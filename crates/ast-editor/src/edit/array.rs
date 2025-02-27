@@ -31,7 +31,7 @@ impl crate::Edit for ast::Array {
                         .await
                         .resolve(
                             Cow::Borrowed(schema_url),
-                            definitions,
+                            Cow::Borrowed(definitions),
                             &schema_context.store,
                         )
                         .await
@@ -43,7 +43,7 @@ impl crate::Edit for ast::Array {
                                         accessors,
                                         Some(&schema_url),
                                         Some(value_schema),
-                                        Some(definitions),
+                                        Some(&definitions),
                                         schema_context,
                                     )
                                     .await,

@@ -92,7 +92,11 @@ impl FindSchemaCandidates for ArraySchema {
                 value_schema,
                 definitions,
             }) = referable_schema
-                .resolve(Cow::Borrowed(schema_url), definitions, schema_store)
+                .resolve(
+                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(definitions),
+                    schema_store,
+                )
                 .await
             {
                 let (mut item_candidates, mut item_errors) = value_schema

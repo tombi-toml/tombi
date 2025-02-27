@@ -45,7 +45,11 @@ where
                 schema_url,
                 definitions,
             }) = referable_schema
-                .resolve(Cow::Borrowed(schema_url), definitions, schema_context.store)
+                .resolve(
+                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(definitions),
+                    schema_context.store,
+                )
                 .await
             {
                 let schema_completions = value
@@ -55,7 +59,7 @@ where
                         accessors,
                         Some(&schema_url),
                         Some(value_schema),
-                        Some(definitions),
+                        Some(&definitions),
                         schema_context,
                         completion_hint,
                     )

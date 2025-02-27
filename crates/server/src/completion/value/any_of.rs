@@ -46,8 +46,8 @@ where
                 definitions,
             }) = referable_schema
                 .resolve(
-                    Cow::Borrowed(&schema_url),
-                    definitions,
+                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(definitions),
                     schema_context.store,
                 )
                 .await
@@ -59,7 +59,7 @@ where
                         accessors,
                         Some(&schema_url),
                         Some(value_schema),
-                        Some(definitions),
+                        Some(&definitions),
                         schema_context,
                         completion_hint,
                     )

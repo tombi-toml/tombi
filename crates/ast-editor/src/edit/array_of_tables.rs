@@ -47,7 +47,7 @@ impl crate::Edit for ast::ArrayOfTables {
                             }) = referable_property_schema
                                 .resolve(
                                     Cow::Borrowed(schema_url),
-                                    definitions,
+                                    Cow::Borrowed(definitions),
                                     schema_context.store,
                                 )
                                 .await
@@ -57,7 +57,7 @@ impl crate::Edit for ast::ArrayOfTables {
                                         &accessors[1..],
                                         Some(&schema_url),
                                         Some(value_schema),
-                                        Some(definitions),
+                                        Some(&definitions),
                                         schema_context,
                                     )
                                     .await;
@@ -74,7 +74,7 @@ impl crate::Edit for ast::ArrayOfTables {
                             }) = schema
                                 .resolve(
                                     Cow::Borrowed(schema_url),
-                                    definitions,
+                                    Cow::Borrowed(definitions),
                                     schema_context.store,
                                 )
                                 .await
@@ -84,7 +84,7 @@ impl crate::Edit for ast::ArrayOfTables {
                                         &accessors,
                                         Some(&schema_url),
                                         Some(value_schema),
-                                        Some(definitions),
+                                        Some(&definitions),
                                         schema_context,
                                     )
                                     .await,

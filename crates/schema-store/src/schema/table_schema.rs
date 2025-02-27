@@ -144,7 +144,11 @@ impl FindSchemaCandidates for TableSchema {
                         schema_url,
                         definitions,
                     }) = property
-                        .resolve(Cow::Borrowed(schema_url), definitions, schema_store)
+                        .resolve(
+                            Cow::Borrowed(schema_url),
+                            Cow::Borrowed(definitions),
+                            schema_store,
+                        )
                         .await
                     {
                         let (schema_candidates, schema_errors) = value_schema
@@ -169,7 +173,11 @@ impl FindSchemaCandidates for TableSchema {
                     schema_url,
                     definitions,
                 }) = value
-                    .resolve(Cow::Borrowed(schema_url), definitions, schema_store)
+                    .resolve(
+                        Cow::Borrowed(schema_url),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                    )
                     .await
                 {
                     return value_schema

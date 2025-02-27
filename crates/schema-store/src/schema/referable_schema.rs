@@ -17,7 +17,7 @@ pub enum Referable<T> {
 pub struct CurrentSchema<'a> {
     pub schema_url: Cow<'a, SchemaUrl>,
     pub value_schema: &'a ValueSchema,
-    pub definitions: &'a SchemaDefinitions,
+    pub definitions: Cow<'a, SchemaDefinitions>,
 }
 
 impl<T> Referable<T> {
@@ -56,7 +56,7 @@ impl Referable<ValueSchema> {
     pub fn resolve<'a: 'b, 'b>(
         &'a mut self,
         schema_url: Cow<'a, SchemaUrl>,
-        definitions: &'a SchemaDefinitions,
+        definitions: Cow<'a, SchemaDefinitions>,
         schema_store: &'a crate::SchemaStore,
     ) -> BoxFuture<'b, Result<CurrentSchema<'a>, crate::Error>> {
         Box::pin(async move {
@@ -84,7 +84,11 @@ impl Referable<ValueSchema> {
                         if let Some(value_schema) = document_schema.value_schema {
                             *self = Referable::Resolved(value_schema);
                             return self
-                                .resolve(Cow::Owned(schema_url), definitions, schema_store)
+                                .resolve(
+                                    Cow::Owned(schema_url),
+                                    Cow::Owned(document_schema.definitions),
+                                    schema_store,
+                                )
                                 .await;
                         } else {
                             return Err(crate::Error::InvalidJsonSchemaReference {
@@ -106,7 +110,7 @@ impl Referable<ValueSchema> {
                         | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
                             for schema in schemas.write().await.iter_mut() {
                                 schema
-                                    .resolve(schema_url.clone(), definitions, schema_store)
+                                    .resolve(schema_url.clone(), definitions.clone(), schema_store)
                                     .await?;
                             }
                         }

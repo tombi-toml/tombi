@@ -75,7 +75,7 @@ impl GetHoverContent for document_tree::Array {
                                     }) = referable_schema
                                         .resolve(
                                             Cow::Borrowed(schema_url),
-                                            definitions,
+                                            Cow::Borrowed(definitions),
                                             schema_context.store,
                                         )
                                         .await
@@ -91,7 +91,7 @@ impl GetHoverContent for document_tree::Array {
                                                     .collect::<Vec<_>>(),
                                                 Some(&schema_url),
                                                 Some(item_schema),
-                                                Some(definitions),
+                                                Some(&definitions),
                                                 schema_context,
                                             )
                                             .await?;

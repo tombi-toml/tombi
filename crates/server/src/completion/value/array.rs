@@ -86,7 +86,7 @@ impl FindCompletionContents for document_tree::Array {
                                         .await
                                         .resolve(
                                             Cow::Borrowed(schema_url),
-                                            definitions,
+                                            Cow::Borrowed(definitions),
                                             schema_context.store,
                                         )
                                         .await
@@ -102,7 +102,7 @@ impl FindCompletionContents for document_tree::Array {
                                                     .collect::<Vec<_>>(),
                                                 Some(&schema_url),
                                                 Some(value_schema),
-                                                Some(definitions),
+                                                Some(&definitions),
                                                 schema_context,
                                                 completion_hint,
                                             )
@@ -121,7 +121,7 @@ impl FindCompletionContents for document_tree::Array {
                                 .await
                                 .resolve(
                                     Cow::Borrowed(schema_url),
-                                    definitions,
+                                    Cow::Borrowed(definitions),
                                     schema_context.store,
                                 )
                                 .await
@@ -137,7 +137,7 @@ impl FindCompletionContents for document_tree::Array {
                                             .collect::<Vec<_>>(),
                                         Some(&schema_url),
                                         Some(value_schema),
-                                        Some(definitions),
+                                        Some(&definitions),
                                         schema_context,
                                         if self.kind() == ArrayKind::Array {
                                             Some(CompletionHint::InArray)

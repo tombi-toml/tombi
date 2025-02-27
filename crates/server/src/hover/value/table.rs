@@ -94,7 +94,7 @@ impl GetHoverContent for document_tree::Table {
                                     }) = property
                                         .resolve(
                                             Cow::Borrowed(schema_url),
-                                            definitions,
+                                            Cow::Borrowed(definitions),
                                             schema_context.store,
                                         )
                                         .await
@@ -110,7 +110,7 @@ impl GetHoverContent for document_tree::Table {
                                                     .collect::<Vec<_>>(),
                                                 Some(&schema_url),
                                                 Some(property_schema),
-                                                Some(definitions),
+                                                Some(&definitions),
                                                 schema_context,
                                             )
                                             .await
@@ -183,7 +183,7 @@ impl GetHoverContent for document_tree::Table {
                                                 }) = pattern_property
                                                     .resolve(
                                                         Cow::Borrowed(schema_url),
-                                                        definitions,
+                                                        Cow::Borrowed(definitions),
                                                         schema_context.store,
                                                     )
                                                     .await
@@ -199,7 +199,7 @@ impl GetHoverContent for document_tree::Table {
                                                                 .collect::<Vec<_>>(),
                                                             Some(&schema_url),
                                                             Some(property_schema),
-                                                            Some(definitions),
+                                                            Some(&definitions),
                                                             schema_context,
                                                         )
                                                         .await
@@ -282,7 +282,7 @@ impl GetHoverContent for document_tree::Table {
                                     }) = referable_schema
                                         .resolve(
                                             Cow::Borrowed(schema_url),
-                                            definitions,
+                                            Cow::Borrowed(definitions),
                                             schema_context.store,
                                         )
                                         .await
@@ -298,7 +298,7 @@ impl GetHoverContent for document_tree::Table {
                                                     .collect::<Vec<_>>(),
                                                 Some(&schema_url),
                                                 Some(additional_property_schema),
-                                                Some(definitions),
+                                                Some(&definitions),
                                                 schema_context,
                                             )
                                             .await

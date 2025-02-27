@@ -273,7 +273,11 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                         schema_url,
                         definitions,
                     }) = referable_schema
-                        .resolve(Cow::Borrowed(schema_url), definitions, schema_store)
+                        .resolve(
+                            Cow::Borrowed(schema_url),
+                            Cow::Borrowed(definitions),
+                            schema_store,
+                        )
                         .await
                     {
                         if matches!(value_schema, ValueSchema::Null) {
@@ -283,7 +287,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                         if let Some(candidate) = CompletionCandidate::title(
                             value_schema,
                             &schema_url,
-                            definitions,
+                            &definitions,
                             schema_store,
                             completion_hint,
                         )
@@ -319,7 +323,11 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                         schema_url,
                         definitions,
                     }) = referable_schema
-                        .resolve(Cow::Borrowed(schema_url), definitions, schema_store)
+                        .resolve(
+                            Cow::Borrowed(schema_url),
+                            Cow::Borrowed(definitions),
+                            schema_store,
+                        )
                         .await
                     {
                         if matches!(value_schema, ValueSchema::Null) {
@@ -329,7 +337,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                         if let Some(candidate) = CompletionCandidate::description(
                             value_schema,
                             &schema_url,
-                            definitions,
+                            &definitions,
                             schema_store,
                             completion_hint,
                         )

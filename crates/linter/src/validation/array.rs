@@ -116,7 +116,11 @@ impl Validate for document_tree::Array {
                             schema_url,
                             definitions,
                         }) = referable_schema
-                            .resolve(Cow::Borrowed(schema_url), definitions, schema_store)
+                            .resolve(
+                                Cow::Borrowed(schema_url),
+                                Cow::Borrowed(definitions),
+                                schema_store,
+                            )
                             .await
                         {
                             for (index, value) in self.values().iter().enumerate() {
@@ -132,7 +136,7 @@ impl Validate for document_tree::Array {
                                             .collect::<Vec<_>>(),
                                         Some(value_schema),
                                         Some(&schema_url),
-                                        Some(definitions),
+                                        Some(&definitions),
                                         sub_schema_url_map,
                                         schema_store,
                                     )
