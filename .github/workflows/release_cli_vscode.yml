@@ -144,7 +144,7 @@ jobs:
           name: tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
           path: dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
 
-  release:
+  release-notes:
     needs: [release-cli-and-vscode]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
