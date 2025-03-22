@@ -33,7 +33,9 @@ impl<T> Parsed<T> {
     }
 
     pub fn errors(&self, toml_version: TomlVersion) -> impl Iterator<Item = &crate::Error> {
-        self.errors.iter().filter(move |e| e.is_match(toml_version))
+        self.errors
+            .iter()
+            .filter(move |e| e.is_compatible_with(toml_version))
     }
 }
 

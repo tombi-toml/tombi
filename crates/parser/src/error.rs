@@ -82,19 +82,19 @@ pub enum ErrorKind {
 pub struct Error {
     kind: ErrorKind,
     range: text::Range,
-    required_toml_version: Option<TomlVersion>,
+    earliest_non_error_version: Option<TomlVersion>,
 }
 
 impl Error {
     pub fn new(
         kind: ErrorKind,
         range: text::Range,
-        required_toml_version: Option<TomlVersion>,
+        earliest_non_error_version: Option<TomlVersion>,
     ) -> Self {
         Self {
             kind,
             range,
-            required_toml_version,
+            earliest_non_error_version,
         }
     }
 
@@ -110,9 +110,11 @@ impl Error {
         self.range
     }
 
-    pub fn is_match(&self, toml_version: TomlVersion) -> bool {
-        self.required_toml_version
-            .map_or(true, |required| required > toml_version)
+    pub fn is_compatible_with(&self, toml_version: TomlVersion) -> bool {
+        self.earliest_non_error_version
+            .map_or(true, |earliest_non_error_version| {
+                toml_version < earliest_non_error_version
+            })
     }
 }
 
