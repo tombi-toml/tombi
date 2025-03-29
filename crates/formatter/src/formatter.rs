@@ -43,7 +43,7 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
+    fn parsed_and_ast(&self, source: &str) -> (parser::Parsed<ast::Root>, ast::Root) {
         let parsed = parser::parse(source);
 
         let Some(parsed) = parsed.cast::<ast::Root>() else {
@@ -52,6 +52,15 @@ impl<'a> Formatter<'a> {
 
         let root = parsed.tree();
         tracing::trace!("TOML AST before editing: {:#?}", root);
+
+        (parsed, root)
+    }
+
+    /// Format a TOML document and return the result as a string
+    ///
+    /// This method is async because it may need to fetch the schema from the schema store.
+    pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
+        let (parsed, root) = self.parsed_and_ast(source);
 
         let source_schema = if let Some(schema) = self
             .schema_store
@@ -82,44 +91,61 @@ impl<'a> Formatter<'a> {
             .unwrap_or(self.toml_version);
 
         let errors = parsed.errors(self.toml_version).collect_vec();
-        let diagnostics = if !errors.is_empty() {
+        if !errors.is_empty() {
             let mut diagnostics = Vec::new();
             for error in errors {
                 error.set_diagnostics(&mut diagnostics);
             }
-            diagnostics
-        } else {
-            Vec::with_capacity(0)
+            return Err(diagnostics);
+        }
+
+        let root = ast_editor::Editor::new(
+            root,
+            &schema_store::SchemaContext {
+                toml_version: self.toml_version,
+                root_schema: source_schema
+                    .as_ref()
+                    .and_then(|schema| schema.root_schema.as_ref()),
+                sub_schema_url_map: source_schema
+                    .as_ref()
+                    .map(|schema| &schema.sub_schema_url_map),
+                store: self.schema_store,
+            },
+        )
+        .edit()
+        .await;
+
+        tracing::trace!("TOML AST after editing: {:#?}", root);
+
+        let line_ending = {
+            root.format(&mut self).unwrap();
+            self.line_ending()
         };
 
-        if diagnostics.is_empty() {
-            let root = ast_editor::Editor::new(
-                root,
-                &schema_store::SchemaContext {
-                    toml_version: self.toml_version,
-                    root_schema: source_schema
-                        .as_ref()
-                        .and_then(|schema| schema.root_schema.as_ref()),
-                    sub_schema_url_map: source_schema
-                        .as_ref()
-                        .map(|schema| &schema.sub_schema_url_map),
-                    store: self.schema_store,
-                },
-            )
-            .edit()
-            .await;
+        Ok(self.buf + line_ending)
+    }
 
-            tracing::trace!("TOML AST after editing: {:#?}", root);
+    /// Format a TOML document without schema and return the result as a string
+    ///
+    /// This method is sync because it does not need to fetch the schema from the schema store.
+    pub fn format_without_schema(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
+        let (parsed, root) = self.parsed_and_ast(source);
 
-            let line_ending = {
-                root.format(&mut self).unwrap();
-                self.line_ending()
-            };
-
-            Ok(self.buf + line_ending)
-        } else {
-            Err(diagnostics)
+        let errors = parsed.errors(self.toml_version).collect_vec();
+        if !errors.is_empty() {
+            let mut diagnostics = Vec::new();
+            for error in errors {
+                error.set_diagnostics(&mut diagnostics);
+            }
+            return Err(diagnostics);
         }
+
+        let line_ending = {
+            root.format(&mut self).unwrap();
+            self.line_ending()
+        };
+
+        Ok(self.buf + line_ending)
     }
 
     /// Format a node and return the result as a string

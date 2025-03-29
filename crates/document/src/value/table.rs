@@ -98,9 +98,9 @@ impl<'de> serde::Deserialize<'de> for Table {
 mod test {
     use serde_json::json;
 
-    use crate::test_serialize;
+    use crate::test_deserialize;
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn key_value(
             r#"
@@ -109,7 +109,7 @@ mod test {
         ) -> Ok(json!({"key": "value"}))
     );
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn keys_value(
             r#"
@@ -126,7 +126,7 @@ mod test {
         ))
     );
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn table(
             r#"
@@ -137,7 +137,7 @@ mod test {
         ) -> Ok(json!({"foo": {"bar": "value", "baz": 42}}))
     );
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn tables(
             r#"
@@ -153,7 +153,7 @@ mod test {
         }))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn sub_empty(
             r#"
@@ -163,7 +163,7 @@ mod test {
         ) -> Ok(json!({ "a": { "b": {} } }))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn key_dotted_2(
             r#"many.dots.here.dot.dot.dot = {a.b.c = 1, a.b.d = 2}"#
@@ -191,7 +191,7 @@ mod test {
         ))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn key_dotted_3(
             r#"
@@ -211,7 +211,7 @@ mod test {
         ))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn array_of_table_table(
             r#"
@@ -235,7 +235,7 @@ mod test {
         )
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn array_of_table_table_twice(
             r#"
@@ -268,7 +268,7 @@ mod test {
         )
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn duplicate(
             r#"
@@ -283,7 +283,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn duplicate_key_2(
             r#"
@@ -296,7 +296,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn duplicate_key_3(
             r#"tbl = { fruit = { apple.color = "red" }, fruit.apple.texture = { smooth = true } }"#
@@ -305,7 +305,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn duplicate_key_dotted_table2(
             r#"
@@ -319,7 +319,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn redefine_2(
             r#"

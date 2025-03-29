@@ -60,9 +60,9 @@ impl<'de> serde::Deserialize<'de> for Document {
 
 #[cfg(test)]
 #[macro_export]
-macro_rules! test_serialize {
+macro_rules! test_deserialize {
     {#[test] fn $name:ident($source:expr) -> Ok($json:expr)} => {
-        test_serialize! {#[test] fn $name($source, toml_version::TomlVersion::default()) -> Ok($json)}
+        test_deserialize! {#[test] fn $name($source, toml_version::TomlVersion::default()) -> Ok($json)}
     };
 
     {#[test] fn $name:ident($source:expr, $toml_version:expr) -> Ok($json:expr)} => {
@@ -87,7 +87,7 @@ macro_rules! test_serialize {
     };
 
     {#[test] fn $name:ident($source:expr) -> Err($errors:expr)} => {
-        test_serialize! {#[test] fn $name($source, toml_version::TomlVersion::default()) -> Err($errors)}
+        test_deserialize! {#[test] fn $name($source, toml_version::TomlVersion::default()) -> Err($errors)}
     };
 
     {#[test] fn $name:ident($source:expr, $toml_version:expr) -> Err($errors:expr)} => {
@@ -132,12 +132,12 @@ macro_rules! test_serialize {
 mod test {
     use serde_json::json;
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn empty("") -> Ok(json!({}))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn key_values(
             r#"
@@ -147,7 +147,7 @@ mod test {
         ) -> Ok(json!({"key": "value", "flag": true}))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn array_of_tables_sample(
             r#"

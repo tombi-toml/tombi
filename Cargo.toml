@@ -31,6 +31,7 @@ indexmap = { version = "2.6.0", features = ["serde"] }
 itertools = "0.13.0"
 lexer = { path = "crates/lexer" }
 linter = { path = "crates/linter" }
+maplit = { version = "1.0" }
 nu-ansi-term = "0.50.1"
 parser = { path = "crates/parser" }
 pretty_assertions = "1.4.1"

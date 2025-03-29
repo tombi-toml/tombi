@@ -9,12 +9,20 @@ license.workspace = true
 
 [dependencies]
 ast = { workspace = true }
+chrono = { workspace = true }
+diagnostic = { workspace = true }
 document = { workspace = true }
 document-tree = { workspace = true }
+formatter = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 parser = { workspace = true }
+schema-store = { workspace = true }
 serde = { workspace = true }
 text = { workspace = true }
 thiserror = { workspace = true }
 toml-version = { workspace = true }
+
+[dev-dependencies]
+maplit = { workspace = true }
+pretty_assertions.workspace = true

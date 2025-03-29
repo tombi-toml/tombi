@@ -93,9 +93,9 @@ mod test {
     use serde_json::json;
     use toml_version::TomlVersion;
 
-    use crate::test_serialize;
+    use crate::test_deserialize;
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn escape_esc_v1_0_0(
             r#"
@@ -107,7 +107,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn escape_esc_v1_1_0(
             r#"
@@ -117,7 +117,7 @@ mod test {
         ) -> Ok(json!({"esc":"\u{001b} There is no escape! \u{001b}"}))
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn escape_unicode_v1_0_0(
             r#"
@@ -131,7 +131,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn escape_unicode_v1_1_0(
             r#"
@@ -165,7 +165,7 @@ mod test {
         }))
     }
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn escape_tricky(
             r#"
@@ -196,7 +196,7 @@ mod test {
         }))
     );
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn hex_escape_v1_0_0(
             r#"
@@ -233,7 +233,7 @@ mod test {
         ])
     }
 
-    test_serialize! {
+    test_deserialize! {
         #[test]
         fn hex_escape_v1_1_0(
             r#"
@@ -272,7 +272,7 @@ mod test {
         }))
     }
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn multiline_empty(
             r#"
@@ -294,7 +294,7 @@ mod test {
         ) -> Ok(json!({"empty-1":"","empty-2":"","empty-3":"","empty-4":""}))
     );
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn string_us(
             r#"
@@ -305,7 +305,7 @@ mod test {
         ])
     );
 
-    test_serialize!(
+    test_deserialize!(
         #[test]
         fn rawstring_us(
             r#"
