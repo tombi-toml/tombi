@@ -1,21 +1,21 @@
 # Treatment of Comments
 
-Tombi performs impressive comment interpretation to support automatic sorting.
+Tombi provides sophisticated comment interpretation to support automatic sorting.
 
-Most users will learn how comments are handled by observing the formatter's behavior,
-but this page is provided for users who want a more systematic understanding of how comments are treated.
+While most users will learn how comments are handled by observing the formatter's behavior,
+this page offers a systematic understanding of Tombi's comment treatment.
 
 ## Terminology
 
-Generally, there are three types of comments:
+In TOML files, there are three types of comments:
 
 1. Leading comments
 2. Tailing comment
 3. Dangling comments
 
-Type 1 and 2 exist surrounding an element.
-Leading comments are on the lines before an element and can exist across multiple consecutive lines.
-Tailing comments exist at the end of the line after an element and can only exist once.
+Types 1 and 2 are associated with specific elements.
+Leading comments appear on the lines before an element and can span multiple consecutive lines.
+Tailing comment appear at the end of the line after an element and are limited to one per line.
 
 ```toml
 # leading comment1
@@ -23,7 +23,7 @@ Tailing comments exist at the end of the line after an element and can only exis
 key = "value" # tailing comment
 ```
 
-Type 3, Dangling comments, are comments not associated with any element.
+Type 3, Dangling comments, are comments that are not associated with any specific element.
 
 ```toml
 # dangling comment1
@@ -36,9 +36,9 @@ key = "value"
 # dangling comment4
 ```
 
-When dangling comments exist, automatic sorting becomes challenging.
+It is impossible to automatically sort Dangling Comments.
 
-For example, consider the following TOML file:
+Consider this example:
 
 ```toml
 # dangling comment1
@@ -55,18 +55,19 @@ key1 = "value1" # tailing comment
 # dangling comment4
 ```
 
-When sorting keys in ascending order, key1 should come before key2.
-But where should dangling comment2 go? Before key1 or after key2?
-Tombi cannot determine which element the comment is directed at.
+When sorting keys in ascending order, `key1` should come before `key2`.
+But where should `dangling comment2` be placed? Before `key1` or after `key2`?
+Tombi cannot determine which element the comment is intended for.
 
 Should we use AI to interpret the comment content?
 
-No, Tombi solves this problem by establishing special rules.
+No, Tombi solves this problem through a set of special rules.
 
 ## Limiting the Use of Dangling Comments
 
-Tombi limits where dangling comments can be used.
-They are allowed before and after key values, and before and after the brackets of arrays and inline tables.
+The key to Tombi's ability to auto-sort is treating some comments that appear to be Dangling Comments as Leading Comments.
+
+Tombi allows Dangling Comments to be placed before and after key values, and before and after the brackets of arrays and inline tables.
 
 ```toml
 # dangling comment
@@ -128,10 +129,10 @@ Dangling comments can be separated by blank lines, allowing multiple groups to b
 </Note>
 
 <Tip>
-In the proposed TOML v1.1.0, it allows multi-line and trailing commas of Inline Table.
+The proposed TOML v1.1.0 specification allows multi-line and trailing commas in Inline Tables.
 </Tip>
 
-Now, what happens to dangling comments in other locations?
+What happens to dangling comments in other locations?
 
 ## Merging Leading Comments
 
@@ -149,7 +150,7 @@ key1 = 1
 key2 = 2
 ```
 
-In such cases, Tombi treats dangling comments as leading comments and removes blank lines between comments:
+In such cases, Tombi treats these dangling comments as leading comments and removes blank lines between them:
 
 ```toml
 key1 = 1
@@ -160,11 +161,11 @@ key1 = 1
 key2 = 2
 ```
 
-With this special pre-processing, Tombi maintains the meaning of comments while enabling automatic sorting.
+Through this special pre-processing, Tombi maintains the meaning of comments while enabling automatic sorting.
 
 ## Summary of Comment Handling
 
-Let's look at a more specific example to understand how Tombi handles comments:
+Let's examine a comprehensive example to understand how Tombi handles comments:
 
 ```toml
 # dangling comment
@@ -358,19 +359,19 @@ key1 = {
 # dangling comment
 ```
 
-By interpreting comments in this way, Tombi enables automatic sorting 🚀
+Through this intelligent comment interpretation, Tombi enables automatic sorting 🚀
 
 ## `:schema` Directive
 
-Tombi can embed JSON Schema information in TOML files in the same way as Taplo.
+Tombi supports embedding JSON Schema information in TOML files, similar to Taplo.
 
 ```toml
 #:schema your-schema.json
 key = "value"
 ```
 
-However, when auto-sorting, to prevent the `#:schema` directive from being accidentally placed anywhere other than the beginning of the document,
-Tombi first moves the comment group containing the `#:schema` directive to the beginning of the document before performing auto-sorting.
+During auto-sorting, to ensure the `#:schema` directive remains at the beginning of the document,
+Tombi first moves the comment group containing the `#:schema` directive to the start before performing auto-sorting.
 
 ```toml
 #:schema your-schema.json

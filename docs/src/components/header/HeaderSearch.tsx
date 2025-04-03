@@ -37,7 +37,7 @@ export function HeaderSearch() {
         console.log(results);
         setSearchResults(results);
       } catch (error) {
-        console.error("検索中にエラーが発生しました:", error);
+        console.error("An error occurred during search:", error);
         setSearchResults([]);
       } finally {
         setIsLoading(false);
