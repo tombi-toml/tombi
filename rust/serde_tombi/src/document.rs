@@ -51,6 +51,12 @@ impl std::ops::Deref for Document {
     }
 }
 
+impl AsRef<document::Document> for Document {
+    fn as_ref(&self) -> &document::Document {
+        &self.0
+    }
+}
+
 impl std::ops::DerefMut for Document {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0

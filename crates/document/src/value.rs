@@ -14,7 +14,10 @@ pub use integer::{Integer, IntegerKind};
 pub use string::{String, StringKind};
 pub use table::{Table, TableKind};
 
+use crate::key::Key;
 use crate::IntoDocument;
+use serde::de::Error as SerdeError;
+use std::string::String as StdString;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -28,6 +31,393 @@ pub enum Value {
     LocalTime(LocalTime),
     Array(Array),
     Table(Table),
+}
+
+#[derive(Debug)]
+pub struct Error(StdString);
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl SerdeError for Error {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: std::fmt::Display,
+    {
+        Self(msg.to_string())
+    }
+}
+
+impl<'de> serde::de::IntoDeserializer<'de, Error> for &'de Key {
+    type Deserializer = serde::de::value::StrDeserializer<'de, Error>;
+
+    fn into_deserializer(self) -> Self::Deserializer {
+        serde::de::value::StrDeserializer::new(self.value())
+    }
+}
+
+pub struct ValueDeserializer<'de> {
+    value: &'de Value,
+}
+
+impl<'de> ValueDeserializer<'de> {
+    pub fn new(value: &'de Value) -> Self {
+        Self { value }
+    }
+}
+
+impl<'de> serde::de::Deserializer<'de> for ValueDeserializer<'de> {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Boolean(b) => visitor.visit_bool(b.value()),
+            Value::Integer(i) => visitor.visit_i64(i.value()),
+            Value::Float(f) => visitor.visit_f64(f.value()),
+            Value::String(s) => visitor.visit_str(s.value()),
+            Value::Array(a) => {
+                let seq = a.values();
+                visitor.visit_seq(serde::de::value::SeqDeserializer::new(seq.iter()))
+            }
+            Value::Table(t) => {
+                let map = t.key_values();
+                visitor.visit_map(serde::de::value::MapDeserializer::new(map.iter()))
+            }
+            _ => Err(Error::custom("Unsupported value type")),
+        }
+    }
+
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Boolean(b) => visitor.visit_bool(b.value()),
+            _ => Err(Error::custom("Expected boolean")),
+        }
+    }
+
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_i8(i.value() as i8),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_i16(i.value() as i16),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_i32(i.value() as i32),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_i64(i.value()),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_u8(i.value() as u8),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_u16(i.value() as u16),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_u32(i.value() as u32),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Integer(i) => visitor.visit_u64(i.value() as u64),
+            _ => Err(Error::custom("Expected integer")),
+        }
+    }
+
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Float(f) => visitor.visit_f32(f.value() as f32),
+            _ => Err(Error::custom("Expected float")),
+        }
+    }
+
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Float(f) => visitor.visit_f64(f.value()),
+            _ => Err(Error::custom("Expected float")),
+        }
+    }
+
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => {
+                let chars: Vec<char> = s.value().chars().collect();
+                if chars.len() == 1 {
+                    visitor.visit_char(chars[0])
+                } else {
+                    Err(Error::custom("Expected single character"))
+                }
+            }
+            _ => Err(Error::custom("Expected string")),
+        }
+    }
+
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => visitor.visit_str(s.value()),
+            _ => Err(Error::custom("Expected string")),
+        }
+    }
+
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => visitor.visit_string(s.value().to_string()),
+            _ => Err(Error::custom("Expected string")),
+        }
+    }
+
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => visitor.visit_bytes(s.value().as_bytes()),
+            _ => Err(Error::custom("Expected string")),
+        }
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => visitor.visit_byte_buf(s.value().as_bytes().to_vec()),
+            _ => Err(Error::custom("Expected string")),
+        }
+    }
+
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_some(self)
+    }
+
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_unit()
+    }
+
+    fn deserialize_unit_struct<V>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_unit()
+    }
+
+    fn deserialize_newtype_struct<V>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_newtype_struct(self)
+    }
+
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Array(a) => {
+                let seq = a.values();
+                visitor.visit_seq(serde::de::value::SeqDeserializer::new(seq.iter()))
+            }
+            _ => Err(Error::custom("Expected array")),
+        }
+    }
+
+    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Array(a) => {
+                let seq = a.values();
+                visitor.visit_seq(serde::de::value::SeqDeserializer::new(seq.iter()))
+            }
+            _ => Err(Error::custom("Expected array")),
+        }
+    }
+
+    fn deserialize_tuple_struct<V>(
+        self,
+        _name: &'static str,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Array(a) => {
+                let seq = a.values();
+                visitor.visit_seq(serde::de::value::SeqDeserializer::new(seq.iter()))
+            }
+            _ => Err(Error::custom("Expected array")),
+        }
+    }
+
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Table(t) => {
+                let map = t.key_values();
+                visitor.visit_map(serde::de::value::MapDeserializer::new(map.iter()))
+            }
+            _ => Err(Error::custom("Expected table")),
+        }
+    }
+
+    fn deserialize_struct<V>(
+        self,
+        _name: &'static str,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::Table(t) => {
+                let map = t.key_values();
+                visitor.visit_map(serde::de::value::MapDeserializer::new(map.iter()))
+            }
+            _ => Err(Error::custom("Expected table")),
+        }
+    }
+
+    fn deserialize_enum<V>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => {
+                visitor.visit_enum(serde::de::value::StrDeserializer::new(s.value()))
+            }
+            Value::Table(t) => {
+                let map = t.key_values();
+                visitor.visit_map(serde::de::value::MapDeserializer::new(map.iter()))
+            }
+            _ => Err(Error::custom("Expected string or table")),
+        }
+    }
+
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        match self.value {
+            Value::String(s) => visitor.visit_str(s.value()),
+            _ => Err(Error::custom("Expected string")),
+        }
+    }
+
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_unit()
+    }
+}
+
+impl<'de> serde::de::IntoDeserializer<'de, Error> for &'de Value {
+    type Deserializer = ValueDeserializer<'de>;
+
+    fn into_deserializer(self) -> Self::Deserializer {
+        ValueDeserializer::new(self)
+    }
 }
 
 impl IntoDocument<Value> for document_tree::Value {
