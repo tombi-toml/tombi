@@ -48,6 +48,14 @@ where
     Deserializer::new().from_str_async(toml_text).await
 }
 
+#[allow(dead_code)]
+pub fn from_str<T>(toml_text: &str) -> Result<T, crate::de::Error>
+where
+    T: DeserializeOwned,
+{
+    Deserializer::new().from_str(toml_text)
+}
+
 pub fn from_document<T>(document: document::Document) -> Result<T, crate::de::Error>
 where
     T: DeserializeOwned,
@@ -86,6 +94,24 @@ impl<'de> Deserializer<'de> {
         T: DeserializeOwned,
     {
         from_document(self.try_to_document(toml_text, self.get_toml_version().await?)?)
+    }
+
+    /// Deserialize a TOML string into a Rust data structure.
+    ///
+    /// # Warning
+    ///
+    /// This function will fail if called in a tokio::Runtime.
+    /// Therefore, use this function only when the process is synchronous.
+    ///
+    pub(crate) fn from_str<T>(&self, toml_text: &str) -> Result<T, crate::de::Error>
+    where
+        T: DeserializeOwned,
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_io()
+            .enable_time()
+            .build()?
+            .block_on(self.from_str_async(toml_text))
     }
 
     pub fn from_document<T>(&self, document: document::Document) -> Result<T, crate::de::Error>
@@ -625,8 +651,8 @@ optional_string = "provided"
         pretty_assertions::assert_eq!(config, config::Config::default());
     }
 
-    #[tokio::test]
-    async fn test_deserialize_actual_tombi_config() {
+    #[test]
+    fn test_deserialize_actual_tombi_config() {
         let config_path = project_root().join("tombi.toml");
         let config = crate::config::from_str(
             &std::fs::read_to_string(&config_path).unwrap(),

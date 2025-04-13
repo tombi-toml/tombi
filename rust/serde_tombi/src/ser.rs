@@ -90,11 +90,21 @@ impl<'a> Serializer<'a> {
         }
     }
 
+    /// Serialize the given data structure as a TOML string.
+    ///
+    /// # Warning
+    ///
+    /// This function will fail if called in a tokio::Runtime.
+    /// Therefore, use this function only when the process is synchronous.
     pub fn to_string<T>(&self, value: &T) -> Result<String, crate::ser::Error>
     where
         T: Serialize,
     {
-        tokio::runtime::Runtime::new()?.block_on(self.to_string_async(value))
+        tokio::runtime::Builder::new_current_thread()
+            .enable_io()
+            .enable_time()
+            .build()?
+            .block_on(self.to_string_async(value))
     }
 
     pub async fn to_string_async<T>(&self, value: &T) -> Result<String, crate::ser::Error>
@@ -990,8 +1000,8 @@ updated_at = "2023-07-20T14:45:30Z"
         toml_text_assert_eq!(toml, expected);
     }
 
-    #[tokio::test]
-    async fn test_builder_with_schema_store_cargo_dependencies() {
+    #[test]
+    fn test_builder_with_schema_store_cargo_dependencies() {
         // This test verifies that dependencies in a Cargo.toml file
         // are sorted alphabetically when the appropriate schema is used
 
@@ -1023,8 +1033,7 @@ updated_at = "2023-07-20T14:45:30Z"
         let toml = Serializer::builder()
             .source_path(std::path::Path::new("Cargo.toml"))
             .build()
-            .to_string_async(&cargo_toml)
-            .await
+            .to_string(&cargo_toml)
             .expect("TOML serialization failed");
 
         let expected = r#"[package]
