@@ -18,12 +18,12 @@ The main goal of this crate is to:
 Plugin developers should implement the traits defined in this crate to create new plugins for Tombi. By following this standardized interface, plugins can be easily integrated into the Tombi Language Server and other Tombi components.
 
 ```rust
-use tombi_plugin::Plugin;
+use tombi_plugin::TombiPlugin;
 
-// Implement the Plugin trait for your custom plugin
+// Implement the TombiPlugin trait for your custom plugin
 struct MyCustomPlugin;
 
-impl Plugin for MyCustomPlugin {
+impl TombiPlugin for MyCustomPlugin {
     // Implement required methods...
 }
 ```
