@@ -10,12 +10,12 @@ pub struct AnyOfSchema {
     pub title: Option<String>,
     pub description: Option<String>,
     pub schemas: ReferableValueSchemas,
-    pub default: Option<serde_json::Value>,
+    pub default: Option<tombi_json_value::Value>,
     pub deprecated: Option<bool>,
 }
 
 impl AnyOfSchema {
-    pub fn new(object: &serde_json::Map<String, serde_json::Value>) -> Self {
+    pub fn new(object: &tombi_json_value::Map<String, tombi_json_value::Value>) -> Self {
         let title = object
             .get("title")
             .and_then(|v| v.as_str())

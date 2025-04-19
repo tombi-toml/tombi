@@ -1,6 +1,6 @@
 use ahash::AHashMap;
-use tombi_config::TomlVersion;
 use futures::{future::BoxFuture, FutureExt};
+use tombi_config::TomlVersion;
 
 use super::{
     referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUrl, ValueSchema,
@@ -17,9 +17,12 @@ pub struct DocumentSchema {
 }
 
 impl DocumentSchema {
-    pub fn new(value: serde_json::Map<String, serde_json::Value>, schema_url: SchemaUrl) -> Self {
+    pub fn new(
+        value: tombi_json_value::Map<String, tombi_json_value::Value>,
+        schema_url: SchemaUrl,
+    ) -> Self {
         let toml_version = value.get("x-tombi-toml-version").and_then(|obj| match obj {
-            serde_json::Value::String(version) => {
+            tombi_json_value::Value::String(version) => {
                 serde_json::from_str(&format!("\"{version}\"")).ok()
             }
             _ => None,
@@ -31,7 +34,7 @@ impl DocumentSchema {
 
         let value_schema = ValueSchema::new(&value);
         let mut definitions = AHashMap::default();
-        if let Some(serde_json::Value::Object(object)) = value.get("definitions") {
+        if let Some(tombi_json_value::Value::Object(object)) = value.get("definitions") {
             for (key, value) in object.into_iter() {
                 let Some(object) = value.as_object() else {
                     continue;
@@ -41,7 +44,7 @@ impl DocumentSchema {
                 }
             }
         }
-        if let Some(serde_json::Value::Object(object)) = value.get("$defs") {
+        if let Some(tombi_json_value::Value::Object(object)) = value.get("$defs") {
             for (key, value) in object.into_iter() {
                 let Some(object) = value.as_object() else {
                     continue;

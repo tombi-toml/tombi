@@ -8,7 +8,7 @@ pub struct LocalDateSchema {
 }
 
 impl LocalDateSchema {
-    pub fn new(object: &serde_json::Map<String, serde_json::Value>) -> Self {
+    pub fn new(object: &tombi_json_value::Map<String, tombi_json_value::Value>) -> Self {
         Self {
             title: object
                 .get("title")

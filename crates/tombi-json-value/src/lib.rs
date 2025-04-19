@@ -100,6 +100,14 @@ impl Value {
         }
     }
 
+    /// Get as u64 value
+    pub fn as_u64(&self) -> Option<u64> {
+        match self {
+            Value::Number(n) => n.as_u64(),
+            _ => None,
+        }
+    }
+
     /// Get as string reference
     pub fn as_str(&self) -> Option<&str> {
         match self {

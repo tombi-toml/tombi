@@ -22,6 +22,9 @@ tombi-ast = { workspace = true }
 tombi-config = { workspace = true }
 tombi-document = { workspace = true }
 tombi-document-tree = { workspace = true }
+tombi-json-parser = { workspace = true }
+tombi-json-tree = { workspace = true }
+tombi-json-value = { workspace = true }
 tombi-text = { workspace = true }
 tombi-x-keyword = { workspace = true }
 tracing = { workspace = true }

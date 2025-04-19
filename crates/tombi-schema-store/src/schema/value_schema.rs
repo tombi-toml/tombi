@@ -31,16 +31,16 @@ pub enum ValueSchema {
 }
 
 impl ValueSchema {
-    pub fn new(object: &serde_json::Map<String, serde_json::Value>) -> Option<Self> {
+    pub fn new(object: &tombi_json_value::Map<String, tombi_json_value::Value>) -> Option<Self> {
         match object.get("type") {
-            Some(serde_json::Value::String(type_str)) => return Self::new_single(type_str, object),
-            Some(serde_json::Value::Array(types)) => {
+            Some(tombi_json_value::Value::String(type_str)) => return Self::new_single(type_str, object),
+            Some(tombi_json_value::Value::Array(types)) => {
                 return Some(Self::OneOf(OneOfSchema {
                     schemas: Arc::new(tokio::sync::RwLock::new(
                         types
                             .iter()
                             .filter_map(|type_value| {
-                                if let serde_json::Value::String(type_str) = type_value {
+                                if let tombi_json_value::Value::String(type_str) = type_value {
                                     Self::new_single(type_str, object)
                                 } else {
                                     None
@@ -73,7 +73,7 @@ impl ValueSchema {
 
     fn new_single(
         type_str: &str,
-        object: &serde_json::Map<String, serde_json::Value>,
+        object: &tombi_json_value::Map<String, tombi_json_value::Value>,
     ) -> Option<Self> {
         match type_str {
             "null" => Some(ValueSchema::Null),
@@ -81,7 +81,7 @@ impl ValueSchema {
             "integer" => Some(ValueSchema::Integer(IntegerSchema::new(object))),
             "number" => Some(ValueSchema::Float(FloatSchema::new(object))),
             "string" => {
-                if let Some(serde_json::Value::String(format_str)) = object.get("format") {
+                if let Some(tombi_json_value::Value::String(format_str)) = object.get("format") {
                     // See: https://json-schema.org/understanding-json-schema/reference/type#built-in-formats
                     match format_str.as_str() {
                         "date-time" => {

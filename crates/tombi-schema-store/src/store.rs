@@ -202,63 +202,64 @@ impl SchemaStore {
         &self,
         schema_url: &SchemaUrl,
     ) -> Result<DocumentSchema, crate::Error> {
-        let schema: serde_json::Map<String, serde_json::Value> = match schema_url.scheme() {
-            "file" => {
-                let schema_path =
-                    schema_url
-                        .to_file_path()
-                        .map_err(|_| crate::Error::InvalidSchemaUrl {
-                            schema_url: schema_url.to_string(),
-                        })?;
-                if !schema_path.exists() {
-                    return Err(crate::Error::SchemaFileNotFound {
-                        schema_path: schema_path.clone(),
-                    });
+        let schema: tombi_json_value::Map<String, tombi_json_value::Value> =
+            match schema_url.scheme() {
+                "file" => {
+                    let schema_path =
+                        schema_url
+                            .to_file_path()
+                            .map_err(|_| crate::Error::InvalidSchemaUrl {
+                                schema_url: schema_url.to_string(),
+                            })?;
+                    if !schema_path.exists() {
+                        return Err(crate::Error::SchemaFileNotFound {
+                            schema_path: schema_path.clone(),
+                        });
+                    }
+                    let file = std::fs::File::open(&schema_path)
+                        .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
+
+                    serde_json::from_reader(file)
                 }
-                let file = std::fs::File::open(&schema_path)
-                    .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
+                "http" | "https" => {
+                    assert!(
+                        !self.offline(),
+                        "offline mode, store don't have online schema url: {schema_url}",
+                    );
 
-                serde_json::from_reader(file)
-            }
-            "http" | "https" => {
-                assert!(
-                    !self.offline(),
-                    "offline mode, store don't have online schema url: {schema_url}",
-                );
+                    tracing::debug!("fetch schema from url: {}", schema_url);
 
-                tracing::debug!("fetch schema from url: {}", schema_url);
-
-                let response = self
-                    .http_client
-                    .get(schema_url.as_ref())
-                    .send()
-                    .await
-                    .map_err(|err| crate::Error::SchemaFetchFailed {
-                        schema_url: schema_url.clone(),
-                        reason: err.to_string(),
-                    })?;
-
-                let bytes =
-                    response
-                        .bytes()
+                    let response = self
+                        .http_client
+                        .get(schema_url.as_ref())
+                        .send()
                         .await
                         .map_err(|err| crate::Error::SchemaFetchFailed {
                             schema_url: schema_url.clone(),
                             reason: err.to_string(),
                         })?;
 
-                serde_json::from_reader(std::io::Cursor::new(bytes))
+                    let bytes =
+                        response
+                            .bytes()
+                            .await
+                            .map_err(|err| crate::Error::SchemaFetchFailed {
+                                schema_url: schema_url.clone(),
+                                reason: err.to_string(),
+                            })?;
+
+                    serde_json::from_reader(std::io::Cursor::new(bytes))
+                }
+                _ => {
+                    return Err(crate::Error::UnsupportedSchemaUrl {
+                        schema_url: schema_url.to_owned(),
+                    })
+                }
             }
-            _ => {
-                return Err(crate::Error::UnsupportedSchemaUrl {
-                    schema_url: schema_url.to_owned(),
-                })
-            }
-        }
-        .map_err(|err| crate::Error::SchemaFileParseFailed {
-            schema_url: schema_url.to_owned(),
-            reason: err.to_string(),
-        })?;
+            .map_err(|err| crate::Error::SchemaFileParseFailed {
+                schema_url: schema_url.to_owned(),
+                reason: err.to_string(),
+            })?;
 
         Ok(DocumentSchema::new(schema, schema_url.clone()))
     }

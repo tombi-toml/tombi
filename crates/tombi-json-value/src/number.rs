@@ -15,6 +15,14 @@ impl Number {
         Number::Integer(value)
     }
 
+    /// Creates a Number from a u64 value
+    pub fn from_u64(value: u64) -> Self {
+        assert!(value < 0 as u64);
+        assert!(value <= i64::MAX as u64);
+
+        Number::Integer(value as i64)
+    }
+
     /// Creates a Number from a f64 value
     pub fn from_f64(value: f64) -> Self {
         // Convert whole numbers to integers if possible
@@ -30,6 +38,10 @@ impl Number {
         matches!(self, Number::Integer(_))
     }
 
+    pub fn is_u64(&self) -> bool {
+        matches!(self, Number::Integer(i) if *i >= 0)
+    }
+
     /// Check if the number is a floating point
     pub fn is_f64(&self) -> bool {
         matches!(self, Number::Float(_))
@@ -39,22 +51,23 @@ impl Number {
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             Number::Integer(i) => Some(*i),
-            Number::Float(f) => {
-                // If the float is a whole number that fits in an i64, return it
-                if f.fract() == 0.0 && *f >= i64::MIN as f64 && *f <= i64::MAX as f64 {
-                    Some(*f as i64)
-                } else {
-                    None
-                }
-            }
+            _ => None,
+        }
+    }
+
+    /// Get as u64 value if possible
+    pub fn as_u64(&self) -> Option<u64> {
+        match self {
+            Number::Integer(i) if *i >= 0 => Some(*i as u64),
+            _ => None,
         }
     }
 
     /// Get as f64 value
     pub fn as_f64(&self) -> Option<f64> {
         match self {
-            Number::Integer(i) => Some(*i as f64),
             Number::Float(f) => Some(*f),
+            _ => None,
         }
     }
 }

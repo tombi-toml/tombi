@@ -32,7 +32,7 @@ fn tombi_schema() -> Result<(), Box<dyn std::error::Error>> {
     reader.read_to_string(&mut contents)?;
 
     let document_schema = DocumentSchema::new(
-        serde_json::from_str(&contents)?,
+        tombi_json_value::from_str(&contents)?,
         SchemaUrl::from_file_path(&document_path).unwrap(),
     );
 

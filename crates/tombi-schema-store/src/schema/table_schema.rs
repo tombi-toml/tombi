@@ -27,9 +27,9 @@ pub struct TableSchema {
 }
 
 impl TableSchema {
-    pub fn new(object: &serde_json::Map<String, serde_json::Value>) -> Self {
+    pub fn new(object: &tombi_json_value::Map<String, tombi_json_value::Value>) -> Self {
         let mut properties = IndexMap::new();
-        if let Some(serde_json::Value::Object(props)) = object.get("properties") {
+        if let Some(tombi_json_value::Value::Object(props)) = object.get("properties") {
             for (key, value) in props {
                 let Some(object) = value.as_object() else {
                     continue;
@@ -40,7 +40,7 @@ impl TableSchema {
             }
         }
         let pattern_properties = match object.get("patternProperties") {
-            Some(serde_json::Value::Object(props)) => {
+            Some(tombi_json_value::Value::Object(props)) => {
                 let mut pattern_properties = AHashMap::new();
                 for (pattern, value) in props {
                     let Some(object) = value.as_object() else {
@@ -57,8 +57,8 @@ impl TableSchema {
 
         let (additional_properties, additional_property_schema) =
             match object.get("additionalProperties") {
-                Some(serde_json::Value::Bool(allow)) => (Some(*allow), None),
-                Some(serde_json::Value::Object(object)) => {
+                Some(tombi_json_value::Value::Bool(allow)) => (Some(*allow), None),
+                Some(tombi_json_value::Value::Object(object)) => {
                     let value_schema = Referable::<ValueSchema>::new(object);
                     (
                         Some(true),
@@ -73,7 +73,7 @@ impl TableSchema {
             // NOTE: support old name
             .or_else(|| object.get("x-tombi-table-keys-order-by"))
         {
-            Some(serde_json::Value::String(order)) => match order.as_str() {
+            Some(tombi_json_value::Value::String(order)) => match order.as_str() {
                 "ascending" => Some(TableKeysOrder::Ascending),
                 "descending" => Some(TableKeysOrder::Descending),
                 "schema" => Some(TableKeysOrder::Schema),
