@@ -17,7 +17,7 @@ pub async fn handle_get_toml_version(
     let source_schema = match backend.get_incomplete_ast(&uri).await {
         Some(root) => backend
             .schema_store
-            .try_get_source_schema_from_ast(&root, Some(Either::Left(&uri)))
+            .build_source_schema_from_ast(&root, Some(Either::Left(&uri)))
             .await
             .ok()
             .flatten(),

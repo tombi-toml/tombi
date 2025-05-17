@@ -38,7 +38,7 @@ impl<'a> Linter<'a> {
         {
             match self
                 .schema_store
-                .try_get_source_schema_from_ast(&parsed.tree(), self.source_url_or_path)
+                .build_source_schema_from_ast(&parsed.tree(), self.source_url_or_path)
                 .await
             {
                 Ok(Some(schema)) => Some(schema),

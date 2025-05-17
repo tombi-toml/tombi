@@ -30,7 +30,7 @@ impl SchemaContext<'_> {
                 }) {
                     return self
                         .store
-                        .try_get_document_schema(sub_schema_url)
+                        .get_document_schema(sub_schema_url)
                         .await
                         .transpose();
                 }
