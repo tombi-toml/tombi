@@ -7,7 +7,8 @@ use tokio::sync::RwLock;
 use tombi_config::{Schema, SchemaOptions};
 
 use crate::{
-    json::CatalogUrl, DocumentSchema, SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
+    json::CatalogUrl, DocumentSchema, SchemaAccessor, SchemaAccessors, SchemaSpec, SchemaUrl,
+    SourceSchema,
 };
 
 #[derive(Debug, Clone)]
@@ -114,7 +115,7 @@ impl SchemaStore {
             tracing::debug!("load config schema from: {}", schema_url);
 
             self.schemas.write().await.push(crate::Schema {
-                url: schema_url,
+                spec: SchemaSpec::Url(schema_url),
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
                 sub_root_keys: schema.root_keys().and_then(SchemaAccessor::parse),
@@ -181,7 +182,7 @@ impl SchemaStore {
                 .any(|pattern| pattern.ends_with(".toml"))
             {
                 schemas.push(crate::Schema {
-                    url: schema.url,
+                    spec: SchemaSpec::Url(schema.url),
                     include: schema.file_match,
                     toml_version: None,
                     sub_root_keys: None,
@@ -210,6 +211,25 @@ impl SchemaStore {
         } else {
             Ok(false)
         }
+    }
+
+    async fn parse_raw_schema(
+        &self,
+        schema_url: &SchemaUrl,
+        schema_content: &str,
+    ) -> Result<DocumentSchema, crate::Error> {
+        let tombi_json::ValueNode::Object(schema) = tombi_json::ValueNode::from_str(schema_content)
+            .map_err(|err| crate::Error::SchemaFileParseFailed {
+                schema_url: schema_url.to_owned(),
+                reason: err.to_string(),
+            })?
+        else {
+            return Err(crate::Error::SchemaMustBeObject {
+                schema_url: schema_url.to_owned(),
+            });
+        };
+
+        Ok(DocumentSchema::new(schema, schema_url.clone()))
     }
 
     async fn fetch_document_schema(
@@ -393,8 +413,14 @@ impl SchemaStore {
 
         let mut source_schema: Option<SourceSchema> = None;
         for matching_schema in matching_schemas {
-            if let Ok(Some(document_schema)) = self.get_document_schema(&matching_schema.url).await
-            {
+            let document_schema = match &matching_schema.spec {
+                SchemaSpec::Url(url) => self.get_document_schema(url).await,
+                SchemaSpec::Raw(url, content) => {
+                    self.parse_raw_schema(url, content).await.map(|d| Some(d))
+                }
+            };
+
+            if let Ok(Some(document_schema)) = document_schema {
                 match &matching_schema.sub_root_keys {
                     Some(sub_root_keys) => match source_schema {
                         Some(ref mut source_schema) => {
@@ -432,7 +458,7 @@ impl SchemaStore {
                     },
                 }
             } else {
-                tracing::error!("Can't find matching schema for {}", matching_schema.url);
+                tracing::error!("Can't find matching schema for {}", matching_schema.spec);
             }
         }
 
@@ -492,10 +518,10 @@ impl SchemaStore {
         })
     }
 
-    pub async fn associate_schema(&self, schema_url: SchemaUrl, include: Vec<String>) {
+    pub async fn associate_schema(&self, spec: SchemaSpec, include: Vec<String>) {
         let mut schemas = self.schemas.write().await;
         schemas.push(crate::Schema {
-            url: schema_url,
+            spec,
             include,
             toml_version: None,
             sub_root_keys: None,

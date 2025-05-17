@@ -1,3 +1,4 @@
+use tombi_schema_store::SchemaSpec;
 use crate::Backend;
 
 #[derive(Debug, serde::Deserialize)]
@@ -19,6 +20,6 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
 
     backend
         .schema_store
-        .associate_schema(schema_url, params.file_match)
+        .associate_schema(SchemaSpec::Url(schema_url), params.file_match)
         .await;
 }

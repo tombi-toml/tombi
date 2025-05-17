@@ -19,6 +19,7 @@ mod string_schema;
 mod table_schema;
 mod value_schema;
 
+use std::fmt::Display;
 use std::sync::Arc;
 
 use crate::{Accessor, SchemaStore};
@@ -59,10 +60,25 @@ pub struct PropertySchema {
     pub property_schema: Referable<ValueSchema>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
+pub enum SchemaSpec {
+    Url(SchemaUrl),
+    Raw(SchemaUrl, String),
+}
+
+impl Display for SchemaSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SchemaSpec::Url(url) => write!(f, "{}", url),
+            SchemaSpec::Raw(url, _) => write!(f, "{}", url),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Schema {
     pub toml_version: Option<tombi_config::TomlVersion>,
-    pub url: crate::SchemaUrl,
+    pub spec: SchemaSpec,
     pub include: Vec<String>,
     pub sub_root_keys: Option<Vec<SchemaAccessor>>,
 }
