@@ -19,6 +19,7 @@ mod string_schema;
 mod table_schema;
 mod value_schema;
 
+use std::borrow::Cow;
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -63,7 +64,7 @@ pub struct PropertySchema {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
 pub enum SchemaSpec {
     Url(SchemaUrl),
-    Raw(SchemaUrl, String),
+    Raw(SchemaUrl, Cow<'static, str>),
 }
 
 impl Display for SchemaSpec {
