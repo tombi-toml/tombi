@@ -88,17 +88,31 @@ jobs:
         if: matrix.target == 'arm-unknown-linux-gnueabihf'
         run: sudo apt-get install gcc-arm-linux-gnueabihf
 
-      - run: pnpm install && pnpm run build
-        working-directory: ./editors/vscode
-
-      - run: which pnpm
-
       - uses: ./.github/actions/set-version
 
       - name: Rub xtask dist
         run: cargo xtask dist
         env:
           RUST_BACKTRACE: "1"
+
+      - name: Upload tombi-cli artifacts (Unix)
+        uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os != 'windows-latest'
+        with:
+          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
+          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
+
+      - name: Upload tombi-cli artifacts (Windows)
+        uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
+        with:
+          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
+          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
+
+      - run: pnpm install && pnpm run build
+        working-directory: ./editors/vscode
+
+      - run: which pnpm
 
       # FIXME: pnpm cannot exec `cargo xtask dist` on windows.
       #        See https://github.com/matklad/xshell/issues/82
@@ -117,20 +131,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         working-directory: ./editors/vscode
         timeout-minutes: 2
-
-      - name: Upload tombi-cli artifacts
-        uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os != 'windows-latest'
-        with:
-          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
-          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
-
-      - name: Upload tombi-cli artifacts (Windows)
-        uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
-        with:
-          name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
-          path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
 
       - name: Upload tombi-vscode artifacts
         uses: actions/upload-artifact@v4
