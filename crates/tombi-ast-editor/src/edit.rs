@@ -1,4 +1,4 @@
-use futures::FutureExt;
+use crate::compat::{BoxFuture, Boxable};
 use tombi_schema_store::{
     AllOfSchema, AnyOfSchema, OneOfSchema, PropertySchema, SchemaAccessor, ValueSchema,
 };
@@ -18,7 +18,7 @@ pub trait Edit {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    ) -> futures::future::BoxFuture<'b, Vec<crate::Change>>;
+    ) -> BoxFuture<'b, Vec<crate::Change>>;
 }
 
 async fn get_schema<'a: 'b, 'b>(
@@ -33,7 +33,7 @@ async fn get_schema<'a: 'b, 'b>(
         validation_accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    ) -> futures::future::BoxFuture<'b, Option<ValueSchema>> {
+    ) -> BoxFuture<'b, Option<ValueSchema>> {
         async move {
             match current_schema.value_schema.as_ref() {
                 ValueSchema::Table(_) | ValueSchema::Array(_) => {}

@@ -1,4 +1,4 @@
-use futures::FutureExt;
+use crate::compat::{BoxFuture, Boxable};
 use itertools::Itertools;
 use tombi_syntax::SyntaxElement;
 
@@ -11,7 +11,7 @@ impl crate::Edit for tombi_ast::Root {
         _accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    ) -> futures::future::BoxFuture<'b, Vec<crate::Change>> {
+    ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
             let mut key_values = vec![];

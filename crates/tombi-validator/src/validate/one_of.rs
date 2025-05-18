@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
+use crate::compat::{BoxFuture, Boxable};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
-use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::{CurrentSchema, OneOfSchema, ValueSchema};
 
 use super::Validate;
@@ -45,7 +45,10 @@ where
                 | (tombi_document_tree::ValueType::Integer, ValueSchema::Integer(_))
                 | (tombi_document_tree::ValueType::Float, ValueSchema::Float(_))
                 | (tombi_document_tree::ValueType::String, ValueSchema::String(_))
-                | (tombi_document_tree::ValueType::OffsetDateTime, ValueSchema::OffsetDateTime(_))
+                | (
+                    tombi_document_tree::ValueType::OffsetDateTime,
+                    ValueSchema::OffsetDateTime(_),
+                )
                 | (tombi_document_tree::ValueType::LocalDateTime, ValueSchema::LocalDateTime(_))
                 | (tombi_document_tree::ValueType::LocalDate, ValueSchema::LocalDate(_))
                 | (tombi_document_tree::ValueType::LocalTime, ValueSchema::LocalTime(_))

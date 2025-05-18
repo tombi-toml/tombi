@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use futures::{future::BoxFuture, FutureExt};
+use crate::compat::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use super::Validate;

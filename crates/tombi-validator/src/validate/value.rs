@@ -1,4 +1,4 @@
-use futures::{future::BoxFuture, FutureExt};
+use crate::compat::{BoxFuture, Boxable};
 
 use super::Validate;
 

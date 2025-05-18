@@ -1,0 +1,20 @@
+[package]
+name = "tombi-wasm"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+nu-ansi-term.workspace = true
+itertools.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_tombi = { workspace = true, features = ["wasm"] }
+tokio = { workspace = true, features = ["macros"] }
+tombi-config.workspace = true
+tombi-diagnostic.workspace = true
+tombi-formatter = { workspace = true, features = ["wasm"] }
+tombi-lexer.workspace = true
+tombi-schema-store = { workspace = true, features = ["wasm"] }

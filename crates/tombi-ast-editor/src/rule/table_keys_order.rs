@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use futures::{future::BoxFuture, FutureExt};
+use crate::compat::{BoxFuture, Boxable};
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;

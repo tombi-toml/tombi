@@ -23,6 +23,7 @@ use std::borrow::Cow;
 use std::fmt::Display;
 use std::sync::Arc;
 
+use crate::compat::{BoxFuture, Boxable};
 use crate::{Accessor, SchemaStore};
 pub use all_of_schema::AllOfSchema;
 pub use any_of_schema::AnyOfSchema;
@@ -30,7 +31,6 @@ pub use array_schema::ArraySchema;
 pub use boolean_schema::BooleanSchema;
 pub use document_schema::DocumentSchema;
 pub use float_schema::FloatSchema;
-use futures::future::BoxFuture;
 pub use integer_schema::IntegerSchema;
 pub use local_date_schema::LocalDateSchema;
 pub use local_date_time_schema::LocalDateTimeSchema;

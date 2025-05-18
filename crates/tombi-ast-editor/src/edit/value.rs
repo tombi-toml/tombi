@@ -1,4 +1,4 @@
-use futures::FutureExt;
+use crate::compat::{BoxFuture, Boxable};
 
 impl crate::Edit for tombi_ast::Value {
     fn edit<'a: 'b, 'b>(
@@ -6,7 +6,7 @@ impl crate::Edit for tombi_ast::Value {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    ) -> futures::future::BoxFuture<'b, Vec<crate::Change>> {
+    ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             match self {
                 tombi_ast::Value::Array(array) => {

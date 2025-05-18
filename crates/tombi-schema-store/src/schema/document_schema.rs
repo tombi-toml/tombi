@@ -1,10 +1,10 @@
 use ahash::AHashMap;
-use futures::{future::BoxFuture, FutureExt};
 use tombi_config::TomlVersion;
 
 use super::{
     referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUrl, ValueSchema,
 };
+use crate::compat::{BoxFuture, Boxable};
 use crate::{Accessor, SchemaStore};
 
 #[derive(Debug, Clone)]

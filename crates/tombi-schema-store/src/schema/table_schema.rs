@@ -1,7 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
 use ahash::AHashMap;
-use futures::{future::BoxFuture, FutureExt};
 use indexmap::IndexMap;
 use tombi_json::StringNode;
 use tombi_x_keyword::{TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
@@ -10,6 +9,7 @@ use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUrl, ValueSchema,
 };
+use crate::compat::{BoxFuture, Boxable};
 use crate::{Accessor, Referable, SchemaProperties, SchemaStore};
 
 #[derive(Debug, Default, Clone)]

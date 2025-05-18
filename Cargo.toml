@@ -48,7 +48,7 @@ serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi" }
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
-tokio = { version = "1.45.0", features = ["fs", "io-std", "rt-multi-thread"] }
+tokio = { version = "1.45.0", features = ["rt"] }  # "fs", ""io-std", "rt-multi-thread"
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cargo-extension = { path = "extensions/tombi-cargo-extension" }

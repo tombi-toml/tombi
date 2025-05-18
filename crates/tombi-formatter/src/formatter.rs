@@ -1,7 +1,7 @@
 pub mod definitions;
 
 use std::fmt::Write;
-
+use std::time::Instant;
 use itertools::Either;
 use tombi_config::{DateTimeDelimiter, IndentStyle, LineEnding, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
@@ -45,6 +45,8 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
+        println!("{:?}", Instant::now());
+
         let source_schema = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
@@ -78,6 +80,8 @@ impl<'a> Formatter<'a> {
                 diagnostics
             })?;
 
+        println!("{:?}", Instant::now());
+
         let root = tombi_ast_editor::Editor::new(
             root,
             &tombi_schema_store::SchemaContext {
@@ -93,6 +97,8 @@ impl<'a> Formatter<'a> {
         )
         .edit()
         .await;
+
+        println!("{:?}", Instant::now());
 
         tracing::trace!("TOML AST after editing: {:#?}", root);
 

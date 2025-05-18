@@ -31,3 +31,8 @@ url.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 rstest.workspace = true
+
+[features]
+default = ["native"]
+native = []
+wasm = []

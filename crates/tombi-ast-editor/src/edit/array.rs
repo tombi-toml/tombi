@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use futures::FutureExt;
+use crate::compat::{BoxFuture, Boxable};
 use itertools::Itertools;
 use tombi_schema_store::ValueSchema;
 
@@ -12,7 +12,7 @@ impl crate::Edit for tombi_ast::Array {
         _accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    ) -> futures::future::BoxFuture<'b, Vec<crate::Change>> {
+    ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
 
