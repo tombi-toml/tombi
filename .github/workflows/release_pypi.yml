@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 env:
-  TOMBI_VERSION: null
+  TOMBI_VERSION: ""
 
 jobs:
   linux:
@@ -44,11 +44,8 @@ jobs:
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-      - run: cargo xtask set-version >> $GITHUB_ENV
       - run: uv python install
-      - run: python python/set_version.py >> $GITHUB_ENV
-      - name: Get TOMBI_VERSION
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -88,9 +85,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv python install
-      - run: python python/set_version.py >> $GITHUB_ENV
-      - name: Get TOMBI_VERSION
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -120,9 +115,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv python install
-      - run: python python/set_version.py >> $env:GITHUB_ENV
-      - name: Get TOMBI_VERSION
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -151,9 +144,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv python install
-      - run: python python/set_version.py >> $GITHUB_ENV
-      - name: Get TOMBI_VERSION
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -174,9 +165,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv python install
-      - run: python python/set_version.py >> $GITHUB_ENV
-      - name: Get TOMBI_VERSION
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
@@ -219,9 +208,7 @@ jobs:
     needs: [release-python]
     steps:
       - uses: actions/checkout@v4
-      - run: python python/set_version.py >> $GITHUB_ENV
-      - name: Get TOMBI_VERSION
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
       - uses: geekyeggo/delete-artifact@v5
         with:
             name: tombi-py-wheels-${{ env.TOMBI_VERSION }}-*

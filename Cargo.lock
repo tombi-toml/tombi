@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "serde_tombi"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "chrono",
  "futures",
@@ -3216,6 +3216,7 @@ dependencies = [
  "convert_case",
  "flate2",
  "itertools",
+ "pretty_assertions",
  "proc-macro2",
  "quote",
  "schemars",

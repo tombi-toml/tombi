@@ -1,0 +1,18 @@
+name: "Set Version"
+description: "Set TOMBI_VERSION environment variable"
+runs:
+  using: "composite"
+  steps:
+    - name: Run xtask set-version on non-Windows
+      if: runner.os != 'Windows'
+      shell: bash
+      run: cargo xtask set-version >> $GITHUB_ENV
+
+    - name: Run xtask set-version on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: cargo xtask set-version >> $env:GITHUB_ENV
+
+    - name: Get TOMBI_VERSION
+      shell: bash
+      run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"

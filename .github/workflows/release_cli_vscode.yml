@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 env:
-  TOMBI_VERSION: null
-  ASSETS: null
+  TOMBI_VERSION: ""
+  ASSETS: ""
   CC_aarch64-unknown-linux-gnu: aarch64-linux-gnu-gcc
   CC_arm_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
@@ -93,17 +93,7 @@ jobs:
 
       - run: which pnpm
 
-      - name: Run xtask set-version on non-Windows
-        if: matrix.os != 'windows-latest'
-        run: cargo xtask set-version >> $GITHUB_ENV
-
-      - name: Run xtask set-version on Windows
-        if: matrix.os == 'windows-latest'
-        run: cargo xtask set-version >> $env:GITHUB_ENV
-
-      - name: Get TOMBI_VERSION
-        if: matrix.os != 'windows-latest'
-        run: echo "TOMBI_VERSION=${{ env.TOMBI_VERSION }}"
+      - uses: ./.github/actions/set-version
 
       - name: Rub xtask dist
         run: cargo xtask dist
@@ -158,8 +148,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Run xtask set-version
-        run: cargo xtask set-version >> $GITHUB_ENV
+      - uses: ./.github/actions/set-version
       - name: Download tombi-cli artifacts
         uses: actions/download-artifact@v4
         with:

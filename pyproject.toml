@@ -1,7 +1,7 @@
 [project]
 name = "tombi"
 version = "0.0.0"  # We use git tags for versioning. This is just a placeholder.
-description = "Reserved package for tombi"
+description = "🦅 TOML Toolkit 🦅 "
 readme = "python/tombi/README.md"
 requires-python = ">=3.10"
 dependencies = []

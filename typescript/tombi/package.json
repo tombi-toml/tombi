@@ -1,13 +1,15 @@
 {
-  "name": "@tombi/tombi",
-  "version": "0.0.1",
-  "description": "Reserved package for tombi",
-  "main": "index.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "name": "@tombi-toml/tombi",
+  "version": "0.0.0",
+  "description": "🦅 TOML Toolkit 🦅",
+  "bin": {
+    "tombi": "./bin/tombi"
   },
-  "keywords": [],
-  "author": "yassun7010",
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "keywords": ["toml", "cli", "formatter", "linter"],
+  "author": "tombi-toml",
   "license": "MIT",
   "private": false,
   "repository": {
@@ -17,9 +19,17 @@
   "bugs": {
     "url": "https://github.com/tombi-toml/tombi/issues"
   },
-  "homepage": "https://github.com/tombi-toml/tombi#readme",
+  "homepage": "https://tombi-toml.github.io/tombi/",
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "devDependencies": {
-    "@types/node": "^22.10.1",
-    "typescript": "^5.7.2"
+    "axios": "^1.9.0",
+    "tar": "^6.2.1",
+    "adm-zip": "^0.5.16"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
