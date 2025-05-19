@@ -8,12 +8,16 @@ license.workspace = true
 
 [dependencies]
 ahash.workspace = true
+async-trait.workspace = true
+bytes.workspace = true
 futures.workspace = true
+getrandom = { version = "0.2", default-features = false, features = ["js"] }
 glob.workspace = true
+gloo-net = { workspace = true, optional = true }
 indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -25,6 +29,7 @@ tombi-document-tree.workspace = true
 tombi-json.workspace = true
 tombi-text.workspace = true
 tombi-x-keyword.workspace = true
+tombi-wasm-compat.workspace = true
 tracing.workspace = true
 url.workspace = true
 
@@ -34,5 +39,5 @@ rstest.workspace = true
 
 [features]
 default = ["native"]
-native = []
-wasm = []
+native = ["reqwest"]
+wasm = ["gloo-net"]

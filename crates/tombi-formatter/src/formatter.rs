@@ -45,7 +45,7 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
-        println!("{:?}", Instant::now());
+        // println!("{:?}", Instant::now());
 
         let source_schema = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
@@ -80,7 +80,7 @@ impl<'a> Formatter<'a> {
                 diagnostics
             })?;
 
-        println!("{:?}", Instant::now());
+        // println!("{:?}", Instant::now());
 
         let root = tombi_ast_editor::Editor::new(
             root,
@@ -98,7 +98,7 @@ impl<'a> Formatter<'a> {
         .edit()
         .await;
 
-        println!("{:?}", Instant::now());
+        // println!("{:?}", Instant::now());
 
         tracing::trace!("TOML AST after editing: {:#?}", root);
 

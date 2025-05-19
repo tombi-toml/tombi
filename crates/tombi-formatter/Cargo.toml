@@ -34,8 +34,5 @@ tombi-test-lib.workspace = true
 tracing-subscriber.workspace = true
 
 [features]
-default = ["native"]
 jsonschema = ["dep:schemars", "serde"]
-native = []
 serde = ["dep:serde"]
-wasm = ["tombi-ast-editor/wasm", "tombi-schema-store/wasm"]

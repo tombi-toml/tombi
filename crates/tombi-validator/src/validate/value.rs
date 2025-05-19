@@ -1,4 +1,4 @@
-use crate::compat::{BoxFuture, Boxable};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::Validate;
 

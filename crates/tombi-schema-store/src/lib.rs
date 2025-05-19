@@ -7,7 +7,6 @@ mod schema;
 mod store;
 mod value_type;
 mod x_taplo;
-mod compat;
 
 pub use accessor::{Accessor, Accessors};
 pub use error::Error;

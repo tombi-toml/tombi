@@ -21,10 +21,6 @@ tombi-syntax.workspace = true
 tombi-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-validator.workspace = true
+tombi-wasm-compat.workspace = true
 tombi-x-keyword.workspace = true
 tracing.workspace = true
-
-[features]
-default = ["native"]
-native = []
-wasm = ["tombi-schema-store/wasm", "tombi-validator/wasm"]

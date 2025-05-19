@@ -1,6 +1,6 @@
-use crate::compat::{BoxFuture, Boxable};
 use itertools::Itertools;
 use tombi_schema_store::ValueSchema;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use crate::rule::{inline_table_comma_tailing_comment, inline_table_keys_order};
 

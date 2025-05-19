@@ -1,6 +1,6 @@
-use crate::compat::{BoxFuture, Boxable};
 use itertools::Itertools;
 use tombi_syntax::SyntaxElement;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use crate::rule::root_table_keys_order;
 use tombi_ast::AstToken;

@@ -2,13 +2,13 @@ use std::{borrow::Cow, sync::Arc};
 
 use futures::future::join_all;
 use tombi_json::StringNode;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::{
     referable_schema::CurrentSchema, AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema,
     FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema, LocalDateTimeSchema,
     LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUrl, StringSchema, TableSchema,
 };
-use crate::compat::{BoxFuture, Boxable};
 use crate::{Accessor, Referable, SchemaDefinitions, SchemaStore};
 
 #[derive(Debug, Clone)]

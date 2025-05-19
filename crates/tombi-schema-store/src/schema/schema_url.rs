@@ -1,3 +1,5 @@
+use tombi_wasm_compat::url::url_from_file_path;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
 pub struct SchemaUrl(url::Url);
 
@@ -19,7 +21,7 @@ impl SchemaUrl {
 
     #[inline]
     pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, crate::Error> {
-        match url::Url::from_file_path(&path) {
+        match url_from_file_path(&path) {
             Ok(url) => Ok(Self(url)),
             Err(_) => Err(crate::Error::InvalidSchemaUrl {
                 schema_url: path.as_ref().to_string_lossy().to_string(),

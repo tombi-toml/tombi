@@ -1,19 +1,83 @@
-use std::{ops::Deref, sync::Arc};
-
-use ahash::AHashMap;
-use itertools::Either;
-use tokio::sync::RwLock;
-use tombi_config::{Schema, SchemaOptions};
-
-use crate::compat::{BoxFuture, Boxable};
 use crate::{
     json::CatalogUrl, DocumentSchema, SchemaAccessor, SchemaAccessors, SchemaSpec, SchemaUrl,
     SourceSchema,
 };
+use ahash::AHashMap;
+use async_trait::async_trait;
+use bytes::Bytes;
+use itertools::{Either, Itertools};
+use std::fmt::Debug;
+use std::{ops::Deref, sync::Arc};
+use tokio::sync::RwLock;
+use tombi_config::{Schema, SchemaOptions};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
+use tombi_wasm_compat::url::url_to_file_path;
+
+// todo: strip dependency to reqwest!
+
+#[cfg_attr(feature = "wasm", async_trait(?Send))]
+#[cfg_attr(not(feature = "wasm"), async_trait)]
+pub trait HttpClient: Debug + Send + Sync {
+    // fn new() -> Self;
+
+    async fn get_bytes(&self, url: &str) -> Result<Bytes, String>;
+}
+
+#[cfg(not(feature = "wasm"))]
+#[derive(Debug)]
+pub struct DefaultClient(reqwest::Client);
+
+#[cfg(not(feature = "wasm"))]
+impl DefaultClient {
+    pub fn new() -> Self {
+        Self(reqwest::Client::new())
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
+#[async_trait]
+impl HttpClient for DefaultClient {
+    async fn get_bytes(&self, url: &str) -> Result<Bytes, String> {
+        let response = self
+            .0
+            .get(url)
+            .send()
+            .await
+            .map_err(|err| err.to_string())?;
+
+        let bytes = response.bytes().await.map_err(|err| err.to_string())?;
+        Ok(bytes)
+    }
+}
+
+#[cfg(feature = "wasm")]
+#[derive(Debug)]
+pub struct DefaultClient;
+
+#[cfg(feature = "wasm")]
+impl DefaultClient {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+#[cfg(feature = "wasm")]
+#[async_trait(?Send)]
+impl HttpClient for DefaultClient {
+    async fn get_bytes(&self, url: &str) -> Result<Bytes, String> {
+        let mut response = gloo_net::http::Request::get(url)
+            .send()
+            .await
+            .map_err(|err| err.to_string())?;
+
+        let bytes = response.binary().await.map_err(|err| err.to_string())?;
+        Ok(Bytes::from(bytes))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
-    http_client: reqwest::Client,
+    http_client: Arc<dyn HttpClient>,
     document_schemas:
         Arc<tokio::sync::RwLock<AHashMap<SchemaUrl, Result<DocumentSchema, crate::Error>>>>,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
@@ -40,8 +104,16 @@ impl SchemaStore {
     /// Create a store with the given options.
     /// Note that the new_with_options() does not automatically load schemas from Config etc.
     pub fn new_with_options(options: crate::Options) -> Self {
+        Self::new_with_client(DefaultClient::new(), options)
+    }
+
+    /// New with an http client
+    ///
+    /// Create a store with the given an http client and options.
+    /// Note that the new_with_options() does not automatically load schemas from Config etc.
+    pub fn new_with_client(client: impl HttpClient + 'static, options: crate::Options) -> Self {
         Self {
-            http_client: reqwest::Client::new(),
+            http_client: Arc::new(client),
             document_schemas: Arc::new(RwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
@@ -135,8 +207,8 @@ impl SchemaStore {
             }
             tracing::debug!("loading schema catalog: {}", catalog_url);
 
-            if let Ok(response) = self.http_client.get(catalog_url.as_str()).send().await {
-                match response.json::<crate::json::JsonCatalog>().await {
+            if let Ok(result) = self.http_client.get_bytes(catalog_url.as_str()).await {
+                match serde_json::from_slice::<crate::json::JsonCatalog>(&result) {
                     Ok(catalog) => catalog,
                     Err(err) => {
                         return Err(crate::Error::InvalidJsonFormat {
@@ -152,11 +224,9 @@ impl SchemaStore {
             }
         } else if catalog_url.scheme() == "file" {
             let catalog_path =
-                catalog_url
-                    .to_file_path()
-                    .map_err(|_| crate::Error::InvalidCatalogFileUrl {
-                        catalog_url: catalog_url.clone(),
-                    })?;
+                url_to_file_path(catalog_url).map_err(|_| crate::Error::InvalidCatalogFileUrl {
+                    catalog_url: catalog_url.clone(),
+                })?;
 
             let content = std::fs::read_to_string(&catalog_path).map_err(|_| {
                 crate::Error::CatalogFileReadFailed {
@@ -239,11 +309,9 @@ impl SchemaStore {
         let tombi_json::ValueNode::Object(schema) = match schema_url.scheme() {
             "file" => {
                 let schema_path =
-                    schema_url
-                        .to_file_path()
-                        .map_err(|_| crate::Error::InvalidSchemaUrl {
-                            schema_url: schema_url.to_string(),
-                        })?;
+                    url_to_file_path(schema_url).map_err(|_| crate::Error::InvalidSchemaUrl {
+                        schema_url: schema_url.to_string(),
+                    })?;
                 if !schema_path.exists() {
                     return Err(crate::Error::SchemaFileNotFound {
                         schema_path: schema_path.clone(),
@@ -262,24 +330,14 @@ impl SchemaStore {
 
                 tracing::debug!("fetch schema from url: {}", schema_url);
 
-                let response = self
+                let bytes = self
                     .http_client
-                    .get(schema_url.as_ref())
-                    .send()
+                    .get_bytes(schema_url.as_ref())
                     .await
                     .map_err(|err| crate::Error::SchemaFetchFailed {
                         schema_url: schema_url.clone(),
                         reason: err.to_string(),
                     })?;
-
-                let bytes =
-                    response
-                        .bytes()
-                        .await
-                        .map_err(|err| crate::Error::SchemaFetchFailed {
-                            schema_url: schema_url.clone(),
-                            reason: err.to_string(),
-                        })?;
 
                 tombi_json::ValueNode::from_reader(std::io::Cursor::new(bytes))
             }
@@ -353,7 +411,7 @@ impl SchemaStore {
     ) -> Result<Option<SourceSchema>, (crate::Error, tombi_text::Range)> {
         let source_path = match source_url_or_path {
             Some(Either::Left(url)) => match url.scheme() {
-                "file" => url.to_file_path().ok(),
+                "file" => url_to_file_path(url).ok(),
                 _ => None,
             },
             Some(Either::Right(path)) => Some(path.to_path_buf()),
@@ -471,12 +529,11 @@ impl SchemaStore {
     ) -> Result<Option<SourceSchema>, crate::Error> {
         match source_url.scheme() {
             "file" => {
-                let source_path =
-                    source_url
-                        .to_file_path()
-                        .map_err(|_| crate::Error::SourceUrlParseFailed {
-                            source_url: source_url.to_owned(),
-                        })?;
+                let source_path = url_to_file_path(source_url).map_err(|_| {
+                    crate::Error::SourceUrlParseFailed {
+                        source_url: source_url.to_owned(),
+                    }
+                })?;
                 self.build_source_schema_from_path(&source_path).await
             }
             "http" | "https" => {

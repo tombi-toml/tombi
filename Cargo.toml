@@ -20,6 +20,8 @@ license = "MIT"
 ahash = "0.8.11"
 anyhow = "1.0.98"
 assert_matches = "1.5.0"
+async-trait = "0.1.88"
+bytes = "1.10.1"
 camino = "1.1.9"
 chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.37", features = ["derive", "string"] }
@@ -27,6 +29,7 @@ clap-verbosity-flag = "3.0.2"
 futures = "0.3.31"
 futures-util = "0.3.31"
 glob = "0.3.2"
+gloo-net = "0.6.0"
 indexmap = { version = "2.9.0", features = ["serde"] }
 itertools = "0.14.0"
 maplit = { version = "1.0" }
@@ -45,10 +48,10 @@ schemars = { version = "1.0.0-alpha.17", features = ["preserve_order", "url2"] }
 semver = { version = "1.0.26" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
-serde_tombi = { path = "rust/serde_tombi" }
+serde_tombi = { default-features = false, path = "rust/serde_tombi" }
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
-tokio = { version = "1.45.0", features = ["rt"] }  # "fs", ""io-std", "rt-multi-thread"
+tokio = { version = "1.45.0", default-features = false, features = ["rt"] }  # "fs", ""io-std", "rt-multi-thread"
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cargo-extension = { path = "extensions/tombi-cargo-extension" }
@@ -76,8 +79,9 @@ tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
 tombi-uv-extension = { path = "extensions/tombi-uv-extension" }
 tombi-validator = { path = "crates/tombi-validator" }
+tombi-wasm-compat = { path = "crates/tombi-wasm-compat" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
-tower-lsp = { version = "0.20.0" }
+tower-lsp = { version = "0.20.0", default-features = true }
 tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 typed-builder = "0.21.0"

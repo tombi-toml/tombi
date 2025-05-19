@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::x_taplo::XTaplo;
 
 use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUrl, ValueSchema};
-use crate::compat::BoxFuture;
+use tombi_wasm_compat::box_future::BoxFuture;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Referable<T> {

@@ -1,8 +1,8 @@
-use crate::compat::{BoxFuture, Boxable};
 use tombi_schema_store::{
     AllOfSchema, AnyOfSchema, OneOfSchema, PropertySchema, SchemaAccessor, ValueSchema,
 };
 use tombi_validator::Validate;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 mod array;
 mod array_of_table;

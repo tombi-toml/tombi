@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
-use crate::compat::{BoxFuture, Boxable};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, ValueSchema};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::Validate;
 use crate::validate::{all_of::validate_all_of, one_of::validate_one_of};

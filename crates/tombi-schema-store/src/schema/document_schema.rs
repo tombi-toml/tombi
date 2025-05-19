@@ -4,8 +4,8 @@ use tombi_config::TomlVersion;
 use super::{
     referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUrl, ValueSchema,
 };
-use crate::compat::{BoxFuture, Boxable};
 use crate::{Accessor, SchemaStore};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {

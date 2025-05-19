@@ -14,10 +14,6 @@ thiserror.workspace = true
 tombi-diagnostic.workspace = true
 tombi-document-tree.workspace = true
 tombi-schema-store.workspace = true
+tombi-wasm-compat.workspace = true
 tombi-text.workspace = true
 tracing.workspace = true
-
-[features]
-default = ["native"]
-native = []
-wasm = ["tombi-schema-store/wasm"]

@@ -15,11 +15,11 @@ mod value;
 
 use std::borrow::Cow;
 
-use crate::compat::{BoxFuture, Boxable};
 use all_of::validate_all_of;
 use any_of::validate_any_of;
 use one_of::validate_one_of;
 use tombi_schema_store::CurrentSchema;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 pub trait Validate {
     fn validate<'a: 'b, 'b>(

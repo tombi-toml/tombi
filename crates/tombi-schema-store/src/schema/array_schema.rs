@@ -6,8 +6,8 @@ use super::{
     CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUrl,
     ValueSchema,
 };
-use crate::compat::{BoxFuture, Boxable};
 use crate::{Accessor, SchemaStore};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 #[derive(Debug, Default, Clone)]
 pub struct ArraySchema {

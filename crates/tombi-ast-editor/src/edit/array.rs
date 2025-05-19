@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::compat::{BoxFuture, Boxable};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 use itertools::Itertools;
 use tombi_schema_store::ValueSchema;
 

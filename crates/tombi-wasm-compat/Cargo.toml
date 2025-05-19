@@ -1,0 +1,16 @@
+[package]
+name = "tombi-wasm-compat"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+futures.workspace = true
+url.workspace = true
+
+[features]
+default = ["native"]
+native = []
+wasm = []

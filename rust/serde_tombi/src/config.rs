@@ -2,6 +2,7 @@ use tombi_ast::AstNode;
 use tombi_config::{
     Config, TomlVersion, CONFIG_FILENAME, PYPROJECT_FILENAME, TOMBI_CONFIG_TOML_VERSION,
 };
+use tombi_wasm_compat::url::url_to_file_path;
 
 /// Parse the TOML text into a `Config` struct.
 ///
@@ -110,8 +111,7 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
 pub fn try_from_url(config_url: url::Url) -> Result<Option<Config>, tombi_config::Error> {
     match config_url.scheme() {
         "file" => {
-            let config_path = config_url
-                .to_file_path()
+            let config_path = url_to_file_path(&config_url)
                 .map_err(|_| tombi_config::Error::ConfigUrlParseFailed { config_url })?;
             try_from_path(config_path)
         }

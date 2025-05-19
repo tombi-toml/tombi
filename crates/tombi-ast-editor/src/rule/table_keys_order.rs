@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use crate::compat::{BoxFuture, Boxable};
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
@@ -10,6 +9,7 @@ use tombi_schema_store::{
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 use tombi_x_keyword::TableKeysOrder;
 
 pub async fn table_keys_order<'a>(
