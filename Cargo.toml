@@ -9,6 +9,8 @@ members = [
   "xtask",
 ]
 
+default-members = ["rust/tombi-cli"]
+
 [workspace.package]
 version = "0.0.0"  # We use git tags for versioning. This is just a placeholder.
 authors = ["yassun7010 <yassun7010@outlook.com>"]
@@ -51,7 +53,7 @@ serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { default-features = false, path = "rust/serde_tombi" }
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
-tokio = { version = "1.45.0", default-features = false, features = ["rt"] }  # "fs", ""io-std", "rt-multi-thread"
+tokio = { version = "1.45.0", default-features = false, features = ["rt"] }  # "fs", "io-std", "rt-multi-thread"
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cargo-extension = { path = "extensions/tombi-cargo-extension" }
@@ -81,7 +83,7 @@ tombi-uv-extension = { path = "extensions/tombi-uv-extension" }
 tombi-validator = { path = "crates/tombi-validator" }
 tombi-wasm-compat = { path = "crates/tombi-wasm-compat" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
-tower-lsp = { version = "0.20.0", default-features = true }
+tower-lsp = "0.20.0"
 tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 typed-builder = "0.21.0"
