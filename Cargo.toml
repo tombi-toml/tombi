@@ -5,11 +5,18 @@ members = [
   "editors/zed",
   "extensions/*",
   "rust/*",
+  "tombi-wasm",
   "toml-test",
   "xtask",
 ]
-
-default-members = ["rust/tombi-cli"]
+default-members = [
+  "crates/*",
+  "editors/zed",
+  "extensions/*",
+  "rust/*",
+  "toml-test",
+  "xtask",
+]
 
 [workspace.package]
 version = "0.0.0"  # We use git tags for versioning. This is just a placeholder.

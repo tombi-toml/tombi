@@ -1,4 +1,4 @@
-import init, { format } from "../pkg/tombi_wasm.js";
+import init, { format } from "../pkg";
 
 await init();
 
