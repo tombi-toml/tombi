@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
-use tombi_ast::AstNode;
 use tombi_config::QuoteStyle;
+use tombi_ast::AstNode;
 
 use super::LiteralNode;
 use crate::format::Format;

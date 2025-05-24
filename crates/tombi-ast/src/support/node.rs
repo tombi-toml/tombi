@@ -14,10 +14,7 @@ pub fn children<N: AstNode>(parent: &tombi_syntax::SyntaxNode) -> AstChildren<N>
 }
 
 #[inline]
-pub fn token(
-    parent: &tombi_syntax::SyntaxNode,
-    kind: tombi_syntax::SyntaxKind,
-) -> Option<tombi_syntax::SyntaxToken> {
+pub fn token(parent: &tombi_syntax::SyntaxNode, kind: tombi_syntax::SyntaxKind) -> Option<tombi_syntax::SyntaxToken> {
     parent
         .children_with_tokens()
         .filter_map(|it| it.into_token())

@@ -1,8 +1,8 @@
 use itertools::Itertools;
+use tombi_syntax::SyntaxElement;
 use tombi_ast::AstNode;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{CurrentSchema, SchemaAccessor, SchemaContext};
-use tombi_syntax::SyntaxElement;
 
 use crate::rule::table_keys_order::{sorted_accessors, table_keys_order};
 

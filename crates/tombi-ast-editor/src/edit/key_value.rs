@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
+use tombi_document_tree::TryIntoDocumentTree;
 use futures::FutureExt;
 use itertools::Itertools;
-use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{CurrentSchema, SchemaAccessor};
 
 use super::get_schema;

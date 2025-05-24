@@ -1,6 +1,6 @@
-use futures::{future::BoxFuture, FutureExt};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
+use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::ValueType;
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};

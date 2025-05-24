@@ -148,18 +148,12 @@ impl IntoDocument<Value> for tombi_document_tree::Value {
             tombi_document_tree::Value::Integer(value) => Value::Integer(value.into()),
             tombi_document_tree::Value::Float(value) => Value::Float(value.into()),
             tombi_document_tree::Value::String(value) => Value::String(value.into()),
-            tombi_document_tree::Value::OffsetDateTime(value) => {
-                Value::OffsetDateTime(value.into())
-            }
+            tombi_document_tree::Value::OffsetDateTime(value) => Value::OffsetDateTime(value.into()),
             tombi_document_tree::Value::LocalDateTime(value) => Value::LocalDateTime(value.into()),
             tombi_document_tree::Value::LocalDate(value) => Value::LocalDate(value.into()),
             tombi_document_tree::Value::LocalTime(value) => Value::LocalTime(value.into()),
-            tombi_document_tree::Value::Array(value) => {
-                Value::Array(value.into_document(toml_version))
-            }
-            tombi_document_tree::Value::Table(value) => {
-                Value::Table(value.into_document(toml_version))
-            }
+            tombi_document_tree::Value::Array(value) => Value::Array(value.into_document(toml_version)),
+            tombi_document_tree::Value::Table(value) => Value::Table(value.into_document(toml_version)),
             tombi_document_tree::Value::Incomplete { .. } => {
                 unreachable!("Incomplete value should not be converted to document")
             }

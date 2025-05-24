@@ -62,16 +62,15 @@ impl Table {
 impl IntoDocument<Table> for tombi_document_tree::Table {
     fn into_document(self, toml_version: crate::TomlVersion) -> Table {
         let kind = self.kind().into();
-        let key_values =
-            IndexMap::<tombi_document_tree::Key, tombi_document_tree::Value>::from(self)
-                .into_iter()
-                .map(|(key, value)| {
-                    (
-                        key.into_document(toml_version),
-                        value.into_document(toml_version),
-                    )
-                })
-                .collect();
+        let key_values = IndexMap::<tombi_document_tree::Key, tombi_document_tree::Value>::from(self)
+            .into_iter()
+            .map(|(key, value)| {
+                (
+                    key.into_document(toml_version),
+                    value.into_document(toml_version),
+                )
+            })
+            .collect();
 
         Table { kind, key_values }
     }

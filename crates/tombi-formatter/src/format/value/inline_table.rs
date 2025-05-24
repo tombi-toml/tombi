@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
+use tombi_config::TomlVersion;
 use itertools::Itertools;
 use tombi_ast::AstNode;
-use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::Format;

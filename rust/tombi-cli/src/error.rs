@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use nu_ansi_term::Style;
 use tombi_diagnostic::{
     printer::{Pretty, Simple},
     Level, Print,
 };
+use nu_ansi_term::Style;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

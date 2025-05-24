@@ -310,8 +310,8 @@ impl ToTomlString for tombi_document::LocalTime {
 
 #[cfg(test)]
 mod tests {
-    use tombi_document::KeyKind;
     use tombi_test_lib::toml_text_assert_eq;
+    use tombi_document::KeyKind;
 
     use crate::document::*;
 

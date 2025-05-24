@@ -1,10 +1,10 @@
 mod format;
 pub mod formatter;
 
+pub use tombi_config::FormatOptions;
 use format::Format;
 use formatter::definitions::FormatDefinitions;
 pub use formatter::Formatter;
-pub use tombi_config::FormatOptions;
 
 #[cfg(test)]
 #[macro_export]

@@ -33,7 +33,10 @@ impl<'a> Cursor<'a> {
     pub fn peek(&self, i: usize) -> char {
         assert!(i != 0, "peek(0) is invalid");
 
-        self.chars
+        
+
+        self
+            .chars
             .clone()
             .nth(i.saturating_sub(1))
             .unwrap_or(EOF_CHAR)

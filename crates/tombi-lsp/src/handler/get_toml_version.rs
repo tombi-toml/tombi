@@ -1,5 +1,5 @@
-use itertools::Either;
 use tombi_config::TomlVersion;
+use itertools::Either;
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::backend::Backend;
@@ -24,7 +24,9 @@ pub async fn handle_get_toml_version(
         None => None,
     };
 
-    let (toml_version, source) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, source) = backend
+        .source_toml_version(source_schema.as_ref())
+        .await;
 
     Ok(GetTomlVersionResponse {
         toml_version,

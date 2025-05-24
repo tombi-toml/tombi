@@ -105,7 +105,9 @@ impl std::fmt::Display for Error {
         write!(
             f,
             "{} in {}..{}",
-            self.kind, self.range.start, self.range.end
+            self.kind,
+            self.range.start,
+            self.range.end
         )
     }
 }

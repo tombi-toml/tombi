@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
+use tombi_document_tree::IntoDocumentTreeAndErrors;
 use futures::FutureExt;
 use itertools::Itertools;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{GetHeaderSchemarAccessors, SchemaAccessor};
 
 use crate::{edit::get_schema, rule::table_keys_order};
@@ -31,9 +31,7 @@ impl crate::Edit for tombi_ast::Table {
             );
 
             let current_schema = if let Some(current_schema) = current_schema {
-                get_schema(value, &header_accessors, current_schema, schema_context)
-                    .await
-                    .map(|value_schema| tombi_schema_store::CurrentSchema {
+                get_schema(value, &header_accessors, current_schema, schema_context).await.map(|value_schema| tombi_schema_store::CurrentSchema {
                         value_schema: Cow::Owned(value_schema),
                         schema_url: current_schema.schema_url.clone(),
                         definitions: current_schema.definitions.clone(),

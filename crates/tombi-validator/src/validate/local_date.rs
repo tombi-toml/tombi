@@ -1,6 +1,6 @@
-use futures::{future::BoxFuture, FutureExt};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::{LocalDate, ValueImpl};
+use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::ValueType;
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -37,9 +37,7 @@ impl Validate for LocalDate {
                 }
 
                 let local_date_schema = match current_schema.value_schema.as_ref() {
-                    tombi_schema_store::ValueSchema::LocalDate(local_date_schema) => {
-                        local_date_schema
-                    }
+                    tombi_schema_store::ValueSchema::LocalDate(local_date_schema) => local_date_schema,
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
                         return validate_one_of(
                             self,
