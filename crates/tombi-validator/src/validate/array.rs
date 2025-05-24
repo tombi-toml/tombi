@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use futures::{future::BoxFuture, FutureExt};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema, ValueType};

@@ -2240,6 +2240,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-future"
+version = "0.0.0"
+dependencies = [
+ "futures",
+ "url",
+]
+
+[[package]]
 name = "tombi-json"
 version = "0.0.0"
 dependencies = [

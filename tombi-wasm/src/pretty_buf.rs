@@ -53,8 +53,8 @@ impl Print<PrettyBuf> for Diagnostic {
                 link_style.paint(format!(
                     "{}:{}:{}",
                     source_file.display(),
-                    self.position().line() + 1,
-                    self.position().column() + 1
+                    self.position().line + 1,
+                    self.position().column + 1
                 )),
             )
             .unwrap();
@@ -64,8 +64,8 @@ impl Print<PrettyBuf> for Diagnostic {
                 "    {}",
                 at_style.paint(format!(
                     "at line {} column {}",
-                    self.position().line() + 1,
-                    self.position().column() + 1
+                    self.position().line + 1,
+                    self.position().column + 1
                 )),
             )
             .unwrap();
