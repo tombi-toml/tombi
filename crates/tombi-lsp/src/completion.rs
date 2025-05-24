@@ -94,9 +94,9 @@ pub async fn get_completion_contents(
                     _ => return Vec::with_capacity(0),
                 };
 
-            if position < bracket_start_range.start()
-                || (bracket_end_range.end() <= position
-                    && position.line() == bracket_end_range.end().line())
+            if position < bracket_start_range.start
+                || (bracket_end_range.end <= position
+                    && position.line == bracket_end_range.end.line)
             {
                 return Vec::with_capacity(0);
             } else {
@@ -118,9 +118,9 @@ pub async fn get_completion_contents(
                 }
             };
 
-            if position < double_bracket_start_range.start()
-                && (double_bracket_end_range.end() <= position
-                    && position.line() == double_bracket_end_range.end().line())
+            if position < double_bracket_start_range.start
+                && (double_bracket_end_range.end <= position
+                    && position.line == double_bracket_end_range.end.line)
             {
                 return Vec::with_capacity(0);
             } else {
@@ -138,7 +138,7 @@ pub async fn get_completion_contents(
             let mut new_keys = Vec::with_capacity(ast_keys.keys().count());
             for key in ast_keys
                 .keys()
-                .take_while(|key| key.token().unwrap().range().start() <= position)
+                .take_while(|key| key.token().unwrap().range().start <= position)
             {
                 match key.try_into_document_tree(schema_context.toml_version) {
                     Ok(Some(key)) => new_keys.push(key),

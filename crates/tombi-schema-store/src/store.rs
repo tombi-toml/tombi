@@ -190,7 +190,7 @@ impl SchemaStore {
                 spec: SchemaSpec::Url(schema_url),
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
-                sub_root_keys: schema.root_keys().and_then(SchemaAccessor::parse),
+                sub_root_keys: schema.root().and_then(SchemaAccessor::parse),
             });
         }))
         .await;

@@ -53,7 +53,7 @@ pub fn lex(source: &str) -> Lexed {
         }
         let (last_span, last_range) = lexed.push_result_token(result);
         last_offset = last_span.end();
-        last_position = last_range.end();
+        last_position = last_range.end;
     }
 
     lexed.tokens.push(crate::Token::new(
@@ -86,12 +86,12 @@ pub fn lex_document_header_comments(source: &str) -> Lexed {
                     was_joint = true;
                     let (last_span, last_range) = lexed.push_result_token(Ok(token));
                     last_offset = last_span.end();
-                    last_position = last_range.end();
+                    last_position = last_range.end;
                 }
                 SyntaxKind::LINE_BREAK | SyntaxKind::WHITESPACE => {
                     let (last_span, last_range) = lexed.push_result_token(Ok(token));
                     last_offset = last_span.end();
-                    last_position = last_range.end();
+                    last_position = last_range.end;
                 }
                 _ => break,
             },

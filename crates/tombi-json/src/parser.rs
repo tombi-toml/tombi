@@ -190,7 +190,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.peek() {
             if token.kind() == T![']'] {
                 let close_token = self.advance().unwrap();
-                let full_range = Range::new(start_range.start(), close_token.range().end());
+                let full_range = Range::new(start_range.start, close_token.range().end);
                 return Ok(ValueNode::Array(ArrayNode {
                     items: Vec::new(),
                     range: full_range,
@@ -211,7 +211,7 @@ impl<'a> Parser<'a> {
                 }
                 Some(T![']']) => {
                     let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start(), close_token.range().end());
+                    let full_range = Range::new(start_range.start, close_token.range().end);
 
                     let array_node = ArrayNode {
                         items,
@@ -232,7 +232,7 @@ impl<'a> Parser<'a> {
             if let Some(token) = self.peek() {
                 if token.kind() == T![']'] {
                     let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start(), close_token.range().end());
+                    let full_range = Range::new(start_range.start, close_token.range().end);
 
                     let array_node = ArrayNode {
                         items,
@@ -256,7 +256,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.peek() {
             if token.kind() == T!['}'] {
                 let close_token = self.advance().unwrap();
-                let full_range = Range::new(start_range.start(), close_token.range().end());
+                let full_range = Range::new(start_range.start, close_token.range().end);
                 return Ok(ValueNode::Object(ObjectNode {
                     properties: tombi_json_value::Map::new(),
                     range: full_range,
@@ -301,7 +301,7 @@ impl<'a> Parser<'a> {
                 }
                 Some(T!['}']) => {
                     let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start(), close_token.range().end());
+                    let full_range = Range::new(start_range.start, close_token.range().end);
 
                     let object_node = ObjectNode {
                         properties,
@@ -322,7 +322,7 @@ impl<'a> Parser<'a> {
             if let Some(token) = self.peek() {
                 if token.kind() == T!['}'] {
                     let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start(), close_token.range().end());
+                    let full_range = Range::new(start_range.start, close_token.range().end);
 
                     let object_node = ObjectNode {
                         properties,

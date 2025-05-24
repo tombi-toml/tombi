@@ -881,13 +881,13 @@ mod tests {
         let value_node = ValueNode::from_str(json).unwrap();
 
         // `tree.root.range`や子要素のrangeを調べることで位置情報が取得できる
-        assert!(value_node.range().start() != value_node.range().end());
+        assert!(value_node.range().start != value_node.range().end);
 
         if let Some(object_node) = value_node.as_object() {
             // オブジェクトのプロパティの位置情報を確認
             if let Some(name_node) = object_node.properties.get("name") {
                 // "name"キーの値の位置情報
-                assert!(name_node.range().start() != name_node.range().end());
+                assert!(name_node.range().start != name_node.range().end);
 
                 // 値が "John" であることを確認
                 pretty_assertions::assert_eq!(name_node.as_str(), Some("John"));
@@ -895,7 +895,7 @@ mod tests {
 
             if let Some(age_node) = object_node.properties.get("age") {
                 // "age"キーの値の位置情報
-                assert!(age_node.range().start() != age_node.range().end());
+                assert!(age_node.range().start != age_node.range().end);
 
                 // 値が 30 であることを確認
                 pretty_assertions::assert_eq!(age_node.as_i64(), Some(30));

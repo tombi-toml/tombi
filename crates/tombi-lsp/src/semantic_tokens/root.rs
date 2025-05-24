@@ -1,5 +1,5 @@
-use tombi_ast::AstToken;
 use itertools::Itertools;
+use tombi_ast::AstToken;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
@@ -11,7 +11,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
                     if let Some(file_schema_range) = builder.file_schema_range {
-                        if comment.syntax().range().contains(file_schema_range.start()) {
+                        if comment.syntax().range().contains(file_schema_range.start) {
                             builder.add_schema_url_comment(comment, &file_schema_range);
                             continue;
                         }
@@ -23,7 +23,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
             for comments in self.key_values_begin_dangling_comments() {
                 for comment in comments {
                     if let Some(file_schema_range) = builder.file_schema_range {
-                        if comment.syntax().range().contains(file_schema_range.start()) {
+                        if comment.syntax().range().contains(file_schema_range.start) {
                             builder.add_schema_url_comment(comment, &file_schema_range);
                             continue;
                         }

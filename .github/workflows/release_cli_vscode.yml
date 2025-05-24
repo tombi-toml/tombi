@@ -58,7 +58,6 @@ jobs:
             target: aarch64-apple-darwin
             vscode_target: darwin-arm64
       fail-fast: false
-    continue-on-error: true
     env:
       TOMBI_TARGET: ${{ matrix.target }}
       VSCODE_TARGET: ${{ matrix.vscode_target }}

@@ -7,8 +7,8 @@ use crate::{Column, Line, RelativePosition};
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Position {
-    line: Line,
-    column: Column,
+    pub line: Line,
+    pub column: Column,
 }
 
 impl Position {
@@ -29,16 +29,6 @@ impl Position {
     #[inline]
     pub fn add_text(&self, text: &str) -> Self {
         (*self) + RelativePosition::of(text)
-    }
-
-    #[inline]
-    pub const fn line(&self) -> Line {
-        self.line
-    }
-
-    #[inline]
-    pub const fn column(&self) -> Column {
-        self.column
     }
 
     #[inline]
@@ -82,11 +72,11 @@ impl Add<RelativePosition> for Position {
 
     #[inline]
     fn add(self, rhs: RelativePosition) -> Self::Output {
-        let line = self.line + rhs.line();
-        let column = if rhs.line() == 0 {
-            self.column + rhs.column()
+        let line = self.line + rhs.line;
+        let column = if rhs.line == 0 {
+            self.column + rhs.column
         } else {
-            rhs.column()
+            rhs.column
         };
         Position::new(line, column)
     }
@@ -95,11 +85,11 @@ impl Add<RelativePosition> for Position {
 impl AddAssign<RelativePosition> for Position {
     #[inline]
     fn add_assign(&mut self, rhs: RelativePosition) {
-        self.line += rhs.line();
-        if rhs.line() == 0 {
-            self.column += rhs.column();
+        self.line += rhs.line;
+        if rhs.line == 0 {
+            self.column += rhs.column;
         } else {
-            self.column = rhs.column();
+            self.column = rhs.column;
         }
     }
 }

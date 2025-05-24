@@ -5,8 +5,8 @@ use crate::{Column, Line, Position, RelativePosition};
 #[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Range {
     // Invariant: start <= end
-    start: Position,
-    end: Position,
+    pub start: Position,
+    pub end: Position,
 }
 
 impl Range {
@@ -40,8 +40,8 @@ impl Range {
     #[inline]
     pub fn new_1_based(range: Self) -> Self {
         Self::new(
-            Position::new(range.start().line() + 1, range.start().column() + 1),
-            Position::new(range.end().line() + 1, range.end().column() + 1),
+            Position::new(range.start.line + 1, range.start.column + 1),
+            Position::new(range.end.line + 1, range.end.column + 1),
         )
     }
 
@@ -51,18 +51,8 @@ impl Range {
     }
 
     #[inline]
-    pub const fn start(&self) -> Position {
-        self.start
-    }
-
-    #[inline]
-    pub const fn end(&self) -> Position {
-        self.end
-    }
-
-    #[inline]
     pub const fn is_empty(self) -> bool {
-        self.start().line() == self.end().line() && self.start().column() == self.end().column()
+        self.start.line == self.end.line && self.start.column == self.end.column
     }
 
     #[inline]

@@ -1,6 +1,6 @@
 id = "tombi"
 name = "Tombi | TOML Toolkit"
-version = "0.1.2"
+version = "0.1.4"
 description = "🦅  TOML Language Server  🦅 "
 schema_version = 1
 authors = ["tombi-toml <tombi-toml@outlook.com>"]

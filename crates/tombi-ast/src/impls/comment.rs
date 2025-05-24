@@ -15,9 +15,9 @@ impl Comment {
 
             let mut schema_url_range = self.syntax().range();
             schema_url_range = tombi_text::Range::new(
-                tombi_text::Position::new(schema_url_range.start().line(), 9 + space_count),
+                tombi_text::Position::new(schema_url_range.start.line, 9 + space_count),
                 tombi_text::Position::new(
-                    schema_url_range.end().line(),
+                    schema_url_range.end.line,
                     9 + space_count + url_str.len() as tombi_text::Column,
                 ),
             );

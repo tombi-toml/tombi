@@ -2047,23 +2047,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tombi-cargo-extension"
-version = "0.0.0"
-dependencies = [
- "glob",
- "itertools",
- "tombi-ast",
- "tombi-config",
- "tombi-document-tree",
- "tombi-extension",
- "tombi-parser",
- "tombi-schema-store",
- "tombi-text",
- "tower-lsp",
- "tracing",
-]
-
-[[package]]
 name = "tombi-cli"
 version = "0.0.0"
 dependencies = [
@@ -2177,6 +2160,54 @@ version = "0.0.0"
 dependencies = [
  "tombi-text",
  "tower-lsp",
+]
+
+[[package]]
+name = "tombi-extension-cargo"
+version = "0.0.0"
+dependencies = [
+ "glob",
+ "itertools",
+ "tombi-ast",
+ "tombi-config",
+ "tombi-document-tree",
+ "tombi-extension",
+ "tombi-parser",
+ "tombi-schema-store",
+ "tombi-text",
+ "tower-lsp",
+ "tracing",
+]
+
+[[package]]
+name = "tombi-extension-tombi"
+version = "0.0.0"
+dependencies = [
+ "tombi-config",
+ "tombi-document-tree",
+ "tombi-extension",
+ "tombi-schema-store",
+ "tombi-text",
+ "tower-lsp",
+ "tracing",
+]
+
+[[package]]
+name = "tombi-extension-uv"
+version = "0.0.0"
+dependencies = [
+ "glob",
+ "itertools",
+ "tombi-ast",
+ "tombi-config",
+ "tombi-document-tree",
+ "tombi-extension",
+ "tombi-parser",
+ "tombi-schema-store",
+ "tombi-test-lib",
+ "tombi-text",
+ "tower-lsp",
+ "tracing",
 ]
 
 [[package]]
@@ -2328,12 +2359,14 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-ast",
- "tombi-cargo-extension",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document",
  "tombi-document-tree",
  "tombi-extension",
+ "tombi-extension-cargo",
+ "tombi-extension-tombi",
+ "tombi-extension-uv",
  "tombi-formatter",
  "tombi-json",
  "tombi-linter",
@@ -2342,7 +2375,6 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
- "tombi-uv-extension",
  "tombi-validator",
  "tombi-x-keyword",
  "tower-lsp",
@@ -2462,24 +2494,6 @@ dependencies = [
  "clap",
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "tombi-uv-extension"
-version = "0.0.0"
-dependencies = [
- "glob",
- "itertools",
- "tombi-ast",
- "tombi-config",
- "tombi-document-tree",
- "tombi-extension",
- "tombi-parser",
- "tombi-schema-store",
- "tombi-test-lib",
- "tombi-text",
- "tower-lsp",
- "tracing",
 ]
 
 [[package]]
@@ -3382,7 +3396,7 @@ dependencies = [
 
 [[package]]
 name = "zed-tombi"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "zed_extension_api",
 ]

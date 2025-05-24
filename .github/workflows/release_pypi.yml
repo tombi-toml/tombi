@@ -38,7 +38,6 @@ jobs:
           - runner: ubuntu-latest
             target: ppc64le
       fail-fast: false
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
@@ -78,7 +77,7 @@ jobs:
             target: aarch64
           - runner: ubuntu-latest
             target: armv7
-    continue-on-error: true
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
@@ -108,7 +107,7 @@ jobs:
             target: x64
           - runner: windows-latest
             target: x86
-    continue-on-error: true
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
@@ -137,7 +136,7 @@ jobs:
             target: x86_64
           - runner: macos-14
             target: aarch64
-    continue-on-error: true
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3

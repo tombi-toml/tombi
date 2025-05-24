@@ -29,16 +29,16 @@ const TreeItem = (props: {
   const [isExpanded, setIsExpanded] = createSignal(shouldBeExpanded());
 
   return (
-    <div class={`my-2 pl-${props.level * 2}`}>
+    <div class={`my-4 pl-${props.level * 2}`}>
       <div class="flex items-center">
         {isCurrentPage() ? (
-          <span class="font-bold text-tombi-700 dark:text-color-yellow text-sm block pl-2 mr-2 py-1 flex-grow">
+          <span class="font-bold text-tombi-700 dark:text-color-yellow block pl-2 mr-2 py-1 flex-grow">
             {props.item.title}
           </span>
         ) : (
           <A
             href={props.item.path}
-            class="text-[--color-text] no-underline text-sm block pl-2 mr-2 py-1 hover:text-[--color-primary] flex-grow"
+            class="text-[--color-text] no-underline block pl-2 mr-2 py-1 hover:text-[--color-primary] flex-grow"
           >
             {props.item.title}
           </A>
@@ -71,7 +71,7 @@ const TreeItem = (props: {
 
 export function Sidebar() {
   return (
-    <nav class="w-[200px] h-screen overflow-y-scroll p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-200">
+    <nav class="w-[250px] h-screen overflow-y-scroll p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-200">
       <For each={docIndexs}>{(item) => <TreeItem item={item} level={0} />}</For>
     </nav>
   );

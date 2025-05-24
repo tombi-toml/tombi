@@ -400,6 +400,7 @@ mod completion_labels {
             ) -> Ok([
                 "include",
                 "path",
+                "root",
                 "root-keys",
                 "toml-version",
             ]);
@@ -1070,7 +1071,7 @@ mod completion_labels {
             async fn $name:ident(
                 $source:expr,
                 $schema_file_path:expr,
-                ($root_keys:expr, $subschema_file_path:expr)$(,)?
+                ($root:expr, $subschema_file_path:expr)$(,)?
             ) -> Ok([$($label:expr),*$(,)?]);
         ) => {
             test_completion_labels_with_subschema! {
@@ -1078,7 +1079,7 @@ mod completion_labels {
                 async fn _$name(
                     $source,
                     Some($schema_file_path),
-                    ($root_keys, $subschema_file_path),
+                    ($root, $subschema_file_path),
                 ) -> Ok([$($label),*]);
             }
         };
@@ -1087,7 +1088,7 @@ mod completion_labels {
             #[tokio::test]
             async fn $name:ident(
                 $source:expr,
-                ($root_keys:expr, $subschema_file_path:expr)$(,)?
+                ($root:expr, $subschema_file_path:expr)$(,)?
             ) -> Ok([$($label:expr),*$(,)?]);
         ) => {
             test_completion_labels_with_subschema! {
@@ -1095,7 +1096,7 @@ mod completion_labels {
                 async fn _$name(
                     $source,
                     Option::<std::path::PathBuf>::None,
-                    ($root_keys, $subschema_file_path),
+                    ($root, $subschema_file_path),
                 ) -> Ok([$($label),*]);
             }
         };
@@ -1105,7 +1106,7 @@ mod completion_labels {
             async fn $name:ident(
                 $source:expr,
                 $schema_file_path:expr,
-                ($root_keys:expr, $subschema_file_path:expr)$(,)?
+                ($root:expr, $subschema_file_path:expr)$(,)?
             ) -> Ok(AnyValue);
         ) => {
             test_completion_labels_with_subschema! {
@@ -1113,7 +1114,7 @@ mod completion_labels {
                 async fn _$name(
                     $source,
                     Some($schema_file_path),
-                    ($root_keys, $subschema_file_path),
+                    ($root, $subschema_file_path),
                 ) -> Ok(AnyValue);
             }
         };
@@ -1122,7 +1123,7 @@ mod completion_labels {
             #[tokio::test]
             async fn $name:ident(
                 $source:expr,
-                ($root_keys:expr, $subschema_file_path:expr)$(,)?
+                ($root:expr, $subschema_file_path:expr)$(,)?
             ) -> Ok(AnyValue);
         ) => {
             test_completion_labels_with_subschema! {
@@ -1130,7 +1131,7 @@ mod completion_labels {
                 async fn _$name(
                     $source,
                     Option::<std::path::PathBuf>::None,
-                    ($root_keys, $subschema_file_path),
+                    ($root, $subschema_file_path),
                 ) -> Ok(AnyValue);
             }
         };
@@ -1140,7 +1141,7 @@ mod completion_labels {
             async fn _$name:ident(
                 $source:expr,
                 $schema_file_path:expr,
-                ($root_keys:expr, $subschema_file_path:expr)$(,)?
+                ($root:expr, $subschema_file_path:expr)$(,)?
             ) -> Ok(AnyValue);
         ) => {
             test_completion_labels_with_subschema! {
@@ -1148,7 +1149,7 @@ mod completion_labels {
                 async fn _$name(
                     $source,
                     $schema_file_path,
-                    ($root_keys, $subschema_file_path),
+                    ($root, $subschema_file_path),
                 ) -> Ok([
                     "\"\"",
                     "''",
@@ -1172,7 +1173,7 @@ mod completion_labels {
             async fn _$name:ident(
                 $source:expr,
                 $schema_file_path:expr,
-                ($root_keys:expr, $subschema_file_path:expr)$(,)?
+                ($root:expr, $subschema_file_path:expr)$(,)?
             ) -> Ok([$($label:expr),*$(,)?]);
         ) => {
             #[tokio::test]
@@ -1239,7 +1240,7 @@ mod completion_labels {
                                 tombi_config::SubSchema {
                                     path: subschema_url.to_string(),
                                     include: vec!["*.toml".to_string()],
-                                    root_keys: Some($root_keys.to_string()),
+                                    root: Some($root.to_string()),
                                 }
                             )
                         ],

@@ -34,6 +34,6 @@ path = "schemas/type-test.schema.json"
 include = ["type-test.toml"]
 
 [[schemas]]
+root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
-root-keys = "tool.taskipy"

@@ -36,24 +36,24 @@ impl ValueSchema {
                 return Self::new_single(type_str.value.as_str(), object)
             }
             Some(tombi_json::ValueNode::Array(types)) => {
+                let schemas = types
+                    .items
+                    .iter()
+                    .filter_map(|type_value| {
+                        if let tombi_json::ValueNode::String(type_str) = type_value {
+                            Self::new_single(type_str.value.as_str(), object)
+                        } else {
+                            None
+                        }
+                    })
+                    .map(|value_schema| Referable::Resolved {
+                        schema_url: None,
+                        value: value_schema,
+                    })
+                    .collect();
+
                 return Some(Self::OneOf(OneOfSchema {
-                    schemas: Arc::new(tokio::sync::RwLock::new(
-                        types
-                            .items
-                            .iter()
-                            .filter_map(|type_value| {
-                                if let tombi_json::ValueNode::String(type_str) = type_value {
-                                    Self::new_single(type_str.value.as_str(), object)
-                                } else {
-                                    None
-                                }
-                            })
-                            .map(|value_schema| Referable::Resolved {
-                                schema_url: None,
-                                value: value_schema,
-                            })
-                            .collect(),
-                    )),
+                    schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
                     ..Default::default()
                 }));
             }
@@ -136,7 +136,7 @@ impl ValueSchema {
         }
     }
 
-    pub fn deprecated(&self) -> Option<bool> {
+    pub async fn deprecated(&self) -> Option<bool> {
         match self {
             Self::Null => None,
             Self::Boolean(boolean) => boolean.deprecated,
@@ -149,13 +149,46 @@ impl ValueSchema {
             Self::OffsetDateTime(offset_date_time) => offset_date_time.deprecated,
             Self::Array(array) => array.deprecated,
             Self::Table(table) => table.deprecated,
-            Self::OneOf(one_of) => one_of.deprecated,
-            Self::AnyOf(any_of) => any_of.deprecated,
-            Self::AllOf(all_of) => all_of.deprecated,
+            Self::OneOf(one_of) => {
+                if let Some(true) = one_of.deprecated {
+                    Some(true)
+                } else {
+                    for schema in one_of.schemas.read().await.iter() {
+                        if let Some(true) = schema.deprecated().await {
+                            return Some(true);
+                        }
+                    }
+                    None
+                }
+            }
+            Self::AnyOf(any_of) => {
+                if let Some(true) = any_of.deprecated {
+                    Some(true)
+                } else {
+                    for schema in any_of.schemas.read().await.iter() {
+                        if let Some(true) = schema.deprecated().await {
+                            return Some(true);
+                        }
+                    }
+                    None
+                }
+            }
+            Self::AllOf(all_of) => {
+                if let Some(true) = all_of.deprecated {
+                    Some(true)
+                } else {
+                    for schema in all_of.schemas.read().await.iter() {
+                        if let Some(true) = schema.deprecated().await {
+                            return Some(true);
+                        }
+                    }
+                    None
+                }
+            }
         }
     }
 
-    pub fn set_deprecated(&mut self, deprecated: bool) {
+    pub(crate) fn set_deprecated(&mut self, deprecated: bool) {
         match self {
             Self::Null => {}
             Self::Boolean(boolean) => boolean.deprecated = Some(deprecated),

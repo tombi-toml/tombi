@@ -179,7 +179,7 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn workspace_members_extension_tombi_cargo_extension(
+            async fn workspace_members_extension_tombi_extension_cargo(
                 r#"
                 [workspace]
                 members = [
@@ -188,8 +188,9 @@ mod goto_definition_tests {
                 "#,
                 project_root_path().join("Cargo.toml"),
             ) -> Ok([
-                project_root_path().join("extensions/tombi-cargo-extension/Cargo.toml"),
-                project_root_path().join("extensions/tombi-uv-extension/Cargo.toml"),
+                project_root_path().join("extensions/tombi-extension-cargo/Cargo.toml"),
+                project_root_path().join("extensions/tombi-extension-tombi/Cargo.toml"),
+                project_root_path().join("extensions/tombi-extension-uv/Cargo.toml"),
             ]);
         );
     }

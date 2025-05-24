@@ -65,7 +65,13 @@ pub async fn handle_document_link(
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
     if let Some(locations) =
-        tombi_cargo_extension::document_link(&text_document, &document_tree, toml_version).await?
+        tombi_extension_cargo::document_link(&text_document, &document_tree, toml_version).await?
+    {
+        document_links.extend(locations.into_iter().map(Into::into));
+    }
+
+    if let Some(locations) =
+        tombi_extension_tombi::document_link(&text_document, &document_tree, toml_version).await?
     {
         document_links.extend(locations.into_iter().map(Into::into));
     }

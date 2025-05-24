@@ -32,11 +32,11 @@ impl Parse for tombi_ast::InlineTable {
                 break;
             }
 
-            let start_line = p.nth_range(n).start().line();
+            let start_line = p.nth_range(n).start.line;
 
             tombi_ast::KeyValue::parse(p);
 
-            key_value_lines += p.previous_range().end().line() - start_line;
+            key_value_lines += p.previous_range().end.line - start_line;
 
             let n = peek_leading_comments(p);
             if p.nth_at(n, T![,]) {
@@ -59,7 +59,7 @@ impl Parse for tombi_ast::InlineTable {
             p.error(crate::Error::new(ExpectedBraceEnd, p.current_range()));
         }
 
-        if (end_range.start().line() - begin_range.start().line()) != key_value_lines {
+        if (end_range.start.line - begin_range.start.line) != key_value_lines {
             if p.toml_version < TomlVersion::V1_1_0_Preview {
                 p.error(crate::Error::new(
                     InlineTableMustSingleLine,

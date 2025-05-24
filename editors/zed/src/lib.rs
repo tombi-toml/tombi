@@ -96,7 +96,7 @@ impl TombiExtension {
         fs::create_dir_all(&version_dir)
             .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
         let binary_path = match platform {
-            zed::Os::Windows => format!("{version_dir}/tombi.exe"),
+            zed::Os::Windows => format!("{version_dir}"),
             _ => format!("{version_dir}/tombi"),
         };
 

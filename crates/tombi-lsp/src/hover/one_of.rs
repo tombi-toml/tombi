@@ -79,13 +79,14 @@ where
                     hover_content.value_type = value_type.clone();
                 }
 
-                if current_schema.value_schema.value_type().await == tombi_schema_store::ValueType::Array
+                if current_schema.value_schema.value_type().await
+                    == tombi_schema_store::ValueType::Array
                     && hover_content.value_type != tombi_schema_store::ValueType::Array
                 {
                     return Some(hover_content);
                 }
 
-                if value
+                match value
                     .validate(
                         &accessors
                             .iter()
@@ -95,9 +96,18 @@ where
                         schema_context,
                     )
                     .await
-                    .is_ok()
                 {
-                    valid_hover_contents.insert(hover_content.clone());
+                    Ok(()) => {
+                        valid_hover_contents.insert(hover_content.clone());
+                    }
+                    Err(errors)
+                        if errors
+                            .iter()
+                            .all(|error| error.level() == tombi_diagnostic::Level::WARNING) =>
+                    {
+                        valid_hover_contents.insert(hover_content.clone());
+                    }
+                    _ => {}
                 }
 
                 one_hover_contents.insert(hover_content);

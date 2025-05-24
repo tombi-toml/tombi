@@ -44,7 +44,7 @@ pub fn lex(source: &str) -> Lexed {
         }
         let (last_span, last_range) = lexed.push_result_token(result);
         last_offset = last_span.end();
-        last_position = last_range.end();
+        last_position = last_range.end;
     }
 
     lexed.tokens.push(crate::Token::new(

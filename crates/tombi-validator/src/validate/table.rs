@@ -142,7 +142,7 @@ impl Validate for tombi_document_tree::Table {
                             .await
                         {
                             Ok(Some(current_schema)) => {
-                                if current_schema.value_schema.deprecated() == Some(true) {
+                                if current_schema.value_schema.deprecated().await == Some(true) {
                                     crate::Warning {
                                         kind: crate::WarningKind::Deprecated(SchemaAccessors::new(
                                             new_accessors.clone(),
@@ -187,7 +187,8 @@ impl Validate for tombi_document_tree::Table {
                                     )
                                     .await
                                 {
-                                    if current_schema.value_schema.deprecated() == Some(true) {
+                                    if current_schema.value_schema.deprecated().await == Some(true)
+                                    {
                                         crate::Warning {
                                             kind: crate::WarningKind::Deprecated(
                                                 SchemaAccessors::new(new_accessors.clone()),
@@ -241,7 +242,7 @@ impl Validate for tombi_document_tree::Table {
                                 )
                                 .await
                             {
-                                if current_schema.value_schema.deprecated() == Some(true) {
+                                if current_schema.value_schema.deprecated().await == Some(true) {
                                     crate::Warning {
                                         kind: crate::WarningKind::Deprecated(SchemaAccessors::new(
                                             new_accessors.clone(),

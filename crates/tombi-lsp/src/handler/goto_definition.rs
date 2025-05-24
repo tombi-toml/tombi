@@ -58,7 +58,7 @@ pub async fn handle_goto_definition(
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;
     let accessors = get_hover_accessors(&document_tree, &keys, position);
 
-    if let Some(locations) = tombi_cargo_extension::goto_definition(
+    if let Some(locations) = tombi_extension_cargo::goto_definition(
         &text_document,
         &document_tree,
         &accessors,
@@ -69,7 +69,7 @@ pub async fn handle_goto_definition(
         return Ok(locations.into());
     }
 
-    if let Some(locations) = tombi_uv_extension::goto_definition(
+    if let Some(locations) = tombi_extension_uv::goto_definition(
         &text_document,
         &document_tree,
         &accessors,

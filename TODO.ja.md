@@ -19,11 +19,11 @@
 
 ### Milestone 4
 - [x] serde-tombi を内部用に作成し、 TOML の Preview バージョンをパースできるように修正
-- [ ] JSON Schema への「定義へ移動」機能の追加
+- [x] JSON Schema への「定義へ移動」機能の追加
 
 ### Milestone ???
 - [ ] WASM サポート & ドキュメントサイトの Playground 作成
-- [ ] cargo.toml のなどの特別な機能追加
+- [x] Cargo.toml のなどの特別な機能追加
 
 ### Bugs
 - [x] Local Date 型が誤って IntegerDec としてパースされる
@@ -40,3 +40,4 @@
 ### Refactor
 - [ ] 各crateのエラー型の整理
 - [ ] tokio::RwLock で読み取りロックを主にすることで、パフォーマンスを向上させる。
+- [ ] `tombi format` | `tombi lint` のファイル探索の高速化

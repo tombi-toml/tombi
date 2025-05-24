@@ -87,12 +87,15 @@ pub struct Error {
     pub range: tombi_text::Range,
 }
 
+impl From<Error> for tombi_diagnostic::Diagnostic {
+    fn from(error: Error) -> Self {
+        tombi_diagnostic::Diagnostic::new_error(error.kind.to_string(), error.range)
+    }
+}
+
 impl tombi_diagnostic::SetDiagnostics for Error {
-    fn set_diagnostics(&self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
-        diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
-            self.kind.to_string(),
-            self.range,
-        ))
+    fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
+        diagnostics.push(self.into())
     }
 }
 

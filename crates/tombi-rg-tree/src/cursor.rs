@@ -937,7 +937,7 @@ impl SyntaxNode {
     pub fn token_at_position(&self, position: tombi_text::Position) -> TokenAtOffset<SyntaxToken> {
         let range = self.range();
         assert!(
-            range.start() <= position && position <= range.end(),
+            range.start <= position && position <= range.end,
             "Bad position: range {:?} position {:?}",
             range,
             position
@@ -949,7 +949,7 @@ impl SyntaxNode {
         let mut children = self.children_with_tokens().filter(|child| {
             let child_range = child.range();
             !child_range.is_empty()
-                && (child_range.start() <= position && position <= child_range.end())
+                && (child_range.start <= position && position <= child_range.end)
         });
 
         let left = children.next().unwrap();
@@ -1261,7 +1261,7 @@ impl SyntaxElement {
     }
 
     fn token_at_position(&self, position: tombi_text::Position) -> TokenAtOffset<SyntaxToken> {
-        assert!(self.range().start() <= position && position <= self.range().end());
+        assert!(self.range().start <= position && position <= self.range().end);
         match self {
             NodeOrToken::Token(token) => TokenAtOffset::Single(token.clone()),
             NodeOrToken::Node(node) => node.token_at_position(position),

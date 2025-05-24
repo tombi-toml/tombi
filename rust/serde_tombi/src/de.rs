@@ -677,6 +677,6 @@ optional_string = "provided"
         let last_schema = &schemas[4];
         pretty_assertions::assert_eq!(last_schema.path(), "schemas/partial-taskipy.schema.json");
         pretty_assertions::assert_eq!(last_schema.include(), &["pyproject.toml"]);
-        pretty_assertions::assert_eq!(last_schema.root_keys(), Some("tool.taskipy"));
+        pretty_assertions::assert_eq!(last_schema.root(), Some("tool.taskipy"));
     }
 }

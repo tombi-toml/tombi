@@ -55,7 +55,7 @@ impl Array {
             range: node.range(),
             symbol_range: match (node.bracket_start(), node.bracket_end()) {
                 (Some(start), Some(end)) => {
-                    tombi_text::Range::new(start.range().start(), end.range().end())
+                    tombi_text::Range::new(start.range().start, end.range().end)
                 }
                 _ => node.range(),
             },

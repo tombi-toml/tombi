@@ -104,17 +104,17 @@ impl Error {
 
 #[cfg(feature = "diagnostic")]
 impl tombi_diagnostic::SetDiagnostics for Error {
-    fn set_diagnostics(&self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
+    fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         match self {
             Self::ConflictArray { range1, range2 } => {
                 let diagnostic1 =
-                    tombi_diagnostic::Diagnostic::new_error(self.to_message(), *range1);
+                    tombi_diagnostic::Diagnostic::new_error(self.to_message(), range1);
                 if !diagnostics.contains(&diagnostic1) {
                     diagnostics.push(diagnostic1);
                 }
                 diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
                     self.to_message(),
-                    *range2,
+                    range2,
                 ));
             }
             _ => {

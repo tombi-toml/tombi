@@ -50,7 +50,7 @@ mod document_link_tests {
                 {
                     path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
                     range: 4:0..4:9,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::CargoToml,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 }
             ]));
         );
@@ -70,7 +70,7 @@ mod document_link_tests {
                 {
                     url: "https://crates.io/crates/serde",
                     range: 4:0..4:5,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::CrateIo,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -90,7 +90,7 @@ mod document_link_tests {
                 {
                     url: "https://crates.io/crates/toml",
                     range: 4:0..4:10,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::CrateIo,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -110,7 +110,7 @@ mod document_link_tests {
                 {
                     url: "https://github.com/serde-rs/serde",
                     range: 4:0..4:5,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::GitRepository,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::GitRepository,
                 }
             ]));
         );
@@ -130,7 +130,7 @@ mod document_link_tests {
                 {
                     path: project_root_path().join("crates/tombi-lsp/Cargo.toml"),
                     range: 4:0..4:9,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::CargoToml,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 }
             ]));
         );
@@ -150,7 +150,7 @@ mod document_link_tests {
                 {
                     url: "https://crates.io/crates/serde",
                     range: 4:0..4:5,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::CrateIo,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -170,7 +170,7 @@ mod document_link_tests {
                 {
                     url: "https://crates.io/crates/toml",
                     range: 4:0..4:10,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::CrateIo,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
                 }
             ]));
         );
@@ -190,7 +190,7 @@ mod document_link_tests {
                 {
                     url: "https://github.com/serde-rs/serde",
                     range: 4:0..4:5,
-                    tooltip: tombi_cargo_extension::DocumentLinkToolTip::GitRepository,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::GitRepository,
                 }
             ]));
         );

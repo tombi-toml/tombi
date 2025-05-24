@@ -6,12 +6,6 @@ pub struct DefinitionLocation {
     pub range: tombi_text::Range,
 }
 
-impl DefinitionLocation {
-    pub fn new(uri: tower_lsp::lsp_types::Url, range: tombi_text::Range) -> Self {
-        Self { uri, range }
-    }
-}
-
 impl From<DefinitionLocation> for tower_lsp::lsp_types::Location {
     fn from(definition_location: DefinitionLocation) -> Self {
         tower_lsp::lsp_types::Location::new(

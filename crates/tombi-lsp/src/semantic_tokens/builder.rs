@@ -63,8 +63,8 @@ impl SemanticTokensBuilder {
 
         self.tokens.push(SemanticToken {
             delta_line: 0,
-            delta_start: (file_schema_range.start().column() - comment_range.start().column() - 1),
-            length: (file_schema_range.end().column() - file_schema_range.start().column()),
+            delta_start: (file_schema_range.start.column - comment_range.start.column - 1),
+            length: (file_schema_range.end.column - file_schema_range.start.column),
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
         });
@@ -77,22 +77,22 @@ impl SemanticTokensBuilder {
 }
 
 fn relative_range(from: tombi_text::Range, to: tombi_text::Range) -> Range {
-    let line_diff = from.end().line() - from.start().line();
-    let start = from.start() - to.start();
+    let line_diff = from.end.line - from.start.line;
+    let start = from.start - to.start;
     let start = Position {
-        line: start.line(),
-        character: start.column(),
+        line: start.line,
+        character: start.column,
     };
 
     let end = if line_diff == 0 {
         Position {
             line: start.line,
-            character: start.character + from.end().column() - from.start().column(),
+            character: start.character + from.end.column - from.start.column,
         }
     } else {
         Position {
             line: start.line + line_diff,
-            character: from.end().column(),
+            character: from.end.column,
         }
     };
 

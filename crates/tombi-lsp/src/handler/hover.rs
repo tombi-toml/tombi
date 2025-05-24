@@ -239,7 +239,7 @@ pub(crate) async fn get_hover_keys_and_range(
             let mut new_keys = Vec::with_capacity(keys.keys().count());
             for key in keys
                 .keys()
-                .take_while(|key| key.token().unwrap().range().start() <= position)
+                .take_while(|key| key.token().unwrap().range().start <= position)
             {
                 match key.try_into_document_tree(toml_version) {
                     Ok(Some(key)) => new_keys.push(key),

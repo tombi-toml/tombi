@@ -70,6 +70,36 @@ impl crate::String {
     }
 
     #[inline]
+    pub fn unquoted_range(&self) -> tombi_text::Range {
+        match self.kind() {
+            StringKind::BasicString(node) => {
+                let mut range = node.token().unwrap().range();
+                range.start.column += 1;
+                range.end.column -= 1;
+                range
+            }
+            StringKind::LiteralString(node) => {
+                let mut range = node.token().unwrap().range();
+                range.start.column += 1;
+                range.end.column -= 1;
+                range
+            }
+            StringKind::MultiLineBasicString(node) => {
+                let mut range = node.token().unwrap().range();
+                range.start.column += 3;
+                range.end.column -= 3;
+                range
+            }
+            StringKind::MultiLineLiteralString(node) => {
+                let mut range = node.token().unwrap().range();
+                range.start.column += 3;
+                range.end.column -= 3;
+                range
+            }
+        }
+    }
+
+    #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.range()
     }

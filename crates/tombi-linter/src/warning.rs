@@ -11,7 +11,7 @@ pub struct Warning {
 }
 
 impl tombi_diagnostic::SetDiagnostics for Warning {
-    fn set_diagnostics(&self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
+    fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         diagnostics.push(tombi_diagnostic::Diagnostic::new_warning(
             self.kind.to_string(),
             self.range,

@@ -2,8 +2,10 @@ use std::borrow::Cow;
 
 use futures::{future::BoxFuture, FutureExt};
 use itertools::Itertools;
-use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUrl, ValueSchema};
 use tombi_document_tree::ArrayKind;
+use tombi_schema_store::{
+    Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUrl, ValueSchema,
+};
 
 use super::{
     all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
@@ -61,7 +63,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                     ValueSchema::Array(array_schema) => {
                         let mut new_item_index = 0;
                         for (index, value) in self.values().iter().enumerate() {
-                            if value.range().end() < position {
+                            if value.range().end < position {
                                 new_item_index = index + 1;
                             }
                             if value.range().contains(position) {

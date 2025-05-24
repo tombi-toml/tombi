@@ -250,20 +250,20 @@ fn goto_workspace_member(
             return Ok(None);
         };
 
-        Ok(Some(tombi_extension::DefinitionLocation::new(
-            package_pyproject_toml_uri,
-            tombi_text::Range::default(),
-        )))
+        Ok(Some(tombi_extension::DefinitionLocation {
+            uri: package_pyproject_toml_uri,
+            range: tombi_text::Range::default(),
+        }))
     } else {
         let Ok(workspace_pyproject_toml_uri) = Url::from_file_path(&workspace_pyproject_toml_path)
         else {
             return Ok(None);
         };
 
-        Ok(Some(tombi_extension::DefinitionLocation::new(
-            workspace_pyproject_toml_uri,
-            member_range,
-        )))
+        Ok(Some(tombi_extension::DefinitionLocation {
+            uri: workspace_pyproject_toml_uri,
+            range: member_range,
+        }))
     }
 }
 
@@ -339,7 +339,7 @@ fn goto_member_pyprojects(
 
         locations.push(PackageLocation {
             pyproject_toml_path,
-            package_name_key_range: package_name.range(),
+            package_name_key_range: package_name.unquoted_range(),
         });
     }
 
@@ -397,7 +397,7 @@ fn find_member_project_toml(
             tombi_document_tree::dig_keys(&package_project_toml_document_tree, &["project", "name"])
         {
             if name.value() == package_name {
-                return Some((package_project_toml_path, member_item.range()));
+                return Some((package_project_toml_path, member_item.unquoted_range()));
             }
         }
     }

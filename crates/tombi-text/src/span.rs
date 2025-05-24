@@ -17,7 +17,7 @@ pub struct Span {
 
 impl std::fmt::Debug for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}..{}", self.start().raw, self.end().raw)
+        write!(f, "{}..{}", self.start.raw, self.end.raw)
     }
 }
 
@@ -97,14 +97,14 @@ impl Span {
     #[inline]
     pub const fn len(self) -> RawOffset {
         // HACK for const fn: math on primitives only
-        self.end().raw - self.start().raw
+        self.end.raw - self.start.raw
     }
 
     /// Check if this span is empty.
     #[inline]
     pub const fn is_empty(self) -> bool {
         // HACK for const fn: math on primitives only
-        self.start().raw == self.end().raw
+        self.start.raw == self.end.raw
     }
 }
 
@@ -126,7 +126,7 @@ impl Span {
     /// ```
     #[inline]
     pub fn contains(self, offset: Offset) -> bool {
-        self.start() <= offset && offset < self.end()
+        self.start <= offset && offset < self.end
     }
 
     /// Check if this span contains an offset.
@@ -145,7 +145,7 @@ impl Span {
     /// ```
     #[inline]
     pub fn contains_inclusive(self, offset: Offset) -> bool {
-        self.start() <= offset && offset <= self.end()
+        self.start <= offset && offset <= self.end
     }
 
     /// Check if this span completely contains another span.
@@ -165,7 +165,7 @@ impl Span {
     /// ```
     #[inline]
     pub fn contains_span(self, other: Span) -> bool {
-        self.start() <= other.start() && other.end() <= self.end()
+        self.start <= other.start && other.end <= self.end
     }
 
     /// The span covered by both ranges, if it exists.
@@ -185,8 +185,8 @@ impl Span {
     /// ```
     #[inline]
     pub fn intersect(self, other: Span) -> Option<Span> {
-        let start = std::cmp::max(self.start(), other.start());
-        let end = std::cmp::min(self.end(), other.end());
+        let start = std::cmp::max(self.start, other.start);
+        let end = std::cmp::min(self.end, other.end);
         if end < start {
             return None;
         }
@@ -209,8 +209,8 @@ impl Span {
     /// ```
     #[inline]
     pub fn cover(self, other: Span) -> Span {
-        let start = std::cmp::min(self.start(), other.start());
-        let end = std::cmp::max(self.end(), other.end());
+        let start = std::cmp::min(self.start, other.start);
+        let end = std::cmp::max(self.end, other.end);
         Span::new(start, end)
     }
 
@@ -297,9 +297,9 @@ impl Span {
     /// ```
     #[inline]
     pub fn ordering(self, other: Span) -> Ordering {
-        if self.end() <= other.start() {
+        if self.end <= other.start {
             Ordering::Less
-        } else if other.end() <= self.start() {
+        } else if other.end <= self.start {
             Ordering::Greater
         } else {
             Ordering::Equal
@@ -360,7 +360,7 @@ where
 {
     #[inline]
     fn from(r: Span) -> Self {
-        r.start().into()..r.end().into()
+        r.start.into()..r.end.into()
     }
 }
 

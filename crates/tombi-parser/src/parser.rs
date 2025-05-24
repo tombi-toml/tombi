@@ -219,8 +219,8 @@ impl<'t> Parser<'t> {
                         token.span().start() + tombi_text::Offset::of(parts[0]),
                     ),
                     tombi_text::Range::new(
-                        token.range().start(),
-                        token.range().start() + tombi_text::RelativePosition::of(parts[0]),
+                        token.range().start,
+                        token.range().start + tombi_text::RelativePosition::of(parts[0]),
                     ),
                 ),
             );
@@ -245,8 +245,8 @@ impl<'t> Parser<'t> {
                         key1.span().end() + tombi_text::Offset::of("."),
                     ),
                     tombi_text::Range::new(
-                        key1.range().end(),
-                        key1.range().end() + tombi_text::RelativePosition::of("."),
+                        key1.range().end,
+                        key1.range().end + tombi_text::RelativePosition::of("."),
                     ),
                 ),
             );
@@ -273,8 +273,8 @@ impl<'t> Parser<'t> {
                         dot.span().end() + tombi_text::Offset::of(parts[1]),
                     ),
                     tombi_text::Range::new(
-                        dot.range().end(),
-                        dot.range().end() + tombi_text::RelativePosition::of(parts[1]),
+                        dot.range().end,
+                        dot.range().end + tombi_text::RelativePosition::of(parts[1]),
                     ),
                 ),
             );

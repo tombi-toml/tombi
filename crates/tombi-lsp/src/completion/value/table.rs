@@ -78,7 +78,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         Some(
                                             CompletionHint::DotTrigger { range, .. }
                                             | CompletionHint::EqualTrigger { range, .. },
-                                        ) => range.end() <= key.range().start(),
+                                        ) => range.end <= key.range().start,
                                         Some(
                                             CompletionHint::InArray | CompletionHint::InTableHeader,
                                         ) => false,
@@ -381,7 +381,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                             Some(
                                                                 current_schema.schema_url.as_ref(),
                                                             ),
-                                                            value_schema.deprecated(),
+                                                            value_schema.deprecated().await,
                                                             completion_hint,
                                                         ),
                                                     );
@@ -427,7 +427,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             CompletionContent::new_additional_key(
                                                 position,
                                                 Some(schema_url.as_ref()),
-                                                value_schema.deprecated(),
+                                                value_schema.deprecated().await,
                                                 completion_hint,
                                             ),
                                         );
@@ -585,7 +585,7 @@ impl FindCompletionContents for TableSchema {
                                 .await,
                             self.required.as_ref(),
                             Some(current_schema.schema_url.as_ref()),
-                            current_schema.value_schema.deprecated(),
+                            current_schema.value_schema.deprecated().await,
                             completion_hint,
                         ));
                     }
@@ -694,7 +694,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 ) => {
                     let key = keys.first().unwrap();
                     if current_schema.is_none() {
-                        if range.end() <= key.range().start() {
+                        if range.end <= key.range().start {
                             return vec![CompletionContent::new_type_hint_key(
                                 key,
                                 schema_context.toml_version,
@@ -886,7 +886,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     .await,
                 table_schema.required.as_ref(),
                 Some(&current_schema.schema_url),
-                current_schema.value_schema.deprecated(),
+                current_schema.value_schema.deprecated().await,
                 completion_hint,
             ));
         }

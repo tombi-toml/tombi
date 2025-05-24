@@ -1,0 +1,21 @@
+[package]
+name = "tombi-extension-cargo"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+description = "Tombi extension for Cargo.toml"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+glob.workspace = true
+itertools.workspace = true
+tombi-ast.workspace = true
+tombi-config.workspace = true
+tombi-document-tree.workspace = true
+tombi-extension.workspace = true
+tombi-parser.workspace = true
+tombi-schema-store.workspace = true
+tombi-text.workspace = true
+tower-lsp.workspace = true
+tracing.workspace = true

@@ -52,9 +52,9 @@ impl Table {
             range: node.syntax().range(),
             symbol_range: tombi_text::Range::new(
                 node.bracket_start()
-                    .map(|bracket| bracket.range().start())
-                    .unwrap_or_else(|| node.range().start()),
-                node.range().end(),
+                    .map(|bracket| bracket.range().start)
+                    .unwrap_or_else(|| node.range().start),
+                node.range().end,
             ),
         }
     }
@@ -66,9 +66,9 @@ impl Table {
             range: node.syntax().range(),
             symbol_range: tombi_text::Range::new(
                 node.double_bracket_start()
-                    .map(|bracket| bracket.range().start())
-                    .unwrap_or_else(|| node.range().start()),
-                node.range().end(),
+                    .map(|bracket| bracket.range().start)
+                    .unwrap_or_else(|| node.range().start),
+                node.range().end,
             ),
         }
     }
@@ -80,9 +80,9 @@ impl Table {
             range: node.syntax().range(),
             symbol_range: tombi_text::Range::new(
                 node.brace_start()
-                    .map(|brace| brace.range().start())
-                    .unwrap_or_else(|| node.range().start()),
-                node.range().end(),
+                    .map(|brace| brace.range().start)
+                    .unwrap_or_else(|| node.range().start),
+                node.range().end,
             ),
         }
     }
@@ -528,7 +528,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                     range: table.range(),
                 });
                 Value::Incomplete {
-                    range: tombi_text::Range::at(self.range().end()),
+                    range: tombi_text::Range::at(self.range().end),
                 }
             }
         };

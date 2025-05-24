@@ -72,8 +72,22 @@ impl Key {
         })
     }
 
+    #[inline]
     pub fn range(&self) -> tombi_text::Range {
         self.range
+    }
+
+    #[inline]
+    pub fn unquoted_range(&self) -> tombi_text::Range {
+        match self.kind {
+            KeyKind::BareKey => self.range,
+            KeyKind::BasicString | KeyKind::LiteralString => {
+                let mut range = self.range;
+                range.start.column += 1;
+                range.end.column -= 1;
+                range
+            }
+        }
     }
 }
 

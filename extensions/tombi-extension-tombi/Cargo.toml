@@ -1,24 +1,16 @@
 [package]
-name = "tombi-uv-extension"
-version = "0.0.0"
+name = "tombi-extension-tombi"
+version.workspace = true
 authors.workspace = true
 edition.workspace = true
-description = "Tombi extension for uv Python project management"
 repository.workspace = true
 license.workspace = true
 
 [dependencies]
-glob.workspace = true
-itertools.workspace = true
-tombi-ast.workspace = true
 tombi-config.workspace = true
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
-tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tower-lsp.workspace = true
 tracing.workspace = true
-
-[dev-dependencies]
-tombi-test-lib.workspace = true

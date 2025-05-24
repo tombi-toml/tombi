@@ -7,8 +7,8 @@ use crate::{Column, Line};
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct RelativePosition {
-    pub(crate) line: Line,
-    pub(crate) column: Column,
+    pub line: Line,
+    pub column: Column,
 }
 
 impl RelativePosition {
@@ -24,16 +24,6 @@ impl RelativePosition {
             }
         }
         Self { line, column }
-    }
-
-    #[inline]
-    pub fn line(&self) -> Line {
-        self.line
-    }
-
-    #[inline]
-    pub fn column(&self) -> Column {
-        self.column
     }
 }
 
@@ -76,8 +66,8 @@ impl Add for RelativePosition {
     #[inline]
     fn add(self, rhs: RelativePosition) -> Self::Output {
         Self {
-            line: self.line + rhs.line(),
-            column: rhs.column(),
+            line: self.line + rhs.line,
+            column: rhs.column,
         }
     }
 }
@@ -85,11 +75,11 @@ impl Add for RelativePosition {
 impl AddAssign for RelativePosition {
     #[inline]
     fn add_assign(&mut self, rhs: RelativePosition) {
-        self.line += rhs.line();
-        if rhs.line() == 0 {
-            self.column += rhs.column();
+        self.line += rhs.line;
+        if rhs.line == 0 {
+            self.column += rhs.column;
         } else {
-            self.column = rhs.column();
+            self.column = rhs.column;
         }
     }
 }

@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use futures::{future::BoxFuture, FutureExt};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema, ValueType};
@@ -119,7 +120,7 @@ impl Validate for tombi_document_tree::Array {
                             .cloned()
                             .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
                             .collect::<Vec<_>>();
-                        if current_schema.value_schema.deprecated() == Some(true) {
+                        if current_schema.value_schema.deprecated().await == Some(true) {
                             crate::Warning {
                                 kind: crate::WarningKind::Deprecated(
                                     tombi_schema_store::SchemaAccessors::new(new_accessors.clone()),

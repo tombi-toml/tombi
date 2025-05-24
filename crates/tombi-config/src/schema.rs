@@ -77,6 +77,7 @@ pub struct SchemaCatalog {
 pub enum Schema {
     Root(RootSchema),
     Sub(SubSchema),
+    OldSub(OldSubSchema),
 }
 
 impl Schema {
@@ -84,6 +85,7 @@ impl Schema {
         match self {
             Self::Root(item) => &item.path,
             Self::Sub(item) => &item.path,
+            Self::OldSub(item) => &item.path,
         }
     }
 
@@ -91,6 +93,7 @@ impl Schema {
         match self {
             Self::Root(item) => &item.include,
             Self::Sub(item) => &item.include,
+            Self::OldSub(item) => &item.include,
         }
     }
 
@@ -98,13 +101,16 @@ impl Schema {
         match self {
             Self::Root(item) => item.toml_version,
             Self::Sub(_) => None,
+            Self::OldSub(_) => None,
         }
     }
 
-    pub fn root_keys(&self) -> Option<&str> {
+    pub fn root(&self) -> Option<&str> {
         match self {
             Self::Root(_) => None,
-            Self::Sub(item) => item.root_keys.as_deref(),
+            Self::Sub(item) => item.root.as_deref(),
+            #[allow(deprecated)]
+            Self::OldSub(item) => item.root_keys.as_deref(),
         }
     }
 }
@@ -139,6 +145,33 @@ pub struct RootSchema {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct SubSchema {
+    /// # The accessors to apply the sub schema.
+    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
+    #[cfg_attr(feature = "jsonschema", schemars(example = "tools.tombi"))]
+    #[cfg_attr(feature = "jsonschema", schemars(example = "items[0].name"))]
+    pub root: Option<String>,
+
+    /// # The sub schema path.
+    pub path: String,
+
+    /// # The file match pattern of the sub schema.
+    ///
+    /// The file match pattern to include the target to apply the sub schema.
+    /// Supports glob pattern.
+    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
+    pub include: Vec<String>,
+}
+
+/// # The schema for the old sub value.
+///
+/// This is for backward compatibility.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
+#[derive(Debug, Clone, PartialEq)]
+pub struct OldSubSchema {
     /// # The sub schema path.
     pub path: String,
 
@@ -150,7 +183,10 @@ pub struct SubSchema {
     pub include: Vec<String>,
 
     /// # The keys to apply the sub schema.
+    ///
+    /// Please use `root` instead.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
+    #[cfg_attr(feature = "jsonschema", deprecated)]
     pub root_keys: Option<String>,
 }
 

@@ -221,6 +221,38 @@ mod tests {
         }
     }
 
+    mod tombi_schema {
+        use super::*;
+        use tombi_test_lib::tombi_schema_path;
+
+        test_lint! {
+            #[test]
+            fn test_tombi_schema(
+                include_str!("../../../tombi.toml"),
+                tombi_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_tombi_schema_invalid_root(
+                r#"
+                [[schemas]]
+                path = "schemas/partial-taskipy.schema.json"
+                include = ["pyproject.toml"]
+                root-keys = "tool.taskipy"
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::WarningKind::Deprecated(tombi_schema_store::SchemaAccessors::new(vec![
+                    tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
+                    tombi_schema_store::SchemaAccessor::Index,
+                    tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
+                ])),
+            ]);
+        }
+    }
+
     mod non_schema {
         use tombi_schema_store::SchemaUrl;
 

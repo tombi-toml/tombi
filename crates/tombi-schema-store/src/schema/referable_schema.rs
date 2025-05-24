@@ -74,6 +74,15 @@ impl Referable<ValueSchema> {
         })
     }
 
+    pub fn deprecated<'a: 'b, 'b>(&'a self) -> BoxFuture<'b, Option<bool>> {
+        Box::pin(async move {
+            match self {
+                Referable::Resolved { value, .. } => value.deprecated().await,
+                Referable::Ref { .. } => None,
+            }
+        })
+    }
+
     pub async fn value_type(&self) -> crate::ValueType {
         match self {
             Referable::Resolved { value, .. } => value.value_type().await,

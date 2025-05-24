@@ -106,8 +106,8 @@ impl std::fmt::Display for Error {
             f,
             "{} in {}..{}",
             self.kind,
-            self.range.start(),
-            self.range.end()
+            self.range.start,
+            self.range.end
         )
     }
 }
@@ -152,7 +152,7 @@ impl tombi_diagnostic::SetDiagnostics for Error {
     /// Since a single error may be converted into multiple diagnostics,
     /// this function takes a vector of diagnostics and appends the conversion results to it.
     #[inline]
-    fn set_diagnostics(&self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
+    fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
             self.to_message(),
             self.range(),

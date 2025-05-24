@@ -63,13 +63,15 @@ thiserror = { version = "2.0.12" }
 tokio = { version = "1.45.0", default-features = false, features = ["rt"] }  # "fs", "io-std", "rt-multi-thread"
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
-tombi-cargo-extension = { path = "extensions/tombi-cargo-extension" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
 tombi-diagnostic = { path = "crates/tombi-diagnostic" }
 tombi-document = { path = "crates/tombi-document" }
 tombi-document-tree = { path = "crates/tombi-document-tree" }
 tombi-extension = { path = "crates/tombi-extension" }
+tombi-extension-cargo = { path = "extensions/tombi-extension-cargo" }
+tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
+tombi-extension-uv = { path = "extensions/tombi-extension-uv" }
 tombi-formatter = { path = "crates/tombi-formatter" }
 tombi-json = { path = "crates/tombi-json" }
 tombi-json-lexer = { path = "crates/tombi-json-lexer" }
@@ -86,7 +88,6 @@ tombi-test-lib = { path = "crates/tombi-test-lib" }
 tombi-text = { path = "crates/tombi-text" }
 tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
-tombi-uv-extension = { path = "extensions/tombi-uv-extension" }
 tombi-validator = { path = "crates/tombi-validator" }
 tombi-wasm-compat = { path = "crates/tombi-wasm-compat" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }

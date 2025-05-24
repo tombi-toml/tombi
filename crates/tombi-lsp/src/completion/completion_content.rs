@@ -235,7 +235,7 @@ impl CompletionContent {
         let key_range = match completion_hint {
             Some(
                 CompletionHint::DotTrigger { range } | CompletionHint::EqualTrigger { range, .. },
-            ) => tombi_text::Range::new(range.end(), position),
+            ) => tombi_text::Range::new(range.end, position),
             _ => tombi_text::Range::at(position),
         };
 

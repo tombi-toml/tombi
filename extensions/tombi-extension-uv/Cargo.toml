@@ -1,9 +1,9 @@
 [package]
-name = "tombi-cargo-extension"
+name = "tombi-extension-uv"
 version = "0.0.0"
 authors.workspace = true
 edition.workspace = true
-description = "Tombi extension for Cargo.toml"
+description = "Tombi extension for uv Python project management"
 repository.workspace = true
 license.workspace = true
 
@@ -19,3 +19,6 @@ tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tower-lsp.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+tombi-test-lib.workspace = true

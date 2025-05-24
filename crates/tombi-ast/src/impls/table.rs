@@ -13,8 +13,8 @@ impl crate::Table {
     }
 
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
-        self.bracket_start().unwrap().range().end() <= position
-            && position <= self.bracket_end().unwrap().range().start()
+        self.bracket_start().unwrap().range().end <= position
+            && position <= self.bracket_end().unwrap().range().start
     }
 
     pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {

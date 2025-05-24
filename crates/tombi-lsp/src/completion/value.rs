@@ -24,13 +24,13 @@ use local_date_time::type_hint_local_date_time;
 use local_time::type_hint_local_time;
 use offset_date_time::type_hint_offset_date_time;
 pub use one_of::find_one_of_completion_items;
+use string::type_hint_string;
+use tombi_config::TomlVersion;
 use tombi_schema_store::{
     Accessor, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema, IntegerSchema,
     LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, SchemaDefinitions,
     SchemaStore, SchemaUrl, StringSchema, TableSchema, ValueSchema,
 };
-use string::type_hint_string;
-use tombi_config::TomlVersion;
 
 use super::{
     schema_completion::SchemaCompletion, CompletionCandidate, CompletionContent, CompletionHint,
@@ -105,7 +105,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
 
                         match (&last_key, completion_hint) {
                             (Some(last_key), Some(CompletionHint::EqualTrigger { range }))
-                                if range.end() < position =>
+                                if range.end < position =>
                             {
                                 vec![CompletionContent::new_type_hint_key(
                                     last_key,
@@ -158,7 +158,7 @@ pub fn type_hint_value(
         let need_key_hint = match completion_hint {
             Some(
                 CompletionHint::DotTrigger { range, .. } | CompletionHint::EqualTrigger { range },
-            ) => range.end() == position || range.end() <= key.range().start(),
+            ) => range.end == position || range.end <= key.range().start,
             Some(CompletionHint::InTableHeader | CompletionHint::InArray) | None => true,
         };
         if need_key_hint {

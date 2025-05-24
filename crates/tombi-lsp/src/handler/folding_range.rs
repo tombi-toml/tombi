@@ -307,10 +307,10 @@ trait GetFoldingRange {
 
     fn get_region_folding_range(&self) -> Option<FoldingRange> {
         self.get_folding_range().map(|range| FoldingRange {
-            start_line: range.start().line(),
-            start_character: Some(range.start().column()),
-            end_line: range.end().line(),
-            end_character: Some(range.end().column()),
+            start_line: range.start.line,
+            start_character: Some(range.start.column),
+            end_line: range.end.line,
+            end_character: Some(range.end.column),
             kind: Some(FoldingRangeKind::Region),
             collapsed_text: None,
         })
@@ -318,10 +318,10 @@ trait GetFoldingRange {
 
     fn get_comment_folding_range(&self) -> Option<FoldingRange> {
         self.get_folding_range().map(|range| FoldingRange {
-            start_line: range.start().line(),
-            start_character: Some(range.start().column()),
-            end_line: range.end().line(),
-            end_character: Some(range.end().column()),
+            start_line: range.start.line,
+            start_character: Some(range.start.column),
+            end_line: range.end.line,
+            end_character: Some(range.end.column),
             kind: Some(FoldingRangeKind::Comment),
             collapsed_text: None,
         })
@@ -343,12 +343,12 @@ impl GetFoldingRange for tombi_ast::Table {
 
         match (first_child, last_child) {
             (Some(first), Some(last)) => Some(tombi_text::Range::new(
-                first.range().start(),
+                first.range().start,
                 self.subtables()
                     .last()
                     .and_then(|t| t.get_folding_range())
                     .unwrap_or(last.range())
-                    .end(),
+                    .end,
             )),
             _ => None,
         }
@@ -370,12 +370,12 @@ impl GetFoldingRange for tombi_ast::ArrayOfTable {
 
         match (first_child, last_child) {
             (Some(first), Some(last)) => Some(tombi_text::Range::new(
-                first.range().start(),
+                first.range().start,
                 self.subtables()
                     .last()
                     .and_then(|t| t.get_folding_range())
                     .unwrap_or(last.range())
-                    .end(),
+                    .end,
             )),
             _ => None,
         }
@@ -393,8 +393,8 @@ impl GetFoldingRange for tombi_ast::TableOrArrayOfTable {
 
 impl GetFoldingRange for tombi_ast::Array {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let start_position = self.bracket_start()?.range().start();
-        let end_position = self.bracket_end()?.range().end();
+        let start_position = self.bracket_start()?.range().start;
+        let end_position = self.bracket_end()?.range().end;
 
         Some(tombi_text::Range::new(start_position, end_position))
     }
@@ -402,8 +402,8 @@ impl GetFoldingRange for tombi_ast::Array {
 
 impl GetFoldingRange for tombi_ast::InlineTable {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let start_position = self.brace_start()?.range().start();
-        let end_position = self.brace_end()?.range().end();
+        let start_position = self.brace_start()?.range().start;
+        let end_position = self.brace_end()?.range().end;
 
         Some(tombi_text::Range::new(start_position, end_position))
     }
@@ -414,8 +414,8 @@ impl GetFoldingRange for Vec<tombi_ast::LeadingComment> {
         let first = self.first()?;
         let last = self.last()?;
         Some(tombi_text::Range::new(
-            first.syntax().range().start(),
-            last.syntax().range().end(),
+            first.syntax().range().start,
+            last.syntax().range().end,
         ))
     }
 }
@@ -437,13 +437,13 @@ impl GetFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
             .rev()
             .next()?;
 
-        if first.syntax().range().start().line() == last.syntax().range().end().line() {
+        if first.syntax().range().start.line == last.syntax().range().end.line {
             return None;
         }
 
         Some(tombi_text::Range::new(
-            first.syntax().range().start(),
-            last.syntax().range().end(),
+            first.syntax().range().start,
+            last.syntax().range().end,
         ))
     }
 }
@@ -465,13 +465,13 @@ impl GetFoldingRange for Vec<Vec<tombi_ast::EndDanglingComment>> {
             .rev()
             .next()?;
 
-        if first.syntax().range().start().line() == last.syntax().range().end().line() {
+        if first.syntax().range().start.line == last.syntax().range().end.line {
             return None;
         }
 
         Some(tombi_text::Range::new(
-            first.syntax().range().start(),
-            last.syntax().range().end(),
+            first.syntax().range().start,
+            last.syntax().range().end,
         ))
     }
 }

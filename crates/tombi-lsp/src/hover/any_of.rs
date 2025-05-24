@@ -78,7 +78,7 @@ where
                     hover_content.value_type = value_type.clone();
                 }
 
-                if value
+                match value
                     .validate(
                         &accessors
                             .iter()
@@ -88,9 +88,16 @@ where
                         schema_context,
                     )
                     .await
-                    .is_ok()
                 {
-                    valid_hover_contents.push(hover_content.clone());
+                    Ok(()) => valid_hover_contents.push(hover_content.clone()),
+                    Err(errors)
+                        if errors
+                            .iter()
+                            .all(|error| error.level() == tombi_diagnostic::Level::WARNING) =>
+                    {
+                        valid_hover_contents.push(hover_content.clone());
+                    }
+                    _ => {}
                 }
 
                 any_hover_contents.push(hover_content);
