@@ -97,7 +97,7 @@ impl Backend {
         {
             match self
                 .schema_store
-                .try_get_source_schema_from_ast(
+                .build_source_schema_from_ast(
                     &parsed.tree(),
                     Some(Either::Left(text_document_uri)),
                 )
@@ -161,7 +161,7 @@ impl Backend {
 
         let source_schema = self
             .schema_store
-            .try_get_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
+            .build_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
             .await
             .ok()
             .flatten();

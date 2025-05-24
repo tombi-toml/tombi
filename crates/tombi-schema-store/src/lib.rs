@@ -12,7 +12,7 @@ pub use accessor::{Accessor, Accessors};
 pub use error::Error;
 pub use options::Options;
 pub use schema::*;
-pub use store::SchemaStore;
+pub use store::{DefaultClient, HttpClient, SchemaStore};
 pub use value_type::ValueType;
 
 pub fn get_schema_name(schema_url: &SchemaUrl) -> Option<&str> {

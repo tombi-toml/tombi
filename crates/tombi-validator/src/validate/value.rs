@@ -1,4 +1,4 @@
-use futures::{future::BoxFuture, FutureExt};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::Validate;
 

@@ -1,6 +1,5 @@
 use std::{borrow::Cow, sync::Arc};
 
-use futures::{future::BoxFuture, FutureExt};
 use tombi_x_keyword::{ArrayValuesOrder, X_TOMBI_ARRAY_VALUES_ORDER};
 
 use super::{
@@ -8,6 +7,7 @@ use super::{
     ValueSchema,
 };
 use crate::{Accessor, SchemaStore};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 #[derive(Debug, Default, Clone)]
 pub struct ArraySchema {

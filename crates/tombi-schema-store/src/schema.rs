@@ -19,7 +19,10 @@ mod string_schema;
 mod table_schema;
 mod value_schema;
 
+use std::borrow::Cow;
+use std::fmt::Display;
 use std::sync::Arc;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use crate::{Accessor, SchemaStore};
 pub use all_of_schema::AllOfSchema;
@@ -28,7 +31,6 @@ pub use array_schema::ArraySchema;
 pub use boolean_schema::BooleanSchema;
 pub use document_schema::DocumentSchema;
 pub use float_schema::FloatSchema;
-use futures::future::BoxFuture;
 pub use integer_schema::IntegerSchema;
 pub use local_date_schema::LocalDateSchema;
 pub use local_date_time_schema::LocalDateTimeSchema;
@@ -59,10 +61,25 @@ pub struct PropertySchema {
     pub property_schema: Referable<ValueSchema>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
+pub enum SchemaSpec {
+    Url(SchemaUrl),
+    Raw(SchemaUrl, Cow<'static, str>),
+}
+
+impl Display for SchemaSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SchemaSpec::Url(url) => write!(f, "{}", url),
+            SchemaSpec::Raw(url, _) => write!(f, "{}", url),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Schema {
     pub toml_version: Option<tombi_config::TomlVersion>,
-    pub url: crate::SchemaUrl,
+    pub spec: SchemaSpec,
     pub include: Vec<String>,
     pub sub_root_keys: Option<Vec<SchemaAccessor>>,
 }

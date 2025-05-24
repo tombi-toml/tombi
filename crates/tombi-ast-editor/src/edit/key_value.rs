@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
-use tombi_document_tree::TryIntoDocumentTree;
-use futures::FutureExt;
 use itertools::Itertools;
+use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{CurrentSchema, SchemaAccessor};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::get_schema;
 
@@ -13,7 +13,7 @@ impl crate::Edit for tombi_ast::KeyValue {
         _accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    ) -> futures::future::BoxFuture<'b, Vec<crate::Change>> {
+    ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
 

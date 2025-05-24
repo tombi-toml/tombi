@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
-use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::CurrentSchema;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::Validate;
 

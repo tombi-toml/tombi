@@ -12,6 +12,7 @@ schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
 tombi-toml-version.workspace = true
+tombi-wasm-compat.workspace = true
 tombi-x-keyword.workspace = true
 tracing.workspace = true
 url.workspace = true

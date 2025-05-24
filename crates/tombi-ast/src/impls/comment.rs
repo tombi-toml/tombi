@@ -1,3 +1,4 @@
+use tombi_wasm_compat::url::url_from_file_path;
 use crate::{AstToken, Comment};
 
 impl Comment {
@@ -33,7 +34,7 @@ impl Comment {
                 }
 
                 Some((
-                    url::Url::from_file_path(&schema_file_path).map_err(|_| url_str.to_string()),
+                    url_from_file_path(&schema_file_path).map_err(|_| url_str.to_string()),
                     schema_url_range,
                 ))
             } else {

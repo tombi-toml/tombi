@@ -150,7 +150,7 @@ impl Deserializer<'_> {
 
         if let Some(source_path) = self.source_path {
             match schema_store
-                .try_get_source_schema_from_ast(&root, Some(Either::Right(source_path)))
+                .build_source_schema_from_ast(&root, Some(Either::Right(source_path)))
                 .await
             {
                 Ok(Some(SourceSchema {

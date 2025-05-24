@@ -1,3 +1,4 @@
+use tombi_wasm_compat::url::url_from_file_path;
 use super::OneOrMany;
 
 /// Generic value that can be either single or multiple
@@ -19,8 +20,8 @@ impl SchemaCatalogPath {
         match self.0.parse() {
             Ok(url) => Ok(url),
             Err(err) => match base_dirpath {
-                Some(base_dirpath) => url::Url::from_file_path(base_dirpath.join(&self.0)),
-                None => url::Url::from_file_path(&self.0),
+                Some(base_dirpath) => url_from_file_path(base_dirpath.join(&self.0)),
+                None => url_from_file_path(&self.0),
             }
             .map_err(|_| err),
         }

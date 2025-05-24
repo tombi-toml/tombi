@@ -351,7 +351,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         if head_accessors == accessors {
                                             if let Ok(Some(document_schema)) = schema_context
                                                 .store
-                                                .try_get_document_schema(sub_schema_url)
+                                                .get_document_schema(sub_schema_url)
                                                 .await
                                             {
                                                 if let Some(value_schema) =

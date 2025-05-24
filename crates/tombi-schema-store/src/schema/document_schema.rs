@@ -1,11 +1,11 @@
 use ahash::AHashMap;
-use futures::{future::BoxFuture, FutureExt};
 use tombi_config::TomlVersion;
 
 use super::{
     referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUrl, ValueSchema,
 };
 use crate::{Accessor, SchemaStore};
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {

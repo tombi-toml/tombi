@@ -98,6 +98,7 @@ impl Serializer<'_> {
         }
     }
 
+    #[cfg(not(feature = "wasm"))]
     pub fn to_string<T>(&self, value: &T) -> Result<String, crate::ser::Error>
     where
         T: Serialize,

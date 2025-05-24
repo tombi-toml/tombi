@@ -1,7 +1,7 @@
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::{OffsetDateTime, ValueImpl};
-use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::ValueType;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 

@@ -1,10 +1,8 @@
 use std::{borrow::Cow, sync::Arc};
 
-use futures::{
-    future::{join_all, BoxFuture},
-    FutureExt,
-};
+use futures::future::join_all;
 use tombi_json::StringNode;
+use tombi_wasm_compat::box_future::{BoxFuture, Boxable};
 
 use super::{
     referable_schema::CurrentSchema, AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema,
