@@ -1,5 +1,6 @@
 mod accessor;
 mod error;
+mod http_client;
 pub mod json;
 pub mod macros;
 mod options;
@@ -10,6 +11,7 @@ mod x_taplo;
 
 pub use accessor::{Accessor, Accessors};
 pub use error::Error;
+pub use http_client::*;
 pub use options::Options;
 pub use schema::*;
 pub use store::SchemaStore;

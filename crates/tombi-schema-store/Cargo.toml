@@ -8,14 +8,18 @@ license.workspace = true
 
 [dependencies]
 ahash.workspace = true
+async-trait.workspace = true
+bytes.workspace = true
 futures.workspace = true
 glob.workspace = true
+gloo-net = { workspace = true, optional = true }
 indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
+surf = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 tombi-ast.workspace = true
@@ -33,3 +37,9 @@ url.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 rstest.workspace = true
+
+[features]
+default = ["native"]
+native = ["dep:reqwest"]
+wasm = ["dep:gloo-net"]
+surf = ["dep:surf"]

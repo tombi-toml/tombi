@@ -1,7 +1,8 @@
 use std::{ops::Deref, sync::Arc};
 
 use crate::{
-    json::CatalogUrl, DocumentSchema, SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
+    json::CatalogUrl, DocumentSchema, HttpClient, SchemaAccessor, SchemaAccessors, SchemaUrl,
+    SourceSchema,
 };
 use ahash::AHashMap;
 use itertools::Either;
@@ -12,7 +13,7 @@ use tombi_url::url_to_file_path;
 
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
-    http_client: reqwest::Client,
+    http_client: HttpClient,
     document_schemas:
         Arc<tokio::sync::RwLock<AHashMap<SchemaUrl, Result<DocumentSchema, crate::Error>>>>,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
@@ -40,7 +41,7 @@ impl SchemaStore {
     /// Note that the new_with_options() does not automatically load schemas from Config etc.
     pub fn new_with_options(options: crate::Options) -> Self {
         Self {
-            http_client: reqwest::Client::new(),
+            http_client: HttpClient::new(),
             document_schemas: Arc::new(RwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
@@ -134,8 +135,8 @@ impl SchemaStore {
             }
             tracing::debug!("loading schema catalog: {}", catalog_url);
 
-            if let Ok(response) = self.http_client.get(catalog_url.as_str()).send().await {
-                match response.json::<crate::json::JsonCatalog>().await {
+            if let Ok(result) = self.http_client.get_bytes(catalog_url.as_str()).await {
+                match serde_json::from_slice::<crate::json::JsonCatalog>(&result) {
                     Ok(catalog) => catalog,
                     Err(err) => {
                         return Err(crate::Error::InvalidJsonFormat {
@@ -238,31 +239,14 @@ impl SchemaStore {
 
                 tracing::debug!("fetch schema from url: {}", schema_url);
 
-                let response = self
+                let bytes = self
                     .http_client
-                    .get(schema_url.as_ref())
-                    .send()
+                    .get_bytes(schema_url.as_ref())
                     .await
                     .map_err(|err| crate::Error::SchemaFetchFailed {
                         schema_url: schema_url.clone(),
                         reason: err.to_string(),
                     })?;
-
-                if !response.status().is_success() {
-                    return Err(crate::Error::SchemaFetchFailed {
-                        schema_url: schema_url.clone(),
-                        reason: response.status().to_string(),
-                    });
-                }
-
-                let bytes =
-                    response
-                        .bytes()
-                        .await
-                        .map_err(|err| crate::Error::SchemaFetchFailed {
-                            schema_url: schema_url.clone(),
-                            reason: err.to_string(),
-                        })?;
 
                 tombi_json::ValueNode::from_reader(std::io::Cursor::new(bytes))
             }
