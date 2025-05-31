@@ -20,7 +20,7 @@ pub struct Args {
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args, offline: bool) -> Result<(), crate::Error> {
-    let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty, offline) {
+    let (success_num, nmt_needed_num, error_num) = match inner_run(args, Pretty, offline) {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
             tracing::error!("{}", error);
@@ -116,10 +116,9 @@ where
         match input {
             arg::FileInput::Stdin => {
                 tracing::debug!("formatting... stdin input");
-                match format_file(
+                match format_stdin(
                     FormatFile::from_stdin(),
                     printer,
-                    None,
                     toml_version,
                     args.check,
                     &format_options,
@@ -200,6 +199,58 @@ where
 
         Ok((success_num, not_needed_num, error_num))
     })
+}
+
+// For standard input: --check outputs formatted TOML and returns error if different
+async fn format_stdin<P>(
+    mut file: FormatFile,
+    mut printer: P,
+    toml_version: TomlVersion,
+    check: bool,
+    format_options: &FormatOptions,
+    schema_store: &tombi_schema_store::SchemaStore,
+) -> Result<bool, ()>
+where
+    Diagnostic: Print<P>,
+    crate::Error: Print<P>,
+{
+    let mut source = String::new();
+    if file.read_to_string(&mut source).await.is_ok() {
+        match tombi_formatter::Formatter::new(
+            toml_version,
+            FormatDefinitions::default(),
+            format_options,
+            None,
+            schema_store,
+        )
+        .format(&source)
+        .await
+        {
+            Ok(formatted) => {
+                if check {
+                    print!("{formatted}");
+                    if source != formatted {
+                        return Err(());
+                    } else {
+                        return Ok(false);
+                    }
+                } else {
+                    if source != formatted {
+                        print!("{formatted}");
+                        Ok(true)
+                    } else {
+                        Ok(false)
+                    }
+                }
+            }
+            Err(diagnostics) => {
+                diagnostics.print(&mut printer);
+                Err(())
+            }
+        }
+    } else {
+        Err(())
+    }
 }
 
 async fn format_file<P>(
