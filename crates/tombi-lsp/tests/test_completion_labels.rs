@@ -319,6 +319,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "code-action",
                 "completion",
                 "diagnostics",
                 "document-link",
