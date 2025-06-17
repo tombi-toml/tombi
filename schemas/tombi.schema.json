@@ -184,6 +184,17 @@
     "LspOptions": {
       "type": "object",
       "properties": {
+        "code-action": {
+          "title": "Code Action Feature options.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LspCodeAction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "completion": {
           "title": "Completion Feature options.",
           "anyOf": [
@@ -276,6 +287,28 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
+    "LspCodeAction": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Enable code action feature.",
+          "description": "Whether to enable code action.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "BoolDefaultTrue": {
+      "type": "boolean",
+      "default": true
+    },
     "LspCompletion": {
       "type": "object",
       "properties": {
@@ -293,10 +326,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "BoolDefaultTrue": {
-      "type": "boolean",
-      "default": true
     },
     "LspDiagnostics": {
       "type": "object",
