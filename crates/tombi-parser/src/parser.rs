@@ -215,8 +215,8 @@ impl<'t> Parser<'t> {
                 BARE_KEY,
                 (
                     tombi_text::Span::new(
-                        token.span().start(),
-                        token.span().start() + tombi_text::Offset::of(parts[0]),
+                        token.span().start,
+                        token.span().start + tombi_text::Offset::of(parts[0]),
                     ),
                     tombi_text::Range::new(
                         token.range().start,
@@ -241,8 +241,8 @@ impl<'t> Parser<'t> {
                 T![.],
                 (
                     tombi_text::Span::new(
-                        key1.span().end(),
-                        key1.span().end() + tombi_text::Offset::of("."),
+                        key1.span().end,
+                        key1.span().end + tombi_text::Offset::of("."),
                     ),
                     tombi_text::Range::new(
                         key1.range().end,
@@ -269,8 +269,8 @@ impl<'t> Parser<'t> {
                 BARE_KEY,
                 (
                     tombi_text::Span::new(
-                        dot.span().end(),
-                        dot.span().end() + tombi_text::Offset::of(parts[1]),
+                        dot.span().end,
+                        dot.span().end + tombi_text::Offset::of(parts[1]),
                     ),
                     tombi_text::Range::new(
                         dot.range().end,

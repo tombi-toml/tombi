@@ -16,6 +16,7 @@ macro_rules! token_types {
         }
 
         #[allow(clippy::upper_case_acronyms)]
+        #[derive(Debug)]
         pub enum TokenType {
             $($standard,)*
             $($custom),*

@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
                 let span = token.span();
                 let range = token.range();
                 // Get the string and advance the position
-                let raw_str = &self.source[span.start().into()..span.end().into()];
+                let raw_str = &self.source[span.start.into()..span.end.into()];
                 self.advance();
 
                 // Remove the quotation marks
@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
                         let token = self.peek().unwrap();
                         let span = token.span();
                         let range = token.range();
-                        let num_str = &self.source[span.start().into()..span.end().into()];
+                        let num_str = &self.source[span.start.into()..span.end.into()];
                         self.advance();
 
                         // Parse as f64
@@ -203,7 +203,7 @@ impl<'a> Parser<'a> {
                         let token = self.peek().unwrap();
                         let span = token.span();
                         let range = token.range();
-                        let bool_str = &self.source[span.start().into()..span.end().into()];
+                        let bool_str = &self.source[span.start.into()..span.end.into()];
                         let value = bool_str == "true";
                         self.advance();
 

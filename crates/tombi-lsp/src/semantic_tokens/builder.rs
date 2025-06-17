@@ -1,11 +1,12 @@
 use tombi_ast::AstToken;
-use tower_lsp::lsp_types::{Position, Range, SemanticToken};
+use tower_lsp::lsp_types::SemanticToken;
 
 use super::token_type::TokenType;
 
 pub struct SemanticTokensBuilder {
     tokens: Vec<SemanticToken>,
     last_range: tombi_text::Range,
+    last_span: tombi_text::Span,
     pub file_schema_range: Option<tombi_text::Range>,
 }
 
@@ -14,12 +15,14 @@ impl SemanticTokensBuilder {
         Self {
             tokens: Vec::new(),
             last_range: tombi_text::Range::default(),
+            last_span: tombi_text::Span::default(),
             file_schema_range,
         }
     }
 
     pub fn add_token(&mut self, token_type: TokenType, elem: tombi_syntax::SyntaxElement) {
         let range = elem.range();
+        let span = elem.span();
 
         let relative = relative_range(range, self.last_range);
 
@@ -27,12 +30,13 @@ impl SemanticTokensBuilder {
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
             delta_start: relative.start.character as u32,
-            length: (relative.end.character - relative.start.character) as u32,
+            length: (span.end - self.last_span.start).into(),
             token_type: token_type as u32,
             token_modifiers_bitset: 0,
         });
 
         self.last_range = range;
+        self.last_span = span;
     }
 
     pub fn add_schema_url_comment(
@@ -76,25 +80,25 @@ impl SemanticTokensBuilder {
     }
 }
 
-fn relative_range(from: tombi_text::Range, to: tombi_text::Range) -> Range {
+fn relative_range(from: tombi_text::Range, to: tombi_text::Range) -> tower_lsp::lsp_types::Range {
     let line_diff = from.end.line - from.start.line;
     let start = from.start - to.start;
-    let start = Position {
+    let start = tower_lsp::lsp_types::Position {
         line: start.line,
         character: start.column,
     };
 
     let end = if line_diff == 0 {
-        Position {
+        tower_lsp::lsp_types::Position {
             line: start.line,
             character: start.character + from.end.column - from.start.column,
         }
     } else {
-        Position {
+        tower_lsp::lsp_types::Position {
             line: start.line + line_diff,
             character: from.end.column,
         }
     };
 
-    Range { start, end }
+    tower_lsp::lsp_types::Range { start, end }
 }
