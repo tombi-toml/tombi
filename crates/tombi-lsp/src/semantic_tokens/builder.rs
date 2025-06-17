@@ -6,7 +6,6 @@ use super::token_type::TokenType;
 pub struct SemanticTokensBuilder {
     tokens: Vec<SemanticToken>,
     last_range: tombi_text::Range,
-    last_span: tombi_text::Span,
     pub file_schema_range: Option<tombi_text::Range>,
 }
 
@@ -15,7 +14,6 @@ impl SemanticTokensBuilder {
         Self {
             tokens: Vec::new(),
             last_range: tombi_text::Range::default(),
-            last_span: tombi_text::Span::default(),
             file_schema_range,
         }
     }
@@ -30,13 +28,12 @@ impl SemanticTokensBuilder {
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
             delta_start: relative.start.character as u32,
-            length: (span.end - self.last_span.start).into(),
+            length: span.len().into(),
             token_type: token_type as u32,
             token_modifiers_bitset: 0,
         });
 
         self.last_range = range;
-        self.last_span = span;
     }
 
     pub fn add_schema_url_comment(
