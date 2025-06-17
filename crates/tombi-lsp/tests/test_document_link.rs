@@ -256,6 +256,49 @@ mod document_link_tests {
                 }
             ]));
         );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_root_package(
+                r#"
+                [package]
+                name = "root-package"
+                version = "0.1.0"
+
+                [dependencies]
+                tombi-ast = { workspace = true }
+
+                [workspace]
+                members = ["crates/*"]
+
+                [workspace.dependencies]
+                serde = "1.0"
+                tombi-ast = { path = "crates/tombi-ast" }
+                "#,
+                project_root_path().join("Cargo.toml"),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/serde",
+                    range: 11:0..11:5,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                },
+                {
+                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    range: 12:0..12:9,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    range: 12:22..12:38,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    range: 8:12..8:20,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoTomlFirstMember,
+                },
+            ]));
+        );
     }
 
     mod tombi_schema {
