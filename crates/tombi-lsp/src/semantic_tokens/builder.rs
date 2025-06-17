@@ -20,7 +20,6 @@ impl SemanticTokensBuilder {
 
     pub fn add_token(&mut self, token_type: TokenType, elem: tombi_syntax::SyntaxElement) {
         let range = elem.range();
-        let span = elem.span();
 
         let relative = relative_range(range, self.last_range);
 
@@ -28,7 +27,7 @@ impl SemanticTokensBuilder {
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
             delta_start: relative.start.character as u32,
-            length: span.len() as u32,
+            length: elem.span().len() as u32,
             token_type: token_type as u32,
             token_modifiers_bitset: 0,
         });
