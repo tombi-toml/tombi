@@ -81,6 +81,16 @@ pub async fn document_link(
             &cargo_toml_path,
             toml_version,
         )?);
+
+        // For Root Package
+        // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#root-package
+        if document_tree.contains_key("package") {
+            document_links.extend(document_link_for_crate_cargo_toml(
+                document_tree,
+                &cargo_toml_path,
+                toml_version,
+            )?);
+        }
     } else {
         document_links.extend(document_link_for_crate_cargo_toml(
             document_tree,
