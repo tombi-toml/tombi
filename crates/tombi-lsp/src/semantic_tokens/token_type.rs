@@ -16,6 +16,7 @@ macro_rules! token_types {
         }
 
         #[allow(clippy::upper_case_acronyms)]
+        #[allow(non_camel_case_types)]
         #[derive(Debug)]
         pub enum TokenType {
             $($standard,)*
@@ -31,17 +32,20 @@ macro_rules! token_types {
 
 token_types! {
     standard {
-        STRUCT,
         STRING,
         NUMBER,
-        VARIABLE,
         OPERATOR,
         COMMENT,
         KEYWORD,
     }
     custom {
+        (TABLE, "table"),
+        (KEY, "key"),
         (BOOLEAN, "boolean"),
         // NOTE: "datetime" does not exist, so we will use "regexp" instead.
-        (DATETIME, "regexp"),
+        (OFFSET_DATE_TIME, "offsetDateTime"),
+        (LOCAL_DATE_TIME, "localDateTime"),
+        (LOCAL_DATE, "localDate"),
+        (LOCAL_TIME, "localTime"),
     }
 }

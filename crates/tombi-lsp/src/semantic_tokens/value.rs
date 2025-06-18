@@ -36,16 +36,16 @@ impl AppendSemanticTokens for tombi_ast::Value {
             Self::Float(n) => builder.add_token(TokenType::NUMBER, (n.token().unwrap()).into()),
             Self::Boolean(n) => builder.add_token(TokenType::BOOLEAN, (n.token().unwrap()).into()),
             Self::OffsetDateTime(n) => {
-                builder.add_token(TokenType::DATETIME, (n.token().unwrap()).into())
+                builder.add_token(TokenType::OFFSET_DATE_TIME, (n.token().unwrap()).into())
             }
             Self::LocalDateTime(n) => {
-                builder.add_token(TokenType::DATETIME, (n.token().unwrap()).into())
+                builder.add_token(TokenType::LOCAL_DATE_TIME, (n.token().unwrap()).into())
             }
             Self::LocalDate(n) => {
-                builder.add_token(TokenType::DATETIME, (n.token().unwrap()).into())
+                builder.add_token(TokenType::LOCAL_DATE, (n.token().unwrap()).into())
             }
             Self::LocalTime(n) => {
-                builder.add_token(TokenType::DATETIME, (n.token().unwrap()).into())
+                builder.add_token(TokenType::LOCAL_TIME, (n.token().unwrap()).into())
             }
             Self::Array(array) => array.append_semantic_tokens(builder),
             Self::InlineTable(inline_table) => inline_table.append_semantic_tokens(builder),

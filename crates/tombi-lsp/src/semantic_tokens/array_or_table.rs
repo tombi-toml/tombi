@@ -14,7 +14,7 @@ impl AppendSemanticTokens for tombi_ast::ArrayOfTable {
 
         if let Some(header) = self.header() {
             for key in header.keys() {
-                builder.add_token(TokenType::STRUCT, key.syntax().clone().into());
+                builder.add_token(TokenType::TABLE, key.syntax().clone().into());
             }
         }
 

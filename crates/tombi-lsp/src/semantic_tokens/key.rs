@@ -12,6 +12,6 @@ impl AppendSemanticTokens for tombi_ast::Keys {
 
 impl AppendSemanticTokens for tombi_ast::Key {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
-        builder.add_token(TokenType::VARIABLE, self.syntax().clone().into());
+        builder.add_token(TokenType::KEY, self.syntax().clone().into());
     }
 }

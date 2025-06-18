@@ -66,6 +66,68 @@
         "path": "./syntaxes/toml.tmLanguage.json"
       }
     ],
+    "semanticTokenTypes": [
+      {
+        "id": "table",
+        "superType": "struct",
+        "description": "Table"
+      },
+      {
+        "id": "key",
+        "superType": "variable",
+        "description": "Key"
+      },
+      {
+        "id": "offsetDateTime",
+        "superType": "regexp",
+        "description": "Offset Date-Time"
+      },
+      {
+        "id": "localDateTime",
+        "superType": "regexp",
+        "description": "Local Date-Time"
+      },
+      {
+        "id": "localDate",
+        "superType": "regexp",
+        "description": "Local Date"
+      },
+      {
+        "id": "localTime",
+        "superType": "regexp",
+        "description": "Local Time"
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "toml",
+        "scopes": {
+          "table": ["entity.name.type.table.toml"],
+          "key": ["variable.other.key.toml"],
+          "string": [
+            "string.quoted.single.basic.line.toml",
+            "string.quoted.triple.basic.block.toml",
+            "string.quoted.single.literal.line.toml",
+            "string.quoted.triple.literal.block.toml"
+          ],
+          "number": [
+            "constant.numeric.integer.toml",
+            "constant.numeric.float.toml",
+            "constant.numeric.hex.toml",
+            "constant.numeric.oct.toml",
+            "constant.numeric.bin.toml",
+            "constant.numeric.inf.toml",
+            "constant.numeric.nan.toml"
+          ],
+          "boolean": ["constant.language.boolean.toml"],
+          "offsetDateTime": ["constant.other.datetime.offset.toml"],
+          "localDateTime": ["constant.other.datetime.local.toml"],
+          "localDate": ["constant.other.date.local.toml"],
+          "localTime": ["constant.other.time.local.toml"],
+          "comment": ["comment.line.number-sign.toml"]
+        }
+      }
+    ],
     "commands": [
       {
         "command": "tombi.showLanguageServerVersion",
