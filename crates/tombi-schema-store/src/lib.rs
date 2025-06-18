@@ -23,7 +23,7 @@ pub use value_type::ValueType;
 pub use crate::accessor::{AccessorContext, AccessorKeyKind, KeyContext};
 
 pub fn get_schema_name(schema_url: &SchemaUrl) -> Option<&str> {
-    if let Some(path) = schema_url.path().split('/').last() {
+    if let Some(path) = schema_url.path().split('/').next_back() {
         if !path.is_empty() {
             return Some(path);
         }

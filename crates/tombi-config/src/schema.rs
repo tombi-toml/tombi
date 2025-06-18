@@ -70,7 +70,7 @@ impl Default for SchemaCatalog {
 impl SchemaCatalog {
     pub fn paths(&self) -> Option<&[SchemaCatalogPath]> {
         match self {
-            Self::New(item) => item.paths.as_ref().map(|v| v.as_slice()),
+            Self::New(item) => item.paths.as_deref(),
             #[allow(deprecated)]
             Self::Old(item) => item.path.as_ref().map(|v| v.as_ref()),
         }
@@ -268,7 +268,7 @@ mod tests {
     fn schema_catalog_paths_empty() {
         let schema = SchemaOptions {
             catalog: Some(SchemaCatalog::New(NewSchemaCatalog {
-                paths: Some(vec![].into()),
+                paths: Some(vec![]),
             })),
             ..Default::default()
         };

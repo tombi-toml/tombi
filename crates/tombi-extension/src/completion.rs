@@ -197,7 +197,7 @@ impl CompletionContent {
         schema_url: Option<&SchemaUrl>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
-        let edit = CompletionEdit::new_key(&key_name, key_range, completion_hint);
+        let edit = CompletionEdit::new_key(key_name, key_range, completion_hint);
 
         Self {
             label: "$key".to_string(),

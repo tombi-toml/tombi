@@ -109,10 +109,7 @@ impl SyntaxText {
 }
 
 fn found<T>(res: Result<(), T>) -> Option<T> {
-    match res {
-        Ok(()) => None,
-        Err(it) => Some(it),
-    }
+    res.err()
 }
 
 impl fmt::Debug for SyntaxText {

@@ -115,7 +115,7 @@ async fn completion_workspace(
     {
         if let Some(Accessor::Key(crate_name)) = accessors.get(2) {
             if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
-                dig_accessors(document_tree, &accessors)
+                dig_accessors(document_tree, accessors)
             {
                 return Ok(None);
             }
@@ -188,7 +188,7 @@ async fn completion_member(
     {
         if let Some(Accessor::Key(crate_name)) = accessors.get(1) {
             if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
-                dig_accessors(document_tree, &accessors)
+                dig_accessors(document_tree, accessors)
             {
                 return Ok(None);
             }
@@ -353,11 +353,11 @@ fn complete_crate_feature<'a: 'b, 'b>(
             return Ok(None);
         };
 
-        let already_features: Vec<String> = match dig_accessors(document_tree, &features_accessors)
+        let already_features: Vec<String> = match dig_accessors(document_tree, features_accessors)
         {
             Some((_, tombi_document_tree::Value::Array(array))) => array
                 .values()
-                .into_iter()
+                .iter()
                 .filter_map(|feature| {
                     if let tombi_document_tree::Value::String(feature_string) = feature {
                         Some(feature_string.value().to_string())
@@ -497,7 +497,7 @@ async fn fetch_local_crate_features(
             let deps = match feature_deps {
                 tombi_document_tree::Value::Array(arr) => arr
                     .values()
-                    .into_iter()
+                    .iter()
                     .filter_map(|v| {
                         if let tombi_document_tree::Value::String(s) = v {
                             Some(s.value().to_string())

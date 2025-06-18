@@ -25,7 +25,7 @@ impl SchemaContext<'_> {
                     .map(SchemaAccessor::from)
                     .collect::<Vec<_>>(),
             ) {
-                if current_schema.map_or(true, |current_schema| {
+                if current_schema.is_none_or(|current_schema| {
                     &*current_schema.schema_url != sub_schema_url
                 }) {
                     return self

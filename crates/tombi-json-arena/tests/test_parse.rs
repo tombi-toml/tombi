@@ -40,7 +40,7 @@ fn parse_simple_boolean() {
     let value = value_arena.get(&value_id).unwrap();
     match value {
         Value::Bool(v) => {
-            assert_eq!(*v, true);
+            assert!(*v);
         }
         _ => panic!("not a boolean value"),
     }
@@ -105,7 +105,7 @@ fn parse_object() {
                 _ => panic!("a is not a number"),
             }
             match value_arena.get(b.1).unwrap() {
-                Value::Bool(v) => assert_eq!(*v, true),
+                Value::Bool(v) => assert!(*v),
                 _ => panic!("b is not a bool"),
             }
         }
@@ -140,7 +140,7 @@ fn parse_nested() {
                                 .find(|(k, _)| value_arena.str_arena().get(**k) == Some("x"))
                                 .unwrap()
                                 .1;
-                            match value_arena.get(&x_id).unwrap() {
+                            match value_arena.get(x_id).unwrap() {
                                 Value::Number(n) => assert_eq!(*n, 2.0),
                                 _ => panic!("x is not a number"),
                             }

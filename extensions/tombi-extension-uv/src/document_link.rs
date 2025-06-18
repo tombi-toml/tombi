@@ -12,10 +12,10 @@ pub enum DocumentLinkToolTip {
     WorkspacePyprojectToml,
 }
 
-impl Into<&'static str> for &DocumentLinkToolTip {
+impl From<&DocumentLinkToolTip> for &'static str {
     #[inline]
-    fn into(self) -> &'static str {
-        match self {
+    fn from(val: &DocumentLinkToolTip) -> Self {
+        match val {
             DocumentLinkToolTip::PyprojectToml => "Open pyproject.toml",
             DocumentLinkToolTip::PyprojectTomlFirstMember => "Open first pyproject.toml in members",
             DocumentLinkToolTip::WorkspacePyprojectToml => "Open Workspace pyproject.toml",
@@ -23,17 +23,17 @@ impl Into<&'static str> for &DocumentLinkToolTip {
     }
 }
 
-impl Into<&'static str> for DocumentLinkToolTip {
+impl From<DocumentLinkToolTip> for &'static str {
     #[inline]
-    fn into(self) -> &'static str {
-        (&self).into()
+    fn from(val: DocumentLinkToolTip) -> Self {
+        (&val).into()
     }
 }
 
-impl Into<Cow<'static, str>> for DocumentLinkToolTip {
+impl From<DocumentLinkToolTip> for Cow<'static, str> {
     #[inline]
-    fn into(self) -> Cow<'static, str> {
-        Cow::Borrowed(self.into())
+    fn from(val: DocumentLinkToolTip) -> Self {
+        Cow::Borrowed(val.into())
     }
 }
 

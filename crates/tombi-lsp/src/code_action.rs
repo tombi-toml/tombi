@@ -37,7 +37,7 @@ pub fn dot_keys_to_inline_table_code_action(
         return None;
     };
 
-    let Some((accessor, value)) = dig_accessors(&document_tree, &accessors[..accessors.len() - 1])
+    let Some((accessor, value)) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])
     else {
         return None;
     };
@@ -94,8 +94,7 @@ pub fn dot_keys_to_inline_table_code_action(
                         change_annotations: None,
                     }),
                     ..Default::default()
-                }
-                .into(),
+                },
             )
         }
         _ => None,

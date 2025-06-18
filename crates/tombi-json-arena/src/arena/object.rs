@@ -7,6 +7,12 @@ pub struct ObjectArena {
     data: Vec<HashMap<StrId, ValueId>>,
 }
 
+impl Default for ObjectArena {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ObjectArena {
     pub fn new() -> Self {
         ObjectArena { data: Vec::new() }

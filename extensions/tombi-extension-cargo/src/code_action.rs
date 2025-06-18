@@ -150,7 +150,7 @@ fn workspace_code_action(
         return None;
     }
 
-    if !matches!(accessors.get(0), Some(a) if a == &"package") {
+    if !matches!(accessors.first(), Some(a) if a == &"package") {
         return None;
     }
 
@@ -186,14 +186,10 @@ fn workspace_code_action(
     let Some((_, value)) = dig_accessors(crate_document_tree, &accessors[..2]) else {
         return None;
     };
-    if !dig_keys(
+    dig_keys(
         workspace_document_tree,
         &["workspace", "package", parent_key.as_str()],
-    )
-    .is_some()
-    {
-        return None; // No workspace settings to inherit
-    }
+    )?;
 
     if let tombi_document_tree::Value::Table(table) = value {
         if table.get("workspace").is_some() {
@@ -201,7 +197,7 @@ fn workspace_code_action(
         }
     };
 
-    return Some(CodeAction {
+    Some(CodeAction {
         title: CodeActionRefactorRewriteName::InheritFromWorkspace.to_string(),
         kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
         diagnostics: None,
@@ -220,7 +216,7 @@ fn workspace_code_action(
             change_annotations: None,
         }),
         ..Default::default()
-    });
+    })
 }
 
 fn use_workspace_depencency_code_action(
@@ -252,14 +248,10 @@ fn use_workspace_depencency_code_action(
 
     match value {
         tombi_document_tree::Value::String(version) => {
-            if dig_keys(
+            dig_keys(
                 workspace_document_tree,
                 &["workspace", "dependencies", crate_name],
-            )
-            .is_none()
-            {
-                return None;
-            }
+            )?;
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
                 kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
@@ -292,14 +284,10 @@ fn use_workspace_depencency_code_action(
                 return None; // Already a workspace dependency
             }
 
-            if dig_keys(
+            dig_keys(
                 workspace_document_tree,
                 &["workspace", "dependencies", crate_name],
-            )
-            .is_none()
-            {
-                return None; // No workspace dependency to inherit
-            }
+            )?;
 
             let Some((key, version)) = table.get_key_value("version") else {
                 return None; // No version to inherit
