@@ -110,9 +110,7 @@ pub fn inline_table_to_dot_keys_code_action(
         return None;
     };
 
-    let Some((_, value)) = dig_accessors(document_tree, &accessors[..accessors.len() - 1]) else {
-        return None;
-    };
+    let (_, value) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match value {
         tombi_document_tree::Value::Table(table)

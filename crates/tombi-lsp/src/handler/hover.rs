@@ -280,9 +280,7 @@ pub(crate) async fn get_hover_keys_with_range(
 
 pub fn get_tombi_github_schema_url(schema_url: &tower_lsp::lsp_types::Url) -> Option<SchemaUrl> {
     if schema_url.scheme() == "tombi" {
-        let Some(schema_filename) = schema_url.path().strip_prefix("/json/schemas/") else {
-            return None;
-        };
+        let schema_filename = schema_url.path().strip_prefix("/json/schemas/")?;
         let version = env!("CARGO_PKG_VERSION");
         let branch = if version == "0.0.0-dev" {
             "main".to_string()
