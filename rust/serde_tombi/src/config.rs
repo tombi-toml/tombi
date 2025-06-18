@@ -155,12 +155,71 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
         }
     }
 
-    tracing::debug!("config file not found, use default config");
+    if let Some(user_config_path) = user_tombi_config_path() {
+        tracing::debug!("user config tombi.toml found at {:?}", &user_config_path);
+        let Some(config) = try_from_path(&user_config_path)? else {
+            unreachable!("user config tombi.toml should always be parsed successfully.");
+        };
+        Ok((config, Some(user_config_path)))
+    } else {
+        tracing::debug!("config file not found, use default config");
 
-    Ok((Config::default(), None))
+        Ok((Config::default(), None))
+    }
 }
 
 pub fn load() -> Result<Config, tombi_config::Error> {
     let (config, _) = load_with_path()?;
     Ok(config)
+}
+
+fn user_tombi_config_path() -> Option<std::path::PathBuf> {
+    // 1. $XDG_CONFIG_HOME/tombi/tombi.toml
+    if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
+        let mut config_path = std::path::PathBuf::from(xdg_config_home);
+        config_path.push("tombi");
+        config_path.push(CONFIG_FILENAME);
+        if config_path.exists() {
+            return Some(config_path);
+        }
+    }
+
+    if let Some(home_dir) = dirs::home_dir() {
+        // 2. ~/.config/tombi/tombi.toml
+        let mut config_path = home_dir.clone();
+        config_path.push(".config");
+        config_path.push("tombi");
+        config_path.push(CONFIG_FILENAME);
+        if config_path.exists() {
+            return Some(config_path);
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // 3. ~/Library/Application Support/tombi/tombi.toml
+            let mut path = home_dir;
+            path.push("Library");
+            path.push("Application Support");
+            path.push("tombi");
+            path.push(CONFIG_FILENAME);
+            if path.exists() {
+                return Some(path);
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // 3. %APPDATA%\tombi\tombi.toml
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let mut config_path = std::path::PathBuf::from(appdata);
+            config_path.push("tombi");
+            config_path.push(CONFIG_FILENAME);
+            if config_path.exists() {
+                return Some(config_path);
+            }
+        }
+    }
+
+    None
 }

@@ -9,6 +9,7 @@ license.workspace = true
 
 [dependencies]
 chrono.workspace = true
+dirs.workspace = true
 futures.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
