@@ -459,7 +459,7 @@ async fn fetch_crate_features(
         let url = format!("https://crates.io/api/v1/crates/{crate_name}");
         let bytes = client.get_bytes(&url).await.ok()?;
         let resp: CratesIoCrateResponse = serde_json::from_slice(&bytes).ok()?;
-        
+
         resp.versions.into_iter().next().map(|v| v.num)?
     };
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");

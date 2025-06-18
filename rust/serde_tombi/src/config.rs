@@ -111,14 +111,19 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
     }
 }
 
-pub fn try_from_url(config_url: url::Url) -> Result<Option<Config>, tombi_config::Error> {
+pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_config::Error> {
     match config_url.scheme() {
         "file" => {
-            let config_path = url_to_file_path(&config_url)
-                .map_err(|_| tombi_config::Error::ConfigUrlParseFailed { config_url })?;
+            let config_path = url_to_file_path(config_url).map_err(|_| {
+                tombi_config::Error::ConfigUrlParseFailed {
+                    config_url: config_url.clone(),
+                }
+            })?;
             try_from_path(config_path)
         }
-        _ => Err(tombi_config::Error::ConfigUrlUnsupported { config_url }),
+        _ => Err(tombi_config::Error::ConfigUrlUnsupported {
+            config_url: config_url.clone(),
+        }),
     }
 }
 
@@ -176,7 +181,7 @@ pub fn load() -> Result<Config, tombi_config::Error> {
     Ok(config)
 }
 
-fn user_tombi_config_path() -> Option<std::path::PathBuf> {
+pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
     // 1. $XDG_CONFIG_HOME/tombi/config.toml
     if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);

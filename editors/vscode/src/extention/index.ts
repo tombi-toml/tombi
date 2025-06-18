@@ -14,7 +14,11 @@ export type { Settings };
 export const EXTENTION_ID = "tombi";
 export const EXTENTION_NAME = "Tombi";
 export const SUPPORT_TOML_LANGUAGES = ["toml", "cargoLock"];
-export const SUPPORT_TOMBI_CONFIG_FILENAMES = ["tombi.toml", "pyproject.toml"];
+export const SUPPORT_TOMBI_CONFIG_FILENAMES = [
+  "tombi.toml",
+  "pyproject.toml",
+  "tombi/config.toml",
+];
 export const SUPPORT_JSON_LANGUAGES = ["json"];
 
 export class Extension {
