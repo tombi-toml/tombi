@@ -145,7 +145,7 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
             match try_from_path(&pyproject_toml_path)? {
                 Some(config) => return Ok((config, Some(pyproject_toml_path))),
                 None => {
-                    tracing::debug!("No [tool.tombi] found in {:?}", &config_path);
+                    tracing::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
                 }
             };
         }
