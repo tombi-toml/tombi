@@ -34,27 +34,18 @@ pub async fn handle_update_config(
             };
 
             if config_url == workspace_config_url {
-                match serde_tombi::config::try_from_url(workspace_config_url) {
-                    Ok(Some(config)) => {
-                        backend
-                            .update_workspace_config(config_url.clone(), config)
-                            .await;
-                        return Ok(true);
-                    }
-                    Ok(None) => {
-                        continue;
-                    }
-                    Err(err) => {
-                        backend
-                            .client
-                            .send_notification::<ShowMessage>(ShowMessageParams {
-                                typ: MessageType::ERROR,
-                                message: err.to_string(),
-                            })
-                            .await;
+                if update_config(backend, &config_url).await? {
+                    return Ok(true);
+                }
+            }
+        }
+    }
 
-                        return Ok(false);
-                    }
+    if let Some(user_config_path) = serde_tombi::config::user_tombi_config_path() {
+        if let Ok(user_config_url) = Url::from_file_path(user_config_path) {
+            if config_url == user_config_url {
+                if update_config(backend, &config_url).await? {
+                    return Ok(true);
                 }
             }
         }
@@ -63,4 +54,28 @@ pub async fn handle_update_config(
     tracing::info!("No workspace found for config settings: {}", config_url);
 
     Ok(false)
+}
+
+async fn update_config(
+    backend: &Backend,
+    config_url: &Url,
+) -> Result<bool, tower_lsp::jsonrpc::Error> {
+    match serde_tombi::config::try_from_url(config_url) {
+        Ok(Some(config)) => {
+            backend.update_workspace_config(config_url, config).await;
+            Ok(true)
+        }
+        Ok(None) => Ok(false),
+        Err(err) => {
+            backend
+                .client
+                .send_notification::<ShowMessage>(ShowMessageParams {
+                    typ: MessageType::ERROR,
+                    message: err.to_string(),
+                })
+                .await;
+
+            Ok(false)
+        }
+    }
 }

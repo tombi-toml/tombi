@@ -179,7 +179,7 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn update_workspace_config(&self, workspace_config_url: Url, config: Config) {
+    pub async fn update_workspace_config(&self, workspace_config_url: &Url, config: Config) {
         tracing::info!("Updated workspace config: {workspace_config_url}");
 
         *self.config.write().await = config;
