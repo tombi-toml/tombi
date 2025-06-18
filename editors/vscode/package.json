@@ -66,6 +66,38 @@
         "path": "./syntaxes/toml.tmLanguage.json"
       }
     ],
+    "semanticTokenScopes": [
+      {
+        "language": "toml",
+        "scopes": {
+          "struct": ["entity.name.type.table.toml"],
+          "variable": ["variable.other.key.toml"],
+          "string": [
+            "string.quoted.single.basic.line.toml",
+            "string.quoted.triple.basic.block.toml",
+            "string.quoted.single.literal.line.toml",
+            "string.quoted.triple.literal.block.toml"
+          ],
+          "number": [
+            "constant.numeric.integer.toml",
+            "constant.numeric.float.toml",
+            "constant.numeric.hex.toml",
+            "constant.numeric.oct.toml",
+            "constant.numeric.bin.toml",
+            "constant.numeric.inf.toml",
+            "constant.numeric.nan.toml"
+          ],
+          "boolean": ["constant.language.boolean.toml"],
+          "datetime": [
+            "constant.other.datetime.offset.toml",
+            "constant.other.datetime.local.toml",
+            "constant.other.date.local.toml",
+            "constant.other.time.local.toml"
+          ],
+          "comment": ["comment.line.number-sign.toml"]
+        }
+      }
+    ],
     "commands": [
       {
         "command": "tombi.showLanguageServerVersion",
