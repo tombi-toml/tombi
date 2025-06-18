@@ -11,8 +11,8 @@ use crate::{Offset, RawOffset, RawTextSize};
 #[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Span {
     // Invariant: start <= end
-    start: Offset,
-    end: Offset,
+    pub start: Offset,
+    pub end: Offset,
 }
 
 impl std::fmt::Debug for Span {
@@ -81,18 +81,6 @@ impl Span {
 
 /// Identity methods.
 impl Span {
-    /// The start point of this span.
-    #[inline]
-    pub const fn start(self) -> Offset {
-        self.start
-    }
-
-    /// The end point of this span.
-    #[inline]
-    pub const fn end(self) -> Offset {
-        self.end
-    }
-
     /// The size of this span.
     #[inline]
     pub const fn len(self) -> RawOffset {

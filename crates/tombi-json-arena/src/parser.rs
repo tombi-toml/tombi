@@ -114,7 +114,7 @@ fn parse_string<'a>(
     str_map: &mut HashMap<&'a str, StrId>,
 ) -> ValueId {
     let span = token.span();
-    let value_str = &json_text[(usize::from(span.start()) + 1)..(usize::from(span.end()) - 1)];
+    let value_str = &json_text[(usize::from(span.start) + 1)..(usize::from(span.end) - 1)];
     let str_id = str_map
         .entry(value_str)
         .or_insert_with(|| value_arena.str_arena_mut().alloc(value_str));
@@ -123,7 +123,7 @@ fn parse_string<'a>(
 
 fn parse_number(token: &Token, json_text: &str, value_arena: &mut ValueArena) -> Option<ValueId> {
     let span = token.span();
-    let value_str = &json_text[span.start().into()..span.end().into()];
+    let value_str = &json_text[span.start.into()..span.end.into()];
     value_str
         .parse::<f64>()
         .ok()
@@ -132,7 +132,7 @@ fn parse_number(token: &Token, json_text: &str, value_arena: &mut ValueArena) ->
 
 fn parse_bool(token: &Token, json_text: &str, value_arena: &mut ValueArena) -> Option<ValueId> {
     let span = token.span();
-    let value_str = &json_text[span.start().into()..span.end().into()];
+    let value_str = &json_text[span.start.into()..span.end.into()];
     match value_str {
         "true" => Some(value_arena.alloc(Value::Bool(true))),
         "false" => Some(value_arena.alloc(Value::Bool(false))),
@@ -307,7 +307,7 @@ where
             }
         };
         let key_span = key_token.span();
-        let key_str = &json_text[key_span.start().into()..key_span.end().into()];
+        let key_str = &json_text[key_span.start.into()..key_span.end.into()];
         let key_str = &key_str[1..key_str.len() - 1];
         let key_id = value_arena.str_arena_mut().alloc(key_str);
         while let Some(token) = tokens.peek() {

@@ -33,7 +33,7 @@ pub fn lex(source: &str) -> Lexed {
 
     for result in tokenize(source) {
         let (last_span, last_range) = lexed.push_result_token(result);
-        last_offset = last_span.end();
+        last_offset = last_span.end;
         last_position = last_range.end;
     }
 

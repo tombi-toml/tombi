@@ -904,7 +904,7 @@ impl SyntaxNode {
         // recursion with a loop.
         let span = self.span();
         assert!(
-            span.start() <= offset && offset <= span.end(),
+            span.start <= offset && offset <= span.end,
             "Bad offset: span {:?} offset {:?}",
             span,
             offset
@@ -915,7 +915,7 @@ impl SyntaxNode {
 
         let mut children = self.children_with_tokens().filter(|child| {
             let child_span = child.span();
-            !child_span.is_empty() && (child_span.start() <= offset && offset <= child_span.end())
+            !child_span.is_empty() && (child_span.start <= offset && offset <= child_span.end)
         });
 
         let left = children.next().unwrap();
@@ -1253,7 +1253,7 @@ impl SyntaxElement {
     }
 
     fn token_at_offset(&self, offset: tombi_text::Offset) -> TokenAtOffset<SyntaxToken> {
-        assert!(self.span().start() <= offset && offset <= self.span().end());
+        assert!(self.span().start <= offset && offset <= self.span().end);
         match self {
             NodeOrToken::Token(token) => TokenAtOffset::Single(token.clone()),
             NodeOrToken::Node(node) => node.token_at_offset(offset),

@@ -11,6 +11,13 @@
 key1 = 1  # key value1 tailing comment
 # key value2 leading comment1
 key2 = "2"
+key3 = """
+multi line basic string
+
+"""
+key4 = '''
+multi line literal string
+'''
 
 # key values end dangling comment1
 # key values end dangling comment2
