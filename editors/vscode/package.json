@@ -66,12 +66,44 @@
         "path": "./syntaxes/toml.tmLanguage.json"
       }
     ],
+    "semanticTokenTypes": [
+      {
+        "id": "table",
+        "superType": "struct",
+        "description": "Table"
+      },
+      {
+        "id": "key",
+        "superType": "variable",
+        "description": "Key"
+      },
+      {
+        "id": "offsetDateTime",
+        "superType": "regexp",
+        "description": "Offset Date-Time"
+      },
+      {
+        "id": "localDateTime",
+        "superType": "regexp",
+        "description": "Local Date-Time"
+      },
+      {
+        "id": "localDate",
+        "superType": "regexp",
+        "description": "Local Date"
+      },
+      {
+        "id": "localTime",
+        "superType": "regexp",
+        "description": "Local Time"
+      }
+    ],
     "semanticTokenScopes": [
       {
         "language": "toml",
         "scopes": {
-          "struct": ["entity.name.type.table.toml"],
-          "variable": ["variable.other.key.toml"],
+          "table": ["entity.name.type.table.toml"],
+          "key": ["variable.other.key.toml"],
           "string": [
             "string.quoted.single.basic.line.toml",
             "string.quoted.triple.basic.block.toml",
@@ -88,12 +120,10 @@
             "constant.numeric.nan.toml"
           ],
           "boolean": ["constant.language.boolean.toml"],
-          "datetime": [
-            "constant.other.datetime.offset.toml",
-            "constant.other.datetime.local.toml",
-            "constant.other.date.local.toml",
-            "constant.other.time.local.toml"
-          ],
+          "offsetDateTime": ["constant.other.datetime.offset.toml"],
+          "localDateTime": ["constant.other.datetime.local.toml"],
+          "localDate": ["constant.other.date.local.toml"],
+          "localTime": ["constant.other.time.local.toml"],
           "comment": ["comment.line.number-sign.toml"]
         }
       }
