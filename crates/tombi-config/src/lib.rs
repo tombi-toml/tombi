@@ -14,9 +14,10 @@ pub use server::{LspCompletion, LspOptions};
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
 
-pub const CONFIG_FILENAME: &str = "tombi.toml";
+pub const TOMBI_CONFIG_FILENAME: &str = "tombi.toml";
+pub const TOMBI_USER_CONFIG_FILENAME: &str = "config.toml";
 pub const PYPROJECT_FILENAME: &str = "pyproject.toml";
-pub const SUPPORTED_CONFIG_FILENAMES: [&str; 2] = [CONFIG_FILENAME, PYPROJECT_FILENAME];
+pub const SUPPORTED_CONFIG_FILENAMES: [&str; 2] = [TOMBI_CONFIG_FILENAME, PYPROJECT_FILENAME];
 pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
 
 /// # Tombi
