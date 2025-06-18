@@ -114,7 +114,7 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
 pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_config::Error> {
     match config_url.scheme() {
         "file" => {
-            let config_path = url_to_file_path(&config_url).map_err(|_| {
+            let config_path = url_to_file_path(config_url).map_err(|_| {
                 tombi_config::Error::ConfigUrlParseFailed {
                     config_url: config_url.clone(),
                 }

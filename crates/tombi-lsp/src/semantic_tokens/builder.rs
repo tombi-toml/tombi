@@ -27,7 +27,7 @@ impl SemanticTokensBuilder {
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
             delta_start: relative.start.character as u32,
-            length: elem.span().len() as u32,
+            length: elem.span().len(),
             token_type: token_type as u32,
             token_modifiers_bitset: 0,
         });
