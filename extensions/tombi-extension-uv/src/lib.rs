@@ -86,10 +86,7 @@ fn find_member_pyproject_toml_paths<'a>(
 ) -> impl Iterator<Item = (&'a tombi_document_tree::String, std::path::PathBuf)> + 'a {
     let exclude_patterns = exclude_patterns
         .iter()
-        .filter_map(|pattern| match glob::Pattern::new(pattern.value()) {
-            Ok(exclude_glob) => Some(exclude_glob),
-            Err(_) => None,
-        })
+        .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
         .collect_vec();
 
     member_patterns
@@ -405,10 +402,7 @@ fn find_member_project_toml_paths<'a>(
 ) -> impl Iterator<Item = (&'a tombi_document_tree::String, std::path::PathBuf)> + 'a {
     let exclude_patterns = exclude_patterns
         .iter()
-        .filter_map(|pattern| match glob::Pattern::new(pattern.value()) {
-            Ok(exclude_glob) => Some(exclude_glob),
-            Err(_) => None,
-        })
+        .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
         .collect_vec();
 
     member_patterns

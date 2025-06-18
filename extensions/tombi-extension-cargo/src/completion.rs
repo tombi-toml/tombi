@@ -115,7 +115,7 @@ async fn completion_workspace(
     {
         if let Some(Accessor::Key(crate_name)) = accessors.get(2) {
             if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
-                dig_accessors(document_tree, &accessors)
+                dig_accessors(document_tree, accessors)
             {
                 return Ok(None);
             }
@@ -188,7 +188,7 @@ async fn completion_member(
     {
         if let Some(Accessor::Key(crate_name)) = accessors.get(1) {
             if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
-                dig_accessors(document_tree, &accessors)
+                dig_accessors(document_tree, accessors)
             {
                 return Ok(None);
             }
@@ -353,11 +353,10 @@ fn complete_crate_feature<'a: 'b, 'b>(
             return Ok(None);
         };
 
-        let already_features: Vec<String> = match dig_accessors(document_tree, &features_accessors)
-        {
+        let already_features: Vec<String> = match dig_accessors(document_tree, features_accessors) {
             Some((_, tombi_document_tree::Value::Array(array))) => array
                 .values()
-                .into_iter()
+                .iter()
                 .filter_map(|feature| {
                     if let tombi_document_tree::Value::String(feature_string) = feature {
                         Some(feature_string.value().to_string())
@@ -460,10 +459,8 @@ async fn fetch_crate_features(
         let url = format!("https://crates.io/api/v1/crates/{crate_name}");
         let bytes = client.get_bytes(&url).await.ok()?;
         let resp: CratesIoCrateResponse = serde_json::from_slice(&bytes).ok()?;
-        let Some(version) = resp.versions.into_iter().next().map(|v| v.num) else {
-            return None;
-        };
-        version
+        
+        resp.versions.into_iter().next().map(|v| v.num)?
     };
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/{version}");
     let bytes = client.get_bytes(&url).await.ok()?;
@@ -478,13 +475,11 @@ async fn fetch_local_crate_features(
     toml_version: TomlVersion,
 ) -> Option<AHashMap<String, Vec<String>>> {
     // Get the directory of the current Cargo.toml file
-    let Some((_, subcrate_document_tree)) = find_path_crate_cargo_toml(
+    let (_, subcrate_document_tree) = find_path_crate_cargo_toml(
         cargo_toml_path,
         std::path::Path::new(sub_crate_path),
         toml_version,
-    ) else {
-        return None;
-    };
+    )?;
 
     // Extract features from [features] section
     if let Some((_, tombi_document_tree::Value::Table(features_table))) =
@@ -497,7 +492,7 @@ async fn fetch_local_crate_features(
             let deps = match feature_deps {
                 tombi_document_tree::Value::Array(arr) => arr
                     .values()
-                    .into_iter()
+                    .iter()
                     .filter_map(|v| {
                         if let tombi_document_tree::Value::String(s) = v {
                             Some(s.value().to_string())

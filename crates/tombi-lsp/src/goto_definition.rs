@@ -57,7 +57,7 @@ pub async fn open_remote_file(
     match url.scheme() {
         "http" | "https" => {
             let remote_url = Url::parse(&format!("untitled://{}", url.path())).unwrap();
-            let content = fetch_remote_content(&url).await?;
+            let content = fetch_remote_content(url).await?;
             open_remote_content(backend, &remote_url, content).await?;
             Ok(Some(remote_url))
         }

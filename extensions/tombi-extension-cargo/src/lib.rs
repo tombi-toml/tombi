@@ -66,9 +66,7 @@ fn find_workspace_cargo_toml(
             }
         }
         if let Ok(canonicalized_path) = std::fs::canonicalize(&workspace_cargo_toml_path) {
-            let Some(document_tree) = load_cargo_toml(&canonicalized_path, toml_version) else {
-                return None;
-            };
+            let document_tree = load_cargo_toml(&canonicalized_path, toml_version)?;
             if document_tree.contains_key("workspace") {
                 return Some((canonicalized_path, document_tree));
             };
@@ -385,10 +383,7 @@ fn find_package_cargo_toml_paths<'a>(
 ) -> impl Iterator<Item = (&'a tombi_document_tree::String, std::path::PathBuf)> + 'a {
     let exclude_patterns = exclude_patterns
         .iter()
-        .filter_map(|pattern| match glob::Pattern::new(pattern.value()) {
-            Ok(exclude_glob) => Some(exclude_glob),
-            Err(_) => None,
-        })
+        .filter_map(|pattern| glob::Pattern::new(pattern.value()).ok())
         .collect_vec();
 
     member_patterns

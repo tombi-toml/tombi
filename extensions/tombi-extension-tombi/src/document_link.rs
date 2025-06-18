@@ -9,24 +9,24 @@ pub enum DocumentLinkToolTip {
     Schema,
 }
 
-impl Into<&'static str> for &DocumentLinkToolTip {
-    fn into(self) -> &'static str {
-        match self {
+impl From<&DocumentLinkToolTip> for &'static str {
+    fn from(val: &DocumentLinkToolTip) -> Self {
+        match val {
             DocumentLinkToolTip::Catalog => "Open JSON Schema Catalog",
             DocumentLinkToolTip::Schema => "Open JSON Schema",
         }
     }
 }
 
-impl Into<&'static str> for DocumentLinkToolTip {
-    fn into(self) -> &'static str {
-        (&self).into()
+impl From<DocumentLinkToolTip> for &'static str {
+    fn from(val: DocumentLinkToolTip) -> Self {
+        (&val).into()
     }
 }
 
-impl Into<Cow<'static, str>> for DocumentLinkToolTip {
-    fn into(self) -> Cow<'static, str> {
-        Cow::Borrowed(self.into())
+impl From<DocumentLinkToolTip> for Cow<'static, str> {
+    fn from(val: DocumentLinkToolTip) -> Self {
+        Cow::Borrowed(val.into())
     }
 }
 

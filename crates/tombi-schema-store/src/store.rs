@@ -335,7 +335,7 @@ impl SchemaStore {
                 .await
                 .insert(schema_url.clone(), document_schema.clone());
 
-            document_schema.map(|document_schema| Some(document_schema))
+            document_schema.map(Some)
         }
         .boxed()
     }
@@ -420,12 +420,12 @@ impl SchemaStore {
         for matching_schema in matching_schemas {
             // Skip if the same schema (by URL and sub_root_keys) is already loaded in source_schema
             let already_loaded = match &matching_schema.sub_root_keys {
-                Some(sub_root_keys) => source_schema.as_ref().map_or(false, |source_schema| {
+                Some(sub_root_keys) => source_schema.as_ref().is_some_and(|source_schema| {
                     source_schema.sub_schema_url_map.contains_key(sub_root_keys)
                 }),
                 None => source_schema
                     .as_ref()
-                    .map_or(false, |source_schema| source_schema.root_schema.is_some()),
+                    .is_some_and(|source_schema| source_schema.root_schema.is_some()),
             };
             if already_loaded {
                 continue;

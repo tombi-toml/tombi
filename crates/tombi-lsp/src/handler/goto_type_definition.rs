@@ -82,7 +82,7 @@ pub async fn handle_goto_type_definition(
                 schema_url, range, ..
             }) => Some(vec![tombi_extension::DefinitionLocation {
                 uri: schema_url.into(),
-                range: range.into(),
+                range,
             }]),
             _ => Default::default(),
         },

@@ -5,6 +5,12 @@ pub struct ArrayArena {
     data: Vec<Vec<ValueId>>,
 }
 
+impl Default for ArrayArena {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ArrayArena {
     pub fn new() -> Self {
         ArrayArena { data: Vec::new() }
