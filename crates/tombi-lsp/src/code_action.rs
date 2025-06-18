@@ -37,10 +37,7 @@ pub fn dot_keys_to_inline_table_code_action(
         return None;
     };
 
-    let Some((accessor, value)) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])
-    else {
-        return None;
-    };
+    let (accessor, value) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match (accessor, value) {
         (Accessor::Key(parent_key), tombi_document_tree::Value::Table(table))
@@ -56,46 +53,44 @@ pub fn dot_keys_to_inline_table_code_action(
                 return None;
             }
 
-            Some(
-                CodeAction {
-                    title: CodeActionRefactorRewriteName::DottedKeysToInlineTable.to_string(),
-                    kind: Some(CodeActionKind::REFACTOR_REWRITE),
-                    edit: Some(WorkspaceEdit {
-                        changes: None,
-                        document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
-                            text_document: OptionalVersionedTextDocumentIdentifier {
-                                uri: text_document.clone().uri,
-                                version: None,
-                            },
-                            edits: vec![
-                                OneOf::Left(TextEdit {
-                                    range: tombi_text::Range {
-                                        start: parent_key_context.range.start,
-                                        end: value.range().start,
+            Some(CodeAction {
+                title: CodeActionRefactorRewriteName::DottedKeysToInlineTable.to_string(),
+                kind: Some(CodeActionKind::REFACTOR_REWRITE),
+                edit: Some(WorkspaceEdit {
+                    changes: None,
+                    document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+                        text_document: OptionalVersionedTextDocumentIdentifier {
+                            uri: text_document.clone().uri,
+                            version: None,
+                        },
+                        edits: vec![
+                            OneOf::Left(TextEdit {
+                                range: tombi_text::Range {
+                                    start: parent_key_context.range.start,
+                                    end: value.range().start,
+                                }
+                                .into(),
+                                new_text: format!(
+                                    "{} = {{ {}{}",
+                                    parent_key,
+                                    key.value(),
+                                    if table.kind() == TableKind::KeyValue {
+                                        " = "
+                                    } else {
+                                        "."
                                     }
-                                    .into(),
-                                    new_text: format!(
-                                        "{} = {{ {}{}",
-                                        parent_key,
-                                        key.value(),
-                                        if table.kind() == TableKind::KeyValue {
-                                            " = "
-                                        } else {
-                                            "."
-                                        }
-                                    ),
-                                }),
-                                OneOf::Left(TextEdit {
-                                    range: tombi_text::Range::at(value.symbol_range().end).into(),
-                                    new_text: " }".to_string(),
-                                }),
-                            ],
-                        }])),
-                        change_annotations: None,
-                    }),
-                    ..Default::default()
-                },
-            )
+                                ),
+                            }),
+                            OneOf::Left(TextEdit {
+                                range: tombi_text::Range::at(value.symbol_range().end).into(),
+                                new_text: " }".to_string(),
+                            }),
+                        ],
+                    }])),
+                    change_annotations: None,
+                }),
+                ..Default::default()
+            })
         }
         _ => None,
     }

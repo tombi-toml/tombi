@@ -66,9 +66,7 @@ fn find_workspace_cargo_toml(
             }
         }
         if let Ok(canonicalized_path) = std::fs::canonicalize(&workspace_cargo_toml_path) {
-            let Some(document_tree) = load_cargo_toml(&canonicalized_path, toml_version) else {
-                return None;
-            };
+            let document_tree = load_cargo_toml(&canonicalized_path, toml_version)?;
             if document_tree.contains_key("workspace") {
                 return Some((canonicalized_path, document_tree));
             };

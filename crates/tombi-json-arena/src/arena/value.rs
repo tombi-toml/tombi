@@ -3,15 +3,13 @@ use super::{ArrayArena, ObjectArena, StrArena};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ValueId(pub(crate) usize);
 
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ValueArena {
     pub(crate) values: Vec<crate::Value>,
     pub(crate) str_arena: StrArena,
     pub(crate) array_arena: ArrayArena,
     pub(crate) object_arena: ObjectArena,
 }
-
 
 impl ValueArena {
     pub fn new() -> Self {

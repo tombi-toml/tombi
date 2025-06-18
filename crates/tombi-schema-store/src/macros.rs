@@ -102,7 +102,10 @@ mod tests {
         ];
 
         // Pattern with index
-        assert!(matches_accessors!(&accessors, ["tool", "uv", _, "workspace"]));
+        assert!(matches_accessors!(
+            &accessors,
+            ["tool", "uv", _, "workspace"]
+        ));
 
         // Pattern with specified index (should not match)
         assert!(!matches_accessors!(

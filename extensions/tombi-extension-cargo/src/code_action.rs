@@ -183,9 +183,7 @@ fn workspace_code_action(
         return None;
     }
 
-    let Some((_, value)) = dig_accessors(crate_document_tree, &accessors[..2]) else {
-        return None;
-    };
+    let (_, value) = dig_accessors(crate_document_tree, &accessors[..2])?;
     dig_keys(
         workspace_document_tree,
         &["workspace", "package", parent_key.as_str()],

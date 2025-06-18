@@ -407,8 +407,7 @@ fn document_link_for_crate_dependency_has_workspace(
                     if is_workspace.value() {
                         if let Some(workspace_crate_value) = workspace_dependencies.get(&crate_key)
                         {
-                            if let Ok(mut target) = Url::from_file_path(workspace_cargo_toml_path)
-                            {
+                            if let Ok(mut target) = Url::from_file_path(workspace_cargo_toml_path) {
                                 let mut document_links = document_link_for_workspace_dependency(
                                     crate_key,
                                     workspace_crate_value,

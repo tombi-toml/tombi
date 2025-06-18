@@ -203,19 +203,14 @@ pub async fn get_completion_keys_with_context(
     ))
 }
 
-pub fn build_accessor_contexts<'a>(
+pub fn build_accessor_contexts(
     accessors: &[Accessor],
     key_contexts: &mut impl Iterator<Item = KeyContext>,
 ) -> Vec<AccessorContext> {
     accessors
         .iter()
         .filter_map(|accessor| match accessor {
-            Accessor::Key(_) => {
-                let Some(context) = key_contexts.next() else {
-                    return None;
-                };
-                Some(AccessorContext::Key(context))
-            }
+            Accessor::Key(_) => Some(AccessorContext::Key(key_contexts.next()?)),
             Accessor::Index(_) => Some(AccessorContext::Index),
         })
         .collect_vec()
