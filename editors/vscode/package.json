@@ -111,13 +111,13 @@
             "string.quoted.triple.literal.block.toml"
           ],
           "number": [
-            "constant.numeric.integer.toml",
+            "constant.numeric.integer.bin.toml",
+            "constant.numeric.integer.dec.toml",
+            "constant.numeric.integer.oct.toml",
+            "constant.numeric.integer.hex.toml",
             "constant.numeric.float.toml",
-            "constant.numeric.hex.toml",
-            "constant.numeric.oct.toml",
-            "constant.numeric.bin.toml",
-            "constant.numeric.inf.toml",
-            "constant.numeric.nan.toml"
+            "constant.numeric.float.inf.toml",
+            "constant.numeric.float.nan.toml"
           ],
           "boolean": ["constant.language.boolean.toml"],
           "offsetDateTime": ["constant.other.datetime.offset.toml"],
