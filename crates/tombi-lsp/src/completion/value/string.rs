@@ -3,8 +3,63 @@ use tombi_extension::CompletionKind;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUrl, StringSchema};
 
 use crate::completion::{
-    CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
+    schema_completion::SchemaCompletion, CompletionContent, CompletionEdit, CompletionHint,
+    FindCompletionContents,
 };
+
+impl FindCompletionContents for tombi_document_tree::String {
+    fn find_completion_contents<'a: 'b, 'b>(
+        &'a self,
+        position: tombi_text::Position,
+        keys: &'a [tombi_document_tree::Key],
+        accessors: &'a [Accessor],
+        current_schema: Option<&'a CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        completion_hint: Option<CompletionHint>,
+    ) -> BoxFuture<'b, Vec<CompletionContent>> {
+        async move {
+            if !self.range().contains(position) {
+                return Vec::with_capacity(0);
+            }
+
+            let current_string_value = self.value();
+
+            SchemaCompletion
+                .find_completion_contents(
+                    position,
+                    keys,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                    completion_hint,
+                )
+                .await
+                .into_iter()
+                .filter_map(|mut completion_content| {
+                    if completion_content.kind != CompletionKind::String {
+                        return None;
+                    }
+
+                    if !completion_content
+                        .label
+                        .trim_matches('"')
+                        .starts_with(current_string_value)
+                    {
+                        return None;
+                    }
+
+                    completion_content.edit = CompletionEdit::new_string_literal_while_editing(
+                        &completion_content.label,
+                        self.range(),
+                    );
+
+                    Some(completion_content)
+                })
+                .collect()
+        }
+        .boxed()
+    }
+}
 
 impl FindCompletionContents for StringSchema {
     fn find_completion_contents<'a: 'b, 'b>(

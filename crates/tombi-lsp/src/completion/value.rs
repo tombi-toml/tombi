@@ -58,11 +58,22 @@ impl FindCompletionContents for tombi_document_tree::Value {
                 Self::Boolean(_)
                 | Self::Integer(_)
                 | Self::Float(_)
-                | Self::String(_)
                 | Self::OffsetDateTime(_)
                 | Self::LocalDateTime(_)
                 | Self::LocalDate(_)
                 | Self::LocalTime(_) => Vec::with_capacity(0),
+                Self::String(string_value) => {
+                    string_value
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
                 Self::Array(array) => {
                     array
                         .find_completion_contents(

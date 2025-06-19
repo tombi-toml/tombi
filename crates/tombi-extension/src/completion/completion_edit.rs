@@ -89,6 +89,20 @@ impl CompletionEdit {
         }
     }
 
+    pub fn new_string_literal_while_editing(
+        label: &str,
+        value_range: tombi_text::Range,
+    ) -> Option<Self> {
+        Some(Self {
+            text_edit: CompletionTextEdit::Edit(TextEdit {
+                new_text: label.to_string(),
+                range: value_range.into(),
+            }),
+            insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+            additional_text_edits: None,
+        })
+    }
+
     pub fn new_array_literal(
         position: tombi_text::Position,
         completion_hint: Option<CompletionHint>,
