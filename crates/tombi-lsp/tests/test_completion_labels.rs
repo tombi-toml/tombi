@@ -178,6 +178,36 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_lint_rules_key_empty_equal(
+                r#"
+                [lint.rules]
+                key-empty = █
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([
+                "\"warn\"",
+                "\"error\"",
+                "\"off\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_lint_rules_key_empty_equal_empty_string(
+                r#"
+                [lint.rules]
+                key-empty = "█"
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([
+                "\"warn\"",
+                "\"error\"",
+                "\"off\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_schema(
                 r#"
                 [schema.█]
