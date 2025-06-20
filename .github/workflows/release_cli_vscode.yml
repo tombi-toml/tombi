@@ -171,7 +171,7 @@ jobs:
           pattern: tombi-cli-${{ env.TOMBI_VERSION }}-*
 
       - name: Check Directory
-        run: ls -la
+        run: tree -L 2
 
       - name: Find CLI Assets
         id: find_cli_assets
