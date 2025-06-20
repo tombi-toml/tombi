@@ -10,6 +10,7 @@ pub struct IntegerSchema {
     pub multiple_of: Option<i64>,
     pub enumerate: Option<Vec<i64>>,
     pub default: Option<i64>,
+    pub const_value: Option<i64>,
     pub examples: Option<Vec<i64>>,
     pub deprecated: Option<bool>,
 }
@@ -33,6 +34,7 @@ impl IntegerSchema {
                 .and_then(|v| v.as_array())
                 .map(|v| v.items.iter().filter_map(|v| v.as_i64()).collect()),
             default: object.get("default").and_then(|v| v.as_i64()),
+            const_value: object.get("const").and_then(|v| v.as_i64()),
             examples: object
                 .get("examples")
                 .and_then(|v| v.as_array())
