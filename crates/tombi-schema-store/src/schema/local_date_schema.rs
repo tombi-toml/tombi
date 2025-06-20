@@ -5,6 +5,7 @@ pub struct LocalDateSchema {
     pub range: tombi_text::Range,
     pub enumerate: Option<Vec<String>>,
     pub default: Option<String>,
+    pub const_value: Option<String>,
     pub examples: Option<Vec<String>>,
     pub deprecated: Option<bool>,
 }
@@ -27,6 +28,9 @@ impl LocalDateSchema {
             }),
             default: object
                 .get("default")
+                .and_then(|v| v.as_str().map(|s| s.to_string())),
+            const_value: object
+                .get("const")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             examples: object.get("examples").and_then(|v| v.as_array()).map(|v| {
                 v.items

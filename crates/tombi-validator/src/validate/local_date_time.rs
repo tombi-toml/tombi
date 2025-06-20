@@ -74,6 +74,20 @@ impl Validate for LocalDateTime {
                 };
 
                 let value_string = self.node().to_string();
+
+                if let Some(const_value) = &local_date_time_schema.const_value {
+                    if value_string != *const_value {
+                        crate::Error {
+                            kind: crate::ErrorKind::ConstValue {
+                                expected: const_value.clone(),
+                                actual: value_string.clone(),
+                            },
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
+
                 if let Some(enumerate) = &local_date_time_schema.enumerate {
                     if !enumerate.contains(&value_string) {
                         crate::Error {
