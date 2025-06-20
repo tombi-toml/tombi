@@ -42,3 +42,51 @@ tombi-ast = { workspace = true }
 ```
 
 In this case, when your cursor is on `workspace`, executing "Go to Declaration" will navigate you to the crate definition.
+
+### Code Actions
+
+When working with `Cargo.toml` files, additional code actions are available.
+
+#### Inherit from Workspace
+
+Convert package fields to inherit from workspace configuration:
+
+```toml
+# Before
+[package]
+version = "1.0.0"
+authors = ["John Doe"]
+
+# After applying "Inherit from workspace"
+[package]
+version.workspace = true
+authors.workspace = true
+```
+
+#### Inherit Dependency from Workspace
+
+Convert dependencies to use workspace versions:
+
+```toml
+# Before
+[dependencies]
+serde = "1.0"
+
+# After applying "Inherit dependency from workspace"
+[dependencies]
+serde = { workspace = true }
+```
+
+#### Convert Dependency to Table Format
+
+Transform simple string dependencies to table format for adding additional fields:
+
+```toml
+# Before
+[dependencies]
+serde = "1.0"
+
+# After applying "Convert to table format"
+[dependencies]
+serde = { version = "1.0" }
+```
