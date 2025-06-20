@@ -90,7 +90,7 @@ impl Validate for tombi_document_tree::String {
                 if let Some(enumerate) = &string_schema.enumerate {
                     if !enumerate.contains(&value) {
                         crate::Error {
-                            kind: crate::ErrorKind::Eunmerate {
+                            kind: crate::ErrorKind::Enumerate {
                                 expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
                                 actual: format!("\"{value}\""),
                             },
