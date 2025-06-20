@@ -120,14 +120,12 @@ jobs:
 
       - name: Upload tombi-cli artifacts
         uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os != 'windows-latest'
         with:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
 
       - name: Upload tombi-cli artifacts (Windows)
         uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
         with:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
