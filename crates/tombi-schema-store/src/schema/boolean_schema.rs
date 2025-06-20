@@ -4,6 +4,7 @@ pub struct BooleanSchema {
     pub description: Option<String>,
     pub range: tombi_text::Range,
     pub default: Option<bool>,
+    pub const_value: Option<bool>,
     pub enumerate: Option<Vec<bool>>,
     pub examples: Option<Vec<bool>>,
     pub deprecated: Option<bool>,
@@ -19,6 +20,7 @@ impl BooleanSchema {
                 .get("description")
                 .and_then(|value| value.as_str().map(|s| s.to_string())),
             default: object.get("default").and_then(|v| v.as_bool()),
+            const_value: object.get("const").and_then(|v| v.as_bool()),
             enumerate: object
                 .get("enum")
                 .and_then(|value| value.as_array())

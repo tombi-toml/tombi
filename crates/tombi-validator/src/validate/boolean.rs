@@ -71,6 +71,20 @@ impl Validate for tombi_document_tree::Boolean {
                 };
 
                 let value = self.value();
+
+                if let Some(const_value) = &boolean_schema.const_value {
+                    if value != *const_value {
+                        crate::Error {
+                            kind: crate::ErrorKind::ConstValue {
+                                expected: const_value.to_string(),
+                                actual: value.to_string(),
+                            },
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
+
                 if let Some(enumerate) = &boolean_schema.enumerate {
                     if !enumerate.contains(&value) {
                         crate::Error {
