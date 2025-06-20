@@ -105,12 +105,33 @@ impl GetHoverContent for LocalDateSchema {
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::LocalDate,
                 constraints: Some(ValueConstraints {
-                    enumerate: self.enumerate.as_ref().map(|value| {
-                        value
-                            .iter()
-                            .filter_map(|value| DisplayValue::try_new_local_date(value).ok())
-                            .collect()
-                    }),
+                    enumerate: {
+                        let const_len = if self.const_value.is_some() { 1 } else { 0 };
+                        let enumerate_len = self
+                            .enumerate
+                            .as_ref()
+                            .map(|value| value.len())
+                            .unwrap_or_default();
+                        let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
+                        if let Some(const_value) = &self.const_value {
+                            if let Ok(display_value) = DisplayValue::try_new_local_date(const_value)
+                            {
+                                enumerate_values.push(display_value);
+                            }
+                        }
+                        if let Some(enumerate) = &self.enumerate {
+                            enumerate_values.extend(
+                                enumerate.iter().filter_map(|value| {
+                                    DisplayValue::try_new_local_date(value).ok()
+                                }),
+                            );
+                        }
+                        if enumerate_values.is_empty() {
+                            None
+                        } else {
+                            Some(enumerate_values)
+                        }
+                    },
                     default: self
                         .default
                         .as_ref()

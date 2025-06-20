@@ -40,6 +40,20 @@ impl Validate for tombi_document_tree::Integer {
                 match current_schema.value_schema.as_ref() {
                     tombi_schema_store::ValueSchema::Integer(integer_schema) => {
                         let value = self.value();
+
+                        if let Some(const_value) = &integer_schema.const_value {
+                            if value != *const_value {
+                                crate::Error {
+                                    kind: crate::ErrorKind::ConstValue {
+                                        expected: const_value.to_string(),
+                                        actual: value.to_string(),
+                                    },
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
+
                         if let Some(enumerate) = &integer_schema.enumerate {
                             if !enumerate.contains(&value) {
                                 crate::Error {
@@ -123,6 +137,20 @@ impl Validate for tombi_document_tree::Integer {
                     }
                     tombi_schema_store::ValueSchema::Float(float_schema) => {
                         let value = self.value() as f64;
+
+                        if let Some(const_value) = &float_schema.const_value {
+                            if (value - *const_value).abs() > f64::EPSILON {
+                                crate::Error {
+                                    kind: crate::ErrorKind::ConstValue {
+                                        expected: const_value.to_string(),
+                                        actual: value.to_string(),
+                                    },
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
+
                         if let Some(enumerate) = &float_schema.enumerate {
                             if !enumerate.contains(&value) {
                                 crate::Error {

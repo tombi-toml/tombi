@@ -19,6 +19,20 @@ impl FindCompletionContents for BooleanSchema {
         async move {
             let schema_url = current_schema.map(|schema| schema.schema_url.as_ref());
 
+            if let Some(const_value) = &self.const_value {
+                let label = const_value.to_string();
+                let edit = CompletionEdit::new_literal(&label, position, completion_hint);
+                return vec![CompletionContent::new_const_value(
+                    CompletionKind::Boolean,
+                    label,
+                    self.title.clone(),
+                    self.description.clone(),
+                    edit,
+                    schema_url,
+                    self.deprecated,
+                )];
+            }
+
             if let Some(enumerate) = &self.enumerate {
                 enumerate
                     .iter()

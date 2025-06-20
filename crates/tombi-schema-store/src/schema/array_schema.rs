@@ -20,6 +20,7 @@ pub struct ArraySchema {
     pub unique_items: Option<bool>,
     pub enumerate: Option<Vec<tombi_json::Value>>,
     pub default: Option<tombi_json::Value>,
+    pub const_value: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
     pub values_order: Option<ArrayValuesOrder>,
     pub deprecated: Option<bool>,
@@ -53,6 +54,10 @@ impl ArraySchema {
                 .map(|array| array.items.iter().map(|v| v.into()).collect()),
             default: object
                 .get("default")
+                .and_then(|v| v.as_array())
+                .map(|array| array.into()),
+            const_value: object
+                .get("const")
                 .and_then(|v| v.as_array())
                 .map(|array| array.into()),
             examples: object

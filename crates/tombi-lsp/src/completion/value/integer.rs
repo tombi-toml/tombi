@@ -20,6 +20,21 @@ impl FindCompletionContents for IntegerSchema {
             let mut completion_items = vec![];
             let schema_url = current_schema.map(|schema| schema.schema_url.as_ref());
 
+            if let Some(const_value) = &self.const_value {
+                let label = const_value.to_string();
+                let edit = CompletionEdit::new_literal(&label, position, completion_hint);
+                completion_items.push(CompletionContent::new_const_value(
+                    CompletionKind::Integer,
+                    label,
+                    self.title.clone(),
+                    self.description.clone(),
+                    edit,
+                    schema_url,
+                    self.deprecated,
+                ));
+                return completion_items;
+            }
+
             if let Some(enumerate) = &self.enumerate {
                 for item in enumerate {
                     let label = item.to_string();

@@ -113,12 +113,28 @@ impl GetHoverContent for IntegerSchema {
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::Integer,
                 constraints: Some(ValueConstraints {
-                    enumerate: self.enumerate.as_ref().map(|value| {
-                        value
-                            .iter()
-                            .map(|value| DisplayValue::Integer(*value))
-                            .collect()
-                    }),
+                    enumerate: {
+                        let const_len = if self.const_value.is_some() { 1 } else { 0 };
+                        let enumerate_len = self
+                            .enumerate
+                            .as_ref()
+                            .map(|value| value.len())
+                            .unwrap_or_default();
+                        let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
+                        if let Some(const_value) = &self.const_value {
+                            enumerate_values.push(DisplayValue::Integer(*const_value));
+                        }
+                        if let Some(enumerate) = &self.enumerate {
+                            enumerate_values.extend(
+                                enumerate.iter().map(|value| DisplayValue::Integer(*value)),
+                            );
+                        }
+                        if enumerate_values.is_empty() {
+                            None
+                        } else {
+                            Some(enumerate_values)
+                        }
+                    },
                     default: self.default.map(DisplayValue::Integer),
                     examples: self.examples.as_ref().map(|examples| {
                         examples

@@ -26,6 +26,7 @@ pub struct TableSchema {
     pub max_properties: Option<usize>,
     pub keys_order: Option<TableKeysOrder>,
     pub default: Option<tombi_json::Object>,
+    pub const_value: Option<tombi_json::Object>,
     pub enumerate: Option<Vec<tombi_json::Object>>,
     pub examples: Option<Vec<tombi_json::Object>>,
     pub deprecated: Option<bool>,
@@ -153,6 +154,10 @@ impl TableSchema {
             }),
             default: object_node
                 .get("default")
+                .and_then(|v| v.as_object())
+                .map(|v| v.into()),
+            const_value: object_node
+                .get("const")
                 .and_then(|v| v.as_object())
                 .map(|v| v.into()),
             examples: object_node
