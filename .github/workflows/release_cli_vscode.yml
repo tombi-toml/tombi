@@ -169,15 +169,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: tombi-cli-${{ env.TOMBI_VERSION }}-*
+          path: tombi-cli-artifacts
 
       - name: Check Directory
-        run: tree -L 2
+        run: tree -L 3
 
       - name: Find CLI Assets
         id: find_cli_assets
         shell: bash
         run: |
-          echo "ASSETS=$(find . -name \"tombi-cli-${{ env.TOMBI_VERSION }}-*\" -type f | tr '\n' ' ')" >> $GITHUB_ENV
+          echo "ASSETS=$(find tombi-cli-artifacts -type f | tr '\n' ' ')" >> $GITHUB_ENV
 
       - name: Check ASSETS
         run: |
