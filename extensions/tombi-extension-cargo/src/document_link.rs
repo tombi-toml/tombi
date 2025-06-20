@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
 use crate::{
-    find_path_crate_cargo_toml, find_workspace_cargo_toml, get_workspace_path,
-    goto_workspace_member_crates, load_cargo_toml,
+    find_package_cargo_toml_paths, find_path_crate_cargo_toml, find_workspace_cargo_toml,
+    get_workspace_path, load_cargo_toml,
 };
 use itertools::Itertools;
 use tombi_config::TomlVersion;
@@ -125,57 +125,102 @@ fn document_link_for_workspace_cargo_toml(
             toml_version,
         )?);
     }
-    if let Some((_, tombi_document_tree::Value::Array(members))) =
-        dig_keys(workspace_document_tree, &["workspace", "members"])
-    {
-        for (i, member) in members.values().iter().enumerate() {
-            let member = match member {
-                tombi_document_tree::Value::String(member) => member,
-                _ => continue,
-            };
-            let Ok(member_crate_locations) = goto_workspace_member_crates(
-                workspace_document_tree,
-                &[
-                    tombi_schema_store::Accessor::Key("workspace".into()),
-                    tombi_schema_store::Accessor::Key("members".into()),
-                    tombi_schema_store::Accessor::Index(i),
-                ],
-                workspace_cargo_toml_path,
-                toml_version,
-            ) else {
-                continue;
-            };
-            let mut member_document_links =
-                member_crate_locations.into_iter().filter_map(|location| {
-                    Url::from_file_path(location.cargo_toml_path)
-                        .map(|mut target| {
-                            target.set_fragment(Some(&format!(
-                                "L{}",
-                                member.unquoted_range().start.line + 1
-                            )));
-                            tombi_extension::DocumentLink {
-                                target,
-                                range: member.unquoted_range(),
-                                tooltip: DocumentLinkToolTip::CargoTomlFirstMember.into(),
-                            }
-                        })
-                        .ok()
-                });
-            match member_document_links.size_hint() {
-                (_, Some(n)) if n > 0 => {
-                    if let Some(mut document_link) = member_document_links.next() {
-                        if n == 1 {
-                            document_link.tooltip = DocumentLinkToolTip::CargoToml.into();
-                        }
-                        total_document_links.push(document_link);
-                    }
+    total_document_links.extend(create_member_document_links(
+        workspace_document_tree,
+        "members",
+        workspace_cargo_toml_path,
+        toml_version,
+    ));
+    total_document_links.extend(create_member_document_links(
+        workspace_document_tree,
+        "default-members",
+        workspace_cargo_toml_path,
+        toml_version,
+    ));
+
+    Ok(total_document_links)
+}
+
+fn create_member_document_links(
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    members_key: &str,
+    workspace_cargo_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Vec<tombi_extension::DocumentLink> {
+    let Some((_, tombi_document_tree::Value::Array(members))) =
+        dig_keys(workspace_document_tree, &["workspace", members_key])
+    else {
+        return Vec::with_capacity(0);
+    };
+
+    let mut document_links = Vec::new();
+    let exclude_patterns: Vec<_> =
+        match dig_keys(workspace_document_tree, &["workspace", "exclude"]) {
+            Some((_, tombi_document_tree::Value::Array(exclude))) => exclude
+                .iter()
+                .filter_map(|member| match member {
+                    tombi_document_tree::Value::String(member_pattern) => Some(member_pattern),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+
+    for member in members.iter() {
+        let member = match member {
+            tombi_document_tree::Value::String(member) => member,
+            _ => continue,
+        };
+
+        let member_patterns = vec![member];
+
+        let Some(workspace_dir_path) = workspace_cargo_toml_path.parent() else {
+            continue;
+        };
+
+        let mut member_document_links: Vec<_> =
+            find_package_cargo_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
+                .filter_map(|(_, cargo_toml_path)| {
+                    let cargo_toml_document_tree = load_cargo_toml(&cargo_toml_path, toml_version)?;
+                    let (_, package_name) =
+                        dig_keys(&cargo_toml_document_tree, &["package", "name"])?;
+                    let package_name = match package_name {
+                        tombi_document_tree::Value::String(s) => s,
+                        _ => return None,
+                    };
+
+                    let mut target = Url::from_file_path(&cargo_toml_path).ok()?;
+                    target.set_fragment(Some(&format!(
+                        "L{}",
+                        package_name.unquoted_range().start.line + 1
+                    )));
+
+                    Some(tombi_extension::DocumentLink {
+                        target,
+                        range: member.unquoted_range(),
+                        tooltip: DocumentLinkToolTip::CargoTomlFirstMember.into(),
+                    })
+                })
+                .collect();
+
+        match member_document_links.len() {
+            0 => {}
+            1 => {
+                if let Some(ref mut document_link) = member_document_links.first_mut() {
+                    document_link.tooltip = DocumentLinkToolTip::CargoToml.into();
                 }
-                _ => {}
+                document_links.extend(member_document_links);
+            }
+            _ => {
+                // only one link is given
+                if let Some(document_link) = member_document_links.into_iter().next() {
+                    document_links.push(document_link);
+                }
             }
         }
     }
 
-    Ok(total_document_links)
+    document_links
 }
 
 fn document_link_for_workspace_depencencies(
