@@ -2,8 +2,11 @@ use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, ValueSchema};
 
 use crate::hover::{
-    all_of::get_all_of_hover_content, any_of::get_any_of_hover_content,
-    constraints::ValueConstraints, display_value::DisplayValue, one_of::get_one_of_hover_content,
+    all_of::get_all_of_hover_content,
+    any_of::get_any_of_hover_content,
+    constraints::{build_enumerate_values, ValueConstraints},
+    display_value::DisplayValue,
+    one_of::get_one_of_hover_content,
     GetHoverContent, HoverContent,
 };
 
@@ -113,28 +116,11 @@ impl GetHoverContent for BooleanSchema {
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::Boolean,
                 constraints: Some(ValueConstraints {
-                    enumerate: {
-                        let const_len = if self.const_value.is_some() { 1 } else { 0 };
-                        let enumerate_len = self
-                            .enumerate
-                            .as_ref()
-                            .map(|value| value.len())
-                            .unwrap_or_default();
-                        let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
-                        if let Some(const_value) = &self.const_value {
-                            enumerate_values.push(DisplayValue::Boolean(*const_value));
-                        }
-                        if let Some(enumerate) = &self.enumerate {
-                            enumerate_values.extend(
-                                enumerate.iter().map(|value| DisplayValue::Boolean(*value)),
-                            );
-                        }
-                        if enumerate_values.is_empty() {
-                            None
-                        } else {
-                            Some(enumerate_values)
-                        }
-                    },
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(DisplayValue::Boolean(*value)),
+                    ),
                     default: self.default.map(DisplayValue::Boolean),
                     examples: self.examples.as_ref().map(|examples| {
                         examples

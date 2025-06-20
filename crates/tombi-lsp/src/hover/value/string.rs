@@ -2,8 +2,11 @@ use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::{Accessor, CurrentSchema, StringSchema, ValueSchema};
 
 use crate::hover::{
-    all_of::get_all_of_hover_content, any_of::get_any_of_hover_content,
-    constraints::ValueConstraints, display_value::DisplayValue, one_of::get_one_of_hover_content,
+    all_of::get_all_of_hover_content,
+    any_of::get_any_of_hover_content,
+    constraints::{build_enumerate_values, ValueConstraints},
+    display_value::DisplayValue,
+    one_of::get_one_of_hover_content,
     GetHoverContent, HoverContent,
 };
 
@@ -107,35 +110,17 @@ impl GetHoverContent for StringSchema {
         _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Option<HoverContent>> {
         async move {
-            let enumerate_len = self
-                .const_value
-                .as_ref()
-                .map(|value| value.len())
-                .unwrap_or_default()
-                + self
-                    .enumerate
-                    .as_ref()
-                    .map(|value| value.len())
-                    .unwrap_or_default();
-            let mut enumerate_values = Vec::with_capacity(enumerate_len);
-            if let Some(const_value) = &self.const_value {
-                enumerate_values.push(DisplayValue::String(const_value.clone()));
-            }
-            if let Some(enumerate) = &self.enumerate {
-                enumerate_values.extend(
-                    enumerate
-                        .iter()
-                        .map(|value| DisplayValue::String(value.clone())),
-                );
-            }
-
             Some(HoverContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::String,
                 constraints: Some(ValueConstraints {
-                    enumerate: (!enumerate_values.is_empty()).then_some(enumerate_values),
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(DisplayValue::String(value.clone())),
+                    ),
                     default: self
                         .default
                         .as_ref()

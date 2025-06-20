@@ -7,8 +7,11 @@ use tombi_schema_store::{
 };
 
 use crate::hover::{
-    all_of::get_all_of_hover_content, any_of::get_any_of_hover_content,
-    constraints::ValueConstraints, one_of::get_one_of_hover_content, GetHoverContent, HoverContent,
+    all_of::get_all_of_hover_content,
+    any_of::get_any_of_hover_content,
+    constraints::{build_enumerate_values, ValueConstraints},
+    one_of::get_one_of_hover_content,
+    GetHoverContent, HoverContent,
 };
 
 impl GetHoverContent for tombi_document_tree::Table {
@@ -423,26 +426,11 @@ impl GetHoverContent for TableSchema {
                 accessors: Accessors::new(accessors.to_vec()),
                 value_type: ValueType::Table,
                 constraints: Some(ValueConstraints {
-                    enumerate: {
-                        let const_len = if self.const_value.is_some() { 1 } else { 0 };
-                        let enumerate_len = self
-                            .enumerate
-                            .as_ref()
-                            .map(|value| value.len())
-                            .unwrap_or_default();
-                        let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
-                        if let Some(const_value) = &self.const_value {
-                            enumerate_values.push(const_value.into());
-                        }
-                        if let Some(enumerate) = &self.enumerate {
-                            enumerate_values.extend(enumerate.iter().map(|example| example.into()));
-                        }
-                        if enumerate_values.is_empty() {
-                            None
-                        } else {
-                            Some(enumerate_values)
-                        }
-                    },
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(value.into()),
+                    ),
                     default: self.default.as_ref().map(|default| default.into()),
                     examples: self
                         .examples

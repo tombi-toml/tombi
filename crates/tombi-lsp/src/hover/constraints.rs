@@ -2,6 +2,42 @@ use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
 
 use super::display_value::DisplayValue;
 
+/// Build enumerate values from const_value and enumerate fields
+///
+/// This function is used to create the enumerate field for ValueConstraints
+/// by combining const_value and enumerate from various schema types.
+pub fn build_enumerate_values<T, F>(
+    const_value: &Option<T>,
+    enumerate: &Option<Vec<T>>,
+    convert_fn: F,
+) -> Option<Vec<DisplayValue>>
+where
+    F: Fn(&T) -> Option<DisplayValue>,
+{
+    let const_len = if const_value.is_some() { 1 } else { 0 };
+    let enumerate_len = enumerate
+        .as_ref()
+        .map(|value| value.len())
+        .unwrap_or_default();
+    let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
+
+    if let Some(const_value) = const_value {
+        if let Some(display_value) = convert_fn(const_value) {
+            enumerate_values.push(display_value);
+        }
+    }
+
+    if let Some(enumerate) = enumerate {
+        enumerate_values.extend(enumerate.iter().filter_map(convert_fn));
+    }
+
+    if enumerate_values.is_empty() {
+        None
+    } else {
+        Some(enumerate_values)
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct ValueConstraints {
     // Common
