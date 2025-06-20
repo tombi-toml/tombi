@@ -10,7 +10,7 @@ use crate::{find_workspace_cargo_toml, get_workspace_path};
 
 pub enum CodeActionRefactorRewriteName {
     InheritFromWorkspace,
-    UseWorkspaceDependency,
+    InheritDependencyFromWorkspace,
     ConvertDependencyToTableFormat,
 }
 
@@ -20,7 +20,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
             CodeActionRefactorRewriteName::InheritFromWorkspace => {
                 write!(f, "Inherit from Workspace")
             }
-            CodeActionRefactorRewriteName::UseWorkspaceDependency => {
+            CodeActionRefactorRewriteName::InheritDependencyFromWorkspace => {
                 write!(f, "Inherit Dependency from Workspace")
             }
             CodeActionRefactorRewriteName::ConvertDependencyToTableFormat => {
@@ -251,7 +251,7 @@ fn use_workspace_depencency_code_action(
                 &["workspace", "dependencies", crate_name],
             )?;
             return Some(CodeAction {
-                title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
+                title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
                 kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
@@ -304,7 +304,7 @@ fn use_workspace_depencency_code_action(
             };
 
             return Some(CodeAction {
-                title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
+                title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
                 kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {

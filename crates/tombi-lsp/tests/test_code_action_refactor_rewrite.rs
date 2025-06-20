@@ -444,7 +444,7 @@ mod refactor_rewrite {
                 [dependencies]
                 serde.version█ = "1.0"
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(Some(
                 r#"
@@ -461,7 +461,7 @@ mod refactor_rewrite {
                 [dependencies]
                 serde = { version█ = "1.0" }
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(Some(
                 r#"
@@ -478,7 +478,7 @@ mod refactor_rewrite {
                 [dependencies]
                 serde = { version█ = "1.0", features = ["derive"] }
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(Some(
                 r#"
@@ -495,7 +495,7 @@ mod refactor_rewrite {
                 [dependencies]
                 serde.workspace█ = true
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(None);
         }
@@ -507,7 +507,7 @@ mod refactor_rewrite {
                 [dependencies]
                 serde = { workspace█ = true }
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(None);
         }
@@ -519,7 +519,7 @@ mod refactor_rewrite {
                 [dependencies.serde]
                 version█ = "1.0"
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(Some(
                 r#"
@@ -537,7 +537,7 @@ mod refactor_rewrite {
                 version█ = "1.0"
                 default-features = false
                 "#,
-                Select(CodeActionRefactorRewriteName::UseWorkspaceDependency),
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
                 project_root_path().join("crates/subcrate/Cargo.toml"),
             ) -> Ok(Some(
                 r#"
