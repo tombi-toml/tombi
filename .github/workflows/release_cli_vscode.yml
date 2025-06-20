@@ -161,7 +161,6 @@ jobs:
   release-notes:
     needs: [release-cli-and-vscode, check-release-notes]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.check-release-notes.outputs.exists == 'false'
     permissions:
       contents: write
 
@@ -173,6 +172,9 @@ jobs:
         with:
           pattern: tombi-cli-${{ env.TOMBI_VERSION }}-*
 
+      - name: Check Directory
+        run: |
+          ls -la
       - name: Find CLI Assets
         id: find_cli_assets
         shell: bash
@@ -182,5 +184,6 @@ jobs:
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: startsWith(github.ref, 'refs/tags/') && needs.check-release-notes.outputs.exists == 'false'
         run: |
           gh release create ${{ github.ref_name }} --generate-notes ${{ env.ASSETS }}
