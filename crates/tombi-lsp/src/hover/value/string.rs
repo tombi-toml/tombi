@@ -107,18 +107,35 @@ impl GetHoverContent for StringSchema {
         _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Option<HoverContent>> {
         async move {
+            let enumerate_len = self
+                .const_value
+                .as_ref()
+                .map(|value| value.len())
+                .unwrap_or_default()
+                + self
+                    .enumerate
+                    .as_ref()
+                    .map(|value| value.len())
+                    .unwrap_or_default();
+            let mut enumerate_values = Vec::with_capacity(enumerate_len);
+            if let Some(const_value) = &self.const_value {
+                enumerate_values.push(DisplayValue::String(const_value.clone()));
+            }
+            if let Some(enumerate) = &self.enumerate {
+                enumerate_values.extend(
+                    enumerate
+                        .iter()
+                        .map(|value| DisplayValue::String(value.clone())),
+                );
+            }
+
             Some(HoverContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::String,
                 constraints: Some(ValueConstraints {
-                    enumerate: self.enumerate.as_ref().map(|value| {
-                        value
-                            .iter()
-                            .map(|value| DisplayValue::String(value.clone()))
-                            .collect()
-                    }),
+                    enumerate: (!enumerate_values.is_empty()).then_some(enumerate_values),
                     default: self
                         .default
                         .as_ref()
