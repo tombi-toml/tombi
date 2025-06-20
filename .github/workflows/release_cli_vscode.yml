@@ -120,14 +120,12 @@ jobs:
 
       - name: Upload tombi-cli artifacts
         uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os != 'windows-latest'
         with:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.gz
 
       - name: Upload tombi-cli artifacts (Windows)
         uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
         with:
           name: tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
           path: dist/tombi-cli-${{ env.TOMBI_VERSION }}-${{ matrix.target }}.zip
@@ -161,7 +159,6 @@ jobs:
   release-notes:
     needs: [release-cli-and-vscode, check-release-notes]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.check-release-notes.outputs.exists == 'false'
     permissions:
       contents: write
 
@@ -172,15 +169,29 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: tombi-cli-${{ env.TOMBI_VERSION }}-*
+          path: tombi-cli-artifacts
+
+      - name: Check Directory
+        run: tree -L 3
 
       - name: Find CLI Assets
         id: find_cli_assets
         shell: bash
         run: |
-          echo "ASSETS=$(find . -name \"tombi-cli-${{ env.TOMBI_VERSION }}-*\" -type f | tr '\n' ' ')" >> $GITHUB_ENV
+          echo "ASSETS=$(find tombi-cli-artifacts -type f | tr '\n' ' ')" >> $GITHUB_ENV
+
+      - name: Check ASSETS
+        run: |
+          echo "ASSETS: '${{ env.ASSETS }}'"
+          if [ -z "${{ env.ASSETS }}" ]; then
+            echo "Error: ASSETS is empty. Aborting release."
+            exit 1
+          fi
+          echo "ASSETS found successfully."
 
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: startsWith(github.ref, 'refs/tags/') && needs.check-release-notes.outputs.exists == 'false'
         run: |
           gh release create ${{ github.ref_name }} --generate-notes ${{ env.ASSETS }}
