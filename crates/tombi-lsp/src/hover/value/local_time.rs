@@ -108,9 +108,11 @@ impl GetHoverContent for LocalTimeSchema {
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::LocalTime,
                 constraints: Some(ValueConstraints {
-                    enumerate: build_enumerate_values(&None::<String>, &self.enumerate, |value| {
-                        DisplayValue::try_new_local_time(value).ok()
-                    }),
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| DisplayValue::try_new_local_time(value).ok(),
+                    ),
                     default: self
                         .default
                         .as_ref()
