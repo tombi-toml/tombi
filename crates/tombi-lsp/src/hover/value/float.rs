@@ -113,12 +113,27 @@ impl GetHoverContent for FloatSchema {
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::Float,
                 constraints: Some(ValueConstraints {
-                    enumerate: self.enumerate.as_ref().map(|value| {
-                        value
-                            .iter()
-                            .map(|value| DisplayValue::Float(*value))
-                            .collect()
-                    }),
+                    enumerate: {
+                        let const_len = if self.const_value.is_some() { 1 } else { 0 };
+                        let enumerate_len = self
+                            .enumerate
+                            .as_ref()
+                            .map(|value| value.len())
+                            .unwrap_or_default();
+                        let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
+                        if let Some(const_value) = &self.const_value {
+                            enumerate_values.push(DisplayValue::Float(*const_value));
+                        }
+                        if let Some(enumerate) = &self.enumerate {
+                            enumerate_values
+                                .extend(enumerate.iter().map(|value| DisplayValue::Float(*value)));
+                        }
+                        if enumerate_values.is_empty() {
+                            None
+                        } else {
+                            Some(enumerate_values)
+                        }
+                    },
                     default: self.default.map(DisplayValue::Float),
                     examples: self.examples.as_ref().map(|examples| {
                         examples
