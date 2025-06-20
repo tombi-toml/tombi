@@ -232,12 +232,32 @@ impl GetHoverContent for ArraySchema {
                 accessors: Accessors::new(accessors.to_vec()),
                 value_type: ValueType::Array,
                 constraints: Some(ValueConstraints {
-                    enumerate: self.enumerate.as_ref().map(|enumerate| {
-                        enumerate
-                            .iter()
-                            .filter_map(|value| DisplayValue::try_from(value).ok())
-                            .collect()
-                    }),
+                    enumerate: {
+                        let const_len = if self.const_value.is_some() { 1 } else { 0 };
+                        let enumerate_len = self
+                            .enumerate
+                            .as_ref()
+                            .map(|value| value.len())
+                            .unwrap_or_default();
+                        let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
+                        if let Some(const_value) = &self.const_value {
+                            if let Ok(display_value) = DisplayValue::try_from(const_value) {
+                                enumerate_values.push(display_value);
+                            }
+                        }
+                        if let Some(enumerate) = &self.enumerate {
+                            enumerate_values.extend(
+                                enumerate
+                                    .iter()
+                                    .filter_map(|value| DisplayValue::try_from(value).ok()),
+                            );
+                        }
+                        if enumerate_values.is_empty() {
+                            None
+                        } else {
+                            Some(enumerate_values)
+                        }
+                    },
                     default: self
                         .default
                         .as_ref()
