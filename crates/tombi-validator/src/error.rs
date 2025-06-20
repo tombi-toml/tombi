@@ -18,7 +18,7 @@ pub enum ErrorKind {
     Const { expected: String, actual: String },
 
     #[error("The value must be one of [{}], but found {actual}", .expected.join(", "))]
-    Eunmerate {
+    Enumerate {
         expected: Vec<String>,
         actual: String,
     },

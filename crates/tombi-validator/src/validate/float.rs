@@ -88,7 +88,7 @@ impl Validate for tombi_document_tree::Float {
                 if let Some(enumerate) = &float_schema.enumerate {
                     if !enumerate.contains(&value) {
                         crate::Error {
-                            kind: crate::ErrorKind::Eunmerate {
+                            kind: crate::ErrorKind::Enumerate {
                                 expected: enumerate.iter().map(ToString::to_string).collect(),
                                 actual: value.to_string(),
                             },
