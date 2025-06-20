@@ -171,13 +171,22 @@ jobs:
           pattern: tombi-cli-${{ env.TOMBI_VERSION }}-*
 
       - name: Check Directory
-        run: |
-          ls -la
+        run: ls -la
+
       - name: Find CLI Assets
         id: find_cli_assets
         shell: bash
         run: |
           echo "ASSETS=$(find . -name \"tombi-cli-${{ env.TOMBI_VERSION }}-*\" -type f | tr '\n' ' ')" >> $GITHUB_ENV
+
+      - name: Check ASSETS
+        run: |
+          echo "ASSETS: '${{ env.ASSETS }}'"
+          if [ -z "${{ env.ASSETS }}" ]; then
+            echo "Error: ASSETS is empty. Aborting release."
+            exit 1
+          fi
+          echo "ASSETS found successfully."
 
       - name: Create GitHub Release
         env:
