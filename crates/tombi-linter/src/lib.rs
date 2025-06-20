@@ -251,6 +251,26 @@ mod tests {
                 ])),
             ]);
         }
+
+        test_lint! {
+            #[test]
+            fn test_tombi_schema_lint_rules_key_empty_undefined(
+                r#"
+                [lint.rules]
+                key-empty = "undefined"
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::ErrorKind::Eunmerate {
+                    expected: vec![
+                        "\"off\"".to_string(),
+                        "\"warn\"".to_string(),
+                        "\"error\"".to_string()
+                    ],
+                    actual: "undefined".to_string()
+                }
+            ]);
+        }
     }
 
     mod other_schema {

@@ -25,6 +25,7 @@ where
         let mut one_hover_contents = ahash::AHashSet::new();
         let mut valid_hover_contents = ahash::AHashSet::new();
         let mut value_type_set = indexmap::IndexSet::new();
+        let mut enumerate_values = Vec::new();
         let default = one_of_schema
             .default
             .as_ref()
@@ -90,6 +91,14 @@ where
                     && hover_content.value_type != tombi_schema_store::ValueType::Array
                 {
                     return Some(hover_content);
+                }
+
+                if let Some(enumerate) = &hover_content
+                    .constraints
+                    .as_ref()
+                    .and_then(|constraints| constraints.enumerate.as_ref())
+                {
+                    enumerate_values.extend(enumerate.iter().map(Clone::clone));
                 }
 
                 match value
@@ -172,6 +181,17 @@ where
                 } else {
                     hover_content.constraints = Some(ValueConstraints {
                         default: Some(default),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            if !enumerate_values.is_empty() {
+                if let Some(constraints) = hover_content.constraints.as_mut() {
+                    constraints.enumerate = Some(enumerate_values);
+                } else {
+                    hover_content.constraints = Some(ValueConstraints {
+                        enumerate: Some(enumerate_values),
                         ..Default::default()
                     });
                 }
