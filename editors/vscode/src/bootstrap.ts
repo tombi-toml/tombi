@@ -9,7 +9,7 @@ export type Env = {
 };
 
 export type TombiBin = {
-  source: "bundled" | "dev" | "VSCode Settings";
+  source: "bundled" | "dev" | "editor settings";
   path: string;
 };
 
@@ -37,7 +37,7 @@ export async function getTombiBin(
       settingsPath = os.homedir() + settingsPath.slice("~".length);
     }
     return {
-      source: "VSCode Settings",
+      source: "editor settings",
       path: settingsPath,
     };
   }
