@@ -89,6 +89,21 @@ impl FindCompletionContents for StringSchema {
                 ));
             }
 
+            if let Some(const_value) = &self.const_value {
+                let label = format!("\"{const_value}\"");
+                let edit = CompletionEdit::new_literal(&label, position, completion_hint);
+                completion_items.push(CompletionContent::new_const_value(
+                    CompletionKind::String,
+                    label,
+                    self.title.clone(),
+                    self.description.clone(),
+                    edit,
+                    schema_url,
+                    self.deprecated,
+                ));
+                return completion_items;
+            }
+
             if let Some(enumerate) = &self.enumerate {
                 for item in enumerate {
                     let label = format!("\"{item}\"");

@@ -73,6 +73,20 @@ impl Validate for tombi_document_tree::String {
                 };
 
                 let value = self.value().to_string();
+
+                if let Some(const_value) = &string_schema.const_value {
+                    if value != *const_value {
+                        crate::Error {
+                            kind: crate::ErrorKind::ConstValue {
+                                expected: const_value.clone(),
+                                actual: value.clone(),
+                            },
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
+
                 if let Some(enumerate) = &string_schema.enumerate {
                     if !enumerate.contains(&value) {
                         crate::Error {

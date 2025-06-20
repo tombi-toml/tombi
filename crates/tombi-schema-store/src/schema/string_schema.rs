@@ -9,6 +9,7 @@ pub struct StringSchema {
     pub enumerate: Option<Vec<String>>,
     pub examples: Option<Vec<String>>,
     pub default: Option<String>,
+    pub const_value: Option<String>,
     pub deprecated: Option<bool>,
 }
 
@@ -38,6 +39,9 @@ impl StringSchema {
                     .map(ToString::to_string)
                     .collect()
             }),
+            const_value: object
+                .get("const")
+                .and_then(|v| v.as_str().map(|s| s.to_string())),
             examples: object.get("examples").and_then(|v| v.as_array()).map(|a| {
                 a.items
                     .iter()

@@ -63,6 +63,9 @@ where
                         Err(diagnostics) => diagnostics,
                     }
                 }
+                (_, ValueSchema::Null) => {
+                    continue;
+                }
                 (_, ValueSchema::Boolean(_))
                 | (_, ValueSchema::Integer(_))
                 | (_, ValueSchema::Float(_))
@@ -72,8 +75,7 @@ where
                 | (_, ValueSchema::LocalDate(_))
                 | (_, ValueSchema::LocalTime(_))
                 | (_, ValueSchema::Table(_))
-                | (_, ValueSchema::Array(_))
-                | (_, ValueSchema::Null) => {
+                | (_, ValueSchema::Array(_)) => {
                     vec![crate::Error {
                         kind: crate::ErrorKind::TypeMismatch {
                             expected: current_schema.value_schema.value_type().await,

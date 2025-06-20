@@ -14,6 +14,9 @@ pub enum ErrorKind {
         actual: tombi_document_tree::ValueType,
     },
 
+    #[error("The value must be const value \"{expected}\", but found \"{actual}\"")]
+    ConstValue { expected: String, actual: String },
+
     #[error("The value must be one of [{}], but found {actual}", .expected.join(", "))]
     Eunmerate {
         expected: Vec<String>,
