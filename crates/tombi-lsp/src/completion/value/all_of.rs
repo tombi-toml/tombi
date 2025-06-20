@@ -1,9 +1,10 @@
 use futures::{future::BoxFuture, FutureExt};
+use tombi_extension::CompletionContentPriority;
 use tombi_schema_store::{Accessor, AllOfSchema, CurrentSchema, ReferableValueSchemas};
 
 use crate::completion::{
-    tombi_json_value_to_completion_item, CompletionCandidate, CompletionContent, CompletionHint,
-    CompositeSchemaImpl, FindCompletionContents,
+    tombi_json_value_to_completion_default_item, CompletionCandidate, CompletionContent,
+    CompletionHint, CompositeSchemaImpl, FindCompletionContents,
 };
 
 impl CompositeSchemaImpl for AllOfSchema {
@@ -87,15 +88,23 @@ where
         }
 
         if let Some(default) = &all_of_schema.default {
-            if let Some(completion_item) = tombi_json_value_to_completion_item(
-                default,
-                position,
-                detail,
-                documentation,
-                Some(&current_schema.schema_url),
-                completion_hint,
-            ) {
-                completion_items.push(completion_item);
+            let default_label = default.to_string();
+            if let Some(completion_item) = completion_items
+                .iter_mut()
+                .find(|item| item.label == default_label)
+            {
+                completion_item.priority = CompletionContentPriority::Default;
+            } else {
+                if let Some(completion_item) = tombi_json_value_to_completion_default_item(
+                    default,
+                    position,
+                    detail,
+                    documentation,
+                    Some(&current_schema.schema_url),
+                    completion_hint,
+                ) {
+                    completion_items.push(completion_item);
+                }
             }
         }
 

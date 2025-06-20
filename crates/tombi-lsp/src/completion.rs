@@ -343,7 +343,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
     }
 }
 
-fn tombi_json_value_to_completion_item(
+fn tombi_json_value_to_completion_default_item(
     value: &tombi_json::Value,
     position: tombi_text::Position,
     detail: Option<String>,

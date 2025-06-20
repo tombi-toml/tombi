@@ -75,7 +75,7 @@ impl Validate for tombi_document_tree::Boolean {
                 if let Some(const_value) = &boolean_schema.const_value {
                     if value != *const_value {
                         crate::Error {
-                            kind: crate::ErrorKind::ConstValue {
+                            kind: crate::ErrorKind::Const {
                                 expected: const_value.to_string(),
                                 actual: value.to_string(),
                             },

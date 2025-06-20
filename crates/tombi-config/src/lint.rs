@@ -36,8 +36,13 @@ pub struct LintRules {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum SeverityLevel {
+    /// # Disable the Rule.
     Off,
+
+    /// # Display as Warning.
     Warn,
+
+    /// # Display as Error.
     Error,
 }
 

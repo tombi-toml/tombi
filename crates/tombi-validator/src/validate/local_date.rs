@@ -78,7 +78,7 @@ impl Validate for LocalDate {
                 if let Some(const_value) = &local_date_schema.const_value {
                     if value_string != *const_value {
                         crate::Error {
-                            kind: crate::ErrorKind::ConstValue {
+                            kind: crate::ErrorKind::Const {
                                 expected: const_value.clone(),
                                 actual: value_string.clone(),
                             },

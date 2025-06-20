@@ -174,11 +174,22 @@
       ]
     },
     "SeverityLevel": {
-      "type": "string",
-      "enum": [
-        "off",
-        "warn",
-        "error"
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
       ]
     },
     "LspOptions": {

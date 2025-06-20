@@ -77,9 +77,9 @@ impl Validate for tombi_document_tree::String {
                 if let Some(const_value) = &string_schema.const_value {
                     if value != *const_value {
                         crate::Error {
-                            kind: crate::ErrorKind::ConstValue {
-                                expected: const_value.clone(),
-                                actual: value.clone(),
+                            kind: crate::ErrorKind::Const {
+                                expected: format!("\"{const_value}\""),
+                                actual: format!("\"{value}\""),
                             },
                             range: self.range(),
                         }
@@ -92,7 +92,7 @@ impl Validate for tombi_document_tree::String {
                         crate::Error {
                             kind: crate::ErrorKind::Eunmerate {
                                 expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
-                                actual: value.clone(),
+                                actual: format!("\"{value}\""),
                             },
                             range: self.range(),
                         }

@@ -15,7 +15,7 @@ pub enum ErrorKind {
     },
 
     #[error("The value must be const value \"{expected}\", but found \"{actual}\"")]
-    ConstValue { expected: String, actual: String },
+    Const { expected: String, actual: String },
 
     #[error("The value must be one of [{}], but found {actual}", .expected.join(", "))]
     Eunmerate {
