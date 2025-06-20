@@ -240,7 +240,7 @@ async fn complete_crate_version(
                 kind: CompletionKind::String,
                 emoji_icon: Some('🦀'),
                 priority: tombi_extension::CompletionContentPriority::Custom(format!(
-                    "00__cargo_{i:>03}__",
+                    "10__cargo_{i:>03}__",
                 )),
                 detail: Some("Crate version".to_string()),
                 documentation: None,
@@ -378,7 +378,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 kind: CompletionKind::String,
                 emoji_icon: Some('🦀'),
                 priority: tombi_extension::CompletionContentPriority::Custom(format!(
-                    "00__cargo_feature_{:>03}__",
+                    "10__cargo_feature_{:>03}__",
                     if feature == "default" {
                         0 // default feature should be the first
                     } else if feature.starts_with('_') {

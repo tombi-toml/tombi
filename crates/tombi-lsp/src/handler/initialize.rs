@@ -75,6 +75,8 @@ pub fn server_capabilities(client_capabilities: &ClientCapabilities) -> ServerCa
                 "[".into(),
                 "{".into(),
                 " ".into(),
+                "\"".into(),
+                "'".into(),
             ]),
             completion_item: Some(CompletionOptionsCompletionItem {
                 label_details_support: (|| -> _ {
