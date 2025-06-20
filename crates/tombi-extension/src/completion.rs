@@ -462,19 +462,28 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             CompletionContentPriority::Default => {
                 Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
                     detail: None,
-                    description: Some("Default".to_string()),
+                    description: Some(match &completion_content.detail {
+                        Some(detail) => format!("[Default] {}", detail),
+                        None => "Default".to_string(),
+                    }),
                 })
             }
             CompletionContentPriority::Const => {
                 Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
                     detail: None,
-                    description: Some("Const".to_string()),
+                    description: Some(match &completion_content.detail {
+                        Some(detail) => detail.to_string(),
+                        None => "Const".to_string(),
+                    }),
                 })
             }
             CompletionContentPriority::Enum => {
                 Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
                     detail: None,
-                    description: Some("Enum".to_string()),
+                    description: Some(match &completion_content.detail {
+                        Some(detail) => detail.to_string(),
+                        None => "Enum".to_string(),
+                    }),
                 })
             }
             CompletionContentPriority::Key => {
