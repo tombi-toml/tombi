@@ -80,6 +80,10 @@
       {
         "title": "Goto Definition",
         "path": "/docs/language-server/goto-definition"
+      },
+      {
+        "title": "Code Action",
+        "path": "/docs/language-server/code-action"
       }
     ]
   },
