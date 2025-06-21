@@ -380,6 +380,28 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_lsp4(
+                r#"
+                [lsp]
+                code-action.enabled = true
+                formatting.enabled = true
+
+                [lsp.█]
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([
+                "completion",
+                "diagnostics",
+                "document-link",
+                "goto-declaration",
+                "goto-definition",
+                "goto-type-definition",
+                "hover",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_lsp_completion(
                 r#"
                 [lsp]
