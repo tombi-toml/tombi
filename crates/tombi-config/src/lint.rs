@@ -25,6 +25,7 @@ pub struct LintRules {
     /// # Key empty.
     ///
     /// Check if the key is empty.
+    ///
     /// ```toml
     /// "" = true
     /// ```
@@ -40,15 +41,13 @@ pub struct LintRules {
     /// orange.type = "fruit"
     /// apple.skin = "thin"
     /// orange.skin = "thick"
-    /// ```
     ///
-    /// ```toml
     /// # RECOMMENDED
     /// apple.type = "fruit"
     /// apple.skin = "thin"
     /// orange.type = "fruit"
     /// orange.skin = "thick"
-    /// ``````
+    /// ```
     pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
 }
 
