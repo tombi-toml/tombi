@@ -316,6 +316,29 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_dotted_keys_out_of_order(
+                r#"
+                apple.type = "fruit"
+                orange.type = "fruit"
+
+                apple.skin = "thin"
+                orange.skin = "thick"
+
+                apple.color = "red"
+                orange.color = "orange"
+                "#,
+            ) -> Err([
+                crate::SeverityKind::DottedKeysOutOfOrder,
+                crate::SeverityKind::DottedKeysOutOfOrder,
+                crate::SeverityKind::DottedKeysOutOfOrder,
+                crate::SeverityKind::DottedKeysOutOfOrder,
+                crate::SeverityKind::DottedKeysOutOfOrder,
+                crate::SeverityKind::DottedKeysOutOfOrder
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_schema_url(
                 r#"
                 #:schema https://json.schemastore.org/tombi.json

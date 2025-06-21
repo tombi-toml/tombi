@@ -2,6 +2,8 @@
 pub enum SeverityKind {
     #[error("An empty quoted key is allowed, but it is not recommended")]
     KeyEmpty,
+    #[error("Defining dotted keys out-of-order is discouraged")]
+    DottedKeysOutOfOrder,
 }
 
 #[derive(Debug)]

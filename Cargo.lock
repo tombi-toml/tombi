@@ -3559,6 +3559,7 @@ dependencies = [
 name = "tombi-linter"
 version = "0.0.0"
 dependencies = [
+ "ahash",
  "futures",
  "itertools",
  "pretty_assertions",
