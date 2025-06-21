@@ -138,7 +138,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         }
 
                                         if let Some(value) = self.get(key_name) {
-                                            if check_used_table_value(value) {
+                                            if check_used_table_value(
+                                                value,
+                                                accessors.is_empty(),
+                                                completion_hint,
+                                            ) {
                                                 continue;
                                             }
                                         }
@@ -159,8 +163,8 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             let Some(contents) =
                                                 collect_table_key_completion_contents(
                                                     self,
-                                                    position,
                                                     key_name,
+                                                    position,
                                                     accessors,
                                                     table_schema,
                                                     &current_schema,
@@ -284,7 +288,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 let key_name = &accessor.to_string();
 
                                 if let Some(value) = self.get(key_name) {
-                                    if check_used_table_value(value) {
+                                    if check_used_table_value(
+                                        value,
+                                        accessors.is_empty(),
+                                        completion_hint,
+                                    ) {
                                         continue;
                                     }
                                 }
@@ -325,8 +333,8 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 {
                                     let Some(contents) = collect_table_key_completion_contents(
                                         self,
-                                        position,
                                         key_name,
+                                        position,
                                         accessors,
                                         table_schema,
                                         &current_schema,
@@ -769,7 +777,11 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
     .boxed()
 }
 
-fn check_used_table_value(value: &tombi_document_tree::Value) -> bool {
+fn check_used_table_value(
+    value: &tombi_document_tree::Value,
+    is_root: bool,
+    completion_hint: Option<CompletionHint>,
+) -> bool {
     match value {
         tombi_document_tree::Value::Boolean(_)
         | tombi_document_tree::Value::Integer(_)
@@ -785,7 +797,11 @@ fn check_used_table_value(value: &tombi_document_tree::Value) -> bool {
             }
         }
         tombi_document_tree::Value::Table(table) => {
-            if table.kind() == tombi_document_tree::TableKind::InlineTable {
+            if table.kind() == tombi_document_tree::TableKind::InlineTable
+                || (is_root
+                    && completion_hint.is_none()
+                    && table.kind() == tombi_document_tree::TableKind::Table)
+            {
                 return true;
             }
         }
@@ -796,8 +812,8 @@ fn check_used_table_value(value: &tombi_document_tree::Value) -> bool {
 
 fn collect_table_key_completion_contents<'a: 'b, 'b>(
     table: &'a tombi_document_tree::Table,
-    position: tombi_text::Position,
     key_name: &'a String,
+    position: tombi_text::Position,
     accessors: &'a [Accessor],
     table_schema: &'a TableSchema,
     current_schema: &'a CurrentSchema<'a>,
@@ -822,7 +838,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
         }
 
         for schema_candidate in schema_candidates {
-            match schema_candidate {
+            match &schema_candidate {
                 ValueSchema::Boolean(_)
                 | ValueSchema::Integer(_)
                 | ValueSchema::Float(_)
@@ -832,21 +848,30 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 | ValueSchema::LocalDate(_)
                 | ValueSchema::LocalTime(_) => {
                     if matches!(completion_hint, Some(CompletionHint::InTableHeader))
-                        || table.get(key_name).is_some()
+                        || table.contains_key(key_name)
                     {
                         return None;
                     }
                 }
-                ValueSchema::Array(_) | ValueSchema::Table(_) => {
+                ValueSchema::Array(_) => {
                     if matches!(completion_hint, Some(CompletionHint::InTableHeader))
                         && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
                     {
                         return None;
                     }
-                    if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
+                }
+                ValueSchema::Table(table_schema) => {
+                    if matches!(completion_hint, Some(CompletionHint::InTableHeader))
+                        && count_table_or_array_schema(current_schema, schema_context.store).await
+                            == 0
+                    {
+                        return None;
+                    }
+                    if let Some(tombi_document_tree::Value::Table(table)) = table.get(key_name) {
+                        let properties = table_schema.properties.read().await;
                         if !table_schema.allows_any_additional_properties(schema_context.strict())
-                            && table_schema.properties.read().await.keys().all(|key| {
+                            && properties.keys().all(|key| {
                                 let property_name = &key.to_string();
                                 table.get(property_name).is_some()
                             })

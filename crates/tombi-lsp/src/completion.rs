@@ -2,7 +2,7 @@ mod comment;
 mod schema_completion;
 mod value;
 
-use std::{borrow::Cow, ops::Deref};
+use std::borrow::Cow;
 
 use ahash::AHashMap;
 pub use comment::get_comment_completion_contents;
@@ -155,7 +155,6 @@ pub async fn find_completion_contents_with_tree(
     });
 
     document_tree
-        .deref()
         .find_completion_contents(
             position,
             keys,

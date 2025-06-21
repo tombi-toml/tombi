@@ -202,7 +202,7 @@ impl Validate for tombi_document_tree::Table {
                                         diagnostics.extend(schema_diagnostics);
                                     }
                                 }
-                            } else if table_schema
+                            } else if !table_schema
                                 .allows_additional_properties(schema_context.strict())
                             {
                                 crate::Error {
