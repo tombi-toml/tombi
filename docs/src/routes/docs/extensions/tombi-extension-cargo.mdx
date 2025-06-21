@@ -8,6 +8,48 @@ Experimentally, we provide additional features when editing `Cargo.toml` files.
 
 ## Supported Features
 
+### Code Completion
+
+The extension provides intelligent code completion for `Cargo.toml` files.
+
+#### Crate Version Completion
+
+Get version suggestions when specifying crate versions:
+
+```toml
+[dependencies]
+serde = "1.0.130"  # <- version suggestions appear here
+tokio = { version = "1.21.0" }  # <- also here
+```
+
+Features:
+- Fetches available versions from crates.io
+- Shows up to 100 versions sorted newest first
+- Works in all dependency sections (`dependencies`, `dev-dependencies`, `build-dependencies`, `workspace.dependencies`)
+
+#### Crate Feature Completion
+
+Get feature suggestions when specifying crate features:
+
+```toml
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }  # <- feature suggestions
+tokio = { version = "1.21", features = ["full", "net"] }  # <- in array
+```
+
+Features:
+- Fetches available features from:
+  - crates.io for registry dependencies
+  - Local `Cargo.toml` for path dependencies
+  - Workspace `Cargo.toml` for workspace dependencies
+- Shows feature dependencies in documentation
+- Filters out already selected features
+- `default` feature shown first, features starting with `_` shown last
+
+<Note>
+The extension is context-aware: when a dependency uses `workspace = true`, it looks up features from the workspace definition.
+</Note>
+
 ### Go to Definition
 For example, suppose you have a `Cargo.toml` like the one below:
 
