@@ -151,6 +151,26 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "lint",
+                "lsp",
+                "schema",
+                "schemas",
+                "server",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_empty_bracket4(
+                r#"
+                toml-version = "v1.0.0"
+
+                [█]
+
+                [lsp]
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([
                 "format",
                 "lint",
                 "lsp",
@@ -327,7 +347,6 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "code-action",
-                "completion",
                 "diagnostics",
                 "document-link",
                 "formatting",
@@ -350,10 +369,8 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "code-action",
-                "completion",
                 "diagnostics",
                 "document-link",
-                "formatting",
                 "goto-declaration",
                 "goto-definition",
                 "goto-type-definition",
