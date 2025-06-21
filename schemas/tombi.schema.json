@@ -151,7 +151,7 @@
       "properties": {
         "key-empty": {
           "title": "Key empty.",
-          "description": "Check if the key is empty.\n```toml\n\"\" = true\n```",
+          "description": "Check if the key is empty.\n\n```toml\n\"\" = true\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultWarn"
@@ -163,7 +163,7 @@
         },
         "dotted-keys-out-of-order": {
           "title": "Dotted keys out of order.",
-          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n```\n\n```toml\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n``````",
+          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultWarn"
