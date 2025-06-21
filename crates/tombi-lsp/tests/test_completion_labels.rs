@@ -98,7 +98,6 @@ mod completion_labels {
                 "format",
                 "include",
                 "lint",
-                "lsp",
                 "schema",
                 "schemas",
                 "server",

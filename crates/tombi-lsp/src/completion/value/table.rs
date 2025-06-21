@@ -138,7 +138,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         }
 
                                         if let Some(value) = self.get(key_name) {
-                                            if check_used_table_value(value) {
+                                            if check_used_table_value(
+                                                value,
+                                                accessors.is_empty(),
+                                                completion_hint,
+                                            ) {
                                                 continue;
                                             }
                                         }
@@ -284,7 +288,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 let key_name = &accessor.to_string();
 
                                 if let Some(value) = self.get(key_name) {
-                                    if check_used_table_value(value) {
+                                    if check_used_table_value(
+                                        value,
+                                        accessors.is_empty(),
+                                        completion_hint,
+                                    ) {
                                         continue;
                                     }
                                 }
@@ -769,7 +777,11 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
     .boxed()
 }
 
-fn check_used_table_value(value: &tombi_document_tree::Value) -> bool {
+fn check_used_table_value(
+    value: &tombi_document_tree::Value,
+    is_root: bool,
+    completion_hint: Option<CompletionHint>,
+) -> bool {
     match value {
         tombi_document_tree::Value::Boolean(_)
         | tombi_document_tree::Value::Integer(_)
@@ -785,7 +797,11 @@ fn check_used_table_value(value: &tombi_document_tree::Value) -> bool {
             }
         }
         tombi_document_tree::Value::Table(table) => {
-            if table.kind() == tombi_document_tree::TableKind::InlineTable {
+            if table.kind() == tombi_document_tree::TableKind::InlineTable
+                || (is_root
+                    && completion_hint.is_none()
+                    && table.kind() == tombi_document_tree::TableKind::Table)
+            {
                 return true;
             }
         }
