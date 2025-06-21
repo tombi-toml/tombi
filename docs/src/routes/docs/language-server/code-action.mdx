@@ -1,0 +1,40 @@
+import { Tip } from "~/components/highlight"
+
+# Code Action
+
+Code actions provide quick refactoring operations for TOML files.
+
+## Available Code Actions
+
+### Convert between Dotted Keys and Inline Tables
+
+Transform between Dotted Key format and Inline Table format:
+
+```toml
+# Dotted key
+foo.bar = 1
+
+# Can be converted to inline table
+foo = { bar = 1 }
+```
+
+<Tip>
+This conversion is only available when there's a single key-value pair in the structure.
+</Tip>
+
+## Configuration
+
+Code actions can be enabled or disabled in your configuration:
+
+```toml
+[lsp]
+code-action.enabled = true  # Default: true
+```
+
+## How to Use
+
+Code actions are triggered differently depending on your editor:
+
+- **VS Code**: Click on the lightbulb icon that appears when your cursor is on a supported structure, or use the keyboard shortcut `Ctrl+.` (Windows/Linux) or `Cmd+.` (macOS)
+- **Neovim**: Use the `:lua vim.lsp.buf.code_action()` command or bind it to a key
+- **Other LSP-compatible editors**: Refer to your editor's documentation for triggering code actions
