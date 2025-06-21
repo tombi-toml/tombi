@@ -91,7 +91,7 @@ impl Validate for OffsetDateTime {
                 if let Some(enumerate) = &offset_date_time_schema.enumerate {
                     if !enumerate.contains(&value_string) {
                         crate::Error {
-                            kind: crate::ErrorKind::Eunmerate {
+                            kind: crate::ErrorKind::Enumerate {
                                 expected: enumerate.iter().map(ToString::to_string).collect(),
                                 actual: value_string,
                             },

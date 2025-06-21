@@ -57,7 +57,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(enumerate) = &integer_schema.enumerate {
                             if !enumerate.contains(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Eunmerate {
+                                    kind: crate::ErrorKind::Enumerate {
                                         expected: enumerate
                                             .iter()
                                             .map(ToString::to_string)
@@ -154,7 +154,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(enumerate) = &float_schema.enumerate {
                             if !enumerate.contains(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Eunmerate {
+                                    kind: crate::ErrorKind::Enumerate {
                                         expected: enumerate
                                             .iter()
                                             .map(ToString::to_string)
