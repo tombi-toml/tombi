@@ -11,6 +11,7 @@ use crate::lint::Lint;
 pub struct Linter<'a> {
     toml_version: TomlVersion,
     options: Cow<'a, crate::LintOptions>,
+    source_text: Cow<'a, str>,
     source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     pub(crate) diagnostics: Vec<crate::Diagnostic>,
@@ -26,6 +27,7 @@ impl<'a> Linter<'a> {
         Self {
             toml_version,
             options: Cow::Borrowed(options),
+            source_text: Cow::Borrowed(""),
             source_url_or_path,
             schema_store,
             diagnostics: Vec::new(),
@@ -33,6 +35,7 @@ impl<'a> Linter<'a> {
     }
 
     pub async fn lint(mut self, source: &str) -> Result<(), Vec<Diagnostic>> {
+        self.source_text = Cow::Borrowed(source);
         let source_schema = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
@@ -95,6 +98,10 @@ impl<'a> Linter<'a> {
         } else {
             Err(self.diagnostics)
         }
+    }
+
+    pub fn source_text(&self) -> &str {
+        self.source_text.as_ref()
     }
 
     #[inline]

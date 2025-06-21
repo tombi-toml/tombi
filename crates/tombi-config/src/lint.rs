@@ -29,6 +29,27 @@ pub struct LintRules {
     /// "" = true
     /// ```
     pub key_empty: Option<SeverityLevelDefaultWarn>,
+
+    /// # Dotted keys out of order.
+    ///
+    /// Check if dotted keys are defined out of order.
+    ///
+    /// ```toml
+    /// # VALID BUT DISCOURAGED
+    /// apple.type = "fruit"
+    /// orange.type = "fruit"
+    /// apple.skin = "thin"
+    /// orange.skin = "thick"
+    /// ```
+    ///
+    /// ```toml
+    /// # RECOMMENDED
+    /// apple.type = "fruit"
+    /// apple.skin = "thin"
+    /// orange.type = "fruit"
+    /// orange.skin = "thick"
+    /// ``````
+    pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
