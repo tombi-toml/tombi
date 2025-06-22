@@ -151,7 +151,7 @@
       "properties": {
         "key-empty": {
           "title": "Key empty.",
-          "description": "Check if the key is empty.\n\n```toml\n\"\" = true\n```",
+          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultWarn"
