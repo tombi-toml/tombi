@@ -18,13 +18,24 @@ pub async fn goto_definition(
 
     let locations =
         if accessors.first() == Some(&tombi_schema_store::Accessor::Key("workspace".to_string())) {
-            goto_definition_for_workspace_cargo_toml(
-                document_tree,
-                accessors,
-                &cargo_toml_path,
-                toml_version,
-                true,
-            )
+            itertools::concat([
+                goto_definition_for_workspace_cargo_toml(
+                    document_tree,
+                    accessors,
+                    &cargo_toml_path,
+                    toml_version,
+                    true,
+                )?,
+                // For Root Package
+                // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#root-package
+                goto_definition_for_crate_cargo_toml(
+                    document_tree,
+                    accessors,
+                    &cargo_toml_path,
+                    toml_version,
+                    true,
+                )?,
+            ])
         } else {
             goto_definition_for_crate_cargo_toml(
                 document_tree,
@@ -32,8 +43,8 @@ pub async fn goto_definition(
                 &cargo_toml_path,
                 toml_version,
                 true,
-            )
-        }?;
+            )?
+        };
 
     if locations.is_empty() {
         return Ok(None);
