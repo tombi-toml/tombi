@@ -163,9 +163,9 @@ impl Schema {
     pub fn root(&self) -> Option<&str> {
         match self {
             Self::Root(_) => None,
-            Self::Sub(item) => item.root.as_deref(),
+            Self::Sub(item) => Some(&item.root),
             #[allow(deprecated)]
-            Self::OldSub(item) => item.root_keys.as_deref(),
+            Self::OldSub(item) => Some(&item.root_keys),
         }
     }
 }
@@ -204,7 +204,7 @@ pub struct SubSchema {
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "tools.tombi"))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "items[0].name"))]
-    pub root: Option<String>,
+    pub root: String,
 
     /// # The sub schema path.
     pub path: String,
@@ -243,7 +243,7 @@ pub struct OldSubSchema {
     /// Please use `schemas[*].root` instead.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub root_keys: Option<String>,
+    pub root_keys: String,
 }
 
 #[cfg(test)]

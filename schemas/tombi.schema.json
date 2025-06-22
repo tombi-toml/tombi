@@ -604,10 +604,7 @@
       "properties": {
         "root": {
           "title": "The accessors to apply the sub schema.",
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "examples": [
             "tools.tombi",
             "items[0].name"
@@ -630,6 +627,7 @@
       },
       "additionalProperties": false,
       "required": [
+        "root",
         "path",
         "include"
       ],
@@ -656,10 +654,7 @@
         "root-keys": {
           "title": "The keys to apply the sub schema.",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `schemas[*].root` instead.",
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "deprecated": true,
           "minLength": 1
         }
@@ -667,7 +662,8 @@
       "additionalProperties": false,
       "required": [
         "path",
-        "include"
+        "include",
+        "root-keys"
       ],
       "x-tombi-table-keys-order": "schema"
     }
