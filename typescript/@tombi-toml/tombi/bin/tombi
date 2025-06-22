@@ -1,0 +1,94 @@
+#!/usr/bin/env node
+const { platform, arch, env, version, release } = process;
+const { execSync } = require("node:child_process");
+
+function isMusl() {
+  let stderr;
+  try {
+    stderr = execSync("ldd --version", {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (err) {
+    stderr = err.stderr;
+  }
+  if (stderr.indexOf("musl") > -1) {
+    return true;
+  }
+  return false;
+}
+
+const PLATFORMS = {
+  win32: {
+    x64: "@tombi-toml/cli-win32-x64/tombi.exe",
+    arm64: "@tombi-toml/cli-win32-arm64/tombi.exe",
+  },
+  darwin: {
+    x64: "@tombi-toml/cli-darwin-x64/tombi",
+    arm64: "@tombi-toml/cli-darwin-arm64/tombi",
+  },
+  linux: {
+    x64: "@tombi-toml/cli-linux-x64/tombi",
+    arm64: "@tombi-toml/cli-linux-arm64/tombi",
+  },
+  "linux-musl": {
+    x64: "@tombi-toml/cli-linux-x64-musl/tombi",
+    arm64: "@tombi-toml/cli-linux-arm64-musl/tombi",
+  },
+};
+
+const binPath =
+  env.TOMBI_BINARY ||
+  (platform === "linux" && isMusl()
+    ? PLATFORMS?.["linux-musl"]?.[arch]
+    : PLATFORMS?.[platform]?.[arch]);
+
+if (binPath) {
+  const packageManager = detectPackageManager();
+  const result = require("node:child_process").spawnSync(
+    require.resolve(binPath),
+    process.argv.slice(2),
+    {
+      shell: false,
+      stdio: "inherit",
+      env: {
+        ...env,
+        JS_RUNTIME_VERSION: version,
+        JS_RUNTIME_NAME: release.name,
+        ...(packageManager != null
+          ? { NODE_PACKAGE_MANAGER: packageManager }
+          : {}),
+      },
+    },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  process.exitCode = result.status;
+} else {
+  console.error(
+    "The Tombi CLI package doesn't ship with prebuilt binaries for your platform yet. " +
+      "Please read the documentation at https://tombi-toml.github.io/tombi/docs/installation",
+  );
+  process.exitCode = 1;
+}
+
+/**
+ * NPM, Yarn, and other package manager set the `npm_config_user_agent`. It has the following format:
+ *
+ * ```
+ * "npm/8.3.0 node/v16.13.2 win32 x64 workspaces/false
+ * ```
+ *
+ * @returns The package manager string (`npm/8.3.0`) or null if the user agent string isn't set.
+ */
+function detectPackageManager() {
+  const userAgent = env.npm_config_user_agent;
+
+  if (userAgent == null) {
+    return null;
+  }
+
+  return userAgent.split(" ")[0];
+}
