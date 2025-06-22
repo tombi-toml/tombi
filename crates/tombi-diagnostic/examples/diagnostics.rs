@@ -38,8 +38,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let source_file = source_file();
 
-    let warning = Diagnostic::new_warning("Some warning occured.".to_owned(), ((2, 1), (2, 3)));
-    let error = Diagnostic::new_error("Some error occured.".to_owned(), ((2, 1), (2, 3)));
+    let warning = Diagnostic::new_warning(
+        "Some warning occured.",
+        "tombi-diagnostic",
+        ((2, 1), (2, 3)),
+    );
+    let error = Diagnostic::new_error("Some error occured.", "tombi-diagnostic", ((2, 1), (2, 3)));
 
     warning.print(&mut Pretty);
     warning.with_source_file(&source_file).print(&mut Pretty);

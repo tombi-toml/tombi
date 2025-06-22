@@ -15,18 +15,30 @@ pub struct Severity {
     pub range: tombi_text::Range,
 }
 
+impl Severity {
+    pub fn code(&self) -> &'static str {
+        match self.kind {
+            SeverityKind::KeyEmpty => "key-empty",
+            SeverityKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
+            SeverityKind::TablesOutOfOrder => "tables-out-of-order",
+        }
+    }
+}
+
 impl tombi_diagnostic::SetDiagnostics for Severity {
     fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         match self.level {
             tombi_config::SeverityLevel::Error => {
                 diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
                     self.kind.to_string(),
+                    self.code(),
                     self.range,
                 ));
             }
             tombi_config::SeverityLevel::Warn => {
                 diagnostics.push(tombi_diagnostic::Diagnostic::new_warning(
                     self.kind.to_string(),
+                    self.code(),
                     self.range,
                 ));
             }

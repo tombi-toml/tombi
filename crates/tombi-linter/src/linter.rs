@@ -47,8 +47,11 @@ impl<'a> Linter<'a> {
                 Ok(Some(schema)) => Some(schema),
                 Ok(None) => None,
                 Err((err, range)) => {
-                    self.diagnostics
-                        .push(Diagnostic::new_error(err.to_string(), range));
+                    self.diagnostics.push(Diagnostic::new_error(
+                        err.to_string(),
+                        err.code(),
+                        range,
+                    ));
                     None
                 }
             }

@@ -91,6 +91,36 @@ impl Error {
         self.kind
     }
 
+    #[inline]
+    pub fn code(&self) -> &'static str {
+        match self.kind {
+            ErrorKind::InvalidKey => "invalid-key",
+            ErrorKind::InvalidBasicString => "invalid-basic-string",
+            ErrorKind::InvalidLiteralString => "invalid-literal-string",
+            ErrorKind::InvalidMultilineBasicString => "invalid-multiline-basic-string",
+            ErrorKind::InvalidMultilineLiteralString => "invalid-multiline-literal-string",
+            ErrorKind::InvalidNumber => "invalid-number",
+            ErrorKind::InvalidOffsetDateTime => "invalid-offset-date-time",
+            ErrorKind::InvalidLocalDateTime => "invalid-local-date-time",
+            ErrorKind::InvalidLocalDate => "invalid-local-date",
+            ErrorKind::InvalidLocalTime => "invalid-local-time",
+            ErrorKind::InvalidLineBreak => "invalid-line-break",
+            ErrorKind::InvalidToken => "invalid-token",
+            ErrorKind::UnknownLine => "unknown-line",
+            ErrorKind::ExpectedKey => "expected-key",
+            ErrorKind::ExpectedValue => "expected-value",
+            ErrorKind::ExpectedEqual => "expected-equal",
+            ErrorKind::ExpectedComma => "expected-comma",
+            ErrorKind::ExpectedBracketEnd => "expected-bracket-end",
+            ErrorKind::ExpectedDoubleBracketEnd => "expected-double-bracket-end",
+            ErrorKind::ExpectedBraceEnd => "expected-brace-end",
+            ErrorKind::ExpectedLineBreak => "expected-line-break",
+            ErrorKind::ForbiddenKeysLastPeriod => "forbidden-keys-last-period",
+            ErrorKind::InlineTableMustSingleLine => "inline-table-must-single-line",
+            ErrorKind::ForbiddenInlineTableLastComma => "forbidden-inline-table-last-comma",
+        }
+    }
+
     pub fn to_message(&self) -> String {
         self.kind.to_string()
     }
@@ -153,6 +183,7 @@ impl tombi_diagnostic::SetDiagnostics for Error {
     fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
             self.to_message(),
+            self.code(),
             self.range(),
         ));
     }

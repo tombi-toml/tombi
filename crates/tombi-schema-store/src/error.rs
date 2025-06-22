@@ -85,3 +85,35 @@ pub enum Error {
     #[error("schema must be an object: {schema_url}")]
     SchemaMustBeObject { schema_url: SchemaUrl },
 }
+
+impl Error {
+    #[inline]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::DocumentLockError { .. } => "document-lock-error",
+            Self::ReferenceLockError { .. } => "reference-lock-error",
+            Self::SchemaLockError => "schema-lock-error",
+            Self::DefinitionNotFound { .. } => "definition-not-found",
+            Self::CatalogPathConvertUrlFailed { .. } => "catalog-path-convert-url-failed",
+            Self::CatalogUrlFetchFailed { .. } => "catalog-url-fetch-failed",
+            Self::InvalidCatalogFileUrl { .. } => "invalid-catalog-file-url",
+            Self::CatalogFileReadFailed { .. } => "catalog-file-read-failed",
+            Self::UnsupportedSchemaUrl { .. } => "unsupported-schema-url",
+            Self::InvalidSchemaUrl { .. } => "invalid-schema-url",
+            Self::InvalidSchemaUrlOrFilePath { .. } => "invalid-schema-url-or-file-path",
+            Self::SchemaFileNotFound { .. } => "schema-file-not-found",
+            Self::SchemaResourceNotFound { .. } => "schema-resource-not-found",
+            Self::SchemaFileReadFailed { .. } => "schema-file-read-failed",
+            Self::SchemaFileParseFailed { .. } => "schema-file-parse-failed",
+            Self::SchemaFetchFailed { .. } => "schema-fetch-failed",
+            Self::UnsupportedSourceUrl { .. } => "unsupported-source-url",
+            Self::SourceUrlParseFailed { .. } => "source-url-parse-failed",
+            Self::InvalidFilePath { .. } => "invalid-file-path",
+            Self::InvalidJsonFormat { .. } => "invalid-json-format",
+            Self::InvalidJsonSchemaReference { .. } => "invalid-json-schema-reference",
+            Self::UnsupportedReference { .. } => "unsupported-reference",
+            Self::UnsupportedUrlSchema { .. } => "unsupported-url-schema",
+            Self::SchemaMustBeObject { .. } => "schema-must-be-object",
+        }
+    }
+}

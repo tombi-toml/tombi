@@ -13,10 +13,21 @@ pub struct Warning {
     pub range: tombi_text::Range,
 }
 
+impl Warning {
+    #[inline]
+    pub fn code(&self) -> &'static str {
+        match self.kind {
+            WarningKind::Deprecated { .. } => "deprecated",
+            WarningKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
+        }
+    }
+}
+
 impl tombi_diagnostic::SetDiagnostics for Warning {
     fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         diagnostics.push(tombi_diagnostic::Diagnostic::new_warning(
             self.kind.to_string(),
+            self.code(),
             self.range,
         ))
     }
