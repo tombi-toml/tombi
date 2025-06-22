@@ -215,10 +215,11 @@ where
     crate::Error: Print<P>,
 {
     let mut source = String::new();
+    let format_definitions = FormatDefinitions::default();
     if file.read_to_string(&mut source).await.is_ok() {
         match tombi_formatter::Formatter::new(
             toml_version,
-            FormatDefinitions::default(),
+            &format_definitions,
             format_options,
             None,
             schema_store,
@@ -266,10 +267,11 @@ where
     crate::Error: Print<P>,
 {
     let mut source = String::new();
+    let format_definitions = FormatDefinitions::default();
     if file.read_to_string(&mut source).await.is_ok() {
         match tombi_formatter::Formatter::new(
             toml_version,
-            FormatDefinitions::default(),
+            &format_definitions,
             format_options,
             source_path.map(itertools::Either::Right),
             schema_store,

@@ -3,7 +3,7 @@ pub mod definitions;
 use std::fmt::Write;
 
 use itertools::Either;
-use tombi_config::{DateTimeDelimiter, IndentStyle, LineEnding, TomlVersion};
+use tombi_config::{DateTimeDelimiter, IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
 use url::Url;
@@ -14,7 +14,7 @@ pub struct Formatter<'a> {
     toml_version: TomlVersion,
     indent_depth: u8,
     skip_indent: bool,
-    definitions: crate::FormatDefinitions,
+    definitions: &'a crate::FormatDefinitions,
     #[allow(dead_code)]
     options: &'a crate::FormatOptions,
     source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
@@ -26,7 +26,7 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub fn new(
         toml_version: TomlVersion,
-        definitions: crate::FormatDefinitions,
+        definitions: &'a crate::FormatDefinitions,
         options: &'a crate::FormatOptions,
         source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
         schema_store: &'a tombi_schema_store::SchemaStore,

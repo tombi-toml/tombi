@@ -2,7 +2,7 @@ mod format;
 pub mod formatter;
 
 use format::Format;
-use formatter::definitions::FormatDefinitions;
+pub use formatter::definitions::FormatDefinitions;
 pub use formatter::Formatter;
 pub use tombi_config::FormatOptions;
 
@@ -26,7 +26,7 @@ macro_rules! test_format {
     };
 
     (#[test] fn $name:ident($source:expr, $toml_version:expr) -> Ok($expected:expr);) => {
-        $crate::test_format!(#[test] fn $name($source, $toml_version, $crate::FormatDefinitions::default()) -> Ok($expected););
+        $crate::test_format!(#[test] fn $name($source, $toml_version, &$crate::FormatDefinitions::default()) -> Ok($expected););
     };
 
     (#[test] fn $name:ident($source:expr, $toml_version:expr, $definitions:expr) -> Ok($expected:expr);) => {
@@ -60,7 +60,7 @@ macro_rules! test_format {
     };
 
     (#[test] fn $name:ident($source:expr, $toml_version:expr) -> Err(_);) => {
-        $crate::test_format!(#[test] fn $name($source, $toml_version, $crate::FormatDefinitions::default()) -> Err(_););
+        $crate::test_format!(#[test] fn $name($source, $toml_version, &$crate::FormatDefinitions::default()) -> Err(_););
     };
 
     (#[test] fn $name:ident($source:expr, $toml_version:expr, $definitions:expr) -> Err(_);) => {
@@ -288,7 +288,7 @@ b = 3
 # table key values end dangling comment4
 "#,
     TomlVersion::V1_1_0_Preview,
-    FormatDefinitions{
+    &FormatDefinitions{
         quote_style: Some(QuoteStyle::Preserve),
         ..Default::default()
     }) -> Ok(source);

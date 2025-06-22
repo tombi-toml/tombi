@@ -92,7 +92,7 @@ mod tests {
         fn basic_string_value_quote_style_single1(
             r#"key = "value""#,
             TomlVersion::default(),
-            FormatDefinitions {
+            &FormatDefinitions {
                 quote_style: Some(QuoteStyle::Single),
                 ..Default::default()
             }
@@ -104,7 +104,7 @@ mod tests {
         fn basic_string_value_quote_style_single2(
             r#"key = "'value'""#,
             TomlVersion::default(),
-            FormatDefinitions {
+            &FormatDefinitions {
                 quote_style: Some(QuoteStyle::Single),
                 ..Default::default()
             }

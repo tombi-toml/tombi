@@ -53,7 +53,7 @@ pub async fn handle_formatting(
 
     match tombi_formatter::Formatter::new(
         toml_version,
-        formatter_definitions.clone(),
+        &formatter_definitions,
         backend
             .config()
             .await

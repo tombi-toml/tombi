@@ -918,7 +918,7 @@ mod table_keys_order {
             async fn $name() {
                 use textwrap::dedent;
                 use tombi_config::TomlVersion;
-                use tombi_formatter::{FormatOptions, Formatter};
+                use tombi_formatter::{FormatDefinitions, FormatOptions, Formatter};
                 use tombi_schema_store::SchemaStore;
 
                 tombi_test_lib::init_tracing();
@@ -941,11 +941,12 @@ mod table_keys_order {
                 }
 
                 // Initialize formatter
+                let format_definitions = &FormatDefinitions::default();
                 let format_options = FormatOptions::default();
                 let source_path = tombi_test_lib::project_root_path().join("test.toml");
                 let formatter = Formatter::new(
                     TomlVersion::default(),
-                    tombi_formatter::formatter::definitions::FormatDefinitions::default(),
+                    format_definitions,
                     &format_options,
                     Some(itertools::Either::Right(source_path.as_path())),
                     &schema_store,
