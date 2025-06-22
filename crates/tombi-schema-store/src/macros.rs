@@ -19,7 +19,7 @@ macro_rules! matches_accessors_inner {
     ($iter:expr) => {
         $iter.next().is_none()
     };
-    ($iter:expr, $key:literal) => {
+    ($iter:expr, $key:expr) => {
         match $iter.next() {
             Some($crate::Accessor::Key(k)) if k == $key => $iter.next().is_none(),
             _ => false,
@@ -31,7 +31,7 @@ macro_rules! matches_accessors_inner {
             None => false,
         }
     };
-    ($iter:expr, $key:literal, $($rest:tt),* $(,)?) => {
+    ($iter:expr, $key:expr, $($rest:tt),* $(,)?) => {
         match $iter.next() {
             Some($crate::Accessor::Key(k)) if k == $key => $crate::matches_accessors_inner!($iter, $($rest),*),
             _ => false,
