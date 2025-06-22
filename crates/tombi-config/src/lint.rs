@@ -49,6 +49,23 @@ pub struct LintRules {
     /// orange.skin = "thick"
     /// ```
     pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
+
+    /// # Tables out of order.
+    ///
+    /// Check if tables are defined out of order.
+    ///
+    /// ```toml
+    /// # VALID BUT DISCOURAGED
+    /// [fruit.apple]
+    /// [animal]
+    /// [fruit.orange]
+    ///
+    /// # RECOMMENDED
+    /// [fruit.apple]
+    /// [fruit.orange]
+    /// [animal]
+    /// ```
+    pub tables_out_of_order: Option<SeverityLevelDefaultWarn>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
