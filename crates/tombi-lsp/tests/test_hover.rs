@@ -98,6 +98,36 @@ mod hover_keys_value {
                 "Value": "String"
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn tombi_schemas_include(
+                r#"
+                [[schemas]]
+                path = "schemas/tombi.schema.json"
+                include█ = ["*.toml"]
+                "#,
+                tombi_schema_path(),
+            ) -> Ok({
+                "Keys": "schemas[0].include",
+                "Value": "Array"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn tombi_schemas_include_array_string(
+                r#"
+                [[schemas]]
+                path = "schemas/tombi.schema.json"
+                include = ["█*.toml"]
+                "#,
+                tombi_schema_path(),
+            ) -> Ok({
+                "Keys": "schemas[0].include[0]",
+                "Value": "String"
+            });
+        );
     }
 
     mod cargo_schema {
