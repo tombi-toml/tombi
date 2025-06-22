@@ -183,6 +183,36 @@ impl GetHoverContent for tombi_document_tree::Array {
                         )
                         .await
                     }
+                    ValueSchema::Null => {
+                        for (index, value) in self.values().iter().enumerate() {
+                            if value.range().contains(position) {
+                                let accessor = Accessor::Index(index);
+                                return value
+                                    .get_hover_content(
+                                        position,
+                                        keys,
+                                        &accessors
+                                            .iter()
+                                            .cloned()
+                                            .chain(std::iter::once(accessor))
+                                            .collect::<Vec<_>>(),
+                                        Some(current_schema),
+                                        schema_context,
+                                    )
+                                    .await;
+                            }
+                        }
+
+                        return Some(HoverContent {
+                            title: None,
+                            description: None,
+                            accessors: Accessors::new(accessors.to_vec()),
+                            value_type: ValueType::Array,
+                            constraints: None,
+                            schema_url: None,
+                            range: Some(self.range()),
+                        });
+                    }
                     _ => {}
                 }
             }
