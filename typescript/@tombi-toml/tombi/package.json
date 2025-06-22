@@ -28,5 +28,15 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "optionalDependencies": {
+    "@tombi-toml/cli-win32-x64": "0.0.0-dev",
+    "@tombi-toml/cli-win32-arm64": "0.0.0-dev",
+    "@tombi-toml/cli-darwin-x64": "0.0.0-dev",
+    "@tombi-toml/cli-darwin-arm64": "0.0.0-dev",
+    "@tombi-toml/cli-linux-x64": "0.0.0-dev",
+    "@tombi-toml/cli-linux-arm64": "0.0.0-dev",
+    "@tombi-toml/cli-linux-x64-musl": "0.0.0-dev",
+    "@tombi-toml/cli-linux-arm64-musl": "0.0.0-dev"
   }
 }

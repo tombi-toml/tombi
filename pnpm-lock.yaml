@@ -156,7 +156,32 @@ importers:
 
   typescript/@tombi-toml/cli-win32-x64: {}
 
-  typescript/@tombi-toml/tombi: {}
+  typescript/@tombi-toml/tombi:
+    optionalDependencies:
+      '@tombi-toml/cli-darwin-arm64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-darwin-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-arm64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-arm64-musl':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-linux-x64-musl':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-win32-arm64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
+      '@tombi-toml/cli-win32-x64':
+        specifier: 0.0.0-dev
+        version: 0.0.0-dev
 
 packages:
 
@@ -1966,6 +1991,54 @@ packages:
     resolution: {integrity: sha512-OHUsAxjTzpkdDXRVtCN66peo0zx2xL4IqP3CheRJ+2oZGWCupfvHPKUITsvU7gqt77Xjy2uDwpVtJ9Vppp2QwQ==}
     engines: {node: '>=12'}
 
+  '@tombi-toml/cli-darwin-arm64@0.0.0-dev':
+    resolution: {integrity: sha512-sFVdDIZw3ROLelTgGrwbXwgXcch3Tn5tSY6foVd86hPx94MpjeywMzMI2YpbwS52sz/GgiHWPtb1lbKBHIRpUA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@tombi-toml/cli-darwin-x64@0.0.0-dev':
+    resolution: {integrity: sha512-DFPIGgA9FzZZMhiqeq8tyJugCrAecxGUGd5yqGh/4r9+gyFubCUGA5DZP7tYsCGS7kDFLlpgUM94npmSyy6Vgg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@tombi-toml/cli-linux-arm64-musl@0.0.0-dev':
+    resolution: {integrity: sha512-x0gRNY0c7diCWNIqaPOj1Nab/DOFRsyj2tncx8nmgT9VifTlcAvoPHDYV8kwsl1nMoOOzoq6pjfZDSFruHRC0g==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tombi-toml/cli-linux-arm64@0.0.0-dev':
+    resolution: {integrity: sha512-LOKBBRMRqTLqIzNZczB3aikaJdmrWHxBctKrCmIP+Rtyc7a6B72IeTewKLIAUaBEWmdhZl81GZa1/UzKsg/Khw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tombi-toml/cli-linux-x64-musl@0.0.0-dev':
+    resolution: {integrity: sha512-qg/qF6+98s4gLrj1FVzUx6Xca0mRT7IiE7S5ryp12LwPClvXRVHMg31vfnNcpPfAySWOh+kYjse7Z8s0v4xzNg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tombi-toml/cli-linux-x64@0.0.0-dev':
+    resolution: {integrity: sha512-D4a+dh3nl+xbHnIb4dXQ1r0XL2qqugxCIVXdjAQk8dtJ72FProhHsAgRmhyv37gf6kMod4y+3NuwM7IIWn5U+g==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tombi-toml/cli-win32-arm64@0.0.0-dev':
+    resolution: {integrity: sha512-d0Fr4C40WFZUFeUOT4xcVqQNwko+F+WEvTGfsw9OOhxA1RwNq/pZ2/H0wL9NM8cmNIq00jhoDklDaPNzTWglFQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@tombi-toml/cli-win32-x64@0.0.0-dev':
+    resolution: {integrity: sha512-851J/tumCwQepXQTR+HjIVya7w0eqzQLTqCFrhSzLnsDk0kmvzhhdh7bdmU3mhfL8O4f+b+ql8tHRZzFwdbDHQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [win32]
+
   '@tsconfig/strictest@2.0.5':
     resolution: {integrity: sha512-ec4tjL2Rr0pkZ5hww65c+EEPYwxOi4Ryv+0MtjeaSQRJyq322Q27eOQiFbuNgw2hpL4hB1/W/HBGk3VKS43osg==}
 
@@ -3151,7 +3224,6 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
 
   globals@11.12.0:
     resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
@@ -3285,7 +3357,6 @@ packages:
 
   inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
-    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -5169,7 +5240,6 @@ packages:
   vsce@2.15.0:
     resolution: {integrity: sha512-P8E9LAZvBCQnoGoizw65JfGvyMqNGlHdlUXD1VAuxtvYAaHBKLBdKPnpy60XKVDAkQCfmMu53g+gq9FM+ydepw==}
     engines: {node: '>= 14'}
-    deprecated: vsce has been renamed to @vscode/vsce. Install using @vscode/vsce instead.
     hasBin: true
 
   vscode-jsonrpc@8.2.0:
@@ -6706,6 +6776,30 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
+
+  '@tombi-toml/cli-darwin-arm64@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-darwin-x64@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-linux-arm64-musl@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-linux-arm64@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-linux-x64-musl@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-linux-x64@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-win32-arm64@0.0.0-dev':
+    optional: true
+
+  '@tombi-toml/cli-win32-x64@0.0.0-dev':
+    optional: true
 
   '@tsconfig/strictest@2.0.5': {}
 
