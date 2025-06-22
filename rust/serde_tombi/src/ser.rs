@@ -138,7 +138,7 @@ impl Serializer<'_> {
 
         let formatter = tombi_formatter::Formatter::new(
             TomlVersion::default(),
-            format_definitions,
+            &format_definitions,
             &format_options,
             self.source_path.map(Either::Right),
             schema_store,
