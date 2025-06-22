@@ -3,6 +3,7 @@ pub mod printer;
 
 pub use level::Level;
 pub use printer::Print;
+use tower_lsp::lsp_types::NumberOrString;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Diagnostic {
@@ -99,6 +100,8 @@ impl From<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
                 level::Level::ERROR => tower_lsp::lsp_types::DiagnosticSeverity::ERROR,
             }),
             message: diagnostic.message().to_string(),
+            source: Some("Tombi".to_owned()),
+            code: Some(NumberOrString::String(diagnostic.code)),
             ..Default::default()
         }
     }
