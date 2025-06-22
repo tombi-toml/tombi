@@ -462,7 +462,7 @@ fn goto_definition_for_workspace_cargo_toml(
             None => Ok(Vec::with_capacity(0)),
         }
     } else if matches_accessors!(accessors, ["workspace", "members"])
-        | matches_accessors!(accessors, ["workspace", "members", _])
+        || matches_accessors!(accessors, ["workspace", "members", _])
     {
         goto_workspace_member_crates(
             workspace_document_tree,
@@ -473,7 +473,7 @@ fn goto_definition_for_workspace_cargo_toml(
         )
         .map(|locations| locations.into_iter().filter_map(Into::into).collect_vec())
     } else if matches_accessors!(accessors, ["workspace", "default-members"])
-        | matches_accessors!(accessors, ["workspace", "default-members", _])
+        || matches_accessors!(accessors, ["workspace", "default-members", _])
     {
         goto_workspace_member_crates(
             workspace_document_tree,
