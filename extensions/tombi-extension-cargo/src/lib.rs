@@ -289,6 +289,7 @@ fn goto_dependency_crates(
             accessors,
             workspace_cargo_toml_path,
             toml_version,
+            "members",
         )? {
             let Some(crate_document_tree) =
                 load_cargo_toml(&crate_location.cargo_toml_path, toml_version)
@@ -468,6 +469,18 @@ fn goto_definition_for_workspace_cargo_toml(
             accessors,
             workspace_cargo_toml_path,
             toml_version,
+            "members",
+        )
+        .map(|locations| locations.into_iter().filter_map(Into::into).collect_vec())
+    } else if matches_accessors!(accessors, ["workspace", "default-members"])
+        | matches_accessors!(accessors, ["workspace", "default-members", _])
+    {
+        goto_workspace_member_crates(
+            workspace_document_tree,
+            accessors,
+            workspace_cargo_toml_path,
+            toml_version,
+            "default-members",
         )
         .map(|locations| locations.into_iter().filter_map(Into::into).collect_vec())
     } else {
@@ -522,8 +535,12 @@ fn goto_workspace_member_crates(
     accessors: &[tombi_schema_store::Accessor],
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
+    members_key: &'static str,
 ) -> Result<Vec<CrateLocation>, tower_lsp::jsonrpc::Error> {
-    let member_patterns = if matches_accessors!(accessors, ["workspace", "members", _]) {
+    debug_assert!(accessors.len() >= 2);
+    debug_assert!(accessors[1] == tombi_schema_store::Accessor::Key(members_key.to_string()));
+
+    let member_patterns = if matches_accessors!(accessors, ["workspace", _, _]) {
         let Some((_, tombi_document_tree::Value::String(member))) =
             dig_accessors(workspace_document_tree, accessors)
         else {
@@ -531,7 +548,7 @@ fn goto_workspace_member_crates(
         };
         vec![member]
     } else {
-        match tombi_document_tree::dig_keys(workspace_document_tree, &["workspace", "members"]) {
+        match tombi_document_tree::dig_keys(workspace_document_tree, &["workspace", members_key]) {
             Some((_, tombi_document_tree::Value::Array(members))) => members
                 .iter()
                 .filter_map(|member| match member {
