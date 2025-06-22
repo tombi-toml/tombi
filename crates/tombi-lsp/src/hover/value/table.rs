@@ -111,20 +111,42 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             )
                                             .await
                                             .map(|mut hover_content| {
-                                                if keys.len() == 1
-                                                    && !required
-                                                    && hover_content
-                                                        .accessors
-                                                        .last()
-                                                        .map(|accessor| accessor.is_key())
-                                                        .unwrap_or_default()
-                                                {
-                                                    if let Some(constraints) =
-                                                        &mut hover_content.constraints
-                                                    {
-                                                        constraints.key_patterns = key_patterns;
+                                                if keys.len() == 1 {
+                                                    // Check if cursor is not on the value
+                                                    if !value.range().contains(position) {
+                                                        // When cursor is on key or equals sign,
+                                                        // use the property's title and description
+                                                        if let Some(title) =
+                                                            current_schema.value_schema.title()
+                                                        {
+                                                            hover_content.title =
+                                                                Some(title.to_string());
+                                                        }
+                                                        if let Some(description) = current_schema
+                                                            .value_schema
+                                                            .description()
+                                                        {
+                                                            hover_content.description =
+                                                                Some(description.to_string());
+                                                        }
                                                     }
-                                                    hover_content.into_nullable()
+
+                                                    if !required
+                                                        && hover_content
+                                                            .accessors
+                                                            .last()
+                                                            .map(|accessor| accessor.is_key())
+                                                            .unwrap_or_default()
+                                                    {
+                                                        if let Some(constraints) =
+                                                            &mut hover_content.constraints
+                                                        {
+                                                            constraints.key_patterns = key_patterns;
+                                                        }
+                                                        hover_content.into_nullable()
+                                                    } else {
+                                                        hover_content
+                                                    }
                                                 } else {
                                                     hover_content
                                                 }
@@ -196,22 +218,52 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                         )
                                                         .await
                                                         .map(|mut hover_content| {
-                                                            if keys.len() == 1
-                                                                && hover_content
+                                                            if keys.len() == 1 {
+                                                                // Check if cursor is not on the value
+                                                                if !value.range().contains(position)
+                                                                {
+                                                                    // When cursor is on key or equals sign,
+                                                                    // use the property's title and description
+                                                                    if let Some(title) =
+                                                                        current_schema
+                                                                            .value_schema
+                                                                            .title()
+                                                                    {
+                                                                        hover_content.title =
+                                                                            Some(title.to_string());
+                                                                    }
+                                                                    if let Some(description) =
+                                                                        current_schema
+                                                                            .value_schema
+                                                                            .description()
+                                                                    {
+                                                                        hover_content.description =
+                                                                            Some(
+                                                                                description
+                                                                                    .to_string(),
+                                                                            );
+                                                                    }
+                                                                }
+
+                                                                if hover_content
                                                                     .accessors
                                                                     .last()
                                                                     .map(|accessor| {
                                                                         accessor.is_key()
                                                                     })
                                                                     .unwrap_or_default()
-                                                            {
-                                                                if let Some(constraints) =
-                                                                    &mut hover_content.constraints
                                                                 {
-                                                                    constraints.key_patterns =
-                                                                        key_patterns;
+                                                                    if let Some(constraints) =
+                                                                        &mut hover_content
+                                                                            .constraints
+                                                                    {
+                                                                        constraints.key_patterns =
+                                                                            key_patterns;
+                                                                    }
+                                                                    hover_content.into_nullable()
+                                                                } else {
+                                                                    hover_content
                                                                 }
-                                                                hover_content.into_nullable()
                                                             } else {
                                                                 hover_content
                                                             }
@@ -286,15 +338,40 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 schema_context,
                                             )
                                             .await
-                                            .map(|hover_content| {
-                                                if keys.len() == 1
-                                                    && hover_content
+                                            .map(|mut hover_content| {
+                                                if keys.len() == 1 {
+                                                    // Check if cursor is not on the value
+                                                    let cursor_on_value =
+                                                        value.range().contains(position);
+
+                                                    if !cursor_on_value {
+                                                        // When cursor is on key or equals sign,
+                                                        // use the property's title and description
+                                                        if let Some(title) =
+                                                            current_schema.value_schema.title()
+                                                        {
+                                                            hover_content.title =
+                                                                Some(title.to_string());
+                                                        }
+                                                        if let Some(description) = current_schema
+                                                            .value_schema
+                                                            .description()
+                                                        {
+                                                            hover_content.description =
+                                                                Some(description.to_string());
+                                                        }
+                                                    }
+
+                                                    if hover_content
                                                         .accessors
                                                         .last()
                                                         .map(|accessor| accessor.is_key())
                                                         .unwrap_or_default()
-                                                {
-                                                    hover_content.into_nullable()
+                                                    {
+                                                        hover_content.into_nullable()
+                                                    } else {
+                                                        hover_content
+                                                    }
                                                 } else {
                                                     hover_content
                                                 }
