@@ -187,7 +187,7 @@
         }
       },
       "additionalProperties": false,
-      "x-tombi-table-keys-order": "schema"
+      "x-tombi-table-keys-order": "version-sort"
     },
     "SeverityLevelDefaultWarn": {
       "default": "warn",
