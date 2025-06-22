@@ -7,3 +7,12 @@ pub enum LineEnding {
     Lf,
     Crlf,
 }
+
+impl Into<&'static str> for LineEnding {
+    fn into(self) -> &'static str {
+        match self {
+            LineEnding::Lf => "\n",
+            LineEnding::Crlf => "\r\n",
+        }
+    }
+}
