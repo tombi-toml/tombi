@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{json::CatalogUrl, SchemaUrl};
+use crate::{CatalogUrl, SchemaUrl};
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
