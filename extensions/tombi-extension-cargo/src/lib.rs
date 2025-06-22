@@ -537,10 +537,7 @@ fn goto_workspace_member_crates(
     toml_version: TomlVersion,
     members_key: &'static str,
 ) -> Result<Vec<CrateLocation>, tower_lsp::jsonrpc::Error> {
-    debug_assert!(accessors.len() >= 2);
-    debug_assert!(accessors[1] == tombi_schema_store::Accessor::Key(members_key.to_string()));
-
-    let member_patterns = if matches_accessors!(accessors, ["workspace", _, _]) {
+    let member_patterns = if matches_accessors!(accessors, ["workspace", members_key, _]) {
         let Some((_, tombi_document_tree::Value::String(member))) =
             dig_accessors(workspace_document_tree, accessors)
         else {
