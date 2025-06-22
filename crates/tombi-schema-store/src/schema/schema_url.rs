@@ -1,6 +1,6 @@
 use tombi_url::url_from_file_path;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, serde::Deserialize)]
 pub struct SchemaUrl(url::Url);
 
 impl SchemaUrl {
@@ -27,6 +27,12 @@ impl SchemaUrl {
                 schema_url: path.as_ref().to_string_lossy().to_string(),
             }),
         }
+    }
+}
+
+impl std::fmt::Debug for SchemaUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_string())
     }
 }
 
