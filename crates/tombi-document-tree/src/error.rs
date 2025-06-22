@@ -83,6 +83,24 @@ impl Error {
         self.to_string()
     }
 
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::DuplicateKey { .. } => "duplicate-key",
+            Self::ConflictTable { .. } => "conflict-table",
+            Self::ConflictArray { .. } => "conflict-array",
+            Self::ParseIntError { .. } => "parse-int-error",
+            Self::ParseFloatError { .. } => "parse-float-error",
+            Self::ParseStringError { .. } => "parse-string-error",
+            Self::ParseOffsetDateTimeError { .. } => "parse-offset-date-time-error",
+            Self::ParseLocalDateTimeError { .. } => "parse-local-date-time-error",
+            Self::ParseLocalDateError { .. } => "parse-local-date-error",
+            Self::ParseLocalTimeError { .. } => "parse-local-time-error",
+            Self::ParseDateTimeError { .. } => "parse-date-time-error",
+            Self::ParseCommentError { .. } => "parse-comment-error",
+            Self::IncompleteNode { .. } => "incomplete-node",
+        }
+    }
+
     pub fn range(&self) -> tombi_text::Range {
         match self {
             Self::DuplicateKey { range, .. } => *range,
@@ -108,18 +126,20 @@ impl tombi_diagnostic::SetDiagnostics for Error {
         match self {
             Self::ConflictArray { range1, range2 } => {
                 let diagnostic1 =
-                    tombi_diagnostic::Diagnostic::new_error(self.to_message(), range1);
+                    tombi_diagnostic::Diagnostic::new_error(self.to_message(), self.code(), range1);
                 if !diagnostics.contains(&diagnostic1) {
                     diagnostics.push(diagnostic1);
                 }
                 diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
                     self.to_message(),
+                    self.code(),
                     range2,
                 ));
             }
             _ => {
                 diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
                     self.to_message(),
+                    self.code(),
                     self.range(),
                 ));
             }

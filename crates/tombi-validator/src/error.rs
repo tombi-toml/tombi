@@ -90,9 +90,40 @@ pub struct Error {
     pub range: tombi_text::Range,
 }
 
+impl Error {
+    #[inline]
+    pub fn code(&self) -> &'static str {
+        match self.kind {
+            ErrorKind::KeyRequired { .. } => "key-required",
+            ErrorKind::KeyNotAllowed { .. } => "key-not-allowed",
+            ErrorKind::TypeMismatch { .. } => "type-mismatch",
+            ErrorKind::Const { .. } => "const",
+            ErrorKind::Enumerate { .. } => "enumerate",
+            ErrorKind::MaximumInteger { .. } => "maximum-integer",
+            ErrorKind::MinimumInteger { .. } => "minimum-integer",
+            ErrorKind::ExclusiveMaximumInteger { .. } => "exclusive-maximum-integer",
+            ErrorKind::ExclusiveMinimumInteger { .. } => "exclusive-minimum-integer",
+            ErrorKind::MultipleOfInteger { .. } => "multiple-of-integer",
+            ErrorKind::MaximumFloat { .. } => "maximum-float",
+            ErrorKind::MinimumFloat { .. } => "minimum-float",
+            ErrorKind::ExclusiveMaximumFloat { .. } => "exclusive-maximum-float",
+            ErrorKind::ExclusiveMinimumFloat { .. } => "exclusive-minimum-float",
+            ErrorKind::MultipleOfFloat { .. } => "multiple-of-float",
+            ErrorKind::MaximumLength { .. } => "maximum-length",
+            ErrorKind::MinimumLength { .. } => "minimum-length",
+            ErrorKind::Pattern { .. } => "pattern",
+            ErrorKind::MaxItems { .. } => "max-items",
+            ErrorKind::MinItems { .. } => "min-items",
+            ErrorKind::MaxProperties { .. } => "max-properties",
+            ErrorKind::MinProperties { .. } => "min-properties",
+            ErrorKind::PatternProperty { .. } => "pattern-property",
+        }
+    }
+}
+
 impl From<Error> for tombi_diagnostic::Diagnostic {
     fn from(error: Error) -> Self {
-        tombi_diagnostic::Diagnostic::new_error(error.kind.to_string(), error.range)
+        tombi_diagnostic::Diagnostic::new_error(error.kind.to_string(), error.code(), error.range)
     }
 }
 
