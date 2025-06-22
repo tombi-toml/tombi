@@ -134,11 +134,8 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn line_ending(&self) -> &'static str {
-        match self.definitions.line_ending.unwrap_or_default() {
-            LineEnding::Lf => "\n",
-            LineEnding::Crlf => "\r\n",
-        }
+    pub fn line_ending(&self) -> &'static str {
+        self.definitions.line_ending.unwrap_or_default().into()
     }
 
     #[inline]
