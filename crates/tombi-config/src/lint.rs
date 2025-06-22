@@ -27,6 +27,7 @@ pub struct LintRules {
     /// Check if the key is empty.
     ///
     /// ```toml
+    /// # VALID BUT DISCOURAGED
     /// "" = true
     /// ```
     pub key_empty: Option<SeverityLevelDefaultWarn>,
