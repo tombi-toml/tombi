@@ -1451,7 +1451,7 @@ mod completion_labels {
                                 tombi_config::SubSchema {
                                     path: subschema_url.to_string(),
                                     include: vec!["*.toml".to_string()],
-                                    root: Some($root.to_string()),
+                                    root: $root.to_string(),
                                 }
                             )
                         ],
