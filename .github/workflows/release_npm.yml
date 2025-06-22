@@ -149,3 +149,31 @@ jobs:
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @tombi-toml/tombi as tombi
+        run: |
+          set -e
+          # Check if tombi@${TOMBI_VERSION} is already published
+          if npm view tombi@${TOMBI_VERSION} version > /dev/null 2>&1; then
+            echo "tombi@${TOMBI_VERSION} is already published. Skipping publish."
+          else
+            # Create a temporary directory
+            temp_dir=$(mktemp -d)
+            
+            # Copy @tombi-toml/tombi package
+            cp -r typescript/@tombi-toml/tombi/* "$temp_dir/"
+            
+            # Update package.json to change the name from @tombi-toml/tombi to tombi
+            cd "$temp_dir"
+            jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
+            
+            # Publish as tombi
+            npm publish --tag latest --access public --provenance
+            echo "Published tombi@${TOMBI_VERSION}"
+            
+            # Clean up
+            cd -
+            rm -rf "$temp_dir"
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
