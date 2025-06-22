@@ -4,7 +4,14 @@
     "enabled": true
   },
   "files": {
-    "include": ["**/*.ts", "**/*.tsx", "**/*.md", "**/*.mdx", "**/*.json"],
+    "include": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.md",
+      "**/*.mdx",
+      "**/*.json",
+      "typescript/@tombi-toml/tombi/bin/tombi"
+    ],
     "ignore": ["**/*.js", "**/.vinxi/**"]
   },
   "formatter": {
