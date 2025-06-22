@@ -1,9 +1,11 @@
 #[derive(thiserror::Error, Debug)]
 pub enum SeverityKind {
-    #[error("An empty quoted key is allowed, but it is not recommended")]
+    #[error("An empty quoted key is discouraged")]
     KeyEmpty,
     #[error("Defining dotted keys out-of-order is discouraged")]
     DottedKeysOutOfOrder,
+    #[error("Defining tables out-of-order is discouraged")]
+    TablesOutOfOrder,
 }
 
 #[derive(Debug)]
