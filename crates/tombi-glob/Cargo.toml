@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 ignore = "0.4.20"
 rayon = "1.10.0"
+thiserror = "2.0.12"

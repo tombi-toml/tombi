@@ -28,7 +28,11 @@ impl FileInput {
                 tracing::debug!("Include patterns: {:?}", include_patterns);
                 tracing::debug!("Exclude patterns: {:?}", exclude_patterns);
 
-                Self::search_with_patterns(".", include_patterns, exclude_patterns)
+                FileInput::Files(search_with_patterns(
+                    ".",
+                    include_patterns,
+                    exclude_patterns,
+                ))
             }
             1 if files[0].as_ref() == "-" => FileInput::Stdin,
             _ => {
@@ -41,10 +45,11 @@ impl FileInput {
                     let file_path = file_input.as_ref();
 
                     if is_glob_pattern(file_path) {
-                        match Self::search_with_patterns(".", &[file_path], exclude_patterns) {
-                            FileInput::Files(paths) => matched_paths.extend(paths),
-                            _ => unreachable!(),
-                        }
+                        matched_paths.extend(search_with_patterns(
+                            ".",
+                            &[file_path],
+                            exclude_patterns,
+                        ));
                     } else {
                         let path = PathBuf::from(file_path);
                         if path.exists() {
@@ -56,29 +61,6 @@ impl FileInput {
                 }
 
                 FileInput::Files(matched_paths)
-            }
-        }
-    }
-
-    fn search_with_patterns(
-        root: &str,
-        include_patterns: &[&str],
-        exclude_patterns: &[&str],
-    ) -> Self {
-        let options = SearchPatternsOptions::new(
-            include_patterns.iter().map(|s| s.to_string()).collect(),
-            exclude_patterns.iter().map(|s| s.to_string()).collect(),
-        );
-
-        match tombi_glob::search_with_patterns(root, options) {
-            Ok(results) => {
-                let matched_paths: Vec<Result<PathBuf, crate::Error>> =
-                    results.into_iter().map(|r| Ok(r.path)).collect();
-                FileInput::Files(matched_paths)
-            }
-            Err(e) => {
-                let error = crate::Error::GlobPatternInvalid(e.to_string());
-                FileInput::Files(vec![Err(error)])
             }
         }
     }
@@ -98,4 +80,26 @@ fn is_glob_pattern(value: &str) -> bool {
         }
     }
     false
+}
+
+fn search_with_patterns(
+    root: &str,
+    include_patterns: &[&str],
+    exclude_patterns: &[&str],
+) -> Vec<Result<PathBuf, crate::Error>> {
+    let options = SearchPatternsOptions::new(
+        include_patterns.iter().map(|s| s.to_string()).collect(),
+        exclude_patterns.iter().map(|s| s.to_string()).collect(),
+    );
+
+    match tombi_glob::search_with_patterns(root, options) {
+        Ok(results) => {
+            let matched_paths: Vec<Result<PathBuf, crate::Error>> =
+                results.into_iter().map(|r| Ok(r.path)).collect();
+            matched_paths
+        }
+        Err(err) => {
+            vec![Err(crate::Error::GlobSearchFailed(err))]
+        }
+    }
 }

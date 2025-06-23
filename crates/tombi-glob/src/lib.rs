@@ -1,6 +1,101 @@
 use ignore::{DirEntry, WalkBuilder};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum GlobError {
+    #[error("Invalid glob pattern: '{pattern}'")]
+    InvalidPattern { pattern: String },
+    
+    #[error("Invalid character class in pattern: '{pattern}' at position {position}")]
+    InvalidCharacterClass { pattern: String, position: usize },
+    
+    #[error("Unclosed bracket in pattern: '{pattern}' at position {position}")]
+    UnclosedBracket { pattern: String, position: usize },
+    
+    #[error("Empty pattern provided")]
+    EmptyPattern,
+    
+    #[error("Pattern too complex: '{pattern}' (maximum {max_states} states exceeded)")]
+    PatternTooComplex { pattern: String, max_states: usize },
+    
+    #[error("IO error while walking directory '{path}': {source}")]
+    IoError {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    
+    #[error("Directory walk failed: {message}")]
+    WalkError { message: String },
+    
+    #[error("Failed to acquire thread synchronization lock")]
+    LockError,
+    
+    #[error("Search root path does not exist: '{path}'")]
+    RootPathNotFound { path: PathBuf },
+    
+    #[error("Search root path is not a directory: '{path}'")]
+    RootPathNotDirectory { path: PathBuf },
+    
+    #[error("Pattern compilation failed for: '{pattern}' - {reason}")]
+    CompilationError { pattern: String, reason: String },
+    
+    #[error("Thread pool error: {message}")]
+    ThreadPoolError { message: String },
+    
+    #[error("Maximum file size exceeded: {size} bytes (limit: {limit} bytes)")]
+    FileSizeExceeded { size: u64, limit: u64 },
+    
+    #[error("Maximum search depth exceeded: {depth} (limit: {limit})")]
+    MaxDepthExceeded { depth: usize, limit: usize },
+}
+
+impl GlobError {
+    pub fn invalid_pattern(pattern: impl Into<String>) -> Self {
+        Self::InvalidPattern {
+            pattern: pattern.into(),
+        }
+    }
+    
+    pub fn invalid_character_class(pattern: impl Into<String>, position: usize) -> Self {
+        Self::InvalidCharacterClass {
+            pattern: pattern.into(),
+            position,
+        }
+    }
+    
+    pub fn unclosed_bracket(pattern: impl Into<String>, position: usize) -> Self {
+        Self::UnclosedBracket {
+            pattern: pattern.into(),
+            position,
+        }
+    }
+    
+    pub fn pattern_too_complex(pattern: impl Into<String>, max_states: usize) -> Self {
+        Self::PatternTooComplex {
+            pattern: pattern.into(),
+            max_states,
+        }
+    }
+    
+    pub fn io_error(path: impl Into<PathBuf>, source: std::io::Error) -> Self {
+        Self::IoError {
+            path: path.into(),
+            source,
+        }
+    }
+    
+    pub fn compilation_error(pattern: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self::CompilationError {
+            pattern: pattern.into(),
+            reason: reason.into(),
+        }
+    }
+}
+
+pub type GlobResult<T> = Result<T, GlobError>;
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -57,13 +152,21 @@ impl MultiGlob {
         }
     }
 
-    pub fn add(&mut self, pattern: &str, value: i64) -> bool {
-        if let Some(states) = parse_glob(pattern) {
-            self.patterns.push(GlobPattern::new(states, value));
-            self.compiled = false;
-            true
-        } else {
-            false
+    pub fn add(&mut self, pattern: &str, value: i64) -> GlobResult<()> {
+        if pattern.is_empty() {
+            return Err(GlobError::EmptyPattern);
+        }
+        
+        match parse_glob(pattern) {
+            Ok(states) => {
+                if states.len() > 1000 { // 合理的な制限を設定
+                    return Err(GlobError::pattern_too_complex(pattern, 1000));
+                }
+                self.patterns.push(GlobPattern::new(states, value));
+                self.compiled = false;
+                Ok(())
+            }
+            Err(e) => Err(e)
         }
     }
 
@@ -150,9 +253,10 @@ impl MultiGlob {
     }
 }
 
-fn parse_glob(pattern: &str) -> Option<Vec<State>> {
+fn parse_glob(pattern: &str) -> GlobResult<Vec<State>> {
     let mut states: Vec<State> = Vec::new();
     let mut chars = pattern.bytes().peekable();
+    let mut position = 0;
 
     while let Some(c) = chars.next() {
         let mut char_set = State::new();
@@ -166,6 +270,7 @@ fn parse_glob(pattern: &str) -> Option<Vec<State>> {
                     star_state.is_star = true;
                     states.push(star_state);
                 }
+                position += 1;
                 continue;
             }
             b'?' => {
@@ -175,11 +280,13 @@ fn parse_glob(pattern: &str) -> Option<Vec<State>> {
                 if let Some(&next_char) = chars.peek() {
                     char_set.set_char(next_char);
                     chars.next();
+                    position += 1;
                 } else {
-                    return None;
+                    return Err(GlobError::invalid_pattern(pattern));
                 }
             }
             b'[' => {
+                let bracket_start = position;
                 let mut negate = false;
                 let mut bracket_chars = Vec::new();
                 let mut closed = false;
@@ -187,14 +294,18 @@ fn parse_glob(pattern: &str) -> Option<Vec<State>> {
                 if let Some(&b'!') | Some(&b'^') = chars.peek() {
                     negate = true;
                     chars.next();
+                    position += 1;
                 }
 
                 if let Some(&b']') = chars.peek() {
                     bracket_chars.push(b']');
                     chars.next();
+                    position += 1;
                 }
 
                 while let Some(bracket_char) = chars.next() {
+                    position += 1;
+                    
                     if bracket_char == b']' {
                         closed = true;
                         break;
@@ -205,6 +316,12 @@ fn parse_glob(pattern: &str) -> Option<Vec<State>> {
                             if end_char != b']' {
                                 let start_char = *bracket_chars.last().unwrap();
                                 chars.next();
+                                position += 1;
+                                
+                                if start_char > end_char {
+                                    return Err(GlobError::invalid_character_class(pattern, bracket_start));
+                                }
+                                
                                 for ch in start_char..=end_char {
                                     bracket_chars.push(ch);
                                 }
@@ -217,7 +334,11 @@ fn parse_glob(pattern: &str) -> Option<Vec<State>> {
                 }
 
                 if !closed {
-                    return None;
+                    return Err(GlobError::unclosed_bracket(pattern, bracket_start));
+                }
+
+                if bracket_chars.is_empty() {
+                    return Err(GlobError::invalid_character_class(pattern, bracket_start));
                 }
 
                 if negate {
@@ -237,13 +358,14 @@ fn parse_glob(pattern: &str) -> Option<Vec<State>> {
         }
 
         states.push(char_set);
+        position += 1;
     }
 
     if states.is_empty() {
-        return None;
+        return Err(GlobError::EmptyPattern);
     }
 
-    Some(states)
+    Ok(states)
 }
 
 impl Default for MultiGlob {
@@ -295,10 +417,7 @@ impl ParallelGlobWalker {
         Self { glob, options }
     }
 
-    pub fn search<P: AsRef<Path>>(
-        &self,
-        root: P,
-    ) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
+    pub fn search<P: AsRef<Path>>(&self, root: P) -> GlobResult<Vec<SearchResult>> {
         let results = Arc::new(Mutex::new(Vec::new()));
 
         let mut builder = WalkBuilder::new(root);
@@ -341,9 +460,9 @@ impl ParallelGlobWalker {
         });
 
         let results = Arc::try_unwrap(results)
-            .map_err(|_| "Failed to unwrap results")?
+            .map_err(|_| GlobError::LockError)?
             .into_inner()
-            .map_err(|_| "Failed to acquire lock")?;
+            .map_err(|_| GlobError::LockError)?;
 
         Ok(results)
     }
@@ -366,10 +485,7 @@ impl ParallelGlobWalker {
         None
     }
 
-    pub fn search_with_full_paths<P: AsRef<Path>>(
-        &self,
-        root: P,
-    ) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
+    pub fn search_with_full_paths<P: AsRef<Path>>(&self, root: P) -> GlobResult<Vec<SearchResult>> {
         let results = Arc::new(Mutex::new(Vec::new()));
 
         let mut builder = WalkBuilder::new(root.as_ref());
@@ -416,9 +532,9 @@ impl ParallelGlobWalker {
         });
 
         let results = Arc::try_unwrap(results)
-            .map_err(|_| "Failed to unwrap results")?
+            .map_err(|_| GlobError::LockError)?
             .into_inner()
-            .map_err(|_| "Failed to acquire lock")?;
+            .map_err(|_| GlobError::LockError)?;
 
         Ok(results)
     }
@@ -453,10 +569,10 @@ pub fn find_files_parallel<P: AsRef<Path>>(
     root: P,
     patterns: &[(&str, i64)],
     options: Option<SearchOptions>,
-) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
+) -> GlobResult<Vec<SearchResult>> {
     let mut glob = MultiGlob::new();
     for (pattern, value) in patterns {
-        glob.add(pattern, *value);
+        glob.add(pattern, *value)?;
     }
 
     let search_options = options.unwrap_or_default();
@@ -464,23 +580,17 @@ pub fn find_files_parallel<P: AsRef<Path>>(
     walker.search(root)
 }
 
-pub fn find_rust_files<P: AsRef<Path>>(
-    root: P,
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+pub fn find_rust_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
     let results = find_files_parallel(root, &[("*.rs", 1)], None)?;
     Ok(results.into_iter().map(|r| r.path).collect())
 }
 
-pub fn find_toml_files<P: AsRef<Path>>(
-    root: P,
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+pub fn find_toml_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
     let results = find_files_parallel(root, &[("*.toml", 1)], None)?;
     Ok(results.into_iter().map(|r| r.path).collect())
 }
 
-pub fn find_config_files<P: AsRef<Path>>(
-    root: P,
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+pub fn find_config_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
     let patterns = &[
         ("*.toml", 1),
         ("*.json", 2),
@@ -519,19 +629,32 @@ impl SearchPatternsOptions {
 pub fn search_with_patterns<P: AsRef<Path>>(
     root: P,
     options: SearchPatternsOptions,
-) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
+) -> GlobResult<Vec<SearchResult>> {
     let root_path = root.as_ref();
+
+    // Validate root path
+    if !root_path.exists() {
+        return Err(GlobError::RootPathNotFound {
+            path: root_path.to_path_buf(),
+        });
+    }
+    
+    if !root_path.is_dir() {
+        return Err(GlobError::RootPathNotDirectory {
+            path: root_path.to_path_buf(),
+        });
+    }
 
     // Create include glob
     let mut include_glob = MultiGlob::new();
     for (i, pattern) in options.include_patterns.iter().enumerate() {
-        include_glob.add(pattern, i as i64 + 1);
+        include_glob.add(pattern, i as i64 + 1)?;
     }
 
     // Create exclude glob
     let mut exclude_glob = MultiGlob::new();
     for (i, pattern) in options.exclude_patterns.iter().enumerate() {
-        exclude_glob.add(pattern, i as i64 + 1);
+        exclude_glob.add(pattern, i as i64 + 1)?;
     }
     exclude_glob.compile();
 
@@ -564,7 +687,7 @@ pub fn search_with_include_exclude<P: AsRef<Path>>(
     root: P,
     include_patterns: &[&str],
     exclude_patterns: &[&str],
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+) -> GlobResult<Vec<PathBuf>> {
     let options = SearchPatternsOptions::new(
         include_patterns.iter().map(|s| s.to_string()).collect(),
         exclude_patterns.iter().map(|s| s.to_string()).collect(),
@@ -577,7 +700,7 @@ pub fn search_with_include_exclude<P: AsRef<Path>>(
 pub fn search_toml_files_advanced<P: AsRef<Path>>(
     root: P,
     exclude_patterns: Option<&[&str]>,
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+) -> GlobResult<Vec<PathBuf>> {
     let exclude_patterns = exclude_patterns.unwrap_or(&[]);
     search_with_include_exclude(root, &["**/*.toml"], exclude_patterns)
 }
@@ -589,7 +712,7 @@ mod tests {
     #[test]
     fn test_simple_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("hello", 1));
+        assert!(glob.add("hello", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"hello"), Some(1));
@@ -599,7 +722,7 @@ mod tests {
     #[test]
     fn test_wildcard_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("h*o", 1));
+        assert!(glob.add("h*o", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"hello"), Some(1));
@@ -611,7 +734,7 @@ mod tests {
     #[test]
     fn test_question_mark_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("h?llo", 1));
+        assert!(glob.add("h?llo", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"hello"), Some(1));
@@ -622,7 +745,7 @@ mod tests {
     #[test]
     fn test_bracket_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("h[aeiou]llo", 1));
+        assert!(glob.add("h[aeiou]llo", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"hello"), Some(1));
@@ -634,7 +757,7 @@ mod tests {
     #[test]
     fn test_bracket_range_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("h[a-z]llo", 1));
+        assert!(glob.add("h[a-z]llo", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"hello"), Some(1));
@@ -645,7 +768,7 @@ mod tests {
     #[test]
     fn test_bracket_negation_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("h[!aeiou]llo", 1));
+        assert!(glob.add("h[!aeiou]llo", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"hello"), None);
@@ -656,9 +779,9 @@ mod tests {
     #[test]
     fn test_multiple_patterns() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("*.txt", 10));
-        assert!(glob.add("test.*", 5));
-        assert!(glob.add("test.txt", 20));
+        assert!(glob.add("*.txt", 10).is_ok());
+        assert!(glob.add("test.*", 5).is_ok());
+        assert!(glob.add("test.txt", 20).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"test.txt"), Some(20));
@@ -669,7 +792,7 @@ mod tests {
     #[test]
     fn test_escape_pattern() {
         let mut glob = MultiGlob::new();
-        assert!(glob.add("test\\*file", 1));
+        assert!(glob.add("test\\*file", 1).is_ok());
         glob.compile();
 
         assert_eq!(glob.find(b"test*file"), Some(1));
@@ -680,8 +803,8 @@ mod tests {
     #[test]
     fn test_parallel_walker_creation() {
         let mut glob = MultiGlob::new();
-        glob.add("*.txt", 1);
-        glob.add("*.rs", 2);
+        glob.add("*.txt", 1).unwrap();
+        glob.add("*.rs", 2).unwrap();
 
         let options = SearchOptions::default();
         let walker = ParallelGlobWalker::new(glob, options);
@@ -744,8 +867,8 @@ mod tests {
         write!(file3, "# Test").unwrap();
 
         let mut glob = MultiGlob::new();
-        glob.add("*.txt", 1);
-        glob.add("*.rs", 2);
+        glob.add("*.txt", 1).unwrap();
+        glob.add("*.rs", 2).unwrap();
 
         let options = SearchOptions::default();
         let walker = ParallelGlobWalker::new(glob, options);
@@ -868,5 +991,67 @@ mod tests {
 
         // Cleanup
         let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_error_empty_pattern() {
+        let mut glob = MultiGlob::new();
+        let result = glob.add("", 1);
+        assert!(matches!(result, Err(GlobError::EmptyPattern)));
+    }
+
+    #[test]
+    fn test_error_unclosed_bracket() {
+        let mut glob = MultiGlob::new();
+        let result = glob.add("test[abc", 1);
+        assert!(matches!(result, Err(GlobError::UnclosedBracket { .. })));
+    }
+
+    #[test]
+    fn test_error_invalid_character_class() {
+        let mut glob = MultiGlob::new();
+        let result = glob.add("test[z-a]", 1);
+        assert!(matches!(result, Err(GlobError::InvalidCharacterClass { .. })));
+    }
+
+    #[test]
+    fn test_error_invalid_pattern_backslash() {
+        let mut glob = MultiGlob::new();
+        let result = glob.add("test\\", 1);
+        assert!(matches!(result, Err(GlobError::InvalidPattern { .. })));
+    }
+
+    #[test]
+    fn test_error_root_path_not_found() {
+        let options = SearchPatternsOptions::new(
+            vec!["*.txt".to_string()],
+            vec![],
+        );
+        
+        let result = search_with_patterns("/nonexistent/path", options);
+        assert!(matches!(result, Err(GlobError::RootPathNotFound { .. })));
+    }
+
+    #[test]
+    fn test_error_pattern_too_complex() {
+        let mut glob = MultiGlob::new();
+        // Create a pattern that would exceed the state limit
+        let mut complex_pattern = String::new();
+        for _ in 0..2000 {
+            complex_pattern.push('a');
+        }
+        
+        let result = glob.add(&complex_pattern, 1);
+        assert!(matches!(result, Err(GlobError::PatternTooComplex { .. })));
+    }
+
+    #[test]
+    fn test_glob_error_display() {
+        let error = GlobError::invalid_pattern("test[");
+        assert!(error.to_string().contains("Invalid glob pattern"));
+        
+        let error = GlobError::unclosed_bracket("test[abc", 4);
+        assert!(error.to_string().contains("Unclosed bracket"));
+        assert!(error.to_string().contains("position 4"));
     }
 }
