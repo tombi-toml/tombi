@@ -14,7 +14,7 @@ pub enum FileInput {
 }
 
 impl FileInput {
-    pub fn new<T: AsRef<str>>(
+    pub async fn new<T: AsRef<str>>(
         files: &[T],
         include_patterns: Option<&[&str]>,
         exclude_patterns: Option<&[&str]>,
@@ -28,11 +28,11 @@ impl FileInput {
                 tracing::debug!("Include patterns: {:?}", include_patterns);
                 tracing::debug!("Exclude patterns: {:?}", exclude_patterns);
 
-                FileInput::Files(search_with_patterns(
+                FileInput::Files(search_with_patterns_async(
                     ".",
                     include_patterns,
                     exclude_patterns,
-                ))
+                ).await)
             }
             1 if files[0].as_ref() == "-" => FileInput::Stdin,
             _ => {
@@ -45,11 +45,11 @@ impl FileInput {
                     let file_path = file_input.as_ref();
 
                     if is_glob_pattern(file_path) {
-                        matched_paths.extend(search_with_patterns(
+                        matched_paths.extend(search_with_patterns_async(
                             ".",
                             &[file_path],
                             exclude_patterns,
-                        ));
+                        ).await);
                     } else {
                         let path = PathBuf::from(file_path);
                         if path.exists() {
@@ -82,7 +82,7 @@ fn is_glob_pattern(value: &str) -> bool {
     false
 }
 
-fn search_with_patterns(
+async fn search_with_patterns_async(
     root: &str,
     include_patterns: &[&str],
     exclude_patterns: &[&str],
@@ -92,7 +92,7 @@ fn search_with_patterns(
         exclude_patterns.iter().map(|s| s.to_string()).collect(),
     );
 
-    match tombi_glob::search_with_patterns(root, options) {
+    match tombi_glob::search_with_patterns_async(root, options).await {
         Ok(results) => {
             let matched_paths: Vec<Result<PathBuf, crate::Error>> =
                 results.into_iter().map(|r| Ok(r.path)).collect();

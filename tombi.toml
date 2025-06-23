@@ -4,7 +4,6 @@
 #
 
 toml-version = "v1.0.0"
-exclude = ["node_modules/**/*"]
 
 [format]
 

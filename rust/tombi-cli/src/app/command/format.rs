@@ -89,10 +89,6 @@ where
     };
 
     runtime.block_on(async {
-        schema_store
-            .load_config(&config, config_path.as_deref())
-            .await?;
-
         let include_patterns: Option<Vec<&str>> = config
             .include
             .as_deref()
@@ -101,13 +97,23 @@ where
             .exclude
             .as_deref()
             .map(|p| p.iter().map(|s| s.as_str()).collect());
-        let format_options = config.format.unwrap_or_default();
+        let format_options = config
+            .format
+            .as_ref()
+            .unwrap_or(&Default::default())
+            .clone();
 
-        let input = arg::FileInput::new(
-            &args.files,
-            include_patterns.as_ref().map(|v| &v[..]),
-            exclude_patterns.as_ref().map(|v| &v[..]),
+        // Run schema loading and file discovery concurrently
+        let (schema_result, input) = tokio::join!(
+            schema_store.load_config(&config, config_path.as_deref()),
+            arg::FileInput::new(
+                &args.files,
+                include_patterns.as_ref().map(|v| &v[..]),
+                exclude_patterns.as_ref().map(|v| &v[..]),
+            )
         );
+
+        schema_result?;
         let total_num = input.len();
         let mut success_num = 0;
         let mut not_needed_num = 0;

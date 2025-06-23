@@ -3,7 +3,16 @@ name = "tombi-glob"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "profile"
+path = "src/bin/profile.rs"
+
 [dependencies]
+futures = "0.3.31"
 ignore = "0.4.20"
 rayon = "1.10.0"
+serde_tombi = { path = "../../rust/serde_tombi" }
 thiserror = "2.0.12"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["macros", "rt"] }
