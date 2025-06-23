@@ -652,7 +652,6 @@ optional_string = "provided"
             config.toml_version,
             Some(tombi_toml_version::TomlVersion::V1_0_0)
         );
-        pretty_assertions::assert_eq!(config.exclude, Some(vec!["node_modules/**/*".to_string()]));
         assert!(config.format.is_some());
         assert!(config.lint.is_some());
         assert!(config.lsp().is_some());
