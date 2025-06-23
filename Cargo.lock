@@ -3364,7 +3364,6 @@ version = "0.0.0-dev"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
- "glob",
  "itertools",
  "nu-ansi-term 0.50.1",
  "rayon",
@@ -3374,6 +3373,7 @@ dependencies = [
  "tombi-config",
  "tombi-diagnostic",
  "tombi-formatter",
+ "tombi-glob",
  "tombi-linter",
  "tombi-lsp",
  "tombi-schema-store",
