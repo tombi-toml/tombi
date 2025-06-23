@@ -1,4 +1,6 @@
+use serde_tombi;
 use std::{env, time::Instant};
+use tombi_config;
 use tombi_glob::{SearchOptions, SearchPatternsOptions};
 
 fn main() {
@@ -54,19 +56,22 @@ fn main() {
     // Profile the same search function that tombi format uses
     println!("\n=== Profiling tombi format search ===");
     let start_time = Instant::now();
-    
+
     match tombi_glob::search_with_patterns_profiled(root, patterns_options) {
         Ok((results, profile)) => {
             let total_duration = start_time.elapsed();
-            
+
             println!("Total search time: {:?}", total_duration);
             println!("Found {} TOML files", results.len());
-            
+
             // Show directory traversal profile
             println!("\n=== Directory Traversal Profile ===");
-            println!("Total directories visited: {}", profile.total_directories_scanned);
+            println!(
+                "Total directories visited: {}",
+                profile.total_directories_scanned
+            );
             println!("Total files examined: {}", profile.total_files_found);
-            
+
             // Show slowest directories
             println!("\n=== Top 10 Slowest Directories ===");
             for (i, dir_profile) in profile.slowest_directories.iter().enumerate() {
@@ -78,14 +83,14 @@ fn main() {
                     dir_profile.file_count,
                     dir_profile.subdirectory_count
                 );
-                
+
                 // Show if this directory should have been excluded
                 let path_str = dir_profile.path.to_string_lossy();
                 if path_str.contains("target") || path_str.contains("node_modules") {
                     println!("   ⚠️  This directory should be excluded by .gitignore!");
                 }
             }
-            
+
             // Show sample results
             println!("\n=== Sample files found ===");
             for (i, result) in results.iter().take(10).enumerate() {
@@ -107,13 +112,13 @@ fn main() {
         ignore_files: false,
         ..SearchOptions::default()
     };
-    
+
     let patterns_options_no_ignore = SearchPatternsOptions::new(
         include_patterns.iter().map(|s| s.to_string()).collect(),
         exclude_patterns.iter().map(|s| s.to_string()).collect(),
     )
     .with_search_options(search_options_no_ignore);
-    
+
     let start_time_no_ignore = Instant::now();
     match tombi_glob::search_with_patterns(root, patterns_options_no_ignore) {
         Ok(results) => {

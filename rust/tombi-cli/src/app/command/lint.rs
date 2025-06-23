@@ -94,7 +94,7 @@ where
                 exclude_patterns.as_ref().map(|v| &v[..]),
             )
         );
-        
+
         schema_result?;
         let total_num = input.len();
         let mut success_num = 0;

@@ -28,11 +28,9 @@ impl FileInput {
                 tracing::debug!("Include patterns: {:?}", include_patterns);
                 tracing::debug!("Exclude patterns: {:?}", exclude_patterns);
 
-                FileInput::Files(search_with_patterns_async(
-                    ".",
-                    include_patterns,
-                    exclude_patterns,
-                ).await)
+                FileInput::Files(
+                    search_with_patterns_async(".", include_patterns, exclude_patterns).await,
+                )
             }
             1 if files[0].as_ref() == "-" => FileInput::Stdin,
             _ => {
@@ -45,11 +43,9 @@ impl FileInput {
                     let file_path = file_input.as_ref();
 
                     if is_glob_pattern(file_path) {
-                        matched_paths.extend(search_with_patterns_async(
-                            ".",
-                            &[file_path],
-                            exclude_patterns,
-                        ).await);
+                        matched_paths.extend(
+                            search_with_patterns_async(".", &[file_path], exclude_patterns).await,
+                        );
                     } else {
                         let path = PathBuf::from(file_path);
                         if path.exists() {

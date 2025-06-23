@@ -1,10 +1,10 @@
 use futures::{stream, StreamExt};
 use ignore::{DirEntry, WalkBuilder};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -451,17 +451,21 @@ impl SearchProfile {
 
     pub fn finalize(&mut self) {
         // Sort by duration and keep top 10 slowest directories
-        self.directory_profiles.sort_by(|a, b| b.duration.cmp(&a.duration));
+        self.directory_profiles
+            .sort_by(|a, b| b.duration.cmp(&a.duration));
         self.slowest_directories = self.directory_profiles.iter().take(10).cloned().collect();
     }
 
     pub fn print_report(&self) {
         println!("=== Directory Search Profile Report ===");
         println!("Total duration: {:?}", self.total_duration);
-        println!("Total directories scanned: {}", self.total_directories_scanned);
+        println!(
+            "Total directories scanned: {}",
+            self.total_directories_scanned
+        );
         println!("Total files found: {}", self.total_files_found);
         println!("\n=== Top 10 Slowest Directories ===");
-        
+
         for (i, profile) in self.slowest_directories.iter().enumerate() {
             println!(
                 "{}. {:?} - {:?} ({} files, {} subdirs, {} bytes)",
@@ -1110,14 +1114,14 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
     }
 
     let walker = builder.build_parallel();
-    
+
     // Results collection
     let results = Arc::new(Mutex::new(Vec::new()));
     let files_count = Arc::new(Mutex::new(0usize));
     let dirs_count = Arc::new(Mutex::new(0usize));
 
     // Current directory tracking for profiling
-    let current_dirs: Arc<Mutex<HashMap<std::thread::ThreadId, (PathBuf, Instant, usize, usize)>>> = 
+    let current_dirs: Arc<Mutex<HashMap<std::thread::ThreadId, (PathBuf, Instant, usize, usize)>>> =
         Arc::new(Mutex::new(HashMap::new()));
 
     walker.run(|| {
@@ -1135,16 +1139,19 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
                 Ok(entry) => {
                     let path = entry.path();
                     let thread_id = std::thread::current().id();
-                    
+
                     // Track directory changes
                     if let Some(parent) = path.parent() {
                         let mut current_dirs_guard = current_dirs_clone.lock().unwrap();
-                        
-                        if let Some((current_dir, start_time, file_count, subdir_count)) = current_dirs_guard.get(&thread_id) {
+
+                        if let Some((current_dir, start_time, file_count, subdir_count)) =
+                            current_dirs_guard.get(&thread_id)
+                        {
                             if current_dir != parent {
                                 // Directory changed, record the profile
                                 let duration = start_time.elapsed();
-                                if duration.as_micros() > 100 || *file_count > 10 { // Only record significant directories
+                                if duration.as_micros() > 100 || *file_count > 10 {
+                                    // Only record significant directories
                                     if let Ok(mut profiles) = dir_profiles_clone.lock() {
                                         profiles.push(DirectoryProfile {
                                             path: current_dir.clone(),
@@ -1156,11 +1163,15 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
                                     }
                                 }
                                 // Start tracking new directory
-                                current_dirs_guard.insert(thread_id, (parent.to_path_buf(), Instant::now(), 0, 0));
+                                current_dirs_guard.insert(
+                                    thread_id,
+                                    (parent.to_path_buf(), Instant::now(), 0, 0),
+                                );
                             }
                         } else {
                             // First time for this thread
-                            current_dirs_guard.insert(thread_id, (parent.to_path_buf(), Instant::now(), 0, 0));
+                            current_dirs_guard
+                                .insert(thread_id, (parent.to_path_buf(), Instant::now(), 0, 0));
                         }
                     }
 
@@ -1169,10 +1180,12 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
                         if let Ok(mut count) = files_count_clone.lock() {
                             *count += 1;
                         }
-                        
+
                         // Update current directory file count
                         if let Ok(mut current_dirs_guard) = current_dirs_clone.lock() {
-                            if let Some((_dir, _start, file_count, _subdir_count)) = current_dirs_guard.get_mut(&thread_id) {
+                            if let Some((_dir, _start, file_count, _subdir_count)) =
+                                current_dirs_guard.get_mut(&thread_id)
+                            {
                                 *file_count += 1;
                             }
                         }
@@ -1184,7 +1197,9 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
                         };
 
                         // Check if file matches include patterns
-                        if let Some(pattern_value) = include_glob_clone.find(relative_path.as_bytes()) {
+                        if let Some(pattern_value) =
+                            include_glob_clone.find(relative_path.as_bytes())
+                        {
                             // Check if file should be excluded
                             if exclude_glob_clone.find(relative_path.as_bytes()).is_none() {
                                 if let Ok(mut results_guard) = results_clone.lock() {
@@ -1201,10 +1216,12 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
                         if let Ok(mut count) = dirs_count_clone.lock() {
                             *count += 1;
                         }
-                        
+
                         // Update current directory subdir count
                         if let Ok(mut current_dirs_guard) = current_dirs_clone.lock() {
-                            if let Some((_dir, _start, _file_count, subdir_count)) = current_dirs_guard.get_mut(&thread_id) {
+                            if let Some((_dir, _start, _file_count, subdir_count)) =
+                                current_dirs_guard.get_mut(&thread_id)
+                            {
                                 *subdir_count += 1;
                             }
                         }
@@ -1284,16 +1301,19 @@ impl FastGlobWalker {
         Ok(results)
     }
 
-    pub fn search_with_profile<P: AsRef<Path>>(&self, root: P) -> GlobResult<(Vec<SearchResult>, SearchProfile)> {
+    pub fn search_with_profile<P: AsRef<Path>>(
+        &self,
+        root: P,
+    ) -> GlobResult<(Vec<SearchResult>, SearchProfile)> {
         let mut results = Vec::new();
         let mut profile = SearchProfile::new();
         let start_time = Instant::now();
-        
+
         self.walk_dir_with_profile(root.as_ref(), &mut results, &mut profile)?;
-        
+
         profile.total_duration = start_time.elapsed();
         profile.finalize();
-        
+
         Ok((results, profile))
     }
 
@@ -1330,7 +1350,12 @@ impl FastGlobWalker {
         Ok(())
     }
 
-    fn walk_dir_with_profile(&self, dir: &Path, results: &mut Vec<SearchResult>, profile: &mut SearchProfile) -> GlobResult<()> {
+    fn walk_dir_with_profile(
+        &self,
+        dir: &Path,
+        results: &mut Vec<SearchResult>,
+        profile: &mut SearchProfile,
+    ) -> GlobResult<()> {
         if !dir.is_dir() {
             return Ok(());
         }
@@ -1351,7 +1376,7 @@ impl FastGlobWalker {
                 self.walk_dir_with_profile(&path, results, profile)?;
             } else {
                 file_count += 1;
-                
+
                 // Get file size
                 if let Ok(metadata) = entry.metadata() {
                     total_size += metadata.len();
@@ -1376,7 +1401,7 @@ impl FastGlobWalker {
         }
 
         let dir_duration = dir_start.elapsed();
-        
+
         // Record all directories with files or subdirectories
         if file_count > 0 || subdirectory_count > 0 {
             profile.add_directory_profile(DirectoryProfile {
@@ -1831,28 +1856,28 @@ mod tests {
     #[test]
     fn test_profile_directory_search() {
         let current_dir = std::env::current_dir().unwrap();
-        
+
         let profile = profile_toml_search(&current_dir).unwrap();
-        
+
         // Should have scanned some directories
         assert!(profile.total_directories_scanned > 0);
         assert!(profile.total_duration.as_nanos() > 0);
-        
+
         // Print profile for manual inspection
         println!("Directory search profile:");
         profile.print_report();
     }
 
-    #[test] 
+    #[test]
     fn test_search_with_profile() {
         let current_dir = std::env::current_dir().unwrap();
-        
+
         let mut glob = MultiGlob::new();
         glob.add("*.toml", 1).unwrap();
-        
+
         let walker = FastGlobWalker::new(glob);
         let (results, profile) = walker.search_with_profile(&current_dir).unwrap();
-        
+
         assert!(results.len() > 0);
         assert!(profile.total_directories_scanned > 0);
     }
