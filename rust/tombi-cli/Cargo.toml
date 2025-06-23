@@ -17,6 +17,7 @@ clap-verbosity-flag.workspace = true
 glob.workspace = true
 itertools.workspace = true
 nu-ansi-term.workspace = true
+rayon.workspace = true
 serde_tombi.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
