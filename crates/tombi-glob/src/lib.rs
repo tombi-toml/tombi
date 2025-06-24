@@ -31,17 +31,6 @@ impl Default for SearchOptions {
     }
 }
 
-/// Validate a glob pattern
-fn validate_pattern(pattern: &str) -> Result<(), crate::Error> {
-    if pattern.is_empty() {
-        return Err(crate::Error::EmptyPattern);
-    }
-
-    // Validate pattern by trying to match empty string (fast-glob will panic on invalid patterns)
-    let _ = glob_match(pattern, "");
-    Ok(())
-}
-
 /// WalkDir-like structure for parallel async directory walking
 pub struct WalkDir {
     root: PathBuf,
@@ -72,21 +61,33 @@ impl WalkDir {
     }
 
     /// Add include patterns
-    pub fn includes(mut self, patterns: &[&str]) -> Result<Self, crate::Error> {
+    pub fn includes(mut self, patterns: &[&str]) -> Self {
         for pattern in patterns {
-            validate_pattern(pattern)?;
-            self.include_patterns.push(pattern.to_string());
+            if pattern.is_empty() {
+                let error = crate::Error::InvalidPattern {
+                    pattern: pattern.to_string(),
+                };
+                tracing::error!("{error}");
+            } else {
+                self.include_patterns.push(pattern.to_string());
+            }
         }
-        Ok(self)
+        self
     }
 
     /// Add exclude patterns
-    pub fn excludes(mut self, patterns: &[&str]) -> Result<Self, crate::Error> {
+    pub fn excludes(mut self, patterns: &[&str]) -> Self {
         for pattern in patterns {
-            validate_pattern(pattern)?;
-            self.exclude_patterns.push(pattern.to_string());
+            if pattern.is_empty() {
+                let error = crate::Error::InvalidPattern {
+                    pattern: pattern.to_string(),
+                };
+                tracing::error!("{error}");
+            } else {
+                self.exclude_patterns.push(pattern.to_string());
+            }
         }
-        Ok(self)
+        self
     }
 
     /// Walk the directory asynchronously and return matching file paths
@@ -195,7 +196,7 @@ mod tests {
 
     // Convenience functions using the new API
     fn find_rust_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
-        let walker = WalkDir::new(root).includes(&["*.rs"])?;
+        let walker = WalkDir::new(root).includes(&["*.rs"]);
         // Note: This is a blocking version, async version would need tokio runtime
         // For now, we'll use a simple implementation
         let root_path = walker.root;
@@ -258,7 +259,7 @@ mod tests {
     }
 
     fn find_toml_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
-        let walker = WalkDir::new(root).includes(&["*.toml"])?;
+        let walker = WalkDir::new(root).includes(&["*.toml"]);
         // Similar blocking implementation as find_rust_files
         let root_path = walker.root;
         if !root_path.exists() {
@@ -343,18 +344,14 @@ mod tests {
     #[test]
     fn test_walkdir_includes() {
         let current_dir = std::env::current_dir().unwrap();
-        let walker = WalkDir::new(&current_dir)
-            .includes(&["*.rs", "*.toml"])
-            .unwrap();
+        let walker = WalkDir::new(&current_dir).includes(&["*.rs", "*.toml"]);
         assert_eq!(walker.include_patterns, vec!["*.rs", "*.toml"]);
     }
 
     #[test]
     fn test_walkdir_excludes() {
         let current_dir = std::env::current_dir().unwrap();
-        let walker = WalkDir::new(&current_dir)
-            .excludes(&["target/**", "node_modules/**"])
-            .unwrap();
+        let walker = WalkDir::new(&current_dir).excludes(&["target/**", "node_modules/**"]);
         assert_eq!(
             walker.exclude_patterns,
             vec!["target/**", "node_modules/**"]
@@ -366,9 +363,7 @@ mod tests {
         let current_dir = std::env::current_dir().unwrap();
         let walker = WalkDir::new(&current_dir)
             .includes(&["*.rs"])
-            .unwrap()
-            .excludes(&["target/**"])
-            .unwrap();
+            .excludes(&["target/**"]);
         assert_eq!(walker.include_patterns, vec!["*.rs"]);
         assert_eq!(walker.exclude_patterns, vec!["target/**"]);
     }
@@ -376,14 +371,15 @@ mod tests {
     #[test]
     fn test_invalid_pattern() {
         let current_dir = std::env::current_dir().unwrap();
-        let result = WalkDir::new(&current_dir).includes(&["invalid[pattern"]);
-        assert!(result.is_err());
+        let walker = WalkDir::new(&current_dir).includes(&["invalid[pattern"]);
+        // Invalid patterns will cause panic at runtime, not compile time
+        assert_eq!(walker.include_patterns, vec!["invalid[pattern"]);
     }
 
     #[tokio::test]
     async fn test_walkdir_walk() {
         let current_dir = std::env::current_dir().unwrap();
-        let walker = WalkDir::new(&current_dir).includes(&["*.rs"]).unwrap();
+        let walker = WalkDir::new(&current_dir).includes(&["*.rs"]);
         let result = walker.walk().await;
         assert!(result.is_ok());
     }
@@ -393,9 +389,7 @@ mod tests {
         let current_dir = std::env::current_dir().unwrap();
         let walker = WalkDir::new(&current_dir)
             .includes(&["*.toml"])
-            .unwrap()
-            .excludes(&["target/**"])
-            .unwrap();
+            .excludes(&["target/**"]);
         let result = walker.walk().await;
         assert!(result.is_ok());
     }
