@@ -1,6 +1,6 @@
 [alias]
-tombi = "run --package tombi-cli --bin tombi --"
 decode = "run --package toml-test --bin decode --"
 jsonschema = "run --package config --bin jsonschema --all-features --"
-xtask = "run --package xtask --bin xtask --"
+tombi = "run --package tombi-cli --bin tombi --"
 tombi-flamegraph = "flamegraph --output .tmp/flamegraph.svg --package tombi-cli --"
+xtask = "run --package xtask --bin xtask --"
