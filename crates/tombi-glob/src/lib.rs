@@ -194,133 +194,135 @@ impl WalkDir {
     }
 }
 
-// Convenience functions using the new API
-pub fn find_rust_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
-    let walker = WalkDir::new(root).includes(&["*.rs"])?;
-    // Note: This is a blocking version, async version would need tokio runtime
-    // For now, we'll use a simple implementation
-    let root_path = walker.root;
-    if !root_path.exists() {
-        return Err(crate::Error::RootPathNotFound {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    if !root_path.is_dir() {
-        return Err(crate::Error::RootPathNotDirectory {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    let results = Arc::new(Mutex::new(Vec::new()));
-    let mut builder = WalkBuilder::new(&root_path);
-    builder
-        .follow_links(false)
-        .hidden(false)
-        .ignore(true)
-        .git_ignore(true)
-        .threads(rayon::current_num_threads());
-
-    let walker = builder.build_parallel();
-
-    walker.run(|| {
-        let results_clone = Arc::clone(&results);
-        Box::new(move |entry_result| {
-            match entry_result {
-                Ok(entry) => {
-                    if let Some(file_type) = entry.file_type() {
-                        if file_type.is_file() {
-                            let path = entry.path();
-                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-                            if matches_pattern("*.rs", filename) {
-                                if let Ok(mut results_guard) = results_clone.lock() {
-                                    results_guard.push(path.to_path_buf());
-                                }
-                            }
-                        }
-                    }
-                }
-                Err(_) => {
-                    // Ignore errors and continue
-                }
-            }
-            ignore::WalkState::Continue
-        })
-    });
-
-    let results = Arc::try_unwrap(results)
-        .map_err(|_| crate::Error::LockError)?
-        .into_inner()
-        .map_err(|_| crate::Error::LockError)?;
-
-    Ok(results)
-}
-
-pub fn find_toml_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
-    let walker = WalkDir::new(root).includes(&["*.toml"])?;
-    // Similar blocking implementation as find_rust_files
-    let root_path = walker.root;
-    if !root_path.exists() {
-        return Err(crate::Error::RootPathNotFound {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    if !root_path.is_dir() {
-        return Err(crate::Error::RootPathNotDirectory {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    let results = Arc::new(Mutex::new(Vec::new()));
-    let mut builder = WalkBuilder::new(&root_path);
-    builder
-        .follow_links(false)
-        .hidden(false)
-        .ignore(true)
-        .git_ignore(true)
-        .threads(rayon::current_num_threads());
-
-    let walker = builder.build_parallel();
-
-    walker.run(|| {
-        let results_clone = Arc::clone(&results);
-        Box::new(move |entry_result| {
-            match entry_result {
-                Ok(entry) => {
-                    if let Some(file_type) = entry.file_type() {
-                        if file_type.is_file() {
-                            let path = entry.path();
-                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-                            if matches_pattern("*.toml", filename) {
-                                if let Ok(mut results_guard) = results_clone.lock() {
-                                    results_guard.push(path.to_path_buf());
-                                }
-                            }
-                        }
-                    }
-                }
-                Err(_) => {
-                    // Ignore errors and continue
-                }
-            }
-            ignore::WalkState::Continue
-        })
-    });
-
-    let results = Arc::try_unwrap(results)
-        .map_err(|_| crate::Error::LockError)?
-        .into_inner()
-        .map_err(|_| crate::Error::LockError)?;
-
-    Ok(results)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Convenience functions using the new API
+    fn find_rust_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
+        let walker = WalkDir::new(root).includes(&["*.rs"])?;
+        // Note: This is a blocking version, async version would need tokio runtime
+        // For now, we'll use a simple implementation
+        let root_path = walker.root;
+        if !root_path.exists() {
+            return Err(crate::Error::RootPathNotFound {
+                path: root_path.to_path_buf(),
+            });
+        }
+
+        if !root_path.is_dir() {
+            return Err(crate::Error::RootPathNotDirectory {
+                path: root_path.to_path_buf(),
+            });
+        }
+
+        let results = Arc::new(Mutex::new(Vec::new()));
+        let mut builder = WalkBuilder::new(&root_path);
+        builder
+            .follow_links(false)
+            .hidden(false)
+            .ignore(true)
+            .git_ignore(true)
+            .threads(rayon::current_num_threads());
+
+        let walker = builder.build_parallel();
+
+        walker.run(|| {
+            let results_clone = Arc::clone(&results);
+            Box::new(move |entry_result| {
+                match entry_result {
+                    Ok(entry) => {
+                        if let Some(file_type) = entry.file_type() {
+                            if file_type.is_file() {
+                                let path = entry.path();
+                                let filename =
+                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+                                if matches_pattern("*.rs", filename) {
+                                    if let Ok(mut results_guard) = results_clone.lock() {
+                                        results_guard.push(path.to_path_buf());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        // Ignore errors and continue
+                    }
+                }
+                ignore::WalkState::Continue
+            })
+        });
+
+        let results = Arc::try_unwrap(results)
+            .map_err(|_| crate::Error::LockError)?
+            .into_inner()
+            .map_err(|_| crate::Error::LockError)?;
+
+        Ok(results)
+    }
+
+    fn find_toml_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
+        let walker = WalkDir::new(root).includes(&["*.toml"])?;
+        // Similar blocking implementation as find_rust_files
+        let root_path = walker.root;
+        if !root_path.exists() {
+            return Err(crate::Error::RootPathNotFound {
+                path: root_path.to_path_buf(),
+            });
+        }
+
+        if !root_path.is_dir() {
+            return Err(crate::Error::RootPathNotDirectory {
+                path: root_path.to_path_buf(),
+            });
+        }
+
+        let results = Arc::new(Mutex::new(Vec::new()));
+        let mut builder = WalkBuilder::new(&root_path);
+        builder
+            .follow_links(false)
+            .hidden(false)
+            .ignore(true)
+            .git_ignore(true)
+            .threads(rayon::current_num_threads());
+
+        let walker = builder.build_parallel();
+
+        walker.run(|| {
+            let results_clone = Arc::clone(&results);
+            Box::new(move |entry_result| {
+                match entry_result {
+                    Ok(entry) => {
+                        if let Some(file_type) = entry.file_type() {
+                            if file_type.is_file() {
+                                let path = entry.path();
+                                let filename =
+                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+                                if matches_pattern("*.toml", filename) {
+                                    if let Ok(mut results_guard) = results_clone.lock() {
+                                        results_guard.push(path.to_path_buf());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        // Ignore errors and continue
+                    }
+                }
+                ignore::WalkState::Continue
+            })
+        });
+
+        let results = Arc::try_unwrap(results)
+            .map_err(|_| crate::Error::LockError)?
+            .into_inner()
+            .map_err(|_| crate::Error::LockError)?;
+
+        Ok(results)
+    }
 
     #[test]
     fn test_walkdir_creation() {
