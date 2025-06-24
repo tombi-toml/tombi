@@ -25,7 +25,11 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
                     if let Some(header) = array_table.header() {
                         let key_parts = extract_key_parts(&header, source_text);
                         if !key_parts.is_empty() {
-                            table_positions.push((position, key_parts, array_table.syntax().range()));
+                            table_positions.push((
+                                position,
+                                key_parts,
+                                array_table.syntax().range(),
+                            ));
                         }
                     }
                 }
@@ -35,7 +39,7 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
 
         // Check if tables with same prefix are out of order
         let mut out_of_order_ranges = Vec::new();
-        
+
         // Group tables by their first key component (prefix)
         let mut prefix_groups: AHashMap<&str, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
         for (pos, keys, range) in &table_positions {
@@ -54,12 +58,9 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
                 let max_pos = positions.iter().map(|(pos, _)| *pos).max().unwrap();
 
                 // Check if there are any tables with different prefixes between min and max
-                let has_interrupting_tables = table_positions
-                    .iter()
-                    .any(|(pos, keys, _)| {
-                        *pos > min_pos && *pos < max_pos && 
-                        !keys.is_empty() && keys[0] != *prefix
-                    });
+                let has_interrupting_tables = table_positions.iter().any(|(pos, keys, _)| {
+                    *pos > min_pos && *pos < max_pos && !keys.is_empty() && keys[0] != *prefix
+                });
 
                 // If there are interrupting tables, mark all tables in this group as out of order
                 if has_interrupting_tables {
