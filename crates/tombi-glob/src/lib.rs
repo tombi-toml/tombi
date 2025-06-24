@@ -60,7 +60,7 @@ impl GlobError {
     }
 }
 
-pub type GlobResult<T> = Result<T, GlobError>;
+type GlobResult<T> = Result<T, GlobError>;
 
 #[derive(Debug, Clone)]
 pub struct GlobPattern {
@@ -99,11 +99,12 @@ impl MultiGlob {
         // This is a simple validation check
         let _ = glob_match(pattern, "");
 
-        self.patterns.push(GlobPattern::new(pattern.to_string(), value));
-        
+        self.patterns
+            .push(GlobPattern::new(pattern.to_string(), value));
+
         // Sort by value in descending order for priority matching
         self.patterns.sort_by(|a, b| b.value.cmp(&a.value));
-        
+
         Ok(())
     }
 
@@ -940,9 +941,7 @@ pub fn search_with_patterns_profiled<P: AsRef<Path>>(
                         };
 
                         // Check if file matches include patterns
-                        if let Some(pattern_value) =
-                            include_glob_clone.find(&relative_path)
-                        {
+                        if let Some(pattern_value) = include_glob_clone.find(&relative_path) {
                             // Check if file should be excluded
                             if exclude_glob_clone.find(&relative_path).is_none() {
                                 if let Ok(mut results_guard) = results_clone.lock() {
@@ -1120,7 +1119,9 @@ impl FastGlobWalker {
                 }
 
                 if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                    if let Some((pattern_value, pattern_index)) = self.glob.find_with_index(filename) {
+                    if let Some((pattern_value, pattern_index)) =
+                        self.glob.find_with_index(filename)
+                    {
                         results.push(SearchResult {
                             path: path.clone(),
                             pattern_value,
