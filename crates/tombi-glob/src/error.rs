@@ -24,18 +24,3 @@ pub enum Error {
     #[error("Failed to acquire thread synchronization lock")]
     LockError,
 }
-
-impl Error {
-    pub fn invalid_pattern(pattern: impl Into<String>) -> Self {
-        Self::InvalidPattern {
-            pattern: pattern.into(),
-        }
-    }
-
-    pub fn io_error(path: impl Into<PathBuf>, source: std::io::Error) -> Self {
-        Self::IoError {
-            path: path.into(),
-            source,
-        }
-    }
-}
