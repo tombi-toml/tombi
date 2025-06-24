@@ -23,20 +23,14 @@ pub enum GlobError {
         source: std::io::Error,
     },
 
-    #[error("Directory walk failed: {message}")]
-    WalkError { message: String },
-
-    #[error("Failed to acquire thread synchronization lock")]
-    LockError,
-
     #[error("Search root path does not exist: '{path}'")]
     RootPathNotFound { path: PathBuf },
 
     #[error("Search root path is not a directory: '{path}'")]
     RootPathNotDirectory { path: PathBuf },
 
-    #[error("Thread pool error: {message}")]
-    ThreadPoolError { message: String },
+    #[error("Failed to acquire thread synchronization lock")]
+    LockError,
 
     #[error("Maximum file size exceeded: {size} bytes (limit: {limit} bytes)")]
     FileSizeExceeded { size: u64, limit: u64 },
@@ -61,81 +55,6 @@ impl GlobError {
 }
 
 type GlobResult<T> = Result<T, GlobError>;
-
-#[derive(Debug, Clone)]
-pub struct GlobPattern {
-    pub pattern: String,
-    pub value: i64,
-}
-
-impl GlobPattern {
-    pub fn new(pattern: String, value: i64) -> Self {
-        Self { pattern, value }
-    }
-
-    pub fn matches(&self, path: &str) -> bool {
-        glob_match(&self.pattern, path)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct MultiGlob {
-    patterns: Vec<GlobPattern>,
-}
-
-impl MultiGlob {
-    pub fn new() -> Self {
-        Self {
-            patterns: Vec::new(),
-        }
-    }
-
-    pub fn add(&mut self, pattern: &str, value: i64) -> GlobResult<()> {
-        if pattern.is_empty() {
-            return Err(GlobError::EmptyPattern);
-        }
-
-        // Validate pattern by trying to match empty string (fast-glob will panic on invalid patterns)
-        // This is a simple validation check
-        let _ = glob_match(pattern, "");
-
-        self.patterns
-            .push(GlobPattern::new(pattern.to_string(), value));
-
-        // Sort by value in descending order for priority matching
-        self.patterns.sort_by(|a, b| b.value.cmp(&a.value));
-
-        Ok(())
-    }
-
-    pub fn compile(&mut self) {
-        // No longer needed with fast-glob, but kept for API compatibility
-    }
-
-    pub fn find(&self, input: &str) -> Option<i64> {
-        for pattern in &self.patterns {
-            if pattern.matches(input) {
-                return Some(pattern.value);
-            }
-        }
-        None
-    }
-
-    pub fn find_with_index(&self, input: &str) -> Option<(i64, usize)> {
-        for (index, pattern) in self.patterns.iter().enumerate() {
-            if pattern.matches(input) {
-                return Some((pattern.value, index));
-            }
-        }
-        None
-    }
-}
-
-impl Default for MultiGlob {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct SearchOptions {
@@ -165,8 +84,7 @@ impl Default for SearchOptions {
 #[derive(Debug, Clone)]
 pub struct SearchResult {
     pub path: PathBuf,
-    pub pattern_value: i64,
-    pub pattern_index: usize,
+    pub pattern: String,
 }
 
 #[derive(Debug, Clone)]
@@ -235,861 +153,346 @@ impl SearchProfile {
     }
 }
 
-pub struct ParallelGlobWalker {
-    glob: MultiGlob,
-    options: SearchOptions,
+/// Validate a glob pattern
+pub fn validate_pattern(pattern: &str) -> GlobResult<()> {
+    if pattern.is_empty() {
+        return Err(GlobError::EmptyPattern);
+    }
+
+    // Validate pattern by trying to match empty string (fast-glob will panic on invalid patterns)
+    let _ = glob_match(pattern, "");
+    Ok(())
 }
 
-impl ParallelGlobWalker {
-    pub fn new(mut glob: MultiGlob, options: SearchOptions) -> Self {
-        glob.compile();
-        Self { glob, options }
-    }
-
-    pub fn search<P: AsRef<Path>>(&self, root: P) -> GlobResult<Vec<SearchResult>> {
-        let results = Arc::new(Mutex::new(Vec::new()));
-
-        let mut builder = WalkBuilder::new(root);
-        builder
-            .follow_links(self.options.follow_links)
-            .hidden(self.options.hidden)
-            .ignore(!self.options.ignore_files)
-            .git_ignore(self.options.git_ignore)
-            .threads(self.options.threads);
-
-        if let Some(max_depth) = self.options.max_depth {
-            builder.max_depth(Some(max_depth));
-        }
-
-        if let Some(max_filesize) = self.options.max_filesize {
-            builder.max_filesize(Some(max_filesize));
-        }
-
-        let walker = builder.build_parallel();
-
-        walker.run(|| {
-            let results_clone = Arc::clone(&results);
-            let glob_clone = &self.glob;
-
-            Box::new(move |entry_result| {
-                match entry_result {
-                    Ok(entry) => {
-                        if let Some(search_result) = self.process_entry(&entry, glob_clone) {
-                            if let Ok(mut results_guard) = results_clone.lock() {
-                                results_guard.push(search_result);
-                            }
-                        }
-                    }
-                    Err(_) => {
-                        // エラーは無視してディレクトリ探索を継続
-                    }
-                }
-                ignore::WalkState::Continue
-            })
-        });
-
-        let results = Arc::try_unwrap(results)
-            .map_err(|_| GlobError::LockError)?
-            .into_inner()
-            .map_err(|_| GlobError::LockError)?;
-
-        Ok(results)
-    }
-
-    fn process_entry(&self, entry: &DirEntry, glob: &MultiGlob) -> Option<SearchResult> {
-        if entry.file_type()?.is_file() {
-            let path = entry.path();
-            let filename = path.file_name()?.to_str()?;
-
-            if let Some((pattern_value, pattern_index)) = glob.find_with_index(filename) {
-                return Some(SearchResult {
-                    path: path.to_path_buf(),
-                    pattern_value,
-                    pattern_index,
-                });
-            }
-        }
-        None
-    }
-
-    pub fn search_with_full_paths<P: AsRef<Path>>(&self, root: P) -> GlobResult<Vec<SearchResult>> {
-        let results = Arc::new(Mutex::new(Vec::new()));
-
-        let mut builder = WalkBuilder::new(root.as_ref());
-        builder
-            .follow_links(self.options.follow_links)
-            .hidden(self.options.hidden)
-            .ignore(!self.options.ignore_files)
-            .git_ignore(self.options.git_ignore)
-            .threads(self.options.threads);
-
-        if let Some(max_depth) = self.options.max_depth {
-            builder.max_depth(Some(max_depth));
-        }
-
-        if let Some(max_filesize) = self.options.max_filesize {
-            builder.max_filesize(Some(max_filesize));
-        }
-
-        let walker = builder.build_parallel();
-        let root_path = root.as_ref().to_path_buf();
-
-        walker.run(|| {
-            let results_clone = Arc::clone(&results);
-            let glob_clone = &self.glob;
-            let root_clone = root_path.clone();
-
-            Box::new(move |entry_result| {
-                match entry_result {
-                    Ok(entry) => {
-                        if let Some(search_result) =
-                            self.process_entry_with_full_path(&entry, glob_clone, &root_clone)
-                        {
-                            if let Ok(mut results_guard) = results_clone.lock() {
-                                results_guard.push(search_result);
-                            }
-                        }
-                    }
-                    Err(_) => {
-                        // エラーは無視してディレクトリ探索を継続
-                    }
-                }
-                ignore::WalkState::Continue
-            })
-        });
-
-        let results = Arc::try_unwrap(results)
-            .map_err(|_| GlobError::LockError)?
-            .into_inner()
-            .map_err(|_| GlobError::LockError)?;
-
-        Ok(results)
-    }
-
-    fn process_entry_with_full_path(
-        &self,
-        entry: &DirEntry,
-        glob: &MultiGlob,
-        root: &Path,
-    ) -> Option<SearchResult> {
-        if entry.file_type()?.is_file() {
-            let path = entry.path();
-            let relative_path = path.strip_prefix(root).ok()?;
-            let path_str = relative_path.to_str()?;
-
-            if let Some((pattern_value, pattern_index)) = glob.find_with_index(path_str) {
-                return Some(SearchResult {
-                    path: path.to_path_buf(),
-                    pattern_value,
-                    pattern_index,
-                });
-            }
-        }
-        None
-    }
+/// Check if a path matches a glob pattern
+pub fn matches_pattern(pattern: &str, path: &str) -> bool {
+    glob_match(pattern, path)
 }
 
-// 便利な関数群
-pub fn find_files_parallel<P: AsRef<Path>>(
+/// Find files matching a single pattern
+pub fn find_files<P: AsRef<Path>>(
     root: P,
-    patterns: &[(&str, i64)],
+    pattern: &str,
     options: Option<SearchOptions>,
-) -> GlobResult<Vec<SearchResult>> {
-    let mut glob = MultiGlob::new();
-    for (pattern, value) in patterns {
-        glob.add(pattern, *value)?;
+) -> GlobResult<Vec<PathBuf>> {
+    validate_pattern(pattern)?;
+
+    let root_path = root.as_ref();
+    if !root_path.exists() {
+        return Err(GlobError::RootPathNotFound {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    if !root_path.is_dir() {
+        return Err(GlobError::RootPathNotDirectory {
+            path: root_path.to_path_buf(),
+        });
     }
 
     let search_options = options.unwrap_or_default();
-    let walker = ParallelGlobWalker::new(glob, search_options);
-    walker.search(root)
-}
+    let results = Arc::new(Mutex::new(Vec::new()));
 
-pub fn find_rust_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let results = find_files_parallel(root, &[("*.rs", 1)], None)?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub fn find_toml_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let results = find_files_parallel(root, &[("*.toml", 1)], None)?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub fn find_config_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let patterns = &[
-        ("*.toml", 1),
-        ("*.json", 2),
-        ("*.yaml", 3),
-        ("*.yml", 4),
-        ("*.ini", 5),
-        ("*.conf", 6),
-        ("*.config", 7),
-    ];
-    let results = find_files_parallel(root, patterns, None)?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-#[derive(Debug, Clone)]
-pub struct SearchPatternsOptions {
-    pub include_patterns: Vec<String>,
-    pub exclude_patterns: Vec<String>,
-    pub search_options: SearchOptions,
-}
-
-impl SearchPatternsOptions {
-    pub fn new(include_patterns: Vec<String>, exclude_patterns: Vec<String>) -> Self {
-        Self {
-            include_patterns,
-            exclude_patterns,
-            search_options: SearchOptions::default(),
-        }
-    }
-
-    pub fn with_search_options(mut self, search_options: SearchOptions) -> Self {
-        self.search_options = search_options;
-        self
-    }
-}
-
-pub fn search_with_patterns<P: AsRef<Path>>(
-    root: P,
-    options: SearchPatternsOptions,
-) -> GlobResult<Vec<SearchResult>> {
-    let root_path = root.as_ref();
-
-    // Validate root path
-    if !root_path.exists() {
-        return Err(GlobError::RootPathNotFound {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    if !root_path.is_dir() {
-        return Err(GlobError::RootPathNotDirectory {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    // Create include glob
-    let mut include_glob = MultiGlob::new();
-    for (i, pattern) in options.include_patterns.iter().enumerate() {
-        include_glob.add(pattern, i as i64 + 1)?;
-    }
-
-    // Create exclude glob
-    let mut exclude_glob = MultiGlob::new();
-    for (i, pattern) in options.exclude_patterns.iter().enumerate() {
-        exclude_glob.add(pattern, i as i64 + 1)?;
-    }
-
-    let walker = ParallelGlobWalker::new(include_glob, options.search_options);
-    let all_results = walker.search_with_full_paths(root_path)?;
-
-    // Filter out excluded files
-    let filtered_results: Vec<SearchResult> = all_results
-        .into_iter()
-        .filter(|result| {
-            if options.exclude_patterns.is_empty() {
-                return true;
-            }
-
-            let relative_path = if let Ok(rel_path) = result.path.strip_prefix(root_path) {
-                rel_path.to_string_lossy()
-            } else {
-                result.path.to_string_lossy()
-            };
-
-            // Check if file should be excluded
-            exclude_glob.find(&relative_path).is_none()
-        })
-        .collect();
-
-    Ok(filtered_results)
-}
-
-pub fn search_with_include_exclude<P: AsRef<Path>>(
-    root: P,
-    include_patterns: &[&str],
-    exclude_patterns: &[&str],
-) -> GlobResult<Vec<PathBuf>> {
-    let options = SearchPatternsOptions::new(
-        include_patterns.iter().map(|s| s.to_string()).collect(),
-        exclude_patterns.iter().map(|s| s.to_string()).collect(),
-    );
-
-    let results = search_with_patterns(root, options)?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub fn search_toml_files_advanced<P: AsRef<Path>>(
-    root: P,
-    exclude_patterns: Option<&[&str]>,
-) -> GlobResult<Vec<PathBuf>> {
-    let exclude_patterns = exclude_patterns.unwrap_or(&[]);
-    search_with_include_exclude(root, &["**/*.toml"], exclude_patterns)
-}
-
-// Async implementation
-pub struct AsyncGlobWalker {
-    glob: MultiGlob,
-    options: SearchOptions,
-}
-
-impl AsyncGlobWalker {
-    pub fn new(mut glob: MultiGlob, options: SearchOptions) -> Self {
-        glob.compile();
-        Self { glob, options }
-    }
-
-    pub async fn search<P: AsRef<Path>>(&self, root: P) -> GlobResult<Vec<SearchResult>> {
-        let root_path = root.as_ref();
-
-        if !root_path.exists() {
-            return Err(GlobError::RootPathNotFound {
-                path: root_path.to_path_buf(),
-            });
-        }
-
-        if !root_path.is_dir() {
-            return Err(GlobError::RootPathNotDirectory {
-                path: root_path.to_path_buf(),
-            });
-        }
-
-        let mut builder = WalkBuilder::new(root_path);
-        builder
-            .follow_links(self.options.follow_links)
-            .hidden(self.options.hidden)
-            .ignore(!self.options.ignore_files)
-            .git_ignore(self.options.git_ignore);
-
-        if let Some(max_depth) = self.options.max_depth {
-            builder.max_depth(Some(max_depth));
-        }
-
-        if let Some(max_filesize) = self.options.max_filesize {
-            builder.max_filesize(Some(max_filesize));
-        }
-
-        let walker = builder.build();
-        let mut results = Vec::new();
-
-        let entries: Vec<_> = walker.collect();
-
-        let chunks = entries.chunks(100);
-        let chunk_streams = chunks.map(|chunk| {
-            let chunk_results: Vec<_> = chunk
-                .iter()
-                .filter_map(|entry_result| match entry_result {
-                    Ok(entry) => self.process_entry(entry, &self.glob),
-                    Err(_) => None,
-                })
-                .collect();
-            stream::iter(chunk_results)
-        });
-
-        let mut stream = stream::iter(chunk_streams).flatten();
-
-        while let Some(result) = stream.next().await {
-            results.push(result);
-        }
-
-        Ok(results)
-    }
-
-    pub async fn search_with_full_paths<P: AsRef<Path>>(
-        &self,
-        root: P,
-    ) -> GlobResult<Vec<SearchResult>> {
-        let root_path = root.as_ref();
-
-        if !root_path.exists() {
-            return Err(GlobError::RootPathNotFound {
-                path: root_path.to_path_buf(),
-            });
-        }
-
-        if !root_path.is_dir() {
-            return Err(GlobError::RootPathNotDirectory {
-                path: root_path.to_path_buf(),
-            });
-        }
-
-        let mut builder = WalkBuilder::new(root_path);
-        builder
-            .follow_links(self.options.follow_links)
-            .hidden(self.options.hidden)
-            .ignore(!self.options.ignore_files)
-            .git_ignore(self.options.git_ignore);
-
-        if let Some(max_depth) = self.options.max_depth {
-            builder.max_depth(Some(max_depth));
-        }
-
-        if let Some(max_filesize) = self.options.max_filesize {
-            builder.max_filesize(Some(max_filesize));
-        }
-
-        let walker = builder.build();
-        let mut results = Vec::new();
-
-        let entries: Vec<_> = walker.collect();
-
-        let chunks = entries.chunks(100);
-        let chunk_streams = chunks.map(|chunk| {
-            let chunk_results: Vec<_> = chunk
-                .iter()
-                .filter_map(|entry_result| match entry_result {
-                    Ok(entry) => self.process_entry_with_full_path(entry, &self.glob, root_path),
-                    Err(_) => None,
-                })
-                .collect();
-            stream::iter(chunk_results)
-        });
-
-        let mut stream = stream::iter(chunk_streams).flatten();
-
-        while let Some(result) = stream.next().await {
-            results.push(result);
-        }
-
-        Ok(results)
-    }
-
-    fn process_entry(&self, entry: &DirEntry, glob: &MultiGlob) -> Option<SearchResult> {
-        if entry.file_type()?.is_file() {
-            let path = entry.path();
-            let filename = path.file_name()?.to_str()?;
-
-            if let Some((pattern_value, pattern_index)) = glob.find_with_index(filename) {
-                return Some(SearchResult {
-                    path: path.to_path_buf(),
-                    pattern_value,
-                    pattern_index,
-                });
-            }
-        }
-        None
-    }
-
-    fn process_entry_with_full_path(
-        &self,
-        entry: &DirEntry,
-        glob: &MultiGlob,
-        root: &Path,
-    ) -> Option<SearchResult> {
-        if entry.file_type()?.is_file() {
-            let path = entry.path();
-            let relative_path = path.strip_prefix(root).ok()?;
-            let path_str = relative_path.to_str()?;
-
-            if let Some((pattern_value, pattern_index)) = glob.find_with_index(path_str) {
-                return Some(SearchResult {
-                    path: path.to_path_buf(),
-                    pattern_value,
-                    pattern_index,
-                });
-            }
-        }
-        None
-    }
-}
-
-// Async convenience functions
-pub async fn find_files_async<P: AsRef<Path>>(
-    root: P,
-    patterns: &[(&str, i64)],
-    options: Option<SearchOptions>,
-) -> GlobResult<Vec<SearchResult>> {
-    let mut glob = MultiGlob::new();
-    for (pattern, value) in patterns {
-        glob.add(pattern, *value)?;
-    }
-
-    let search_options = options.unwrap_or_default();
-    let walker = AsyncGlobWalker::new(glob, search_options);
-    walker.search(root).await
-}
-
-pub async fn find_rust_files_async<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let results = find_files_async(root, &[("*.rs", 1)], None).await?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub async fn find_toml_files_async<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let results = find_files_async(root, &[("*.toml", 1)], None).await?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub async fn find_config_files_async<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let patterns = &[
-        ("*.toml", 1),
-        ("*.json", 2),
-        ("*.yaml", 3),
-        ("*.yml", 4),
-        ("*.ini", 5),
-        ("*.conf", 6),
-        ("*.config", 7),
-    ];
-    let results = find_files_async(root, patterns, None).await?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub async fn search_with_patterns_async<P: AsRef<Path>>(
-    root: P,
-    options: SearchPatternsOptions,
-) -> GlobResult<Vec<SearchResult>> {
-    let root_path = root.as_ref();
-
-    if !root_path.exists() {
-        return Err(GlobError::RootPathNotFound {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    if !root_path.is_dir() {
-        return Err(GlobError::RootPathNotDirectory {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    let mut include_glob = MultiGlob::new();
-    for (i, pattern) in options.include_patterns.iter().enumerate() {
-        include_glob.add(pattern, i as i64 + 1)?;
-    }
-
-    let mut exclude_glob = MultiGlob::new();
-    for (i, pattern) in options.exclude_patterns.iter().enumerate() {
-        exclude_glob.add(pattern, i as i64 + 1)?;
-    }
-
-    let walker = AsyncGlobWalker::new(include_glob, options.search_options);
-    let all_results = walker.search_with_full_paths(root_path).await?;
-
-    let filtered_results: Vec<SearchResult> = all_results
-        .into_iter()
-        .filter(|result| {
-            if options.exclude_patterns.is_empty() {
-                return true;
-            }
-
-            let relative_path = if let Ok(rel_path) = result.path.strip_prefix(root_path) {
-                rel_path.to_string_lossy()
-            } else {
-                result.path.to_string_lossy()
-            };
-
-            exclude_glob.find(&relative_path).is_none()
-        })
-        .collect();
-
-    Ok(filtered_results)
-}
-
-pub async fn search_with_include_exclude_async<P: AsRef<Path>>(
-    root: P,
-    include_patterns: &[&str],
-    exclude_patterns: &[&str],
-) -> GlobResult<Vec<PathBuf>> {
-    let options = SearchPatternsOptions::new(
-        include_patterns.iter().map(|s| s.to_string()).collect(),
-        exclude_patterns.iter().map(|s| s.to_string()).collect(),
-    );
-
-    let results = search_with_patterns_async(root, options).await?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
-
-pub async fn search_toml_files_advanced_async<P: AsRef<Path>>(
-    root: P,
-    exclude_patterns: Option<&[&str]>,
-) -> GlobResult<Vec<PathBuf>> {
-    let exclude_patterns = exclude_patterns.unwrap_or(&[]);
-    search_with_include_exclude_async(root, &["**/*.toml"], exclude_patterns).await
-}
-
-/// Search with patterns and return profiling information
-pub fn search_with_patterns_profiled<P: AsRef<Path>>(
-    root: P,
-    options: SearchPatternsOptions,
-) -> GlobResult<(Vec<SearchResult>, SearchProfile)> {
-    let root_path = root.as_ref();
-    let start_time = Instant::now();
-
-    // Validate root path
-    if !root_path.exists() {
-        return Err(GlobError::RootPathNotFound {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    if !root_path.is_dir() {
-        return Err(GlobError::RootPathNotDirectory {
-            path: root_path.to_path_buf(),
-        });
-    }
-
-    // Track visited directories
-    let dir_profiles = Arc::new(Mutex::new(Vec::new()));
-
-    // Create include glob
-    let mut include_glob = MultiGlob::new();
-    for (i, pattern) in options.include_patterns.iter().enumerate() {
-        include_glob.add(pattern, i as i64 + 1)?;
-    }
-
-    // Create exclude glob
-    let mut exclude_glob = MultiGlob::new();
-    for (i, pattern) in options.exclude_patterns.iter().enumerate() {
-        exclude_glob.add(pattern, i as i64 + 1)?;
-    }
-
-    // Build walker with profiling
     let mut builder = WalkBuilder::new(root_path);
     builder
-        .follow_links(options.search_options.follow_links)
-        .hidden(options.search_options.hidden)
-        .ignore(!options.search_options.ignore_files)
-        .git_ignore(options.search_options.git_ignore)
-        .threads(options.search_options.threads);
+        .follow_links(search_options.follow_links)
+        .hidden(search_options.hidden)
+        .ignore(!search_options.ignore_files)
+        .git_ignore(search_options.git_ignore)
+        .threads(search_options.threads);
 
-    if let Some(max_depth) = options.search_options.max_depth {
+    if let Some(max_depth) = search_options.max_depth {
         builder.max_depth(Some(max_depth));
+    }
+
+    if let Some(max_filesize) = search_options.max_filesize {
+        builder.max_filesize(Some(max_filesize));
     }
 
     let walker = builder.build_parallel();
 
-    // Results collection
-    let results = Arc::new(Mutex::new(Vec::new()));
-    let files_count = Arc::new(Mutex::new(0usize));
-    let dirs_count = Arc::new(Mutex::new(0usize));
-
-    // Current directory tracking for profiling
-    let current_dirs: Arc<Mutex<HashMap<std::thread::ThreadId, (PathBuf, Instant, usize, usize)>>> =
-        Arc::new(Mutex::new(HashMap::new()));
-
     walker.run(|| {
         let results_clone = Arc::clone(&results);
-        let include_glob_clone = include_glob.clone();
-        let exclude_glob_clone = exclude_glob.clone();
-        let root_clone = root_path.to_path_buf();
-        let dir_profiles_clone = Arc::clone(&dir_profiles);
-        let files_count_clone = Arc::clone(&files_count);
-        let dirs_count_clone = Arc::clone(&dirs_count);
-        let current_dirs_clone = Arc::clone(&current_dirs);
+        let pattern = pattern.to_string();
 
         Box::new(move |entry_result| {
             match entry_result {
                 Ok(entry) => {
-                    let path = entry.path();
-                    let thread_id = std::thread::current().id();
+                    if let Some(file_type) = entry.file_type() {
+                        if file_type.is_file() {
+                            let path = entry.path();
+                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                    // Track directory changes
-                    if let Some(parent) = path.parent() {
-                        let mut current_dirs_guard = current_dirs_clone.lock().unwrap();
-
-                        if let Some((current_dir, start_time, file_count, subdir_count)) =
-                            current_dirs_guard.get(&thread_id)
-                        {
-                            if current_dir != parent {
-                                // Directory changed, record the profile
-                                let duration = start_time.elapsed();
-                                if duration.as_micros() > 100 || *file_count > 10 {
-                                    // Only record significant directories
-                                    if let Ok(mut profiles) = dir_profiles_clone.lock() {
-                                        profiles.push(DirectoryProfile {
-                                            path: current_dir.clone(),
-                                            duration,
-                                            file_count: *file_count,
-                                            subdirectory_count: *subdir_count,
-                                            total_size: 0, // Not tracking size in parallel walker
-                                        });
-                                    }
-                                }
-                                // Start tracking new directory
-                                current_dirs_guard.insert(
-                                    thread_id,
-                                    (parent.to_path_buf(), Instant::now(), 0, 0),
-                                );
-                            }
-                        } else {
-                            // First time for this thread
-                            current_dirs_guard
-                                .insert(thread_id, (parent.to_path_buf(), Instant::now(), 0, 0));
-                        }
-                    }
-
-                    if entry.file_type().map_or(false, |ft| ft.is_file()) {
-                        // Increment file count
-                        if let Ok(mut count) = files_count_clone.lock() {
-                            *count += 1;
-                        }
-
-                        // Update current directory file count
-                        if let Ok(mut current_dirs_guard) = current_dirs_clone.lock() {
-                            if let Some((_dir, _start, file_count, _subdir_count)) =
-                                current_dirs_guard.get_mut(&thread_id)
-                            {
-                                *file_count += 1;
-                            }
-                        }
-
-                        let relative_path = if let Ok(rel_path) = path.strip_prefix(&root_clone) {
-                            rel_path.to_string_lossy()
-                        } else {
-                            path.to_string_lossy()
-                        };
-
-                        // Check if file matches include patterns
-                        if let Some(pattern_value) = include_glob_clone.find(&relative_path) {
-                            // Check if file should be excluded
-                            if exclude_glob_clone.find(&relative_path).is_none() {
+                            if glob_match(&pattern, filename) {
                                 if let Ok(mut results_guard) = results_clone.lock() {
-                                    results_guard.push(SearchResult {
-                                        path: path.to_path_buf(),
-                                        pattern_value,
-                                        pattern_index: 0,
-                                    });
+                                    results_guard.push(path.to_path_buf());
                                 }
-                            }
-                        }
-                    } else if entry.file_type().map_or(false, |ft| ft.is_dir()) {
-                        // Increment directory count
-                        if let Ok(mut count) = dirs_count_clone.lock() {
-                            *count += 1;
-                        }
-
-                        // Update current directory subdir count
-                        if let Ok(mut current_dirs_guard) = current_dirs_clone.lock() {
-                            if let Some((_dir, _start, _file_count, subdir_count)) =
-                                current_dirs_guard.get_mut(&thread_id)
-                            {
-                                *subdir_count += 1;
                             }
                         }
                     }
                 }
                 Err(_) => {
-                    // Ignore errors
+                    // Ignore errors and continue
                 }
             }
             ignore::WalkState::Continue
         })
     });
 
-    // Finalize any remaining directory profiles
-    if let Ok(current_dirs_guard) = current_dirs.lock() {
-        if let Ok(mut profiles) = dir_profiles.lock() {
-            for (_, (dir, start_time, file_count, subdir_count)) in current_dirs_guard.iter() {
-                let duration = start_time.elapsed();
-                if duration.as_micros() > 100 || *file_count > 10 {
-                    profiles.push(DirectoryProfile {
-                        path: dir.clone(),
-                        duration,
-                        file_count: *file_count,
-                        subdirectory_count: *subdir_count,
-                        total_size: 0,
-                    });
+    let results = Arc::try_unwrap(results)
+        .map_err(|_| GlobError::LockError)?
+        .into_inner()
+        .map_err(|_| GlobError::LockError)?;
+
+    Ok(results)
+}
+
+/// Find files matching multiple patterns
+pub fn find_files_multi<P: AsRef<Path>>(
+    root: P,
+    patterns: &[&str],
+    options: Option<SearchOptions>,
+) -> GlobResult<Vec<SearchResult>> {
+    for pattern in patterns {
+        validate_pattern(pattern)?;
+    }
+
+    let root_path = root.as_ref();
+    if !root_path.exists() {
+        return Err(GlobError::RootPathNotFound {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    if !root_path.is_dir() {
+        return Err(GlobError::RootPathNotDirectory {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    let search_options = options.unwrap_or_default();
+    let results = Arc::new(Mutex::new(Vec::new()));
+
+    let mut builder = WalkBuilder::new(root_path);
+    builder
+        .follow_links(search_options.follow_links)
+        .hidden(search_options.hidden)
+        .ignore(!search_options.ignore_files)
+        .git_ignore(search_options.git_ignore)
+        .threads(search_options.threads);
+
+    if let Some(max_depth) = search_options.max_depth {
+        builder.max_depth(Some(max_depth));
+    }
+
+    if let Some(max_filesize) = search_options.max_filesize {
+        builder.max_filesize(Some(max_filesize));
+    }
+
+    let walker = builder.build_parallel();
+
+    walker.run(|| {
+        let results_clone = Arc::clone(&results);
+        let patterns = patterns.to_vec();
+
+        Box::new(move |entry_result| {
+            match entry_result {
+                Ok(entry) => {
+                    if let Some(file_type) = entry.file_type() {
+                        if file_type.is_file() {
+                            let path = entry.path();
+                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+                            for pattern in &patterns {
+                                if glob_match(pattern, filename) {
+                                    if let Ok(mut results_guard) = results_clone.lock() {
+                                        results_guard.push(SearchResult {
+                                            path: path.to_path_buf(),
+                                            pattern: pattern.to_string(),
+                                        });
+                                    }
+                                    break; // First match wins
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    // Ignore errors and continue
                 }
             }
-        }
-    }
+            ignore::WalkState::Continue
+        })
+    });
 
     let results = Arc::try_unwrap(results)
         .map_err(|_| GlobError::LockError)?
         .into_inner()
         .map_err(|_| GlobError::LockError)?;
 
-    let files_count = Arc::try_unwrap(files_count)
+    Ok(results)
+}
+
+/// Find files with include/exclude patterns
+pub fn find_files_with_exclude<P: AsRef<Path>>(
+    root: P,
+    include_patterns: &[&str],
+    exclude_patterns: &[&str],
+    options: Option<SearchOptions>,
+) -> GlobResult<Vec<PathBuf>> {
+    for pattern in include_patterns {
+        validate_pattern(pattern)?;
+    }
+    for pattern in exclude_patterns {
+        validate_pattern(pattern)?;
+    }
+
+    let root_path = root.as_ref();
+    if !root_path.exists() {
+        return Err(GlobError::RootPathNotFound {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    if !root_path.is_dir() {
+        return Err(GlobError::RootPathNotDirectory {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    let search_options = options.unwrap_or_default();
+    let results = Arc::new(Mutex::new(Vec::new()));
+
+    let mut builder = WalkBuilder::new(root_path);
+    builder
+        .follow_links(search_options.follow_links)
+        .hidden(search_options.hidden)
+        .ignore(!search_options.ignore_files)
+        .git_ignore(search_options.git_ignore)
+        .threads(search_options.threads);
+
+    if let Some(max_depth) = search_options.max_depth {
+        builder.max_depth(Some(max_depth));
+    }
+
+    if let Some(max_filesize) = search_options.max_filesize {
+        builder.max_filesize(Some(max_filesize));
+    }
+
+    let walker = builder.build_parallel();
+
+    walker.run(|| {
+        let results_clone = Arc::clone(&results);
+        let include_patterns = include_patterns.to_vec();
+        let exclude_patterns = exclude_patterns.to_vec();
+        let root_path = root_path.to_path_buf();
+
+        Box::new(move |entry_result| {
+            match entry_result {
+                Ok(entry) => {
+                    if let Some(file_type) = entry.file_type() {
+                        if file_type.is_file() {
+                            let path = entry.path();
+                            let relative_path = if let Ok(rel_path) = path.strip_prefix(&root_path)
+                            {
+                                rel_path.to_string_lossy()
+                            } else {
+                                path.to_string_lossy()
+                            };
+
+                            // Check if file matches any include pattern
+                            let mut should_include = false;
+                            for pattern in &include_patterns {
+                                if glob_match(pattern, &relative_path) {
+                                    should_include = true;
+                                    break;
+                                }
+                            }
+
+                            if should_include {
+                                // Check if file should be excluded
+                                let mut should_exclude = false;
+                                for pattern in &exclude_patterns {
+                                    if glob_match(pattern, &relative_path) {
+                                        should_exclude = true;
+                                        break;
+                                    }
+                                }
+
+                                if !should_exclude {
+                                    if let Ok(mut results_guard) = results_clone.lock() {
+                                        results_guard.push(path.to_path_buf());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    // Ignore errors and continue
+                }
+            }
+            ignore::WalkState::Continue
+        })
+    });
+
+    let results = Arc::try_unwrap(results)
         .map_err(|_| GlobError::LockError)?
         .into_inner()
         .map_err(|_| GlobError::LockError)?;
 
-    let dirs_count = Arc::try_unwrap(dirs_count)
-        .map_err(|_| GlobError::LockError)?
-        .into_inner()
-        .map_err(|_| GlobError::LockError)?;
+    Ok(results)
+}
 
-    let dir_profiles = Arc::try_unwrap(dir_profiles)
-        .map_err(|_| GlobError::LockError)?
-        .into_inner()
-        .map_err(|_| GlobError::LockError)?;
+/// Find files with profiling information
+pub fn find_files_with_profile<P: AsRef<Path>>(
+    root: P,
+    pattern: &str,
+    options: Option<SearchOptions>,
+) -> GlobResult<(Vec<PathBuf>, SearchProfile)> {
+    validate_pattern(pattern)?;
 
-    // Create profile
+    let root_path = root.as_ref();
+    if !root_path.exists() {
+        return Err(GlobError::RootPathNotFound {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    if !root_path.is_dir() {
+        return Err(GlobError::RootPathNotDirectory {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    let start_time = Instant::now();
     let mut profile = SearchProfile::new();
+    let mut results = Vec::new();
+
+    // Use fast walker for profiling
+    let mut walker = FastWalker::new(pattern.to_string());
+    walker.walk_with_profile(root_path, &mut results, &mut profile)?;
+
     profile.total_duration = start_time.elapsed();
-    profile.total_files_found = files_count;
-    profile.total_directories_scanned = dirs_count;
-    profile.directory_profiles = dir_profiles;
     profile.finalize();
 
     Ok((results, profile))
 }
 
-// Fast glob functions that bypass ignore processing
-pub struct FastGlobWalker {
-    glob: MultiGlob,
+// Fast walker for profiling
+struct FastWalker {
+    pattern: String,
 }
 
-impl FastGlobWalker {
-    pub fn new(mut glob: MultiGlob) -> Self {
-        glob.compile();
-        Self { glob }
+impl FastWalker {
+    fn new(pattern: String) -> Self {
+        Self { pattern }
     }
 
-    pub fn search<P: AsRef<Path>>(&self, root: P) -> GlobResult<Vec<SearchResult>> {
-        let mut results = Vec::new();
-        self.walk_dir(root.as_ref(), &mut results)?;
-        Ok(results)
-    }
-
-    pub fn search_with_profile<P: AsRef<Path>>(
-        &self,
-        root: P,
-    ) -> GlobResult<(Vec<SearchResult>, SearchProfile)> {
-        let mut results = Vec::new();
-        let mut profile = SearchProfile::new();
-        let start_time = Instant::now();
-
-        self.walk_dir_with_profile(root.as_ref(), &mut results, &mut profile)?;
-
-        profile.total_duration = start_time.elapsed();
-        profile.finalize();
-
-        Ok((results, profile))
-    }
-
-    fn walk_dir(&self, dir: &Path, results: &mut Vec<SearchResult>) -> GlobResult<()> {
-        if !dir.is_dir() {
-            return Ok(());
-        }
-
-        let entries = fs::read_dir(dir).map_err(|e| GlobError::io_error(dir, e))?;
-
-        for entry in entries {
-            let entry = entry.map_err(|e| GlobError::io_error(dir, e))?;
-            let path = entry.path();
-
-            if path.is_dir() {
-                self.walk_dir(&path, results)?;
-            } else if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                if let Some((pattern_value, pattern_index)) = self.glob.find_with_index(filename) {
-                    results.push(SearchResult {
-                        path: path.clone(),
-                        pattern_value,
-                        pattern_index,
-                    });
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn walk_dir_with_profile(
+    fn walk_with_profile(
         &self,
         dir: &Path,
-        results: &mut Vec<SearchResult>,
+        results: &mut Vec<PathBuf>,
         profile: &mut SearchProfile,
     ) -> GlobResult<()> {
         if !dir.is_dir() {
@@ -1109,7 +512,7 @@ impl FastGlobWalker {
 
             if path.is_dir() {
                 subdirectory_count += 1;
-                self.walk_dir_with_profile(&path, results, profile)?;
+                self.walk_with_profile(&path, results, profile)?;
             } else {
                 file_count += 1;
 
@@ -1119,14 +522,8 @@ impl FastGlobWalker {
                 }
 
                 if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                    if let Some((pattern_value, pattern_index)) =
-                        self.glob.find_with_index(filename)
-                    {
-                        results.push(SearchResult {
-                            path: path.clone(),
-                            pattern_value,
-                            pattern_index,
-                        });
+                    if glob_match(&self.pattern, filename) {
+                        results.push(path.clone());
                     }
                 }
             }
@@ -1149,65 +546,134 @@ impl FastGlobWalker {
     }
 }
 
-/// Fast file search that bypasses all ignore processing
-pub fn find_files_fast<P: AsRef<Path>>(
+// Convenience functions
+pub fn find_rust_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+    find_files(root, "*.rs", None)
+}
+
+pub fn find_toml_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+    find_files(root, "*.toml", None)
+}
+
+pub fn find_config_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+    find_files_multi(
+        root,
+        &[
+            "*.toml", "*.json", "*.yaml", "*.yml", "*.ini", "*.conf", "*.config",
+        ],
+        None,
+    )
+    .map(|results| results.into_iter().map(|r| r.path).collect())
+}
+
+pub fn find_toml_files_excluding<P: AsRef<Path>>(
     root: P,
-    patterns: &[(&str, i64)],
-) -> GlobResult<Vec<SearchResult>> {
-    let mut glob = MultiGlob::new();
-    for (pattern, value) in patterns {
-        glob.add(pattern, *value)?;
+    exclude_patterns: &[&str],
+) -> GlobResult<Vec<PathBuf>> {
+    find_files_with_exclude(root, &["**/*.toml"], exclude_patterns, None)
+}
+
+// Async versions
+pub async fn find_files_async<P: AsRef<Path>>(
+    root: P,
+    pattern: &str,
+    options: Option<SearchOptions>,
+) -> GlobResult<Vec<PathBuf>> {
+    validate_pattern(pattern)?;
+
+    let root_path = root.as_ref();
+    if !root_path.exists() {
+        return Err(GlobError::RootPathNotFound {
+            path: root_path.to_path_buf(),
+        });
     }
 
-    let walker = FastGlobWalker::new(glob);
-    walker.search(root)
+    if !root_path.is_dir() {
+        return Err(GlobError::RootPathNotDirectory {
+            path: root_path.to_path_buf(),
+        });
+    }
+
+    let search_options = options.unwrap_or_default();
+
+    let mut builder = WalkBuilder::new(root_path);
+    builder
+        .follow_links(search_options.follow_links)
+        .hidden(search_options.hidden)
+        .ignore(!search_options.ignore_files)
+        .git_ignore(search_options.git_ignore);
+
+    if let Some(max_depth) = search_options.max_depth {
+        builder.max_depth(Some(max_depth));
+    }
+
+    if let Some(max_filesize) = search_options.max_filesize {
+        builder.max_filesize(Some(max_filesize));
+    }
+
+    let walker = builder.build();
+    let mut results = Vec::new();
+
+    let entries: Vec<_> = walker.collect();
+
+    let chunks = entries.chunks(100);
+    let chunk_streams = chunks.map(|chunk| {
+        let chunk_results: Vec<_> = chunk
+            .iter()
+            .filter_map(|entry_result| match entry_result {
+                Ok(entry) => {
+                    if let Some(file_type) = entry.file_type() {
+                        if file_type.is_file() {
+                            let path = entry.path();
+                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+                            if glob_match(pattern, filename) {
+                                Some(path.to_path_buf())
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
+                Err(_) => None,
+            })
+            .collect();
+        stream::iter(chunk_results)
+    });
+
+    let mut stream = stream::iter(chunk_streams).flatten();
+
+    while let Some(result) = stream.next().await {
+        results.push(result);
+    }
+
+    Ok(results)
 }
 
-/// Fast Rust file search
-pub fn find_rust_files_fast<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let results = find_files_fast(root, &[("*.rs", 1)])?;
-    Ok(results.into_iter().map(|r| r.path).collect())
+pub async fn find_rust_files_async<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+    find_files_async(root, "*.rs", None).await
 }
 
-/// Fast TOML file search
-pub fn find_toml_files_fast<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
-    let results = find_files_fast(root, &[("*.toml", 1)])?;
-    Ok(results.into_iter().map(|r| r.path).collect())
+pub async fn find_toml_files_async<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+    find_files_async(root, "*.toml", None).await
 }
 
-/// Fast config file search
-pub fn find_config_files_fast<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+pub async fn find_config_files_async<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
     let patterns = &[
-        ("*.toml", 1),
-        ("*.json", 2),
-        ("*.yaml", 3),
-        ("*.yml", 4),
-        ("*.ini", 5),
-        ("*.conf", 6),
-        ("*.config", 7),
+        "*.toml", "*.json", "*.yaml", "*.yml", "*.ini", "*.conf", "*.config",
     ];
-    let results = find_files_fast(root, patterns)?;
-    Ok(results.into_iter().map(|r| r.path).collect())
-}
+    let mut all_results = Vec::new();
 
-/// Profile directory search performance
-pub fn profile_directory_search<P: AsRef<Path>>(
-    root: P,
-    patterns: &[(&str, i64)],
-) -> GlobResult<SearchProfile> {
-    let mut glob = MultiGlob::new();
-    for (pattern, value) in patterns {
-        glob.add(pattern, *value)?;
+    for pattern in patterns {
+        let results = find_files_async(root.as_ref(), pattern, None).await?;
+        all_results.extend(results);
     }
 
-    let walker = FastGlobWalker::new(glob);
-    let (_, profile) = walker.search_with_profile(root)?;
-    Ok(profile)
-}
-
-/// Profile TOML file search
-pub fn profile_toml_search<P: AsRef<Path>>(root: P) -> GlobResult<SearchProfile> {
-    profile_directory_search(root, &[("*.toml", 1)])
+    Ok(all_results)
 }
 
 #[cfg(test)]
@@ -1215,474 +681,65 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_simple_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("hello", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("hello"), Some(1));
-        assert_eq!(glob.find("world"), None);
+    fn test_validate_pattern() {
+        assert!(validate_pattern("*.rs").is_ok());
+        assert!(validate_pattern("test.*").is_ok());
+        assert!(matches!(validate_pattern(""), Err(GlobError::EmptyPattern)));
     }
 
     #[test]
-    fn test_wildcard_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("h*o", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("hello"), Some(1));
-        assert_eq!(glob.find("ho"), Some(1));
-        assert_eq!(glob.find("hilo"), Some(1));
-        assert_eq!(glob.find("hi"), None);
+    fn test_matches_pattern() {
+        assert!(matches_pattern("*.rs", "main.rs"));
+        assert!(matches_pattern("test.*", "test.txt"));
+        assert!(matches_pattern("h*o", "hello"));
+        assert!(!matches_pattern("*.rs", "main.txt"));
     }
 
     #[test]
-    fn test_question_mark_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("h?llo", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("hello"), Some(1));
-        assert_eq!(glob.find("hallo"), Some(1));
-        assert_eq!(glob.find("hllo"), None);
+    fn test_find_files() {
+        let current_dir = std::env::current_dir().unwrap();
+        let result = find_files(&current_dir, "*.rs", None);
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn test_bracket_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("h[aeiou]llo", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("hello"), Some(1));
-        assert_eq!(glob.find("hallo"), Some(1));
-        assert_eq!(glob.find("hillo"), Some(1));
-        assert_eq!(glob.find("hyllo"), None);
+    fn test_find_files_multi() {
+        let current_dir = std::env::current_dir().unwrap();
+        let result = find_files_multi(&current_dir, &["*.rs", "*.toml"], None);
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn test_bracket_range_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("h[a-z]llo", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("hello"), Some(1));
-        assert_eq!(glob.find("hallo"), Some(1));
-        assert_eq!(glob.find("h9llo"), None);
-    }
-
-    #[test]
-    fn test_bracket_negation_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("h[!aeiou]llo", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("hello"), None);
-        assert_eq!(glob.find("hxllo"), Some(1));
-        assert_eq!(glob.find("h9llo"), Some(1));
-    }
-
-    #[test]
-    fn test_multiple_patterns() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("*.txt", 10).is_ok());
-        assert!(glob.add("test.*", 5).is_ok());
-        assert!(glob.add("test.txt", 20).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("test.txt"), Some(20));
-        assert_eq!(glob.find("hello.txt"), Some(10));
-        assert_eq!(glob.find("test.rs"), Some(5));
-    }
-
-    #[test]
-    fn test_escape_pattern() {
-        let mut glob = MultiGlob::new();
-        assert!(glob.add("test\\*file", 1).is_ok());
-        glob.compile();
-
-        assert_eq!(glob.find("test*file"), Some(1));
-        assert_eq!(glob.find("testfile"), None);
-        assert_eq!(glob.find("testXfile"), None);
-    }
-
-    #[test]
-    fn test_parallel_walker_creation() {
-        let mut glob = MultiGlob::new();
-        glob.add("*.txt", 1).unwrap();
-        glob.add("*.rs", 2).unwrap();
-
-        let options = SearchOptions::default();
-        let walker = ParallelGlobWalker::new(glob, options);
-
-        assert_eq!(walker.options.threads, rayon::current_num_threads());
-    }
-
-    #[test]
-    fn test_search_options_default() {
-        let options = SearchOptions::default();
-
-        assert!(!options.follow_links);
-        assert!(!options.hidden);
-        assert!(options.ignore_files);
-        assert!(options.git_ignore);
-        assert!(options.max_depth.is_none());
-        assert!(options.max_filesize.is_none());
-        assert!(options.threads > 0);
-    }
-
-    #[test]
-    fn test_search_options_custom() {
-        let options = SearchOptions {
-            follow_links: true,
-            hidden: true,
-            ignore_files: false,
-            git_ignore: false,
-            max_depth: Some(3),
-            max_filesize: Some(1024 * 1024),
-            threads: 4,
-        };
-
-        assert!(options.follow_links);
-        assert!(options.hidden);
-        assert!(!options.ignore_files);
-        assert!(!options.git_ignore);
-        assert_eq!(options.max_depth, Some(3));
-        assert_eq!(options.max_filesize, Some(1024 * 1024));
-        assert_eq!(options.threads, 4);
-    }
-
-    #[cfg(test)]
-    #[test]
-    fn test_parallel_search_integration() {
-        use std::fs;
-        use std::io::Write;
-
-        let temp_dir = std::env::temp_dir().join("tombi_glob_test");
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).unwrap();
-
-        // テスト用ファイルを作成
-        let mut file1 = fs::File::create(temp_dir.join("test1.txt")).unwrap();
-        write!(file1, "test content").unwrap();
-
-        let mut file2 = fs::File::create(temp_dir.join("test2.rs")).unwrap();
-        write!(file2, "fn main() {{}}").unwrap();
-
-        let mut file3 = fs::File::create(temp_dir.join("readme.md")).unwrap();
-        write!(file3, "# Test").unwrap();
-
-        let mut glob = MultiGlob::new();
-        glob.add("*.txt", 1).unwrap();
-        glob.add("*.rs", 2).unwrap();
-
-        let options = SearchOptions::default();
-        let walker = ParallelGlobWalker::new(glob, options);
-
-        let results = walker.search(&temp_dir).unwrap();
-
-        assert_eq!(results.len(), 2);
-
-        let txt_result = results.iter().find(|r| r.pattern_value == 1);
-        let rs_result = results.iter().find(|r| r.pattern_value == 2);
-
-        assert!(txt_result.is_some());
-        assert!(rs_result.is_some());
-
-        // クリーンアップ
-        let _ = fs::remove_dir_all(&temp_dir);
+    fn test_find_files_with_exclude() {
+        let current_dir = std::env::current_dir().unwrap();
+        let result = find_files_with_exclude(&current_dir, &["*.toml"], &["target/**"], None);
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_convenience_functions() {
-        // 便利関数の基本テスト
-        let patterns = &[("*.rs", 1), ("*.toml", 2)];
         let current_dir = std::env::current_dir().unwrap();
 
-        // エラーが発生しないことを確認
-        let _ = find_files_parallel(&current_dir, patterns, None);
         let _ = find_rust_files(&current_dir);
         let _ = find_toml_files(&current_dir);
         let _ = find_config_files(&current_dir);
+        let _ = find_toml_files_excluding(&current_dir, &["target/**"]);
     }
 
     #[test]
-    fn test_search_patterns_options() {
-        let options =
-            SearchPatternsOptions::new(vec!["*.rs".to_string()], vec!["target/**".to_string()]);
-
-        assert_eq!(options.include_patterns, vec!["*.rs"]);
-        assert_eq!(options.exclude_patterns, vec!["target/**"]);
-        assert!(!options.search_options.hidden);
-    }
-
-    #[test]
-    fn test_search_patterns_options_with_search_options() {
-        let search_opts = SearchOptions {
-            hidden: true,
-            max_depth: Some(2),
-            ..Default::default()
-        };
-
-        let options = SearchPatternsOptions::new(vec!["*.toml".to_string()], vec![])
-            .with_search_options(search_opts);
-
-        assert!(options.search_options.hidden);
-        assert_eq!(options.search_options.max_depth, Some(2));
-    }
-
-    #[test]
-    fn test_search_with_include_exclude() {
+    fn test_find_files_with_profile() {
         let current_dir = std::env::current_dir().unwrap();
-
-        // Test basic functionality
-        let result = search_with_include_exclude(&current_dir, &["*.toml"], &["target/**"]);
-
-        // Should not fail
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_search_toml_files_advanced() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        // Test with no exclude patterns
-        let result1 = search_toml_files_advanced(&current_dir, None);
-        assert!(result1.is_ok());
-
-        // Test with exclude patterns
-        let result2 = search_toml_files_advanced(&current_dir, Some(&["target/**", "dist/**"]));
-        assert!(result2.is_ok());
-    }
-
-    #[cfg(test)]
-    #[test]
-    fn test_search_with_patterns_integration() {
-        use std::fs;
-        use std::io::Write;
-
-        let temp_dir = std::env::temp_dir().join("tombi_glob_patterns_test");
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).unwrap();
-
-        // Create test files
-        let mut file1 = fs::File::create(temp_dir.join("config.toml")).unwrap();
-        write!(file1, "[package]").unwrap();
-
-        let mut file2 = fs::File::create(temp_dir.join("test.rs")).unwrap();
-        write!(file2, "fn main() {{}}").unwrap();
-
-        // Create subdirectory with excluded file
-        let target_dir = temp_dir.join("target");
-        fs::create_dir_all(&target_dir).unwrap();
-        let mut file3 = fs::File::create(target_dir.join("exclude.toml")).unwrap();
-        write!(file3, "[excluded]").unwrap();
-
-        let options = SearchPatternsOptions::new(
-            vec!["**/*.toml".to_string()],
-            vec!["target/**".to_string()],
-        );
-
-        let results = search_with_patterns(&temp_dir, options).unwrap();
-
-        // Should find config.toml but not target/exclude.toml
-        assert_eq!(results.len(), 1);
-        assert!(results[0].path.file_name().unwrap() == "config.toml");
-
-        // Test include/exclude convenience function
-        let paths = search_with_include_exclude(&temp_dir, &["**/*.toml"], &["target/**"]).unwrap();
-
-        assert_eq!(paths.len(), 1);
-        assert!(paths[0].file_name().unwrap() == "config.toml");
-
-        // Cleanup
-        let _ = fs::remove_dir_all(&temp_dir);
-    }
-
-    #[test]
-    fn test_error_empty_pattern() {
-        let mut glob = MultiGlob::new();
-        let result = glob.add("", 1);
-        assert!(matches!(result, Err(GlobError::EmptyPattern)));
-    }
-
-    #[test]
-    fn test_error_root_path_not_found() {
-        let options = SearchPatternsOptions::new(vec!["*.txt".to_string()], vec![]);
-
-        let result = search_with_patterns("/nonexistent/path", options);
-        assert!(matches!(result, Err(GlobError::RootPathNotFound { .. })));
-    }
-
-    #[test]
-    fn test_glob_error_display() {
-        let error = GlobError::invalid_pattern("test[");
-        assert!(error.to_string().contains("Invalid glob pattern"));
-    }
-
-    #[test]
-    fn test_fast_glob_walker() {
-        let mut glob = MultiGlob::new();
-        glob.add("*.txt", 1).unwrap();
-        glob.add("*.rs", 2).unwrap();
-
-        let walker = FastGlobWalker::new(glob);
-        let current_dir = std::env::current_dir().unwrap();
-
-        // Should not fail
-        let result = walker.search(&current_dir);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_fast_convenience_functions() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        // Test fast functions
-        let _ = find_files_fast(&current_dir, &[("*.rs", 1), ("*.toml", 2)]);
-        let _ = find_rust_files_fast(&current_dir);
-        let _ = find_toml_files_fast(&current_dir);
-        let _ = find_config_files_fast(&current_dir);
-    }
-
-    #[test]
-    fn test_profile_directory_search() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        let profile = profile_toml_search(&current_dir).unwrap();
-
-        // Should have scanned some directories
-        assert!(profile.total_directories_scanned > 0);
-        assert!(profile.total_duration.as_nanos() > 0);
-
-        // Print profile for manual inspection
-        println!("Directory search profile:");
-        profile.print_report();
-    }
-
-    #[test]
-    fn test_search_with_profile() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        let mut glob = MultiGlob::new();
-        glob.add("*.toml", 1).unwrap();
-
-        let walker = FastGlobWalker::new(glob);
-        let (results, profile) = walker.search_with_profile(&current_dir).unwrap();
+        let (results, profile) = find_files_with_profile(&current_dir, "*.toml", None).unwrap();
 
         assert!(results.len() > 0);
         assert!(profile.total_directories_scanned > 0);
-    }
-
-    #[test]
-    fn test_gitignore_directory_exclusion_performance() {
-        use std::fs;
-        use std::io::Write;
-        use std::time::Instant;
-
-        let temp_dir = std::env::temp_dir().join("tombi_glob_perf_test");
-        let _ = fs::remove_dir_all(&temp_dir);
-        fs::create_dir_all(&temp_dir).unwrap();
-
-        // Initialize git repository
-        std::process::Command::new("git")
-            .args(&["init"])
-            .current_dir(&temp_dir)
-            .output()
-            .unwrap();
-
-        // Create .gitignore
-        let mut gitignore = fs::File::create(temp_dir.join(".gitignore")).unwrap();
-        writeln!(gitignore, "large_dir/").unwrap();
-
-        // Create a large directory with many files
-        let large_dir = temp_dir.join("large_dir");
-        fs::create_dir_all(&large_dir).unwrap();
-        for i in 0..1000 {
-            let mut file = fs::File::create(large_dir.join(format!("file_{}.txt", i))).unwrap();
-            writeln!(file, "content {}", i).unwrap();
-        }
-
-        // Create some non-ignored files
-        let mut file1 = fs::File::create(temp_dir.join("normal.txt")).unwrap();
-        writeln!(file1, "normal content").unwrap();
-
-        // Test with .gitignore enabled (should be fast)
-        let start = Instant::now();
-        let options_with_gitignore = SearchOptions::default(); // git_ignore: true
-        let results_with_gitignore =
-            find_files_parallel(&temp_dir, &[("*.txt", 1)], Some(options_with_gitignore)).unwrap();
-        let duration_with_gitignore = start.elapsed();
-
-        // Test with .gitignore disabled (should be slower)
-        let start = Instant::now();
-        let options_without_gitignore = SearchOptions {
-            git_ignore: false,
-            ignore_files: false,
-            ..Default::default()
-        };
-        let results_without_gitignore =
-            find_files_parallel(&temp_dir, &[("*.txt", 1)], Some(options_without_gitignore))
-                .unwrap();
-        let duration_without_gitignore = start.elapsed();
-
-        // Debug: Print actual results
-        println!(
-            "Results with .gitignore: {} files",
-            results_with_gitignore.len()
-        );
-        for result in &results_with_gitignore {
-            println!("  Found: {:?}", result.path);
-        }
-
-        println!(
-            "Results without .gitignore: {} files",
-            results_without_gitignore.len()
-        );
-
-        // The key assertion: .gitignore should exclude the large_dir
-        assert!(results_with_gitignore.len() < results_without_gitignore.len());
-
-        // Without .gitignore should find many more files
-        assert!(results_without_gitignore.len() > 100);
-
-        // Performance check: .gitignore version should be significantly faster
-        println!(
-            "With .gitignore: {:?} ({} files)",
-            duration_with_gitignore,
-            results_with_gitignore.len()
-        );
-        println!(
-            "Without .gitignore: {:?} ({} files)",
-            duration_without_gitignore,
-            results_without_gitignore.len()
-        );
-
-        // Cleanup
-        let _ = fs::remove_dir_all(&temp_dir);
-
-        // The .gitignore version should be at least 2x faster for this test
-        assert!(duration_with_gitignore < duration_without_gitignore);
+        assert!(profile.total_duration.as_nanos() > 0);
     }
 
     #[tokio::test]
-    async fn test_async_walker_creation() {
-        let mut glob = MultiGlob::new();
-        glob.add("*.txt", 1).unwrap();
-        glob.add("*.rs", 2).unwrap();
-
-        let options = SearchOptions::default();
-        let walker = AsyncGlobWalker::new(glob, options);
-
-        assert_eq!(walker.options.threads, rayon::current_num_threads());
-    }
-
-    #[tokio::test]
-    async fn test_async_find_files() {
+    async fn test_find_files_async() {
         let current_dir = std::env::current_dir().unwrap();
-
-        let patterns = &[("*.rs", 1), ("*.toml", 2)];
-        let result = find_files_async(&current_dir, patterns, None).await;
-
+        let result = find_files_async(&current_dir, "*.rs", None).await;
         assert!(result.is_ok());
     }
 
@@ -1695,43 +752,9 @@ mod tests {
         let _ = find_config_files_async(&current_dir).await;
     }
 
-    #[tokio::test]
-    async fn test_async_search_with_patterns() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        let options =
-            SearchPatternsOptions::new(vec!["*.toml".to_string()], vec!["target/**".to_string()]);
-
-        let result = search_with_patterns_async(&current_dir, options).await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_async_search_with_include_exclude() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        let result =
-            search_with_include_exclude_async(&current_dir, &["*.toml"], &["target/**"]).await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_async_search_toml_files_advanced() {
-        let current_dir = std::env::current_dir().unwrap();
-
-        let result1 = search_toml_files_advanced_async(&current_dir, None).await;
-        assert!(result1.is_ok());
-
-        let result2 =
-            search_toml_files_advanced_async(&current_dir, Some(&["target/**", "dist/**"])).await;
-        assert!(result2.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_async_error_root_path_not_found() {
-        let options = SearchPatternsOptions::new(vec!["*.txt".to_string()], vec![]);
-
-        let result = search_with_patterns_async("/nonexistent/path", options).await;
+    #[test]
+    fn test_error_handling() {
+        let result = find_files("/nonexistent/path", "*.rs", None);
         assert!(matches!(result, Err(GlobError::RootPathNotFound { .. })));
     }
 }
