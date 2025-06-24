@@ -8,13 +8,8 @@ name = "profile"
 path = "src/bin/profile.rs"
 required-features = ["serde_tombi", "tombi_config"]
 
-[[bench]]
-harness = false
-name = "glob_benchmark"
-
 [dependencies]
 fast-glob = "0.3.0"
-futures = "0.3.31"
 ignore = "0.4.20"
 rayon = "1.10.0"
 serde_tombi = { workspace = true, optional = true }
@@ -24,3 +19,7 @@ tombi-config = { workspace = true, optional = true }
 [dev-dependencies]
 criterion = "0.5"
 tokio = { workspace = true, features = ["macros", "rt"] }
+
+[features]
+default = []
+profile = ["dep:serde_tombi", "dep:tombi-config"]

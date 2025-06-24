@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tombi_glob::SearchPatternsOptions;
+use tombi_glob::WalkDir;
 
 const DEFAULT_INCLUDE_PATTERNS: &[&str] = &["**/*.toml"];
 
@@ -83,15 +83,26 @@ async fn search_with_patterns_async(
     include_patterns: &[&str],
     exclude_patterns: &[&str],
 ) -> Vec<Result<PathBuf, crate::Error>> {
-    let options = SearchPatternsOptions::new(
-        include_patterns.iter().map(|s| s.to_string()).collect(),
-        exclude_patterns.iter().map(|s| s.to_string()).collect(),
-    );
+    let mut walker = WalkDir::new(root);
 
-    match tombi_glob::search_with_patterns_async(root, options).await {
+    if !include_patterns.is_empty() {
+        walker = match walker.includes(include_patterns) {
+            Ok(w) => w,
+            Err(err) => return vec![Err(crate::Error::GlobSearchFailed(err))],
+        };
+    }
+
+    if !exclude_patterns.is_empty() {
+        walker = match walker.excludes(exclude_patterns) {
+            Ok(w) => w,
+            Err(err) => return vec![Err(crate::Error::GlobSearchFailed(err))],
+        };
+    }
+
+    match walker.walk().await {
         Ok(results) => {
             let matched_paths: Vec<Result<PathBuf, crate::Error>> =
-                results.into_iter().map(|r| Ok(r.path)).collect();
+                results.into_iter().map(|r| Ok(r)).collect();
             matched_paths
         }
         Err(err) => {

@@ -1,6 +1,5 @@
 use fast_glob::glob_match;
-use futures::{stream, StreamExt};
-use ignore::{DirEntry, WalkBuilder};
+use ignore::WalkBuilder;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
