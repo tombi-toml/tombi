@@ -1,50 +1,10 @@
+mod error;
 use fast_glob::glob_match;
 use ignore::WalkBuilder;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum GlobError {
-    #[error("Invalid glob pattern: '{pattern}'")]
-    InvalidPattern { pattern: String },
-
-    #[error("Empty pattern provided")]
-    EmptyPattern,
-
-    #[error("IO error while walking directory '{path}': {source}")]
-    IoError {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-
-    #[error("Search root path does not exist: '{path}'")]
-    RootPathNotFound { path: PathBuf },
-
-    #[error("Search root path is not a directory: '{path}'")]
-    RootPathNotDirectory { path: PathBuf },
-
-    #[error("Failed to acquire thread synchronization lock")]
-    LockError,
-}
-
-impl GlobError {
-    pub fn invalid_pattern(pattern: impl Into<String>) -> Self {
-        Self::InvalidPattern {
-            pattern: pattern.into(),
-        }
-    }
-
-    pub fn io_error(path: impl Into<PathBuf>, source: std::io::Error) -> Self {
-        Self::IoError {
-            path: path.into(),
-            source,
-        }
-    }
-}
-
-type GlobResult<T> = Result<T, GlobError>;
+pub use error::Error;
 
 #[derive(Debug, Clone)]
 pub struct SearchOptions {
@@ -72,9 +32,9 @@ impl Default for SearchOptions {
 }
 
 /// Validate a glob pattern
-fn validate_pattern(pattern: &str) -> GlobResult<()> {
+fn validate_pattern(pattern: &str) -> Result<(), crate::Error> {
     if pattern.is_empty() {
-        return Err(GlobError::EmptyPattern);
+        return Err(crate::Error::EmptyPattern);
     }
 
     // Validate pattern by trying to match empty string (fast-glob will panic on invalid patterns)
@@ -117,7 +77,7 @@ impl WalkDir {
     }
 
     /// Add include patterns
-    pub fn includes(mut self, patterns: &[&str]) -> GlobResult<Self> {
+    pub fn includes(mut self, patterns: &[&str]) -> Result<Self, crate::Error> {
         for pattern in patterns {
             validate_pattern(pattern)?;
             self.include_patterns.push(pattern.to_string());
@@ -126,7 +86,7 @@ impl WalkDir {
     }
 
     /// Add exclude patterns
-    pub fn excludes(mut self, patterns: &[&str]) -> GlobResult<Self> {
+    pub fn excludes(mut self, patterns: &[&str]) -> Result<Self, crate::Error> {
         for pattern in patterns {
             validate_pattern(pattern)?;
             self.exclude_patterns.push(pattern.to_string());
@@ -135,17 +95,17 @@ impl WalkDir {
     }
 
     /// Walk the directory asynchronously and return matching file paths
-    pub async fn walk(self) -> GlobResult<Vec<PathBuf>> {
+    pub async fn walk(self) -> Result<Vec<PathBuf>, crate::Error> {
         let root_path = &self.root;
 
         if !root_path.exists() {
-            return Err(GlobError::RootPathNotFound {
+            return Err(crate::Error::RootPathNotFound {
                 path: root_path.to_path_buf(),
             });
         }
 
         if !root_path.is_dir() {
-            return Err(GlobError::RootPathNotDirectory {
+            return Err(crate::Error::RootPathNotDirectory {
                 path: root_path.to_path_buf(),
             });
         }
@@ -226,28 +186,28 @@ impl WalkDir {
         });
 
         let results = Arc::try_unwrap(results)
-            .map_err(|_| GlobError::LockError)?
+            .map_err(|_| crate::Error::LockError)?
             .into_inner()
-            .map_err(|_| GlobError::LockError)?;
+            .map_err(|_| crate::Error::LockError)?;
 
         Ok(results)
     }
 }
 
 // Convenience functions using the new API
-pub fn find_rust_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+pub fn find_rust_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
     let walker = WalkDir::new(root).includes(&["*.rs"])?;
     // Note: This is a blocking version, async version would need tokio runtime
     // For now, we'll use a simple implementation
     let root_path = walker.root;
     if !root_path.exists() {
-        return Err(GlobError::RootPathNotFound {
+        return Err(crate::Error::RootPathNotFound {
             path: root_path.to_path_buf(),
         });
     }
 
     if !root_path.is_dir() {
-        return Err(GlobError::RootPathNotDirectory {
+        return Err(crate::Error::RootPathNotDirectory {
             path: root_path.to_path_buf(),
         });
     }
@@ -290,25 +250,25 @@ pub fn find_rust_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
     });
 
     let results = Arc::try_unwrap(results)
-        .map_err(|_| GlobError::LockError)?
+        .map_err(|_| crate::Error::LockError)?
         .into_inner()
-        .map_err(|_| GlobError::LockError)?;
+        .map_err(|_| crate::Error::LockError)?;
 
     Ok(results)
 }
 
-pub fn find_toml_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
+pub fn find_toml_files<P: AsRef<Path>>(root: P) -> Result<Vec<PathBuf>, crate::Error> {
     let walker = WalkDir::new(root).includes(&["*.toml"])?;
     // Similar blocking implementation as find_rust_files
     let root_path = walker.root;
     if !root_path.exists() {
-        return Err(GlobError::RootPathNotFound {
+        return Err(crate::Error::RootPathNotFound {
             path: root_path.to_path_buf(),
         });
     }
 
     if !root_path.is_dir() {
-        return Err(GlobError::RootPathNotDirectory {
+        return Err(crate::Error::RootPathNotDirectory {
             path: root_path.to_path_buf(),
         });
     }
@@ -351,9 +311,9 @@ pub fn find_toml_files<P: AsRef<Path>>(root: P) -> GlobResult<Vec<PathBuf>> {
     });
 
     let results = Arc::try_unwrap(results)
-        .map_err(|_| GlobError::LockError)?
+        .map_err(|_| crate::Error::LockError)?
         .into_inner()
-        .map_err(|_| GlobError::LockError)?;
+        .map_err(|_| crate::Error::LockError)?;
 
     Ok(results)
 }
@@ -454,6 +414,6 @@ mod tests {
     #[test]
     fn test_error_handling() {
         let result = find_rust_files("/nonexistent/path");
-        assert!(matches!(result, Err(GlobError::RootPathNotFound { .. })));
+        assert!(matches!(result, Err(crate::Error::RootPathNotFound { .. })));
     }
 }

@@ -15,7 +15,7 @@ pub enum Error {
     #[error("{0:?} is invalid glob pattern")]
     GlobPatternInvalid(String),
     #[error(transparent)]
-    GlobSearchFailed(tombi_glob::GlobError),
+    GlobSearchFailed(tombi_glob::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }

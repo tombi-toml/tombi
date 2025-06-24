@@ -6,14 +6,15 @@ edition = "2021"
 [[bin]]
 name = "profile"
 path = "src/bin/profile.rs"
-required-features = ["serde_tombi", "tombi_config"]
+required-features = ["profile"]
 
 [dependencies]
 fast-glob = "0.3.0"
 ignore = "0.4.20"
 rayon = "1.10.0"
 serde_tombi = { workspace = true, optional = true }
-thiserror = "2.0.12"
+thiserror.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-config = { workspace = true, optional = true }
 
 [dev-dependencies]
