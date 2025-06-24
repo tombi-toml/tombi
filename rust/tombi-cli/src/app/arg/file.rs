@@ -86,17 +86,11 @@ async fn search_with_patterns_async(
     let mut walker = WalkDir::new(root);
 
     if !include_patterns.is_empty() {
-        walker = match walker.includes(include_patterns) {
-            Ok(w) => w,
-            Err(err) => return vec![Err(crate::Error::GlobSearchFailed(err))],
-        };
+        walker = walker.includes(include_patterns);
     }
 
     if !exclude_patterns.is_empty() {
-        walker = match walker.excludes(exclude_patterns) {
-            Ok(w) => w,
-            Err(err) => return vec![Err(crate::Error::GlobSearchFailed(err))],
-        };
+        walker = walker.excludes(exclude_patterns);
     }
 
     match walker.walk().await {
