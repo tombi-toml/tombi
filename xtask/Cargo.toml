@@ -23,7 +23,4 @@ time = { workspace = true }
 tombi-config = { workspace = true, features = ["jsonschema"] }
 ungrammar = { workspace = true }
 xshell = { workspace = true }
-zip = { workspace = true, features = [
-  "deflate",
-  "time",
-] }
+zip = { workspace = true, features = ["deflate", "time"] }
