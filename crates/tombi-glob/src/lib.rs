@@ -42,11 +42,6 @@ fn validate_pattern(pattern: &str) -> Result<(), crate::Error> {
     Ok(())
 }
 
-/// Check if a path matches a glob pattern
-fn matches_pattern(pattern: &str, path: &str) -> bool {
-    glob_match(pattern, path)
-}
-
 /// WalkDir-like structure for parallel async directory walking
 pub struct WalkDir {
     root: PathBuf,
@@ -152,7 +147,7 @@ impl WalkDir {
                                 // Check if file matches any include pattern
                                 let mut should_include = include_patterns.is_empty();
                                 for pattern in &include_patterns {
-                                    if matches_pattern(pattern, &relative_path) {
+                                    if glob_match(pattern, &relative_path) {
                                         should_include = true;
                                         break;
                                     }
@@ -162,7 +157,7 @@ impl WalkDir {
                                     // Check if file should be excluded
                                     let mut should_exclude = false;
                                     for pattern in &exclude_patterns {
-                                        if matches_pattern(pattern, &relative_path) {
+                                        if glob_match(pattern, &relative_path) {
                                             should_exclude = true;
                                             break;
                                         }
@@ -238,7 +233,7 @@ mod tests {
                                 let filename =
                                     path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                                if matches_pattern("*.rs", filename) {
+                                if glob_match("*.rs", filename) {
                                     if let Ok(mut results_guard) = results_clone.lock() {
                                         results_guard.push(path.to_path_buf());
                                     }
@@ -300,7 +295,7 @@ mod tests {
                                 let filename =
                                     path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                                if matches_pattern("*.toml", filename) {
+                                if glob_match("*.toml", filename) {
                                     if let Ok(mut results_guard) = results_clone.lock() {
                                         results_guard.push(path.to_path_buf());
                                     }
