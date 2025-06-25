@@ -89,28 +89,13 @@ where
     };
 
     runtime.block_on(async {
-        let include_patterns: Option<Vec<&str>> = config
-            .include
-            .as_deref()
-            .map(|p| p.iter().map(|s| s.as_str()).collect());
-        let exclude_patterns: Option<Vec<&str>> = config
-            .exclude
-            .as_deref()
-            .map(|p| p.iter().map(|s| s.as_str()).collect());
-        let format_options = config
-            .format
-            .as_ref()
-            .unwrap_or(&Default::default())
-            .clone();
+        let files_options = config.files.clone().unwrap_or_default();
+        let format_options = config.format.clone().unwrap_or_default();
 
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            arg::FileInput::new(
-                &args.files,
-                include_patterns.as_ref().map(|v| &v[..]),
-                exclude_patterns.as_ref().map(|v| &v[..]),
-            )
+            arg::FileInput::new(&args.files, config_path.as_deref(), files_options)
         );
 
         schema_result?;

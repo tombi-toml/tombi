@@ -1,4 +1,5 @@
 mod error;
+mod files;
 pub mod format;
 mod lint;
 mod schema;
@@ -6,6 +7,7 @@ mod server;
 mod types;
 
 pub use error::Error;
+pub use files::FilesOptions;
 pub use format::FormatOptions;
 pub use lint::{LintOptions, SeverityLevel};
 pub use schema::SchemaOptions;
@@ -43,15 +45,23 @@ pub struct Config {
     ///
     /// The file match pattern to include in formatting and linting.
     /// Supports glob pattern.
+    ///
+    /// Deprecated. Use `files.include` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub include: Option<Vec<String>>,
+    include: Option<Vec<String>>,
 
     /// # File patterns to exclude.
     ///
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.
+    ///
+    /// Deprecated. Use `files.exclude` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub exclude: Option<Vec<String>>,
+    exclude: Option<Vec<String>>,
+
+    pub files: Option<FilesOptions>,
 
     /// # Formatter options.
     pub format: Option<FormatOptions>,
@@ -74,6 +84,22 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn include(&self) -> Option<&Vec<String>> {
+        #[allow(deprecated)]
+        self.files
+            .as_ref()
+            .and_then(|files| files.include.as_ref())
+            .or_else(|| self.include.as_ref())
+    }
+
+    pub fn exclude(&self) -> Option<&Vec<String>> {
+        #[allow(deprecated)]
+        self.files
+            .as_ref()
+            .and_then(|files| files.exclude.as_ref())
+            .or_else(|| self.exclude.as_ref())
+    }
+
     pub fn lsp(&self) -> Option<&LspOptions> {
         #[allow(deprecated)]
         self.lsp.as_ref().or(self.server.as_ref())
