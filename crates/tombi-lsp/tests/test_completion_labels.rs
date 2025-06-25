@@ -19,6 +19,7 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "exclude",
+                "files",
                 "format",
                 "include",
                 "lint",
@@ -72,6 +73,7 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "exclude",
+                "files",
                 "format",
                 "include",
                 "lint",
@@ -95,6 +97,7 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "exclude",
+                "files",
                 "format",
                 "include",
                 "lint",
@@ -111,6 +114,7 @@ mod completion_labels {
                 "[█]",
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "files",
                 "format",
                 "lint",
                 "lsp",
@@ -130,6 +134,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "files",
                 "format",
                 "lint",
                 "lsp",
@@ -151,6 +156,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "files",
                 "lint",
                 "lsp",
                 "schema",
@@ -171,6 +177,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "files",
                 "format",
                 "lint",
                 "lsp",
@@ -186,6 +193,7 @@ mod completion_labels {
                 "[[█]]",
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "files",
                 "format",
                 "lint",
                 "lsp",
