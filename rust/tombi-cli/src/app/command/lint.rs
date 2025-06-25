@@ -75,24 +75,13 @@ where
     };
 
     runtime.block_on(async {
-        let include_patterns: Option<Vec<&str>> = config
-            .include()
-            .as_ref()
-            .map(|p| p.iter().map(|s| s.as_str()).collect());
-        let exclude_patterns: Option<Vec<&str>> = config
-            .exclude()
-            .as_ref()
-            .map(|p| p.iter().map(|s| s.as_str()).collect());
-        let lint_options = config.lint.as_ref().unwrap_or(&Default::default()).clone();
+        let files_options = config.files.clone().unwrap_or_default();
+        let lint_options = config.lint.clone().unwrap_or_default();
 
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            arg::FileInput::new(
-                &args.files,
-                include_patterns.as_ref().map(|v| &v[..]),
-                exclude_patterns.as_ref().map(|v| &v[..]),
-            )
+            arg::FileInput::new(&args.files, config_path.as_deref(), files_options)
         );
 
         schema_result?;

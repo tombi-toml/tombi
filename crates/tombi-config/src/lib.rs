@@ -7,6 +7,7 @@ mod server;
 mod types;
 
 pub use error::Error;
+pub use files::FilesOptions;
 pub use format::FormatOptions;
 pub use lint::{LintOptions, SeverityLevel};
 pub use schema::SchemaOptions;
@@ -14,8 +15,6 @@ pub use schema::{RootSchema, Schema, SubSchema};
 pub use server::{LspCompletion, LspOptions};
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
-
-use crate::files::FilesOptions;
 
 pub const TOMBI_CONFIG_FILENAME: &str = "tombi.toml";
 pub const TOMBI_USER_CONFIG_FILENAME: &str = "config.toml";

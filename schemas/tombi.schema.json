@@ -138,7 +138,10 @@
           "items": {
             "type": "string"
           },
-          "minItems": 1
+          "minItems": 1,
+          "default": [
+            "**/*.toml"
+          ]
         },
         "exclude": {
           "title": "File patterns to exclude.",
