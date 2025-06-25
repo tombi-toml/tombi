@@ -5,17 +5,6 @@
   "description": "**Tombi** (鳶) is a toolkit for TOML; providing a formatter/linter and language server.\nSee the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.",
   "type": "object",
   "properties": {
-    "format": {
-      "title": "Formatter options.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/FormatOptions"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "toml-version": {
       "title": "TOML version.",
       "description": "TOML version to use if not specified in the schema.",
@@ -31,27 +20,44 @@
     },
     "include": {
       "title": "File patterns to include.",
-      "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.",
-      "type": [
-        "array",
-        "null"
-      ],
+      "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.\n\nDeprecated. Use `files.include` instead.",
+      "type": ["array", "null"],
       "items": {
         "type": "string"
       },
+      "deprecated": true,
       "minItems": 1
     },
     "exclude": {
       "title": "File patterns to exclude.",
-      "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.",
-      "type": [
-        "array",
-        "null"
-      ],
+      "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.\n\nDeprecated. Use `files.exclude` instead.",
+      "type": ["array", "null"],
       "items": {
         "type": "string"
       },
+      "deprecated": true,
       "minItems": 1
+    },
+    "files": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FilesOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "format": {
+      "title": "Formatter options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "lint": {
       "title": "Linter options.",
@@ -100,10 +106,7 @@
     },
     "schemas": {
       "title": "Schema catalog items.",
-      "type": [
-        "array",
-        "null"
-      ],
+      "type": ["array", "null"],
       "items": {
         "$ref": "#/definitions/Schema"
       }
@@ -120,6 +123,38 @@
         "v1.0.0",
         "v1.1.0-preview"
       ]
+    },
+    "FilesOptions": {
+      "title": "Files options.",
+      "type": "object",
+      "properties": {
+        "include": {
+          "title": "File patterns to include.",
+          "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "exclude": {
+          "title": "File patterns to exclude.",
+          "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
     },
     "FormatOptions": {
       "title": "Formatter options.",

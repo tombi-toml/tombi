@@ -1,4 +1,5 @@
 mod error;
+mod files;
 pub mod format;
 mod lint;
 mod schema;
@@ -13,6 +14,8 @@ pub use schema::{RootSchema, Schema, SubSchema};
 pub use server::{LspCompletion, LspOptions};
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
+
+use crate::files::FilesOptions;
 
 pub const TOMBI_CONFIG_FILENAME: &str = "tombi.toml";
 pub const TOMBI_USER_CONFIG_FILENAME: &str = "config.toml";
@@ -43,15 +46,23 @@ pub struct Config {
     ///
     /// The file match pattern to include in formatting and linting.
     /// Supports glob pattern.
+    ///
+    /// Deprecated. Use `files.include` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub include: Option<Vec<String>>,
+    include: Option<Vec<String>>,
 
     /// # File patterns to exclude.
     ///
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.
+    ///
+    /// Deprecated. Use `files.exclude` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub exclude: Option<Vec<String>>,
+    exclude: Option<Vec<String>>,
+
+    pub files: Option<FilesOptions>,
 
     /// # Formatter options.
     pub format: Option<FormatOptions>,
@@ -74,6 +85,22 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn include(&self) -> Option<&Vec<String>> {
+        #[allow(deprecated)]
+        self.files
+            .as_ref()
+            .and_then(|files| files.include.as_ref())
+            .or_else(|| self.include.as_ref())
+    }
+
+    pub fn exclude(&self) -> Option<&Vec<String>> {
+        #[allow(deprecated)]
+        self.files
+            .as_ref()
+            .and_then(|files| files.exclude.as_ref())
+            .or_else(|| self.exclude.as_ref())
+    }
+
     pub fn lsp(&self) -> Option<&LspOptions> {
         #[allow(deprecated)]
         self.lsp.as_ref().or(self.server.as_ref())

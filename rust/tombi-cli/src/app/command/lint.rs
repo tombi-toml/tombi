@@ -76,11 +76,11 @@ where
 
     runtime.block_on(async {
         let include_patterns: Option<Vec<&str>> = config
-            .include
+            .include()
             .as_ref()
             .map(|p| p.iter().map(|s| s.as_str()).collect());
         let exclude_patterns: Option<Vec<&str>> = config
-            .exclude
+            .exclude()
             .as_ref()
             .map(|p| p.iter().map(|s| s.as_str()).collect());
         let lint_options = config.lint.as_ref().unwrap_or(&Default::default()).clone();

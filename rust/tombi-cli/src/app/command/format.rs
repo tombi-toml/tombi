@@ -90,12 +90,12 @@ where
 
     runtime.block_on(async {
         let include_patterns: Option<Vec<&str>> = config
-            .include
-            .as_deref()
+            .include()
+            .as_ref()
             .map(|p| p.iter().map(|s| s.as_str()).collect());
         let exclude_patterns: Option<Vec<&str>> = config
-            .exclude
-            .as_deref()
+            .exclude()
+            .as_ref()
             .map(|p| p.iter().map(|s| s.as_str()).collect());
         let format_options = config
             .format
