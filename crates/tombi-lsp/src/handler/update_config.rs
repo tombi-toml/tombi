@@ -40,10 +40,10 @@ pub async fn handle_update_config(
         }
     }
 
-    if let Some(user_config_path) = serde_tombi::config::user_or_system_tombi_config_path() {
-        if let Ok(user_config_url) = Url::from_file_path(&user_config_path) {
-            if config_url == user_config_url && update_config(backend, &config_url).await? {
-                tracing::info!("update config from {user_config_path:?}");
+    if let Some(config_path) = serde_tombi::config::user_or_system_tombi_config_path() {
+        if let Ok(config_url) = Url::from_file_path(&config_path) {
+            if config_url == config_url && update_config(backend, &config_url).await? {
+                tracing::info!("update config from {config_path:?}");
                 return Ok(true);
             }
         }
