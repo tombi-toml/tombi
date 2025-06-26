@@ -47,6 +47,14 @@ pub async fn handle_update_config(
         }
     }
 
+    if let Some(system_config_path) = serde_tombi::config::system_tombi_config_path() {
+        if let Ok(system_config_url) = Url::from_file_path(system_config_path) {
+            if config_url == system_config_url && update_config(backend, &config_url).await? {
+                return Ok(true);
+            }
+        }
+    }
+
     tracing::info!("No workspace found for config settings: {}", config_url);
 
     Ok(false)
