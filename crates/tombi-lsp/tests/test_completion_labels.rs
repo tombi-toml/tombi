@@ -594,6 +594,7 @@ mod completion_labels {
                 "poe",
                 "poetry",
                 "pyright",
+                "pytest",
                 "repo-review",
                 "ruff",
                 "scikit-build",
@@ -602,6 +603,7 @@ mod completion_labels {
                 "taskipy",
                 "tombi",
                 "tox",
+                "ty",
                 "uv",
             ]);
         }
