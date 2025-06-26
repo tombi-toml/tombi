@@ -132,7 +132,7 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
     let mut current_dir = std::env::current_dir().unwrap();
     loop {
         let config_path = current_dir.join(TOMBI_CONFIG_FILENAME);
-        if config_path.exists() {
+        if config_path.is_file() {
             tracing::debug!("\"{}\" found at {:?}", TOMBI_CONFIG_FILENAME, &config_path);
 
             let Some(config) = try_from_path(&config_path)? else {
@@ -187,7 +187,7 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);
         config_path.push("tombi");
         config_path.push(TOMBI_USER_CONFIG_FILENAME);
-        if config_path.exists() {
+        if config_path.is_file() {
             return Some(config_path);
         }
     }
@@ -198,7 +198,7 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
         config_path.push(".config");
         config_path.push("tombi");
         config_path.push(TOMBI_USER_CONFIG_FILENAME);
-        if config_path.exists() {
+        if config_path.is_file() {
             return Some(config_path);
         }
 
@@ -223,7 +223,7 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
             let mut config_path = std::path::PathBuf::from(appdata);
             config_path.push("tombi");
             config_path.push(TOMBI_USER_CONFIG_FILENAME);
-            if config_path.exists() {
+            if config_path.is_file() {
                 return Some(config_path);
             }
         }
