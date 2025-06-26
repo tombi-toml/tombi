@@ -19,8 +19,7 @@
       "default": "v1.0.0"
     },
     "include": {
-      "title": "File patterns to include.",
-      "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.\n\nDeprecated. Use `files.include` instead.",
+      "title": "Deprecated. Use `files.include` instead.",
       "type": ["array", "null"],
       "items": {
         "type": "string"
@@ -29,8 +28,7 @@
       "minItems": 1
     },
     "exclude": {
-      "title": "File patterns to exclude.",
-      "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.\n\nDeprecated. Use `files.exclude` instead.",
+      "title": "Deprecated. Use `files.exclude` instead.",
       "type": ["array", "null"],
       "items": {
         "type": "string"
