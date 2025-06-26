@@ -169,6 +169,12 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
             unreachable!("user config.toml should always be parsed successfully.");
         };
         Ok((config, Some(user_config_path)))
+    } else if let Some(system_config_path) = system_tombi_config_path() {
+        tracing::debug!("system config.toml found at {:?}", &system_config_path);
+        let Some(config) = try_from_path(&system_config_path)? else {
+            unreachable!("system config.toml should always be parsed successfully.");
+        };
+        Ok((config, Some(system_config_path)))
     } else {
         tracing::debug!("config file not found, use default config");
 
@@ -227,6 +233,16 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
                 return Some(config_path);
             }
         }
+    }
+
+    None
+}
+
+pub fn system_tombi_config_path() -> Option<std::path::PathBuf> {
+    let mut config_path = std::path::PathBuf::from("/etc/tombi");
+    config_path.push(TOMBI_CONFIG_FILENAME);
+    if config_path.exists() {
+        return Some(config_path);
     }
 
     None
