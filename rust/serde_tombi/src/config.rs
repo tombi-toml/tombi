@@ -1,7 +1,7 @@
 use tombi_ast::AstNode;
 use tombi_config::{
-    Config, TomlVersion, PYPROJECT_FILENAME, TOMBI_CONFIG_FILENAME, TOMBI_CONFIG_TOML_VERSION,
-    TOMBI_USER_CONFIG_FILENAME,
+    Config, TomlVersion, CONFIG_TOML_FILENAME, PYPROJECT_TOML_FILENAME, TOMBI_CONFIG_TOML_VERSION,
+    TOMBI_TOML_FILENAME,
 };
 use tombi_url::url_to_file_path;
 
@@ -79,7 +79,7 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
     };
 
     match config_path.file_name().and_then(|name| name.to_str()) {
-        Some(TOMBI_CONFIG_FILENAME | TOMBI_USER_CONFIG_FILENAME) => {
+        Some(TOMBI_TOML_FILENAME | CONFIG_TOML_FILENAME) => {
             match crate::config::from_str(&config_text, config_path) {
                 Ok(tombi_config) => Ok(Some(tombi_config)),
                 Err(error) => {
@@ -90,7 +90,7 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
                 }
             }
         }
-        Some(PYPROJECT_FILENAME) => {
+        Some(PYPROJECT_TOML_FILENAME) => {
             let Ok(pyproject_toml) = PyProjectToml::from_str(&config_text, config_path) else {
                 return Err(tombi_config::Error::ConfigFileParseFailed {
                     config_path: config_path.to_owned(),
@@ -131,9 +131,9 @@ pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_confi
 pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
     let mut current_dir = std::env::current_dir().unwrap();
     loop {
-        let config_path = current_dir.join(TOMBI_CONFIG_FILENAME);
-        if config_path.exists() {
-            tracing::debug!("\"{}\" found at {:?}", TOMBI_CONFIG_FILENAME, &config_path);
+        let config_path = current_dir.join(TOMBI_TOML_FILENAME);
+        if config_path.is_file() {
+            tracing::debug!("\"{}\" found at {:?}", TOMBI_TOML_FILENAME, &config_path);
 
             let Some(config) = try_from_path(&config_path)? else {
                 unreachable!("tombi.toml should always be parsed successfully.");
@@ -142,11 +142,11 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
             return Ok((config, Some(config_path)));
         }
 
-        let pyproject_toml_path = current_dir.join(PYPROJECT_FILENAME);
+        let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
         if pyproject_toml_path.exists() {
             tracing::debug!(
                 "\"{}\" found at {:?}",
-                PYPROJECT_FILENAME,
+                PYPROJECT_TOML_FILENAME,
                 pyproject_toml_path
             );
 
@@ -163,18 +163,12 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
         }
     }
 
-    if let Some(user_config_path) = user_tombi_config_path() {
-        tracing::debug!("user config.toml found at {:?}", &user_config_path);
+    if let Some(user_config_path) = user_or_system_tombi_config_path() {
+        tracing::debug!("{CONFIG_TOML_FILENAME} found at {:?}", &user_config_path);
         let Some(config) = try_from_path(&user_config_path)? else {
-            unreachable!("user config.toml should always be parsed successfully.");
+            unreachable!("{CONFIG_TOML_FILENAME} should always be parsed successfully.");
         };
         Ok((config, Some(user_config_path)))
-    } else if let Some(system_config_path) = system_tombi_config_path() {
-        tracing::debug!("system config.toml found at {:?}", &system_config_path);
-        let Some(config) = try_from_path(&system_config_path)? else {
-            unreachable!("system config.toml should always be parsed successfully.");
-        };
-        Ok((config, Some(system_config_path)))
     } else {
         tracing::debug!("config file not found, use default config");
 
@@ -187,13 +181,13 @@ pub fn load() -> Result<Config, tombi_config::Error> {
     Ok(config)
 }
 
-pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
+pub fn user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
     // 1. $XDG_CONFIG_HOME/tombi/config.toml
     if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);
         config_path.push("tombi");
-        config_path.push(TOMBI_USER_CONFIG_FILENAME);
-        if config_path.exists() {
+        config_path.push(CONFIG_TOML_FILENAME);
+        if config_path.is_file() {
             return Some(config_path);
         }
     }
@@ -203,8 +197,8 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
         let mut config_path = home_dir.clone();
         config_path.push(".config");
         config_path.push("tombi");
-        config_path.push(TOMBI_USER_CONFIG_FILENAME);
-        if config_path.exists() {
+        config_path.push(CONFIG_TOML_FILENAME);
+        if config_path.is_file() {
             return Some(config_path);
         }
 
@@ -215,7 +209,7 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
             path.push("Library");
             path.push("Application Support");
             path.push("tombi");
-            path.push(TOMBI_USER_CONFIG_FILENAME);
+            path.push(CONFIG_TOML_FILENAME);
             if path.exists() {
                 return Some(path);
             }
@@ -228,19 +222,16 @@ pub fn user_tombi_config_path() -> Option<std::path::PathBuf> {
         if let Ok(appdata) = std::env::var("APPDATA") {
             let mut config_path = std::path::PathBuf::from(appdata);
             config_path.push("tombi");
-            config_path.push(TOMBI_USER_CONFIG_FILENAME);
-            if config_path.exists() {
+            config_path.push(CONFIG_TOML_FILENAME);
+            if config_path.is_file() {
                 return Some(config_path);
             }
         }
     }
 
-    None
-}
-
-pub fn system_tombi_config_path() -> Option<std::path::PathBuf> {
+    // 4. /etc/tombi/config.toml
     let mut config_path = std::path::PathBuf::from("/etc/tombi");
-    config_path.push(TOMBI_CONFIG_FILENAME);
+    config_path.push(CONFIG_TOML_FILENAME);
     if config_path.exists() {
         return Some(config_path);
     }
