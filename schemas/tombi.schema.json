@@ -20,7 +20,10 @@
     },
     "include": {
       "title": "Deprecated. Use `files.include` instead.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "type": "string"
       },
@@ -29,7 +32,10 @@
     },
     "exclude": {
       "title": "Deprecated. Use `files.exclude` instead.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "type": "string"
       },
@@ -104,7 +110,10 @@
     },
     "schemas": {
       "title": "Schema catalog items.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "$ref": "#/definitions/Schema"
       }
