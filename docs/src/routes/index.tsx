@@ -3,7 +3,6 @@ import { FaSolidFeather } from "solid-icons/fa";
 import { TbBrandGithubFilled } from "solid-icons/tb";
 import { FeatureCard } from "~/components/FeatureCard";
 import { LinkButton } from "~/components/button/LinkButton";
-import { Highlight } from "solid-highlight";
 import { createSignal, onMount, onCleanup } from "solid-js";
 
 const FEATURES = [

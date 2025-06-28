@@ -40,10 +40,11 @@ export function HeaderLogo() {
 
   return (
     <div class="flex-shrink-0 flex items-center relative">
-      <div
+      <button
+        type="button"
         onClick={toggleMenu}
         onKeyUp={toggleMenu}
-        class="cursor-pointer md:cursor-default ml-4 menu-toggle"
+        class="cursor-pointer md:cursor-default ml-4 menu-toggle bg-transparent border-none p-0"
       >
         <For each={logoProps}>
           {(props) => (
@@ -61,7 +62,7 @@ export function HeaderLogo() {
             </A>
           )}
         </For>
-      </div>
+      </button>
 
       <HeaderDropdown isExpanded={isOpen} onSelect={handleSelect} />
     </div>

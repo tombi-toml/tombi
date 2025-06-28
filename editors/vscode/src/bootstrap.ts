@@ -42,7 +42,7 @@ export async function getTombiBin(
     };
   }
 
-  // biome-ignore lint/complexity/useLiteralKeys: <explanation>
+  // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
   const developPath = process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"];
   if (developPath) {
     return {

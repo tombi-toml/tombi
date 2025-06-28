@@ -1,21 +1,36 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.2.2/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "include": [
+    "includes": [
       "**/*.ts",
       "**/*.tsx",
       "**/*.md",
       "**/*.mdx",
       "**/*.json",
-      "typescript/@tombi-toml/tombi/bin/tombi"
-    ],
-    "ignore": ["**/*.js", "**/.vinxi/**"]
+      "**/typescript/@tombi-toml/tombi/bin/tombi/**",
+      "!**/*.js",
+      "!**/.vinxi/**"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
     "indentWidth": 2
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "noParameterAssign": "error",
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useEnumInitializers": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useNumberNamespace": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error"
+      }
+    }
   }
 }

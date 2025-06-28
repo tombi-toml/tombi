@@ -6,8 +6,8 @@ function slugify(text: string): string {
   return text
     .toLowerCase()
     .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/[^\w\-]/g, "") // Remove non-alphanumeric characters except hyphens
-    .replace(/\-+/g, "-") // Replace consecutive hyphens with a single hyphen
+    .replace(/[^\w-]/g, "") // Remove non-alphanumeric characters except hyphens
+    .replace(/-+/g, "-") // Replace consecutive hyphens with a single hyphen
     .replace(/^-+|-+$/g, ""); // Remove hyphens at the beginning and end
 }
 
