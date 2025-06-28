@@ -43,6 +43,15 @@ Available sorting strategies:
 When using the `schema` strategy, we recommend avoiding `additionalProperties` or `patternProperties` as they are not sorted with `properties` and will appear at the end.
 </Note>
 
+### x-tombi-array-values-order
+
+This key controls the automatic sorting of array values.
+
+Available sorting strategies:
+- `ascending`
+- `descending`
+- `version-sort`
+
 ## Linting
 ### Strict Mode
 By default, Tombi operates in `strict` mode. In this mode, objects without `additionalProperties` are treated as if `additionalProperties: false` was specified.
