@@ -121,9 +121,9 @@ impl Validate for tombi_document_tree::Array {
                             .collect::<Vec<_>>();
                         if current_schema.value_schema.deprecated().await == Some(true) {
                             crate::Warning {
-                                kind: crate::WarningKind::Deprecated(
+                                kind: Box::new(crate::WarningKind::Deprecated(
                                     tombi_schema_store::SchemaAccessors::new(new_accessors.clone()),
-                                ),
+                                )),
                                 range: self.range(),
                             }
                             .set_diagnostics(&mut diagnostics);

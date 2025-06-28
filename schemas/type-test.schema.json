@@ -71,6 +71,16 @@
           "type": "null"
         }
       ]
+    },
+    "object": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ObjectValue"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -115,6 +125,30 @@
           }
         }
       ]
+    },
+    "ObjectValue": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "b": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "c": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
     }
   }
 }
