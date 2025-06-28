@@ -11,6 +11,10 @@
     "node": ">=14.0.0"
   },
   "homepage": "https://tombi-toml.github.io/tombi/",
-  "os": ["linux"],
-  "cpu": ["arm64"]
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ]
 }
