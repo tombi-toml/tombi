@@ -205,6 +205,10 @@ mod tests {
                 "#,
                 cargo_schema_path(),
             ) -> Err([tombi_validator::WarningKind::StrictAdditionalProperties {
+                accessors: tombi_schema_store::SchemaAccessors::new(vec![
+                    tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
+                ]),
+                schema_url: tombi_schema_store::SchemaUrl::from_file_path(cargo_schema_path()).unwrap(),
                 key: "aaa".to_string(),
             }]);
         }
