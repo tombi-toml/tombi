@@ -100,7 +100,6 @@ function extractContext(
   }
 
   // Find matches in the extracted context
-  const offset = !isFullText && start > 0 ? 3 : 0; // Consider length of "..."
   const matches = findMatches(content, query, 0);
 
   return { content, matches };

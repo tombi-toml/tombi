@@ -1,10 +1,5 @@
 import { createSignal, onMount } from "solid-js";
-import {
-  TbBrandGithubFilled,
-  TbMoonFilled,
-  TbSunFilled,
-  TbBrandTwitterFilled,
-} from "solid-icons/tb";
+import { TbBrandGithubFilled, TbMoonFilled, TbSunFilled } from "solid-icons/tb";
 import { LinkIconButton } from "../button/LinkIconButton";
 import { IconButton } from "../button/IconButton";
 

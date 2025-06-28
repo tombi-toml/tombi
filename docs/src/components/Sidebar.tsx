@@ -6,10 +6,7 @@ import type { DicIndex } from "~/utils/doc-index";
 
 const docIndexs: DicIndex[] = docIndex;
 
-const TreeItem = (props: {
-  item: DicIndex;
-  level: number;
-}) => {
+const TreeItem = (props: { item: DicIndex; level: number }) => {
   const location = useLocation();
   const isCurrentPage = createMemo(
     () => location.pathname === `${import.meta.env.BASE_URL}${props.item.path}`,

@@ -5,11 +5,21 @@
   "bin": {
     "tombi": "bin/tombi"
   },
-  "files": ["bin/tombi", "scripts/postinstall.js", "README.md", "LICENSE"],
+  "files": [
+    "bin/tombi",
+    "scripts/postinstall.js",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "postinstall": "node ./scripts/postinstall.js"
   },
-  "keywords": ["toml", "cli", "formatter", "linter"],
+  "keywords": [
+    "toml",
+    "cli",
+    "formatter",
+    "linter"
+  ],
   "author": "tombi-toml",
   "license": "MIT",
   "private": false,

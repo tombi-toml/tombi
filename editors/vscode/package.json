@@ -10,8 +10,16 @@
   },
   "repository": "https://github.com/tombi-toml/tombi",
   "license": "MIT",
-  "keywords": ["toml", "formatter", "linter"],
-  "categories": ["Programming Languages", "Formatters", "Linters"],
+  "keywords": [
+    "toml",
+    "formatter",
+    "linter"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -44,7 +52,9 @@
     "vitest": "^2.1.9",
     "vsce": "^2.15.0"
   },
-  "activationEvents": ["onLanguage:cargoLock"],
+  "activationEvents": [
+    "onLanguage:cargoLock"
+  ],
   "icon": "icon.png",
   "sponsor": {
     "url": "https://github.com/sponsors/tombi-toml"
@@ -53,9 +63,16 @@
     "languages": [
       {
         "id": "toml",
-        "aliases": ["TOML"],
-        "extensions": [".toml"],
-        "filenames": ["Cargo.lock", "uv.lock"],
+        "aliases": [
+          "TOML"
+        ],
+        "extensions": [
+          ".toml"
+        ],
+        "filenames": [
+          "Cargo.lock",
+          "uv.lock"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -102,8 +119,12 @@
       {
         "language": "toml",
         "scopes": {
-          "table": ["entity.name.type.table.toml"],
-          "key": ["variable.other.key.toml"],
+          "table": [
+            "entity.name.type.table.toml"
+          ],
+          "key": [
+            "variable.other.key.toml"
+          ],
           "string": [
             "string.quoted.single.basic.line.toml",
             "string.quoted.triple.basic.block.toml",
@@ -119,12 +140,24 @@
             "constant.numeric.float.inf.toml",
             "constant.numeric.float.nan.toml"
           ],
-          "boolean": ["constant.language.boolean.toml"],
-          "offsetDateTime": ["constant.other.datetime.offset.toml"],
-          "localDateTime": ["constant.other.datetime.local.toml"],
-          "localDate": ["constant.other.date.local.toml"],
-          "localTime": ["constant.other.time.local.toml"],
-          "comment": ["comment.line.number-sign.toml"]
+          "boolean": [
+            "constant.language.boolean.toml"
+          ],
+          "offsetDateTime": [
+            "constant.other.datetime.offset.toml"
+          ],
+          "localDateTime": [
+            "constant.other.datetime.local.toml"
+          ],
+          "localDate": [
+            "constant.other.date.local.toml"
+          ],
+          "localTime": [
+            "constant.other.time.local.toml"
+          ],
+          "comment": [
+            "comment.line.number-sign.toml"
+          ]
         }
       }
     ],
@@ -145,7 +178,10 @@
       "properties": {
         "tombi.path": {
           "description": "Absolute path to tombi executable.",
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "scope": "resource",
           "default": null,
           "pattern": "^.*tombi(\\.exe)?$"
