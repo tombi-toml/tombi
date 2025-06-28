@@ -36,11 +36,15 @@ This key controls the automatic sorting of table keys (e.g., `[dependencies]`).
 Available sorting strategies:
 - `ascending`
 - `descending`
-- `schema`
 - `version-sort`
+- `schema`
 
 <Note>
 When using the `schema` strategy, we recommend avoiding `additionalProperties` or `patternProperties` as they are not sorted with `properties` and will appear at the end.
+</Note>
+
+<Note>
+The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
 </Note>
 
 ### x-tombi-array-values-order
@@ -51,6 +55,10 @@ Available sorting strategies:
 - `ascending`
 - `descending`
 - `version-sort`
+
+<Note>
+The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
+</Note>
 
 ## Linting
 ### Strict Mode
