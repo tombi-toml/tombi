@@ -33,6 +33,7 @@ struct TypeTest {
     local_date: Option<chrono::NaiveDate>,
     local_time: Option<chrono::NaiveTime>,
     literal: Option<LiteralValue>,
+    object: Option<ObjectValue>,
 }
 
 #[allow(dead_code)]
@@ -50,4 +51,13 @@ enum LiteralValue {
     LocalDate(chrono::NaiveDate),
     LocalTime(chrono::NaiveTime),
     Array(Vec<LiteralValue>),
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+struct ObjectValue {
+    a: Option<i64>,
+    b: Option<String>,
+    c: Option<bool>,
 }

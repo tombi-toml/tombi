@@ -138,8 +138,8 @@ impl Validate for tombi_document_tree::Table {
                             Ok(Some(current_schema)) => {
                                 if current_schema.value_schema.deprecated().await == Some(true) {
                                     crate::Warning {
-                                        kind: crate::WarningKind::Deprecated(SchemaAccessors::new(
-                                            new_accessors.clone(),
+                                        kind: Box::new(crate::WarningKind::Deprecated(
+                                            SchemaAccessors::new(new_accessors.clone()),
                                         )),
                                         range: key.range() + value.range(),
                                     }
@@ -184,9 +184,9 @@ impl Validate for tombi_document_tree::Table {
                                     if current_schema.value_schema.deprecated().await == Some(true)
                                     {
                                         crate::Warning {
-                                            kind: crate::WarningKind::Deprecated(
+                                            kind: Box::new(crate::WarningKind::Deprecated(
                                                 SchemaAccessors::new(new_accessors.clone()),
-                                            ),
+                                            )),
                                             range: key.range() + value.range(),
                                         }
                                         .set_diagnostics(&mut diagnostics);
@@ -238,8 +238,8 @@ impl Validate for tombi_document_tree::Table {
                             {
                                 if current_schema.value_schema.deprecated().await == Some(true) {
                                     crate::Warning {
-                                        kind: crate::WarningKind::Deprecated(SchemaAccessors::new(
-                                            new_accessors.clone(),
+                                        kind: Box::new(crate::WarningKind::Deprecated(
+                                            SchemaAccessors::new(new_accessors.clone()),
                                         )),
                                         range: key.range() + value.range(),
                                     }
@@ -259,9 +259,11 @@ impl Validate for tombi_document_tree::Table {
                             .check_strict_additional_properties_violation(schema_context.strict())
                         {
                             crate::Warning {
-                                kind: crate::WarningKind::StrictAdditionalProperties {
+                                kind: Box::new(crate::WarningKind::StrictAdditionalProperties {
+                                    accessors: SchemaAccessors::new(accessors.to_vec()),
+                                    schema_url: current_schema.schema_url.as_ref().clone(),
                                     key: key.to_string(),
-                                },
+                                }),
                                 range: key.range() + value.range(),
                             }
                             .set_diagnostics(&mut diagnostics);

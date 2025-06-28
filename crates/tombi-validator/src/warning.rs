@@ -1,22 +1,32 @@
+use tombi_schema_store::{SchemaAccessors, SchemaUrl};
+
 #[derive(thiserror::Error, Debug)]
 pub enum WarningKind {
     #[error("`{0}` is deprecated")]
-    Deprecated(tombi_schema_store::SchemaAccessors),
+    Deprecated(SchemaAccessors),
 
-    #[error("\"{key}\" is not allowed; In strict mode, the JSON schema must be explicitly set to `\"additionalProperties\": true`. ")]
-    StrictAdditionalProperties { key: String },
+    #[error(
+        r#"In strict mode, `{accessors}` does not allow the "{key}".
+Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_url},
+or set `schema.strict = false` in your `tombi.toml`"#
+    )]
+    StrictAdditionalProperties {
+        accessors: SchemaAccessors,
+        key: String,
+        schema_url: SchemaUrl,
+    },
 }
 
 #[derive(Debug)]
 pub struct Warning {
-    pub kind: WarningKind,
+    pub kind: Box<WarningKind>,
     pub range: tombi_text::Range,
 }
 
 impl Warning {
     #[inline]
     pub fn code(&self) -> &'static str {
-        match self.kind {
+        match *self.kind {
             WarningKind::Deprecated { .. } => "deprecated",
             WarningKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
         }
