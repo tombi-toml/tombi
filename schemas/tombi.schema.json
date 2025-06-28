@@ -5,6 +5,17 @@
   "description": "**Tombi** (鳶) is a toolkit for TOML; providing a formatter/linter and language server.\nSee the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.",
   "type": "object",
   "properties": {
+    "format": {
+      "title": "Formatter options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "toml-version": {
       "title": "TOML version.",
       "description": "TOML version to use if not specified in the schema.",
@@ -20,7 +31,10 @@
     },
     "include": {
       "title": "Deprecated. Use `files.include` instead.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "type": "string"
       },
@@ -29,7 +43,10 @@
     },
     "exclude": {
       "title": "Deprecated. Use `files.exclude` instead.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "type": "string"
       },
@@ -40,17 +57,6 @@
       "anyOf": [
         {
           "$ref": "#/definitions/FilesOptions"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "format": {
-      "title": "Formatter options.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/FormatOptions"
         },
         {
           "type": "null"
@@ -104,7 +110,10 @@
     },
     "schemas": {
       "title": "Schema catalog items.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "$ref": "#/definitions/Schema"
       }
