@@ -18,6 +18,7 @@ env:
   CC_arm_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
   CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+  CARGO_PROFILE_RELEASE_LTO: "fat"
   RUSTFLAGS: "-C strip=symbols"
 
 jobs:
