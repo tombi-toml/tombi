@@ -18,7 +18,7 @@ env:
   CC_arm_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
   CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
-  RUSTFLAGS: "-C strip=symbols"
+  RUSTFLAGS: "-C strip=symbols -C lto=fat"
 
 jobs:
   delete-old-dev-artifacts:
