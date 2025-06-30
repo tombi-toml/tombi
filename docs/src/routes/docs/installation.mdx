@@ -1,8 +1,21 @@
 import CodeTabs from "../../components/CodeTabs";
+import { createSignal } from "solid-js";
+
+export const [selectedMethod, setSelectedMethod] = createSignal(null);
 
 # Installation
 
-## CLI
+Choose your preferred installation method:
+
+<InstallationMethodGrid onSelect={(method) => {
+  setSelectedMethod(method);
+  const element = document.getElementById(method);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}} />
+
+## <span id="cli">CLI</span>
 
 ```sh
 curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh
@@ -14,9 +27,9 @@ Install a specific version:
 curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.2.24
 ```
 
-## Python
+## <span id="python">Python</span>
 
-### Quick Try
+### <span id="uvx">Quick Try</span>
 
 <CodeTabs
   tabs={[
@@ -30,7 +43,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   language="bash"
 />
 
-### Project Installation
+### <span id="uv"><span id="poetry"><span id="hatch"><span id="pip">Project Installation</span></span></span></span>
 
 <CodeTabs
   tabs={[
@@ -60,7 +73,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
 />
 
 
-### Global Installation
+### <span id="pipx">Global Installation</span>
 
 <CodeTabs
   tabs={[
@@ -79,9 +92,9 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   language="bash"
 />
 
-## JavaScript
+## <span id="javascript">JavaScript</span>
 
-### Quick Try
+### <span id="npx">Quick Try</span>
 
 <CodeTabs
   tabs={[
@@ -95,7 +108,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   language="bash"
 />
 
-### Project Installation
+### <span id="npm"><span id="pnpm"><span id="yarn">Project Installation</span></span></span>
 
 <CodeTabs
   tabs={[
@@ -143,7 +156,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   language="bash"
 />
 
-## VSCode/Cursor
+## <span id="vscode">VSCode</span> / <span id="cursor">Cursor</span>
 
 <LinkCard
   title="Tombi - Visual Studio Marketplace"
@@ -152,7 +165,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   url="https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi"
 />
 
-## Open VSX
+## <span id="openvsx">Open VSX</span>
 
 <LinkCard
   title="Tombi - Open VSX Registry"
@@ -161,7 +174,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   url="https://open-vsx.org/extension/tombi-toml/tombi"
 />
 
-## Zed
+## <span id="zed">Zed</span>
 
 <LinkCard
   title="Tombi - Zed Extensions"
@@ -170,7 +183,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   url="https://zed.dev/extensions?query=tombi&filter=language-servers"
 />
 
-## Neovim
+## <span id="neovim">Neovim</span>
 
 <LinkCard
   title="Tombi - Neovim"
@@ -179,7 +192,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   url="https://github.com/neovim/nvim-lspconfig/blob/master/lsp/tombi.lua"
 />
 
-## Emacs
+## <span id="emacs">Emacs</span>
 
 <LinkCard
   title="Tombi - Emacs"
@@ -188,7 +201,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   url="https://emacs-lsp.github.io/lsp-mode/page/lsp-toml-tombi/"
 />
 
-## GitHub Actions
+## <span id="github-actions">GitHub Actions</span>
 
 <LinkCard
   title="Tombi - GitHub Action"

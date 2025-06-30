@@ -8,11 +8,17 @@ interface CodeBlockProps {
 
 export const CodeBlock: ParentComponent<CodeBlockProps> = (props) => {
   return (
-    <div class="relative">
-      <pre class={`language-${props.language || "text"}`}>
-        <code class={`language-${props.language || "text"}`}>{props.code}</code>
+    <div class="code-block-wrapper relative max-w-full overflow-hidden my-4">
+      <pre
+        class={`language-${props.language || "text"} overflow-x-auto max-w-full pr-20`}
+      >
+        <code class={`language-${props.language || "text"}`}>
+          {`${props.code}`}
+        </code>
       </pre>
-      <CopyButton text={props.code} />
+      <div class="copy-button language-text">
+        <CopyButton text={props.code} />
+      </div>
     </div>
   );
 };
