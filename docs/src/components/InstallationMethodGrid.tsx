@@ -45,9 +45,16 @@ const installationMethods: InstallationMethod[] = [
     category: "editor",
   },
   {
-    id: "cursor",
+    id: "open-vsx",
     name: "Cursor",
     image: "/cursor.svg",
+    color: "#000000",
+    category: "editor",
+  },
+  {
+    id: "open-vsx",
+    name: "Windsurf",
+    image: "/windsurf.svg",
     color: "#000000",
     category: "editor",
   },
