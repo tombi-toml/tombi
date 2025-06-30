@@ -12,7 +12,10 @@ export const LinkCard: Component<LinkCardProps> = (props) => {
     props.image = `${import.meta.env.BASE_URL}${props.image}`;
   }
   return (
-    <div class="w-auto max-w-xl mx-0 my-6 border border-gray-200 rounded-lg p-4 bg-white shadow-sm transition-all hover:translate-y-[-2px] hover:shadow-md">
+    <div
+      class="w-full my-6 border border-gray-200 rounded-lg p-4 bg-white shadow-sm transition-all hover:translate-y-[-2px] hover:shadow-md"
+      style="box-sizing: border-box; width: 100%; max-width: 100%; margin: 0 auto;"
+    >
       <a
         href={props.url}
         class="block text-inherit no-underline"

@@ -18,11 +18,13 @@ export default function DocumentationLayout(props: RouteSectionProps) {
   });
 
   return (
-    <div class="flex w-full">
+    <div class="flex w-full max-w-[100vw] overflow-x-hidden">
       <Sidebar />
-      <main class="flex-1 p-4 mdx-content min-h-screen">
-        {props.children}
-        <DocNavigation />
+      <main class="flex-1 p-4 mdx-content min-h-screen max-w-full overflow-x-hidden">
+        <div class="max-w-full">
+          {props.children}
+          <DocNavigation />
+        </div>
       </main>
     </div>
   );

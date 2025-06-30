@@ -22,7 +22,7 @@ export function CopyButton(props: CopyButtonProps) {
     <button
       type="button"
       onClick={copyToClipboard}
-      class="absolute top-0 right-0 p-3 bg-transparent border-0 text-gray-400 hover:text-gray-300 transition-colors"
+      class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300"
       aria-label="Copy code to clipboard"
     >
       {copied() ? (
