@@ -106,7 +106,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
           class={`px-4 py-2 rounded-lg border-0 transition-all btn-focus ${
             !selectedCategory()
               ? "bg-tombi-primary text-white shadow-lg hover:shadow-xl"
-              : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
           }`}
         >
           All
@@ -119,7 +119,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
               class={`px-4 py-2 rounded-lg border-0 transition-all flex items-center gap-2 btn-focus ${
                 selectedCategory() === category.id
                   ? "bg-tombi-primary text-white shadow-lg hover:shadow-xl"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
               }`}
             >
               <span>{category.label}</span>
