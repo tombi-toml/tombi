@@ -14,23 +14,23 @@ body {
 }
 
 /* Modern Scrollbar Styles */
-* {
+main, .sidebar {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e0 #f7fafc;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
-*::-webkit-scrollbar {
+main::-webkit-scrollbar, .sidebar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-*::-webkit-scrollbar-track {
+main::-webkit-scrollbar-track, .sidebar::-webkit-scrollbar-track {
   background: #f7fafc;
   border-radius: 4px;
 }
 
-*::-webkit-scrollbar-thumb {
+main::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb {
   background: #cbd5e0;
   border-radius: 4px;
   transition: background 0.2s;
