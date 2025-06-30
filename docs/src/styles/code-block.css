@@ -1,0 +1,69 @@
+/* Code Block Styles - Prevent horizontal scroll on page */
+.code-block-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Code blocks should scroll internally */
+pre {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem;
+  background: #1e1e1e;
+  border-radius: 0.5rem;
+}
+
+/* Ensure code doesn't wrap */
+pre code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  white-space: pre;
+  word-break: normal;
+  word-wrap: normal;
+}
+
+/* Copy button positioning */
+.copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  pre {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+  }
+}
+
+/* Custom scrollbar for code blocks */
+pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Firefox */
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+}

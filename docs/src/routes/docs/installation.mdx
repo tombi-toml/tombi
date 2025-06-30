@@ -1,6 +1,25 @@
 import CodeTabs from "../../components/CodeTabs";
+import { createSignal } from "solid-js";
+
+export const [selectedMethod, setSelectedMethod] = createSignal(null);
 
 # Installation
+
+Choose your preferred installation method:
+
+<InstallationMethodGrid onSelect={(method) => {
+  console.log('method', method);
+  setSelectedMethod(method);
+  const element = document.getElementById(method);
+  if (element) {
+    const headerHeight = 80;
+    const elementTop = element.offsetTop - headerHeight;
+    window.scrollTo({
+      top: elementTop,
+      behavior: 'smooth'
+    });
+  }
+}} />
 
 ## CLI
 
@@ -143,7 +162,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
   language="bash"
 />
 
-## VSCode/Cursor
+## VSCode
 
 <LinkCard
   title="Tombi - Visual Studio Marketplace"
@@ -153,6 +172,7 @@ curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh -s -- --version 0.
 />
 
 ## Open VSX
+Cursor, Windsurf, etc.
 
 <LinkCard
   title="Tombi - Open VSX Registry"
