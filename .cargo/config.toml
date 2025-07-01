@@ -4,3 +4,6 @@ jsonschema = "run --package config --bin jsonschema --all-features --"
 tombi = "run --package tombi-cli --bin tombi --"
 tombi-flamegraph = "flamegraph --output .tmp/flamegraph.svg --package tombi-cli --"
 xtask = "run --package xtask --bin xtask --"
+
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", 'getrandom_backend="wasm_js"']

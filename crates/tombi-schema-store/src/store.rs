@@ -482,12 +482,11 @@ impl SchemaStore {
     ) -> Result<Option<SourceSchema>, crate::Error> {
         match source_url.scheme() {
             "file" => {
-                let source_path =
-                    source_url
-                        .to_file_path()
-                        .map_err(|_| crate::Error::SourceUrlParseFailed {
-                            source_url: source_url.to_owned(),
-                        })?;
+                let source_path = url_to_file_path(source_url).map_err(|_| {
+                    crate::Error::SourceUrlParseFailed {
+                        source_url: source_url.to_owned(),
+                    }
+                })?;
                 self.resolve_source_schema_from_path(&source_path).await
             }
             "untitled" => Ok(None),

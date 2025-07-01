@@ -1,0 +1,35 @@
+[package]
+name = "tombi-wasm"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+console_error_panic_hook = "0.1.7"
+getrandom = { workspace = true, features = ["wasm_js"] }
+itertools.workspace = true
+js-sys = "0.3.77"
+log = "0.4.27"
+nu-ansi-term.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_tombi = { workspace = true, default-features = false, features = ["wasm"] }
+# serde_tombi = { workspace = true, default-features = false }
+tokio = { workspace = true, features = ["macros"] }
+tombi-config.workspace = true
+tombi-diagnostic.workspace = true
+tombi-formatter.workspace = true
+tombi-future = { workspace = true, features = ["wasm"] }
+tombi-lexer.workspace = true
+tombi-schema-store = { workspace = true, features = ["wasm"] }
+tombi-url = { workspace = true, features = ["wasm"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-wasm = "0.2.1"
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4.50"
