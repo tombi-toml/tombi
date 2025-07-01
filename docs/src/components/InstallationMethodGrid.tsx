@@ -1,10 +1,11 @@
-import { createSignal, For } from "solid-js";
+import { createSignal, For, createEffect } from "solid-js";
 import type { Component } from "solid-js";
 
 interface InstallationMethod {
   id: string;
   name: string;
   image: string;
+  imageDark?: string;
   category?: "package-manager" | "editor" | "ci";
 }
 
@@ -43,6 +44,7 @@ const installationMethods: InstallationMethod[] = [
     id: "open-vsx",
     name: "Cursor",
     image: "/cursor.svg",
+    imageDark: "/cursor-dark.png",
     category: "editor",
   },
   {
@@ -85,6 +87,44 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
   const [selectedCategory, setSelectedCategory] = createSignal<string | null>(
     null,
   );
+  const [isDarkMode, setIsDarkMode] = createSignal(false);
+
+  // Check for dark mode
+  createEffect(() => {
+    const checkDarkMode = () => {
+      const storedTheme = localStorage.getItem("theme");
+      const hasDarkClass = document.documentElement.classList.contains("dark");
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+
+      // Check localStorage first, then dark class, then system preference
+      const isDark =
+        storedTheme === "dark" ||
+        (!storedTheme && hasDarkClass) ||
+        (!storedTheme && !hasDarkClass && prefersDark);
+      setIsDarkMode(isDark);
+    };
+
+    // Initial check
+    checkDarkMode();
+
+    // Listen for class changes on document.documentElement
+    const observer = new MutationObserver(() => {
+      checkDarkMode();
+    });
+
+    // Set up observer
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+    };
+  });
 
   const categories = [
     { id: "package-manager", label: "Package Managers" },
@@ -138,7 +178,11 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
             >
               <div class="flex flex-col items-center gap-2">
                 <img
-                  src={`${import.meta.env.BASE_URL}${method.image}`}
+                  src={`${import.meta.env.BASE_URL}${
+                    isDarkMode() && method.imageDark
+                      ? method.imageDark
+                      : method.image
+                  }`}
                   alt={method.name}
                   class="w-8 h-8 object-contain group-hover:scale-110 transition-transform"
                 />
