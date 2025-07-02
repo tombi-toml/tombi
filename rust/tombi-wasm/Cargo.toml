@@ -10,11 +10,11 @@ license.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-console_error_panic_hook = "0.1.7"
+console_error_panic_hook.workspace = true
 getrandom = { workspace = true, features = ["wasm_js"] }
 itertools.workspace = true
-js-sys = "0.3.77"
-log = "0.4.27"
+js-sys.workspace = true
+log.workspace = true
 nu-ansi-term.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -30,6 +30,6 @@ tombi-schema-store = { workspace = true, features = ["wasm"] }
 tombi-url = { workspace = true, features = ["wasm"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
-tracing-wasm = "0.2.1"
-wasm-bindgen = "0.2.100"
-wasm-bindgen-futures = "0.4.50"
+tracing-wasm.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
