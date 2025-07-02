@@ -1,0 +1,16 @@
+{
+    "name": "tombi-wasm",
+    "version": "0.0.0",
+    "description": "TOML formatter WASM demo",
+    "scripts": {
+        "build:wasm": "wasm-pack build --target web --out-dir dist/pkg",
+        "build:copy": "cp -r www/* dist/",
+        "build": "mkdir -p dist && pnpm run build:wasm && pnpm run build:copy",
+        "dev": "pnpm run build && serve dist",
+        "clean": "rm -rf dist"
+    },
+    "devDependencies": {
+        "serve": "^14.2.0",
+        "wasm-pack": "^0.13.1"
+    }
+}

@@ -40,8 +40,6 @@ rstest.workspace = true
 
 [features]
 default = ["native"]
-gloo-net06 = ["dep:gloo-net"]
-native = ["reqwest01"]
-reqwest01 = ["dep:reqwest"]
-surf2 = ["dep:surf"]
-wasm = ["gloo-net06"]
+native = ["dep:reqwest"]
+surf = ["dep:surf"]
+wasm = ["dep:gloo-net"]

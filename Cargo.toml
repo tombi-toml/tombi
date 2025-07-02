@@ -8,6 +8,16 @@ members = [
   "toml-test",
   "xtask",
 ]
+default-members = [
+  "crates/*",
+  "editors/zed",
+  "extensions/*",
+  "rust/serde_tombi",
+  "rust/tombi",
+  "rust/tombi-cli",
+  "toml-test",
+  "xtask",
+]
 
 [workspace.package]
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
@@ -30,6 +40,7 @@ dirs = { version = "6.0.0" }
 flate2 = "1.0.35"
 futures = "0.3.31"
 futures-util = "0.3.31"
+getrandom = "0.3.3"
 glob = "0.3.2"
 gloo-net = "0.6.0"
 indexmap = { version = "2.9.0", features = ["serde"] }
@@ -51,17 +62,12 @@ schemars = { version = "1.0.2", features = ["preserve_order", "url2"] }
 semver = { version = "1.0.26" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
-serde_tombi = { path = "rust/serde_tombi" }
+serde_tombi = { default-features = false, path = "rust/serde_tombi" }
 surf = "2.3.2"
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
 time = { version = "0.3.36" }
-tokio = { version = "1.45.0", features = [
-  "fs",
-  "io-std",
-  "macros",
-  "rt-multi-thread",
-] }
+tokio = { version = "1.45.0", default-features = false, features = ["rt"] }
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-config = { path = "crates/tombi-config" }

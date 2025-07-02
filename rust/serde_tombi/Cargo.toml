@@ -39,3 +39,8 @@ maplit.workspace = true
 pretty_assertions.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tombi-test-lib.workspace = true
+
+[features]
+default = ["native"]
+native = ["tokio/rt-multi-thread"]
+wasm = []
