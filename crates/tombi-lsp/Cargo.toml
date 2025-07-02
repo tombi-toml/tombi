@@ -48,7 +48,7 @@ tracing-subscriber.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 rstest.workspace = true
-tempfile = { version = "3.15.0" }
+tempfile.workspace = true
 textwrap.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tombi-test-lib.workspace = true

@@ -9,9 +9,9 @@ path = "src/bin/profile.rs"
 required-features = ["profile"]
 
 [dependencies]
-fast-glob = "0.3.0"
-ignore = "0.4.20"
-rayon = "1.10.0"
+fast-glob.workspace = true
+ignore.workspace = true
+rayon.workspace = true
 serde_tombi = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
@@ -19,7 +19,7 @@ tombi-config = { workspace = true }
 tracing.workspace = true
 
 [dev-dependencies]
-criterion = "0.5"
+criterion.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 
 [features]

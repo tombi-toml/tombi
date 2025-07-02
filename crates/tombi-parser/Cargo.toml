@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-drop_bomb = "0.1.5"
+drop_bomb.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
