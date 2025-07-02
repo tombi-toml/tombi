@@ -1,4 +1,5 @@
 packages:
   - "docs"
   - "editors/vscode"
+  - "rust/tombi-wasm"
   - "typescript/@tombi-toml/*"
