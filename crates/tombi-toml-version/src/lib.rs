@@ -41,6 +41,17 @@ macro_rules! define_toml_version {
                 }
             }
         }
+
+        impl TomlVersion {
+            pub fn from_str(value: &str) -> Option<Self> {
+                match value {
+                    $(
+                        $version => Some(Self::$variant),
+                    )*
+                    _ => None,
+                }
+            }
+        }
     };
 }
 

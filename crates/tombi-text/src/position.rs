@@ -6,6 +6,8 @@ use std::{
 use crate::{Column, Line, RelativePosition};
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Position {
     pub line: Line,
     pub column: Column,

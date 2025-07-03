@@ -156,6 +156,7 @@ macro_rules! _static_assert {
     };
 }
 
+#[allow(unused_imports)]
 pub(crate) use _static_assert as static_assert;
 
 #[derive(Copy, Clone, Debug)]

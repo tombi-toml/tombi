@@ -11,7 +11,6 @@ use countme::Count;
 use crate::{
     arc::{Arc, HeaderSlice, ThinArc},
     green::{GreenElement, GreenElementRef, SyntaxKind},
-    utility_types::static_assert,
     GreenToken, NodeOrToken,
 };
 
@@ -38,7 +37,7 @@ pub(crate) enum GreenChild {
 }
 
 #[cfg(target_pointer_width = "64")]
-static_assert!(mem::size_of::<GreenChild>() == mem::size_of::<usize>() * 3);
+crate::utility_types::static_assert!(mem::size_of::<GreenChild>() == mem::size_of::<usize>() * 3);
 
 type Repr = HeaderSlice<GreenNodeHead, [GreenChild]>;
 type ReprThin = HeaderSlice<GreenNodeHead, [GreenChild; 0]>;
