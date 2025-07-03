@@ -4084,6 +4084,7 @@ dependencies = [
  "tombi-formatter",
  "tombi-future",
  "tombi-lexer",
+ "tombi-linter",
  "tombi-schema-store",
  "tombi-text",
  "tombi-url",
