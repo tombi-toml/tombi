@@ -12,6 +12,7 @@ thiserror.workspace = true
 tombi-text.workspace = true
 tower-lsp = { workspace = true, optional = true }
 tracing.workspace = true
+wasm-bindgen = { workspace = true, optional = true }
 
 [dev-dependencies]
 clap.workspace = true
@@ -21,3 +22,4 @@ tracing-subscriber.workspace = true
 [features]
 default = ["lsp"]
 lsp = ["dep:tower-lsp"]
+wasm = ["dep:wasm-bindgen"]

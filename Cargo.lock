@@ -2894,6 +2894,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-wasm-bindgen"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8302e169f0eddcc139c70f139d19d6467353af16f9fce27e8c30158036a1e16b"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3595,6 +3606,7 @@ dependencies = [
  "tower-lsp",
  "tracing",
  "tracing-subscriber",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -4002,6 +4014,7 @@ dependencies = [
  "serde",
  "tower-lsp",
  "tracing",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -4062,6 +4075,7 @@ dependencies = [
  "log",
  "nu-ansi-term 0.50.1",
  "serde",
+ "serde-wasm-bindgen",
  "serde_json",
  "serde_tombi",
  "tokio",
@@ -4071,6 +4085,7 @@ dependencies = [
  "tombi-future",
  "tombi-lexer",
  "tombi-schema-store",
+ "tombi-text",
  "tombi-url",
  "tracing",
  "tracing-subscriber",

@@ -129,37 +129,38 @@ pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_confi
 
 /// Load the config from the current directory.
 pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
-    let mut current_dir = std::env::current_dir().unwrap();
-    loop {
-        let config_path = current_dir.join(TOMBI_TOML_FILENAME);
-        if config_path.is_file() {
-            tracing::debug!("\"{}\" found at {:?}", TOMBI_TOML_FILENAME, &config_path);
+    if let Ok(mut current_dir) = std::env::current_dir() {
+        loop {
+            let config_path = current_dir.join(TOMBI_TOML_FILENAME);
+            if config_path.is_file() {
+                tracing::debug!("\"{}\" found at {:?}", TOMBI_TOML_FILENAME, &config_path);
 
-            let Some(config) = try_from_path(&config_path)? else {
-                unreachable!("tombi.toml should always be parsed successfully.");
-            };
+                let Some(config) = try_from_path(&config_path)? else {
+                    unreachable!("tombi.toml should always be parsed successfully.");
+                };
 
-            return Ok((config, Some(config_path)));
-        }
+                return Ok((config, Some(config_path)));
+            }
 
-        let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
-        if pyproject_toml_path.exists() {
-            tracing::debug!(
-                "\"{}\" found at {:?}",
-                PYPROJECT_TOML_FILENAME,
-                pyproject_toml_path
-            );
+            let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
+            if pyproject_toml_path.exists() {
+                tracing::debug!(
+                    "\"{}\" found at {:?}",
+                    PYPROJECT_TOML_FILENAME,
+                    pyproject_toml_path
+                );
 
-            match try_from_path(&pyproject_toml_path)? {
-                Some(config) => return Ok((config, Some(pyproject_toml_path))),
-                None => {
-                    tracing::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
-                }
-            };
-        }
+                match try_from_path(&pyproject_toml_path)? {
+                    Some(config) => return Ok((config, Some(pyproject_toml_path))),
+                    None => {
+                        tracing::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
+                    }
+                };
+            }
 
-        if !current_dir.pop() {
-            break;
+            if !current_dir.pop() {
+                break;
+            }
         }
     }
 

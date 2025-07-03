@@ -3,6 +3,8 @@ use std::ops::{Add, AddAssign};
 use crate::{Column, Line, Position, RelativePosition};
 
 #[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Range {
     // Invariant: start <= end
     pub start: Position,

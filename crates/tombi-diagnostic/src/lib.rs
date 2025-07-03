@@ -6,6 +6,8 @@ pub use printer::Print;
 use tower_lsp::lsp_types::NumberOrString;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Diagnostic {
     level: level::Level,
     code: String,

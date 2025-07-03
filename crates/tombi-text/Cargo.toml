@@ -9,6 +9,7 @@ license.workspace = true
 serde = { workspace = true, optional = true }
 tower-lsp = { workspace = true, optional = true }
 tracing.workspace = true
+wasm-bindgen = { workspace = true, optional = true }
 
 [dev-dependencies]
 pretty_assertions.workspace = true
@@ -18,3 +19,4 @@ rstest.workspace = true
 default = ["lsp", "serde"]
 lsp = ["dep:tower-lsp"]
 serde = ["dep:serde"]
+wasm = ["dep:wasm-bindgen", "serde"]

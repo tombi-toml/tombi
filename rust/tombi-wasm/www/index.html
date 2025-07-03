@@ -35,15 +35,16 @@
 
             init().then(() => {
                 document.getElementById("run").onclick = async () => {
-                    const file = document.getElementById("file-name").value;
+                    const filename = document.getElementById("file-name").value;
                     const text = document.getElementById("content").value;
                     const output = document.getElementById("output");
 
                     try {
-                        const result = await format(file, text);
-                        output.textContent = result;
-                    } catch (e) {
-                        output.textContent = "Error: " + e;
+                        const result = await format(text, filename);
+
+                        output.textContent = result.toString();
+                    } catch (error) {
+                        output.textContent = JSON.stringify(error, null, 2);
                     }
                 };
             });
