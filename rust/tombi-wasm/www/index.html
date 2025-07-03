@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <title>Formatter Demo</title>
+        <title>Tombi Playground (WASM)</title>
         <style>
             body { font-family: sans-serif; margin: 2rem; }
             textarea { width: 100%; height: 10rem; }
@@ -10,7 +10,7 @@
         </style>
     </head>
     <body>
-        <h1>TOML Formatter (WASM)</h1>
+        <h1>TOML Playground (WASM)</h1>
 
         <label>
             File name:
@@ -25,24 +25,29 @@
         </label>
         <br>
 
-        <button id="run">Format</button>
+        <button id="run">Run</button>
 
         <h2>Result</h2>
         <pre id="output"></pre>
 
         <script type="module">
-            import init, { format } from "./pkg/tombi_wasm.js";
+            import init, { format, lint } from "./pkg/tombi_wasm.js";
 
             init().then(() => {
                 document.getElementById("run").onclick = async () => {
                     const filename = document.getElementById("file-name").value;
-                    const text = document.getElementById("content").value;
+                    const content = document.getElementById("content");
                     const output = document.getElementById("output");
 
                     try {
-                        const result = await format(text, filename);
+                        const new_content = await format(content.value, filename);
 
-                        output.textContent = result.toString();
+                        content.value = new_content;
+                    } catch (error) {
+                    }
+                    try {
+                        await lint(content.value, filename);
+                        output.textContent = "";
                     } catch (error) {
                         output.textContent = JSON.stringify(error, null, 2);
                     }
