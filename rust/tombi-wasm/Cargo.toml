@@ -29,7 +29,7 @@ tombi-lexer.workspace = true
 tombi-linter.workspace = true
 tombi-schema-store = { workspace = true, features = ["wasm"] }
 tombi-text = { workspace = true, features = ["wasm"] }
-tombi-url = { workspace = true, features = ["wasm"] }
+tombi-url = { workspace = true }
 tracing.workspace = true
 tracing-subscriber.workspace = true
 tracing-wasm.workspace = true

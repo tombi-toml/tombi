@@ -8,8 +8,3 @@ license.workspace = true
 
 [dependencies]
 url.workspace = true
-
-[features]
-default = ["native"]
-native = []
-wasm = []
