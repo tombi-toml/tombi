@@ -1,4 +1,3 @@
-use futures::{future::BoxFuture, FutureExt};
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, ValueSchema};
 
 use crate::hover::{
@@ -9,6 +8,7 @@ use crate::hover::{
     one_of::get_one_of_hover_content,
     GetHoverContent, HoverContent,
 };
+use tombi_future::Boxable;
 
 impl GetHoverContent for tombi_document_tree::LocalDateTime {
     fn get_hover_content<'a: 'b, 'b>(
@@ -18,7 +18,7 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
@@ -100,7 +100,7 @@ impl GetHoverContent for LocalDateTimeSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             Some(HoverContent {
                 title: self.title.clone(),

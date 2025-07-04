@@ -6,12 +6,12 @@ use std::borrow::Cow;
 
 use ahash::AHashMap;
 pub use comment::get_comment_completion_contents;
-use futures::{future::BoxFuture, FutureExt};
 use itertools::Itertools;
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_config::TomlVersion;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_extension::{CompletionContent, CompletionEdit, CompletionHint, CompletionKind};
+use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUrl,
     ValueSchema,
@@ -188,7 +188,7 @@ pub trait FindCompletionContents {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Vec<CompletionContent>>;
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>>;
 }
 
 pub trait CompletionCandidate {
@@ -198,7 +198,7 @@ pub trait CompletionCandidate {
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Option<String>>;
+    ) -> tombi_future::BoxFuture<'b, Option<String>>;
 
     fn description<'a: 'b, 'b>(
         &'a self,
@@ -206,7 +206,7 @@ pub trait CompletionCandidate {
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Option<String>>;
+    ) -> tombi_future::BoxFuture<'b, Option<String>>;
 
     async fn detail(
         &self,
@@ -244,7 +244,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Option<String>> {
+    ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
             {
@@ -294,7 +294,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Option<String>> {
+    ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
             {

@@ -21,7 +21,6 @@ mod table_schema;
 mod value_schema;
 
 use std::sync::Arc;
-use tombi_future::BoxFuture;
 
 use crate::{Accessor, SchemaStore};
 pub use all_of_schema::AllOfSchema;
@@ -76,5 +75,5 @@ pub trait FindSchemaCandidates {
         schema_url: &'a SchemaUrl,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
-    ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)>;
+    ) -> tombi_future::BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)>;
 }

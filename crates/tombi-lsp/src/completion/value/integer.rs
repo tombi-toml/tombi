@@ -1,5 +1,5 @@
-use futures::{future::BoxFuture, FutureExt};
 use tombi_extension::CompletionKind;
+use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, IntegerSchema, SchemaUrl};
 
 use crate::completion::{
@@ -15,7 +15,7 @@ impl FindCompletionContents for IntegerSchema {
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Vec<CompletionContent>> {
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         async move {
             let mut completion_items = vec![];
             let schema_url = current_schema.map(|schema| schema.schema_url.as_ref());

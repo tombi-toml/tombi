@@ -1,9 +1,8 @@
-use std::borrow::Cow;
-
-use futures::{future::BoxFuture, FutureExt};
 use itertools::Itertools;
+use std::borrow::Cow;
 use tombi_document_tree::ArrayKind;
 use tombi_extension::CompletionKind;
+use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUrl, ValueSchema,
 };
@@ -23,7 +22,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Vec<CompletionContent>> {
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
         tracing::trace!("accessors = {:?}", accessors);
@@ -226,7 +225,7 @@ impl FindCompletionContents for ArraySchema {
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Vec<CompletionContent>> {
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         async move {
             match completion_hint {
                 Some(CompletionHint::InTableHeader) => Vec::with_capacity(0),

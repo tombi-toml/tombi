@@ -34,6 +34,7 @@ tombi-extension-cargo.workspace = true
 tombi-extension-tombi.workspace = true
 tombi-extension-uv.workspace = true
 tombi-formatter.workspace = true
+tombi-future.workspace = true
 tombi-json.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true

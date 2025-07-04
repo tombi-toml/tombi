@@ -3917,6 +3917,7 @@ dependencies = [
  "tombi-extension-tombi",
  "tombi-extension-uv",
  "tombi-formatter",
+ "tombi-future",
  "tombi-json",
  "tombi-linter",
  "tombi-parser",
