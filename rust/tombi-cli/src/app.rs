@@ -57,7 +57,15 @@ fn convert_log_level_filter(level: log::LevelFilter) -> filter::LevelFilter {
 pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     let args: Args = args.into();
     tracing_subscriber::registry()
-        .with(convert_log_level_filter(args.verbose.log_level_filter()))
+        .with(
+            // Filter out all logs from other crates
+            filter::Targets::new()
+                .with_target(
+                    "tombi",
+                    convert_log_level_filter(args.verbose.log_level_filter()),
+                )
+                .with_default(filter::LevelFilter::OFF),
+        )
         .with(
             tracing_subscriber::fmt::layer()
                 .event_format(TombiFormatter::from(args.verbose.log_level_filter()))
