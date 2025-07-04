@@ -36,13 +36,14 @@ pub async fn handle_initialize(
         .load_config(&backend.config().await, backend.config_path.as_deref())
         .await
     {
-        if let Err(error) = backend
+        let error_message = error.to_string();
+
+        tracing::error!("{:?}", error_message);
+
+        backend
             .client
-            .show_message_request(MessageType::ERROR, error.to_string(), None)
-            .await
-        {
-            tracing::error!("{:?}", error);
-        }
+            .show_message(MessageType::ERROR, error_message)
+            .await;
     }
 
     Ok(InitializeResult {
