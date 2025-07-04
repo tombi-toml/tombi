@@ -31,7 +31,14 @@ async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     None
 }
 
-pub async fn get_cache_file_path(cache_file_url: &url::Url) -> Option<std::path::PathBuf> {
+pub async fn get_cache_file_path(
+    cache_file_url: &url::Url,
+    no_cache: Option<bool>,
+) -> Option<std::path::PathBuf> {
+    if no_cache.unwrap_or_default() {
+        return None;
+    }
+
     get_tombi_cache_dir_path().await.map(|mut dir_path| {
         dir_path.push(cache_file_url.scheme());
         if let Some(host) = cache_file_url.host() {
