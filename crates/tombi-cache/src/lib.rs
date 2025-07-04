@@ -6,28 +6,26 @@ async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
         cache_dir_path.push("tombi");
 
-        if cache_dir_path.is_dir() {
-            return Some(cache_dir_path);
-        } else {
+        if !cache_dir_path.is_dir() {
             if let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
                 tracing::error!("Failed to create cache directory: {error}");
                 return None;
             }
         }
+        return Some(cache_dir_path);
     }
 
     if let Some(home_dir) = dirs::home_dir() {
         let mut cache_dir_path = home_dir.clone();
         cache_dir_path.push(".cache");
         cache_dir_path.push("tombi");
-        if cache_dir_path.is_dir() {
-            return Some(cache_dir_path);
-        } else {
+        if !cache_dir_path.is_dir() {
             if let Err(error) = std::fs::create_dir_all(&cache_dir_path) {
                 tracing::error!("Failed to create cache directory: {error}");
                 return None;
             }
         }
+        return Some(cache_dir_path);
     }
 
     None
