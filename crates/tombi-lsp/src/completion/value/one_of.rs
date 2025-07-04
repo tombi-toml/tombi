@@ -1,5 +1,5 @@
-use futures::{future::BoxFuture, FutureExt};
 use tombi_extension::CompletionContentPriority;
+use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, OneOfSchema, ReferableValueSchemas};
 
 use crate::completion::{
@@ -30,7 +30,7 @@ pub fn find_one_of_completion_items<'a: 'b, 'b, T>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     completion_hint: Option<CompletionHint>,
-) -> BoxFuture<'b, Vec<CompletionContent>>
+) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>>
 where
     T: FindCompletionContents + tombi_validator::Validate + Sync + Send,
 {

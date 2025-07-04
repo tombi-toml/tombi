@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use futures::{future::BoxFuture, FutureExt};
+use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
     TableSchema, ValueSchema, ValueType,
@@ -22,7 +22,7 @@ impl GetHoverContent for tombi_document_tree::Table {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
         tracing::trace!("accessors = {:?}", accessors);
@@ -495,7 +495,7 @@ impl GetHoverContent for TableSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             Some(HoverContent {
                 title: self.title.clone(),

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use futures::{future::BoxFuture, FutureExt};
 use itertools::Itertools;
+use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, TableSchema,
     ValueSchema,
@@ -20,7 +20,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
         tracing::trace!("accessors = {:?}", accessors);
@@ -313,7 +313,7 @@ impl GetTypeDefinition for TableSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {
                 let mut schema_url = schema.schema_url.as_ref().clone();

@@ -9,7 +9,7 @@ mod offset_date_time;
 mod string;
 mod table;
 
-use futures::{future::BoxFuture, FutureExt};
+use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, ValueSchema};
 
 use super::{GetHoverContent, HoverContent};
@@ -22,7 +22,7 @@ impl GetHoverContent for tombi_document_tree::Value {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             match self {
                 Self::Boolean(boolean) => {
@@ -166,7 +166,7 @@ impl GetHoverContent for ValueSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             match self {
                 Self::Boolean(boolean_schema) => {

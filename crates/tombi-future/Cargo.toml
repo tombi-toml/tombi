@@ -10,6 +10,5 @@ license.workspace = true
 futures.workspace = true
 
 [features]
-default = ["native"]
 native = []
 wasm = []

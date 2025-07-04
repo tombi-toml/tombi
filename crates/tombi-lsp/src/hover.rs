@@ -8,7 +8,6 @@ mod value;
 use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
 use constraints::ValueConstraints;
-use futures::future::BoxFuture;
 use tombi_schema_store::{
     get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUrl, ValueType,
 };
@@ -51,7 +50,7 @@ trait GetHoverContent {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>>;
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
 }
 
 #[derive(Debug, Clone)]
