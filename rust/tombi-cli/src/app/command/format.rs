@@ -78,6 +78,7 @@ where
         tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
             offline: offline.then_some(true),
             strict: schema_options.and_then(|schema_options| schema_options.strict()),
+            cache_ttl: Some(tombi_schema_store::DEFAULT_CACHE_TTL),
         });
 
     let Ok(runtime) = tokio::runtime::Builder::new_multi_thread()

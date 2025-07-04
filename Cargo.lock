@@ -3541,6 +3541,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-cache"
+version = "0.0.0-dev"
+dependencies = [
+ "dirs",
+ "thiserror 2.0.12",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "tombi-cli"
 version = "0.0.0-dev"
 dependencies = [
@@ -3974,6 +3984,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-ast",
+ "tombi-cache",
  "tombi-config",
  "tombi-document",
  "tombi-document-tree",

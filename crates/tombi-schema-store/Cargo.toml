@@ -23,6 +23,7 @@ surf = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 tombi-ast.workspace = true
+tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
