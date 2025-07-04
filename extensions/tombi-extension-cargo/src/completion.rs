@@ -285,7 +285,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
     features_accessors: &'a [Accessor],
     position: tombi_text::Position,
     toml_version: TomlVersion,
-    editting_feature_string: Option<&'a tombi_document_tree::String>,
+    editing_feature_string: Option<&'a tombi_document_tree::String>,
 ) -> BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error>> {
     async move {
         // Check if this is a path dependency
@@ -339,7 +339,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                     ],
                     position,
                     toml_version,
-                    editting_feature_string,
+                    editing_feature_string,
                 )
                 .await;
             } else {
@@ -399,7 +399,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 filter_text: None,
                 schema_url: None,
                 deprecated: None,
-                edit: editting_feature_string.map(|value| tombi_extension::CompletionEdit {
+                edit: editing_feature_string.map(|value| tombi_extension::CompletionEdit {
                     text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
                         tower_lsp::lsp_types::TextEdit {
                             range: tombi_text::Range::at(position).into(),

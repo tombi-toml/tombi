@@ -94,6 +94,12 @@ export class Extension {
         async () => command.restartLanguageServer(this.client),
       ),
     );
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(
+        `${EXTENTION_ID}.refreshCache`,
+        async () => command.refreshCache(this.client),
+      ),
+    );
   }
 
   private registerEvents(): void {

@@ -37,6 +37,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     .custom_method("tombi/updateSchema", Backend::update_schema)
     .custom_method("tombi/updateConfig", Backend::update_config)
     .custom_method("tombi/associateSchema", Backend::associate_schema)
+    .custom_method("tombi/refreshCache", Backend::refresh_cache)
     .finish();
 
     tower_lsp::Server::new(stdin, stdout, socket)

@@ -16,6 +16,12 @@ pub enum Error {
         cache_file_path: PathBuf,
         reason: String,
     },
+
+    #[error("failed to remove cache directory: {cache_dir_path}, reason: {reason}")]
+    CacheDirectoryRemoveFailed {
+        cache_dir_path: PathBuf,
+        reason: String,
+    },
 }
 
 impl Error {
@@ -27,6 +33,7 @@ impl Error {
                 "cache-file-parent-directory-not-found"
             }
             Self::CacheFileSaveFailed { .. } => "cache-file-save-failed",
+            Self::CacheDirectoryRemoveFailed { .. } => "cache-directory-remove-failed",
         }
     }
 }

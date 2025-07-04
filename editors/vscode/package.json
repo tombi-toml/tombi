@@ -171,6 +171,11 @@
         "command": "tombi.restartLanguageServer",
         "title": "Restart Language Server",
         "category": "Tombi"
+      },
+      {
+        "command": "tombi.refreshCache",
+        "title": "Refresh Cache",
+        "category": "Tombi"
       }
     ],
     "configuration": {

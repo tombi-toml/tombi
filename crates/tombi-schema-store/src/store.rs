@@ -7,7 +7,7 @@ use crate::{
 use ahash::AHashMap;
 use itertools::Either;
 use tokio::sync::RwLock;
-use tombi_cache::{get_cache_file_path, read_from_cache, save_to_cache};
+use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_url::url_to_file_path;
@@ -57,6 +57,22 @@ impl SchemaStore {
     /// Strict mode
     pub fn strict(&self) -> bool {
         self.options.strict.unwrap_or(true)
+    }
+
+    pub async fn refresh_cache(
+        &self,
+        config: &tombi_config::Config,
+        config_path: Option<&std::path::Path>,
+    ) -> Result<bool, crate::Error> {
+        if refresh_cache().await? {
+            self.document_schemas.write().await.clear();
+            self.schemas.write().await.clear();
+            tracing::info!("load config");
+            self.load_config(config, config_path).await?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     pub async fn load_config(

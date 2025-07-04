@@ -3,7 +3,7 @@ mod options;
 pub use error::Error;
 pub use options::{Options, DEFAULT_CACHE_TTL};
 
-async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
+pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
         cache_dir_path.push("tombi");
@@ -116,4 +116,28 @@ pub async fn save_to_cache(
     }
 
     Ok(())
+}
+
+pub async fn refresh_cache() -> Result<bool, crate::Error> {
+    if let Some(cache_dir_path) = get_tombi_cache_dir_path().await {
+        // Remove all contents of the cache directory but keep the directory itself
+        if let Ok(mut entries) = tokio::fs::read_dir(&cache_dir_path).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                if let Ok(file_type) = entry.file_type().await {
+                    if file_type.is_dir() {
+                        let path = entry.path();
+                        if let Err(err) = tokio::fs::remove_dir_all(&path).await {
+                            return Err(crate::Error::CacheDirectoryRemoveFailed {
+                                cache_dir_path: path,
+                                reason: err.to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        return Ok(true);
+    }
+
+    Ok(false)
 }

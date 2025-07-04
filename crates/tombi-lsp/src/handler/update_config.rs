@@ -40,16 +40,20 @@ pub async fn handle_update_config(
         }
     }
 
-    if let Some(config_path) = serde_tombi::config::get_user_or_system_tombi_config_path() {
-        if let Ok(config_url) = Url::from_file_path(&config_path) {
-            if config_url == config_url && update_config(backend, &config_url).await? {
-                tracing::info!("update config from {config_path:?}");
+    if let Some(user_or_system_config_path) =
+        serde_tombi::config::get_user_or_system_tombi_config_path()
+    {
+        if let Ok(user_or_system_config_url) = Url::from_file_path(&user_or_system_config_path) {
+            if config_url == user_or_system_config_url
+                && update_config(backend, &user_or_system_config_url).await?
+            {
+                tracing::info!("update config from {user_or_system_config_url:?}");
                 return Ok(true);
             }
         }
     }
 
-    tracing::info!("No workspace found for config settings: {}", config_url);
+    tracing::debug!("Tombi config not found: {}", config_url);
 
     Ok(false)
 }
