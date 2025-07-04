@@ -1,7 +1,7 @@
 mod error;
 pub use error::Error;
 
-fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
+async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
         cache_dir_path.push("tombi");
@@ -9,7 +9,7 @@ fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         if cache_dir_path.is_dir() {
             return Some(cache_dir_path);
         } else {
-            if let Err(error) = std::fs::create_dir_all(&cache_dir_path) {
+            if let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
                 tracing::error!("Failed to create cache directory: {error}");
                 return None;
             }
@@ -33,8 +33,8 @@ fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     None
 }
 
-pub fn get_cache_file_path(cache_file_url: &url::Url) -> Option<std::path::PathBuf> {
-    get_tombi_cache_dir_path().map(|mut dir_path| {
+pub async fn get_cache_file_path(cache_file_url: &url::Url) -> Option<std::path::PathBuf> {
+    get_tombi_cache_dir_path().await.map(|mut dir_path| {
         dir_path.push(cache_file_url.scheme());
         if let Some(host) = cache_file_url.host() {
             dir_path.push(host.to_string());

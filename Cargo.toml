@@ -77,7 +77,7 @@ tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
 time = { version = "0.3.36" }
-tokio = { version = "1.45.0", default-features = false, features = ["rt"] }
+tokio = { version = "1.45.0", default-features = false }
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
