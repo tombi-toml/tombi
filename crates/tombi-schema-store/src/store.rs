@@ -140,10 +140,10 @@ impl SchemaStore {
     ) -> Result<Option<JsonCatalog>, crate::Error> {
         Ok(Some(match catalog_url.scheme() {
             "http" | "https" => {
-                let catalog_cache_path =
-                    get_cache_file_path(catalog_url, self.options.no_cache).await;
+                let catalog_cache_path = get_cache_file_path(catalog_url).await;
                 if let Some(catalog_cache_content) =
-                    read_from_cache(catalog_cache_path.as_deref(), self.options.cache_ttl).await?
+                    read_from_cache(catalog_cache_path.as_deref(), self.options.cache.as_ref())
+                        .await?
                 {
                     let catalog = serde_json::from_str(&catalog_cache_content).map_err(|err| {
                         crate::Error::InvalidJsonFormat {
@@ -293,10 +293,10 @@ impl SchemaStore {
                 )?))
             }
             "http" | "https" => {
-                let schema_cache_path =
-                    get_cache_file_path(schema_url, self.options.no_cache).await;
+                let schema_cache_path = get_cache_file_path(schema_url).await;
                 if let Some(schema_cache_content) =
-                    read_from_cache(schema_cache_path.as_deref(), self.options.cache_ttl).await?
+                    read_from_cache(schema_cache_path.as_deref(), self.options.cache.as_ref())
+                        .await?
                 {
                     return Ok(Some(
                         tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {

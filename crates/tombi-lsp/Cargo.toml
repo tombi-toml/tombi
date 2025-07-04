@@ -23,6 +23,7 @@ serde_tombi.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
 tombi-ast.workspace = true
+tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
 tombi-diagnostic.workspace = true

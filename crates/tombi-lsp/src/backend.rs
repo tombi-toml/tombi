@@ -5,7 +5,7 @@ use itertools::Either;
 use tombi_config::{Config, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
-use tombi_schema_store::{SourceSchema, DEFAULT_CACHE_TTL};
+use tombi_schema_store::SourceSchema;
 use tombi_syntax::SyntaxNode;
 use tower_lsp::{
     lsp_types::{
@@ -69,8 +69,10 @@ impl Backend {
         let options = tombi_schema_store::Options {
             offline: options.offline,
             strict: config.schema.as_ref().and_then(|schema| schema.strict()),
-            no_cache: options.no_cache,
-            cache_ttl: Some(DEFAULT_CACHE_TTL),
+            cache: Some(tombi_cache::Options {
+                no_cache: options.no_cache,
+                ..Default::default()
+            }),
         };
 
         Self {

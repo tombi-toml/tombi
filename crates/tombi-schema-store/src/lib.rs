@@ -13,7 +13,7 @@ pub use accessor::{Accessor, Accessors};
 pub use error::Error;
 pub use http_client::*;
 use itertools::Itertools;
-pub use options::{Options, DEFAULT_CACHE_TTL};
+pub use options::Options;
 pub use schema::*;
 pub use store::SchemaStore;
 use tombi_ast::{algo::ancestors_at_position, AstNode};

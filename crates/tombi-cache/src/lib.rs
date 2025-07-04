@@ -1,5 +1,7 @@
 mod error;
+mod options;
 pub use error::Error;
+pub use options::{Options, DEFAULT_CACHE_TTL};
 
 async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
@@ -31,14 +33,7 @@ async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     None
 }
 
-pub async fn get_cache_file_path(
-    cache_file_url: &url::Url,
-    no_cache: Option<bool>,
-) -> Option<std::path::PathBuf> {
-    if no_cache.unwrap_or_default() {
-        return None;
-    }
-
+pub async fn get_cache_file_path(cache_file_url: &url::Url) -> Option<std::path::PathBuf> {
     get_tombi_cache_dir_path().await.map(|mut dir_path| {
         dir_path.push(cache_file_url.scheme());
         if let Some(host) = cache_file_url.host() {
@@ -56,11 +51,18 @@ pub async fn get_cache_file_path(
 
 pub async fn read_from_cache(
     cache_file_path: Option<&std::path::Path>,
-    ttl: Option<std::time::Duration>,
+    options: Option<&Options>,
 ) -> Result<Option<String>, crate::Error> {
+    if options
+        .and_then(|options| options.no_cache)
+        .unwrap_or_default()
+    {
+        return Ok(None);
+    }
+
     if let Some(cache_file_path) = cache_file_path {
         if cache_file_path.is_file() {
-            if let Some(ttl) = ttl {
+            if let Some(ttl) = options.and_then(|options| options.cache_ttl) {
                 let Ok(metadata) = tokio::fs::metadata(cache_file_path).await else {
                     return Ok(None);
                 };

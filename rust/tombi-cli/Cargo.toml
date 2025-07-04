@@ -20,6 +20,7 @@ rayon.workspace = true
 serde_tombi.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-formatter.workspace = true
