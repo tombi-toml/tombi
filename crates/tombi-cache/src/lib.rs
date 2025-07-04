@@ -49,14 +49,14 @@ pub fn get_cache_file_path(cache_file_url: &url::Url) -> Option<std::path::PathB
     })
 }
 
-pub fn read_from_cache(
+pub async fn read_from_cache(
     cache_file_path: Option<&std::path::Path>,
     ttl: Option<std::time::Duration>,
 ) -> Result<Option<String>, crate::Error> {
     if let Some(cache_file_path) = cache_file_path {
         if cache_file_path.is_file() {
             if let Some(ttl) = ttl {
-                let Ok(metadata) = std::fs::metadata(cache_file_path) else {
+                let Ok(metadata) = tokio::fs::metadata(cache_file_path).await else {
                     return Ok(None);
                 };
                 if let Ok(modified) = metadata.modified() {
@@ -67,19 +67,21 @@ pub fn read_from_cache(
                     }
                 }
             }
-            return Ok(Some(std::fs::read_to_string(&cache_file_path).map_err(
-                |err| crate::Error::CacheFileReadFailed {
-                    cache_file_path: cache_file_path.to_path_buf(),
-                    reason: err.to_string(),
-                },
-            )?));
+            return Ok(Some(
+                tokio::fs::read_to_string(&cache_file_path)
+                    .await
+                    .map_err(|err| crate::Error::CacheFileReadFailed {
+                        cache_file_path: cache_file_path.to_path_buf(),
+                        reason: err.to_string(),
+                    })?,
+            ));
         }
     }
 
     Ok(None)
 }
 
-pub fn save_to_cache(
+pub async fn save_to_cache(
     cache_file_path: Option<&std::path::Path>,
     bytes: &[u8],
 ) -> Result<(), crate::Error> {
@@ -91,14 +93,14 @@ pub fn save_to_cache(
                 });
             };
 
-            if let Err(err) = std::fs::create_dir_all(cache_dir_path) {
+            if let Err(err) = tokio::fs::create_dir_all(cache_dir_path).await {
                 return Err(crate::Error::CacheFileSaveFailed {
                     cache_file_path: cache_file_path.to_owned(),
                     reason: err.to_string(),
                 });
             }
         }
-        if let Err(err) = std::fs::write(cache_file_path, &bytes) {
+        if let Err(err) = tokio::fs::write(cache_file_path, &bytes).await {
             return Err(crate::Error::CacheFileSaveFailed {
                 cache_file_path: cache_file_path.to_owned(),
                 reason: err.to_string(),

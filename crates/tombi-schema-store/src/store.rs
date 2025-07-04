@@ -142,7 +142,7 @@ impl SchemaStore {
             "http" | "https" => {
                 let catalog_cache_path = get_cache_file_path(catalog_url);
                 if let Some(catalog_cache_content) =
-                    read_from_cache(catalog_cache_path.as_deref(), self.options.cache_ttl)?
+                    read_from_cache(catalog_cache_path.as_deref(), self.options.cache_ttl).await?
                 {
                     let catalog = serde_json::from_str(&catalog_cache_content).map_err(|err| {
                         crate::Error::InvalidJsonFormat {
@@ -161,7 +161,8 @@ impl SchemaStore {
 
                 match self.http_client.get_bytes(catalog_url.as_str()).await {
                     Ok(bytes) => {
-                        if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes) {
+                        if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await
+                        {
                             tracing::error!("{err}");
                         }
 
@@ -293,7 +294,7 @@ impl SchemaStore {
             "http" | "https" => {
                 let schema_cache_path = get_cache_file_path(schema_url);
                 if let Some(schema_cache_content) =
-                    read_from_cache(schema_cache_path.as_deref(), self.options.cache_ttl)?
+                    read_from_cache(schema_cache_path.as_deref(), self.options.cache_ttl).await?
                 {
                     return Ok(Some(
                         tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
@@ -320,7 +321,7 @@ impl SchemaStore {
                         reason: err.to_string(),
                     })?;
 
-                if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes) {
+                if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
                     tracing::error!("{err}");
                 }
 

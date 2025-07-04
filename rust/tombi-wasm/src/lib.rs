@@ -3,6 +3,7 @@ use serde_wasm_bindgen;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::Diagnostic;
 use tombi_formatter::FormatDefinitions;
+use tombi_schema_store::DEFAULT_CACHE_TTL;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
 
@@ -52,6 +53,7 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
             tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
                 offline: None,
                 strict: schema_options.and_then(|schema_options| schema_options.strict()),
+                cache_ttl: Some(DEFAULT_CACHE_TTL),
             });
 
         if let Err(error) = schema_store
@@ -132,6 +134,7 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
                 offline: None,
                 strict: schema_options.and_then(|schema_options| schema_options.strict()),
+                cache_ttl: Some(DEFAULT_CACHE_TTL),
             });
 
         if let Err(error) = schema_store
