@@ -56,3 +56,4 @@ tombi-test-lib.workspace = true
 [features]
 clap = ["dep:clap"]
 default = ["clap"]
+wasm = ["tombi-schema-store/wasm"]
