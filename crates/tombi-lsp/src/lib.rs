@@ -15,7 +15,7 @@ pub use backend::Backend;
 #[cfg_attr(feature = "clap", derive(clap::Args))]
 pub struct Args {}
 
-pub async fn serve(_args: impl Into<Args>, offline: bool) {
+pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     tracing::info!(
         "Tombi Language Server version \"{}\" will start.",
         env!("CARGO_PKG_VERSION")
@@ -29,6 +29,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool) {
             client,
             &crate::backend::Options {
                 offline: offline.then_some(true),
+                no_cache: no_cache.then_some(true),
             },
         )
     })

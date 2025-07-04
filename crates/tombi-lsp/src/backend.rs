@@ -52,6 +52,7 @@ pub struct Backend {
 #[derive(Debug, Clone, Default)]
 pub struct Options {
     pub offline: Option<bool>,
+    pub no_cache: Option<bool>,
 }
 
 impl Backend {
@@ -68,6 +69,7 @@ impl Backend {
         let options = tombi_schema_store::Options {
             offline: options.offline,
             strict: config.schema.as_ref().and_then(|schema| schema.strict()),
+            no_cache: options.no_cache,
             cache_ttl: Some(DEFAULT_CACHE_TTL),
         };
 

@@ -2,6 +2,7 @@
 pub struct Options {
     pub strict: Option<bool>,
     pub offline: Option<bool>,
+    pub no_cache: Option<bool>,
     pub cache_ttl: Option<std::time::Duration>,
 }
 
