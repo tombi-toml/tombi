@@ -17,7 +17,6 @@ pub use any_of::find_any_of_completion_items;
 use array::type_hint_array;
 use boolean::type_hint_boolean;
 use float::type_hint_float;
-use futures::{future::BoxFuture, FutureExt};
 use integer::type_hint_integer;
 use local_date::type_hint_local_date;
 use local_date_time::type_hint_local_date_time;
@@ -26,6 +25,7 @@ use offset_date_time::type_hint_offset_date_time;
 pub use one_of::find_one_of_completion_items;
 use string::type_hint_string;
 use tombi_config::TomlVersion;
+use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema, IntegerSchema,
     LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, SchemaDefinitions,
@@ -46,7 +46,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Vec<CompletionContent>> {
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("accessors = {:?}", accessors);
         tracing::trace!("keys = {:?}", keys);
@@ -198,7 +198,7 @@ impl CompletionCandidate for ValueSchema {
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Option<String>> {
+    ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             match self {
                 Self::Boolean(BooleanSchema { title, .. })
@@ -240,7 +240,7 @@ impl CompletionCandidate for ValueSchema {
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
-    ) -> BoxFuture<'b, Option<String>> {
+    ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             match self {
                 Self::Boolean(BooleanSchema { description, .. })

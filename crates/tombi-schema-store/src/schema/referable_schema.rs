@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use crate::x_taplo::XTaplo;
 
 use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUrl, ValueSchema};
-use tombi_future::BoxFuture;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Referable<T> {
@@ -74,7 +73,7 @@ impl Referable<ValueSchema> {
         })
     }
 
-    pub fn deprecated<'a: 'b, 'b>(&'a self) -> BoxFuture<'b, Option<bool>> {
+    pub fn deprecated<'a: 'b, 'b>(&'a self) -> tombi_future::BoxFuture<'b, Option<bool>> {
         Box::pin(async move {
             match self {
                 Referable::Resolved { value, .. } => value.deprecated().await,
@@ -95,7 +94,7 @@ impl Referable<ValueSchema> {
         schema_url: Cow<'a, SchemaUrl>,
         definitions: Cow<'a, SchemaDefinitions>,
         schema_store: &'a crate::SchemaStore,
-    ) -> BoxFuture<'b, Result<Option<CurrentSchema<'a>>, crate::Error>> {
+    ) -> tombi_future::BoxFuture<'b, Result<Option<CurrentSchema<'a>>, crate::Error>> {
         Box::pin(async move {
             match self {
                 Referable::Ref {

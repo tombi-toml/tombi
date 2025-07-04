@@ -5,7 +5,6 @@ use tombi_config::TomlVersion;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
-use tombi_future::BoxFuture;
 use tombi_future::Boxable;
 use tombi_schema_store::dig_accessors;
 use tombi_schema_store::matches_accessors;
@@ -286,7 +285,8 @@ fn complete_crate_feature<'a: 'b, 'b>(
     position: tombi_text::Position,
     toml_version: TomlVersion,
     editting_feature_string: Option<&'a tombi_document_tree::String>,
-) -> BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error>> {
+) -> tombi_future::BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error>>
+{
     async move {
         // Check if this is a path dependency
         let features = if let Some((_, tombi_document_tree::Value::String(path_value))) =

@@ -8,10 +8,8 @@ mod local_time;
 mod offset_date_time;
 mod string;
 mod table;
-
-use futures::{future::BoxFuture, FutureExt};
-
 use super::GetTypeDefinition;
+use tombi_future::Boxable;
 
 impl GetTypeDefinition for tombi_document_tree::Value {
     fn get_type_definition<'a: 'b, 'b>(
@@ -21,7 +19,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> futures::future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
             match self {
                 Self::Boolean(boolean) => {
@@ -163,7 +161,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
             match self {
                 Self::Boolean(boolean_schema) => {

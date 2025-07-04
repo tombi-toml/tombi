@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use futures::{future::BoxFuture, FutureExt};
 use itertools::Itertools;
+use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUrl};
 
 use super::{GetTypeDefinition, TypeDefinition};
@@ -15,7 +15,7 @@ pub fn get_any_of_type_definition<'a: 'b, 'b, T>(
     schema_url: &'a SchemaUrl,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
-) -> BoxFuture<'b, Option<TypeDefinition>>
+) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>>
 where
     T: GetTypeDefinition + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
 {
@@ -79,7 +79,7 @@ impl GetTypeDefinition for tombi_schema_store::AnyOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Option<TypeDefinition>> {
+    ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             let Some(current_schema) = current_schema else {
                 unreachable!("schema must be provided");

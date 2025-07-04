@@ -40,7 +40,7 @@ rstest.workspace = true
 
 [features]
 gloo-net06 = ["dep:gloo-net"]
-native = ["reqwest01"]
+native = ["reqwest01", "tombi-future/native"]
 reqwest01 = ["dep:reqwest"]
 surf2 = ["dep:surf"]
-wasm = ["gloo-net06"]
+wasm = ["gloo-net06", "tombi-future/wasm"]

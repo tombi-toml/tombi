@@ -65,5 +65,5 @@ trait GetTypeDefinition {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> futures::future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
+    ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
 }

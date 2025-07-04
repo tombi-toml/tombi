@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use futures::{future::BoxFuture, FutureExt};
+use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUrl};
 
 use super::{
@@ -16,7 +16,7 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     schema_url: &'a SchemaUrl,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a SchemaContext,
-) -> BoxFuture<'b, Option<HoverContent>>
+) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
     T: GetHoverContent + Sync + Send,
 {
@@ -120,7 +120,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext,
-    ) -> BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             let Some(current_schema) = current_schema else {
                 unreachable!("schema must be provided");

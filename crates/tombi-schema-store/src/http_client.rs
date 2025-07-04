@@ -6,8 +6,9 @@ mod reqwest_client;
 pub use reqwest_client::HttpClient;
 
 #[cfg(feature = "gloo-net06")]
+#[allow(dead_code)]
 mod gloo_net_client;
-#[cfg(feature = "gloo-net06")]
+#[cfg(all(feature = "gloo-net06", not(feature = "wasm")))]
 pub use gloo_net_client::HttpClient;
 
 #[cfg(feature = "surf2")]
