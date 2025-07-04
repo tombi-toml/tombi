@@ -7,7 +7,6 @@ use crate::{
 use ahash::AHashMap;
 use itertools::Either;
 use tokio::sync::RwLock;
-use tombi_cache::get_url_cache_path;
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_url::url_to_file_path;
