@@ -1,19 +1,16 @@
 mod error;
 
-#[cfg(all(feature = "wasm", feature = "surf"))]
-compile_error!("Cannot enable both `wasm` and `surf` features");
-
-#[cfg(not(any(feature = "wasm", feature = "surf")))]
+#[cfg(feature = "reqwest01")]
 mod reqwest_client;
-#[cfg(not(any(feature = "wasm", feature = "surf")))]
+#[cfg(feature = "reqwest01")]
 pub use reqwest_client::HttpClient;
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "gloo-net06")]
 mod gloo_net_client;
-#[cfg(feature = "wasm")]
+#[cfg(feature = "gloo-net06")]
 pub use gloo_net_client::HttpClient;
 
-#[cfg(feature = "surf")]
+#[cfg(feature = "surf2")]
 mod surf_client;
-#[cfg(feature = "surf")]
+#[cfg(feature = "surf2")]
 pub use surf_client::HttpClient;
