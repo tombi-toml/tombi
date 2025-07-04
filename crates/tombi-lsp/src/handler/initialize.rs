@@ -38,7 +38,7 @@ pub async fn handle_initialize(
     {
         let error_message = error.to_string();
 
-        tracing::error!("{:?}", error_message);
+        tracing::error!("{error_message}");
 
         backend
             .client
