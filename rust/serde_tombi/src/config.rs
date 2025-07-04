@@ -164,7 +164,7 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
         }
     }
 
-    if let Some(user_config_path) = user_or_system_tombi_config_path() {
+    if let Some(user_config_path) = get_user_or_system_tombi_config_path() {
         tracing::debug!("{CONFIG_TOML_FILENAME} found at {:?}", &user_config_path);
         let Some(config) = try_from_path(&user_config_path)? else {
             unreachable!("{CONFIG_TOML_FILENAME} should always be parsed successfully.");
@@ -182,7 +182,7 @@ pub fn load() -> Result<Config, tombi_config::Error> {
     Ok(config)
 }
 
-pub fn user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
+pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
     // 1. $XDG_CONFIG_HOME/tombi/config.toml
     if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);

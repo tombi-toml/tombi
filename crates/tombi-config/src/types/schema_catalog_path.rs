@@ -19,12 +19,12 @@ impl SchemaCatalogPath {
 
     pub fn try_to_catalog_url(
         &self,
-        base_dirpath: Option<&std::path::Path>,
+        base_dir_path: Option<&std::path::Path>,
     ) -> Result<url::Url, url::ParseError> {
         match self.0.parse() {
             Ok(url) => Ok(url),
-            Err(err) => match base_dirpath {
-                Some(base_dirpath) => url_from_file_path(base_dirpath.join(&self.0)),
+            Err(err) => match base_dir_path {
+                Some(base_dir_path) => url_from_file_path(base_dir_path.join(&self.0)),
                 None => url_from_file_path(&self.0),
             }
             .map_err(|_| err),

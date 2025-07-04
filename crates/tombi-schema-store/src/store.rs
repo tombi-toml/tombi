@@ -63,7 +63,7 @@ impl SchemaStore {
         config: &tombi_config::Config,
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
-        let base_dirpath = config_path.and_then(|p| p.parent());
+        let base_dir_path = config_path.and_then(|p| p.parent());
         let schema_options = match &config.schema {
             Some(schema) => schema,
             None => &SchemaOptions::default(),
@@ -75,7 +75,7 @@ impl SchemaStore {
                     Some(schemas) => schemas,
                     None => &[],
                 },
-                base_dirpath,
+                base_dir_path,
             )
             .await;
 
@@ -83,7 +83,7 @@ impl SchemaStore {
 
             let catalogs_results =
                 futures::future::join_all(catalog_paths.iter().map(|catalog_path| async move {
-                    let Ok(catalog_url) = catalog_path.try_to_catalog_url(base_dirpath) else {
+                    let Ok(catalog_url) = catalog_path.try_to_catalog_url(base_dir_path) else {
                         return Err(crate::Error::CatalogPathConvertUrlFailed {
                             catalog_path: catalog_path.to_string(),
                         });
