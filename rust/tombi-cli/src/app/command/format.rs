@@ -19,8 +19,9 @@ pub struct Args {
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
-pub fn run(args: Args, offline: bool) -> Result<(), crate::Error> {
-    let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty, offline) {
+pub fn run(args: Args, offline: bool, no_cache: bool) -> Result<(), crate::Error> {
+    let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty, offline, no_cache)
+    {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
             tracing::error!("{}", error);
@@ -64,6 +65,7 @@ fn inner_run<P>(
     args: Args,
     mut printer: P,
     offline: bool,
+    no_cache: bool,
 ) -> Result<(usize, usize, usize), Box<dyn std::error::Error>>
 where
     Diagnostic: Print<P>,
@@ -78,6 +80,10 @@ where
         tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
             offline: offline.then_some(true),
             strict: schema_options.and_then(|schema_options| schema_options.strict()),
+            cache: Some(tombi_cache::Options {
+                no_cache: no_cache.then_some(true),
+                ..Default::default()
+            }),
         });
 
     let Ok(runtime) = tokio::runtime::Builder::new_multi_thread()

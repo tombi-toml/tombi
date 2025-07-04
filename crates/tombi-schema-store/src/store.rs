@@ -7,6 +7,7 @@ use crate::{
 use ahash::AHashMap;
 use itertools::Either;
 use tokio::sync::RwLock;
+use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_url::url_to_file_path;
@@ -58,6 +59,22 @@ impl SchemaStore {
         self.options.strict.unwrap_or(true)
     }
 
+    pub async fn refresh_cache(
+        &self,
+        config: &tombi_config::Config,
+        config_path: Option<&std::path::Path>,
+    ) -> Result<bool, crate::Error> {
+        if refresh_cache().await? {
+            self.document_schemas.write().await.clear();
+            self.schemas.write().await.clear();
+            tracing::info!("load config");
+            self.load_config(config, config_path).await?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
     pub async fn load_config(
         &self,
         config: &tombi_config::Config,
@@ -107,12 +124,12 @@ impl SchemaStore {
         Ok(())
     }
 
-    pub async fn load_schemas(&self, schemas: &[Schema], base_dirpath: Option<&std::path::Path>) {
+    pub async fn load_schemas(&self, schemas: &[Schema], base_dir_path: Option<&std::path::Path>) {
         futures::future::join_all(schemas.iter().map(|schema| async move {
             let schema_url = if let Ok(schema_url) = SchemaUrl::parse(schema.path()) {
                 schema_url
-            } else if let Ok(schema_url) = match base_dirpath {
-                Some(base_dirpath) => SchemaUrl::from_file_path(base_dirpath.join(schema.path())),
+            } else if let Ok(schema_url) = match base_dir_path {
+                Some(base_dir_path) => SchemaUrl::from_file_path(base_dir_path.join(schema.path())),
                 None => SchemaUrl::from_file_path(schema.path()),
             } {
                 schema_url
@@ -139,6 +156,20 @@ impl SchemaStore {
     ) -> Result<Option<JsonCatalog>, crate::Error> {
         Ok(Some(match catalog_url.scheme() {
             "http" | "https" => {
+                let catalog_cache_path = get_cache_file_path(catalog_url).await;
+                if let Some(catalog_cache_content) =
+                    read_from_cache(catalog_cache_path.as_deref(), self.options.cache.as_ref())
+                        .await?
+                {
+                    let catalog = serde_json::from_str(&catalog_cache_content).map_err(|err| {
+                        crate::Error::InvalidJsonFormat {
+                            url: catalog_url.deref().clone(),
+                            reason: err.to_string(),
+                        }
+                    })?;
+                    tracing::debug!("load catalog from cache: {}", catalog_url);
+                    return Ok(Some(catalog));
+                }
                 if self.offline() {
                     tracing::debug!("offline mode, skip fetch catalog from url: {}", catalog_url);
                     return Ok(None);
@@ -146,16 +177,22 @@ impl SchemaStore {
                 tracing::debug!("loading schema catalog: {}", catalog_url);
 
                 match self.http_client.get_bytes(catalog_url.as_str()).await {
-                    Ok(result) => match serde_json::from_slice::<crate::json::JsonCatalog>(&result)
-                    {
-                        Ok(catalog) => catalog,
-                        Err(err) => {
-                            return Err(crate::Error::InvalidJsonFormat {
-                                url: catalog_url.deref().clone(),
-                                reason: err.to_string(),
-                            })
+                    Ok(bytes) => {
+                        if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await
+                        {
+                            tracing::error!("{err}");
                         }
-                    },
+
+                        match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
+                            Ok(catalog) => catalog,
+                            Err(err) => {
+                                return Err(crate::Error::InvalidJsonFormat {
+                                    url: catalog_url.deref().clone(),
+                                    reason: err.to_string(),
+                                })
+                            }
+                        }
+                    }
                     Err(err) => {
                         return Err(crate::Error::CatalogUrlFetchFailed {
                             catalog_url: catalog_url.clone(),
@@ -232,24 +269,25 @@ impl SchemaStore {
 
         let has_key = { self.document_schemas.read().await.contains_key(schema_url) };
         if has_key {
-            self.document_schemas.write().await.insert(
-                schema_url.clone(),
-                self.fetch_document_schema(schema_url).await,
-            );
-
-            tracing::debug!("update schema: {}", schema_url);
-
-            Ok(true)
-        } else {
-            Ok(false)
+            if let Some(document_schema) = self.fetch_document_schema(schema_url).await.transpose()
+            {
+                self.document_schemas
+                    .write()
+                    .await
+                    .insert(schema_url.clone(), document_schema);
+                tracing::debug!("update schema: {}", schema_url);
+                return Ok(true);
+            }
         }
+
+        Ok(false)
     }
 
-    async fn fetch_document_schema(
+    async fn fetch_schema_value(
         &self,
         schema_url: &SchemaUrl,
-    ) -> Result<DocumentSchema, crate::Error> {
-        let tombi_json::ValueNode::Object(schema) = match schema_url.scheme() {
+    ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+        match schema_url.scheme() {
             "file" => {
                 let schema_path =
                     url_to_file_path(schema_url).map_err(|_| crate::Error::InvalidSchemaUrl {
@@ -263,13 +301,32 @@ impl SchemaStore {
                 let file = std::fs::File::open(&schema_path)
                     .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
 
-                tombi_json::ValueNode::from_reader(file)
+                Ok(Some(tombi_json::ValueNode::from_reader(file).map_err(
+                    |err| crate::Error::SchemaFileParseFailed {
+                        schema_url: schema_url.to_owned(),
+                        reason: err.to_string(),
+                    },
+                )?))
             }
             "http" | "https" => {
-                assert!(
-                    !self.offline(),
-                    "offline mode, store don't have online schema url: {schema_url}",
-                );
+                let schema_cache_path = get_cache_file_path(schema_url).await;
+                if let Some(schema_cache_content) =
+                    read_from_cache(schema_cache_path.as_deref(), self.options.cache.as_ref())
+                        .await?
+                {
+                    return Ok(Some(
+                        tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
+                            crate::Error::SchemaFileParseFailed {
+                                schema_url: schema_url.to_owned(),
+                                reason: err.to_string(),
+                            }
+                        })?,
+                    ));
+                }
+                if self.offline() {
+                    tracing::debug!("offline mode, skip fetch catalog from url: {}", schema_url);
+                    return Ok(None);
+                }
 
                 tracing::debug!("fetch schema from url: {}", schema_url);
 
@@ -282,7 +339,18 @@ impl SchemaStore {
                         reason: err.to_string(),
                     })?;
 
-                tombi_json::ValueNode::from_reader(std::io::Cursor::new(bytes))
+                if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
+                    tracing::error!("{err}");
+                }
+
+                Ok(Some(
+                    tombi_json::ValueNode::from_reader(std::io::Cursor::new(bytes)).map_err(
+                        |err| crate::Error::SchemaFileParseFailed {
+                            schema_url: schema_url.to_owned(),
+                            reason: err.to_string(),
+                        },
+                    )?,
+                ))
             }
             "tombi" => {
                 let Some(content) = get_tombi_scheme_content(schema_url) else {
@@ -290,7 +358,12 @@ impl SchemaStore {
                         schema_url: schema_url.to_owned(),
                     });
                 };
-                tombi_json::ValueNode::from_str(content)
+                Ok(Some(tombi_json::ValueNode::from_str(content).map_err(
+                    |err| crate::Error::SchemaFileParseFailed {
+                        schema_url: schema_url.to_owned(),
+                        reason: err.to_string(),
+                    },
+                )?))
             }
             _ => {
                 return Err(crate::Error::UnsupportedSchemaUrl {
@@ -298,17 +371,23 @@ impl SchemaStore {
                 })
             }
         }
-        .map_err(|err| crate::Error::SchemaFileParseFailed {
-            schema_url: schema_url.to_owned(),
-            reason: err.to_string(),
-        })?
-        else {
-            return Err(crate::Error::SchemaMustBeObject {
-                schema_url: schema_url.to_owned(),
-            });
+    }
+
+    async fn fetch_document_schema(
+        &self,
+        schema_url: &SchemaUrl,
+    ) -> Result<Option<DocumentSchema>, crate::Error> {
+        let object = match self.fetch_schema_value(schema_url).await? {
+            Some(tombi_json::ValueNode::Object(object)) => object,
+            Some(_) => {
+                return Err(crate::Error::SchemaMustBeObject {
+                    schema_url: schema_url.to_owned(),
+                });
+            }
+            None => return Ok(None),
         };
 
-        Ok(DocumentSchema::new(schema, schema_url.clone()))
+        Ok(Some(DocumentSchema::new(object, schema_url.clone())))
     }
 
     pub fn try_get_document_schema<'a: 'b, 'b>(
@@ -316,10 +395,6 @@ impl SchemaStore {
         schema_url: &'a SchemaUrl,
     ) -> BoxFuture<'b, Result<Option<DocumentSchema>, crate::Error>> {
         async move {
-            if self.offline() && matches!(schema_url.scheme(), "http" | "https") {
-                return Ok(None);
-            }
-
             if let Some(document_schema) = self.document_schemas.read().await.get(schema_url) {
                 return match document_schema {
                     Ok(document_schema) => Ok(Some(document_schema.clone())),
@@ -327,14 +402,17 @@ impl SchemaStore {
                 };
             }
 
-            let document_schema = self.fetch_document_schema(schema_url).await;
+            match self.fetch_document_schema(schema_url).await.transpose() {
+                Some(document_schema) => {
+                    self.document_schemas
+                        .write()
+                        .await
+                        .insert(schema_url.clone(), document_schema.clone());
 
-            self.document_schemas
-                .write()
-                .await
-                .insert(schema_url.clone(), document_schema.clone());
-
-            document_schema.map(Some)
+                    Some(document_schema).transpose()
+                }
+                None => Ok(None),
+            }
         }
         .boxed()
     }

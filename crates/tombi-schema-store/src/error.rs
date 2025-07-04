@@ -84,6 +84,9 @@ pub enum Error {
 
     #[error("schema must be an object: {schema_url}")]
     SchemaMustBeObject { schema_url: SchemaUrl },
+
+    #[error(transparent)]
+    CacheError(#[from] tombi_cache::Error),
 }
 
 impl Error {
@@ -114,6 +117,7 @@ impl Error {
             Self::UnsupportedReference { .. } => "unsupported-reference",
             Self::UnsupportedUrlSchema { .. } => "unsupported-url-schema",
             Self::SchemaMustBeObject { .. } => "schema-must-be-object",
+            Self::CacheError(error) => error.code(),
         }
     }
 }
