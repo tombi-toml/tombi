@@ -1,4 +1,4 @@
-import { Note } from "~/components/Highlight";
+import { Note, Warning } from "~/components/Highlight";
 
 # JSON Schema
 
@@ -79,23 +79,25 @@ Tombi caches JSON Catalog/Schemas in the file system to avoid unnecessary networ
 
 ### How to Clear Cache
 #### CLI
-Use `--no-cache` option to disable caching for a CLI command.
+Use `--no-cache` option to disable using caches for a CLI command.
 
 ```bash
 tombi format --no-cache
 ```
 
-<Note>
-The `--no-cache` option fetches the latest schema over the network without using the cache.
-It only applies to catalogs/schemas used by the command, and does not update other file caches.
-</Note>
+<Warning>
+`--no-cache` option does not use caches, but **saves the latest catalogs/schemas** to the file caches.\
+(This behavior is the same as HTTP's `Cache-Control: no-cache`)
+
+It only applies to catalogs/schemas used by the command, and does not update other files.
+</Warning>
 
 #### Language Server
 Use `RefreshCache` command to clear the cache.
 
-<Note>
-It removes **all** file caches and fetches the latest schema over the network.
-</Note>
+<Warning>
+It removes **all file caches** and fetches the latest schema over the network for the editing TOML file.
+</Warning>
 
 ### Cache Location Search Priority
 
