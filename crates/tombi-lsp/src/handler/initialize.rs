@@ -73,6 +73,7 @@ pub fn server_capabilities(client_capabilities: &ClientCapabilities) -> ServerCa
                 ".".into(),
                 ",".into(),
                 "=".into(),
+                ":".into(), // for schema directive `#:schema ...`
                 "[".into(),
                 "{".into(),
                 " ".into(),
