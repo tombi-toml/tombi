@@ -5,10 +5,24 @@
   "autoCloseBefore": ".,=}] \n\t",
   "brackets": [["[", "]"], ["{", "}"]],
   "autoClosingPairs": [
-    { "open": "\"", "close": "\"", "notIn": ["string"] },
-    { "open": "'", "close": "'", "notIn": ["string", "comment"] },
-    { "open": "[", "close": "]" },
-    { "open": "{", "close": "}" }
+    {
+      "open": "\"",
+      "close": "\"",
+      "notIn": ["string"]
+    },
+    {
+      "open": "'",
+      "close": "'",
+      "notIn": ["string", "comment"]
+    },
+    {
+      "open": "[",
+      "close": "]"
+    },
+    {
+      "open": "{",
+      "close": "}"
+    }
   ],
   "surroundingPairs": [["\"", "\""], ["'", "'"], ["[", "]"], ["{", "}"]],
   "folding": {
@@ -16,5 +30,14 @@
       "start": "^\\s*// region:\\b",
       "end": "^\\s*// endregion\\b"
     }
-  }
+  },
+  "onEnterRules": [
+    {
+      "beforeText": "^\\s*#.*$",
+      "action": {
+        "indent": "none",
+        "appendText": "# "
+      }
+    }
+  ]
 }
