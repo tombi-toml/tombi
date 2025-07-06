@@ -44,7 +44,7 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
                         let prefix = key_parts[0];
                         prefix_groups
                             .entry(prefix)
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .push((position, key_value.syntax().range()));
                     }
                 }

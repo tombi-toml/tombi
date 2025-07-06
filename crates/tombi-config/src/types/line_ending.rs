@@ -8,9 +8,9 @@ pub enum LineEnding {
     Crlf,
 }
 
-impl Into<&'static str> for LineEnding {
-    fn into(self) -> &'static str {
-        match self {
+impl From<LineEnding> for &'static str {
+    fn from(val: LineEnding) -> Self {
+        match val {
             LineEnding::Lf => "\n",
             LineEnding::Crlf => "\r\n",
         }

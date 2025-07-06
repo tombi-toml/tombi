@@ -46,7 +46,7 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
             if !keys.is_empty() {
                 prefix_groups
                     .entry(keys[0])
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push((*pos, *range));
             }
         }

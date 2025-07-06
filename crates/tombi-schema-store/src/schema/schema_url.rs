@@ -32,7 +32,7 @@ impl SchemaUrl {
 
 impl std::fmt::Debug for SchemaUrl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        write!(f, "{}", self.0)
     }
 }
 

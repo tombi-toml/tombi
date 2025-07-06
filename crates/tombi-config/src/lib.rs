@@ -79,7 +79,7 @@ impl Config {
         self.files
             .as_ref()
             .and_then(|files| files.include.as_ref())
-            .or_else(|| self.include.as_ref())
+            .or(self.include.as_ref())
     }
 
     pub fn exclude(&self) -> Option<&Vec<String>> {
@@ -87,7 +87,7 @@ impl Config {
         self.files
             .as_ref()
             .and_then(|files| files.exclude.as_ref())
-            .or_else(|| self.exclude.as_ref())
+            .or(self.exclude.as_ref())
     }
 
     pub fn lsp(&self) -> Option<&LspOptions> {
