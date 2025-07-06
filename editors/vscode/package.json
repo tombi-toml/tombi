@@ -46,11 +46,10 @@
     "@types/minimatch": "^5.1.2",
     "@types/semver": "^7.5.8",
     "@types/vscode": "^1.93.0",
-    "@vscode/vsce": "^3.2.1",
+    "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.0",
     "ovsx": "^0.10.4",
-    "vitest": "^2.1.9",
-    "vsce": "^2.15.0"
+    "vitest": "^2.1.9"
   },
   "activationEvents": [
     "onLanguage:cargoLock"
