@@ -26,7 +26,7 @@ tombi-diagnostic.workspace = true
 tombi-formatter.workspace = true
 tombi-glob.workspace = true
 tombi-linter.workspace = true
-tombi-lsp.workspace = true
+tombi-lsp = { workspace = true, features = ["clap", "native"] }
 tombi-schema-store = { workspace = true, features = ["native"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
