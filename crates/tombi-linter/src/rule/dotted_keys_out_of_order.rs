@@ -20,21 +20,21 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
                 if let Some(keys) = key_value.keys() {
                     let key_parts = keys
                         .keys()
-                        .filter_map(|key| match key {
-                            tombi_ast::Key::BareKey(k) => Some(&source_text[k.syntax().span()]),
+                        .map(|key| match key {
+                            tombi_ast::Key::BareKey(k) => &source_text[k.syntax().span()],
                             tombi_ast::Key::BasicString(k) => {
                                 let mut span = k.syntax().span();
                                 // Remove quotes
                                 span.start += 1;
                                 span.end -= 1;
-                                Some(&source_text[span])
+                                &source_text[span]
                             }
                             tombi_ast::Key::LiteralString(k) => {
                                 let mut span = k.syntax().span();
                                 // Remove quotes
                                 span.start += 1;
                                 span.end -= 1;
-                                Some(&source_text[span])
+                                &source_text[span]
                             }
                         })
                         .collect_vec();
@@ -44,7 +44,7 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
                         let prefix = key_parts[0];
                         prefix_groups
                             .entry(prefix)
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .push((position, key_value.syntax().range()));
                     }
                 }

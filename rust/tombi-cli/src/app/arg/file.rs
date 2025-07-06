@@ -88,7 +88,7 @@ async fn search_with_patterns_async<P: AsRef<std::path::Path>>(
     match WalkDir::new_with_options(root, files_options).walk().await {
         Ok(results) => {
             let matched_paths: Vec<Result<PathBuf, crate::Error>> =
-                results.into_iter().map(|r| Ok(r)).collect();
+                results.into_iter().map(Ok).collect();
             matched_paths
         }
         Err(err) => {

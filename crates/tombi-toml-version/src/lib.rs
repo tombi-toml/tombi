@@ -42,13 +42,16 @@ macro_rules! define_toml_version {
             }
         }
 
-        impl TomlVersion {
-            pub fn from_str(value: &str) -> Option<Self> {
+        impl std::str::FromStr for TomlVersion {
+            type Err = ();
+
+            #[allow(clippy::result_unit_err)]
+            fn from_str(value: &str) -> Result<Self, Self::Err> {
                 match value {
                     $(
-                        $version => Some(Self::$variant),
+                        $version => Ok(Self::$variant),
                     )*
-                    _ => None,
+                    _ => Err(()),
                 }
             }
         }

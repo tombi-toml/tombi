@@ -95,17 +95,15 @@ where
                 .find(|item| item.label == default_label)
             {
                 completion_item.priority = CompletionContentPriority::Default;
-            } else {
-                if let Some(completion_item) = tombi_json_value_to_completion_default_item(
-                    default,
-                    position,
-                    detail,
-                    documentation,
-                    Some(&current_schema.schema_url),
-                    completion_hint,
-                ) {
-                    completion_items.push(completion_item);
-                }
+            } else if let Some(completion_item) = tombi_json_value_to_completion_default_item(
+                default,
+                position,
+                detail,
+                documentation,
+                Some(&current_schema.schema_url),
+                completion_hint,
+            ) {
+                completion_items.push(completion_item);
             }
         }
 

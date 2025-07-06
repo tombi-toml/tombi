@@ -366,7 +366,7 @@ impl SchemaStore {
                 )?))
             }
             _ => {
-                return Err(crate::Error::UnsupportedSchemaUrl {
+                Err(crate::Error::UnsupportedSchemaUrl {
                     schema_url: schema_url.to_owned(),
                 })
             }
