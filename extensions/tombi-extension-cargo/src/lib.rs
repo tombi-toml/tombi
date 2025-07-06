@@ -506,7 +506,7 @@ fn goto_definition_for_crate_cargo_toml(
             toml_version,
             jump_to_subcrate,
         );
-    } else if matches!(accessors.last(), Some(tombi_schema_store::Accessor::Key(key)) if key == "workspace")
+    } else if accessors.last() == Some(&tombi_schema_store::Accessor::Key("workspace".to_string()))
     {
         goto_workspace(
             accessors,
