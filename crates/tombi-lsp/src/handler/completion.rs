@@ -103,7 +103,7 @@ pub async fn handle_completion(
 
     for node in ancestors_at_position(root.syntax(), position) {
         if let Some(SyntaxElement::Token(token)) = node.first_child_or_token() {
-            if token.kind() == SyntaxKind::COMMENT && token.range().contains(position) {
+            if token.kind() == SyntaxKind::COMMENT {
                 return Ok(Some(get_comment_completion_contents(
                     &root,
                     position,
