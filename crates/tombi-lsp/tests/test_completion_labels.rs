@@ -49,6 +49,17 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_comment_schema_directive_and_comment(
+                r#"
+                #:schema https://json.schemastore.org/tombi.json
+                # █
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_toml_version_comment(
                 r#"toml-version = "v1.0.0"  # █"#,
                 Schema(tombi_schema_path()),
