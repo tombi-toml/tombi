@@ -16,35 +16,36 @@ pub async fn goto_definition(
         return Ok(Default::default());
     };
 
-    let locations =
-        if accessors.first() == Some(&tombi_schema_store::Accessor::Key("workspace".to_string())) {
-            itertools::concat([
-                goto_definition_for_workspace_cargo_toml(
-                    document_tree,
-                    accessors,
-                    &cargo_toml_path,
-                    toml_version,
-                    true,
-                )?,
-                // For Root Package
-                // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#root-package
-                goto_definition_for_crate_cargo_toml(
-                    document_tree,
-                    accessors,
-                    &cargo_toml_path,
-                    toml_version,
-                    true,
-                )?,
-            ])
-        } else {
+    let locations = if accessors.first()
+        == Some(&tombi_schema_store::Accessor::Key("workspace".to_string()))
+    {
+        itertools::concat([
+            goto_definition_for_workspace_cargo_toml(
+                document_tree,
+                accessors,
+                &cargo_toml_path,
+                toml_version,
+                true,
+            )?,
+            // For Root Package
+            // See: https://doc.rust-lang.org/cargo/reference/workspaces.html#root-package
             goto_definition_for_crate_cargo_toml(
                 document_tree,
                 accessors,
                 &cargo_toml_path,
                 toml_version,
                 true,
-            )?
-        };
+            )?,
+        ])
+    } else {
+        goto_definition_for_crate_cargo_toml(
+            document_tree,
+            accessors,
+            &cargo_toml_path,
+            toml_version,
+            accessors.last() != Some(&tombi_schema_store::Accessor::Key("workspace".to_string())),
+        )?
+    };
 
     if locations.is_empty() {
         return Ok(None);

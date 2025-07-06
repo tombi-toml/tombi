@@ -19,7 +19,7 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn dependencies_serde(
+            async fn dependencies_serde_with_workspace(
                 r#"
                 [dependencies]
                 serde█ = { workspace = true }
@@ -36,7 +36,7 @@ mod goto_definition_tests {
                 tombi-ast = { workspace█ = true }
                 "#,
                 project_root_path().join("crates/test-crate/Cargo.toml"),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -74,13 +74,24 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
+            async fn dev_dependencies_tombi_ast_with_workspace(
+                r#"
+                [dev-dependencies]
+                tombi-ast█ = { workspace = true }
+                "#,
+                project_root_path().join("crates/test-crate/Cargo.toml"),
+            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
             async fn dev_dependencies_tombi_ast_workspace(
                 r#"
                 [dev-dependencies]
                 tombi-ast = { workspace█ = true }
                 "#,
                 project_root_path().join("crates/test-crate/Cargo.toml"),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
         test_goto_definition!(
@@ -91,7 +102,7 @@ mod goto_definition_tests {
                 tombi-ast = { workspace█ = true }
                 "#,
                 project_root_path().join("crates/test-crate/Cargo.toml"),
-            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
         test_goto_definition!(

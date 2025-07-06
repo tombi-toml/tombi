@@ -40,6 +40,7 @@ pretty_assertions.workspace = true
 rstest.workspace = true
 
 [features]
+default = ["native"]
 gloo-net06 = ["dep:gloo-net"]
 native = ["reqwest01", "tombi-future/native"]
 reqwest01 = ["dep:reqwest"]
