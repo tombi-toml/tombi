@@ -513,7 +513,7 @@ fn goto_definition_for_crate_cargo_toml(
             cargo_toml_path,
             get_workspace_path(document_tree),
             toml_version,
-            jump_to_subcrate,
+            false,
         )
     } else if matches_accessors!(accessors, ["dependencies", _, "path"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
