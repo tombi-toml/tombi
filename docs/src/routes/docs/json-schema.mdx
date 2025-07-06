@@ -73,3 +73,31 @@ While TOML and JSON are different languages, JSON Schema remains a valuable tool
 Tombi bridges this language gap by using abbreviations to represent JSON Schema concepts that don't have direct equivalents in TOML.
 
 For more details on how Tombi represents these concepts, check out the Hover section.
+
+## JSON Catalog/Schema Cache
+Tombi caches JSON Catalog/Schemas in the file system to avoid unnecessary network requests.
+
+### How to Clear Cache
+#### CLI
+Use `--no-cache` option to disable caching for a cli command.
+
+```bash
+tombi format --no-cache
+```
+
+<Note>
+The `--no-cache` option fetches the latest schema over the network without using the cache.
+It only applies to catalogs/schemas used by the command, and does not update other file caches.
+</Note>
+
+#### Language Server
+Use `RefreshCache` command to clear the cache.
+
+<Note>
+It removes **all** file caches and fetches the latest schema over the network.
+</Note>
+
+### Cache Location Search Priority
+
+1. `$XDG_CACHE_HOME/tombi/cache.json`
+2. `~/.cache/tombi/cache.json`
