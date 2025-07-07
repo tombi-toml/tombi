@@ -25,7 +25,7 @@
     </a>
 </div>
 
-<br><br>
+<br>
 
 <div align="center">
     <h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
