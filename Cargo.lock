@@ -3503,7 +3503,7 @@ version = "0.0.0-dev"
 
 [[package]]
 name = "tombi-ast"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "thiserror 2.0.12",
@@ -3518,7 +3518,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-ast-editor"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "ahash",
  "futures",
@@ -3578,7 +3578,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-config"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "clap",
  "pretty_assertions",
@@ -3594,7 +3594,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-date-time"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "pretty_assertions",
@@ -3607,7 +3607,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-diagnostic"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -3623,7 +3623,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-document"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "indexmap",
@@ -3647,7 +3647,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-document-tree"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "indexmap",
@@ -3664,7 +3664,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-extension"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "tombi-schema-store",
  "tombi-text",
@@ -3726,7 +3726,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-formatter"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
@@ -3754,7 +3754,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-future"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "futures",
 ]
@@ -3776,7 +3776,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-json"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "indexmap",
  "itertools 0.14.0",
@@ -3805,7 +3805,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-json-lexer"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
@@ -3821,7 +3821,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-json-syntax"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "pretty_assertions",
  "tombi-rg-tree",
@@ -3829,7 +3829,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-json-value"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "indexmap",
  "pretty_assertions",
@@ -3839,7 +3839,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-lexer"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
@@ -3855,7 +3855,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-linter"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "ahash",
  "futures",
@@ -3934,7 +3934,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-parser"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "drop_bomb",
  "itertools 0.14.0",
@@ -3956,7 +3956,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-rg-tree"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "countme",
  "hashbrown 0.15.3",
@@ -3968,7 +3968,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-schema-store"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "ahash",
  "async-trait",
@@ -4013,7 +4013,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-test-lib"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "tracing",
@@ -4034,7 +4034,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-toml-text"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "thiserror 2.0.12",
  "tombi-toml-version",
@@ -4051,14 +4051,14 @@ dependencies = [
 
 [[package]]
 name = "tombi-url"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "url",
 ]
 
 [[package]]
 name = "tombi-validator"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "futures",
  "itertools 0.14.0",
@@ -4081,7 +4081,7 @@ dependencies = [
 
 [[package]]
 name = "tombi-wasm"
-version = "0.0.0"
+version = "0.0.0-dev"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.3.3",

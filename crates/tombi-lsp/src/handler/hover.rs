@@ -1,7 +1,8 @@
 use itertools::{Either, Itertools};
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
-use tombi_schema_store::{SchemaContext, SchemaUrl};
+use tombi_extension::get_tombi_github_url;
+use tombi_schema_store::SchemaContext;
 use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 
 use crate::{
@@ -80,9 +81,9 @@ pub async fn handle_hover(
         if let Some(schema_url) = content
             .schema_url
             .as_ref()
-            .and_then(|url| get_tombi_github_schema_url(url))
+            .and_then(|url| get_tombi_github_url(url))
         {
-            content.schema_url = Some(schema_url);
+            content.schema_url = Some(schema_url.into());
         }
         content
     }));
@@ -276,24 +277,4 @@ pub(crate) async fn get_hover_keys_with_range(
         keys_vec.into_iter().rev().flatten().collect_vec(),
         hover_range,
     ))
-}
-
-pub fn get_tombi_github_schema_url(schema_url: &tower_lsp::lsp_types::Url) -> Option<SchemaUrl> {
-    if schema_url.scheme() == "tombi" {
-        let schema_filename = schema_url.path().strip_prefix("/json/schemas/")?;
-        let version = env!("CARGO_PKG_VERSION");
-        let branch = if version == "0.0.0-dev" {
-            "main".to_string()
-        } else {
-            format!("refs/tags/v{version}")
-        };
-        let Ok(schema_url) = SchemaUrl::parse(&format!(
-            "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/schemas/{schema_filename}"
-        )) else {
-            return None;
-        };
-        Some(schema_url)
-    } else {
-        None
-    }
 }

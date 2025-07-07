@@ -1,6 +1,6 @@
 [package]
 name = "tombi-rg-tree"
-version = "0.0.0"
+version.workspace = true
 authors.workspace = true
 edition.workspace = true
 description = "A `Red/Green Tree` implementation."
