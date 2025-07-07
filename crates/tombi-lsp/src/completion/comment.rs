@@ -24,8 +24,7 @@ pub fn get_comment_completion_contents(
                         {
                             let mut directive_range = comment_range;
                             directive_range.end.column =
-                                comment_range.start.column + 1 + colon_pos as u32 + 1; // : の後まで
-
+                                comment_range.start.column + 1 + colon_pos as u32;
                             let mut completion_contents = Vec::new();
 
                             if root.file_schema_url(None).is_none() {
