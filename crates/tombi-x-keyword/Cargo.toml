@@ -7,8 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-clap = { workspace = true, optional = true }
-itertools.workspace = true
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 

@@ -17,7 +17,6 @@ tombi-diagnostic = { workspace = true, optional = true }
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-tracing.workspace = true
 
 [features]
 default = ["diagnostic"]

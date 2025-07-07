@@ -7,14 +7,12 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-clap = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
 tombi-toml-version.workspace = true
 tombi-url.workspace = true
 tombi-x-keyword.workspace = true
-tracing.workspace = true
 url.workspace = true
 
 [dev-dependencies]

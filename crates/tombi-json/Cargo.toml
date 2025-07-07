@@ -15,7 +15,6 @@ tombi-json-lexer.workspace = true
 tombi-json-syntax.workspace = true
 tombi-json-value.workspace = true
 tombi-text.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

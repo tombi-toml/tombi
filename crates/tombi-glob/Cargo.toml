@@ -16,10 +16,8 @@ serde_tombi = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tombi-config = { workspace = true }
-tracing.workspace = true
 
 [dev-dependencies]
-criterion.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 
 [features]

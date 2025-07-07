@@ -6,7 +6,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-chrono.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 serde = { workspace = true, optional = true }
@@ -17,10 +16,7 @@ tombi-date-time.workspace = true
 tombi-document-tree.workspace = true
 tombi-parser.workspace = true
 tombi-text.workspace = true
-tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-tower-lsp = { workspace = true, optional = true }
-tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

@@ -29,7 +29,6 @@ license = "MIT"
 [workspace.dependencies]
 ahash = { version = "0.8.11", features = ["serde"] }
 anyhow = "1.0.98"
-async-trait = "0.1.88"
 bytes = "1.10.1"
 chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.37", features = ["derive", "env", "string"] }
@@ -38,14 +37,11 @@ compact_str = "0.9.0"
 console_error_panic_hook = "0.1.7"
 convert_case = "0.6.0"
 countme = "3.0.1"
-criterion = "0.5"
 dirs = { version = "6.0.0" }
 drop_bomb = "0.1.5"
 fast-glob = "0.3.0"
 flate2 = "1.0.35"
 futures = "0.3.31"
-futures-util = "0.3.31"
-getrandom = "0.3.3"
 glob = "0.3.2"
 gloo-net = "0.6.0"
 hashbrown = "0.15.3"
@@ -53,8 +49,6 @@ ignore = "0.4.20"
 indexmap = { version = "2.9.0", features = ["serde"] }
 itertools = "0.14.0"
 js-sys = "0.3.77"
-log = "0.4.27"
-maplit = { version = "1.0" }
 nu-ansi-term = "0.50.1"
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.95"
@@ -68,7 +62,6 @@ reqwest = { version = "0.12.15", default-features = false, features = [
 rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
 schemars = { version = "1.0.2", features = ["preserve_order", "url2"] }
-semver = { version = "1.0.26" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { default-features = false, path = "rust/serde_tombi" }
@@ -115,7 +108,6 @@ tombi-x-keyword = { path = "crates/tombi-x-keyword" }
 tower-lsp = { version = "0.20.0" }
 tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-tracing-wasm = "0.2.1"
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"

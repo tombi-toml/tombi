@@ -8,10 +8,8 @@ license.workspace = true
 [dependencies]
 nu-ansi-term.workspace = true
 serde.workspace = true
-thiserror.workspace = true
 tombi-text.workspace = true
 tower-lsp = { workspace = true, optional = true }
-tracing.workspace = true
 wasm-bindgen = { workspace = true, optional = true }
 
 [dev-dependencies]

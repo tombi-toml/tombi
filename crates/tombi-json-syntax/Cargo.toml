@@ -7,5 +7,4 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-pretty_assertions.workspace = true
 tombi-rg-tree.workspace = true

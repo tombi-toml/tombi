@@ -10,24 +10,18 @@ ahash.workspace = true
 chrono.workspace = true
 clap = { workspace = true, optional = true }
 futures.workspace = true
-futures-util.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
 reqwest.workspace = true
-rustc-hash.workspace = true
-semver.workspace = true
 serde.workspace = true
-serde_json.workspace = true
 serde_tombi.workspace = true
-thiserror.workspace = true
 tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
 tombi-diagnostic.workspace = true
-tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-extension.workspace = true
 tombi-extension-cargo.workspace = true
@@ -47,7 +41,6 @@ tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
 tower-lsp.workspace = true
 tracing.workspace = true
-tracing-subscriber.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
