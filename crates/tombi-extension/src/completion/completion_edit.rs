@@ -276,7 +276,7 @@ impl CompletionEdit {
 
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
-                new_text: format!("schema ${{0:{schema_url}}}"),
+                new_text: format!("#:schema ${{0:{schema_url}}}"),
                 range: tombi_text::Range::at(position).into(),
             }),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
