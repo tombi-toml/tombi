@@ -1,5 +1,4 @@
 use tombi_config::TomlVersion;
-use tombi_extension::get_tombi_github_url;
 use tombi_schema_store::{dig_accessors, matches_accessors};
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
