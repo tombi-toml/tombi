@@ -1,5 +1,5 @@
 use tombi_config::TomlVersion;
-use tombi_schema_store::dig_accessors;
+use tombi_schema_store::{dig_accessors, matches_accessors};
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 pub async fn goto_definition(
@@ -28,6 +28,33 @@ pub async fn goto_definition(
                     uri,
                     range: tombi_text::Range::default(),
                 });
+            }
+        }
+    }
+
+    if matches!(accessors.len(), 3 | 4) {
+        if matches_accessors!(accessors[..3], ["schema", "catalog", "paths"]) {
+            if let Some((_, tombi_document_tree::Value::Array(paths))) =
+                dig_accessors(document_tree, &accessors[..3])
+            {
+                let index = (accessors.len() == 4)
+                    .then(|| accessors.last().and_then(|accessor| accessor.as_index()))
+                    .flatten();
+
+                for (i, path) in paths.iter().enumerate() {
+                    let tombi_document_tree::Value::String(path) = path else {
+                        continue;
+                    };
+                    if index.is_some() && index != Some(i) {
+                        continue;
+                    }
+                    if let Some(uri) = crate::str2url(path.value(), &tombi_toml_path) {
+                        locations.push(tombi_extension::DefinitionLocation {
+                            uri,
+                            range: tombi_text::Range::default(),
+                        });
+                    }
+                }
             }
         }
     }
