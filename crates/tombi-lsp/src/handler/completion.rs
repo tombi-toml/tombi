@@ -1,9 +1,7 @@
 use itertools::Either;
-use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::CompletionContent;
 use tombi_schema_store::get_accessors;
-use tombi_syntax::{SyntaxElement, SyntaxKind};
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionParams, CompletionTriggerKind, TextDocumentPositionParams,
 };
@@ -101,16 +99,10 @@ pub async fn handle_completion(
     let mut completion_items = Vec::new();
     let position = position.into();
 
-    for node in ancestors_at_position(root.syntax(), position) {
-        if let Some(SyntaxElement::Token(token)) = node.first_child_or_token() {
-            if token.kind() == SyntaxKind::COMMENT {
-                return Ok(Some(get_comment_completion_contents(
-                    &root,
-                    position,
-                    &text_document.uri,
-                )));
-            }
-        }
+    if let Some(comment_completion_contents) =
+        get_comment_completion_contents(&root, position, &text_document.uri)
+    {
+        return Ok(Some(comment_completion_contents));
     }
 
     let Some((keys, completion_hint)) = extract_keys_and_hint(&root, position, toml_version) else {
