@@ -49,6 +49,14 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_comment_space_schema_directive(
+                "# :█",
+                Schema(tombi_schema_path()),
+            ) -> Ok(["schema"]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_comment_schema_directive_and_comment(
                 r#"
                 #:schema https://json.schemastore.org/tombi.json

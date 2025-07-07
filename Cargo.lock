@@ -3921,6 +3921,7 @@ dependencies = [
  "tombi-json",
  "tombi-linter",
  "tombi-parser",
+ "tombi-rg-tree",
  "tombi-schema-store",
  "tombi-syntax",
  "tombi-test-lib",
