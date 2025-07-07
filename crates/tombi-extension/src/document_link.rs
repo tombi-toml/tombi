@@ -39,6 +39,6 @@ pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp
             None
         }
     } else {
-        None
+        Some(url.clone())
     }
 }

@@ -129,11 +129,7 @@ pub async fn document_link(
 
 fn get_document_link(url: &str, tombi_toml_path: &std::path::Path) -> Option<Url> {
     if let Ok(target) = Url::parse(url) {
-        if let Some(tombi_github_url) = get_tombi_github_url(&target) {
-            Some(tombi_github_url)
-        } else {
-            Some(target)
-        }
+        get_tombi_github_url(&target)
     } else if let Some(tombi_config_dir) = tombi_toml_path.parent() {
         let mut file_path = std::path::PathBuf::from(url);
         if file_path.is_relative() {
