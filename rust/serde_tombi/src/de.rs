@@ -665,7 +665,7 @@ optional_string = "provided"
         );
 
         let schemas = config.schemas.unwrap();
-        pretty_assertions::assert_eq!(schemas.len(), 1);
+        pretty_assertions::assert_eq!(schemas.len(), 2);
 
         // Verify the first schema
         let first_schema = &schemas[0];

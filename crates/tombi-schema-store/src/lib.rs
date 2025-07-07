@@ -113,6 +113,7 @@ pub fn dig_accessors<'a>(
 
 pub fn get_tombi_scheme_content(schema_url: &url::Url) -> Option<&'static str> {
     match schema_url.path() {
+        "/json/catalog.json" => Some(include_str!("../../../schemas/catalog.json")),
         "/json/schemas/cargo.schema.json" => {
             Some(include_str!("../../../schemas/cargo.schema.json"))
         }

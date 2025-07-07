@@ -50,6 +50,12 @@ impl std::ops::DerefMut for SchemaUrl {
     }
 }
 
+impl From<url::Url> for SchemaUrl {
+    fn from(url: url::Url) -> Self {
+        Self(url)
+    }
+}
+
 impl From<SchemaUrl> for url::Url {
     fn from(schema_url: SchemaUrl) -> Self {
         schema_url.0

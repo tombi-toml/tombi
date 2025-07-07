@@ -1,6 +1,6 @@
 [package]
 name = "tombi-date-time"
-version = "0.0.0"
+version.workspace = true
 authors.workspace = true
 edition.workspace = true
 repository.workspace = true

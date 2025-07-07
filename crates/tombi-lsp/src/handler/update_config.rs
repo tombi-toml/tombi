@@ -34,7 +34,7 @@ pub async fn handle_update_config(
             };
 
             if config_url == workspace_config_url && update_config(backend, &config_url).await? {
-                tracing::info!("update config from {workspace_config_url:?}");
+                tracing::info!("update config from {workspace_config_url}");
                 return Ok(true);
             }
         }
@@ -47,7 +47,7 @@ pub async fn handle_update_config(
             if config_url == user_or_system_config_url
                 && update_config(backend, &user_or_system_config_url).await?
             {
-                tracing::info!("update config from {user_or_system_config_url:?}");
+                tracing::info!("update config from {user_or_system_config_url}");
                 return Ok(true);
             }
         }

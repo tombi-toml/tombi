@@ -17,3 +17,28 @@ impl From<DocumentLink> for tower_lsp::lsp_types::DocumentLink {
         }
     }
 }
+
+pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp::lsp_types::Url> {
+    if url.scheme() == "tombi" {
+        let version = env!("CARGO_PKG_VERSION");
+        let branch = if version == "0.0.0-dev" {
+            "main".to_string()
+        } else {
+            format!("refs/tags/v{version}")
+        };
+        if let Some(schema_filename) = url.path().strip_prefix("/json/schemas/") {
+            tower_lsp::lsp_types::Url::parse(&format!(
+                "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/schemas/{schema_filename}"
+            )).ok()
+        } else if url.path() == "/json/catalog.json" {
+            tower_lsp::lsp_types::Url::parse(&format!(
+                "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/schemas/catalog.json"
+            ))
+            .ok()
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}

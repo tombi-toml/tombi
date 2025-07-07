@@ -2,7 +2,8 @@ use std::borrow::Cow;
 
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
-use tower_lsp::lsp_types::TextDocumentIdentifier;
+use tombi_extension::get_tombi_github_url;
+use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 pub enum DocumentLinkToolTip {
     Catalog,
@@ -69,7 +70,7 @@ pub async fn document_link(
         };
         for path in paths {
             // Convert the path to a URL
-            if let Some(target) = crate::str2url(path.value(), &tombi_toml_path) {
+            if let Some(target) = get_document_link(path.value(), &tombi_toml_path) {
                 document_links.push(tombi_extension::DocumentLink {
                     target,
                     range: path.unquoted_range(),
@@ -87,7 +88,7 @@ pub async fn document_link(
                 continue;
             };
             // Convert the path to a URL
-            if let Some(target) = crate::str2url(path.value(), &tombi_toml_path) {
+            if let Some(target) = get_document_link(path.value(), &tombi_toml_path) {
                 document_links.push(tombi_extension::DocumentLink {
                     target,
                     range: path.unquoted_range(),
@@ -107,7 +108,7 @@ pub async fn document_link(
             let Some(tombi_document_tree::Value::String(path)) = table.get("path") else {
                 continue;
             };
-            let Some(target) = crate::str2url(path.value(), &tombi_toml_path) else {
+            let Some(target) = get_document_link(path.value(), &tombi_toml_path) else {
                 continue;
             };
 
@@ -124,4 +125,26 @@ pub async fn document_link(
     }
 
     Ok(Some(document_links))
+}
+
+fn get_document_link(url: &str, tombi_toml_path: &std::path::Path) -> Option<Url> {
+    if let Ok(target) = Url::parse(url) {
+        if let Some(tombi_github_url) = get_tombi_github_url(&target) {
+            Some(tombi_github_url)
+        } else {
+            Some(target)
+        }
+    } else if let Some(tombi_config_dir) = tombi_toml_path.parent() {
+        let mut file_path = std::path::PathBuf::from(url);
+        if file_path.is_relative() {
+            file_path = tombi_config_dir.join(file_path);
+        }
+        if file_path.exists() {
+            Url::from_file_path(file_path).ok()
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
