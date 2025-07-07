@@ -24,3 +24,15 @@
         📚 Documentation here 📚
     </a>
 </div>
+
+<br><br>
+
+<div align="center">
+    <h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
+        <strong>Support</strong>
+    </h2>
+    ❤️ If you like this project and would like to support us ❤️
+    <br><br>
+    <a href="https://www.buymeacoffee.com/tombi" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+</div>
+
