@@ -1,6 +1,7 @@
 mod error;
 mod files;
 pub mod format;
+mod level;
 mod lint;
 mod schema;
 mod server;
@@ -9,6 +10,7 @@ mod types;
 pub use error::Error;
 pub use files::FilesOptions;
 pub use format::FormatOptions;
+pub use level::ConfigLevel;
 pub use lint::{LintOptions, SeverityLevel};
 pub use schema::SchemaOptions;
 pub use schema::{RootSchema, Schema, SubSchema};

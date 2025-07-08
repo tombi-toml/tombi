@@ -1,7 +1,7 @@
 use tombi_ast::AstNode;
 use tombi_config::{
-    Config, TomlVersion, CONFIG_TOML_FILENAME, PYPROJECT_TOML_FILENAME, TOMBI_CONFIG_TOML_VERSION,
-    TOMBI_TOML_FILENAME,
+    Config, ConfigLevel, TomlVersion, CONFIG_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
+    TOMBI_CONFIG_TOML_VERSION, TOMBI_TOML_FILENAME,
 };
 use tombi_url::url_to_file_path;
 
@@ -127,8 +127,8 @@ pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_confi
     }
 }
 
-/// Load the config from the current directory.
-pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
+pub fn load_with_path_and_level(
+) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
     if let Ok(mut current_dir) = std::env::current_dir() {
         loop {
             let config_path = current_dir.join(TOMBI_TOML_FILENAME);
@@ -139,7 +139,7 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
                     unreachable!("tombi.toml should always be parsed successfully.");
                 };
 
-                return Ok((config, Some(config_path)));
+                return Ok((config, Some(config_path), ConfigLevel::Project));
             }
 
             let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
@@ -151,7 +151,9 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
                 );
 
                 match try_from_path(&pyproject_toml_path)? {
-                    Some(config) => return Ok((config, Some(pyproject_toml_path))),
+                    Some(config) => {
+                        return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project))
+                    }
                     None => {
                         tracing::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
                     }
@@ -164,32 +166,40 @@ pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_co
         }
     }
 
-    if let Some(user_config_path) = get_user_or_system_tombi_config_path() {
+    if let Some((user_config_path, config_level)) = get_user_or_system_tombi_config_path_and_level()
+    {
         tracing::debug!("{CONFIG_TOML_FILENAME} found at {:?}", &user_config_path);
         let Some(config) = try_from_path(&user_config_path)? else {
             unreachable!("{CONFIG_TOML_FILENAME} should always be parsed successfully.");
         };
-        Ok((config, Some(user_config_path)))
+        Ok((config, Some(user_config_path), config_level))
     } else {
         tracing::debug!("config file not found, use default config");
 
-        Ok((Config::default(), None))
+        Ok((Config::default(), None, ConfigLevel::Default))
     }
 }
 
+#[inline]
+pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
+    let (config, config_path, _) = load_with_path_and_level()?;
+    Ok((config, config_path))
+}
+
+#[inline]
 pub fn load() -> Result<Config, tombi_config::Error> {
-    let (config, _) = load_with_path()?;
+    let (config, _, _) = load_with_path_and_level()?;
     Ok(config)
 }
 
-pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
+fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBuf, ConfigLevel)> {
     // 1. $XDG_CONFIG_HOME/tombi/config.toml
     if let Ok(xdg_config_home) = std::env::var("XDG_CONFIG_HOME") {
         let mut config_path = std::path::PathBuf::from(xdg_config_home);
         config_path.push("tombi");
         config_path.push(CONFIG_TOML_FILENAME);
         if config_path.is_file() {
-            return Some(config_path);
+            return Some((config_path, ConfigLevel::User));
         }
     }
 
@@ -200,19 +210,19 @@ pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
         config_path.push("tombi");
         config_path.push(CONFIG_TOML_FILENAME);
         if config_path.is_file() {
-            return Some(config_path);
+            return Some((config_path, ConfigLevel::User));
         }
 
         #[cfg(target_os = "macos")]
         {
             // 3. ~/Library/Application Support/tombi/config.toml
-            let mut path = home_dir;
-            path.push("Library");
-            path.push("Application Support");
-            path.push("tombi");
-            path.push(CONFIG_TOML_FILENAME);
-            if path.exists() {
-                return Some(path);
+            let mut config_path = home_dir;
+            config_path.push("Library");
+            config_path.push("Application Support");
+            config_path.push("tombi");
+            config_path.push(CONFIG_TOML_FILENAME);
+            if config_path.exists() {
+                return Some((config_path, ConfigLevel::User));
             }
         }
     }
@@ -225,7 +235,7 @@ pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
             config_path.push("tombi");
             config_path.push(CONFIG_TOML_FILENAME);
             if config_path.is_file() {
-                return Some(config_path);
+                return Some((config_path, ConfigLevel::User));
             }
         }
     }
@@ -234,8 +244,13 @@ pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
     let mut config_path = std::path::PathBuf::from("/etc/tombi");
     config_path.push(CONFIG_TOML_FILENAME);
     if config_path.exists() {
-        return Some(config_path);
+        return Some((config_path, ConfigLevel::System));
     }
 
     None
+}
+
+#[inline]
+pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
+    get_user_or_system_tombi_config_path_and_level().map(|(path, _)| path)
 }

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tombi_config::FilesOptions;
+use tombi_config::{ConfigLevel, FilesOptions};
 use tombi_glob::WalkDir;
 
 /// Input source for TOML files.
@@ -16,9 +16,13 @@ impl FileInput {
     pub async fn new<T: AsRef<str>>(
         files: &[T],
         config_path: Option<&std::path::Path>,
+        config_level: ConfigLevel,
         files_options: FilesOptions,
     ) -> Self {
-        let root = config_path.and_then(|p| p.parent()).unwrap_or(".".as_ref());
+        let root = match config_level {
+            ConfigLevel::Project => config_path.and_then(|p| p.parent()).unwrap_or(".".as_ref()),
+            _ => ".".as_ref(),
+        };
 
         match files.len() {
             0 => {

@@ -72,7 +72,7 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let (config, config_path) = serde_tombi::config::load_with_path()?;
+    let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level()?;
 
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_options = config.schema.as_ref();
@@ -101,7 +101,12 @@ where
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            arg::FileInput::new(&args.files, config_path.as_deref(), files_options)
+            arg::FileInput::new(
+                &args.files,
+                config_path.as_deref(),
+                config_level,
+                files_options,
+            )
         );
 
         schema_result?;
