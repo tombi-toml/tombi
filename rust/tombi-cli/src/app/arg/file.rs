@@ -52,8 +52,12 @@ impl FileInput {
                         );
                     } else {
                         let path = PathBuf::from(file_path);
-                        if path.exists() {
+                        if path.is_file() {
                             matched_paths.push(Ok(path));
+                        } else if path.is_dir() {
+                            matched_paths.extend(
+                                search_with_patterns_async(path, files_options.clone()).await,
+                            );
                         } else {
                             matched_paths.push(Err(crate::Error::FileNotFound(path)));
                         }
