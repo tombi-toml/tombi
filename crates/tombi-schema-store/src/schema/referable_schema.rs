@@ -127,7 +127,7 @@ impl Referable<ValueSchema> {
                             schema_store.fetch_schema_value(&schema_url).await?
                         {
                             if let Some(mut resolved_schema) =
-                                resolve_json_pointer(&schema_value, pointer).await?
+                                resolve_json_pointer(&schema_value, pointer)?
                             {
                                 if title.is_some() || description.is_some() {
                                     resolved_schema.set_title(title.to_owned());
@@ -251,7 +251,7 @@ pub fn is_json_pointer(reference: &str) -> bool {
     reference.starts_with('#')
 }
 
-pub async fn resolve_json_pointer(
+pub fn resolve_json_pointer(
     schema_node: &tombi_json::ValueNode,
     pointer: &str,
 ) -> Result<Option<ValueSchema>, crate::Error> {
