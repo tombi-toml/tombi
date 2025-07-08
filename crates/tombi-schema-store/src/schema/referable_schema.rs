@@ -123,6 +123,9 @@ impl Referable<ValueSchema> {
                     } else if is_json_pointer(reference) {
                         let pointer = reference;
 
+                        // Exceptional handling for schemas that do not use `#/definitions/*`.
+                        // Therefore, schema_value is not cached in memory, but read from file cache.
+                        // Execution speed decreases, but memory usage can be reduced.
                         if let Some(schema_value) =
                             schema_store.fetch_schema_value(&schema_url).await?
                         {
@@ -251,6 +254,13 @@ pub fn is_json_pointer(reference: &str) -> bool {
     reference.starts_with('#')
 }
 
+/// Resolve a JSON pointer to a ValueSchema.
+///
+/// This function resolves a JSON pointer to a ValueSchema.
+/// It is used to resolve pointers like `#/properties/foo` within the same schema.
+/// More correctly, it should use `#/definitions/foo` to use definitions,
+/// but this function is provided for exceptional cases of some JSON Schema implementations.
+///
 pub fn resolve_json_pointer(
     schema_node: &tombi_json::ValueNode,
     pointer: &str,
