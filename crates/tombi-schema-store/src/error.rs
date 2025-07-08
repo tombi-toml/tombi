@@ -82,7 +82,7 @@ pub enum Error {
         schema_url: SchemaUrl,
     },
 
-    #[error("unsupported url scheme: {}, url: {url}", url.scheme())]
+    #[error("unsupported url scheme: {scheme}, url: {url}", scheme = url.scheme())]
     UnsupportedUrlScheme { url: url::Url },
 
     #[error("schema must be an object: {schema_url}")]
