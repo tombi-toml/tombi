@@ -283,7 +283,7 @@ impl SchemaStore {
         Ok(false)
     }
 
-    async fn fetch_schema_value(
+    pub async fn fetch_schema_value(
         &self,
         schema_url: &SchemaUrl,
     ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
