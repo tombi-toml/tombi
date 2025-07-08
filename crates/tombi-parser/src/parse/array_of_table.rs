@@ -37,11 +37,13 @@ impl Parse for tombi_ast::ArrayOfTable {
         begin_dangling_comments(p);
 
         loop {
+            while p.eat(LINE_BREAK) {}
             let n = peek_leading_comments(p);
 
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
+
             tombi_ast::KeyValue::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
