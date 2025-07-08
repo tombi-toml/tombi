@@ -120,6 +120,37 @@ impl Referable<ValueSchema> {
                         }
 
                         *self = referable_schema;
+                    } else if is_json_pointer(reference) {
+                        let pointer = reference;
+
+                        if let Some(schema_value) =
+                            schema_store.fetch_schema_value(&schema_url).await?
+                        {
+                            if let Some(mut resolved_schema) =
+                                resolve_json_pointer(&schema_value, pointer).await?
+                            {
+                                if title.is_some() || description.is_some() {
+                                    resolved_schema.set_title(title.to_owned());
+                                    resolved_schema.set_description(description.to_owned());
+                                }
+                                if let Some(deprecated) = deprecated {
+                                    resolved_schema.set_deprecated(*deprecated);
+                                }
+
+                                *self = Referable::Resolved {
+                                    schema_url: Some(schema_url.as_ref().clone()),
+                                    value: resolved_schema,
+                                };
+                            } else {
+                                return Err(crate::Error::InvalidJsonPointer {
+                                    pointer: pointer.to_owned(),
+                                    schema_url: schema_url.as_ref().clone(),
+                                });
+                            }
+                        } else {
+                            // Offline Mode
+                            return Ok(None);
+                        }
                     } else if is_online_url(reference) {
                         let schema_url = SchemaUrl::parse(reference)?;
 
@@ -214,4 +245,59 @@ impl Referable<ValueSchema> {
 
 pub fn is_online_url(reference: &str) -> bool {
     reference.starts_with("https://") || reference.starts_with("http://")
+}
+
+pub fn is_json_pointer(reference: &str) -> bool {
+    reference.starts_with('#')
+}
+
+pub async fn resolve_json_pointer(
+    schema_node: &tombi_json::ValueNode,
+    pointer: &str,
+) -> Result<Option<ValueSchema>, crate::Error> {
+    if !pointer.starts_with('#') {
+        return Ok(None);
+    }
+
+    let path = &pointer[1..]; // Remove the leading '#'
+    if path.is_empty() {
+        return Ok(schema_node.as_object().and_then(ValueSchema::new));
+    }
+
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+    let mut current = schema_node;
+
+    for segment in segments {
+        let decoded_segment = segment.replace("~1", "/").replace("~0", "~");
+
+        match current {
+            tombi_json::ValueNode::Object(obj) => {
+                if let Some(value) = obj.get(&decoded_segment) {
+                    current = value;
+                } else {
+                    return Ok(None);
+                }
+            }
+            tombi_json::ValueNode::Array(arr) => {
+                if let Ok(index) = decoded_segment.parse::<usize>() {
+                    if let Some(value) = arr.get(index) {
+                        current = value;
+                    } else {
+                        return Ok(None);
+                    }
+                } else {
+                    return Ok(None);
+                }
+            }
+            _ => {
+                return Ok(None);
+            }
+        }
+    }
+
+    // Convert the final ValueNode to ValueSchema
+    match current {
+        tombi_json::ValueNode::Object(obj) => Ok(ValueSchema::new(obj)),
+        _ => Ok(None),
+    }
 }

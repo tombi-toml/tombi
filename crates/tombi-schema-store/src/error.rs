@@ -70,6 +70,12 @@ pub enum Error {
     #[error("invalid json format: {url}, reason: {reason}")]
     InvalidJsonFormat { url: url::Url, reason: String },
 
+    #[error("invalid json pointer: {pointer}, schema_url: {schema_url}")]
+    InvalidJsonPointer {
+        pointer: String,
+        schema_url: SchemaUrl,
+    },
+
     #[error("invalid json schema reference: {reference}, schema_url: {schema_url}")]
     InvalidJsonSchemaReference {
         reference: String,
@@ -115,6 +121,7 @@ impl Error {
             Self::SourceUrlParseFailed { .. } => "source-url-parse-failed",
             Self::InvalidFilePath { .. } => "invalid-file-path",
             Self::InvalidJsonFormat { .. } => "invalid-json-format",
+            Self::InvalidJsonPointer { .. } => "invalid-json-pointer",
             Self::InvalidJsonSchemaReference { .. } => "invalid-json-schema-reference",
             Self::UnsupportedReference { .. } => "unsupported-reference",
             Self::UnsupportedUrlScheme { .. } => "unsupported-url-scheme",
