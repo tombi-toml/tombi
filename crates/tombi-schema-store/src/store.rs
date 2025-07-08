@@ -302,8 +302,11 @@ impl SchemaStore {
                         schema_path: schema_path.clone(),
                     });
                 }
+
                 let file = std::fs::File::open(&schema_path)
                     .map_err(|_| crate::Error::SchemaFileReadFailed { schema_path })?;
+
+                tracing::debug!("fetch schema from file: {}", schema_url);
 
                 Ok(Some(tombi_json::ValueNode::from_reader(file).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
@@ -318,6 +321,8 @@ impl SchemaStore {
                     read_from_cache(schema_cache_path.as_deref(), self.options.cache.as_ref())
                         .await?
                 {
+                    tracing::debug!("fetch schema from cache: {}", schema_url);
+
                     return Ok(Some(
                         tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
                             crate::Error::SchemaFileParseFailed {
@@ -362,6 +367,9 @@ impl SchemaStore {
                         schema_url: schema_url.to_owned(),
                     });
                 };
+
+                tracing::debug!("fetch schema from embedded file: {}", schema_url);
+
                 Ok(Some(tombi_json::ValueNode::from_str(content).map_err(
                     |err| crate::Error::SchemaFileParseFailed {
                         schema_url: schema_url.to_owned(),
