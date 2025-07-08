@@ -235,8 +235,8 @@ impl SchemaStore {
                 })?
             }
             _ => {
-                return Err(crate::Error::UnsupportedUrlSchema {
-                    schema: catalog_url.to_string(),
+                return Err(crate::Error::UnsupportedUrlScheme {
+                    url: catalog_url.deref().clone(),
                 });
             }
         }))
@@ -365,11 +365,9 @@ impl SchemaStore {
                     },
                 )?))
             }
-            _ => {
-                Err(crate::Error::UnsupportedSchemaUrl {
-                    schema_url: schema_url.to_owned(),
-                })
-            }
+            _ => Err(crate::Error::UnsupportedUrlScheme {
+                url: schema_url.deref().clone(),
+            }),
         }
     }
 
