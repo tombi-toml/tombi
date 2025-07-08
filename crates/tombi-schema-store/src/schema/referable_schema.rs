@@ -150,6 +150,7 @@ impl Referable<ValueSchema> {
                             } else {
                                 return Err(crate::Error::InvalidJsonSchemaReference {
                                     reference: reference.to_owned(),
+                                    schema_url: schema_url.clone(),
                                 });
                             }
                         } else {
@@ -158,6 +159,7 @@ impl Referable<ValueSchema> {
                     } else {
                         return Err(crate::Error::UnsupportedReference {
                             reference: reference.to_owned(),
+                            schema_url: schema_url.as_ref().clone(),
                         });
                     }
 

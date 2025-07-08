@@ -31,9 +31,6 @@ pub enum Error {
     #[error("failed to read catalog: {catalog_path}")]
     CatalogFileReadFailed { catalog_path: PathBuf },
 
-    #[error("unsupported schema url: {schema_url}")]
-    UnsupportedSchemaUrl { schema_url: SchemaUrl },
-
     #[error("invalid schema url: {schema_url}")]
     InvalidSchemaUrl { schema_url: String },
 
@@ -73,14 +70,20 @@ pub enum Error {
     #[error("invalid json format: {url}, reason: {reason}")]
     InvalidJsonFormat { url: url::Url, reason: String },
 
-    #[error("invalid json schema reference: {reference}")]
-    InvalidJsonSchemaReference { reference: String },
+    #[error("invalid json schema reference: {reference}, schema_url: {schema_url}")]
+    InvalidJsonSchemaReference {
+        reference: String,
+        schema_url: SchemaUrl,
+    },
 
-    #[error("unsupported reference: {reference}")]
-    UnsupportedReference { reference: String },
+    #[error("unsupported reference: {reference}, schema_url: {schema_url}")]
+    UnsupportedReference {
+        reference: String,
+        schema_url: SchemaUrl,
+    },
 
-    #[error("unsupported url schema: {schema}")]
-    UnsupportedUrlSchema { schema: String },
+    #[error("unsupported url scheme: {scheme}, url: {url}", scheme = url.scheme())]
+    UnsupportedUrlScheme { url: url::Url },
 
     #[error("schema must be an object: {schema_url}")]
     SchemaMustBeObject { schema_url: SchemaUrl },
@@ -101,7 +104,6 @@ impl Error {
             Self::CatalogUrlFetchFailed { .. } => "catalog-url-fetch-failed",
             Self::InvalidCatalogFileUrl { .. } => "invalid-catalog-file-url",
             Self::CatalogFileReadFailed { .. } => "catalog-file-read-failed",
-            Self::UnsupportedSchemaUrl { .. } => "unsupported-schema-url",
             Self::InvalidSchemaUrl { .. } => "invalid-schema-url",
             Self::InvalidSchemaUrlOrFilePath { .. } => "invalid-schema-url-or-file-path",
             Self::SchemaFileNotFound { .. } => "schema-file-not-found",
@@ -115,7 +117,7 @@ impl Error {
             Self::InvalidJsonFormat { .. } => "invalid-json-format",
             Self::InvalidJsonSchemaReference { .. } => "invalid-json-schema-reference",
             Self::UnsupportedReference { .. } => "unsupported-reference",
-            Self::UnsupportedUrlSchema { .. } => "unsupported-url-schema",
+            Self::UnsupportedUrlScheme { .. } => "unsupported-url-scheme",
             Self::SchemaMustBeObject { .. } => "schema-must-be-object",
             Self::CacheError(error) => error.code(),
         }
