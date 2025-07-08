@@ -65,7 +65,7 @@ impl DocumentSchema {
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
         self.toml_version.inspect(|version| {
-            tracing::debug!(
+            tracing::trace!(
                 "use schema TOML version \"{version}\" for {}",
                 self.schema_url
             );

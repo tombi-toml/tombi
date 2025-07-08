@@ -214,6 +214,8 @@ impl SchemaStore {
                     }
                 })?;
 
+                tracing::debug!("load catalog from file: {}", catalog_url);
+
                 serde_json::from_str(&content).map_err(|err| crate::Error::InvalidJsonFormat {
                     url: catalog_url.deref().clone(),
                     reason: err.to_string(),
@@ -225,6 +227,8 @@ impl SchemaStore {
                         catalog_url: catalog_url.clone(),
                     });
                 }
+
+                tracing::debug!("load catalog from embedded file: {}", catalog_url);
 
                 serde_json::from_str::<crate::json::JsonCatalog>(include_str!(
                     "../../../schemas/catalog.json"
@@ -583,10 +587,10 @@ impl SchemaStore {
         .inspect(|source_schema| {
             if let Some(source_schema) = source_schema {
                 if let Some(root_schema) = &source_schema.root_schema {
-                    tracing::debug!("find root schema from {}", root_schema.schema_url);
+                    tracing::trace!("find root schema from {}", root_schema.schema_url);
                 }
                 for (accessors, schema_url) in &source_schema.sub_schema_url_map {
-                    tracing::debug!(
+                    tracing::trace!(
                         "find sub schema {:?} from {}",
                         SchemaAccessors::new(accessors.clone()),
                         schema_url
