@@ -15,21 +15,16 @@ pub async fn handle_update_config(
             if let Some(config_path) = config_path {
                 if config_path == params_path {
                     backend.update_config_with_path(config, config_path).await;
+                    tracing::info!("updated config: {}", params.uri);
                     return Ok(true);
                 } else {
-                    tracing::info!(
-                        "Not used as a Tombi Language Server config file: {}",
-                        params.uri
-                    );
+                    tracing::info!("not used as a config file: {}", params.uri);
                 }
             } else {
-                tracing::info!(
-                    "Use default config, skip Tombi Language Server config update: {}",
-                    params.uri
-                );
+                tracing::info!("use default config, update skipped: {}", params.uri);
             }
         } else {
-            tracing::error!("Tombi config load failed: {}", params.uri);
+            tracing::error!("config load failed: {}", params.uri);
         }
     }
 
