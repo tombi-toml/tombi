@@ -29,8 +29,8 @@ pub fn run(args: Args, offline: bool, no_cache: bool) -> Result<(), crate::Error
                 eprintln!("No files linted")
             }
         }
-        1 => eprintln!("1 file linted"),
-        _ => eprintln!("{} files linted", success_num),
+        1 => eprintln!("1 file was successfully linted"),
+        _ => eprintln!("{} files were successfully linted", success_num),
     }
 
     match error_num {
