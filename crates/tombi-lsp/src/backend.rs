@@ -185,9 +185,9 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn update_config_with_path(&self, config: Config, config_path: &std::path::Path) {
+    pub async fn update_config_with_path(&self, config: Config, config_path: std::path::PathBuf) {
         *self.config.write().await = config;
-        *self.config_path.write().await = Some(config_path.to_owned());
+        *self.config_path.write().await = Some(config_path);
     }
 
     #[inline]

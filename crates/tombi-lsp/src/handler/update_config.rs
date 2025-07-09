@@ -14,7 +14,7 @@ pub async fn handle_update_config(
         if let Ok((config, config_path)) = serde_tombi::config::load_with_path() {
             if let Some(config_path) = config_path {
                 if config_path == params_path {
-                    backend.update_config_with_path(config, &config_path).await;
+                    backend.update_config_with_path(config, config_path).await;
                     return Ok(true);
                 } else {
                     tracing::info!(
