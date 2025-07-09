@@ -185,7 +185,7 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn set_config(&self, config_path: &std::path::Path, config: Config) {
+    pub async fn update_config_with_path(&self, config: Config, config_path: &std::path::Path) {
         *self.config.write().await = config;
         *self.config_path.write().await = Some(config_path.to_owned());
     }
