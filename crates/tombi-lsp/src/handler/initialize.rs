@@ -33,7 +33,10 @@ pub async fn handle_initialize(
     tracing::info!("Loading config...");
     if let Err(error) = backend
         .schema_store
-        .load_config(&backend.config().await, backend.config_path.as_deref())
+        .load_config(
+            &backend.config().await,
+            backend.config_path().await.as_deref(),
+        )
         .await
     {
         let error_message = error.to_string();
