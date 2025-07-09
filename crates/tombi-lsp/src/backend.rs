@@ -45,7 +45,7 @@ pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<Url, DocumentSource>>>,
-    pub config_path: Option<std::path::PathBuf>,
+    config_path: Arc<tokio::sync::RwLock<Option<std::path::PathBuf>>>,
     config: Arc<tokio::sync::RwLock<Config>>,
     pub schema_store: tombi_schema_store::SchemaStore,
 }
@@ -79,7 +79,7 @@ impl Backend {
         Self {
             client,
             document_sources: Default::default(),
-            config_path,
+            config_path: Arc::new(tokio::sync::RwLock::new(config_path)),
             config: Arc::new(tokio::sync::RwLock::new(config)),
             schema_store: tombi_schema_store::SchemaStore::new_with_options(options),
         }
@@ -185,10 +185,14 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn update_workspace_config(&self, workspace_config_url: &Url, config: Config) {
-        tracing::info!("Updated workspace config: {workspace_config_url}");
-
+    pub async fn update_config_with_path(&self, config: Config, config_path: std::path::PathBuf) {
         *self.config.write().await = config;
+        *self.config_path.write().await = Some(config_path);
+    }
+
+    #[inline]
+    pub async fn config_path(&self) -> Option<std::path::PathBuf> {
+        self.config_path.read().await.clone()
     }
 
     pub async fn source_toml_version(

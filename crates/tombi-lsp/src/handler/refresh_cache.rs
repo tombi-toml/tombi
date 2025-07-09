@@ -14,7 +14,10 @@ pub async fn handle_refresh_cache(
 
     match backend
         .schema_store
-        .refresh_cache(&backend.config().await, backend.config_path.as_deref())
+        .refresh_cache(
+            &backend.config().await,
+            backend.config_path().await.as_deref(),
+        )
         .await
     {
         Ok(true) => {
