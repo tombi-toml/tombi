@@ -249,8 +249,3 @@ fn get_user_or_system_tombi_config_path_and_level() -> Option<(std::path::PathBu
 
     None
 }
-
-#[inline]
-pub fn get_user_or_system_tombi_config_path() -> Option<std::path::PathBuf> {
-    get_user_or_system_tombi_config_path_and_level().map(|(path, _)| path)
-}

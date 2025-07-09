@@ -3926,6 +3926,7 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
+ "tombi-url",
  "tombi-validator",
  "tombi-x-keyword",
  "tower-lsp",

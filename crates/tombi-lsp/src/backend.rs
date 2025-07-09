@@ -185,10 +185,13 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn update_workspace_config(&self, workspace_config_url: &Url, config: Config) {
-        tracing::info!("Updated workspace config: {workspace_config_url}");
-
-        *self.config.write().await = config;
+    pub async fn set_config(&self, config_path: &std::path::Path, config: Config) {
+        if self.config_path.as_ref().map(|path| path == config_path) == Some(true) {
+            tracing::info!("Updated config from {config_path:?}");
+            *self.config.write().await = config;
+        } else {
+            tracing::debug!("Not a Tombi Language Server config file: {config_path:?}");
+        }
     }
 
     pub async fn source_toml_version(
