@@ -103,3 +103,21 @@ It removes **all file caches** and fetches the latest schema over the network fo
 
 1. `$XDG_CACHE_HOME/tombi`
 2. `~/.cache/tombi`
+
+## VSCode Extension
+As with [Taplo](https://taplo.tamasfe.dev/configuration/developing-schemas.html#visual-studio-code-extensions), extensions can associate their own schemas using `tomlValidation`.
+
+You can specify `fileMatch`, which associates the schema with documents whose file matches the given pattern (same as [jsonValidation](https://code.visualstudio.com/api/references/contribution-points#contributes.jsonValidation)).
+
+```json
+{
+  "contributes": {
+    "tomlValidation": [
+      {
+        "fileMatch": "^.*foo.toml$",
+        "url": "https://json.schemastore.org/foo.json"
+      }
+    ]
+  }
+}
+```
