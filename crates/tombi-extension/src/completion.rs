@@ -2,10 +2,14 @@ mod completion_edit;
 mod completion_hint;
 mod completion_kind;
 
+use std::ops::Deref;
+
 pub use completion_edit::CompletionEdit;
 pub use completion_hint::CompletionHint;
 pub use completion_kind::CompletionKind;
 use tombi_schema_store::{get_schema_name, SchemaUrl};
+
+use crate::get_tombi_github_url;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -427,7 +431,11 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
 
         let mut schema_text = None;
         if let Some(schema_url) = &completion_content.schema_url {
-            if let Some(schema_filename) = get_schema_name(schema_url) {
+            let schema_url = match get_tombi_github_url(schema_url) {
+                Some(schema_url) => schema_url,
+                None => schema_url.deref().clone(),
+            };
+            if let Some(schema_filename) = get_schema_name(&schema_url) {
                 schema_text = Some(format!("Schema: [{schema_filename}]({schema_url})\n"));
             }
         }
