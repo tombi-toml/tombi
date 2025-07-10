@@ -91,8 +91,9 @@ impl ValueSchema {
                                 object,
                             )))
                         }
-                        "partial-date-time" => {
-                            // NOTE: It's not a standard format.
+                        "date-time-local" | "partial-date-time" => {
+                            // NOTE: It's defined in OpenAPI.
+                            //       date-time-local: see [OpenAPI Format Registry](https://spec.openapis.org/registry/format/date-time-local.html).
                             //       partial-date-time: used [schemars](https://github.com/GREsau/schemars).
                             return Some(ValueSchema::LocalDateTime(LocalDateTimeSchema::new(
                                 object,
@@ -101,8 +102,9 @@ impl ValueSchema {
                         "date" => {
                             return Some(ValueSchema::LocalDate(LocalDateSchema::new(object)))
                         }
-                        "partial-time" => {
-                            // NOTE: It's not a standard format.
+                        "time-local" | "partial-time" => {
+                            // NOTE: It's defined in OpenAPI.
+                            //       time-local: see [OpenAPI Format Registry](https://spec.openapis.org/registry/format/time-local.html).
                             //       partial-time: used [schemars](https://github.com/GREsau/schemars).
                             return Some(ValueSchema::LocalTime(LocalTimeSchema::new(object)));
                         }
