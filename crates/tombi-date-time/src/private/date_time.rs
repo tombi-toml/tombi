@@ -136,7 +136,7 @@ impl std::str::FromStr for DateTime {
             Some(date)
         };
 
-        // Next parse the "partial-time" if available
+        // Next parse the "time-local" if available
         let next = chars.clone().next();
         let partial_time = if full_date.is_some()
             && (next == Some('T') || next == Some('t') || next == Some(' '))
