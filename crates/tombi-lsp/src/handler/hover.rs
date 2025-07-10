@@ -175,7 +175,16 @@ pub(crate) async fn get_hover_keys_with_range(
                                     .any(|comment| comment.syntax().range().contains(position))
                             }))
                 {
-                    hover_range = Some(table.syntax().range());
+                    let mut range = table.syntax().range();
+                    if let Some(max_end) = table
+                        .subtables()
+                        .into_iter()
+                        .map(|subtable| subtable.syntax().range().end)
+                        .max()
+                    {
+                        range.end = max_end;
+                    }
+                    hover_range = Some(range);
                 }
             }
 
@@ -211,7 +220,16 @@ pub(crate) async fn get_hover_keys_with_range(
                                     .any(|comment| comment.syntax().range().contains(position))
                             }))
                 {
-                    hover_range = Some(array_of_table.syntax().range());
+                    let mut range = array_of_table.syntax().range();
+                    if let Some(max_end) = array_of_table
+                        .subtables()
+                        .into_iter()
+                        .map(|subtable| subtable.syntax().range().end)
+                        .max()
+                    {
+                        range.end = max_end;
+                    }
+                    hover_range = Some(range);
                 }
             }
             header
