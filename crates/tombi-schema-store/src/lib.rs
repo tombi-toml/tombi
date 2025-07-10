@@ -18,11 +18,12 @@ pub use schema::*;
 pub use store::SchemaStore;
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::TryIntoDocumentTree;
+use url::Url;
 pub use value_type::ValueType;
 
 pub use crate::accessor::{AccessorContext, AccessorKeyKind, KeyContext};
 
-pub fn get_schema_name(schema_url: &SchemaUrl) -> Option<&str> {
+pub fn get_schema_name(schema_url: &Url) -> Option<&str> {
     if let Some(path) = schema_url.path().split('/').next_back() {
         if !path.is_empty() {
             return Some(path);
