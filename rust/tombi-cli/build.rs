@@ -10,7 +10,7 @@ fn main() {
             if output.status.success() {
                 if let Some(tag) = String::from_utf8(output.stdout).ok() {
                     if tag.starts_with("v") {
-                        return Some(tag);
+                        return Some(tag.trim().to_string());
                     }
                 }
             }
