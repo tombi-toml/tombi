@@ -29,7 +29,7 @@ pub async fn goto_definition(
             accessors,
             &pyproject_toml_path,
             toml_version,
-            true,
+            accessors.last() != Some(&tombi_schema_store::Accessor::Key("workspace".to_string())),
         )?
     } else if matches_accessors!(
         accessors[..accessors.len().min(3)],
