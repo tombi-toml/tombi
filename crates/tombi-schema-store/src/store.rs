@@ -65,14 +65,22 @@ impl SchemaStore {
         config_path: Option<&std::path::Path>,
     ) -> Result<bool, crate::Error> {
         if refresh_cache().await? {
-            self.document_schemas.write().await.clear();
-            self.schemas.write().await.clear();
-            tracing::info!("load config");
-            self.load_config(config, config_path).await?;
+            self.reload_config(config, config_path).await?;
             Ok(true)
         } else {
             Ok(false)
         }
+    }
+
+    pub async fn reload_config(
+        &self,
+        config: &tombi_config::Config,
+        config_path: Option<&std::path::Path>,
+    ) -> Result<(), crate::Error> {
+        self.document_schemas.write().await.clear();
+        self.schemas.write().await.clear();
+        self.load_config(config, config_path).await?;
+        Ok(())
     }
 
     pub async fn load_config(

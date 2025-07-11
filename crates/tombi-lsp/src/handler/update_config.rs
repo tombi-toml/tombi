@@ -14,11 +14,22 @@ pub async fn handle_update_config(
         if let Ok((config, config_path)) = serde_tombi::config::load_with_path() {
             if let Some(config_path) = config_path {
                 if config_path == params_path {
-                    backend.update_config_with_path(config, config_path).await;
-                    tracing::info!("updated config: {}", params.uri);
-                    return Ok(true);
+                    match backend
+                        .schema_store
+                        .reload_config(&config, Some(&config_path))
+                        .await
+                    {
+                        Ok(_) => {
+                            backend.update_config_with_path(config, config_path).await;
+                            tracing::info!("updated config: {}", params.uri);
+                            return Ok(true);
+                        }
+                        Err(err) => {
+                            tracing::error!("schema store reload failed: {}", err);
+                        }
+                    }
                 } else {
-                    tracing::info!("not used as a config file: {}", params.uri);
+                    tracing::info!("not used as a config file, update skipped: {}", params.uri);
                 }
             } else {
                 tracing::info!("use default config, update skipped: {}", params.uri);
