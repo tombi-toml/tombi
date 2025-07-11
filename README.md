@@ -10,7 +10,7 @@
 [![pypi](https://img.shields.io/pypi/v/tombi.svg?labelColor=374151)](https://pypi.python.org/pypi/tombi)
 [![npm](https://img.shields.io/npm/v/tombi.svg?labelColor=374151)](https://www.npmjs.com/package/tombi)
 [![toml-test](https://github.com/tombi-toml/tombi/actions/workflows/toml-test.yml/badge.svg)](https://github.com/tombi-toml/tombi/actions)
-[![GitHub license](https://badgen.net/github/license/Naereen/Strapdown.js?style=flat-square&labelColor=374151)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
+[![GitHub license](https://badgen.net/github/license/tombi-toml/tombi?style=flat-square&labelColor=374151)](https://github.com/tombi-toml/tombi/blob/main/LICENSE)
 
 </div>
 
