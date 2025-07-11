@@ -1,4 +1,4 @@
-# @tombi-toml/tombi
+# tombi
 
 🦅 Rust binary installer for tombi TOML toolkit
 
@@ -9,7 +9,7 @@ This package provides a way to install the Rust-built tombi binary through npm. 
 ## Installation
 
 ```
-npm install -g @tombi-toml/tombi
+npm install -g tombi
 ```
 
 After installation, the `tombi` command becomes available globally.
