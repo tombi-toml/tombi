@@ -37,7 +37,7 @@
         <img
             src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
             alt="Buy Me A Coffee"
-            style="max-width: 217px !important; aspect-ratio: 217 / 60 !important;"
+            style="width: 25% !important; aspect-ratio: 217 / 60 !important;"
         >
     </a>
 </div>
