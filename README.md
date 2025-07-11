@@ -33,6 +33,11 @@
     </h2>
     ❤️ If you like this project and would like to support us ❤️
     <br><br>
-    <a href="https://www.buymeacoffee.com/tombi" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+    <a href="https://www.buymeacoffee.com/tombi" target="_blank">
+        <img
+            src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+            alt="Buy Me A Coffee"
+            style="max-height: 60px !important; max-width: 217px !important; aspect-ratio: 217 / 60;"
+        >
+    </a>
 </div>
-
