@@ -16,7 +16,7 @@ fn main() {
             }
             None
         })
-        .unwrap_or_else(|| "v0.0.0-dev".to_string());
+        .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
 
     println!("cargo:rustc-env=__TOMBI_VERSION={}", git_version);
     println!("cargo:rerun-if-changed=.git/HEAD");
