@@ -5,10 +5,12 @@
 
 <div align="center">
 
-[![Marketplace Version](https://vsmarketplacebadges.dev/version/tombi-toml.tombi.png?label=VS%20Code%20Marketplace&logo=visual-studio-code "Current Release")](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
-[![pypi](https://img.shields.io/pypi/v/tombi.svg)](https://pypi.python.org/pypi/tombi)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/tombi-toml.tombi?label=VS%20Code%20Marketplace&logo=visual-studio-code&labelColor=374151)](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
+[![open vsx](https://img.shields.io/open-vsx/v/tombi-toml/tombi?label=Open%20VSX%20Registry&labelColor=374151)](https://open-vsx.org/extension/tombi-toml/tombi)
+[![pypi](https://img.shields.io/pypi/v/tombi.svg?labelColor=374151)](https://pypi.python.org/pypi/tombi)
+[![npm](https://img.shields.io/npm/v/tombi.svg?labelColor=374151)](https://www.npmjs.com/package/tombi)
 [![toml-test](https://github.com/tombi-toml/tombi/actions/workflows/toml-test.yml/badge.svg)](https://github.com/tombi-toml/tombi/actions)
-[![GitHub license](https://badgen.net/github/license/Naereen/Strapdown.js?style=flat-square)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
+[![GitHub license](https://badgen.net/github/license/tombi-toml/tombi?style=flat-square&labelColor=374151)](https://github.com/tombi-toml/tombi/blob/main/LICENSE)
 
 </div>
 
