@@ -1,12 +1,23 @@
 # Developer Documentation
 
 ## Debug CLI
+
+> [!NOTE]
+> The version of the built `tombi` command is `0.0.0-dev`. If you want to execute a specific version, please refer to the [Installation Document](https://tombi-toml.github.io/tombi/docs/installation).
+
+### Use Cargo
 ```sh
 cargo tombi
 ```
 
-> [!NOTE]
-> The version of the built `tombi` command is `0.0.0-dev`. If you want to execute a specific version, please refer to the [Installation Document](https://tombi-toml.github.io/tombi/docs/installation).
+### Use Python
+```sh
+source .venv/bin/activate
+
+maturin dev --uv
+
+tombi
+```
 
 ## Debug VSCode Extension
 1. Select `Run and Debug` from the sidebar
@@ -23,4 +34,11 @@ go install github.com/toml-lang/toml-test/cmd/toml-test@latest
 
 # Run the toml-test
 cargo xtask toml-test
+```
+
+## Check Performance
+
+```sh
+cargo tombi-flamegraph format
+cat .tmp/flamegraph.svg
 ```
