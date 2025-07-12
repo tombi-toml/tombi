@@ -8,9 +8,9 @@ use crate::app::arg;
 /// Format TOML files.
 #[derive(clap::Args, Debug)]
 pub struct Args {
-    /// List of files or directories to format.
+    /// List of files or directories to format
     ///
-    /// If the only argument is "-", the standard input will be used.
+    /// If the only argument is "-", the standard input will be used
     ///
     /// [default: if "tombi.toml" exists, format project directory, otherwise format current directory]
     files: Vec<String>,
