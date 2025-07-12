@@ -41,5 +41,8 @@ cargo xtask toml-test
 
 ```sh
 cargo tombi-flamegraph format
-cat .tmp/flamegraph.svg
+# Open the flamegraph in a browser or using a platform-specific command:
+# macOS: open .tmp/flamegraph.svg
+# Linux: xdg-open .tmp/flamegraph.svg
+# Alternatively, manually open the file in your web browser.
 ```
