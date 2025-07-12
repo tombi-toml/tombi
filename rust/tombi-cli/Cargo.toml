@@ -31,3 +31,6 @@ tombi-schema-store = { workspace = true, features = ["native"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
 url.workspace = true
+
+[build-dependencies]
+regex.workspace = true
