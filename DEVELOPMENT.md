@@ -12,11 +12,12 @@ cargo tombi
 
 ### Use Python
 ```sh
+# Setup Python Environment
+uv sync
 source .venv/bin/activate
 
-maturin dev --uv
-
-tombi
+# Build and Run
+maturin dev --uv && tombi
 ```
 
 ## Debug VSCode Extension
