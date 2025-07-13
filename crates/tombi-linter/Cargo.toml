@@ -7,11 +7,7 @@ license.workspace = true
 
 [dependencies]
 ahash.workspace = true
-futures.workspace = true
 itertools.workspace = true
-regex.workspace = true
-schemars.workspace = true
-serde.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
 tombi-config.workspace = true
@@ -19,14 +15,11 @@ tombi-diagnostic.workspace = true
 tombi-document-tree.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
-tombi-syntax.workspace = true
 tombi-text.workspace = true
 tombi-validator.workspace = true
-tracing.workspace = true
 url.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tombi-test-lib.workspace = true
-tracing-subscriber.workspace = true

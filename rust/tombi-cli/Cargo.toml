@@ -16,7 +16,6 @@ clap.workspace = true
 clap-verbosity-flag.workspace = true
 itertools.workspace = true
 nu-ansi-term.workspace = true
-rayon.workspace = true
 serde_tombi.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -30,7 +29,6 @@ tombi-lsp = { workspace = true, features = ["clap", "native"] }
 tombi-schema-store = { workspace = true, features = ["native"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
-url.workspace = true
 
 [build-dependencies]
 regex.workspace = true

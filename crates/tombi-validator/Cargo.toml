@@ -7,7 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-futures.workspace = true
 itertools.workspace = true
 regex.workspace = true
 thiserror.workspace = true

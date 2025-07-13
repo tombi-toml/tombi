@@ -6,7 +6,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-rstest.workspace = true
 thiserror.workspace = true
 tombi-rg-tree.workspace = true
-tombi-text.workspace = true

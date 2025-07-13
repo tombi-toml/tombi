@@ -11,27 +11,15 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 console_error_panic_hook.workspace = true
-getrandom = { workspace = true, features = ["wasm_js"] }
 itertools.workspace = true
 js-sys.workspace = true
-log.workspace = true
-nu-ansi-term.workspace = true
 serde.workspace = true
-serde_json.workspace = true
 serde_tombi = { workspace = true, default-features = false, features = ["wasm"] }
 serde-wasm-bindgen = "0.6.5"
-tokio = { workspace = true, features = ["fs", "macros"] }
 tombi-config.workspace = true
 tombi-diagnostic = { workspace = true, features = ["wasm"] }
 tombi-formatter.workspace = true
-tombi-future = { workspace = true, features = ["wasm"] }
-tombi-lexer.workspace = true
 tombi-linter.workspace = true
 tombi-schema-store = { workspace = true, features = ["wasm"] }
-tombi-text = { workspace = true, features = ["wasm"] }
-tombi-url = { workspace = true }
-tracing.workspace = true
-tracing-subscriber.workspace = true
-tracing-wasm.workspace = true
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
