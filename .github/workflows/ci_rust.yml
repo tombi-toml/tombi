@@ -27,3 +27,16 @@ jobs:
       run: cargo build --verbose --locked
     - name: Run tests
       run: cargo nextest run --verbose --locked
+
+  cargo-shear:
+    name: "cargo shear"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: cargo-bins/cargo-binstall@v1.14.1
+      - run: cargo binstall --no-confirm cargo-shear
+      - run: cargo shear
