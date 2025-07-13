@@ -7,9 +7,11 @@ use crate::app::arg;
 /// Lint TOML files.
 #[derive(clap::Args, Debug)]
 pub struct Args {
-    /// Paths or glob patterns to TOML documents.
+    /// List of files or directories to lint
     ///
-    /// If the only argument is "-", the standard input is used.
+    /// If the only argument is "-", the standard input will be used
+    ///
+    /// [default: if "tombi.toml" exists, lint project directory, otherwise lint current directory]
     files: Vec<String>,
 }
 

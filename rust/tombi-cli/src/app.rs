@@ -28,6 +28,8 @@ pub struct Args {
     offline: bool,
 
     /// Do not use cache
+    ///
+    /// Fetch the latest data from remote and save it to the cache
     #[clap(long, global = true, env("TOMBI_NO_CACHE"))]
     no_cache: bool,
 

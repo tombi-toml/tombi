@@ -15,4 +15,10 @@ tombi lint path/to/file1.toml path/to/file2.toml
 
 # Lint all TOML files in a directory
 tombi lint .
+
+# Lint files using glob pattern
+tombi lint **/*.toml
+
+# Lint from standard input
+cat Cargo.toml | tombi lint -
 ```

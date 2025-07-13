@@ -16,4 +16,10 @@ tombi format path/to/file1.toml path/to/file2.toml
 
 # Format all TOML files in a directory
 tombi format .
+
+# Format files using glob pattern
+tombi format **/*.toml
+
+# Format from standard input
+cat Cargo.toml | tombi format -
 ```
