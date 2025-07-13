@@ -13,6 +13,7 @@ dirs.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 serde.workspace = true
+textwrap.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tombi-ast.workspace = true
@@ -39,3 +40,6 @@ tombi-test-lib.workspace = true
 default = ["native"]
 native = ["tokio/rt-multi-thread"]
 wasm = []
+
+[package.metadata.cargo-shear]
+ignored = ["textwrap"] # Used in `toml_text_assert_eq` macro

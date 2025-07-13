@@ -19,7 +19,6 @@ url.workspace = true
 pretty_assertions.workspace = true
 
 [features]
-clap = ["dep:clap"]
-default = ["clap", "serde"]
+default = ["serde"]
 jsonschema = ["dep:schemars", "serde", "tombi-toml-version/jsonschema"]
 serde = ["dep:serde"]

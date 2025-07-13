@@ -26,5 +26,5 @@ tombi-test-lib.workspace = true
 
 [features]
 default = ["serde"]
-lsp = ["dep:tower-lsp", "tombi-text/lsp"]
-serde = ["chrono/serde", "dep:serde", "indexmap/serde"]
+lsp = ["tombi-text/lsp"]
+serde = ["dep:serde", "indexmap/serde"]

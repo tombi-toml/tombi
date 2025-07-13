@@ -14,6 +14,7 @@ indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
 reqwest.workspace = true
+semver.workspace = true
 serde.workspace = true
 serde_tombi.workspace = true
 tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
@@ -55,3 +56,6 @@ clap = ["dep:clap"]
 default = ["clap", "native"]
 native = ["tombi-schema-store/native"]
 wasm = ["tombi-schema-store/wasm"]
+
+[package.metadata.cargo-shear]
+ignored = ["semver"]
