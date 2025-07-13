@@ -33,7 +33,6 @@ bytes = "1.10.1"
 chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.37", features = ["derive", "env", "string"] }
 clap-verbosity-flag = "3.0.2"
-compact_str = "0.9.0"
 console_error_panic_hook = "0.1.7"
 convert_case = "0.6.0"
 countme = "3.0.1"
