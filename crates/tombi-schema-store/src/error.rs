@@ -19,11 +19,20 @@ pub enum Error {
     #[error("failed to convert to catalog url: {catalog_path}")]
     CatalogPathConvertUrlFailed { catalog_path: String },
 
+    #[error("failed to parse catalog: {catalog_url}, reason: {reason}")]
+    CatalogFileParseFailed {
+        catalog_url: CatalogUrl,
+        reason: String,
+    },
+
     #[error("failed to fetch catalog: {catalog_url}, reason: {reason}")]
     CatalogUrlFetchFailed {
         catalog_url: CatalogUrl,
         reason: String,
     },
+
+    #[error("catalog file not found: {catalog_path}")]
+    CatalogFileNotFound { catalog_path: PathBuf },
 
     #[error("invalid catalog file url: {catalog_url}")]
     InvalidCatalogFileUrl { catalog_url: CatalogUrl },
@@ -107,7 +116,9 @@ impl Error {
             Self::SchemaLockError => "schema-lock-error",
             Self::DefinitionNotFound { .. } => "definition-not-found",
             Self::CatalogPathConvertUrlFailed { .. } => "catalog-path-convert-url-failed",
+            Self::CatalogFileParseFailed { .. } => "catalog-file-parse-failed",
             Self::CatalogUrlFetchFailed { .. } => "catalog-url-fetch-failed",
+            Self::CatalogFileNotFound { .. } => "catalog-file-not-found",
             Self::InvalidCatalogFileUrl { .. } => "invalid-catalog-file-url",
             Self::CatalogFileReadFailed { .. } => "catalog-file-read-failed",
             Self::InvalidSchemaUrl { .. } => "invalid-schema-url",

@@ -163,58 +163,18 @@ impl SchemaStore {
         catalog_url: &CatalogUrl,
     ) -> Result<Option<JsonCatalog>, crate::Error> {
         Ok(Some(match catalog_url.scheme() {
-            "http" | "https" => {
-                let catalog_cache_path = get_cache_file_path(catalog_url).await;
-                if let Some(catalog_cache_content) =
-                    read_from_cache(catalog_cache_path.as_deref(), self.options.cache.as_ref())
-                        .await?
-                {
-                    let catalog = serde_json::from_str(&catalog_cache_content).map_err(|err| {
-                        crate::Error::InvalidJsonFormat {
-                            url: catalog_url.deref().clone(),
-                            reason: err.to_string(),
-                        }
-                    })?;
-                    tracing::debug!("load catalog from cache: {}", catalog_url);
-                    return Ok(Some(catalog));
-                }
-                if self.offline() {
-                    tracing::debug!("offline mode, skip fetch catalog from url: {}", catalog_url);
-                    return Ok(None);
-                }
-                tracing::debug!("loading schema catalog: {}", catalog_url);
-
-                match self.http_client.get_bytes(catalog_url.as_str()).await {
-                    Ok(bytes) => {
-                        if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await
-                        {
-                            tracing::error!("{err}");
-                        }
-
-                        match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
-                            Ok(catalog) => catalog,
-                            Err(err) => {
-                                return Err(crate::Error::InvalidJsonFormat {
-                                    url: catalog_url.deref().clone(),
-                                    reason: err.to_string(),
-                                })
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        return Err(crate::Error::CatalogUrlFetchFailed {
-                            catalog_url: catalog_url.clone(),
-                            reason: err.to_string(),
-                        });
-                    }
-                }
-            }
             "file" => {
                 let catalog_path = url_to_file_path(catalog_url).map_err(|_| {
                     crate::Error::InvalidCatalogFileUrl {
                         catalog_url: catalog_url.clone(),
                     }
                 })?;
+
+                if !catalog_path.exists() {
+                    return Err(crate::Error::CatalogFileNotFound {
+                        catalog_path: catalog_path.to_path_buf(),
+                    });
+                }
 
                 let content = std::fs::read_to_string(&catalog_path).map_err(|_| {
                     crate::Error::CatalogFileReadFailed {
@@ -228,6 +188,70 @@ impl SchemaStore {
                     url: catalog_url.deref().clone(),
                     reason: err.to_string(),
                 })?
+            }
+            "http" | "https" => {
+                let catalog_cache_path = get_cache_file_path(catalog_url).await;
+                if let Some(catalog_cache_path) = &catalog_cache_path {
+                    if let Ok(Some(catalog)) = load_catalog_from_cache(
+                        catalog_url,
+                        &catalog_cache_path,
+                        self.options.cache.as_ref(),
+                    )
+                    .await
+                    {
+                        return Ok(Some(catalog));
+                    }
+                }
+
+                if self.offline() {
+                    if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
+                        catalog_url,
+                        catalog_cache_path.as_deref(),
+                        self.options.cache.clone(),
+                    )
+                    .await
+                    {
+                        return Ok(Some(catalog));
+                    }
+                    tracing::debug!("offline mode, skip fetch catalog from url: {}", catalog_url);
+                    return Ok(None);
+                }
+
+                let bytes = match self.http_client.get_bytes(catalog_url.as_str()).await {
+                    Ok(bytes) => {
+                        tracing::debug!("fetch catalog from url: {}", catalog_url);
+                        bytes
+                    }
+                    Err(err) => {
+                        if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
+                            catalog_url,
+                            catalog_cache_path.as_deref(),
+                            self.options.cache.clone(),
+                        )
+                        .await
+                        {
+                            return Ok(Some(catalog));
+                        }
+                        return Err(crate::Error::CatalogUrlFetchFailed {
+                            catalog_url: catalog_url.clone(),
+                            reason: err.to_string(),
+                        });
+                    }
+                };
+
+                if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await {
+                    tracing::error!("{err}");
+                }
+
+                match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
+                    Ok(catalog) => catalog,
+                    Err(err) => {
+                        return Err(crate::Error::InvalidJsonFormat {
+                            url: catalog_url.deref().clone(),
+                            reason: err.to_string(),
+                        })
+                    }
+                }
             }
             "tombi" => {
                 if catalog_url.path() != "/json/catalog.json" {
@@ -305,6 +329,7 @@ impl SchemaStore {
                     url_to_file_path(schema_url).map_err(|_| crate::Error::InvalidSchemaUrl {
                         schema_url: schema_url.to_string(),
                     })?;
+
                 if !schema_path.exists() {
                     return Err(crate::Error::SchemaFileNotFound {
                         schema_path: schema_path.clone(),
@@ -336,8 +361,18 @@ impl SchemaStore {
                         return Ok(Some(schema_value));
                     }
                 }
+
                 if self.offline() {
-                    tracing::debug!("offline mode, skip fetch catalog from url: {}", schema_url);
+                    if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(
+                        schema_url,
+                        schema_cache_path.as_deref(),
+                        self.options.cache.clone(),
+                    )
+                    .await
+                    {
+                        return Ok(Some(schema_value));
+                    }
+                    tracing::debug!("offline mode, skip fetch schema from url: {}", schema_url);
                     return Ok(None);
                 }
 
@@ -347,21 +382,14 @@ impl SchemaStore {
                         bytes
                     }
                     Err(err) => {
-                        // NOTE: If fetching the schema fails, attempt to load it from the cache, ignoring the TTL.
-                        if let Some(schema_cache_path) = &schema_cache_path {
-                            let mut cache_options = self.options.cache.clone();
-                            if let Some(options) = &mut cache_options {
-                                options.cache_ttl = None
-                            }
-                            if let Ok(Some(schema_value)) = load_json_schema_from_cache(
-                                schema_url,
-                                schema_cache_path,
-                                cache_options.as_ref(),
-                            )
-                            .await
-                            {
-                                return Ok(Some(schema_value));
-                            }
+                        if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(
+                            schema_url,
+                            schema_cache_path.as_deref(),
+                            self.options.cache.clone(),
+                        )
+                        .await
+                        {
+                            return Ok(Some(schema_value));
                         }
                         return Err(crate::Error::SchemaFetchFailed {
                             schema_url: schema_url.clone(),
@@ -641,6 +669,76 @@ impl SchemaStore {
     }
 }
 
+async fn load_catalog_from_cache_ignoring_ttl(
+    catalog_url: &CatalogUrl,
+    catalog_cache_path: Option<&std::path::Path>,
+    cache_options: Option<tombi_cache::Options>,
+) -> Result<Option<JsonCatalog>, crate::Error> {
+    if let Some(catalog_cache_path) = catalog_cache_path {
+        let mut cache_options = cache_options.clone();
+        if let Some(options) = &mut cache_options {
+            options.cache_ttl = None;
+        }
+        if let Ok(Some(catalog)) = load_catalog_from_cache(
+            catalog_url,
+            catalog_cache_path.as_ref(),
+            cache_options.as_ref(),
+        )
+        .await
+        {
+            return Ok(Some(catalog));
+        }
+    }
+
+    Ok(None)
+}
+
+async fn load_catalog_from_cache(
+    catalog_url: &CatalogUrl,
+    catalog_cache_path: &std::path::Path,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<JsonCatalog>, crate::Error> {
+    if let Some(catalog_cache_content) =
+        read_from_cache(Some(&catalog_cache_path), cache_options).await?
+    {
+        tracing::debug!("load catalog from cache: {}", catalog_url);
+
+        return Ok(Some(serde_json::from_str(&catalog_cache_content).map_err(
+            |err| crate::Error::CatalogFileParseFailed {
+                catalog_url: catalog_url.to_owned(),
+                reason: err.to_string(),
+            },
+        )?));
+    }
+
+    Ok(None)
+}
+
+/// Attempt to load the json schema from the cache, ignoring the TTL.
+async fn load_json_schema_from_cache_ignoring_ttl(
+    schema_url: &SchemaUrl,
+    schema_cache_path: Option<&std::path::Path>,
+    cache_options: Option<tombi_cache::Options>,
+) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+    if let Some(schema_cache_path) = schema_cache_path {
+        let mut cache_options = cache_options.clone();
+        if let Some(options) = &mut cache_options {
+            options.cache_ttl = None;
+        }
+        if let Ok(Some(schema_value)) = load_json_schema_from_cache(
+            schema_url,
+            schema_cache_path.as_ref(),
+            cache_options.as_ref(),
+        )
+        .await
+        {
+            return Ok(Some(schema_value));
+        }
+    }
+
+    Ok(None)
+}
+
 async fn load_json_schema_from_cache(
     schema_url: &SchemaUrl,
     schema_cache_path: &std::path::Path,
@@ -649,7 +747,7 @@ async fn load_json_schema_from_cache(
     if let Some(schema_cache_content) =
         read_from_cache(Some(&schema_cache_path), cache_options).await?
     {
-        tracing::debug!("fetch schema from cache: {}", schema_url);
+        tracing::debug!("load schema from cache: {}", schema_url);
 
         return Ok(Some(
             tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
