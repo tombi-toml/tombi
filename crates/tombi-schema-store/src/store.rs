@@ -325,36 +325,50 @@ impl SchemaStore {
             }
             "http" | "https" => {
                 let schema_cache_path = get_cache_file_path(schema_url).await;
-                if let Some(schema_cache_content) =
-                    read_from_cache(schema_cache_path.as_deref(), self.options.cache.as_ref())
-                        .await?
-                {
-                    tracing::debug!("fetch schema from cache: {}", schema_url);
-
-                    return Ok(Some(
-                        tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
-                            crate::Error::SchemaFileParseFailed {
-                                schema_url: schema_url.to_owned(),
-                                reason: err.to_string(),
-                            }
-                        })?,
-                    ));
+                if let Some(schema_cache_path) = &schema_cache_path {
+                    if let Ok(Some(schema_value)) = load_json_schema_from_cache(
+                        schema_url,
+                        &schema_cache_path,
+                        self.options.cache.as_ref(),
+                    )
+                    .await
+                    {
+                        return Ok(Some(schema_value));
+                    }
                 }
                 if self.offline() {
                     tracing::debug!("offline mode, skip fetch catalog from url: {}", schema_url);
                     return Ok(None);
                 }
 
-                tracing::debug!("fetch schema from url: {}", schema_url);
-
-                let bytes = self
-                    .http_client
-                    .get_bytes(schema_url.as_ref())
-                    .await
-                    .map_err(|err| crate::Error::SchemaFetchFailed {
-                        schema_url: schema_url.clone(),
-                        reason: err.to_string(),
-                    })?;
+                let bytes = match self.http_client.get_bytes(schema_url.as_ref()).await {
+                    Ok(bytes) => {
+                        tracing::debug!("fetch schema from url: {}", schema_url);
+                        bytes
+                    }
+                    Err(err) => {
+                        // NOTE: If fetching the schema fails, attempt to load it from the cache, ignoring the TTL.
+                        if let Some(schema_cache_path) = &schema_cache_path {
+                            let mut cache_options = self.options.cache.clone();
+                            if let Some(options) = &mut cache_options {
+                                options.cache_ttl = None
+                            }
+                            if let Ok(Some(schema_value)) = load_json_schema_from_cache(
+                                schema_url,
+                                schema_cache_path,
+                                cache_options.as_ref(),
+                            )
+                            .await
+                            {
+                                return Ok(Some(schema_value));
+                            }
+                        }
+                        return Err(crate::Error::SchemaFetchFailed {
+                            schema_url: schema_url.clone(),
+                            reason: err.to_string(),
+                        });
+                    }
+                };
 
                 if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
                     tracing::error!("{err}");
@@ -625,4 +639,27 @@ impl SchemaStore {
             sub_root_keys: None,
         });
     }
+}
+
+async fn load_json_schema_from_cache(
+    schema_url: &SchemaUrl,
+    schema_cache_path: &std::path::Path,
+    cache_options: Option<&tombi_cache::Options>,
+) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+    if let Some(schema_cache_content) =
+        read_from_cache(Some(&schema_cache_path), cache_options).await?
+    {
+        tracing::debug!("fetch schema from cache: {}", schema_url);
+
+        return Ok(Some(
+            tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
+                crate::Error::SchemaFileParseFailed {
+                    schema_url: schema_url.to_owned(),
+                    reason: err.to_string(),
+                }
+            })?,
+        ));
+    }
+
+    Ok(None)
 }
