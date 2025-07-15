@@ -163,6 +163,26 @@ impl SchemaStore {
         catalog_url: &CatalogUrl,
     ) -> Result<Option<JsonCatalog>, crate::Error> {
         Ok(Some(match catalog_url.scheme() {
+            "file" => {
+                let catalog_path = url_to_file_path(catalog_url).map_err(|_| {
+                    crate::Error::InvalidCatalogFileUrl {
+                        catalog_url: catalog_url.clone(),
+                    }
+                })?;
+
+                let content = std::fs::read_to_string(&catalog_path).map_err(|_| {
+                    crate::Error::CatalogFileReadFailed {
+                        catalog_path: catalog_path.to_path_buf(),
+                    }
+                })?;
+
+                tracing::debug!("load catalog from file: {}", catalog_url);
+
+                serde_json::from_str(&content).map_err(|err| crate::Error::InvalidJsonFormat {
+                    url: catalog_url.deref().clone(),
+                    reason: err.to_string(),
+                })?
+            }
             "http" | "https" => {
                 let catalog_cache_path = get_cache_file_path(catalog_url).await;
                 if let Some(catalog_cache_content) =
@@ -208,26 +228,6 @@ impl SchemaStore {
                         });
                     }
                 }
-            }
-            "file" => {
-                let catalog_path = url_to_file_path(catalog_url).map_err(|_| {
-                    crate::Error::InvalidCatalogFileUrl {
-                        catalog_url: catalog_url.clone(),
-                    }
-                })?;
-
-                let content = std::fs::read_to_string(&catalog_path).map_err(|_| {
-                    crate::Error::CatalogFileReadFailed {
-                        catalog_path: catalog_path.to_path_buf(),
-                    }
-                })?;
-
-                tracing::debug!("load catalog from file: {}", catalog_url);
-
-                serde_json::from_str(&content).map_err(|err| crate::Error::InvalidJsonFormat {
-                    url: catalog_url.deref().clone(),
-                    reason: err.to_string(),
-                })?
             }
             "tombi" => {
                 if catalog_url.path() != "/json/catalog.json" {
