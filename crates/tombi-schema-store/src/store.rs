@@ -337,6 +337,15 @@ impl SchemaStore {
                     }
                 }
                 if self.offline() {
+                    if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(
+                        schema_url,
+                        schema_cache_path.as_deref(),
+                        self.options.cache.clone(),
+                    )
+                    .await
+                    {
+                        return Ok(Some(schema_value));
+                    }
                     tracing::debug!("offline mode, skip fetch catalog from url: {}", schema_url);
                     return Ok(None);
                 }
@@ -347,21 +356,14 @@ impl SchemaStore {
                         bytes
                     }
                     Err(err) => {
-                        // NOTE: If fetching the schema fails, attempt to load it from the cache, ignoring the TTL.
-                        if let Some(schema_cache_path) = &schema_cache_path {
-                            let mut cache_options = self.options.cache.clone();
-                            if let Some(options) = &mut cache_options {
-                                options.cache_ttl = None
-                            }
-                            if let Ok(Some(schema_value)) = load_json_schema_from_cache(
-                                schema_url,
-                                schema_cache_path,
-                                cache_options.as_ref(),
-                            )
-                            .await
-                            {
-                                return Ok(Some(schema_value));
-                            }
+                        if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(
+                            schema_url,
+                            schema_cache_path.as_deref(),
+                            self.options.cache.clone(),
+                        )
+                        .await
+                        {
+                            return Ok(Some(schema_value));
                         }
                         return Err(crate::Error::SchemaFetchFailed {
                             schema_url: schema_url.clone(),
@@ -641,6 +643,31 @@ impl SchemaStore {
     }
 }
 
+/// Attempt to load the json schema from the cache, ignoring the TTL.
+async fn load_json_schema_from_cache_ignoring_ttl(
+    schema_url: &SchemaUrl,
+    schema_cache_path: Option<&std::path::Path>,
+    cache_options: Option<tombi_cache::Options>,
+) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
+    if let Some(schema_cache_path) = schema_cache_path {
+        let mut cache_options = cache_options.clone();
+        if let Some(options) = &mut cache_options {
+            options.cache_ttl = None;
+        }
+        if let Ok(Some(schema_value)) = load_json_schema_from_cache(
+            schema_url,
+            schema_cache_path.as_ref(),
+            cache_options.as_ref(),
+        )
+        .await
+        {
+            return Ok(Some(schema_value));
+        }
+    }
+
+    Ok(None)
+}
+
 async fn load_json_schema_from_cache(
     schema_url: &SchemaUrl,
     schema_cache_path: &std::path::Path,
@@ -649,7 +676,7 @@ async fn load_json_schema_from_cache(
     if let Some(schema_cache_content) =
         read_from_cache(Some(&schema_cache_path), cache_options).await?
     {
-        tracing::debug!("fetch schema from cache: {}", schema_url);
+        tracing::debug!("load schema from cache: {}", schema_url);
 
         return Ok(Some(
             tombi_json::ValueNode::from_str(&schema_cache_content).map_err(|err| {
