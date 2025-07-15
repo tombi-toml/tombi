@@ -25,6 +25,9 @@ pub enum Error {
         reason: String,
     },
 
+    #[error("catalog file not found: {catalog_path}")]
+    CatalogFileNotFound { catalog_path: PathBuf },
+
     #[error("invalid catalog file url: {catalog_url}")]
     InvalidCatalogFileUrl { catalog_url: CatalogUrl },
 
@@ -108,6 +111,7 @@ impl Error {
             Self::DefinitionNotFound { .. } => "definition-not-found",
             Self::CatalogPathConvertUrlFailed { .. } => "catalog-path-convert-url-failed",
             Self::CatalogUrlFetchFailed { .. } => "catalog-url-fetch-failed",
+            Self::CatalogFileNotFound { .. } => "catalog-file-not-found",
             Self::InvalidCatalogFileUrl { .. } => "invalid-catalog-file-url",
             Self::CatalogFileReadFailed { .. } => "catalog-file-read-failed",
             Self::InvalidSchemaUrl { .. } => "invalid-schema-url",

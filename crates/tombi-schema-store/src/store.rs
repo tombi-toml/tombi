@@ -170,6 +170,12 @@ impl SchemaStore {
                     }
                 })?;
 
+                if !catalog_path.exists() {
+                    return Err(crate::Error::CatalogFileNotFound {
+                        catalog_path: catalog_path.to_path_buf(),
+                    });
+                }
+
                 let content = std::fs::read_to_string(&catalog_path).map_err(|_| {
                     crate::Error::CatalogFileReadFailed {
                         catalog_path: catalog_path.to_path_buf(),
@@ -305,6 +311,7 @@ impl SchemaStore {
                     url_to_file_path(schema_url).map_err(|_| crate::Error::InvalidSchemaUrl {
                         schema_url: schema_url.to_string(),
                     })?;
+
                 if !schema_path.exists() {
                     return Err(crate::Error::SchemaFileNotFound {
                         schema_path: schema_path.clone(),
