@@ -7,6 +7,9 @@ description = "A TOML serialization file format using Tombi."
 repository.workspace = true
 license.workspace = true
 
+[package.metadata.cargo-shear]
+ignored = ["textwrap"]  # Used in `toml_text_assert_eq` macro
+
 [dependencies]
 chrono.workspace = true
 dirs.workspace = true
@@ -40,6 +43,3 @@ tombi-test-lib.workspace = true
 default = ["native"]
 native = ["tokio/rt-multi-thread"]
 wasm = []
-
-[package.metadata.cargo-shear]
-ignored = ["textwrap"] # Used in `toml_text_assert_eq` macro
