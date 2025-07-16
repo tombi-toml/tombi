@@ -17,5 +17,9 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
         if let Some(document) = document_sources.get_mut(&text_document.uri) {
             document.text = text;
         }
+        drop(document_sources);
     }
+
+    // Publish diagnostics for the saved document
+    backend.publish_diagnostics(&text_document.uri).await;
 }

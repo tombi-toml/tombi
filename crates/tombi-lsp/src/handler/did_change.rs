@@ -24,4 +24,8 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
             document.text = content_change.text;
         }
     }
+    drop(document_sources);
+
+    // Publish diagnostics for the changed document
+    backend.publish_diagnostics(&text_document.uri).await;
 }

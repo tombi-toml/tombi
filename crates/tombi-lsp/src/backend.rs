@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use itertools::Either;
-use tombi_config::{Config, TomlVersion};
+use itertools::{Either, Itertools};
+use tombi_config::{Config, LintOptions, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::SourceSchema;
@@ -19,8 +19,8 @@ use tower_lsp::{
         DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
         DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
         GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
-        TextDocumentIdentifier, Url,
+        InitializeResult, InitializedParams, SemanticTokensParams,
+        SemanticTokensResult, TextDocumentIdentifier, Url,
     },
     LanguageServer,
 };
@@ -214,6 +214,63 @@ impl Backend {
         }
 
         (TomlVersion::default(), "default")
+    }
+
+    pub async fn publish_diagnostics(&self, uri: &Url) {
+        let config = self.config().await;
+        
+        if !config
+            .lsp()
+            .and_then(|server| server.diagnostics.as_ref())
+            .and_then(|diagnostics| diagnostics.enabled)
+            .unwrap_or_default()
+            .value()
+        {
+            tracing::debug!("`server.diagnostics.enabled` is false");
+            return;
+        }
+
+        let Some(root) = self.get_incomplete_ast(uri).await else {
+            self.client
+                .publish_diagnostics(uri.clone(), vec![], None)
+                .await;
+            return;
+        };
+
+        let source_schema = self
+            .schema_store
+            .resolve_source_schema_from_ast(&root, Some(Either::Left(uri)))
+            .await
+            .ok()
+            .flatten();
+
+        let (toml_version, _) = self.source_toml_version(source_schema.as_ref()).await;
+
+        let document_sources = self.document_sources.read().await;
+
+        let diagnostics = match document_sources.get(uri) {
+            Some(document) => tombi_linter::Linter::new(
+                toml_version,
+                self.config()
+                    .await
+                    .lint
+                    .as_ref()
+                    .unwrap_or(&LintOptions::default()),
+                Some(Either::Left(uri)),
+                &self.schema_store,
+            )
+            .lint(&document.text)
+            .await
+            .map_or_else(
+                |diagnostics| diagnostics.into_iter().unique().map(Into::into).collect(),
+                |_| vec![],
+            ),
+            None => vec![],
+        };
+
+        self.client
+            .publish_diagnostics(uri.clone(), diagnostics, None)
+            .await;
     }
 }
 
