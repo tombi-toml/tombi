@@ -17,5 +17,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     drop(document_sources);
 
     // Publish diagnostics for the opened document
-    backend.publish_diagnostics(&text_document.uri).await;
+    backend
+        .publish_diagnostics(text_document.uri, Some(text_document.version))
+        .await;
 }

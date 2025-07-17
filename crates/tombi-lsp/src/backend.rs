@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use itertools::{Either, Itertools};
-use tombi_config::{Config, LintOptions, TomlVersion};
+use itertools::Either;
+use tombi_config::{Config, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::SourceSchema;
@@ -19,8 +19,8 @@ use tower_lsp::{
         DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
         DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
         GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, SemanticTokensParams,
-        SemanticTokensResult, TextDocumentIdentifier, Url,
+        InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
+        TextDocumentIdentifier, Url,
     },
     LanguageServer,
 };
@@ -35,8 +35,8 @@ use crate::{
         handle_document_symbol, handle_folding_range, handle_formatting, handle_get_toml_version,
         handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
         handle_initialize, handle_initialized, handle_refresh_cache, handle_semantic_tokens_full,
-        handle_shutdown, handle_update_config, handle_update_schema, AssociateSchemaParams,
-        GetTomlVersionResponse, RefreshCacheParams,
+        handle_shutdown, handle_update_config, handle_update_schema, publish_diagnostics,
+        AssociateSchemaParams, GetTomlVersionResponse, RefreshCacheParams,
     },
 };
 
@@ -216,61 +216,46 @@ impl Backend {
         (TomlVersion::default(), "default")
     }
 
-    pub async fn publish_diagnostics(&self, uri: &Url) {
-        let config = self.config().await;
-        
-        if !config
-            .lsp()
-            .and_then(|server| server.diagnostics.as_ref())
-            .and_then(|diagnostics| diagnostics.enabled)
-            .unwrap_or_default()
-            .value()
-        {
-            tracing::debug!("`server.diagnostics.enabled` is false");
-            return;
-        }
+    #[inline]
+    pub async fn get_toml_version(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
+        handle_get_toml_version(self, params).await
+    }
 
-        let Some(root) = self.get_incomplete_ast(uri).await else {
-            self.client
-                .publish_diagnostics(uri.clone(), vec![], None)
-                .await;
-            return;
-        };
+    #[inline]
+    pub async fn update_schema(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+        handle_update_schema(self, params).await
+    }
 
-        let source_schema = self
-            .schema_store
-            .resolve_source_schema_from_ast(&root, Some(Either::Left(uri)))
-            .await
-            .ok()
-            .flatten();
+    #[inline]
+    pub async fn update_config(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+        handle_update_config(self, params).await
+    }
 
-        let (toml_version, _) = self.source_toml_version(source_schema.as_ref()).await;
+    #[inline]
+    pub async fn associate_schema(&self, params: AssociateSchemaParams) {
+        handle_associate_schema(self, params).await
+    }
 
-        let document_sources = self.document_sources.read().await;
+    #[inline]
+    pub async fn refresh_cache(
+        &self,
+        params: RefreshCacheParams,
+    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+        handle_refresh_cache(self, params).await
+    }
 
-        let diagnostics = match document_sources.get(uri) {
-            Some(document) => tombi_linter::Linter::new(
-                toml_version,
-                self.config()
-                    .await
-                    .lint
-                    .as_ref()
-                    .unwrap_or(&LintOptions::default()),
-                Some(Either::Left(uri)),
-                &self.schema_store,
-            )
-            .lint(&document.text)
-            .await
-            .map_or_else(
-                |diagnostics| diagnostics.into_iter().unique().map(Into::into).collect(),
-                |_| vec![],
-            ),
-            None => vec![],
-        };
-
-        self.client
-            .publish_diagnostics(uri.clone(), diagnostics, None)
-            .await;
+    #[inline]
+    pub async fn publish_diagnostics(&self, text_document_uri: Url, version: Option<i32>) {
+        publish_diagnostics(self, text_document_uri, version).await
     }
 }
 
@@ -399,44 +384,5 @@ impl LanguageServer for Backend {
         params: CodeActionParams,
     ) -> Result<Option<CodeActionResponse>, tower_lsp::jsonrpc::Error> {
         handle_code_action(self, params).await
-    }
-}
-
-impl Backend {
-    #[inline]
-    pub async fn get_toml_version(
-        &self,
-        params: TextDocumentIdentifier,
-    ) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
-        handle_get_toml_version(self, params).await
-    }
-
-    #[inline]
-    pub async fn update_schema(
-        &self,
-        params: TextDocumentIdentifier,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-        handle_update_schema(self, params).await
-    }
-
-    #[inline]
-    pub async fn update_config(
-        &self,
-        params: TextDocumentIdentifier,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-        handle_update_config(self, params).await
-    }
-
-    #[inline]
-    pub async fn associate_schema(&self, params: AssociateSchemaParams) {
-        handle_associate_schema(self, params).await
-    }
-
-    #[inline]
-    pub async fn refresh_cache(
-        &self,
-        params: RefreshCacheParams,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-        handle_refresh_cache(self, params).await
     }
 }

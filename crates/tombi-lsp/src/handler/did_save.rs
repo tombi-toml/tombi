@@ -21,5 +21,5 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
     }
 
     // Publish diagnostics for the saved document
-    backend.publish_diagnostics(&text_document.uri).await;
+    backend.publish_diagnostics(text_document.uri, None).await
 }

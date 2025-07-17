@@ -1,12 +1,11 @@
 use tower_lsp::lsp_types::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
-    CompletionOptionsCompletionItem, DeclarationCapability, DiagnosticOptions,
-    DiagnosticServerCapabilities, DocumentLinkOptions, FoldingRangeProviderCapability,
-    HoverProviderCapability, InitializeParams, InitializeResult, MessageType, OneOf,
-    PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability,
-    WorkDoneProgressOptions,
+    CompletionOptionsCompletionItem, DeclarationCapability, DocumentLinkOptions,
+    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
+    MessageType, OneOf, PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend,
+    SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
+    TypeDefinitionProviderCapability, WorkDoneProgressOptions,
 };
 
 use crate::{semantic_tokens::SUPPORTED_TOKEN_TYPES, Backend};
@@ -119,9 +118,7 @@ pub fn server_capabilities(client_capabilities: &ClientCapabilities) -> ServerCa
             }
             .into(),
         ),
-        diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-            ..Default::default()
-        })),
+        diagnostic_provider: None,
 
         ..Default::default()
     }
