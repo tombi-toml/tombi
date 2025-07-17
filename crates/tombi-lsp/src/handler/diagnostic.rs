@@ -1,38 +1,8 @@
 use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
-use tower_lsp::lsp_types::{
-    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, TextDocumentIdentifier, Url,
-};
+use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::backend::Backend;
-
-#[tracing::instrument(level = "debug", skip_all)]
-pub async fn handle_diagnostic(
-    backend: &Backend,
-    params: DocumentDiagnosticParams,
-) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_diagnostic");
-    tracing::trace!(?params);
-
-    let DocumentDiagnosticParams { text_document, .. } = params;
-
-    let Some(diagnostics) = diagnostics(backend, &text_document.uri).await else {
-        return Ok(DocumentDiagnosticReportResult::Report(
-            DocumentDiagnosticReport::Full(Default::default()),
-        ));
-    };
-
-    Ok(DocumentDiagnosticReportResult::Report(
-        DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
-            full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                items: diagnostics,
-                ..Default::default()
-            },
-            ..Default::default()
-        }),
-    ))
-}
 
 pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
     #[derive(Debug)]
