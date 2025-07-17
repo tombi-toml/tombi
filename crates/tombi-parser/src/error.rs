@@ -175,10 +175,6 @@ impl From<tombi_lexer::Error> for Error {
 
 #[cfg(feature = "diagnostic")]
 impl tombi_diagnostic::SetDiagnostics for Error {
-    /// Converts an error into diagnostic information.
-    ///
-    /// Since a single error may be converted into multiple diagnostics,
-    /// this function takes a vector of diagnostics and appends the conversion results to it.
     #[inline]
     fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         diagnostics.push(tombi_diagnostic::Diagnostic::new_error(

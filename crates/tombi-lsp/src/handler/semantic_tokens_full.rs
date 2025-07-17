@@ -15,7 +15,7 @@ pub async fn handle_semantic_tokens_full(
 
     let SemanticTokensParams { text_document, .. } = params;
 
-    let Some(Ok(root)) = backend.try_get_ast(&text_document.uri).await else {
+    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document.uri).await else {
         return Ok(None);
     };
 
