@@ -25,6 +25,31 @@ maturin dev --uv && tombi
 2. Select `Run Extension (Debug Build)` from the dropdown
 3. Press the green play button ▶️
 
+## Working on the IntelliJ plugin
+
+To get started, open the `editors/intellij` subdirectory in IntelliJ IDEA,
+then configure Gradle.
+
+### Building the plugin
+
+```shell
+$ cd editors/intellij
+$ ./gradlew buildPlugin
+```
+
+### Running tests
+
+```shell
+$ cd editors/intellij
+$ ./gradlew check
+```
+
+### Resources
+
+* [IntelliJ Platform SDK Documentation](https://plugins.jetbrains.com/docs/intellij/welcome.html).
+* [JetBrains Marketplace Documentation](https://plugins.jetbrains.com/docs/marketplace/discover-jetbrains-marketplace.html)
+* [InteliJ Platform Explorer](https://plugins.jetbrains.com/intellij-platform-explorer/extensions)
+
 ## toml-test
 
 To test if it passes [toml-test](https://github.com/toml-lang/toml-test), run the following.
