@@ -1,9 +1,7 @@
 use std::borrow::Cow;
 
-use futures::{
-    future::{join_all, BoxFuture},
-    FutureExt,
-};
+use futures::future::join_all;
+use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
     Referable, SchemaAccessor, SchemaStore, TableSchema, ValueSchema,
