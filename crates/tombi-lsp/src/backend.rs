@@ -16,11 +16,10 @@ use tower_lsp::{
         CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
         DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
-        DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-        GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
-        TextDocumentIdentifier, Url,
+        DocumentLink, DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse,
+        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+        HoverParams, InitializeParams, InitializeResult, InitializedParams, SemanticTokensParams,
+        SemanticTokensResult, TextDocumentIdentifier, Url,
     },
     LanguageServer,
 };
@@ -29,13 +28,13 @@ use crate::{
     document::DocumentSource,
     goto_definition::into_definition_locations,
     handler::{
-        handle_associate_schema, handle_code_action, handle_completion, handle_diagnostic,
-        handle_did_change, handle_did_change_configuration, handle_did_change_watched_files,
-        handle_did_close, handle_did_open, handle_did_save, handle_document_link,
-        handle_document_symbol, handle_folding_range, handle_formatting, handle_get_toml_version,
-        handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
-        handle_initialize, handle_initialized, handle_refresh_cache, handle_semantic_tokens_full,
-        handle_shutdown, handle_update_config, handle_update_schema, AssociateSchemaParams,
+        handle_associate_schema, handle_code_action, handle_completion, handle_did_change,
+        handle_did_change_configuration, handle_did_change_watched_files, handle_did_close,
+        handle_did_open, handle_did_save, handle_document_link, handle_document_symbol,
+        handle_folding_range, handle_formatting, handle_get_toml_version, handle_goto_declaration,
+        handle_goto_definition, handle_goto_type_definition, handle_hover, handle_initialize,
+        handle_initialized, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
+        handle_update_config, handle_update_schema, publish_diagnostics, AssociateSchemaParams,
         GetTomlVersionResponse, RefreshCacheParams,
     },
 };
@@ -215,6 +214,48 @@ impl Backend {
 
         (TomlVersion::default(), "default")
     }
+
+    #[inline]
+    pub async fn get_toml_version(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
+        handle_get_toml_version(self, params).await
+    }
+
+    #[inline]
+    pub async fn update_schema(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+        handle_update_schema(self, params).await
+    }
+
+    #[inline]
+    pub async fn update_config(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+        handle_update_config(self, params).await
+    }
+
+    #[inline]
+    pub async fn associate_schema(&self, params: AssociateSchemaParams) {
+        handle_associate_schema(self, params).await
+    }
+
+    #[inline]
+    pub async fn refresh_cache(
+        &self,
+        params: RefreshCacheParams,
+    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+        handle_refresh_cache(self, params).await
+    }
+
+    #[inline]
+    pub async fn publish_diagnostics(&self, text_document_uri: Url, version: Option<i32>) {
+        publish_diagnostics(self, text_document_uri, version).await
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -309,13 +350,6 @@ impl LanguageServer for Backend {
         handle_formatting(self, params).await
     }
 
-    async fn diagnostic(
-        &self,
-        params: DocumentDiagnosticParams,
-    ) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-        handle_diagnostic(self, params).await
-    }
-
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
@@ -342,44 +376,5 @@ impl LanguageServer for Backend {
         params: CodeActionParams,
     ) -> Result<Option<CodeActionResponse>, tower_lsp::jsonrpc::Error> {
         handle_code_action(self, params).await
-    }
-}
-
-impl Backend {
-    #[inline]
-    pub async fn get_toml_version(
-        &self,
-        params: TextDocumentIdentifier,
-    ) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
-        handle_get_toml_version(self, params).await
-    }
-
-    #[inline]
-    pub async fn update_schema(
-        &self,
-        params: TextDocumentIdentifier,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-        handle_update_schema(self, params).await
-    }
-
-    #[inline]
-    pub async fn update_config(
-        &self,
-        params: TextDocumentIdentifier,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-        handle_update_config(self, params).await
-    }
-
-    #[inline]
-    pub async fn associate_schema(&self, params: AssociateSchemaParams) {
-        handle_associate_schema(self, params).await
-    }
-
-    #[inline]
-    pub async fn refresh_cache(
-        &self,
-        params: RefreshCacheParams,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-        handle_refresh_cache(self, params).await
     }
 }
