@@ -140,23 +140,21 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn try_get_ast(
+    pub async fn get_ast_and_diagnostics(
         &self,
         text_document_uri: &Url,
-    ) -> Option<Result<tombi_ast::Root, Vec<Diagnostic>>> {
-        Some(
-            self.get_parsed(text_document_uri)
-                .await?
-                .try_into_root()
-                .map_err(|errors| {
-                    let mut diagnostics = vec![];
-                    for error in errors {
-                        error.set_diagnostics(&mut diagnostics);
-                    }
+    ) -> Option<(tombi_ast::Root, Vec<Diagnostic>)> {
+        let (root, errors) = self
+            .get_parsed(text_document_uri)
+            .await?
+            .into_root_and_errors();
 
-                    diagnostics
-                }),
-        )
+        let mut diagnostics = vec![];
+        for error in errors {
+            error.set_diagnostics(&mut diagnostics);
+        }
+
+        Some((root, diagnostics))
     }
 
     #[inline]

@@ -14,7 +14,7 @@ pub async fn handle_folding_range(
 
     let FoldingRangeParams { text_document, .. } = params;
 
-    let Some(Ok(root)) = backend.try_get_ast(&text_document.uri).await else {
+    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document.uri).await else {
         return Ok(None);
     };
 
