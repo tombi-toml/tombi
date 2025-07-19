@@ -24,38 +24,42 @@ impl FindCompletionContents for tombi_document_tree::String {
 
             let current_string_value = self.value();
 
-            SchemaCompletion
-                .find_completion_contents(
-                    position,
-                    keys,
-                    accessors,
-                    current_schema,
-                    schema_context,
-                    completion_hint,
-                )
-                .await
-                .into_iter()
-                .filter_map(|mut completion_content| {
-                    if completion_content.kind != CompletionKind::String {
-                        return None;
-                    }
+            if let Some(current_schema) = current_schema {
+                SchemaCompletion
+                    .find_completion_contents(
+                        position,
+                        keys,
+                        accessors,
+                        Some(current_schema),
+                        schema_context,
+                        completion_hint,
+                    )
+                    .await
+                    .into_iter()
+                    .filter_map(|mut completion_content| {
+                        if completion_content.kind != CompletionKind::String {
+                            return None;
+                        }
 
-                    if !completion_content
-                        .label
-                        .trim_matches('"')
-                        .starts_with(current_string_value)
-                    {
-                        return None;
-                    }
+                        if !completion_content
+                            .label
+                            .trim_matches('"')
+                            .starts_with(current_string_value)
+                        {
+                            return None;
+                        }
 
-                    completion_content.edit = CompletionEdit::new_string_literal_while_editing(
-                        &completion_content.label,
-                        self.range(),
-                    );
+                        completion_content.edit = CompletionEdit::new_string_literal_while_editing(
+                            &completion_content.label,
+                            self.range(),
+                        );
 
-                    Some(completion_content)
-                })
-                .collect()
+                        Some(completion_content)
+                    })
+                    .collect()
+            } else {
+                Vec::with_capacity(0)
+            }
         }
         .boxed()
     }
