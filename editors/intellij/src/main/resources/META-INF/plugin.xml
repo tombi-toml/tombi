@@ -1,0 +1,42 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+	<!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+	<id>tombi</id>
+	
+	<!-- Public plugin name should be written in Title Case.
+		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+	<!--suppress PluginXmlCapitalization -->
+	<name>Tombi</name>
+
+	<!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+	<vendor url="https://github.com/tombi-toml">Tombi</vendor>
+
+	<!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+		 Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+	<!-- <description><![CDATA[]]></description> -->
+
+	<!-- Product and plugin compatibility requirements.
+		 Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+	<depends>com.intellij.modules.lang</depends>
+	<depends>com.intellij.modules.platform</depends>
+
+	<resource-bundle>messages.tombi</resource-bundle>
+
+	<!-- Extension points defined by the plugin.
+		 Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+	<extensions defaultExtensionNs="com.intellij">
+		<applicationConfigurable
+			id="tombi.configurations.TombiConfigurable"
+			parentId="tools"
+			bundle="messages.tombi"
+			key="configurations.displayName"
+			instance="tombi.configurations.TombiConfigurable"
+		/>
+
+		<platform.lsp.serverSupportProvider
+			id="tombi.server.TombiServerSupportProvider"
+			implementation="tombi.server.TombiServerSupportProvider"
+		/>
+	</extensions>
+</idea-plugin>
