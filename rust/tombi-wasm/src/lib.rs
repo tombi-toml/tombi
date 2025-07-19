@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use js_sys::Promise;
 use serde_wasm_bindgen;
 use tombi_config::TomlVersion;
@@ -28,8 +30,8 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
     ) -> Result<String, FormatError> {
         let toml_version = match toml_version {
             Some(v) => match TomlVersion::from_str(&v) {
-                Some(v) => v,
-                None => {
+                Ok(v) => v,
+                Err(_) => {
                     return Err(FormatError::Error {
                         error: "Invalid TOML version".to_string(),
                     });
@@ -109,8 +111,8 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
     ) -> Result<(), LintError> {
         let toml_version = match toml_version {
             Some(v) => match TomlVersion::from_str(&v) {
-                Some(v) => v,
-                None => {
+                Ok(v) => v,
+                Err(_) => {
                     return Err(LintError::Error {
                         error: "Invalid TOML version".to_string(),
                     });

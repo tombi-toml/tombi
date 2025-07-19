@@ -20,4 +20,4 @@ tracing-subscriber.workspace = true
 [features]
 default = ["lsp"]
 lsp = ["dep:tower-lsp"]
-wasm = ["dep:wasm-bindgen"]
+wasm = ["dep:wasm-bindgen", "tombi-text/wasm"]
