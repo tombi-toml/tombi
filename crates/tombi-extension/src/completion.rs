@@ -355,7 +355,7 @@ impl CompletionContent {
             kind: CompletionKind::Key,
             emoji_icon: None,
             priority: CompletionContentPriority::AdditionalKey,
-            detail: Some("Additinal Key".to_string()),
+            detail: Some("Additional Key".to_string()),
             documentation: None,
             filter_text: None,
             edit: CompletionEdit::new_additional_key(
