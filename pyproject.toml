@@ -18,6 +18,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 bindings = "bin"
+include = [{ path = "schemas/**/*", format = "sdist" }]
 manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"
 python-source = "python/tombi/src"
