@@ -191,7 +191,7 @@
           "pattern": "^.*tombi(\\.exe)?$"
         },
         "tombi.args": {
-          "description": "Arguments to `tombi serve` command.",
+          "description": "Arguments to `tombi lsp` command.",
           "type": "array",
           "scope": "resource",
           "default": null,
