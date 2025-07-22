@@ -70,6 +70,10 @@
         ],
         "filenames": [
           "Cargo.lock",
+          "Gopkg.lock",
+          "Pipfile",
+          "pdm.lock",
+          "poetry.lock",
           "uv.lock"
         ],
         "configuration": "./language-configuration.json"

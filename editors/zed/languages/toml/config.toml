@@ -1,6 +1,14 @@
 name = "TOML"
 grammar = "toml"
-path_suffixes = ["Cargo.lock", "toml", "Pipfile", "uv.lock"]
+path_suffixes = [
+  "Cargo.lock",
+  "Gopkg.lock",
+  "toml",
+  "Pipfile",
+  "pdm.lock",
+  "poetry.lock",
+  "uv.lock",
+]
 tab_size = 2
 hard_tabs = false
 line_comments = ["# "]
