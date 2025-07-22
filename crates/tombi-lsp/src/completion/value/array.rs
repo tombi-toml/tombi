@@ -1,6 +1,7 @@
+use ahash::AHashSet;
 use itertools::Itertools;
 use std::borrow::Cow;
-use tombi_document_tree::ArrayKind;
+use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{
@@ -105,7 +106,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                 )
                                 .await
                             {
-                                return SchemaCompletion
+                                let mut completions = SchemaCompletion
                                     .find_completion_contents(
                                         position,
                                         keys,
@@ -123,6 +124,25 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         },
                                     )
                                     .await;
+
+                                if array_schema.unique_items == Some(true) {
+                                    let values = self
+                                        .values()
+                                        .iter()
+                                        .filter_map(Option::<LiteralValueRef>::from)
+                                        .map(|value| value.to_string())
+                                        .collect::<AHashSet<_>>();
+
+                                    completions = completions
+                                        .into_iter()
+                                        .filter(|completion| {
+                                            !(completion.kind.is_literal()
+                                                && values.contains(&completion.label))
+                                        })
+                                        .collect_vec();
+                                }
+
+                                return completions;
                             }
                         }
 

@@ -3799,6 +3799,7 @@ dependencies = [
 name = "tombi-validator"
 version = "0.0.0-dev"
 dependencies = [
+ "ahash",
  "itertools",
  "regex",
  "thiserror 2.0.12",

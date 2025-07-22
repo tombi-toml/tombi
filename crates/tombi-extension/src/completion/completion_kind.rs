@@ -16,6 +16,22 @@ pub enum CompletionKind {
     CommentDirective,
 }
 
+impl CompletionKind {
+    pub fn is_literal(&self) -> bool {
+        matches!(
+            self,
+            Self::Boolean
+                | Self::Integer
+                | Self::Float
+                | Self::String
+                | Self::OffsetDateTime
+                | Self::LocalDateTime
+                | Self::LocalDate
+                | Self::LocalTime
+        )
+    }
+}
+
 impl From<CompletionKind> for tower_lsp::lsp_types::CompletionItemKind {
     fn from(kind: CompletionKind) -> Self {
         // NOTE: All TOML completions are CompletionItemKind::VALUE,

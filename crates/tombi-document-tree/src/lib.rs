@@ -1,5 +1,6 @@
 mod error;
 mod key;
+mod literal_value;
 mod root;
 pub mod support;
 mod value;
@@ -7,6 +8,7 @@ mod value_type;
 
 pub use error::Error;
 pub use key::{Key, KeyKind};
+pub use literal_value::LiteralValueRef;
 pub use root::DocumentTree;
 use tombi_toml_version::TomlVersion;
 pub use value::{

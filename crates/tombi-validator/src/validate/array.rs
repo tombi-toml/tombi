@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 
+use ahash::AHashSet;
+use itertools::Itertools;
 use tombi_diagnostic::SetDiagnostics;
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema, ValueType};
 
@@ -143,8 +145,8 @@ impl Validate for tombi_document_tree::Array {
                 if let Some(max_items) = array_schema.max_items {
                     if self.values().len() > max_items {
                         crate::Error {
-                            kind: crate::ErrorKind::MaxItems {
-                                max_items,
+                            kind: crate::ErrorKind::MaxValues {
+                                max_values: max_items,
                                 actual: self.values().len(),
                             },
                             range: self.range(),
@@ -156,13 +158,37 @@ impl Validate for tombi_document_tree::Array {
                 if let Some(min_items) = array_schema.min_items {
                     if self.values().len() < min_items {
                         crate::Error {
-                            kind: crate::ErrorKind::MinItems {
-                                min_items,
+                            kind: crate::ErrorKind::MinValues {
+                                min_values: min_items,
                                 actual: self.values().len(),
                             },
                             range: self.range(),
                         }
                         .set_diagnostics(&mut diagnostics);
+                    }
+                }
+                if array_schema.unique_items == Some(true) {
+                    let literal_values = self
+                        .values()
+                        .iter()
+                        .filter_map(Option::<LiteralValueRef>::from)
+                        .counts();
+
+                    let duplicated_values = literal_values
+                        .iter()
+                        .filter_map(|(value, count)| if *count > 1 { Some(value) } else { None })
+                        .collect::<AHashSet<_>>();
+
+                    for value in self.values() {
+                        if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
+                            if duplicated_values.contains(&literal_value) {
+                                crate::Error {
+                                    kind: crate::ErrorKind::UniqueValues,
+                                    range: value.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
                     }
                 }
             } else {

@@ -598,6 +598,65 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_project_dynamic_array(
+                r#"
+                [project]
+                dynamic = [█]
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                "\"authors\"",
+                "\"classifiers\"",
+                "\"dependencies\"",
+                "\"description\"",
+                "\"entry-points\"",
+                "\"gui-scripts\"",
+                "\"keywords\"",
+                "\"license\"",
+                "\"license-files\"",
+                "\"maintainers\"",
+                "\"optional-dependencies\"",
+                "\"readme\"",
+                "\"requires-python\"",
+                "\"scripts\"",
+                "\"urls\"",
+                "\"version\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_dynamic_array_with_values(
+                // Check `unique_items = true` case.
+                r#"
+                [project]
+                dynamic = [
+                  "authors",
+                  "classifiers",
+                  █
+                ]
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                "\"dependencies\"",
+                "\"description\"",
+                "\"entry-points\"",
+                "\"gui-scripts\"",
+                "\"keywords\"",
+                "\"license\"",
+                "\"license-files\"",
+                "\"maintainers\"",
+                "\"optional-dependencies\"",
+                "\"readme\"",
+                "\"requires-python\"",
+                "\"scripts\"",
+                "\"urls\"",
+                "\"version\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_build_system(
                 r#"
                 [build-system]
