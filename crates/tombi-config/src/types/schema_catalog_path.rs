@@ -1,7 +1,7 @@
 use super::OneOrMany;
 use tombi_url::url_from_file_path;
 
-pub const TOMBI_SCHENASTORE_CATALOG_URL: &str =
+pub const TOMBI_SCHEMASTORE_CATALOG_URL: &str =
     "tombi://json.schemastore.org/api/json/catalog.json";
 pub const JSON_SCHEMASTORE_CATALOG_URL: &str = "https://json.schemastore.org/api/json/catalog.json";
 

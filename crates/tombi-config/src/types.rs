@@ -17,5 +17,5 @@ pub use line_width::LineWidth;
 pub use one_or_many::OneOrMany;
 pub use quote_style::QuoteStyle;
 pub use schema_catalog_path::{
-    SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHENASTORE_CATALOG_URL,
+    SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL,
 };
