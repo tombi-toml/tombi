@@ -33,16 +33,16 @@ impl CompletionContentPriority {
             CompletionContentPriority::Custom(value) => value.to_string(),
             // NOTE: 30 is the prefix for completion items from extensions
             //       that should be prioritized over basic features.
-            CompletionContentPriority::Default => "30".to_string(),
-            CompletionContentPriority::Const => "31".to_string(),
-            CompletionContentPriority::Enum => "32".to_string(),
-            CompletionContentPriority::Key => "33".to_string(),
-            CompletionContentPriority::OptionalKey => "34".to_string(),
-            CompletionContentPriority::AdditionalKey => "35".to_string(),
-            CompletionContentPriority::TypeHint => "36".to_string(),
-            CompletionContentPriority::TypeHintKey => "37".to_string(),
-            CompletionContentPriority::TypeHintTrue => "38".to_string(),
-            CompletionContentPriority::TypeHintFalse => "39".to_string(),
+            CompletionContentPriority::Default => "50".to_string(),
+            CompletionContentPriority::Const => "51".to_string(),
+            CompletionContentPriority::Enum => "52".to_string(),
+            CompletionContentPriority::Key => "53".to_string(),
+            CompletionContentPriority::OptionalKey => "54".to_string(),
+            CompletionContentPriority::AdditionalKey => "55".to_string(),
+            CompletionContentPriority::TypeHint => "56".to_string(),
+            CompletionContentPriority::TypeHintKey => "57".to_string(),
+            CompletionContentPriority::TypeHintTrue => "58".to_string(),
+            CompletionContentPriority::TypeHintFalse => "59".to_string(),
         }
     }
 }
