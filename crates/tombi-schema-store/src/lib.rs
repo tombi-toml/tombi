@@ -113,20 +113,18 @@ pub fn dig_accessors<'a>(
 }
 
 pub fn get_tombi_schemastore_content(schema_url: &url::Url) -> Option<&'static str> {
+    if schema_url.scheme() != "tombi" {
+        return None;
+    }
+
     match schema_url.host_str() {
         Some("json.schemastore.org") => match schema_url.path() {
-            "/api/json/catalog.json" | "/json/catalog.json" => Some(include_str!(
+            "/api/json/catalog.json" => Some(include_str!(
                 "../../../json.schemastore.org/api/json/catalog.json"
             )),
-            "/json/cargo.json" | "/json/schemas/cargo.schema.json" => {
-                Some(include_str!("../../../json.schemastore.org/cargo.json"))
-            }
-            "/json/pyproject.json" | "/json/schemas/pyproject.schema.json" => {
-                Some(include_str!("../../../json.schemastore.org/pyproject.json"))
-            }
-            "/json/tombi.json" | "/json/schemas/tombi.schema.json" => {
-                Some(include_str!("../../../json.schemastore.org/tombi.json"))
-            }
+            "/cargo.json" => Some(include_str!("../../../json.schemastore.org/cargo.json")),
+            "/pyproject.json" => Some(include_str!("../../../json.schemastore.org/pyproject.json")),
+            "/tombi.json" => Some(include_str!("../../../json.schemastore.org/tombi.json")),
             _ => None,
         },
         None => match schema_url.path() {
