@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug, Hash)]
 pub enum TimeZoneOffset {
     /// > A suffix which, when applied to a time, denotes a UTC offset of 00:00;
     /// > often spoken "Zulu" from the ICAO phonetic alphabet representation of
