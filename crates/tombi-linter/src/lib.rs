@@ -229,13 +229,13 @@ mod tests {
         use super::*;
         use tombi_test_lib::tombi_schema_path;
 
-        // test_lint! {
-        //     #[test]
-        //     fn test_tombi_schema(
-        //         include_str!("../../../tombi.toml"),
-        //         tombi_schema_path(),
-        //     ) -> Ok(_);
-        // }
+        test_lint! {
+            #[test]
+            fn test_tombi_schema(
+                include_str!("../../../tombi.toml"),
+                tombi_schema_path(),
+            ) -> Ok(_);
+        }
 
         test_lint! {
             #[test]

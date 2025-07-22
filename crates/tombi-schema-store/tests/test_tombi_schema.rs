@@ -25,7 +25,7 @@ fn tombi_schema() -> Result<(), Box<dyn std::error::Error>> {
         io::{BufReader, Read},
     };
 
-    let document_path = project_root_path()?.join("schemas/tombi.schema.json");
+    let document_path = project_root_path()?.join("json.schemastore.org/tombi.json");
     let file = File::open(&document_path)?;
     let mut reader = BufReader::new(file);
 
