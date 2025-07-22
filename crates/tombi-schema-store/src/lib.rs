@@ -112,18 +112,38 @@ pub fn dig_accessors<'a>(
     Some((current_accessor, value))
 }
 
-pub fn get_tombi_scheme_content(schema_url: &url::Url) -> Option<&'static str> {
-    match schema_url.path() {
-        "/json/catalog.json" => Some(include_str!("../../../schemas/catalog.json")),
-        "/json/schemas/cargo.schema.json" => {
-            Some(include_str!("../../../schemas/cargo.schema.json"))
-        }
-        "/json/schemas/pyproject.schema.json" => {
-            Some(include_str!("../../../schemas/pyproject.schema.json"))
-        }
-        "/json/schemas/tombi.schema.json" => {
-            Some(include_str!("../../../schemas/tombi.schema.json"))
-        }
+pub fn get_tombi_schemastore_content(schema_url: &url::Url) -> Option<&'static str> {
+    match schema_url.host_str() {
+        Some("json.schemastore.org") => match schema_url.path() {
+            "/api/json/catalog.json" | "/json/catalog.json" => Some(include_str!(
+                "../../../json.schemastore.org/api/json/catalog.json"
+            )),
+            "/json/cargo.json" | "/json/schemas/cargo.schema.json" => {
+                Some(include_str!("../../../json.schemastore.org/cargo.json"))
+            }
+            "/json/pyproject.json" | "/json/schemas/pyproject.schema.json" => {
+                Some(include_str!("../../../json.schemastore.org/pyproject.json"))
+            }
+            "/json/tombi.json" | "/json/schemas/tombi.schema.json" => {
+                Some(include_str!("../../../json.schemastore.org/tombi.json"))
+            }
+            _ => None,
+        },
+        None => match schema_url.path() {
+            "/json/catalog.json" => Some(include_str!(
+                "../../../json.schemastore.org/api/json/catalog.json"
+            )),
+            "/json/schemas/cargo.schema.json" => {
+                Some(include_str!("../../../json.schemastore.org/cargo.json"))
+            }
+            "/json/schemas/pyproject.schema.json" => {
+                Some(include_str!("../../../json.schemastore.org/pyproject.json"))
+            }
+            "/json/schemas/tombi.schema.json" => {
+                Some(include_str!("../../../json.schemastore.org/tombi.json"))
+            }
+            _ => None,
+        },
         _ => None,
     }
 }

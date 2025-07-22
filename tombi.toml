@@ -28,5 +28,5 @@ path = "schemas/type-test.schema.json"
 include = ["type-test.toml"]
 
 [[schemas]]
-path = "tombi:///json/schemas/tombi.schema.json"
+path = "tombi://json.schemastore.org/tombi.json"
 include = ["tombi.toml", "tombi/config.toml"]

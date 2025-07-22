@@ -1,4 +1,4 @@
-use tombi_config::{JSON_SCHEMA_STORE_CATALOG_URL, TOMBI_CATALOG_URL};
+use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHENASTORE_CATALOG_URL};
 use tombi_test_lib::{
     project_root_path, today_local_date, today_local_date_time, today_local_time,
     today_offset_date_time,
@@ -393,7 +393,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                format!("[\"{TOMBI_CATALOG_URL}\", \"{JSON_SCHEMA_STORE_CATALOG_URL}\"]"),
+                format!("[\"{TOMBI_SCHENASTORE_CATALOG_URL}\", \"{JSON_SCHEMASTORE_CATALOG_URL}\"]"),
                 "[]",
             ]);
         }

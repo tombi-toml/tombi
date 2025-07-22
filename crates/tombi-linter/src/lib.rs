@@ -354,7 +354,7 @@ mod tests {
             #[test]
             fn test_schema_file(
                 r#"
-                #:schema ./schemas/tombi.schema.json
+                #:schema ./json.schemastore.org/tombi.json
                 "#,
             ) -> Ok(_);
         }

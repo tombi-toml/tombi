@@ -13,19 +13,21 @@ pub fn project_root_path() -> PathBuf {
 }
 
 pub fn tombi_schema_path() -> PathBuf {
-    project_root_path().join("schemas/tombi.schema.json")
+    project_root_path()
+        .join("json.schemastore.org")
+        .join("tombi.json")
 }
 
 pub fn cargo_schema_path() -> PathBuf {
     project_root_path()
-        .join("schemas")
-        .join("cargo.schema.json")
+        .join("json.schemastore.org")
+        .join("cargo.json")
 }
 
 pub fn pyproject_schema_path() -> PathBuf {
     project_root_path()
-        .join("schemas")
-        .join("pyproject.schema.json")
+        .join("json.schemastore.org")
+        .join("pyproject.json")
 }
 
 pub fn type_test_schema_path() -> PathBuf {

@@ -1,7 +1,7 @@
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    BoolDefaultTrue, OneOrMany, SchemaCatalogPath, JSON_SCHEMA_STORE_CATALOG_URL, TOMBI_CATALOG_URL,
+    BoolDefaultTrue, OneOrMany, SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHENASTORE_CATALOG_URL,
 };
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -102,8 +102,8 @@ impl Default for NewSchemaCatalog {
 
 fn catalog_paths_default() -> Option<Vec<SchemaCatalogPath>> {
     Some(vec![
-        TOMBI_CATALOG_URL.into(),
-        JSON_SCHEMA_STORE_CATALOG_URL.into(),
+        TOMBI_SCHENASTORE_CATALOG_URL.into(),
+        JSON_SCHEMASTORE_CATALOG_URL.into(),
     ])
 }
 
@@ -248,7 +248,7 @@ pub struct OldSubSchema {
 
 #[cfg(test)]
 mod tests {
-    use crate::JSON_SCHEMA_STORE_CATALOG_URL;
+    use crate::JSON_SCHEMASTORE_CATALOG_URL;
 
     use super::*;
 
@@ -256,8 +256,8 @@ mod tests {
     fn schema_catalog_paths_default() {
         let schema = SchemaOptions::default();
         let expected = Some(vec![
-            TOMBI_CATALOG_URL.into(),
-            JSON_SCHEMA_STORE_CATALOG_URL.into(),
+            TOMBI_SCHENASTORE_CATALOG_URL.into(),
+            JSON_SCHEMASTORE_CATALOG_URL.into(),
         ]);
         let default_paths = schema.catalog_paths();
 

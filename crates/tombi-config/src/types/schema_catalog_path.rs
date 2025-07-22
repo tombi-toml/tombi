@@ -1,9 +1,9 @@
 use super::OneOrMany;
 use tombi_url::url_from_file_path;
 
-pub const TOMBI_CATALOG_URL: &str = "tombi:///json/catalog.json";
-pub const JSON_SCHEMA_STORE_CATALOG_URL: &str =
-    "https://json.schemastore.org/api/json/catalog.json";
+pub const TOMBI_SCHENASTORE_CATALOG_URL: &str =
+    "tombi://json.schemastore.org/api/json/catalog.json";
+pub const JSON_SCHEMASTORE_CATALOG_URL: &str = "https://json.schemastore.org/api/json/catalog.json";
 
 /// Generic value that can be either single or multiple
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +40,7 @@ impl std::fmt::Display for SchemaCatalogPath {
 
 impl Default for OneOrMany<SchemaCatalogPath> {
     fn default() -> Self {
-        Self::One(JSON_SCHEMA_STORE_CATALOG_URL.into())
+        Self::One(JSON_SCHEMASTORE_CATALOG_URL.into())
     }
 }
 
