@@ -6,19 +6,19 @@
       "name": "Cargo Manifest",
       "description": "Manifest for Cargo, the Rust package manager and build tool",
       "fileMatch": ["Cargo.toml"],
-      "url": "tombi:///schemastore/json/cargo.json"
+      "url": "tombi://json.schemastore.org/cargo.json"
     },
     {
       "name": "PyProject",
       "description": "Python project metadata and configuration",
       "fileMatch": ["pyproject.toml"],
-      "url": "tombi:///scemastore/json/pyproject.json"
+      "url": "tombi://json.schemastore.org/pyproject.json"
     },
     {
       "name": "Tombi",
       "description": "Tombi (鳶) is a toolkit for TOML; providing a formatter/linter and language server",
       "fileMatch": ["tombi.toml", "tombi/config.toml"],
-      "url": "tombi:///schemastore/json/tombi.json"
+      "url": "tombi://json.schemastore.org/tombi.json"
     }
   ]
 }
