@@ -262,10 +262,10 @@ mod goto_definition_tests {
             async fn schema_catalog_path(
                 r#"
                 [[schemas]]
-                path = "█schemas/tombi.schema.json"
+                path = "█json.schemastore.org/tombi.json"
                 "#,
                 project_root_path().join("tombi.toml"),
-            ) -> Ok([project_root_path().join("schemas/tombi.schema.json")]);
+            ) -> Ok([project_root_path().join("json.schemastore.org/tombi.json")]);
         );
     }
 

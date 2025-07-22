@@ -20,7 +20,10 @@
     },
     "include": {
       "title": "Deprecated. Use `files.include` instead.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "type": "string"
       },
@@ -29,7 +32,10 @@
     },
     "exclude": {
       "title": "Deprecated. Use `files.exclude` instead.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "type": "string"
       },
@@ -104,7 +110,10 @@
     },
     "schemas": {
       "title": "Schema catalog items.",
-      "type": ["array", "null"],
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "$ref": "#/definitions/Schema"
       }
@@ -117,7 +126,10 @@
     "TomlVersion": {
       "title": "TOML version.",
       "type": "string",
-      "enum": ["v1.0.0", "v1.1.0-preview"]
+      "enum": [
+        "v1.0.0",
+        "v1.1.0-preview"
+      ]
     },
     "FilesOptions": {
       "title": "Files options.",
@@ -126,17 +138,25 @@
         "include": {
           "title": "File patterns to include.",
           "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.",
-          "type": ["array", "null"],
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "type": "string"
           },
           "minItems": 1,
-          "default": ["**/*.toml"]
+          "default": [
+            "**/*.toml"
+          ]
         },
         "exclude": {
           "title": "File patterns to exclude.",
           "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.",
-          "type": ["array", "null"],
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "type": "string"
           },
@@ -534,12 +554,15 @@
         "paths": {
           "title": "The schema catalog path/url array.",
           "description": "The catalog is evaluated after the schemas specified by [[schemas]].\\\nSchemas are loaded in order from the beginning of the catalog list.",
-          "type": ["array", "null"],
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "$ref": "#/definitions/SchemaCatalogPath"
           },
           "default": [
-            "tombi:///json/catalog.json",
+            "tombi://json.schemastore.org/api/json/catalog.json",
             "https://json.schemastore.org/api/json/catalog.json"
           ]
         }
@@ -626,7 +649,10 @@
         }
       },
       "additionalProperties": false,
-      "required": ["path", "include"],
+      "required": [
+        "path",
+        "include"
+      ],
       "x-tombi-table-keys-order": "schema"
     },
     "SubSchema": {
@@ -636,7 +662,10 @@
         "root": {
           "title": "The accessors to apply the sub schema.",
           "type": "string",
-          "examples": ["tools.tombi", "items[0].name"],
+          "examples": [
+            "tools.tombi",
+            "items[0].name"
+          ],
           "minLength": 1
         },
         "path": {
@@ -654,7 +683,11 @@
         }
       },
       "additionalProperties": false,
-      "required": ["root", "path", "include"],
+      "required": [
+        "root",
+        "path",
+        "include"
+      ],
       "x-tombi-table-keys-order": "schema"
     },
     "OldSubSchema": {
@@ -684,7 +717,11 @@
         }
       },
       "additionalProperties": false,
-      "required": ["path", "include", "root-keys"],
+      "required": [
+        "path",
+        "include",
+        "root-keys"
+      ],
       "x-tombi-table-keys-order": "schema"
     }
   }

@@ -1,7 +1,7 @@
 use std::{ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
-    get_tombi_scheme_content, json::JsonCatalog, CatalogUrl, DocumentSchema, HttpClient,
+    get_tombi_schemastore_content, json::JsonCatalog, CatalogUrl, DocumentSchema, HttpClient,
     SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
 };
 use ahash::AHashMap;
@@ -254,20 +254,17 @@ impl SchemaStore {
                 }
             }
             "tombi" => {
-                if catalog_url.path() != "/json/catalog.json" {
+                let Some(content) = get_tombi_schemastore_content(catalog_url) else {
                     return Err(crate::Error::InvalidCatalogFileUrl {
                         catalog_url: catalog_url.clone(),
                     });
-                }
+                };
 
-                tracing::debug!("load catalog from embedded file: {}", catalog_url);
-
-                serde_json::from_str::<crate::json::JsonCatalog>(include_str!(
-                    "../../../schemas/catalog.json"
-                ))
-                .map_err(|err| crate::Error::InvalidJsonFormat {
-                    url: catalog_url.deref().clone(),
-                    reason: err.to_string(),
+                serde_json::from_str::<crate::json::JsonCatalog>(content).map_err(|err| {
+                    crate::Error::InvalidJsonFormat {
+                        url: catalog_url.deref().clone(),
+                        reason: err.to_string(),
+                    }
                 })?
             }
             _ => {
@@ -412,7 +409,7 @@ impl SchemaStore {
                 ))
             }
             "tombi" => {
-                let Some(content) = get_tombi_scheme_content(schema_url) else {
+                let Some(content) = get_tombi_schemastore_content(schema_url) else {
                     return Err(crate::Error::SchemaResourceNotFound {
                         schema_url: schema_url.to_owned(),
                     });

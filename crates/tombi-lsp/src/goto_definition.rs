@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use ahash::AHashMap;
 use itertools::Itertools;
-use tombi_schema_store::get_tombi_scheme_content;
+use tombi_schema_store::get_tombi_schemastore_content;
 use tower_lsp::lsp_types::{
     CreateFile, CreateFileOptions, DocumentChangeOperation, DocumentChanges,
     GotoDefinitionResponse, OneOf, OptionalVersionedTextDocumentIdentifier, ResourceOp,
@@ -63,7 +63,7 @@ pub async fn open_remote_file(
         }
         "tombi" => {
             let remote_url = Url::parse(&format!("untitled://{}", url.path())).unwrap();
-            let Some(content) = get_tombi_scheme_content(url) else {
+            let Some(content) = get_tombi_schemastore_content(url) else {
                 return Ok(None);
             };
             open_remote_content(backend, &remote_url, content).await?;
