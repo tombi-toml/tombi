@@ -62,11 +62,14 @@ pub enum ErrorKind {
     #[error("\"{actual}\" does not match the pattern \"{pattern}\"")]
     Pattern { pattern: String, actual: String },
 
-    #[error("Array must contain at most {max_items} items, but found {actual}")]
-    MaxItems { max_items: usize, actual: usize },
+    #[error("Array must contain at most {max_values} values, but found {actual}")]
+    MaxValues { max_values: usize, actual: usize },
 
-    #[error("Array must contain at least {min_items} items, but found {actual}")]
-    MinItems { min_items: usize, actual: usize },
+    #[error("Array must contain at least {min_values} values, but found {actual}")]
+    MinValues { min_values: usize, actual: usize },
+
+    #[error("Array values must be unique")]
+    UniqueValues,
 
     #[error("Table must contain at most {max_properties} properties, but found {actual}")]
     MaxProperties {
@@ -112,8 +115,9 @@ impl Error {
             ErrorKind::MaximumLength { .. } => "maximum-length",
             ErrorKind::MinimumLength { .. } => "minimum-length",
             ErrorKind::Pattern { .. } => "pattern",
-            ErrorKind::MaxItems { .. } => "max-items",
-            ErrorKind::MinItems { .. } => "min-items",
+            ErrorKind::MaxValues { .. } => "max-values",
+            ErrorKind::MinValues { .. } => "min-values",
+            ErrorKind::UniqueValues { .. } => "unique-values",
             ErrorKind::MaxProperties { .. } => "max-properties",
             ErrorKind::MinProperties { .. } => "min-properties",
             ErrorKind::PatternProperty { .. } => "pattern-property",
