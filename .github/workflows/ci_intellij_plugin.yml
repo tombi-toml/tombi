@@ -27,12 +27,12 @@ jobs:
     steps:
       - name: Fetch sources
         uses: actions/checkout@v4
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Export properties
         id: properties
@@ -73,18 +73,15 @@ jobs:
     steps:
       - name: Fetch sources
         uses: actions/checkout@v4
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v6
-      - name: Set up Tombi
-        run: |
-          uv tool install tombi
+      - name: Setup Tombi
+        uses: tombi-toml/setup-tombi@v1
       - name: Run tests
         working-directory: ./editors/intellij
         run: |
@@ -117,7 +114,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
@@ -141,14 +138,14 @@ jobs:
           large-packages: false
       - name: Fetch sources
         uses: actions/checkout@v4
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Set up IDEs cache
+      - name: Setup IDEs cache
         uses: actions/cache@v4
         with:
           path: ${{ needs.build.outputs.pluginVerifierHomeDir }}/ides
