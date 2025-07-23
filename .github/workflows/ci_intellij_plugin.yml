@@ -17,7 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -26,20 +25,16 @@ jobs:
       pluginVerifierHomeDir: ${{ steps.properties.outputs.pluginVerifierHomeDir }}
 
     steps:
-      -
-        name: Fetch sources
+      - name: Fetch sources
         uses: actions/checkout@v4
-      -
-        name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      -
-        name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      -
-        name: Export properties
+      - name: Export properties
         id: properties
         shell: bash
         working-directory: ./editors/intellij
@@ -47,13 +42,11 @@ jobs:
           chmod +x ./gradlew
           PROPERTIES="$(./gradlew properties --console=plain -q)"
           echo "pluginVerifierHomeDir=~/.pluginVerifier" >> $GITHUB_OUTPUT
-      -
-        name: Build plugin
+      - name: Build plugin
         working-directory: ./editors/intellij
         run: |
           ./gradlew buildPlugin
-      -
-        name: Prepare plugin artifact
+      - name: Prepare plugin artifact
         id: artifact
         shell: bash
         working-directory: ./editors/intellij
@@ -63,8 +56,7 @@ jobs:
           unzip "$FILENAME" -d content
 
           echo "filename=${FILENAME:0:-4}" >> $GITHUB_OUTPUT
-      -
-        name: Upload artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.filename }}
@@ -72,40 +64,30 @@ jobs:
 
   test:
     name: Test
-    needs: [ build ]
+    needs: [build]
     runs-on: ubuntu-latest
 
     permissions:
       actions: write
 
     steps:
-      -
-        name: Fetch sources
+      - name: Fetch sources
         uses: actions/checkout@v4
-      -
-        name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      -
-        name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      -
-        name: Set up uv
-        uses: astral-sh/setup-uv@v6
-      -
-        name: Set up Tombi
-        run: |
-          uv tool install tombi
-      -
-        name: Run tests
+      - name: Setup Tombi
+        uses: tombi-toml/setup-tombi@v1
+      - name: Run tests
         working-directory: ./editors/intellij
         run: |
           chmod +x ./gradlew
           ./gradlew check
-      -
-        name: Upload result
+      - name: Upload result
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -122,26 +104,22 @@ jobs:
       pull-requests: write
 
     steps:
-      -
-        name: Maximize build space
+      - name: Maximize build space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
           large-packages: false
-      -
-        name: Fetch sources
+      - name: Fetch sources
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      -
-        name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      -
-        name: Run Qodana
+      - name: Run Qodana
         uses: JetBrains/qodana-action@v2025.1
         with:
           args: --project-dir,editors/intellij
@@ -149,43 +127,36 @@ jobs:
 
   verify:
     name: Verify
-    needs: [ build ]
+    needs: [build]
     runs-on: ubuntu-latest
 
     steps:
-      -
-        name: Maximize build space
+      - name: Maximize build space
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
           large-packages: false
-      -
-        name: Fetch sources
+      - name: Fetch sources
         uses: actions/checkout@v4
-      -
-        name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      -
-        name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      -
-        name: Set up IDEs cache
+      - name: Setup IDEs cache
         uses: actions/cache@v4
         with:
           path: ${{ needs.build.outputs.pluginVerifierHomeDir }}/ides
           key: plugin-verifier-${{ hashFiles('build/listProductsReleases.txt') }}
-      -
-        name: Run verifier
+      - name: Run verifier
         continue-on-error: true
         working-directory: ./editors/intellij
         run: |
           chmod +x ./gradlew
           ./gradlew verifyPlugin -Dplugin.verifier.home.dir=${{ needs.build.outputs.pluginVerifierHomeDir }}
-      -
-        name: Upload result
+      - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
         with:
