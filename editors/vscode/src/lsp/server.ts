@@ -2,7 +2,7 @@ import type { TombiBin } from "@/bootstrap";
 import { spawn } from "node:child_process";
 import { text } from "node:stream/consumers";
 
-export const LANGUAGE_SERVER_BIN_NAME = "tombi";
+export const LANGUAGE_SERVER_NAME = "tombi";
 
 export class Server {
   private version?: string;
@@ -17,7 +17,7 @@ export class Server {
           spawn(this.tombiBin.path, ["--version"]).stdout.setEncoding("utf-8"),
         );
 
-        const prefix = LANGUAGE_SERVER_BIN_NAME;
+        const prefix = LANGUAGE_SERVER_NAME;
         version = version
           .slice(version.startsWith(prefix) ? prefix.length : 0)
           .trim();

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as os from "node:os";
 import type * as extention from "./extention";
 import { log } from "@/logging";
-import { LANGUAGE_SERVER_BIN_NAME } from "./lsp/server";
+import { LANGUAGE_SERVER_NAME } from "./lsp/server";
 
 export type Env = {
   [name: string]: string;
@@ -13,6 +13,9 @@ export type TombiBin = {
   path: string;
 };
 
+/**
+ * Bootstrap the Language Server binary.
+ */
 export async function bootstrap(
   context: vscode.ExtensionContext,
   settings: extention.Settings,
@@ -27,7 +30,7 @@ export async function bootstrap(
   return tombiBin;
 }
 
-export async function getTombiBin(
+async function getTombiBin(
   context: vscode.ExtensionContext,
   settings: extention.Settings,
 ): Promise<TombiBin | undefined> {
@@ -51,12 +54,14 @@ export async function getTombiBin(
     };
   }
 
-  // finally, use the bundled one
   const ext = process.platform === "win32" ? ".exe" : "";
+  const binName = LANGUAGE_SERVER_NAME + ext;
+
+  // finally, use the bundled one
   const bundledUri = vscode.Uri.joinPath(
     context.extensionUri,
     "server",
-    LANGUAGE_SERVER_BIN_NAME + ext,
+    binName,
   );
 
   if (await fileExists(bundledUri)) {
