@@ -231,7 +231,7 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_tombi_schema(
+            fn test_tombi_config_in_this_repository(
                 include_str!("../../../tombi.toml"),
                 tombi_schema_path(),
             ) -> Ok(_);
