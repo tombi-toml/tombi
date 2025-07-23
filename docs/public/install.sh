@@ -27,7 +27,7 @@ while [ $# -gt 0 ]; do
     case $1 in
     --version)
         if [ "$2" != "latest" ]; then
-            SPECIFIED_VERSION="$2"
+            SPECIFIED_VERSION="${2#v}"
         fi
         shift 2
         ;;
@@ -113,7 +113,7 @@ download_and_install() {
     TEMP_FILE="${TEMP_DIR}/tombi-${VERSION}${ARTIFACT_EXTENSION}"
 
     print_step "Download from ${DOWNLOAD_URL}"
-    print_step "Downloading tombi v${VERSION} (${TARGET})..."
+    print_step "Downloading tombi ${VERSION} (${TARGET})..."
 
     if command -v curl >/dev/null 2>&1; then
         if ! curl -L -f -s "${DOWNLOAD_URL}" -o "${TEMP_FILE}"; then
@@ -145,7 +145,7 @@ download_and_install() {
     chmod +x "${EXTRACTED_FILE}"
     mv "${EXTRACTED_FILE}" "${BIN_DIR}/tombi"
 
-    print_success "tombi v${VERSION} has been installed to ${BIN_DIR}/tombi"
+    print_success "tombi ${VERSION} has been installed to ${BIN_DIR}/tombi"
 }
 
 # Version
@@ -153,10 +153,10 @@ REPO="tombi-toml/tombi"
 GITHUB_RELEASE_URL="https://github.com/${REPO}/releases/download"
 if [ -n "${SPECIFIED_VERSION}" ]; then
     VERSION="${SPECIFIED_VERSION}"
-    print_step "Using specified version: v${VERSION}"
+    print_step "Using specified version: ${VERSION}"
 else
     VERSION=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-    print_step "Using latest version: v${VERSION}"
+    print_step "Using latest version: ${VERSION}"
 fi
 ARTIFACT_EXTENSION=$(artifact_extension)
 
@@ -172,9 +172,9 @@ main() {
     # Verify installation
     if command -v tombi >/dev/null 2>&1; then
         if tombi --version >/dev/null 2>&1; then
-            INSTALLED_VERSION=$(tombi --version 2>&1 | head -n 1 | sed 's/tombi //g' || echo "unknown")
+            INSTALLED_VERSION=$(tombi --version 2>&1 | head -n 1 | sed -E 's/tombi //; s/^v//' || echo "unknown")
             if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
-                print_error "Installed version mismatch: expected v${VERSION}, but got v${INSTALLED_VERSION}"
+                print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
                 exit 1
             fi
             printf 'Usage: \033[34mtombi --help\033[m\n' >&2
