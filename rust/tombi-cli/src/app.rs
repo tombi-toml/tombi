@@ -15,7 +15,7 @@ use tracing_subscriber::prelude::*;
 #[command(
     name="tombi",
     about = app_about(),
-    version = env!("__TOMBI_VERSION"),
+    version = env!("__TOMBI_VERSION").trim_start_matches('v'),
     styles=app_styles(),
     disable_help_subcommand(true),
 )]
