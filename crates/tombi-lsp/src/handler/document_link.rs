@@ -52,7 +52,7 @@ pub async fn handle_document_link(
         );
     }
 
-    // Document Link for Extentions
+    // Document Link for Extensions
     let source_schema = backend
         .schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))

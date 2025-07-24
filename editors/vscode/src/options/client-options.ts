@@ -1,4 +1,4 @@
-import { SUPPORT_TOML_LANGUAGES } from "@/extention";
+import { SUPPORT_TOML_LANGUAGES } from "@/extension";
 import * as vscode from "vscode";
 import type * as languageclient from "vscode-languageclient";
 

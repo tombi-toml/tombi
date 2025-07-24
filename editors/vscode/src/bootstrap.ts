@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as os from "node:os";
 import * as path from "node:path";
-import type * as extention from "@/extention";
+import type * as extension from "@/extension";
 import { log } from "@/logging";
 import { LANGUAGE_SERVER_NAME } from "@/lsp/server";
 import { exec } from "node:child_process";
@@ -27,7 +27,7 @@ export type TombiBin = {
  */
 export async function bootstrap(
   context: vscode.ExtensionContext,
-  settings: extention.Settings,
+  settings: extension.Settings,
 ): Promise<TombiBin> {
   const tombiBin = await getTombiBin(context, settings);
   if (!tombiBin) {
@@ -41,7 +41,7 @@ export async function bootstrap(
 
 async function getTombiBin(
   context: vscode.ExtensionContext,
-  settings: extention.Settings,
+  settings: extension.Settings,
 ): Promise<TombiBin | undefined> {
   let settingsPath = settings.path;
   if (settingsPath) {

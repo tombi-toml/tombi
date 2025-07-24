@@ -11,8 +11,8 @@ import { getTomlVersion, updateConfig, updateSchema } from "@/lsp/client";
 import { registerExtensionSchemas } from "@/tomlValidation";
 export type { Settings };
 
-export const EXTENTION_ID = "tombi";
-export const EXTENTION_NAME = "Tombi";
+export const Extension_ID = "tombi";
+export const Extension_NAME = "Tombi";
 export const SUPPORT_TOML_LANGUAGES = ["toml", "cargoLock"];
 export const SUPPORT_TOMBI_CONFIG_FILENAMES = [
   "tombi.toml",
@@ -41,15 +41,15 @@ export class Extension {
 
   static async activate(context: vscode.ExtensionContext): Promise<Extension> {
     const settings = vscode.workspace.getConfiguration(
-      EXTENTION_ID,
+      Extension_ID,
     ) as Settings;
 
     const tombiBin = await bootstrap(context, settings);
 
     const server = new Server(tombiBin);
     const client = new node.LanguageClient(
-      EXTENTION_ID,
-      `${EXTENTION_NAME} Language Server`,
+      Extension_ID,
+      `${Extension_NAME} Language Server`,
       serverOptions(server.tombiBin.path, settings),
       clientOptions(),
       // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
@@ -84,19 +84,19 @@ export class Extension {
   private registerCommands(): void {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
-        `${EXTENTION_ID}.showLanguageServerVersion`,
+        `${Extension_ID}.showLanguageServerVersion`,
         async () => command.showLanguageServerVersion(this.server),
       ),
     );
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
-        `${EXTENTION_ID}.restartLanguageServer`,
+        `${Extension_ID}.restartLanguageServer`,
         async () => command.restartLanguageServer(this.client),
       ),
     );
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
-        `${EXTENTION_ID}.refreshCache`,
+        `${Extension_ID}.refreshCache`,
         async () => command.refreshCache(this.client),
       ),
     );
@@ -130,7 +130,7 @@ export class Extension {
         this.statusBarItem.text = `TOML: ${tomlVersion} (${source})`;
         this.statusBarItem.color = undefined;
         this.statusBarItem.backgroundColor = undefined;
-        this.statusBarItem.command = `${EXTENTION_ID}.showLanguageServerVersion`;
+        this.statusBarItem.command = `${Extension_ID}.showLanguageServerVersion`;
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";
