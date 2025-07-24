@@ -38,6 +38,7 @@
     "test": "vitest run --passWithNoTests ./src"
   },
   "dependencies": {
+    "@vscode/python-extension": "^1.0.5",
     "valibot": "^1.0.0",
     "vscode-languageclient": "^9.0.1"
   },

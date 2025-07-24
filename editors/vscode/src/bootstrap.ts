@@ -1,16 +1,18 @@
 import * as vscode from "vscode";
 import * as os from "node:os";
-import type * as extention from "./extention";
+import * as path from "node:path";
+import type * as extention from "@/extention";
 import { log } from "@/logging";
-import { LANGUAGE_SERVER_NAME } from "./lsp/server";
+import { LANGUAGE_SERVER_NAME } from "@/lsp/server";
 import { exec } from "node:child_process";
+import { getInterpreterDetails } from "@/python";
 
 export type Env = {
   [name: string]: string;
 };
 
 export type TombiBin = {
-  source: "bundled" | "dev" | "editor settings" | "local";
+  source: "bundled" | "dev" | "editor settings" | "local" | "venv";
   path: string;
 };
 
@@ -58,6 +60,17 @@ async function getTombiBin(
   const ext = process.platform === "win32" ? ".exe" : "";
   const binName = LANGUAGE_SERVER_NAME + ext;
 
+  // Check for tombi in Python virtual environment
+  for (const workspace of vscode.workspace.workspaceFolders ?? []) {
+    const venvBinPath = await findVenvTombiBin(binName, workspace.uri);
+    if (venvBinPath) {
+      return {
+        source: "venv",
+        path: venvBinPath,
+      };
+    }
+  }
+
   // use local tombi binary
   const localBinPath = await findLocalTombiBin(binName);
   if (localBinPath) {
@@ -84,6 +97,26 @@ async function getTombiBin(
   await vscode.window.showErrorMessage(
     "Unfortunately we don't ship binaries for your platform yet. ",
   );
+
+  return undefined;
+}
+
+async function findVenvTombiBin(
+  binName: string,
+  workspaceUri: vscode.Uri,
+): Promise<string | undefined> {
+  const interpreterDetails = await getInterpreterDetails(workspaceUri);
+  if (!interpreterDetails.pythonPath) {
+    return undefined;
+  }
+
+  const pythonPath = interpreterDetails.pythonPath;
+  const binDir = path.dirname(pythonPath);
+
+  const tombiPath = path.join(binDir, binName);
+  if (await fileExists(vscode.Uri.file(tombiPath))) {
+    return tombiPath;
+  }
 
   return undefined;
 }
