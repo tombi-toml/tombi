@@ -1,4 +1,4 @@
-import type { Settings } from "@/extention";
+import type { Settings } from "@/extension";
 import type * as node from "vscode-languageclient/node";
 
 export function serverOptions(
