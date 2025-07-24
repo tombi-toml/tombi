@@ -124,6 +124,9 @@ importers:
       '@types/vscode':
         specifier: ^1.93.0
         version: 1.93.0
+      '@vscode/python-extension':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@vscode/vsce':
         specifier: ^3.6.0
         version: 3.6.0
@@ -2351,6 +2354,10 @@ packages:
 
   '@vitest/utils@2.1.9':
     resolution: {integrity: sha512-v0psaMSkNJ3A2NMrUEHFRzJtDPFn+/VWZ5WxImB21T9fjucJRmS7xCS3ppEnARb9y11OAzaD+P2Ps+b+BGX5iQ==}
+
+  '@vscode/python-extension@1.0.5':
+    resolution: {integrity: sha512-uYhXUrL/gn92mfqhjAwH2+yGOpjloBxj9ekoL4BhUsKcyJMpEg6WlNf3S3si+5x9zlbHHe7FYQNjZEbz1ymI9Q==}
+    engines: {node: '>=16.17.1', vscode: ^1.78.0}
 
   '@vscode/vsce-sign-alpine-arm64@2.0.2':
     resolution: {integrity: sha512-E80YvqhtZCLUv3YAf9+tIbbqoinWLCO/B3j03yQPbjT3ZIHCliKZlsy1peNc4XNZ5uIb87Jn0HWx/ZbPXviuAQ==}
@@ -7607,6 +7614,8 @@ snapshots:
       '@vitest/pretty-format': 2.1.9
       loupe: 3.1.3
       tinyrainbow: 1.2.0
+
+  '@vscode/python-extension@1.0.5': {}
 
   '@vscode/vsce-sign-alpine-arm64@2.0.2':
     optional: true
