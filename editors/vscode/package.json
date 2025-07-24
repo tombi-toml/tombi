@@ -38,7 +38,6 @@
     "test": "vitest run --passWithNoTests ./src"
   },
   "dependencies": {
-    "@vscode/python-extension": "^1.0.5",
     "valibot": "^1.0.0",
     "vscode-languageclient": "^9.0.1"
   },
@@ -47,6 +46,7 @@
     "@types/minimatch": "^5.1.2",
     "@types/semver": "^7.5.8",
     "@types/vscode": "^1.93.0",
+    "@vscode/python-extension": "^1.0.5",
     "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.0",
     "ovsx": "^0.10.4",

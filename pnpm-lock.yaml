@@ -105,9 +105,6 @@ importers:
 
   editors/vscode:
     dependencies:
-      '@vscode/python-extension':
-        specifier: ^1.0.5
-        version: 1.0.5
       valibot:
         specifier: ^1.0.0
         version: 1.0.0(typescript@5.8.3)
@@ -127,6 +124,9 @@ importers:
       '@types/vscode':
         specifier: ^1.93.0
         version: 1.93.0
+      '@vscode/python-extension':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@vscode/vsce':
         specifier: ^3.6.0
         version: 3.6.0
