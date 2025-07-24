@@ -6,7 +6,11 @@ export async function showLanguageServerVersion(server: Server): Promise<void> {
 
   let message = `Tombi Language Server Version: ${version} (${server.tombiBin.source})`;
 
-  if (["local", "editor settings", "venv"].includes(server.tombiBin.source)) {
+  if (
+    ["local", "editor settings", "venv", "node_modules"].includes(
+      server.tombiBin.source,
+    )
+  ) {
     message += `\t@${server.tombiBin.path}`;
   }
 

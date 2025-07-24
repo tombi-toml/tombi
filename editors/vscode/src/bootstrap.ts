@@ -12,7 +12,13 @@ export type Env = {
 };
 
 export type TombiBin = {
-  source: "bundled" | "dev" | "editor settings" | "local" | "venv";
+  source:
+    | "bundled"
+    | "dev"
+    | "editor settings"
+    | "local"
+    | "venv"
+    | "node_modules";
   path: string;
 };
 
@@ -60,13 +66,25 @@ async function getTombiBin(
   const ext = process.platform === "win32" ? ".exe" : "";
   const binName = LANGUAGE_SERVER_NAME + ext;
 
-  // Check for tombi in Python virtual environment
   for (const workspace of vscode.workspace.workspaceFolders ?? []) {
+    // Check for tombi in Python virtual environment
     const venvBinPath = await findVenvTombiBin(binName, workspace.uri);
     if (venvBinPath) {
       return {
         source: "venv",
         path: venvBinPath,
+      };
+    }
+
+    // Check for tombi in node_modules/.bin
+    const nodeModulesBinPath = await findNodeModulesTombiBin(
+      binName,
+      workspace.uri,
+    );
+    if (nodeModulesBinPath) {
+      return {
+        source: "node_modules",
+        path: nodeModulesBinPath,
       };
     }
   }
@@ -116,6 +134,24 @@ async function findVenvTombiBin(
   const tombiPath = path.join(binDir, binName);
   if (await fileExists(vscode.Uri.file(tombiPath))) {
     return tombiPath;
+  }
+
+  return undefined;
+}
+
+async function findNodeModulesTombiBin(
+  binName: string,
+  workspaceUri: vscode.Uri,
+): Promise<string | undefined> {
+  const nodeModulesBinPath = vscode.Uri.joinPath(
+    workspaceUri,
+    "node_modules",
+    ".bin",
+    binName,
+  );
+
+  if (await fileExists(nodeModulesBinPath)) {
+    return nodeModulesBinPath.fsPath;
   }
 
   return undefined;
