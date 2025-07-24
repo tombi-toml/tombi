@@ -1,0 +1,17 @@
+# VSCode Extension
+
+## Language Server Binary Priority
+
+The tombi VSCode extension selects the Language Server binary in the following order of priority:
+
+| Order | Source Type      | Description                                                                                 |
+|-------|------------------|--------------------------------------------------------------------------------------------|
+| 1     | editor settings  | Path explicitly specified by `tombi.path` in `.vscode/settings.json`                        |
+| 2     | venv             | `tombi` binary found in a Python virtual environment (venv) in the workspace                |
+| 3     | node_modules     | `tombi` binary found in the `node_modules/.bin` directory in the workspace                  |
+| 4     | local            | `tombi` binary found in the system PATH                                                     |
+| 5     | bundled          | `tombi` binary bundled with the extension                                                   |
+
+You can check which tombi binary is currently selected by running the `Tombi: Show Language Server Version` command from the VSCode command palette.
+
+<img src="/show_language_server_version.png" class="w-full" />
