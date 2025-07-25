@@ -12,6 +12,23 @@ pub enum FileInput {
     Files(Vec<Result<PathBuf, crate::Error>>),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum FileInputType {
+    Stdin,
+    Project,
+    Files,
+}
+
+impl<T: AsRef<str>> From<&[T]> for FileInputType {
+    fn from(files: &[T]) -> Self {
+        match files.len() {
+            0 => FileInputType::Project,
+            1 if files[0].as_ref() == "-" => FileInputType::Stdin,
+            _ => FileInputType::Files,
+        }
+    }
+}
+
 impl FileInput {
     pub async fn new<T: AsRef<str>>(
         files: &[T],
@@ -24,14 +41,14 @@ impl FileInput {
             _ => ".".as_ref(),
         };
 
-        match files.len() {
-            0 => {
+        match FileInputType::from(files) {
+            FileInputType::Stdin => FileInput::Stdin,
+            FileInputType::Project => {
                 tracing::debug!("Searching for TOML files using configured patterns...");
 
                 FileInput::Files(search_with_patterns_async(root, files_options).await)
             }
-            1 if files[0].as_ref() == "-" => FileInput::Stdin,
-            _ => {
+            FileInputType::Files => {
                 tracing::debug!("Searching for TOML files using user input patterns...");
 
                 let mut matched_paths = Vec::with_capacity(100);
