@@ -2,7 +2,6 @@
 # libraries
 annotations = "26.0.2"
 junit = "4.13.2"
-
 # plugins
 changelog = "2.2.1"
 intelliJPlatform = "2.6.0"
