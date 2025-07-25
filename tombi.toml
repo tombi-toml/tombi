@@ -5,6 +5,11 @@
 
 toml-version = "v1.0.0"
 
+[files]
+exclude = [
+  "editors/intellij/src/test/testData/*",
+]
+
 [format]
 
 [lint]
