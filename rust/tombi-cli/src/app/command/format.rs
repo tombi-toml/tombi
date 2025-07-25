@@ -3,7 +3,7 @@ use tombi_config::{FormatOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 
-use crate::app::arg;
+use crate::app::arg::{self, file::FileInputType};
 
 /// Format TOML files.
 #[derive(clap::Args, Debug)]
@@ -74,7 +74,15 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level()?;
+    let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level()
+        .map_err(|error| {
+            if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin {
+                if let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
+                    tracing::error!("failed to copy stdin to stdout: {}", error);
+                }
+            }
+            error
+        })?;
 
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_options = config.schema.as_ref();
