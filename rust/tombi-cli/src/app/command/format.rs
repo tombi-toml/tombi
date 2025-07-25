@@ -74,18 +74,15 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let (config, config_path, config_level) = match serde_tombi::config::load_with_path_and_level()
-    {
-        Ok(result) => result,
-        Err(error) => {
+    let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level()
+        .map_err(|error| {
             if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin {
-                let mut stdin = std::io::stdin();
-                let mut stdout = std::io::stdout();
-                std::io::copy(&mut stdin, &mut stdout)?;
+                if let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
+                    tracing::error!("failed to copy stdin to stdout: {}", error);
+                }
             }
-            return Err(error.into());
-        }
-    };
+            error
+        })?;
 
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_options = config.schema.as_ref();
