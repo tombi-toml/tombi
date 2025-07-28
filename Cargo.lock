@@ -415,6 +415,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "boxcar"
+version = "0.2.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26c4925bc979b677330a8c7fe7a8c94af2dbb4a2d37b4a20a80d884400f46baa"
+
+[[package]]
 name = "bstr"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1727,6 +1733,15 @@ dependencies = [
 
 [[package]]
 name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
@@ -2059,6 +2074,41 @@ checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
 dependencies = [
  "digest 0.10.7",
  "hmac 0.12.1",
+]
+
+[[package]]
+name = "pep440_rs"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31095ca1f396e3de32745f42b20deef7bc09077f918b085307e8eab6ddd8fb9c"
+dependencies = [
+ "once_cell",
+ "serde",
+ "unicode-width",
+ "unscanny",
+ "version-ranges",
+]
+
+[[package]]
+name = "pep508_rs"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "faee7227064121fcadcd2ff788ea26f0d8f2bd23a0574da11eca23bc935bcc05"
+dependencies = [
+ "boxcar",
+ "indexmap",
+ "itertools 0.13.0",
+ "once_cell",
+ "pep440_rs",
+ "regex",
+ "rustc-hash",
+ "serde",
+ "smallvec",
+ "thiserror 1.0.69",
+ "unicode-width",
+ "url",
+ "urlencoding",
+ "version-ranges",
 ]
 
 [[package]]
@@ -2794,7 +2844,7 @@ dependencies = [
  "chrono",
  "dirs",
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "serde",
  "textwrap",
@@ -3311,7 +3361,7 @@ version = "0.0.0-dev"
 name = "tombi-ast"
 version = "0.0.0-dev"
 dependencies = [
- "itertools",
+ "itertools 0.14.0",
  "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",
@@ -3325,7 +3375,7 @@ name = "tombi-ast-editor"
 version = "0.0.0-dev"
 dependencies = [
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "regex",
  "thiserror 2.0.12",
  "tombi-ast",
@@ -3358,7 +3408,7 @@ version = "0.0.0-dev"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
- "itertools",
+ "itertools 0.14.0",
  "nu-ansi-term 0.50.1",
  "regex",
  "serde_tombi",
@@ -3421,7 +3471,7 @@ name = "tombi-document"
 version = "0.0.0-dev"
 dependencies = [
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "serde",
  "serde_json",
@@ -3442,7 +3492,7 @@ version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "thiserror 2.0.12",
  "tombi-ast",
  "tombi-date-time",
@@ -3467,7 +3517,7 @@ version = "0.0.0-dev"
 dependencies = [
  "ahash",
  "glob",
- "itertools",
+ "itertools 0.14.0",
  "serde",
  "serde_json",
  "tombi-ast",
@@ -3500,7 +3550,8 @@ name = "tombi-extension-uv"
 version = "0.0.0-dev"
 dependencies = [
  "glob",
- "itertools",
+ "itertools 0.14.0",
+ "pep508_rs",
  "tombi-ast",
  "tombi-config",
  "tombi-document-tree",
@@ -3515,7 +3566,7 @@ dependencies = [
 name = "tombi-formatter"
 version = "0.0.0-dev"
 dependencies = [
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "rstest",
  "schemars",
@@ -3560,7 +3611,7 @@ name = "tombi-json"
 version = "0.0.0-dev"
 dependencies = [
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "serde",
  "thiserror 2.0.12",
@@ -3574,7 +3625,7 @@ dependencies = [
 name = "tombi-json-lexer"
 version = "0.0.0-dev"
 dependencies = [
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "regex",
  "textwrap",
@@ -3604,7 +3655,7 @@ dependencies = [
 name = "tombi-lexer"
 version = "0.0.0-dev"
 dependencies = [
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "regex",
  "textwrap",
@@ -3619,7 +3670,7 @@ name = "tombi-linter"
 version = "0.0.0-dev"
 dependencies = [
  "ahash",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "thiserror 2.0.12",
  "tokio",
@@ -3644,7 +3695,7 @@ dependencies = [
  "clap",
  "futures",
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "regex",
  "reqwest",
@@ -3705,7 +3756,7 @@ version = "0.0.0-dev"
 dependencies = [
  "countme",
  "hashbrown 0.15.3",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "rustc-hash",
  "tombi-text",
@@ -3721,7 +3772,7 @@ dependencies = [
  "glob",
  "gloo-net",
  "indexmap",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "reqwest",
  "rstest",
@@ -3800,7 +3851,7 @@ name = "tombi-validator"
 version = "0.0.0-dev"
 dependencies = [
  "ahash",
- "itertools",
+ "itertools 0.14.0",
  "regex",
  "thiserror 2.0.12",
  "tombi-diagnostic",
@@ -3815,7 +3866,7 @@ dependencies = [
 name = "tombi-version-sort"
 version = "0.0.0-dev"
 dependencies = [
- "itertools",
+ "itertools 0.14.0",
 ]
 
 [[package]]
@@ -3823,7 +3874,7 @@ name = "tombi-wasm"
 version = "0.0.0-dev"
 dependencies = [
  "console_error_panic_hook",
- "itertools",
+ "itertools 0.14.0",
  "js-sys",
  "serde",
  "serde-wasm-bindgen",
@@ -4111,6 +4162,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "unscanny"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9df2af067a7953e9c3831320f35c1cc0600c30d44d9f7a12b01db1cd88d6b47"
+
+[[package]]
 name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4127,6 +4184,12 @@ dependencies = [
  "percent-encoding",
  "serde",
 ]
+
+[[package]]
+name = "urlencoding"
+version = "2.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "utf16_iter"
@@ -4163,6 +4226,15 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
+
+[[package]]
+name = "version-ranges"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8d079415ceb2be83fc355adbadafe401307d5c309c7e6ade6638e6f9f42f42d"
+dependencies = [
+ "smallvec",
+]
 
 [[package]]
 name = "version_check"
@@ -4719,7 +4791,7 @@ dependencies = [
  "clap",
  "convert_case",
  "flate2",
- "itertools",
+ "itertools 0.14.0",
  "pretty_assertions",
  "proc-macro2",
  "quote",
