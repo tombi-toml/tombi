@@ -49,6 +49,7 @@ indexmap = { version = "2.9.0", features = ["serde"] }
 itertools = "0.14.0"
 js-sys = "0.3.77"
 nu-ansi-term = "0.50.1"
+pep508_rs = "0.9"
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.95"
 quote = "1.0.40"

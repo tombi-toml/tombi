@@ -10,6 +10,7 @@ license.workspace = true
 [dependencies]
 glob.workspace = true
 itertools.workspace = true
+pep508_rs.workspace = true
 tombi-ast.workspace = true
 tombi-config.workspace = true
 tombi-document-tree.workspace = true

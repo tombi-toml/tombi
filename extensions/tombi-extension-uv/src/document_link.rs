@@ -1,5 +1,7 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
+use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
@@ -10,6 +12,7 @@ pub enum DocumentLinkToolTip {
     PyprojectToml,
     PyprojectTomlFirstMember,
     WorkspacePyprojectToml,
+    PyPI,
 }
 
 impl From<&DocumentLinkToolTip> for &'static str {
@@ -19,6 +22,7 @@ impl From<&DocumentLinkToolTip> for &'static str {
             DocumentLinkToolTip::PyprojectToml => "Open pyproject.toml",
             DocumentLinkToolTip::PyprojectTomlFirstMember => "Open first pyproject.toml in members",
             DocumentLinkToolTip::WorkspacePyprojectToml => "Open Workspace pyproject.toml",
+            DocumentLinkToolTip::PyPI => "Open PyPI Package",
         }
     }
 }
@@ -69,7 +73,10 @@ pub async fn document_link(
             &pyproject_toml_path,
             toml_version,
         )?);
-    } else if let Some((_, tombi_document_tree::Value::Table(sources))) =
+    }
+
+    // Collect tool.uv.sources information
+    let uv_sources = if let Some((_, tombi_document_tree::Value::Table(sources))) =
         dig_keys(document_tree, &["tool", "uv", "sources"])
     {
         for (package_name_key, source) in sources.key_values() {
@@ -80,6 +87,46 @@ pub async fn document_link(
                 toml_version,
             )?);
         }
+
+        Some(sources)
+    } else {
+        None
+    };
+
+    // Handle [project.dependencies] section
+    if let Some((_, tombi_document_tree::Value::Array(dependencies))) =
+        dig_keys(document_tree, &["project", "dependencies"])
+    {
+        document_links.extend(document_link_for_project_dependencies(
+            dependencies,
+            uv_sources,
+            &pyproject_toml_path,
+            toml_version,
+        )?);
+    }
+
+    // Handle [project.optional-dependencies] section
+    if let Some((_, tombi_document_tree::Value::Table(optional_dependencies))) =
+        dig_keys(document_tree, &["project", "optional-dependencies"])
+    {
+        document_links.extend(document_link_for_optional_dependencies(
+            optional_dependencies,
+            uv_sources,
+            &pyproject_toml_path,
+            toml_version,
+        )?);
+    }
+
+    // Handle [dependency-groups] section
+    if let Some((_, tombi_document_tree::Value::Table(dependency_groups))) =
+        dig_keys(document_tree, &["dependency-groups"])
+    {
+        document_links.extend(document_link_for_dependency_groups(
+            dependency_groups,
+            uv_sources,
+            &pyproject_toml_path,
+            toml_version,
+        )?);
     }
 
     if document_links.is_empty() {
@@ -196,6 +243,122 @@ fn document_link_for_member_pyproject_toml(
                     tooltip: DocumentLinkToolTip::WorkspacePyprojectToml.into(),
                 });
             }
+        }
+    }
+
+    Ok(document_links)
+}
+
+fn document_link_for_project_dependencies(
+    dependencies: &tombi_document_tree::Array,
+    uv_sources: Option<&tombi_document_tree::Table>,
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+    let mut document_links = Vec::with_capacity(dependencies.len());
+
+    for dep_value in dependencies.values() {
+        if let tombi_document_tree::Value::String(dep_spec) = dep_value {
+            // Parse the PEP 508 requirement specification
+            if let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(dep_spec.value()) {
+                // Extract package name from the requirement
+                let package_name = &requirement.name;
+
+                // Check if this package is in tool.uv.sources
+                let is_local_source =
+                    uv_sources.map_or(false, |sources| sources.contains_key(package_name.as_ref()));
+
+                if is_local_source {
+                    // For packages in tool.uv.sources, create links to local pyproject.toml
+                    if let Some(sources) = uv_sources {
+                        if let Some((package_key, source_value)) =
+                            sources.get_key_value(package_name.as_ref())
+                        {
+                            // Try to create document links for the local source
+                            if let Ok(links) = document_link_for_member_pyproject_toml(
+                                package_key,
+                                source_value,
+                                pyproject_toml_path,
+                                toml_version,
+                            ) {
+                                for link in links {
+                                    if link.tooltip
+                                        == Into::<&'static str>::into(
+                                            DocumentLinkToolTip::PyprojectToml,
+                                        )
+                                    {
+                                        // Update the range to point to the dependency spec
+                                        document_links.push(tombi_extension::DocumentLink {
+                                            target: link.target,
+                                            range: dep_spec.unquoted_range(),
+                                            tooltip: link.tooltip,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Create PyPI URL for external packages
+                    if let Ok(pypi_url) =
+                        Url::parse(&format!("https://pypi.org/project/{}/", package_name))
+                    {
+                        document_links.push(tombi_extension::DocumentLink {
+                            target: pypi_url,
+                            range: dep_spec.unquoted_range(),
+                            tooltip: DocumentLinkToolTip::PyPI.into(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(document_links)
+}
+
+fn document_link_for_dependency_groups(
+    dependency_groups: &tombi_document_tree::Table,
+    uv_sources: Option<&tombi_document_tree::Table>,
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+    let mut document_links = Vec::new();
+
+    // Iterate through each dependency group
+    for dependency_group in dependency_groups.values() {
+        if let tombi_document_tree::Value::Array(dependencies) = dependency_group {
+            // Process each dependency in the group using the same logic as project.dependencies
+            document_links.extend(document_link_for_project_dependencies(
+                dependencies,
+                uv_sources,
+                pyproject_toml_path,
+                toml_version,
+            )?);
+        }
+    }
+
+    Ok(document_links)
+}
+
+fn document_link_for_optional_dependencies(
+    optional_dependencies: &tombi_document_tree::Table,
+    uv_sources: Option<&tombi_document_tree::Table>,
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+    let mut document_links = Vec::new();
+
+    // Iterate through each optional dependency group
+    for option in optional_dependencies.values() {
+        if let tombi_document_tree::Value::Array(dependencies) = option {
+            // Process each dependency in the group using the same logic as project.dependencies
+            document_links.extend(document_link_for_project_dependencies(
+                dependencies,
+                uv_sources,
+                pyproject_toml_path,
+                toml_version,
+            )?);
         }
     }
 

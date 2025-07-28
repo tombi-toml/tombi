@@ -168,6 +168,10 @@ impl Array {
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
         self.values.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
 }
 
 impl ValueImpl for Array {
