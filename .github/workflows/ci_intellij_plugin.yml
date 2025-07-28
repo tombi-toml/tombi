@@ -21,18 +21,15 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
-    outputs:
-      pluginVerifierHomeDir: ${{ steps.properties.outputs.pluginVerifierHomeDir }}
-
     steps:
       - name: Fetch sources
         uses: actions/checkout@v4
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Export properties
         id: properties
@@ -41,7 +38,6 @@ jobs:
         run: |
           chmod +x ./gradlew
           PROPERTIES="$(./gradlew properties --console=plain -q)"
-          echo "pluginVerifierHomeDir=~/.pluginVerifier" >> $GITHUB_OUTPUT
       - name: Build plugin
         working-directory: ./editors/intellij
         run: |
@@ -73,14 +69,16 @@ jobs:
     steps:
       - name: Fetch sources
         uses: actions/checkout@v4
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Setup Tombi
+        with:
+          cache-read-only: true
+      - name: Set up Tombi
         uses: tombi-toml/setup-tombi@v1
       - name: Run tests
         working-directory: ./editors/intellij
@@ -114,7 +112,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
@@ -138,24 +136,21 @@ jobs:
           large-packages: false
       - name: Fetch sources
         uses: actions/checkout@v4
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Setup IDEs cache
-        uses: actions/cache@v4
         with:
-          path: ${{ needs.build.outputs.pluginVerifierHomeDir }}/ides
-          key: plugin-verifier-${{ hashFiles('build/listProductsReleases.txt') }}
+          cache-read-only: true
       - name: Run verifier
         continue-on-error: true
         working-directory: ./editors/intellij
         run: |
           chmod +x ./gradlew
-          ./gradlew verifyPlugin -Dplugin.verifier.home.dir=${{ needs.build.outputs.pluginVerifierHomeDir }}
+          ./gradlew verifyPlugin
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
