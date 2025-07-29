@@ -91,21 +91,21 @@ impl From<&tombi_json::Object> for DisplayValue {
 impl std::fmt::Display for DisplayValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DisplayValue::Boolean(boolean) => write!(f, "{}", boolean),
-            DisplayValue::Integer(integer) => write!(f, "{}", integer),
-            DisplayValue::Float(float) => write!(f, "{}", float),
+            DisplayValue::Boolean(boolean) => write!(f, "{boolean}"),
+            DisplayValue::Integer(integer) => write!(f, "{integer}"),
+            DisplayValue::Float(float) => write!(f, "{float}"),
             DisplayValue::String(string) => write!(f, "\"{}\"", string.replace("\"", "\\\"")),
-            DisplayValue::OffsetDateTime(offset_date_time) => write!(f, "{}", offset_date_time),
-            DisplayValue::LocalDateTime(local_date_time) => write!(f, "{}", local_date_time),
-            DisplayValue::LocalDate(local_date) => write!(f, "{}", local_date),
-            DisplayValue::LocalTime(local_time) => write!(f, "{}", local_time),
+            DisplayValue::OffsetDateTime(offset_date_time) => write!(f, "{offset_date_time}"),
+            DisplayValue::LocalDateTime(local_date_time) => write!(f, "{local_date_time}"),
+            DisplayValue::LocalDate(local_date) => write!(f, "{local_date}"),
+            DisplayValue::LocalTime(local_time) => write!(f, "{local_time}"),
             DisplayValue::Array(array) => {
                 write!(f, "[")?;
                 for (i, value) in array.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{}", value)?;
+                    write!(f, "{value}")?;
                 }
                 write!(f, "]")
             }
@@ -115,7 +115,7 @@ impl std::fmt::Display for DisplayValue {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{}: {}", key, value)?;
+                    write!(f, "{key}: {value}")?;
                 }
                 write!(f, " }}")
             }

@@ -43,7 +43,7 @@ pub fn run() -> Result<(), anyhow::Error> {
 fn write_file(content: &str, target: &std::path::Path) {
     if !target.exists() {
         std::fs::create_dir_all(target.parent().unwrap())
-            .unwrap_or_else(|err| panic!("Failed to create directory: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to create directory: {err}"));
     }
     std::fs::write(target, content)
         .unwrap_or_else(|err| panic!("Failed to write file {}: {}", target.display(), err));

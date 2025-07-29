@@ -194,7 +194,7 @@ impl SchemaStore {
                 if let Some(catalog_cache_path) = &catalog_cache_path {
                     if let Ok(Some(catalog)) = load_catalog_from_cache(
                         catalog_url,
-                        &catalog_cache_path,
+                        catalog_cache_path,
                         self.options.cache.as_ref(),
                     )
                     .await
@@ -350,7 +350,7 @@ impl SchemaStore {
                 if let Some(schema_cache_path) = &schema_cache_path {
                     if let Ok(Some(schema_value)) = load_json_schema_from_cache(
                         schema_url,
-                        &schema_cache_path,
+                        schema_cache_path,
                         self.options.cache.as_ref(),
                     )
                     .await
@@ -538,7 +538,7 @@ impl SchemaStore {
             .filter(|schema| {
                 schema.include.iter().any(|pat| {
                     let pattern = if !pat.contains("*") {
-                        format!("**/{}", pat)
+                        format!("**/{pat}")
                     } else {
                         pat.to_string()
                     };
@@ -678,7 +678,7 @@ async fn load_catalog_from_cache_ignoring_ttl(
         }
         if let Ok(Some(catalog)) = load_catalog_from_cache(
             catalog_url,
-            catalog_cache_path.as_ref(),
+            catalog_cache_path,
             cache_options.as_ref(),
         )
         .await
@@ -696,7 +696,7 @@ async fn load_catalog_from_cache(
     cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<JsonCatalog>, crate::Error> {
     if let Some(catalog_cache_content) =
-        read_from_cache(Some(&catalog_cache_path), cache_options).await?
+        read_from_cache(Some(catalog_cache_path), cache_options).await?
     {
         tracing::debug!("load catalog from cache: {}", catalog_url);
 
@@ -724,7 +724,7 @@ async fn load_json_schema_from_cache_ignoring_ttl(
         }
         if let Ok(Some(schema_value)) = load_json_schema_from_cache(
             schema_url,
-            schema_cache_path.as_ref(),
+            schema_cache_path,
             cache_options.as_ref(),
         )
         .await
@@ -742,7 +742,7 @@ async fn load_json_schema_from_cache(
     cache_options: Option<&tombi_cache::Options>,
 ) -> Result<Option<tombi_json::ValueNode>, crate::Error> {
     if let Some(schema_cache_content) =
-        read_from_cache(Some(&schema_cache_path), cache_options).await?
+        read_from_cache(Some(schema_cache_path), cache_options).await?
     {
         tracing::debug!("load schema from cache: {}", schema_url);
 

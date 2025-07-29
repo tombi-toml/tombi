@@ -93,7 +93,7 @@ where
         if self.level == Some(tracing::Level::TRACE) {
             if let Some(file) = metadata.file() {
                 let link = if let Some(line) = metadata.line() {
-                    format!("{}:{}", file, line)
+                    format!("{file}:{line}")
                 } else {
                     file.to_string()
                 };

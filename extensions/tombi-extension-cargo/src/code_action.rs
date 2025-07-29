@@ -269,7 +269,7 @@ fn use_workspace_depencency_code_action(
                             .into(),
                             // NOTE: Convert to a workspace dependency to make it easier
                             //       to add other settings in the future.
-                            new_text: format!("{} = {{ workspace = true }}", crate_name),
+                            new_text: format!("{crate_name} = {{ workspace = true }}"),
                         })],
                     }])),
                     change_annotations: None,
@@ -294,7 +294,7 @@ fn use_workspace_depencency_code_action(
             let text_edit = if table.kind() == TableKind::KeyValue {
                 TextEdit {
                     range: (crate_key_context.range + version.range()).into(),
-                    new_text: format!("{} = {{ workspace = true }}", crate_name),
+                    new_text: format!("{crate_name} = {{ workspace = true }}"),
                 }
             } else {
                 TextEdit {

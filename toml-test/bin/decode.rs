@@ -29,7 +29,7 @@ fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Erro
 
     if !p.errors.is_empty() {
         for error in p.errors {
-            eprintln!("{}", error);
+            eprintln!("{error}");
         }
         return Err(anyhow::anyhow!(INVALID_MESSAGE));
     }
@@ -43,7 +43,7 @@ fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Erro
         Ok(root) => root,
         Err(errors) => {
             for error in errors {
-                eprintln!("{}", error);
+                eprintln!("{error}");
             }
             return Err(anyhow::anyhow!(INVALID_MESSAGE));
         }

@@ -309,13 +309,13 @@ pub fn to_basic_string(value: &str) -> String {
 }
 
 pub fn to_literal_string(value: &str) -> String {
-    format!("'{}'", value)
+    format!("'{value}'")
 }
 
 pub fn to_multi_line_basic_string(value: &str) -> String {
-    format!("\"\"\"\n{}\"\"\"", value)
+    format!("\"\"\"\n{value}\"\"\"")
 }
 
 pub fn to_multi_line_literal_string(value: &str) -> String {
-    format!("'''\n{}'''", value)
+    format!("'''\n{value}'''")
 }
