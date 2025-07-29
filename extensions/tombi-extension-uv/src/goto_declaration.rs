@@ -8,7 +8,7 @@ use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml,
-    goto_definition::goto_path_dependency_definition, goto_definition_for_member_pyproject_toml,
+    goto_definition::get_path_dependency_definition, goto_definition_for_member_pyproject_toml,
 };
 
 pub async fn goto_declaration(
@@ -89,30 +89,31 @@ fn goto_declaration_for_dependency_package(
         if !is_workspace.value() {
             return Ok(None);
         }
-        return goto_workspace_dependency_declaration(
+        return Ok(get_workspace_dependency_declaration(
             package_name.as_ref(),
             pyproject_toml_path,
             toml_version,
-        );
+        ));
     }
     if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
-        return goto_path_dependency_definition(path.value(), toml_version);
+        return Ok(get_path_dependency_definition(path.value(), toml_version));
     }
 
     Ok(None)
 }
 
-fn goto_workspace_dependency_declaration(
+fn get_workspace_dependency_declaration(
     package_name: &str,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Option<tombi_extension::DefinitionLocation> {
     // Find the workspace pyproject.toml
     let Some((workspace_pyproject_toml_path, workspace_document_tree)) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
     else {
-        return Ok(None);
+        return None;
     };
+
     // Find the member project
     let Some((_, member_range)) = find_member_project_toml(
         package_name,
@@ -120,14 +121,16 @@ fn goto_workspace_dependency_declaration(
         &workspace_pyproject_toml_path,
         toml_version,
     ) else {
-        return Ok(None);
+        return None;
     };
+
     let Ok(workspace_pyproject_toml_uri) = Url::from_file_path(&workspace_pyproject_toml_path)
     else {
-        return Ok(None);
+        return None;
     };
-    return Ok(Some(tombi_extension::DefinitionLocation {
+
+    Some(tombi_extension::DefinitionLocation {
         uri: workspace_pyproject_toml_uri,
         range: member_range,
-    }));
+    })
 }
