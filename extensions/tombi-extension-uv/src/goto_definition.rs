@@ -147,17 +147,11 @@ pub fn get_path_dependency_definition(
 ) -> Option<tombi_extension::DefinitionLocation> {
     let pyproject_toml_path = std::path::PathBuf::from(path).join("pyproject.toml");
 
-    let Some(member_document_tree) = load_pyproject_toml(&pyproject_toml_path, toml_version) else {
-        return None;
-    };
+    let member_document_tree = load_pyproject_toml(&pyproject_toml_path, toml_version)?;
 
-    let Some(package_name) = get_project_name(&member_document_tree) else {
-        return None;
-    };
+    let package_name = get_project_name(&member_document_tree)?;
 
-    let Ok(member_pyproject_toml_uri) = Url::from_file_path(&pyproject_toml_path) else {
-        return None;
-    };
+    let member_pyproject_toml_uri = Url::from_file_path(&pyproject_toml_path).ok()?;
 
     Some(tombi_extension::DefinitionLocation {
         uri: member_pyproject_toml_uri,
