@@ -8,7 +8,7 @@ use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml,
-    goto_definition_for_member_pyproject_toml,
+    goto_definition::goto_path_dependency_definition, goto_definition_for_member_pyproject_toml,
 };
 
 pub async fn goto_declaration(
@@ -94,6 +94,9 @@ fn goto_declaration_for_dependency_package(
             pyproject_toml_path,
             toml_version,
         );
+    }
+    if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
+        return goto_path_dependency_definition(path.value(), toml_version);
     }
 
     Ok(None)

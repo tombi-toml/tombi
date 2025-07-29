@@ -107,6 +107,9 @@ fn goto_definition_for_dependency_package(
             toml_version,
         );
     }
+    if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
+        return goto_path_dependency_definition(path.value(), toml_version);
+    }
 
     Ok(None)
 }
@@ -139,6 +142,26 @@ fn goto_workspace_dependency_definition(
         return Ok(None);
     };
     let Ok(member_pyproject_toml_uri) = Url::from_file_path(&member_pyproject_toml_path) else {
+        return Ok(None);
+    };
+    return Ok(Some(tombi_extension::DefinitionLocation {
+        uri: member_pyproject_toml_uri,
+        range: package_name.unquoted_range(),
+    }));
+}
+
+pub fn goto_path_dependency_definition(
+    path: &str,
+    toml_version: TomlVersion,
+) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+    let pyproject_toml_path = std::path::PathBuf::from(path).join("pyproject.toml");
+    let Some(member_document_tree) = load_pyproject_toml(&pyproject_toml_path, toml_version) else {
+        return Ok(None);
+    };
+    let Some(package_name) = get_project_name(&member_document_tree) else {
+        return Ok(None);
+    };
+    let Ok(member_pyproject_toml_uri) = Url::from_file_path(&pyproject_toml_path) else {
         return Ok(None);
     };
     return Ok(Some(tombi_extension::DefinitionLocation {
