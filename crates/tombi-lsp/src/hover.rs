@@ -98,15 +98,15 @@ impl std::fmt::Display for HoverContent {
         const SECTION_SEPARATOR: &str = "-----";
 
         if let Some(title) = &self.title {
-            writeln!(f, "#### {}\n", title)?;
+            writeln!(f, "#### {title}\n")?;
         }
 
         if let Some(description) = &self.description {
-            writeln!(f, "{}\n", description)?;
+            writeln!(f, "{description}\n")?;
         }
 
         if self.title.is_some() || self.description.is_some() {
-            writeln!(f, "{}\n", SECTION_SEPARATOR)?;
+            writeln!(f, "{SECTION_SEPARATOR}\n")?;
         }
 
         if !self.accessors.is_empty() {
@@ -115,7 +115,7 @@ impl std::fmt::Display for HoverContent {
         writeln!(f, "Value: `{}`\n", self.value_type)?;
 
         if let Some(constraints) = &self.constraints {
-            writeln!(f, "{}", constraints)?;
+            writeln!(f, "{constraints}")?;
         }
 
         if let Some(schema_url) = &self.schema_url {

@@ -53,7 +53,7 @@ impl std::fmt::Display for ValueKind {
 #[cfg(feature = "serde")]
 impl serde::de::Expected for ValueKind {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(formatter, "{}", self)
+        write!(formatter, "{self}")
     }
 }
 

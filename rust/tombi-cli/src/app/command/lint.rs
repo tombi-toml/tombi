@@ -32,7 +32,7 @@ pub fn run(args: Args, offline: bool, no_cache: bool) -> Result<(), crate::Error
             }
         }
         1 => eprintln!("1 file linted successfully"),
-        _ => eprintln!("{} files linted successfully", success_num),
+        _ => eprintln!("{success_num} files linted successfully"),
     }
 
     match error_num {

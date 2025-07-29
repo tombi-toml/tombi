@@ -57,7 +57,7 @@ impl From<Option<&std::path::Path>> for NotFormattedError {
 impl std::fmt::Display for NotFormattedError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.source_path {
-            Some(path) => write!(f, "{:?} is not formatted", path),
+            Some(path) => write!(f, "{path:?} is not formatted"),
             None => write!(f, "Input is not formatted"),
         }
     }

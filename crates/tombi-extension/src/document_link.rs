@@ -36,7 +36,7 @@ pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp
                 ))
                 .ok()
             } else if let Some(schema_filename) =
-                url.path_segments().and_then(|segments| segments.last())
+                url.path_segments().and_then(|mut segments| segments.next_back())
             {
                 tower_lsp::lsp_types::Url::parse(&format!(
                     "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/json.schemastore.org/{schema_filename}"

@@ -75,13 +75,12 @@ where
     P: Clone + Send + 'static,
 {
     let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level()
-        .map_err(|error| {
+        .inspect_err(|_| {
             if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin {
                 if let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
                     tracing::error!("failed to copy stdin to stdout: {}", error);
                 }
             }
-            error
         })?;
 
     let toml_version = config.toml_version.unwrap_or_default();

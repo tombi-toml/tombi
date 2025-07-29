@@ -187,8 +187,7 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
                         visitor.visit_u64(i as u64)
                     } else {
                         Err(Error::Custom(format!(
-                            "invalid value: negative number for u64: {}",
-                            i
+                            "invalid value: negative number for u64: {i}"
                         )))
                     }
                 } else if let Some(f) = n.value.as_f64() {
@@ -196,8 +195,7 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
                         visitor.visit_u64(f as u64)
                     } else {
                         Err(Error::Custom(format!(
-                            "invalid value: negative number for u64: {}",
-                            f
+                            "invalid value: negative number for u64: {f}"
                         )))
                     }
                 } else {
@@ -302,21 +300,18 @@ impl<'de> SerdeDeserializer<'de> for ValueNodeDeserializer<'de> {
                                     bytes.push(i as u8);
                                 } else {
                                     return Err(Error::Custom(format!(
-                                        "invalid value for byte: {}, should be 0-255",
-                                        i
+                                        "invalid value for byte: {i}, should be 0-255"
                                     )));
                                 }
                             } else {
                                 return Err(Error::Custom(format!(
-                                    "invalid value for byte: {:?}",
-                                    n
+                                    "invalid value for byte: {n:?}"
                                 )));
                             }
                         }
                         _ => {
                             return Err(Error::Custom(format!(
-                                "invalid type for byte array element: expected number, found {:?}",
-                                item
+                                "invalid type for byte array element: expected number, found {item:?}"
                             )));
                         }
                     }

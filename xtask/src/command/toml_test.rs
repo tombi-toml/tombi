@@ -40,7 +40,7 @@ fn decode_test(sh: &Shell, project_root: &std::path::Path, toml_version: TomlVer
             }
         }
         Err(err) => {
-            eprintln!("{}", err);
+            eprintln!("{err}");
         }
     }
 }

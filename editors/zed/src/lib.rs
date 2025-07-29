@@ -90,7 +90,7 @@ impl TombiExtension {
             .assets
             .iter()
             .find(|asset| asset.name == asset_name)
-            .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
+            .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
         let version_dir = format!("tombi-{version}");
         fs::create_dir_all(&version_dir)

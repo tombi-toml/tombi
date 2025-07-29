@@ -374,7 +374,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
             .sorted_by(|(a, _), (b, _)| version_sort(a, b))
             .enumerate()
             .map(|(i, (feature, feature_dependencies))| CompletionContent {
-                label: format!("\"{}\"", feature),
+                label: format!("\"{feature}\""),
                 kind: CompletionKind::String,
                 emoji_icon: Some('🦀'),
                 priority: tombi_extension::CompletionContentPriority::Custom(format!(
@@ -422,7 +422,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
 
 /// Fetch crate version list from crates.io API
 async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
-    let url = format!("https://crates.io/api/v1/crates/{}/versions", crate_name);
+    let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
     let client = HttpClient::new();
     let bytes = match client
         .get_bytes(&url)

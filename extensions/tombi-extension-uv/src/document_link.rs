@@ -266,7 +266,7 @@ fn document_link_for_project_dependencies(
 
                 // Check if this package is in tool.uv.sources
                 let is_local_source =
-                    uv_sources.map_or(false, |sources| sources.contains_key(package_name.as_ref()));
+                    uv_sources.is_some_and(|sources| sources.contains_key(package_name.as_ref()));
 
                 if is_local_source {
                     // For packages in tool.uv.sources, create links to local pyproject.toml
@@ -301,7 +301,7 @@ fn document_link_for_project_dependencies(
                 } else {
                     // Create PyPI URL for external packages
                     if let Ok(pypi_url) =
-                        Url::parse(&format!("https://pypi.org/project/{}/", package_name))
+                        Url::parse(&format!("https://pypi.org/project/{package_name}/"))
                     {
                         document_links.push(tombi_extension::DocumentLink {
                             target: pypi_url,

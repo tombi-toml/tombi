@@ -10,7 +10,7 @@ fn main() {
         .ok()
         .and_then(|output| {
             if output.status.success() {
-                if let Some(tags) = String::from_utf8(output.stdout).ok() {
+                if let Ok(tags) = String::from_utf8(output.stdout) {
                     for tag in tags.split('\n') {
                         if re.is_match(tag.trim()) {
                             return Some(tag.trim().to_string());
@@ -22,6 +22,6 @@ fn main() {
         })
         .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
 
-    println!("cargo:rustc-env=__TOMBI_VERSION={}", git_version);
+    println!("cargo:rustc-env=__TOMBI_VERSION={git_version}");
     println!("cargo:rerun-if-changed=.git/HEAD");
 }

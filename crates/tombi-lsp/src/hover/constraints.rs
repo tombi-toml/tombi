@@ -76,61 +76,61 @@ impl std::fmt::Display for ValueConstraints {
         if let Some(enumerate) = &self.enumerate {
             write!(f, "Enumerated Values:\n\n")?;
             for value in enumerate {
-                write!(f, "- `{}`\n\n", value)?;
+                write!(f, "- `{value}`\n\n")?;
             }
             writeln!(f)?;
         }
 
         if let Some(default) = &self.default {
-            write!(f, "Default: `{}`\n\n", default)?;
+            write!(f, "Default: `{default}`\n\n")?;
         }
 
         if let Some(examples) = &self.examples {
             write!(f, "Examples:\n\n")?;
             for example in examples {
-                write!(f, "  - `{}`\n\n", example)?;
+                write!(f, "  - `{example}`\n\n")?;
             }
             writeln!(f)?;
         }
 
         if let Some(minimum) = &self.minimum {
-            write!(f, "Minimum: `{}`\n\n", minimum)?;
+            write!(f, "Minimum: `{minimum}`\n\n")?;
         }
 
         if let Some(exclusive_minimum) = &self.exclusive_minimum {
-            write!(f, "Exclusive Minimum: `{}`\n\n", exclusive_minimum)?;
+            write!(f, "Exclusive Minimum: `{exclusive_minimum}`\n\n")?;
         }
 
         if let Some(maximum) = &self.maximum {
-            write!(f, "Maximum: `{}`\n\n", maximum)?;
+            write!(f, "Maximum: `{maximum}`\n\n")?;
         }
 
         if let Some(exclusive_maximum) = &self.exclusive_maximum {
-            write!(f, "Exclusive Maximum: `{}`\n\n", exclusive_maximum)?;
+            write!(f, "Exclusive Maximum: `{exclusive_maximum}`\n\n")?;
         }
 
         if let Some(multiple_of) = &self.multiple_of {
-            write!(f, "Multiple of: `{}`\n\n", multiple_of)?;
+            write!(f, "Multiple of: `{multiple_of}`\n\n")?;
         }
 
         if let Some(min_length) = self.min_length {
-            write!(f, "Minimum Length: `{}`\n\n", min_length)?;
+            write!(f, "Minimum Length: `{min_length}`\n\n")?;
         }
 
         if let Some(max_length) = self.max_length {
-            write!(f, "Maximum Length: `{}`\n\n", max_length)?;
+            write!(f, "Maximum Length: `{max_length}`\n\n")?;
         }
 
         if let Some(pattern) = &self.pattern {
-            write!(f, "Pattern: `{}`\n\n", pattern)?;
+            write!(f, "Pattern: `{pattern}`\n\n")?;
         }
 
         if let Some(min_items) = self.min_items {
-            write!(f, "Minimum Items: `{}`\n\n", min_items)?;
+            write!(f, "Minimum Items: `{min_items}`\n\n")?;
         }
 
         if let Some(max_items) = self.max_items {
-            write!(f, "Maximum Items: `{}`\n\n", max_items)?;
+            write!(f, "Maximum Items: `{max_items}`\n\n")?;
         }
 
         if self.unique_items.unwrap_or(false) {
@@ -138,28 +138,28 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(values_order) = &self.values_order {
-            write!(f, "Values Order: `{}`\n\n", values_order)?;
+            write!(f, "Values Order: `{values_order}`\n\n")?;
         }
 
         if let Some(required_keys) = &self.required_keys {
             write!(f, "Required Keys:\n\n")?;
             for key in required_keys.iter() {
-                write!(f, "- `{}`\n\n", key)?;
+                write!(f, "- `{key}`\n\n")?;
             }
         }
 
         if let Some(min_keys) = self.min_keys {
-            write!(f, "Minimum Keys: `{}`\n\n", min_keys)?;
+            write!(f, "Minimum Keys: `{min_keys}`\n\n")?;
         }
 
         if let Some(max_keys) = self.max_keys {
-            write!(f, "Maximum Keys: `{}`\n\n", max_keys)?;
+            write!(f, "Maximum Keys: `{max_keys}`\n\n")?;
         }
 
         if let Some(key_patterns) = &self.key_patterns {
             write!(f, "Key Patterns:\n\n")?;
             for pattern_property in key_patterns.iter() {
-                write!(f, "- `{}`\n\n", pattern_property)?;
+                write!(f, "- `{pattern_property}`\n\n")?;
             }
         }
 
@@ -168,7 +168,7 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(keys_order) = &self.keys_order {
-            write!(f, "Keys Order: `{}`\n\n", keys_order)?;
+            write!(f, "Keys Order: `{keys_order}`\n\n")?;
         }
 
         Ok(())

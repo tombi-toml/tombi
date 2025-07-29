@@ -273,7 +273,7 @@ impl NodeData {
                                     assert!(ptr::eq(lhs, rhs))
                                 }
                                 it => {
-                                    panic!("node/token confusion: {:?}", it)
+                                    panic!("node/token confusion: {it:?}")
                                 }
                             }
                         }
@@ -905,9 +905,7 @@ impl SyntaxNode {
         let span = self.span();
         assert!(
             span.start <= offset && offset <= span.end,
-            "Bad offset: span {:?} offset {:?}",
-            span,
-            offset
+            "Bad offset: span {span:?} offset {offset:?}"
         );
         if span.is_empty() {
             return TokenAtOffset::None;
@@ -938,9 +936,7 @@ impl SyntaxNode {
         let range = self.range();
         assert!(
             range.start <= position && position <= range.end,
-            "Bad position: range {:?} position {:?}",
-            range,
-            position
+            "Bad position: range {range:?} position {position:?}"
         );
         if range.is_empty() {
             return TokenAtOffset::None;
@@ -1005,7 +1001,7 @@ impl SyntaxNode {
     }
 
     pub fn splice_children(&self, to_delete: Range<usize>, to_insert: Vec<SyntaxElement>) {
-        assert!(self.data().mutable, "immutable tree: {}", self);
+        assert!(self.data().mutable, "immutable tree: {self}");
         for (i, child) in self.children_with_tokens().enumerate() {
             if to_delete.contains(&i) {
                 child.detach();
@@ -1019,12 +1015,12 @@ impl SyntaxNode {
     }
 
     pub fn detach(&self) {
-        assert!(self.data().mutable, "immutable tree: {}", self);
+        assert!(self.data().mutable, "immutable tree: {self}");
         self.data().detach()
     }
 
     fn attach_child(&self, index: usize, child: SyntaxElement) {
-        assert!(self.data().mutable, "immutable tree: {}", self);
+        assert!(self.data().mutable, "immutable tree: {self}");
         child.detach();
         let data = match &child {
             NodeOrToken::Node(it) => it.data(),
@@ -1154,7 +1150,7 @@ impl SyntaxToken {
     }
 
     pub fn detach(&self) {
-        assert!(self.data().mutable, "immutable tree: {}", self);
+        assert!(self.data().mutable, "immutable tree: {self}");
         self.data().detach()
     }
 }
