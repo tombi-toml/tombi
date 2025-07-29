@@ -299,10 +299,17 @@ fn goto_workspace_member(
         let Ok(package_pyproject_toml_uri) = Url::from_file_path(&package_toml_path) else {
             return Ok(None);
         };
+        let Some(member_document_tree) = load_pyproject_toml(&pyproject_toml_path, toml_version)
+        else {
+            return Ok(None);
+        };
+        let Some(package_name) = get_project_name(&member_document_tree) else {
+            return Ok(None);
+        };
 
         Ok(Some(tombi_extension::DefinitionLocation {
             uri: package_pyproject_toml_uri,
-            range: tombi_text::Range::default(),
+            range: package_name.unquoted_range(),
         }))
     } else {
         let Ok(workspace_pyproject_toml_uri) = Url::from_file_path(&workspace_pyproject_toml_path)
