@@ -101,37 +101,48 @@ fn goto_definition_for_dependency_package(
         if !is_workspace.value() {
             return Ok(None);
         }
-        // Find the workspace pyproject.toml
-        let Some((workspace_path, workspace_document_tree)) =
-            find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
-        else {
-            return Ok(None);
-        };
-        // Find the member project
-        let Some((member_pyproject_toml_path, _)) = find_member_project_toml(
+        return goto_workspace_dependency_definition(
             package_name.as_ref(),
-            &workspace_document_tree,
-            &workspace_path,
+            pyproject_toml_path,
             toml_version,
-        ) else {
-            return Ok(None);
-        };
-        let Some(member_document_tree) =
-            load_pyproject_toml(&member_pyproject_toml_path, toml_version)
-        else {
-            return Ok(None);
-        };
-        let Some(package_name) = get_project_name(&member_document_tree) else {
-            return Ok(None);
-        };
-        let Ok(member_pyproject_toml_uri) = Url::from_file_path(&member_pyproject_toml_path) else {
-            return Ok(None);
-        };
-        return Ok(Some(tombi_extension::DefinitionLocation {
-            uri: member_pyproject_toml_uri,
-            range: package_name.unquoted_range(),
-        }));
+        );
     }
 
     Ok(None)
+}
+
+fn goto_workspace_dependency_definition(
+    package_name: &str,
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+    // Find the workspace pyproject.toml
+    let Some((workspace_path, workspace_document_tree)) =
+        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
+    else {
+        return Ok(None);
+    };
+    // Find the member project
+    let Some((member_pyproject_toml_path, _)) = find_member_project_toml(
+        package_name,
+        &workspace_document_tree,
+        &workspace_path,
+        toml_version,
+    ) else {
+        return Ok(None);
+    };
+    let Some(member_document_tree) = load_pyproject_toml(&member_pyproject_toml_path, toml_version)
+    else {
+        return Ok(None);
+    };
+    let Some(package_name) = get_project_name(&member_document_tree) else {
+        return Ok(None);
+    };
+    let Ok(member_pyproject_toml_uri) = Url::from_file_path(&member_pyproject_toml_path) else {
+        return Ok(None);
+    };
+    return Ok(Some(tombi_extension::DefinitionLocation {
+        uri: member_pyproject_toml_uri,
+        range: package_name.unquoted_range(),
+    }));
 }
