@@ -120,34 +120,20 @@ fn get_workspace_dependency_definition(
     toml_version: TomlVersion,
 ) -> Option<tombi_extension::DefinitionLocation> {
     // Find the workspace pyproject.toml
-    let Some((workspace_path, workspace_document_tree)) =
-        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
-    else {
-        return None;
-    };
+    let (workspace_path, workspace_document_tree) =
+        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
 
     // Find the member project
-    let Some((member_pyproject_toml_path, _)) = find_member_project_toml(
+    let (member_pyproject_toml_path, _) = find_member_project_toml(
         package_name,
         &workspace_document_tree,
         &workspace_path,
         toml_version,
-    ) else {
-        return None;
-    };
+    )?;
 
-    let Some(member_document_tree) = load_pyproject_toml(&member_pyproject_toml_path, toml_version)
-    else {
-        return None;
-    };
-
-    let Some(package_name) = get_project_name(&member_document_tree) else {
-        return None;
-    };
-
-    let Ok(member_pyproject_toml_uri) = Url::from_file_path(&member_pyproject_toml_path) else {
-        return None;
-    };
+    let member_document_tree = load_pyproject_toml(&member_pyproject_toml_path, toml_version)?;
+    let package_name = get_project_name(&member_document_tree)?;
+    let member_pyproject_toml_uri = Url::from_file_path(&member_pyproject_toml_path).ok()?;
 
     Some(tombi_extension::DefinitionLocation {
         uri: member_pyproject_toml_uri,

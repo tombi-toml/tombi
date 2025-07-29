@@ -172,6 +172,10 @@ impl Array {
     pub fn len(&self) -> usize {
         self.values.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
 }
 
 impl ValueImpl for Array {

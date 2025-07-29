@@ -48,9 +48,7 @@ async fn diagnostics(
         return None;
     }
 
-    let Some(root) = backend.get_incomplete_ast(text_document_uri).await else {
-        return None;
-    };
+    let root = backend.get_incomplete_ast(text_document_uri).await?;
 
     let source_schema = backend
         .schema_store
