@@ -161,7 +161,7 @@ jobs:
   nightly:
     name: Publish nightly version
     if: github.event_name != 'pull_request'
-    needs: [ build, test, verify ]
+    needs: [build, test, verify]
     runs-on: ubuntu-latest
     environment: IntelliJ
     continue-on-error: true
@@ -184,6 +184,7 @@ jobs:
           CERTIFICATE_CHAIN: ${{ secrets.INTELLIJ_CERTIFICATE_CHAIN }}
           PRIVATE_KEY: ${{ secrets.INTELLIJ_PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.INTELLIJ_PRIVATE_KEY_PASSWORD }}
+        working-directory: ./editors/intellij
         run: |
           chmod +x ./gradlew
 
