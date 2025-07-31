@@ -74,13 +74,13 @@ impl Number {
 impl fmt::Display for Number {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Number::Integer(i) => write!(f, "{}", i),
+            Number::Integer(i) => write!(f, "{i}"),
             Number::Float(v) => {
                 // Ensure that whole number floats are displayed with .0
                 if v.fract() == 0.0 {
-                    write!(f, "{}.0", v)
+                    write!(f, "{v}.0")
                 } else {
-                    write!(f, "{}", v)
+                    write!(f, "{v}")
                 }
             }
         }

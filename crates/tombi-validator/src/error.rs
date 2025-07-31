@@ -117,7 +117,7 @@ impl Error {
             ErrorKind::Pattern { .. } => "pattern",
             ErrorKind::MaxValues { .. } => "max-values",
             ErrorKind::MinValues { .. } => "min-values",
-            ErrorKind::UniqueValues { .. } => "unique-values",
+            ErrorKind::UniqueValues => "unique-values",
             ErrorKind::MaxProperties { .. } => "max-properties",
             ErrorKind::MinProperties { .. } => "min-properties",
             ErrorKind::PatternProperty { .. } => "pattern-property",
@@ -145,7 +145,7 @@ impl std::fmt::Display for Patterns {
         if self.0.len() == 1 {
             write!(f, "{}", self.0[0])
         } else {
-            write!(f, "{}", self.0.iter().map(|p| format!("({})", p)).join("|"))
+            write!(f, "{}", self.0.iter().map(|p| format!("({p})")).join("|"))
         }
     }
 }

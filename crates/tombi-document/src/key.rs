@@ -110,7 +110,7 @@ impl<'de> serde::Deserialize<'de> for Key {
         } else if value.contains('"') && !value.contains('\'') {
             Ok(Self {
                 kind: KeyKind::LiteralString,
-                value: format!("'{}'", value),
+                value: format!("'{value}'"),
             })
         } else {
             Ok(Self {

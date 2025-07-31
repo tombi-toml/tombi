@@ -27,8 +27,7 @@ impl std::fmt::Debug for SourceSchema {
             .join(", ");
         write!(
             f,
-            "SourceSchema {{ root_schema: {:?}, sub_schema_url_map: {:?} }}",
-            root_schema_url, sub_schema_url_map
+            "SourceSchema {{ root_schema: {root_schema_url:?}, sub_schema_url_map: {sub_schema_url_map:?} }}"
         )
     }
 }

@@ -13,7 +13,7 @@ impl Format for tombi_ast::Keys {
             .collect_vec()
             .join(".");
 
-        write!(f, "{}", keys)
+        write!(f, "{keys}")
     }
 }
 

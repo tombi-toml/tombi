@@ -124,12 +124,12 @@ fn format_comment(
         if c != ' ' && c != '\t' {
             write!(f, " ")?;
         }
-        write!(f, "{}", c)?;
+        write!(f, "{c}")?;
     }
     if strip_leading_spaces {
         for c in iter.by_ref() {
             if c != ' ' && c != '\t' {
-                write!(f, "{}", c)?;
+                write!(f, "{c}")?;
                 break;
             }
         }

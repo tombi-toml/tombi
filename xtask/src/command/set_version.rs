@@ -26,7 +26,7 @@ pub fn run(sh: &Shell) -> anyhow::Result<()> {
     set_pyproject_toml_version(sh, &version)?;
     set_package_json_versions(sh, &version)?;
 
-    println!("TOMBI_VERSION={}", version);
+    println!("TOMBI_VERSION={version}");
 
     Ok(())
 }
@@ -35,8 +35,8 @@ fn set_cargo_toml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
     let project_root = project_root_path();
     let mut patch = Patch::new(sh, project_root.join("Cargo.toml"))?;
     patch.replace(
-        &format!(r#"version = "{}""#, DEV_VERSION),
-        &format!(r#"version = "{}""#, version),
+        &format!(r#"version = "{DEV_VERSION}""#),
+        &format!(r#"version = "{version}""#),
     );
     patch.commit(sh)?;
     Ok(())
@@ -52,8 +52,8 @@ fn set_editors_vscode_package_json_version(sh: &Shell, version: &str) -> anyhow:
     )?;
 
     patch.replace(
-        &format!(r#""version": "{}""#, DEV_VERSION),
-        &format!(r#""version": "{}""#, version),
+        &format!(r#""version": "{DEV_VERSION}""#),
+        &format!(r#""version": "{version}""#),
     );
 
     patch.commit(sh)?;
@@ -63,8 +63,8 @@ fn set_editors_vscode_package_json_version(sh: &Shell, version: &str) -> anyhow:
 fn set_pyproject_toml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
     let mut patch = Patch::new(sh, project_root_path().join("pyproject.toml"))?;
     patch.replace(
-        &format!(r#"version = "{}""#, DEV_VERSION),
-        &format!(r#"version = "{}""#, version),
+        &format!(r#"version = "{DEV_VERSION}""#),
+        &format!(r#"version = "{version}""#),
     );
     patch.commit(sh)?;
     Ok(())
@@ -87,8 +87,8 @@ fn set_package_json_versions(sh: &Shell, version: &str) -> anyhow::Result<()> {
             if package_json.exists() {
                 let mut patch = Patch::new(sh, &package_json)?;
                 patch.replace(
-                    &format!(r#""{}""#, DEV_VERSION),
-                    &format!(r#""{}""#, version),
+                    &format!(r#""{DEV_VERSION}""#),
+                    &format!(r#""{version}""#),
                 );
                 patch.commit(sh)?;
             }

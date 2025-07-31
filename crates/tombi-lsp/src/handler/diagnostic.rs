@@ -48,13 +48,11 @@ async fn diagnostics(
         return None;
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
-        return None;
-    };
+    let root = backend.get_incomplete_ast(text_document_uri).await?;
 
     let source_schema = backend
         .schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -63,7 +61,7 @@ async fn diagnostics(
 
     let document_sources = backend.document_sources.read().await;
 
-    match document_sources.get(&text_document_uri) {
+    match document_sources.get(text_document_uri) {
         Some(document) => tombi_linter::Linter::new(
             toml_version,
             backend
@@ -72,7 +70,7 @@ async fn diagnostics(
                 .lint
                 .as_ref()
                 .unwrap_or(&LintOptions::default()),
-            Some(Either::Left(&text_document_uri)),
+            Some(Either::Left(text_document_uri)),
             &backend.schema_store,
         )
         .lint(&document.text)

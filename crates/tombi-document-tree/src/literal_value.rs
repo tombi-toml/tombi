@@ -20,7 +20,7 @@ impl<'a> std::fmt::Display for LiteralValueRef<'a> {
             Boolean(v) => v.fmt(f),
             Integer(v) => v.fmt(f),
             Float(v) => v.fmt(f),
-            String(v) => write!(f, "\"{}\"", v),
+            String(v) => write!(f, "\"{v}\""),
             OffsetDateTime(v) => v.fmt(f),
             LocalDateTime(v) => v.fmt(f),
             LocalDate(v) => v.fmt(f),

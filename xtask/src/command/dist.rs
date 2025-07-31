@@ -17,7 +17,7 @@ pub fn run(sh: &Shell) -> Result<(), anyhow::Error> {
     let target = Target::get(&project_root);
     let dist = project_root.join("dist");
 
-    println!("Target: {:#?}", target);
+    println!("Target: {target:#?}");
 
     sh.remove_path(&dist)?;
     sh.create_dir(&dist)?;

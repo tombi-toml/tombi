@@ -199,7 +199,7 @@ impl ToTomlString for tombi_document::Array {
                                     );
                                 }
                                 _ => {
-                                    result.push_str(&format!("{} = ", key));
+                                    result.push_str(&format!("{key} = "));
                                     value.to_toml_string(
                                         result,
                                         &parent_keys.iter().chain(&[key]).copied().collect_vec(),

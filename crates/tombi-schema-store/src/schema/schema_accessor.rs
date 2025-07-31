@@ -119,7 +119,7 @@ impl From<&Accessor> for SchemaAccessor {
 impl std::fmt::Display for SchemaAccessor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SchemaAccessor::Key(key) => write!(f, "{}", key),
+            SchemaAccessor::Key(key) => write!(f, "{key}"),
             SchemaAccessor::Index => write!(f, "[*]"),
         }
     }
@@ -156,11 +156,11 @@ impl std::fmt::Display for SchemaAccessors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut iter = self.0.iter();
         if let Some(accessor) = iter.next() {
-            write!(f, "{}", accessor)?;
+            write!(f, "{accessor}")?;
             for accessor in iter {
                 match accessor {
-                    SchemaAccessor::Key(_) => write!(f, ".{}", accessor)?,
-                    SchemaAccessor::Index => write!(f, "{}", accessor)?,
+                    SchemaAccessor::Key(_) => write!(f, ".{accessor}")?,
+                    SchemaAccessor::Index => write!(f, "{accessor}")?,
                 }
             }
         }

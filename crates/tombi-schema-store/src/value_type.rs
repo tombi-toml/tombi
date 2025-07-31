@@ -344,14 +344,14 @@ fn fmt_composit_types(types: &[ValueType], separator: char, is_root: bool) -> St
                 non_null_types
                     .iter()
                     .map(|t| t.to_display(false))
-                    .join(&format!(" {} ", separator)),
+                    .join(&format!(" {separator} ")),
             )
         }
     } else if is_root {
         non_null_types
             .iter()
             .map(|t| t.to_display(false))
-            .join(&format!(" {} ", separator))
+            .join(&format!(" {separator} "))
             .to_string()
     } else if non_null_types.len() == 1 {
         non_null_types[0].to_display(false).to_string()
@@ -361,7 +361,7 @@ fn fmt_composit_types(types: &[ValueType], separator: char, is_root: bool) -> St
             non_null_types
                 .iter()
                 .map(|t| t.to_display(false))
-                .join(&format!(" {} ", separator)),
+                .join(&format!(" {separator} ")),
         )
     }
 }

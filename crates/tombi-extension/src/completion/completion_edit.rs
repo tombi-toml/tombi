@@ -21,7 +21,7 @@ impl CompletionEdit {
                 | CompletionHint::EqualTrigger { range, .. },
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!(" = {}", label),
+                    new_text: format!(" = {label}"),
                     range: tombi_text::Range::at(position).into(),
                 }),
                 insert_text_format: None,
