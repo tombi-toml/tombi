@@ -70,6 +70,17 @@ main {
   line-height: 1.6;
 }
 
+/* Anchor link scroll offset for fixed header */
+.mdx-content h1,
+.mdx-content h2,
+.mdx-content h3,
+.mdx-content h4,
+.mdx-content h5,
+.mdx-content h6,
+.mdx-content [id] {
+  scroll-margin-top: 100px; /* header height (80px) + offset (20px) */
+}
+
 .no-content h1,
 .mdx-content h2,
 .mdx-content h3,
