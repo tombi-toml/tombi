@@ -9,7 +9,7 @@ const SCROLL_OFFSET = 20; // Additional offset for better visual spacing
  * Scrolls to an element with proper header offset
  */
 export function scrollToElement(element: HTMLElement, smooth = true) {
-  const elementTop = element.offsetTop;
+  const elementTop = element.getBoundingClientRect().top + window.scrollY;
   const scrollTop = elementTop - HEADER_HEIGHT - SCROLL_OFFSET;
 
   window.scrollTo({
