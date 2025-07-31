@@ -19,7 +19,7 @@ export function AnchorHandler() {
   // Watch for route changes using createEffect
   createEffect(() => {
     // Access location.pathname to trigger the effect when route changes
-    const pathname = location.pathname;
+    location.pathname;
 
     // Small delay to ensure DOM is updated after route change
     setTimeout(() => {
