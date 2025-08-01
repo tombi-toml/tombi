@@ -3549,17 +3549,24 @@ dependencies = [
 name = "tombi-extension-uv"
 version = "0.0.0-dev"
 dependencies = [
+ "ahash",
  "glob",
  "itertools 0.14.0",
  "pep508_rs",
+ "serde",
+ "serde_json",
+ "tokio",
  "tombi-ast",
  "tombi-config",
  "tombi-document-tree",
  "tombi-extension",
+ "tombi-future",
  "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-version-sort",
  "tower-lsp",
+ "tracing",
 ]
 
 [[package]]

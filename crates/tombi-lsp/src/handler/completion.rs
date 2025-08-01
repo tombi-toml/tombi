@@ -143,5 +143,18 @@ pub async fn handle_completion(
         completion_items.extend(items);
     }
 
+    if let Some(items) = tombi_extension_uv::completion(
+        &text_document,
+        &document_tree,
+        position,
+        &accessors,
+        toml_version,
+        completion_hint,
+    )
+    .await?
+    {
+        completion_items.extend(items);
+    }
+
     Ok(Some(completion_items))
 }
