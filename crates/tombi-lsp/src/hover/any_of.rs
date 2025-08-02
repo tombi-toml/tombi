@@ -4,6 +4,8 @@ use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUrl};
 
+use crate::hover::display_value::GetEnumerate;
+
 use super::{
     constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverContent,
 };
@@ -42,6 +44,15 @@ where
             else {
                 continue;
             };
+
+            if let Some(values) = value_schema
+                .as_ref()
+                .get_enumerate(schema_url, definitions, schema_context)
+                .await
+            {
+                enumerate_values.extend(values);
+            }
+
             value_type_set.insert(value_schema.value_type().await);
         }
 
@@ -83,14 +94,6 @@ where
 
                 if keys.is_empty() && accessors == hover_content.accessors.as_ref() {
                     hover_content.value_type = value_type.clone();
-                }
-
-                if let Some(enumerate) = &hover_content
-                    .constraints
-                    .as_ref()
-                    .and_then(|constraints| constraints.enumerate.as_ref())
-                {
-                    enumerate_values.extend(enumerate.iter().map(Clone::clone));
                 }
 
                 match value

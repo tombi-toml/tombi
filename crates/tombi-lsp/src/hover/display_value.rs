@@ -1,4 +1,9 @@
-use std::str::FromStr;
+use std::{borrow::Cow, str::FromStr};
+
+use tombi_future::Boxable;
+use tombi_schema_store::{
+    AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaDefinitions, SchemaUrl, ValueSchema,
+};
 
 #[derive(Debug, Clone)]
 pub enum DisplayValue {
@@ -120,5 +125,189 @@ impl std::fmt::Display for DisplayValue {
                 write!(f, " }}")
             }
         }
+    }
+}
+
+pub trait GetEnumerate {
+    fn get_enumerate<'a: 'b, 'b>(
+        &'a self,
+        schema_url: &'a SchemaUrl,
+        definitions: &'a SchemaDefinitions,
+        schema_context: &'a SchemaContext,
+    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>>;
+}
+
+impl GetEnumerate for ValueSchema {
+    fn get_enumerate<'a: 'b, 'b>(
+        &'a self,
+        schema_url: &'a SchemaUrl,
+        definitions: &'a SchemaDefinitions,
+        schema_context: &'a SchemaContext,
+    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
+        async move {
+            match self {
+                ValueSchema::Boolean(schema) => schema
+                    .enumerate
+                    .as_ref()
+                    .map(|v| v.clone().into_iter().map(DisplayValue::Boolean).collect()),
+                ValueSchema::Integer(schema) => schema
+                    .enumerate
+                    .as_ref()
+                    .map(|v| v.clone().into_iter().map(DisplayValue::Integer).collect()),
+                ValueSchema::Float(schema) => schema
+                    .enumerate
+                    .as_ref()
+                    .map(|v| v.clone().into_iter().map(DisplayValue::Float).collect()),
+                ValueSchema::String(schema) => schema
+                    .enumerate
+                    .as_ref()
+                    .map(|v| v.clone().into_iter().map(DisplayValue::String).collect()),
+                ValueSchema::LocalDate(schema) => schema
+                    .enumerate
+                    .as_ref()
+                    .map(|v| v.clone().into_iter().map(DisplayValue::LocalDate).collect()),
+                ValueSchema::LocalDateTime(schema) => schema.enumerate.as_ref().map(|v| {
+                    v.clone()
+                        .into_iter()
+                        .map(DisplayValue::LocalDateTime)
+                        .collect()
+                }),
+                ValueSchema::LocalTime(schema) => schema
+                    .enumerate
+                    .as_ref()
+                    .map(|v| v.clone().into_iter().map(DisplayValue::LocalTime).collect()),
+                ValueSchema::OffsetDateTime(schema) => schema.enumerate.as_ref().map(|v| {
+                    v.clone()
+                        .into_iter()
+                        .map(DisplayValue::OffsetDateTime)
+                        .collect()
+                }),
+                ValueSchema::Array(_) | ValueSchema::Table(_) | ValueSchema::Null => None,
+                ValueSchema::OneOf(schema) => {
+                    schema
+                        .get_enumerate(schema_url, definitions, schema_context)
+                        .await
+                }
+                ValueSchema::AnyOf(schema) => {
+                    schema
+                        .get_enumerate(schema_url, definitions, schema_context)
+                        .await
+                }
+                ValueSchema::AllOf(schema) => {
+                    schema
+                        .get_enumerate(schema_url, definitions, schema_context)
+                        .await
+                }
+            }
+        }
+        .boxed()
+    }
+}
+
+impl GetEnumerate for OneOfSchema {
+    fn get_enumerate<'a: 'b, 'b>(
+        &'a self,
+        schema_url: &'a SchemaUrl,
+        definitions: &'a SchemaDefinitions,
+        schema_context: &'a SchemaContext,
+    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
+        async move {
+            let mut enumerate_values = Vec::new();
+            for schema in self.schemas.write().await.iter_mut() {
+                match schema
+                    .resolve(
+                        Cow::Borrowed(schema_url),
+                        Cow::Borrowed(definitions),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    Ok(Some(resolved)) => {
+                        if let Some(values) = resolved
+                            .value_schema
+                            .get_enumerate(schema_url, definitions, schema_context)
+                            .await
+                        {
+                            enumerate_values.extend(values);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Some(enumerate_values)
+        }
+        .boxed()
+    }
+}
+
+impl GetEnumerate for AnyOfSchema {
+    fn get_enumerate<'a: 'b, 'b>(
+        &'a self,
+        schema_url: &'a SchemaUrl,
+        definitions: &'a SchemaDefinitions,
+        schema_context: &'a SchemaContext,
+    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
+        async move {
+            let mut enumerate_values = Vec::new();
+            for schema in self.schemas.write().await.iter_mut() {
+                match schema
+                    .resolve(
+                        Cow::Borrowed(schema_url),
+                        Cow::Borrowed(definitions),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    Ok(Some(resolved)) => {
+                        if let Some(values) = resolved
+                            .value_schema
+                            .get_enumerate(schema_url, definitions, schema_context)
+                            .await
+                        {
+                            enumerate_values.extend(values);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Some(enumerate_values)
+        }
+        .boxed()
+    }
+}
+
+impl GetEnumerate for AllOfSchema {
+    fn get_enumerate<'a: 'b, 'b>(
+        &'a self,
+        schema_url: &'a SchemaUrl,
+        definitions: &'a SchemaDefinitions,
+        schema_context: &'a SchemaContext,
+    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
+        async move {
+            let mut enumerate_values = Vec::new();
+            for schema in self.schemas.write().await.iter_mut() {
+                match schema
+                    .resolve(
+                        Cow::Borrowed(schema_url),
+                        Cow::Borrowed(definitions),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    Ok(Some(resolved)) => {
+                        if let Some(values) = resolved
+                            .value_schema
+                            .get_enumerate(schema_url, definitions, schema_context)
+                            .await
+                        {
+                            enumerate_values.extend(values);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Some(enumerate_values)
+        }
+        .boxed()
     }
 }
