@@ -234,7 +234,12 @@ impl GetEnumerate for OneOfSchema {
                     _ => {}
                 }
             }
-            Some(enumerate_values)
+
+            if enumerate_values.is_empty() {
+                None
+            } else {
+                Some(enumerate_values)
+            }
         }
         .boxed()
     }
@@ -270,7 +275,12 @@ impl GetEnumerate for AnyOfSchema {
                     _ => {}
                 }
             }
-            Some(enumerate_values)
+
+            if enumerate_values.is_empty() {
+                None
+            } else {
+                Some(enumerate_values)
+            }
         }
         .boxed()
     }
@@ -306,7 +316,12 @@ impl GetEnumerate for AllOfSchema {
                     _ => {}
                 }
             }
-            Some(enumerate_values)
+
+            if enumerate_values.is_empty() {
+                None
+            } else {
+                Some(enumerate_values)
+            }
         }
         .boxed()
     }
