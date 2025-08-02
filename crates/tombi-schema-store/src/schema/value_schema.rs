@@ -1,6 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use futures::future::join_all;
+use indexmap::IndexSet;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_json::StringNode;
 
@@ -69,6 +70,9 @@ impl ValueSchema {
         if object.get("allOf").is_some() {
             return Some(ValueSchema::AllOf(AllOfSchema::new(object)));
         }
+        if let Some(tombi_json::ValueNode::Array(enum_values)) = object.get("enum") {
+            return Self::new_enum_value(object, enum_values);
+        }
 
         None
     }
@@ -116,6 +120,72 @@ impl ValueSchema {
             "array" => Some(ValueSchema::Array(ArraySchema::new(object))),
             "object" => Some(ValueSchema::Table(TableSchema::new(object))),
             _ => None,
+        }
+    }
+
+    fn new_enum_value(
+        object: &tombi_json::ObjectNode,
+        enum_values: &tombi_json::ArrayNode,
+    ) -> Option<Self> {
+        let mut enum_types = IndexSet::new();
+        for enum_value in &enum_values.items {
+            match enum_value {
+                tombi_json::ValueNode::Null(_) => {
+                    enum_types.insert("null");
+                }
+                tombi_json::ValueNode::Bool(_) => {
+                    enum_types.insert("boolean");
+                }
+                tombi_json::ValueNode::Number(_) => {
+                    enum_types.insert("number");
+                }
+                tombi_json::ValueNode::String(_) => {
+                    enum_types.insert("string");
+                }
+                tombi_json::ValueNode::Array(_) | tombi_json::ValueNode::Object(_) => {
+                    continue;
+                }
+            }
+        }
+
+        match enum_types.len() {
+            0 => None,
+            1 => {
+                let value_type = enum_types.into_iter().next().unwrap();
+                Self::new_single(value_type, object)
+            }
+            _ => {
+                let mut schemas = Vec::with_capacity(enum_types.len());
+                for value_type in enum_types {
+                    if let Some(schema) = Self::new_single(value_type, object) {
+                        schemas.push(Referable::Resolved {
+                            schema_url: None,
+                            value: schema,
+                        });
+                    }
+                }
+                let title = object
+                    .get("title")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+                let description = object
+                    .get("description")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                Some(Self::OneOf(OneOfSchema {
+                    title,
+                    description,
+                    range: object.range,
+                    schemas: Arc::new(tokio::sync::RwLock::new(schemas)),
+                    default: object.get("default").cloned().map(|v| v.into()),
+                    examples: object
+                        .get("examples")
+                        .and_then(|v| v.as_array())
+                        .map(|array| array.items.iter().map(|v| v.into()).collect()),
+                    deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+                }))
+            }
         }
     }
 
