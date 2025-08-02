@@ -3,6 +3,8 @@ use std::borrow::Cow;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUrl};
 
+use crate::hover::display_value::GetEnumerate;
+
 use super::{
     constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverContent,
 };
@@ -24,6 +26,7 @@ where
         let mut title_description_set = ahash::AHashSet::new();
         let mut value_type_set = indexmap::IndexSet::new();
         let mut constraints = None;
+        let mut enumerate_values = Vec::new();
         let default = all_of_schema
             .default
             .as_ref()
@@ -40,6 +43,15 @@ where
             else {
                 continue;
             };
+
+            if let Some(values) = current_schema
+                .value_schema
+                .as_ref()
+                .get_enumerate(schema_url, definitions, schema_context)
+                .await
+            {
+                enumerate_values.extend(values);
+            }
 
             if let Some(hover_content) = value
                 .get_hover_content(
@@ -94,6 +106,17 @@ where
             } else {
                 constraints = Some(ValueConstraints {
                     default: Some(default),
+                    ..Default::default()
+                });
+            }
+        }
+
+        if !enumerate_values.is_empty() {
+            if let Some(constraints) = constraints.as_mut() {
+                constraints.enumerate = Some(enumerate_values);
+            } else {
+                constraints = Some(ValueConstraints {
+                    enumerate: Some(enumerate_values),
                     ..Default::default()
                 });
             }
