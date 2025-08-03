@@ -1,4 +1,4 @@
-# Tombi for IntelliJ
+# Tombi for JetBrains
 
 <!-- Plugin description -->
 [Tombi][1] is a feature-rich language server for TOML.
