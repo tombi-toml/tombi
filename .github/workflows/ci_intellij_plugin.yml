@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - editors/intellij/**
+      - .github/workflows/ci_intellij_plugin.yml
   pull_request:
     branches:
       - main
