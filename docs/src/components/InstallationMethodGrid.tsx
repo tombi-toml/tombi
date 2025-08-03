@@ -60,8 +60,8 @@ const installationMethods: InstallationMethod[] = [
     category: "editor",
   },
   {
-    id: "jetbrains",
-    name: "JetBrains",
+    id: "jetbrains-ide",
+    name: "JetBrains IDE",
     image: "/jetbrains.png",
     category: "editor",
   },
