@@ -57,7 +57,7 @@ pub async fn completion(
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
-    toml_version: TomlVersion,
+    _toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if !text_document.uri.path().ends_with("pyproject.toml") {
@@ -65,37 +65,11 @@ pub async fn completion(
     }
 
     // Handle [project] dependencies
-    if matches_accessors!(accessors, ["project", "dependencies", _]) {
-        if let Some((_, tombi_document_tree::Value::String(dep_spec))) =
-            dig_accessors(document_tree, accessors)
-        {
-            return complete_package_spec(dep_spec.value(), dep_spec, position, completion_hint)
-                .await;
-        }
-    }
-
-    // Handle [project] optional-dependencies
-    if matches_accessors!(accessors, ["project", "optional-dependencies", _, _]) {
-        if let Some((_, tombi_document_tree::Value::String(dep_spec))) =
-            dig_accessors(document_tree, accessors)
-        {
-            return complete_package_spec(dep_spec.value(), dep_spec, position, completion_hint)
-                .await;
-        }
-    }
-
-    // Handle [tool.uv] dependencies
-    if matches_accessors!(accessors, ["tool", "uv", "dependencies", _]) {
-        if let Some((_, tombi_document_tree::Value::String(dep_spec))) =
-            dig_accessors(document_tree, accessors)
-        {
-            return complete_package_spec(dep_spec.value(), dep_spec, position, completion_hint)
-                .await;
-        }
-    }
-
-    // Handle [dependency-groups]
-    if matches_accessors!(accessors, ["dependency-groups", _, _]) {
+    if matches_accessors!(accessors, ["project", "dependencies", _])
+        || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
+        || matches_accessors!(accessors, ["dependency-groups", _, _])
+        || matches_accessors!(accessors, ["build-system", "requires", _])
+    {
         if let Some((_, tombi_document_tree::Value::String(dep_spec))) =
             dig_accessors(document_tree, accessors)
         {
@@ -125,11 +99,9 @@ fn analyze_completion_context(dep_spec: &str, cursor_pos: usize) -> CompletionCo
 
     // Try to parse as a complete requirement first
     if let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(dep_spec) {
+        tracing::info!("Parsed requirement successfully: {:?}", requirement);
+
         let package_name = requirement.name.to_string();
-        tracing::info!(
-            "Parsed requirement successfully: package_name={}",
-            package_name
-        );
 
         // Check if we're in the extras/features section
         if dep_spec.contains('[') && dep_spec.contains(']') {
