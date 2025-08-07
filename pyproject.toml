@@ -13,7 +13,7 @@ GitHub = "https://github.com/tombi-toml/tombi"
 dev = [
   "maturin>=1.5,<2.0",
   "pytest>=8.3.3",
-  "ruff[a, b,]>=0.7.4; python_version < '3.12'",
+  "ruff>=0.7.4",
 ]
 
 [build-system]
