@@ -34,13 +34,6 @@ jobs:
           java-version: 21
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Export properties
-        id: properties
-        shell: bash
-        working-directory: ./editors/intellij
-        run: |
-          chmod +x ./gradlew
-          PROPERTIES="$(./gradlew properties --console=plain -q)"
       - name: Build plugin
         working-directory: ./editors/intellij
         run: |
@@ -86,7 +79,6 @@ jobs:
       - name: Run tests
         working-directory: ./editors/intellij
         run: |
-          chmod +x ./gradlew
           ./gradlew check
       - name: Upload result
         if: failure()
@@ -152,7 +144,6 @@ jobs:
         continue-on-error: true
         working-directory: ./editors/intellij
         run: |
-          chmod +x ./gradlew
           ./gradlew verifyPlugin
       - name: Upload result
         if: always()
@@ -189,8 +180,6 @@ jobs:
           PRIVATE_KEY_PASSWORD: ${{ secrets.INTELLIJ_PRIVATE_KEY_PASSWORD }}
         working-directory: ./editors/intellij
         run: |
-          chmod +x ./gradlew
-
           sed -i -E \
             "s/(pluginVersion = [^[:space:]]+)/\\1-nightly.$(git rev-parse --short HEAD)/g" \
             gradle.properties
