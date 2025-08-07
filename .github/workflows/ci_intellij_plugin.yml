@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - editors/intellij/**
+      - .github/workflows/ci_intellij_plugin.yml
   pull_request:
     branches:
       - main
@@ -31,13 +34,6 @@ jobs:
           java-version: 21
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Export properties
-        id: properties
-        shell: bash
-        working-directory: ./editors/intellij
-        run: |
-          chmod +x ./gradlew
-          PROPERTIES="$(./gradlew properties --console=plain -q)"
       - name: Build plugin
         working-directory: ./editors/intellij
         run: |
@@ -83,7 +79,6 @@ jobs:
       - name: Run tests
         working-directory: ./editors/intellij
         run: |
-          chmod +x ./gradlew
           ./gradlew check
       - name: Upload result
         if: failure()
@@ -149,7 +144,6 @@ jobs:
         continue-on-error: true
         working-directory: ./editors/intellij
         run: |
-          chmod +x ./gradlew
           ./gradlew verifyPlugin
       - name: Upload result
         if: always()
@@ -157,3 +151,39 @@ jobs:
         with:
           name: pluginVerifier-result
           path: ${{ github.workspace }}/editors/intellij/build/reports/pluginVerifier
+
+  nightly:
+    name: Publish nightly version
+    if: github.event_name != 'pull_request'
+    needs: [build, test, verify]
+    runs-on: ubuntu-latest
+    environment: IntelliJ
+    continue-on-error: true
+
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Publish plugin to Nightly channel
+        env:
+          PUBLISH_TOKEN: ${{ secrets.INTELLIJ_PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.INTELLIJ_CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.INTELLIJ_PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.INTELLIJ_PRIVATE_KEY_PASSWORD }}
+        working-directory: ./editors/intellij
+        run: |
+          sed -i -E \
+            "s/(pluginVersion = [^[:space:]]+)/\\1-nightly.$(git rev-parse --short HEAD)/g" \
+            gradle.properties
+
+          NIGHTLY_VERSION=$(grep -oP '^pluginVersion = \K\S+' gradle.properties)
+
+          ./gradlew publishPlugin -Pchannel=Nightly -PpluginVersion=${NIGHTLY_VERSION}

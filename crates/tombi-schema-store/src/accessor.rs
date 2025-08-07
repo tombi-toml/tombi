@@ -39,8 +39,8 @@ impl Accessor {
 impl std::fmt::Display for Accessor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Accessor::Key(key) => write!(f, "{}", key),
-            Accessor::Index(index) => write!(f, "[{}]", index),
+            Accessor::Key(key) => write!(f, "{key}"),
+            Accessor::Index(index) => write!(f, "[{index}]"),
         }
     }
 }
@@ -100,11 +100,11 @@ impl std::fmt::Display for Accessors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut iter = self.0.iter();
         if let Some(accessor) = iter.next() {
-            write!(f, "{}", accessor)?;
+            write!(f, "{accessor}")?;
             for accessor in iter {
                 match accessor {
-                    Accessor::Key(_) => write!(f, ".{}", accessor)?,
-                    Accessor::Index(_) => write!(f, "{}", accessor)?,
+                    Accessor::Key(_) => write!(f, ".{accessor}")?,
+                    Accessor::Index(_) => write!(f, "{accessor}")?,
                 }
             }
         }

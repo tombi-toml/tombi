@@ -60,6 +60,12 @@ const installationMethods: InstallationMethod[] = [
     category: "editor",
   },
   {
+    id: "jetbrains-ide",
+    name: "JetBrains IDE",
+    image: "/jetbrains.png",
+    category: "editor",
+  },
+  {
     id: "neovim",
     name: "Neovim",
     image: "/neovim.png",

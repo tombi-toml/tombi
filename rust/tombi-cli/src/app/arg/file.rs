@@ -56,7 +56,7 @@ impl FileInput {
                 for file_input in files {
                     let file_path = file_input.as_ref();
 
-                    if is_glob_pattern(file_path) || file_path.ends_with(".toml") {
+                    if is_glob_pattern(file_path) {
                         matched_paths.extend(
                             search_with_patterns_async(
                                 root,

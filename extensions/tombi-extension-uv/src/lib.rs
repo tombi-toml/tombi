@@ -110,9 +110,9 @@ fn extract_member_patterns<'a>(
 }
 
 /// Helper function to extract exclude patterns from workspace document tree
-fn extract_exclude_patterns<'a>(
-    workspace_document_tree: &'a tombi_document_tree::DocumentTree,
-) -> Vec<&'a tombi_document_tree::String> {
+fn extract_exclude_patterns(
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
+) -> Vec<&tombi_document_tree::String> {
     match tombi_document_tree::dig_keys(
         workspace_document_tree,
         &["tool", "uv", "workspace", "exclude"],
@@ -129,9 +129,9 @@ fn extract_exclude_patterns<'a>(
 }
 
 /// Helper function to get project name from document tree
-fn get_project_name<'a>(
-    document_tree: &'a tombi_document_tree::DocumentTree,
-) -> Option<&'a tombi_document_tree::String> {
+fn get_project_name(
+    document_tree: &tombi_document_tree::DocumentTree,
+) -> Option<&tombi_document_tree::String> {
     match tombi_document_tree::dig_keys(document_tree, &["project", "name"]) {
         Some((_, tombi_document_tree::Value::String(name))) => Some(name),
         _ => None,
@@ -301,7 +301,7 @@ fn goto_workspace_member(
         let Ok(package_pyproject_toml_uri) = Url::from_file_path(&package_toml_path) else {
             return Ok(None);
         };
-        let Some(member_document_tree) = load_pyproject_toml(&pyproject_toml_path, toml_version)
+        let Some(member_document_tree) = load_pyproject_toml(pyproject_toml_path, toml_version)
         else {
             return Ok(None);
         };

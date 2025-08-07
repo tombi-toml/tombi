@@ -24,3 +24,14 @@ node_modules
 
 # envrc
 .direnv/
+
+### IntelliJ IDEA ###
+.idea/**
+!.idea/gradle.xml
+!.idea/icon.svg
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/

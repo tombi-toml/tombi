@@ -132,6 +132,7 @@ pub fn load_with_path_and_level(
     if let Ok(mut current_dir) = std::env::current_dir() {
         loop {
             let config_path = current_dir.join(TOMBI_TOML_FILENAME);
+            tracing::trace!("Checking config file at {:?}", &config_path);
             if config_path.is_file() {
                 tracing::debug!("\"{}\" found at {:?}", TOMBI_TOML_FILENAME, &config_path);
 
@@ -143,6 +144,7 @@ pub fn load_with_path_and_level(
             }
 
             let pyproject_toml_path = current_dir.join(PYPROJECT_TOML_FILENAME);
+            tracing::trace!("Checking pyproject.toml file at {:?}", &pyproject_toml_path);
             if pyproject_toml_path.exists() {
                 tracing::debug!(
                     "\"{}\" found at {:?}",

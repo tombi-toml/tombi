@@ -5,7 +5,9 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUrl};
 
 use super::{
-    constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverContent,
+    constraints::ValueConstraints,
+    display_value::{DisplayValue, GetEnumerate},
+    GetHoverContent, HoverContent,
 };
 
 pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
@@ -42,6 +44,15 @@ where
             else {
                 continue;
             };
+
+            if let Some(values) = value_schema
+                .as_ref()
+                .get_enumerate(schema_url, definitions, schema_context)
+                .await
+            {
+                enumerate_values.extend(values);
+            }
+
             value_type_set.insert(value_schema.value_type().await);
         }
 
@@ -91,14 +102,6 @@ where
                     && hover_content.value_type != tombi_schema_store::ValueType::Array
                 {
                     return Some(hover_content);
-                }
-
-                if let Some(enumerate) = &hover_content
-                    .constraints
-                    .as_ref()
-                    .and_then(|constraints| constraints.enumerate.as_ref())
-                {
-                    enumerate_values.extend(enumerate.iter().map(Clone::clone));
                 }
 
                 match value

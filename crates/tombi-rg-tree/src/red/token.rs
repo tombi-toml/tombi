@@ -29,7 +29,7 @@ impl<L: Language> fmt::Debug for RedToken<L> {
         for idx in 21..25 {
             if text.is_char_boundary(idx) {
                 let text = format!("{} ...", &text[..idx]);
-                return write!(f, " {:?}", text);
+                return write!(f, " {text:?}");
             }
         }
         unreachable!()

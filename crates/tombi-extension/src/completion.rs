@@ -189,7 +189,7 @@ impl CompletionContent {
         schema_url: Option<&SchemaUrl>,
     ) -> Self {
         Self {
-            label: format!("{}{}", quote, quote),
+            label: format!("{quote}{quote}"),
             kind,
             emoji_icon: Some('🦅'),
             priority: CompletionContentPriority::TypeHint,
@@ -326,7 +326,7 @@ impl CompletionContent {
             documentation: if !patterns.is_empty() {
                 let mut documentation = "Allowed Patterns:\n\n".to_string();
                 for pattern in patterns {
-                    documentation.push_str(&format!("- `{}`\n", pattern));
+                    documentation.push_str(&format!("- `{pattern}`\n"));
                 }
                 Some(documentation)
             } else {
@@ -443,7 +443,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             Some(documentation) => {
                 let mut documentation = documentation;
                 if let Some(schema_text) = schema_text {
-                    documentation.push_str(&format!("\n\n{}\n\n", SECTION_SEPARATOR));
+                    documentation.push_str(&format!("\n\n{SECTION_SEPARATOR}\n\n"));
                     documentation.push_str(&schema_text);
                 }
                 Some(documentation)
@@ -471,7 +471,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
                 Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
                     detail: None,
                     description: Some(match &completion_content.detail {
-                        Some(detail) => format!("[Default] {}", detail),
+                        Some(detail) => format!("[Default] {detail}"),
                         None => "Default".to_string(),
                     }),
                 })
@@ -533,7 +533,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             kind: Some(completion_content.kind.into()),
             detail: completion_content.detail.map(|detail| {
                 if let Some(emoji_icon) = completion_content.emoji_icon {
-                    format!("{} {}", emoji_icon, detail)
+                    format!("{emoji_icon} {detail}")
                 } else {
                     detail
                 }

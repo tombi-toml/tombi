@@ -125,6 +125,17 @@ async function findVenvTombiBin(
 ): Promise<string | undefined> {
   const interpreterDetails = await getInterpreterDetails(workspaceUri);
   if (!interpreterDetails.pythonPath) {
+    const venvBinPath = vscode.Uri.joinPath(
+      workspaceUri,
+      ".venv",
+      process.platform === "win32" ? "Scripts" : "bin",
+      binName,
+    );
+
+    if (await fileExists(venvBinPath)) {
+      return venvBinPath.fsPath;
+    }
+
     return undefined;
   }
 
@@ -140,14 +151,14 @@ async function findVenvTombiBin(
 }
 
 async function findNodeModulesTombiBin(
-  binName: string,
+  _binName: string,
   workspaceUri: vscode.Uri,
 ): Promise<string | undefined> {
   const nodeModulesBinPath = vscode.Uri.joinPath(
     workspaceUri,
     "node_modules",
     ".bin",
-    binName,
+    "tombi", // NOTE: npm installs the binary as "tombi"
   );
 
   if (await fileExists(nodeModulesBinPath)) {

@@ -2,3 +2,4 @@
 
 editors/intellij/ @ya7010 @InSyncWithFoo
 .github/workflows/ci_intellij_plugin.yml @ya7010 @InSyncWithFoo
+.github/workflows/release_jetbrains_marketplace.yml @ya7010 @InSyncWithFoo

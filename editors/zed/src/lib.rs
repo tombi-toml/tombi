@@ -31,6 +31,31 @@ impl TombiExtension {
             });
         }
 
+        let worktree_root_path = worktree.root_path();
+        let worktree_root_path = std::path::Path::new(&worktree_root_path);
+
+        let (venv_script_dir, binary_name) = match zed::current_platform() {
+            (zed::Os::Windows, _) => ("Scripts", "tombi.exe"),
+            _ => ("bin", "tombi"),
+        };
+
+        let venv_bin_path =
+            worktree_root_path.join(format!(".venv/{venv_script_dir}/{binary_name}"));
+        if venv_bin_path.is_file() {
+            return Ok(TombiBinary {
+                path: venv_bin_path.to_string_lossy().to_string(),
+                args: binary_args,
+            });
+        }
+
+        let node_modules_bin_path = worktree_root_path.join("node_modules/.bin/tombi");
+        if node_modules_bin_path.is_file() {
+            return Ok(TombiBinary {
+                path: node_modules_bin_path.to_string_lossy().to_string(),
+                args: binary_args,
+            });
+        }
+
         if let Some(path) = worktree.which("tombi") {
             return Ok(TombiBinary {
                 path,
@@ -90,15 +115,12 @@ impl TombiExtension {
             .assets
             .iter()
             .find(|asset| asset.name == asset_name)
-            .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
+            .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
         let version_dir = format!("tombi-{version}");
         fs::create_dir_all(&version_dir)
             .map_err(|err| format!("failed to create directory '{version_dir}': {err}"))?;
-        let binary_path = match platform {
-            zed::Os::Windows => format!("{version_dir}/tombi.exe"),
-            _ => format!("{version_dir}/tombi"),
-        };
+        let binary_path = format!("{version_dir}/{binary_name}");
 
         if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(

@@ -8,7 +8,6 @@ use clap::{
 };
 use clap_verbosity_flag::{log, InfoLevel, Verbosity};
 use tracing_formatter::TombiFormatter;
-use tracing_subscriber::filter;
 use tracing_subscriber::prelude::*;
 
 #[derive(clap::Parser)]
@@ -49,14 +48,14 @@ where
 }
 
 /// Convert [`clap_verbosity_flag::log::LevelFilter`] to [`tracing_subscriber::filter::LevelFilter`]
-fn convert_log_level_filter(level: log::LevelFilter) -> filter::LevelFilter {
+fn convert_log_level_filter(level: log::LevelFilter) -> tracing_subscriber::filter::LevelFilter {
     match level {
-        log::LevelFilter::Off => filter::LevelFilter::OFF,
-        log::LevelFilter::Error => filter::LevelFilter::ERROR,
-        log::LevelFilter::Warn => filter::LevelFilter::WARN,
-        log::LevelFilter::Info => filter::LevelFilter::INFO,
-        log::LevelFilter::Debug => filter::LevelFilter::DEBUG,
-        log::LevelFilter::Trace => filter::LevelFilter::TRACE,
+        log::LevelFilter::Off => tracing_subscriber::filter::LevelFilter::OFF,
+        log::LevelFilter::Error => tracing_subscriber::filter::LevelFilter::ERROR,
+        log::LevelFilter::Warn => tracing_subscriber::filter::LevelFilter::WARN,
+        log::LevelFilter::Info => tracing_subscriber::filter::LevelFilter::INFO,
+        log::LevelFilter::Debug => tracing_subscriber::filter::LevelFilter::DEBUG,
+        log::LevelFilter::Trace => tracing_subscriber::filter::LevelFilter::TRACE,
     }
 }
 
@@ -65,12 +64,16 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     tracing_subscriber::registry()
         .with(
             // Filter out all logs from other crates
-            filter::Targets::new()
+            tracing_subscriber::filter::Targets::new()
                 .with_target(
                     "tombi",
                     convert_log_level_filter(args.verbose.log_level_filter()),
                 )
-                .with_default(filter::LevelFilter::OFF),
+                .with_target(
+                    "serde_tombi",
+                    convert_log_level_filter(args.verbose.log_level_filter()),
+                )
+                .with_default(tracing_subscriber::filter::LevelFilter::OFF),
         )
         .with(
             tracing_subscriber::fmt::layer()

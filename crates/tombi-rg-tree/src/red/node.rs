@@ -27,8 +27,8 @@ impl<L: Language> fmt::Debug for RedNode<L> {
                             write!(f, "  ")?;
                         }
                         match element {
-                            NodeOrToken::Node(node) => writeln!(f, "{:?}", node)?,
-                            NodeOrToken::Token(token) => writeln!(f, "{:?}", token)?,
+                            NodeOrToken::Node(node) => writeln!(f, "{node:?}")?,
+                            NodeOrToken::Token(token) => writeln!(f, "{token:?}")?,
                         }
                         level += 1;
                     }

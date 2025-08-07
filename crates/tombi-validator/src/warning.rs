@@ -6,7 +6,7 @@ pub enum WarningKind {
     Deprecated(SchemaAccessors),
 
     #[error(
-        r#"In strict mode, `{accessors}` does not allow the "{key}".
+        r#"In strict mode, `{accessors}` does not allow "{key}" key.
 Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_url},
 or set `schema.strict = false` in your `tombi.toml`"#
     )]
