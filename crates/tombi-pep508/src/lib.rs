@@ -1,5 +1,4 @@
 pub mod ast;
-pub mod completion;
 mod error;
 mod language;
 pub mod parse;
@@ -49,6 +48,3 @@ pub use ast::{
 
 // Re-export from parser module
 pub use parser::{Parser, PartialParseResult};
-
-// Re-export from completion module
-pub use completion::CompletionContext;
