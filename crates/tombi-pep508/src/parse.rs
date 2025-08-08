@@ -1,8 +1,4 @@
-use crate::{
-    ast::SyntaxTreeBuilder,
-    parser::Parser,
-    Error, ErrorKind, SyntaxKind,
-};
+use crate::{ast::SyntaxTreeBuilder, parser::Parser, Error, ErrorKind, SyntaxKind};
 
 /// Trait for parsing PEP 508 components
 pub trait Parse {

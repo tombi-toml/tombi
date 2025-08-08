@@ -1,6 +1,6 @@
-use crate::SyntaxKind;
-use crate::ast::traits::{AstNode, AstToken, SyntaxNode, SyntaxToken};
 use crate::ast::token::Identifier;
+use crate::ast::traits::{AstNode, AstToken, SyntaxNode, SyntaxToken};
+use crate::SyntaxKind;
 
 /// Extras list node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

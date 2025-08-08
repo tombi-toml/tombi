@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod completion;
 mod error;
 mod language;
 pub mod parse;
@@ -14,16 +15,40 @@ pub use syntax_kind::SyntaxKind;
 
 // Re-export from ast module
 pub use ast::{
-    parse, MarkerExpression, ParseError, Pep508Requirement, PreorderWithTokens, SyntaxElement,
-    SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxNodePtr, SyntaxToken,
-    SyntaxTreeBuilder, VersionClause, VersionOperator, VersionSpec,
+    parse,
     // AST traits
-    AstNode, AstToken,
-    // AST nodes
-    Root, Requirement, PackageName, ExtrasList, VersionSpecNode, VersionClauseNode, UrlSpec, MarkerExpr,
+    AstNode,
+    AstToken,
+    ExtrasList,
     // AST tokens
-    Identifier, VersionString,
+    Identifier,
+    MarkerExpr,
+    MarkerExpression,
+    PackageName,
+    ParseError,
+    Pep508Requirement,
+    PreorderWithTokens,
+    Requirement,
+    // AST nodes
+    Root,
+    SyntaxElement,
+    SyntaxElementChildren,
+    SyntaxNode,
+    SyntaxNodeChildren,
+    SyntaxNodePtr,
+    SyntaxToken,
+    SyntaxTreeBuilder,
+    UrlSpec,
+    VersionClause,
+    VersionClauseNode,
+    VersionOperator,
+    VersionSpec,
+    VersionSpecNode,
+    VersionString,
 };
 
 // Re-export from parser module
 pub use parser::{Parser, PartialParseResult};
+
+// Re-export from completion module
+pub use completion::CompletionContext;

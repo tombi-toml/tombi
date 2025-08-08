@@ -1,6 +1,6 @@
-use crate::SyntaxKind;
-use crate::ast::traits::{AstNode, SyntaxNode, AstChildren};
 use crate::ast::data::VersionOperator;
+use crate::ast::traits::{AstChildren, AstNode, SyntaxNode};
+use crate::SyntaxKind;
 
 /// Version specification node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

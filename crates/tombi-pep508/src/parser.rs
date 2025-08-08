@@ -321,7 +321,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-
     // Data extraction methods
     fn parse_package_name(&mut self) -> Result<String, ParseError> {
         let position = self.position;

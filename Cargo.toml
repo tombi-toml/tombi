@@ -77,7 +77,6 @@ tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
-tombi-pep508 = { path = "crates/tombi-pep508" }
 tombi-diagnostic = { path = "crates/tombi-diagnostic" }
 tombi-document = { path = "crates/tombi-document" }
 tombi-document-tree = { path = "crates/tombi-document-tree" }
@@ -96,6 +95,7 @@ tombi-lexer = { path = "crates/tombi-lexer" }
 tombi-linter = { path = "crates/tombi-linter" }
 tombi-lsp = { default-features = false, path = "crates/tombi-lsp" }
 tombi-parser = { path = "crates/tombi-parser" }
+tombi-pep508 = { path = "crates/tombi-pep508" }
 tombi-rg-tree = { path = "crates/tombi-rg-tree" }
 tombi-schema-store = { default-features = false, path = "crates/tombi-schema-store" }
 tombi-syntax = { path = "crates/tombi-syntax" }

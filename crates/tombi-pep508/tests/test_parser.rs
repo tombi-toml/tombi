@@ -43,7 +43,10 @@ fn test_parse_url_dependency() {
     let mut parser = Parser::new("mypackage @ https://github.com/user/repo/archive/main.zip");
     let req = parser.parse().unwrap();
     assert_eq!(req.name, "mypackage");
-    assert_eq!(req.url, Some("https://github.com/user/repo/archive/main.zip".to_string()));
+    assert_eq!(
+        req.url,
+        Some("https://github.com/user/repo/archive/main.zip".to_string())
+    );
 }
 
 #[test]
@@ -51,7 +54,11 @@ fn test_partial_parse_incomplete_extras() {
     let mut parser = Parser::new("requests[security,");
     let result = parser.parse_partial();
     match result {
-        PartialParseResult::ExtrasIncomplete { name, extras, after_comma } => {
+        PartialParseResult::ExtrasIncomplete {
+            name,
+            extras,
+            after_comma,
+        } => {
             assert_eq!(name, "requests");
             assert_eq!(extras, vec!["security"]);
             assert!(after_comma);

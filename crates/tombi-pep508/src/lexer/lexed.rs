@@ -21,13 +21,13 @@ impl Lexed {
             }
             Err(error) => {
                 let (span, range) = (error.span(), error.range());
-                
+
                 self.tokens.push(Token::new(
                     SyntaxKind::INVALID_TOKEN,
                     (error.span(), error.range()),
                 ));
                 self.errors.push(error);
-                
+
                 (span, range)
             }
         }

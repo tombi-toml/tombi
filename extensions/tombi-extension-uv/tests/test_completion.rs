@@ -238,7 +238,7 @@ dependencies = ["requests"]
         assert!(result.is_some());
         let items = result.unwrap();
         assert!(!items.is_empty());
-        
+
         // Should contain operators and features bracket
         assert!(items.iter().any(|item| item.label == "["));
         assert!(items.iter().any(|item| item.label == "=="));
@@ -284,7 +284,10 @@ dependencies = ["requests["]
         // Should at least suggest closing bracket
         assert!(items.iter().any(|item| item.label == "]"));
         // May also include actual features if PyPI is accessible
-        println!("Feature completion items: {:?}", items.iter().map(|i| &i.label).collect::<Vec<_>>());
+        println!(
+            "Feature completion items: {:?}",
+            items.iter().map(|i| &i.label).collect::<Vec<_>>()
+        );
     }
 
     #[tokio::test]
@@ -324,6 +327,8 @@ dependencies = ["requests[socks]=="]
         let items = result.unwrap();
         assert!(!items.is_empty());
         // Should contain version numbers
-        assert!(items.iter().all(|item| !item.label.contains("==") && !item.label.contains("[")));
+        assert!(items
+            .iter()
+            .all(|item| !item.label.contains("==") && !item.label.contains("[")));
     }
 }

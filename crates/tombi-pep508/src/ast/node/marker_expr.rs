@@ -1,5 +1,5 @@
-use crate::SyntaxKind;
 use crate::ast::traits::{AstNode, SyntaxNode};
+use crate::SyntaxKind;
 
 /// Marker expression node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

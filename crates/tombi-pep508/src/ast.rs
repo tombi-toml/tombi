@@ -13,7 +13,8 @@ pub use data::{
 
 // Re-export node types
 pub use node::{
-    ExtrasList, MarkerExpr, PackageName, Requirement, Root, UrlSpec, VersionClauseNode, VersionSpecNode,
+    ExtrasList, MarkerExpr, PackageName, Requirement, Root, UrlSpec, VersionClauseNode,
+    VersionSpecNode,
 };
 
 // Re-export token types

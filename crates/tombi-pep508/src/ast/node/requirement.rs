@@ -1,10 +1,10 @@
-use crate::SyntaxKind;
-use crate::ast::traits::{AstNode, SyntaxNode};
-use super::package_name::PackageName;
 use super::extras_list::ExtrasList;
-use super::version_spec::VersionSpecNode;
-use super::url_spec::UrlSpec;
 use super::marker_expr::MarkerExpr;
+use super::package_name::PackageName;
+use super::url_spec::UrlSpec;
+use super::version_spec::VersionSpecNode;
+use crate::ast::traits::{AstNode, SyntaxNode};
+use crate::SyntaxKind;
 
 /// A PEP 508 requirement
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

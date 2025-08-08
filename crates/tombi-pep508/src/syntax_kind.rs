@@ -72,7 +72,7 @@ pub enum SyntaxKind {
     MARKER_COMPARISON,
     MARKER_VALUE,
     URL_SPEC,
-    
+
     #[doc(hidden)]
     __LAST,
 }

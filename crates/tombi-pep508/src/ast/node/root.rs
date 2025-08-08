@@ -1,6 +1,6 @@
-use crate::SyntaxKind;
-use crate::ast::traits::{AstNode, SyntaxNode};
 use super::requirement::Requirement;
+use crate::ast::traits::{AstNode, SyntaxNode};
+use crate::SyntaxKind;
 
 /// Root node of a PEP 508 requirement
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

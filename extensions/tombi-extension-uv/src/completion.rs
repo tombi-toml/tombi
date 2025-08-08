@@ -1,7 +1,9 @@
 use ahash::AHashMap;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
-use tombi_extension::{CompletionContent, CompletionContentPriority, CompletionHint, CompletionKind};
+use tombi_extension::{
+    CompletionContent, CompletionContentPriority, CompletionHint, CompletionKind,
+};
 use tombi_future::BoxFuture;
 use tombi_future::Boxable;
 use tombi_schema_store::dig_accessors;
@@ -11,7 +13,8 @@ use tombi_schema_store::HttpClient;
 use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
-use tombi_pep508::{Parser, PartialParseResult};
+use tombi_pep508::ast::AstNode;
+use tombi_pep508::{CompletionContext, Parser};
 
 #[derive(Debug, Deserialize)]
 struct PyPiProjectResponse {
@@ -82,23 +85,28 @@ pub async fn completion(
     Ok(None)
 }
 
-
 async fn complete_package_spec(
     dep_spec: &tombi_document_tree::String,
-    _position: tombi_text::Position,
+    position: tombi_text::Position,
     _completion_hint: Option<CompletionHint>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     let mut completions = Vec::new();
 
-    // Parse the dependency specification using our custom parser
-    let mut parser = Parser::new(dep_spec.value());
-    let parse_result = parser.parse_partial();
+    // Parse the dependency specification to AST
+    let parser = Parser::new(dep_spec.value());
+    let (ast_root, _errors) = parser.parse_ast();
 
-    tracing::info!("Parsed result: {:?}", parse_result);
+    // Get root node from AST
+    let root = tombi_pep508::ast::Root::cast(ast_root).unwrap();
 
-    match parse_result {
-        PartialParseResult::Empty => {}
-        PartialParseResult::PackageName { name: _, .. } => {
+    // Get completion context from AST at cursor position
+    let context = CompletionContext::from_ast(&root, position);
+
+    tracing::info!("Completion context: {:?}", context);
+
+    match context {
+        None | Some(CompletionContext::Empty) => {}
+        Some(CompletionContext::AfterPackageName { .. }) => {
             // Suggest version operators
             completions.push(CompletionContent {
                 label: ">=".to_string(),
@@ -153,11 +161,15 @@ async fn complete_package_spec(
                 preselect: None,
             });
         }
-        PartialParseResult::ExtrasIncomplete { name, extras, after_comma } => {
+        Some(CompletionContext::InExtras { after_comma, .. }) => {
+            // Get package name and existing extras
+            let package_name = context.as_ref().unwrap().package_name().unwrap_or_default();
+            let existing_extras = context.as_ref().unwrap().existing_extras();
+
             // Fetch available extras for the package
-            if let Some(features) = fetch_package_features(&name, None).await {
+            if let Some(features) = fetch_package_features(&package_name, None).await {
                 for feature in features {
-                    if !extras.contains(&feature) {
+                    if !existing_extras.contains(&feature) {
                         completions.push(CompletionContent {
                             label: feature.clone(),
                             kind: CompletionKind::String,
@@ -192,9 +204,12 @@ async fn complete_package_spec(
                 });
             }
         }
-        PartialParseResult::VersionIncomplete { name } => {
+        Some(CompletionContext::InVersionSpec { .. }) => {
+            // Get package name
+            let package_name = context.as_ref().unwrap().package_name().unwrap_or_default();
+
             // Fetch and suggest versions
-            if let Some(mut versions) = fetch_package_versions(&name).await {
+            if let Some(mut versions) = fetch_package_versions(&package_name).await {
                 versions.sort_by(|a, b| version_sort(a, b));
                 for (i, version) in versions.iter().rev().take(10).enumerate() {
                     completions.push(CompletionContent {
@@ -202,7 +217,11 @@ async fn complete_package_spec(
                         kind: CompletionKind::String,
                         emoji_icon: None,
                         priority: CompletionContentPriority::Default,
-                        detail: Some(if i == 0 { "Latest version".to_string() } else { format!("Version {}", version) }),
+                        detail: Some(if i == 0 {
+                            "Latest version".to_string()
+                        } else {
+                            format!("Version {}", version)
+                        }),
                         documentation: None,
                         filter_text: None,
                         schema_url: None,
@@ -213,7 +232,7 @@ async fn complete_package_spec(
                 }
             }
         }
-        PartialParseResult::AfterSemicolon { .. } => {
+        Some(CompletionContext::AfterSemicolon { .. }) => {
             // Suggest common environment markers
             completions.push(CompletionContent {
                 label: "python_version".to_string(),
@@ -255,7 +274,7 @@ async fn complete_package_spec(
                 preselect: None,
             });
         }
-        PartialParseResult::MarkerIncomplete { .. } => {
+        Some(CompletionContext::InMarkerExpression { .. }) => {
             // Suggest marker operators and values
             completions.push(CompletionContent {
                 label: "and".to_string(),
@@ -284,7 +303,12 @@ async fn complete_package_spec(
                 preselect: None,
             });
         }
-        _ => {}
+        Some(CompletionContext::AfterAt { .. }) => {
+            // URL completion - could add common URL prefixes
+        }
+        Some(CompletionContext::InUrl { .. }) => {
+            // URL path completion
+        }
     }
 
     if completions.is_empty() {

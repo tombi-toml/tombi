@@ -33,30 +33,31 @@ pub async fn goto_definition(
     }
 
     if matches!(accessors.len(), 3 | 4)
-        && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"]) {
-            if let Some((_, tombi_document_tree::Value::Array(paths))) =
-                dig_accessors(document_tree, &accessors[..3])
-            {
-                let index = (accessors.len() == 4)
-                    .then(|| accessors.last().and_then(|accessor| accessor.as_index()))
-                    .flatten();
+        && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"])
+    {
+        if let Some((_, tombi_document_tree::Value::Array(paths))) =
+            dig_accessors(document_tree, &accessors[..3])
+        {
+            let index = (accessors.len() == 4)
+                .then(|| accessors.last().and_then(|accessor| accessor.as_index()))
+                .flatten();
 
-                for (i, path) in paths.iter().enumerate() {
-                    let tombi_document_tree::Value::String(path) = path else {
-                        continue;
-                    };
-                    if index.is_some() && index != Some(i) {
-                        continue;
-                    }
-                    if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
-                        locations.push(tombi_extension::DefinitionLocation {
-                            uri,
-                            range: tombi_text::Range::default(),
-                        });
-                    }
+            for (i, path) in paths.iter().enumerate() {
+                let tombi_document_tree::Value::String(path) = path else {
+                    continue;
+                };
+                if index.is_some() && index != Some(i) {
+                    continue;
+                }
+                if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
+                    locations.push(tombi_extension::DefinitionLocation {
+                        uri,
+                        range: tombi_text::Range::default(),
+                    });
                 }
             }
         }
+    }
 
     if locations.is_empty() {
         return Ok(None);

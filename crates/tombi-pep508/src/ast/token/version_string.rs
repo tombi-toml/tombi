@@ -1,5 +1,5 @@
-use crate::SyntaxKind;
 use crate::ast::traits::{AstToken, SyntaxToken};
+use crate::SyntaxKind;
 
 /// Version string token
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

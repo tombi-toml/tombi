@@ -57,11 +57,11 @@ impl Cursor<'_> {
         if self.bump().is_none() {
             return Ok(Token::eof());
         }
-        
+
         match self.current() {
             // Whitespace
             _ if self.is_whitespace() => self.whitespace(),
-            
+
             // Single character tokens
             '[' => Ok(Token::new(SyntaxKind::BRACKET_START, self.pop_span_range())),
             ']' => Ok(Token::new(SyntaxKind::BRACKET_END, self.pop_span_range())),
@@ -70,7 +70,7 @@ impl Cursor<'_> {
             ',' => Ok(Token::new(SyntaxKind::COMMA, self.pop_span_range())),
             ';' => Ok(Token::new(SyntaxKind::SEMICOLON, self.pop_span_range())),
             '@' => Ok(Token::new(SyntaxKind::AT, self.pop_span_range())),
-            
+
             // Operators
             '=' => {
                 if self.peek(1) == '=' {
@@ -83,7 +83,10 @@ impl Cursor<'_> {
                     }
                 } else {
                     self.bump();
-                    Err(Error::new(ErrorKind::InvalidOperator, self.pop_span_range()))
+                    Err(Error::new(
+                        ErrorKind::InvalidOperator,
+                        self.pop_span_range(),
+                    ))
                 }
             }
             '!' => {
@@ -92,7 +95,10 @@ impl Cursor<'_> {
                     Ok(Token::new(SyntaxKind::NOT_EQ, self.pop_span_range()))
                 } else {
                     self.bump();
-                    Err(Error::new(ErrorKind::InvalidOperator, self.pop_span_range()))
+                    Err(Error::new(
+                        ErrorKind::InvalidOperator,
+                        self.pop_span_range(),
+                    ))
                 }
             }
             '<' => {
@@ -117,21 +123,24 @@ impl Cursor<'_> {
                     Ok(Token::new(SyntaxKind::TILDE_EQ, self.pop_span_range()))
                 } else {
                     self.bump();
-                    Err(Error::new(ErrorKind::InvalidOperator, self.pop_span_range()))
+                    Err(Error::new(
+                        ErrorKind::InvalidOperator,
+                        self.pop_span_range(),
+                    ))
                 }
             }
-            
+
             // Strings
             '"' | '\'' => self.string(),
-            
+
             // Identifiers, keywords, version strings
             _ if self.current().is_ascii_alphabetic() || self.current() == '_' => {
                 self.identifier_or_keyword()
             }
-            
+
             // Version strings
             _ if self.current().is_ascii_digit() => self.version_string(),
-            
+
             // Unknown
             _ => {
                 self.bump();
@@ -164,7 +173,10 @@ impl Cursor<'_> {
             }
         }
 
-        Err(Error::new(ErrorKind::UnterminatedString, self.pop_span_range()))
+        Err(Error::new(
+            ErrorKind::UnterminatedString,
+            self.pop_span_range(),
+        ))
     }
 
     fn identifier_or_keyword(&mut self) -> Result<Token, Error> {
@@ -203,10 +215,19 @@ impl Cursor<'_> {
     fn version_string(&mut self) -> Result<Token, Error> {
         // Consume version-like characters (digits, dots, letters, etc.)
         self.eat_while(|c| {
-            c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' || c == '*' || c == '+' || c == '!'
+            c.is_ascii_alphanumeric()
+                || c == '.'
+                || c == '-'
+                || c == '_'
+                || c == '*'
+                || c == '+'
+                || c == '!'
         });
-        
-        Ok(Token::new(SyntaxKind::VERSION_STRING, self.pop_span_range()))
+
+        Ok(Token::new(
+            SyntaxKind::VERSION_STRING,
+            self.pop_span_range(),
+        ))
     }
 }
 
@@ -218,5 +239,8 @@ fn is_whitespace(c: char) -> bool {
 #[inline]
 fn is_token_separator(c: char) -> bool {
     is_whitespace(c)
-        || matches!(c, '[' | ']' | '(' | ')' | ',' | ';' | '@' | '"' | '\'' | '\0')
+        || matches!(
+            c,
+            '[' | ']' | '(' | ')' | ',' | ';' | '@' | '"' | '\'' | '\0'
+        )
 }
