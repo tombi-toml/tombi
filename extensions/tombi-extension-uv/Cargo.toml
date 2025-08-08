@@ -28,4 +28,9 @@ tower-lsp.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-tokio.workspace = true
+tokio = { workspace = true, features = [
+  "macros",
+  "rt",
+  "rt-multi-thread",
+  "test-util",
+] }

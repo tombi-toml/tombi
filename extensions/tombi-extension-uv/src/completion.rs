@@ -69,7 +69,7 @@ pub async fn completion(
         return Ok(None);
     }
 
-    // Handle [project] dependencies
+    // Handle various dependency sections
     if matches_accessors!(accessors, ["project", "dependencies", _])
         || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
         || matches_accessors!(accessors, ["dependency-groups", _, _])
@@ -92,6 +92,27 @@ async fn complete_package_spec(
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     let mut completions = Vec::new();
 
+    // Check if position is within the string's range
+    let dep_spec_range = dep_spec.range();
+    if !dep_spec_range.contains(position) {
+        return Ok(None);
+    }
+
+    // Convert absolute position to relative position within the string content
+    // We need to account for the fact that the range includes quotes but the value doesn't
+    let relative_column = if position.line == dep_spec_range.start.line {
+        // Calculate the offset within the string value (excluding quotes)
+        // The range starts at the opening quote, so we subtract 1 for the quote
+        position
+            .column
+            .saturating_sub(dep_spec_range.start.column + 1)
+    } else {
+        // If on a different line (shouldn't happen for dependency specs), use column as-is
+        position.column
+    };
+
+    let relative_position = tombi_text::Position::new(0, relative_column);
+
     // Parse the dependency specification to AST
     let parser = Parser::new(dep_spec.value());
     let (ast_root, _errors) = parser.parse_ast();
@@ -100,9 +121,15 @@ async fn complete_package_spec(
     let root = tombi_pep508::ast::Root::cast(ast_root).unwrap();
 
     // Get completion context from AST at cursor position
-    let context = CompletionContext::from_ast(&root, position);
+    let context = CompletionContext::from_ast(&root, relative_position);
 
-    tracing::info!("Completion context: {:?}", context);
+    tracing::info!(
+        "Completion for '{}' at abs pos {:?}, rel pos {:?}, context: {:?}",
+        dep_spec.value(),
+        position,
+        relative_position,
+        context
+    );
 
     match context {
         None | Some(CompletionContext::Empty) => {}
@@ -127,6 +154,19 @@ async fn complete_package_spec(
                 emoji_icon: None,
                 priority: CompletionContentPriority::Default,
                 detail: Some("Exactly equal to".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+            completions.push(CompletionContent {
+                label: "~=".to_string(),
+                kind: CompletionKind::String,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Compatible release".to_string()),
                 documentation: None,
                 filter_text: None,
                 schema_url: None,
