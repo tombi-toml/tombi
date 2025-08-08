@@ -26,11 +26,3 @@ tombi-text.workspace = true
 tombi-version-sort.workspace = true
 tower-lsp.workspace = true
 tracing.workspace = true
-
-[dev-dependencies]
-tokio = { workspace = true, features = [
-  "macros",
-  "rt",
-  "rt-multi-thread",
-  "test-util",
-] }

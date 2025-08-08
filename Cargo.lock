@@ -3555,7 +3555,6 @@ dependencies = [
  "pep508_rs",
  "serde",
  "serde_json",
- "tokio",
  "tombi-ast",
  "tombi-config",
  "tombi-document-tree",
@@ -3762,7 +3761,6 @@ dependencies = [
 name = "tombi-pep508"
 version = "0.0.0-dev"
 dependencies = [
- "pretty_assertions",
  "tombi-rg-tree",
  "tombi-text",
  "tracing",
