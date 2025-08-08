@@ -1,13 +1,7 @@
-use std::str::FromStr;
-
 use ahash::AHashMap;
-use itertools::Itertools;
-use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
 use serde::Deserialize;
 use tombi_config::TomlVersion;
-use tombi_extension::CompletionContent;
-use tombi_extension::CompletionHint;
-use tombi_extension::CompletionKind;
+use tombi_extension::{CompletionContent, CompletionContentPriority, CompletionHint, CompletionKind};
 use tombi_future::BoxFuture;
 use tombi_future::Boxable;
 use tombi_schema_store::dig_accessors;
@@ -17,17 +11,22 @@ use tombi_schema_store::HttpClient;
 use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
+use tombi_pep508::{Parser, PartialParseResult};
+
 #[derive(Debug, Deserialize)]
 struct PyPiProjectResponse {
+    #[allow(dead_code)]
     info: PyPiProjectInfo,
     releases: AHashMap<String, Vec<PyPiReleaseInfo>>,
 }
 
 #[derive(Debug, Deserialize)]
 struct PyPiProjectInfo {
+    #[allow(dead_code)]
     name: String,
     version: String,
     #[serde(default)]
+    #[allow(dead_code)]
     requires_dist: Option<Vec<String>>,
 }
 
@@ -44,9 +43,12 @@ struct PyPiVersionResponse {
 
 #[derive(Debug, Deserialize)]
 struct PyPiVersionInfo {
+    #[allow(dead_code)]
     name: String,
+    #[allow(dead_code)]
     version: String,
     #[serde(default)]
+    #[allow(dead_code)]
     requires_dist: Option<Vec<String>>,
     #[serde(default)]
     provides_extra: Option<Vec<String>>,
@@ -73,324 +75,226 @@ pub async fn completion(
         if let Some((_, tombi_document_tree::Value::String(dep_spec))) =
             dig_accessors(document_tree, accessors)
         {
-            return complete_package_spec(dep_spec.value(), dep_spec, position, completion_hint)
-                .await;
+            return complete_package_spec(dep_spec, position, completion_hint).await;
         }
     }
 
     Ok(None)
 }
 
-#[derive(Debug)]
-enum CompletionContext {
-    PackageName,
-    AfterPackageName(String),
-    FeatureName(String),
-    VersionOperator(String),
-    VersionNumber(String, String), // package_name, operator
-}
-
-fn analyze_completion_context(dep_spec: &str, cursor_pos: usize) -> CompletionContext {
-    tracing::info!(
-        "analyze_completion_context: dep_spec={:?}, cursor_pos={}",
-        dep_spec,
-        cursor_pos
-    );
-
-    // Try to parse as a complete requirement first
-    if let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(dep_spec) {
-        tracing::info!("Parsed requirement successfully: {:?}", requirement);
-
-        let package_name = requirement.name.to_string();
-
-        // Check if we're in the extras/features section
-        if dep_spec.contains('[') && dep_spec.contains(']') {
-            if let Some(start) = dep_spec.find('[') {
-                if let Some(end) = dep_spec.find(']') {
-                    if cursor_pos > start && cursor_pos <= end {
-                        tracing::info!("Context: In features section");
-                        return CompletionContext::FeatureName(package_name);
-                    }
-                }
-            }
-        }
-
-        // Check if we're after version operator
-        if let Some(VersionOrUrl::VersionSpecifier(_)) = requirement.version_or_url {
-            if let Some(op_pos) = dep_spec.rfind(|c: char| matches!(c, '=' | '>' | '<' | '!' | '~'))
-            {
-                if cursor_pos > op_pos {
-                    let operator = &dep_spec[op_pos..op_pos + 2.min(dep_spec.len() - op_pos)];
-                    tracing::info!("Context: After version operator={}", operator);
-                    return CompletionContext::VersionNumber(package_name, operator.to_string());
-                }
-            }
-        }
-
-        tracing::info!("Context: After package name");
-        return CompletionContext::AfterPackageName(package_name);
-    } else {
-        tracing::info!("Failed to parse as complete requirement");
-    }
-
-    // Handle incomplete specs
-    if dep_spec.is_empty() {
-        return CompletionContext::PackageName;
-    }
-
-    // Check for features syntax
-    if let Some(bracket_pos) = dep_spec.find('[') {
-        let package_name = dep_spec[..bracket_pos].trim();
-        if cursor_pos > bracket_pos {
-            return CompletionContext::FeatureName(package_name.to_string());
-        }
-    }
-
-    // Check for version operators
-    if let Some(op_idx) = dep_spec.find(|c: char| matches!(c, '=' | '>' | '<' | '!' | '~')) {
-        let package_name = dep_spec[..op_idx].trim();
-        tracing::info!(
-            "Found operator at index {}, package_name={}",
-            op_idx,
-            package_name
-        );
-
-        if cursor_pos == op_idx + 1 {
-            tracing::info!("Context: At version operator position");
-            return CompletionContext::VersionOperator(package_name.to_string());
-        } else if cursor_pos > op_idx {
-            let operator = &dep_spec[op_idx..op_idx + 2.min(dep_spec.len() - op_idx)];
-            tracing::info!("Context: After incomplete version operator={}", operator);
-            return CompletionContext::VersionNumber(
-                package_name.to_string(),
-                operator.to_string(),
-            );
-        }
-    }
-
-    // If we have some text but no special characters, we're still typing the package name
-    if cursor_pos <= dep_spec.len()
-        && !dep_spec.contains(|c: char| matches!(c, '[' | ']' | '=' | '>' | '<' | '!' | '~'))
-    {
-        return CompletionContext::PackageName;
-    }
-
-    // Default to after package name
-    CompletionContext::AfterPackageName(dep_spec.trim().to_string())
-}
 
 async fn complete_package_spec(
-    dep_spec: &str,
-    dep_string: &tombi_document_tree::String,
-    position: tombi_text::Position,
-    completion_hint: Option<CompletionHint>,
+    dep_spec: &tombi_document_tree::String,
+    _position: tombi_text::Position,
+    _completion_hint: Option<CompletionHint>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
-    let string_start = dep_string.range().start;
-    let cursor_offset = position - string_start;
-    let cursor_pos = cursor_offset.column as usize;
+    let mut completions = Vec::new();
 
-    let context = analyze_completion_context(dep_spec, cursor_pos);
+    // Parse the dependency specification using our custom parser
+    let mut parser = Parser::new(dep_spec.value());
+    let parse_result = parser.parse_partial();
 
-    tracing::info!(
-        "complete_package_spec: dep_spec={:?}, cursor_pos={}, context={:?}",
-        dep_spec,
-        cursor_pos,
-        context
-    );
+    tracing::info!("Parsed result: {:?}", parse_result);
 
-    match context {
-        CompletionContext::PackageName => {
-            // TODO: Could provide package name suggestions from PyPI search
-            Ok(None)
-        }
-        CompletionContext::AfterPackageName(package_name) => {
-            // Suggest opening bracket for features or version operators
-            let mut items = vec![];
-
-            // Suggest features syntax
-            items.push(CompletionContent {
-                label: "[".to_string(),
-                kind: CompletionKind::String,
-                emoji_icon: Some('🐍'),
-                priority: tombi_extension::CompletionContentPriority::Custom(
-                    "10__features__".to_string(),
-                ),
-                detail: Some("Specify package features".to_string()),
-                documentation: Some("Add package features/extras".to_string()),
-                filter_text: None,
-                schema_url: None,
-                deprecated: None,
-                edit: Some(tombi_extension::CompletionEdit {
-                    text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                        tower_lsp::lsp_types::TextEdit {
-                            range: tombi_text::Range::at(position).into(),
-                            new_text: "[".to_string(),
-                        },
-                    ),
-                    insert_text_format: Some(tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT),
-                    additional_text_edits: None,
-                }),
-                preselect: None,
-            });
-
+    match parse_result {
+        PartialParseResult::Empty => {}
+        PartialParseResult::PackageName { name: _, .. } => {
             // Suggest version operators
-            let operators = vec![
-                ("==", "Exact version match"),
-                (">=", "Greater than or equal to"),
-                ("<=", "Less than or equal to"),
-                (">", "Greater than"),
-                ("<", "Less than"),
-                ("~=", "Compatible release"),
-                ("!=", "Not equal to"),
-            ];
-
-            for (i, (op, desc)) in operators.iter().enumerate() {
-                items.push(CompletionContent {
-                    label: op.to_string(),
-                    kind: CompletionKind::String,
-                    emoji_icon: Some('📌'),
-                    priority: tombi_extension::CompletionContentPriority::Custom(format!(
-                        "10__version_{:02}__",
-                        i
-                    )),
-                    detail: Some(desc.to_string()),
-                    documentation: None,
-                    filter_text: None,
-                    schema_url: None,
-                    deprecated: None,
-                    edit: Some(tombi_extension::CompletionEdit {
-                        text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                            tower_lsp::lsp_types::TextEdit {
-                                range: tombi_text::Range::at(position).into(),
-                                new_text: op.to_string(),
-                            },
-                        ),
-                        insert_text_format: Some(
-                            tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT,
-                        ),
-                        additional_text_edits: None,
-                    }),
-                    preselect: None,
-                });
-            }
-
-            Ok(Some(items))
-        }
-        CompletionContext::FeatureName(package_name) => {
-            // Fetch features from PyPI
-            let mut items = vec![];
-
-            if let Some(features) = fetch_package_features(&package_name, None).await {
-                for (i, feature) in features.iter().enumerate() {
-                    items.push(CompletionContent {
-                        label: feature.clone(),
-                        kind: CompletionKind::String,
-                        emoji_icon: Some('🔧'),
-                        priority: tombi_extension::CompletionContentPriority::Custom(format!(
-                            "10__feature_{:03}__",
-                            i
-                        )),
-                        detail: Some("Package extra".to_string()),
-                        documentation: None,
-                        filter_text: None,
-                        schema_url: None,
-                        deprecated: None,
-                        edit: Some(tombi_extension::CompletionEdit {
-                            text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                                tower_lsp::lsp_types::TextEdit {
-                                    range: tombi_text::Range::at(position).into(),
-                                    new_text: feature.clone(),
-                                },
-                            ),
-                            insert_text_format: Some(
-                                tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT,
-                            ),
-                            additional_text_edits: None,
-                        }),
-                        preselect: None,
-                    });
-                }
-            }
-
-            // Always suggest closing bracket
-            items.push(CompletionContent {
-                label: "]".to_string(),
+            completions.push(CompletionContent {
+                label: ">=".to_string(),
                 kind: CompletionKind::String,
-                emoji_icon: Some('🐍'),
-                priority: tombi_extension::CompletionContentPriority::Custom(
-                    "99__close_bracket__".to_string(),
-                ),
-                detail: Some("Close features list".to_string()),
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Greater than or equal to".to_string()),
                 documentation: None,
                 filter_text: None,
                 schema_url: None,
                 deprecated: None,
-                edit: Some(tombi_extension::CompletionEdit {
-                    text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                        tower_lsp::lsp_types::TextEdit {
-                            range: tombi_text::Range::at(position).into(),
-                            new_text: "]".to_string(),
-                        },
-                    ),
-                    insert_text_format: Some(tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT),
-                    additional_text_edits: None,
-                }),
+                edit: None,
                 preselect: None,
             });
-
-            Ok(Some(items))
+            completions.push(CompletionContent {
+                label: "==".to_string(),
+                kind: CompletionKind::String,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Exactly equal to".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+            completions.push(CompletionContent {
+                label: "[".to_string(),
+                kind: CompletionKind::String,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Add extras".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+            completions.push(CompletionContent {
+                label: ";".to_string(),
+                kind: CompletionKind::String,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Add environment marker".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
         }
-        CompletionContext::VersionOperator(package_name) => {
-            // Already showing an operator, don't suggest more
-            Ok(None)
-        }
-        CompletionContext::VersionNumber(package_name, operator) => {
-            // Fetch and suggest version numbers
-            if let Some(versions) = fetch_package_versions(&package_name).await {
-                let items = versions
-                    .into_iter()
-                    .sorted_by(|a, b| tombi_version_sort::version_sort(a, b))
-                    .rev()
-                    .take(50)
-                    .enumerate()
-                    .map(|(i, ver)| {
-                        let new_dep_spec = format!("{package_name}{operator}{ver}");
-                        CompletionContent {
-                            label: ver.clone(),
+        PartialParseResult::ExtrasIncomplete { name, extras, after_comma } => {
+            // Fetch available extras for the package
+            if let Some(features) = fetch_package_features(&name, None).await {
+                for feature in features {
+                    if !extras.contains(&feature) {
+                        completions.push(CompletionContent {
+                            label: feature.clone(),
                             kind: CompletionKind::String,
-                            emoji_icon: Some('🐍'),
-                            priority: tombi_extension::CompletionContentPriority::Custom(format!(
-                                "10__pypi_{i:>03}__",
-                            )),
-                            detail: Some("Package version".to_string()),
+                            emoji_icon: None,
+                            priority: CompletionContentPriority::Default,
+                            detail: Some(format!("Extra: {}", feature)),
                             documentation: None,
                             filter_text: None,
                             schema_url: None,
                             deprecated: None,
-                            edit: Some(tombi_extension::CompletionEdit {
-                                text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                                    tower_lsp::lsp_types::TextEdit {
-                                        range: dep_string.unquoted_range().into(),
-                                        new_text: new_dep_spec,
-                                    },
-                                ),
-                                insert_text_format: Some(
-                                    tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT,
-                                ),
-                                additional_text_edits: None,
-                            }),
+                            edit: None,
                             preselect: None,
-                        }
-                    })
-                    .collect();
-                Ok(Some(items))
-            } else {
-                Ok(None)
+                        });
+                    }
+                }
+            }
+
+            // Also suggest closing the extras list
+            if !after_comma {
+                completions.push(CompletionContent {
+                    label: "]".to_string(),
+                    kind: CompletionKind::String,
+                    emoji_icon: None,
+                    priority: CompletionContentPriority::Default,
+                    detail: Some("Close extras list".to_string()),
+                    documentation: None,
+                    filter_text: None,
+                    schema_url: None,
+                    deprecated: None,
+                    edit: None,
+                    preselect: None,
+                });
             }
         }
+        PartialParseResult::VersionIncomplete { name } => {
+            // Fetch and suggest versions
+            if let Some(mut versions) = fetch_package_versions(&name).await {
+                versions.sort_by(|a, b| version_sort(a, b));
+                for (i, version) in versions.iter().rev().take(10).enumerate() {
+                    completions.push(CompletionContent {
+                        label: version.clone(),
+                        kind: CompletionKind::String,
+                        emoji_icon: None,
+                        priority: CompletionContentPriority::Default,
+                        detail: Some(if i == 0 { "Latest version".to_string() } else { format!("Version {}", version) }),
+                        documentation: None,
+                        filter_text: None,
+                        schema_url: None,
+                        deprecated: None,
+                        edit: None,
+                        preselect: None,
+                    });
+                }
+            }
+        }
+        PartialParseResult::AfterSemicolon { .. } => {
+            // Suggest common environment markers
+            completions.push(CompletionContent {
+                label: "python_version".to_string(),
+                kind: CompletionKind::Key,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Python version marker".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+            completions.push(CompletionContent {
+                label: "sys_platform".to_string(),
+                kind: CompletionKind::Key,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("System platform marker".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+            completions.push(CompletionContent {
+                label: "platform_machine".to_string(),
+                kind: CompletionKind::Key,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Platform machine marker".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+        }
+        PartialParseResult::MarkerIncomplete { .. } => {
+            // Suggest marker operators and values
+            completions.push(CompletionContent {
+                label: "and".to_string(),
+                kind: CompletionKind::String,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Logical AND".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+            completions.push(CompletionContent {
+                label: "or".to_string(),
+                kind: CompletionKind::String,
+                emoji_icon: None,
+                priority: CompletionContentPriority::Default,
+                detail: Some("Logical OR".to_string()),
+                documentation: None,
+                filter_text: None,
+                schema_url: None,
+                deprecated: None,
+                edit: None,
+                preselect: None,
+            });
+        }
+        _ => {}
     }
+
+    if completions.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(completions))
 }
 
+#[allow(dead_code)]
 async fn fetch_package_versions(package_name: &str) -> Option<Vec<String>> {
     tracing::info!("Fetching versions for package: {}", package_name);
     let url = format!("https://pypi.org/pypi/{}/json", package_name);

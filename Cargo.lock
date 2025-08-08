@@ -3562,6 +3562,7 @@ dependencies = [
  "tombi-extension",
  "tombi-future",
  "tombi-parser",
+ "tombi-pep508",
  "tombi-schema-store",
  "tombi-text",
  "tombi-version-sort",
@@ -3755,6 +3756,15 @@ dependencies = [
  "tombi-rg-tree",
  "tombi-syntax",
  "tombi-text",
+]
+
+[[package]]
+name = "tombi-pep508"
+version = "0.0.0-dev"
+dependencies = [
+ "pretty_assertions",
+ "tombi-text",
+ "tracing",
 ]
 
 [[package]]

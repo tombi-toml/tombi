@@ -20,6 +20,7 @@ tombi-document-tree.workspace = true
 tombi-extension.workspace = true
 tombi-future.workspace = true
 tombi-parser.workspace = true
+tombi-pep508.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-version-sort.workspace = true

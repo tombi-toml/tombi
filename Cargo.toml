@@ -77,6 +77,7 @@ tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
+tombi-pep508 = { path = "crates/tombi-pep508" }
 tombi-diagnostic = { path = "crates/tombi-diagnostic" }
 tombi-document = { path = "crates/tombi-document" }
 tombi-document-tree = { path = "crates/tombi-document-tree" }
