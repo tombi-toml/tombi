@@ -1,9 +1,9 @@
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "native")]
 mod on_native;
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "native")]
 pub use on_native::*;
 
-#[cfg(feature = "wasm")]
+#[cfg(not(feature = "native"))]
 mod on_wasm;
-#[cfg(feature = "wasm")]
+#[cfg(not(feature = "native"))]
 pub use on_wasm::*;
