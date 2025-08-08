@@ -8,6 +8,7 @@ license.workspace = true
 
 [dependencies]
 tombi-text = { workspace = true }
+tombi-rg-tree = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

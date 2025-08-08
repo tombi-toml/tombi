@@ -59,6 +59,20 @@ pub enum SyntaxKind {
     // Error recovery
     INVALID_TOKEN,
 
+    // AST Nodes
+    ROOT,
+    REQUIREMENT,
+    PACKAGE_NAME,
+    EXTRAS_LIST,
+    VERSION_SPEC,
+    VERSION_CLAUSE,
+    MARKER_EXPR,
+    MARKER_AND,
+    MARKER_OR,
+    MARKER_COMPARISON,
+    MARKER_VALUE,
+    URL_SPEC,
+    
     #[doc(hidden)]
     __LAST,
 }
@@ -101,6 +115,28 @@ impl SyntaxKind {
                 | SyntaxKind::IMPLEMENTATION_VERSION
                 | SyntaxKind::EXTRA
         )
+    }
+}
+
+impl From<SyntaxKind> for tombi_rg_tree::SyntaxKind {
+    #[inline]
+    fn from(k: SyntaxKind) -> Self {
+        Self(k as u16)
+    }
+}
+
+impl From<u16> for SyntaxKind {
+    #[inline]
+    fn from(d: u16) -> SyntaxKind {
+        assert!(d <= (SyntaxKind::__LAST as u16));
+        unsafe { std::mem::transmute::<u16, SyntaxKind>(d) }
+    }
+}
+
+impl From<SyntaxKind> for u16 {
+    #[inline]
+    fn from(k: SyntaxKind) -> u16 {
+        k as u16
     }
 }
 

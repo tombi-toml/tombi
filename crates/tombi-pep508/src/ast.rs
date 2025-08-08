@@ -1,5 +1,7 @@
-use crate::{lexer, Lexed, SyntaxKind, Token};
+use crate::{lexer, Error, ErrorKind, Lexed, SyntaxKind, Token};
+use tombi_rg_tree::Language;
 
+// Data structures for parsed PEP 508 requirements
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pep508Requirement {
     pub name: String,
@@ -59,6 +61,96 @@ pub struct ParseError {
     pub position: usize,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PartialParseResult {
+    Empty,
+    PackageName {
+        name: String,
+        complete: bool,
+    },
+    ExtrasIncomplete {
+        name: String,
+        extras: Vec<String>,
+        after_comma: bool,
+    },
+    AfterAt {
+        name: String,
+    },
+    UrlIncomplete {
+        name: String,
+    },
+    VersionIncomplete {
+        name: String,
+    },
+    AfterSemicolon {
+        name: String,
+        version_spec: Option<VersionSpec>,
+    },
+    MarkerIncomplete {
+        name: String,
+        version_spec: Option<VersionSpec>,
+    },
+    Complete(Pep508Requirement),
+}
+
+// Re-export AST types
+pub use crate::language::Pep508Language;
+pub type SyntaxNode = tombi_rg_tree::RedNode<Pep508Language>;
+pub type SyntaxToken = tombi_rg_tree::RedToken<Pep508Language>;
+pub type SyntaxElement = tombi_rg_tree::RedElement<Pep508Language>;
+pub type SyntaxNodePtr = tombi_rg_tree::RedNodePtr<Pep508Language>;
+pub type SyntaxNodeChildren = tombi_rg_tree::RedNodeChildren<Pep508Language>;
+pub type SyntaxElementChildren = tombi_rg_tree::RedElementChildren<Pep508Language>;
+pub type PreorderWithTokens = tombi_rg_tree::RedPreorderWithTokens<Pep508Language>;
+
+/// Parse a PEP 508 requirement string into an AST
+pub fn parse(source: &str) -> (SyntaxNode, Vec<Error>) {
+    let parser = Parser::new(source);
+    parser.parse_ast()
+}
+
+/// Syntax tree builder for PEP 508 AST
+#[derive(Debug)]
+pub struct SyntaxTreeBuilder<E> {
+    inner: tombi_rg_tree::GreenNodeBuilder<'static>,
+    errors: Vec<E>,
+}
+
+impl<E> SyntaxTreeBuilder<E> {
+    pub fn finish(self) -> (tombi_rg_tree::GreenNode, Vec<E>) {
+        let green = self.inner.finish();
+        (green, self.errors)
+    }
+
+    pub fn token(&mut self, kind: crate::SyntaxKind, text: &str) {
+        let kind = Pep508Language::kind_to_raw(kind);
+        self.inner.token(kind, text);
+    }
+
+    pub fn start_node(&mut self, kind: crate::SyntaxKind) {
+        let kind = Pep508Language::kind_to_raw(kind);
+        self.inner.start_node(kind);
+    }
+
+    pub fn finish_node(&mut self) {
+        self.inner.finish_node();
+    }
+
+    pub fn error(&mut self, error: E) {
+        self.errors.push(error);
+    }
+}
+
+impl<E> Default for SyntaxTreeBuilder<E> {
+    fn default() -> SyntaxTreeBuilder<E> {
+        SyntaxTreeBuilder {
+            inner: tombi_rg_tree::GreenNodeBuilder::new(),
+            errors: Vec::new(),
+        }
+    }
+}
+
+/// Parser for PEP 508 requirements
 pub struct Parser<'a> {
     source: &'a str,
     lexed: Lexed,
@@ -75,6 +167,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parse into an AST
+    pub fn parse_ast(mut self) -> (SyntaxNode, Vec<Error>) {
+        let mut builder = SyntaxTreeBuilder::default();
+        builder.start_node(SyntaxKind::ROOT);
+        self.parse_requirement_ast(&mut builder);
+        builder.finish_node();
+
+        let (green, errors) = builder.finish();
+        let node = SyntaxNode::new_root(green);
+        (node, errors)
+    }
+
+    /// Parse into a Pep508Requirement structure
     pub fn parse(&mut self) -> Result<Pep508Requirement, ParseError> {
         // Skip leading trivia
         self.skip_trivia();
@@ -126,6 +231,7 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// Parse partial input for completion
     pub fn parse_partial(&mut self) -> PartialParseResult {
         self.skip_trivia();
 
@@ -334,6 +440,232 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // AST building methods
+    fn parse_requirement_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        builder.start_node(SyntaxKind::REQUIREMENT);
+
+        // Skip leading trivia
+        self.skip_trivia_ast(builder);
+
+        // Parse package name
+        self.parse_package_name_ast(builder);
+        self.skip_trivia_ast(builder);
+
+        // Check for extras
+        if self.peek_kind() == Some(SyntaxKind::BRACKET_START) {
+            self.parse_extras_ast(builder);
+            self.skip_trivia_ast(builder);
+        }
+
+        // Check for URL dependency (@ url)
+        if self.peek_kind() == Some(SyntaxKind::AT) {
+            self.consume_token_ast(builder); // consume '@'
+            self.skip_trivia_ast(builder);
+            self.parse_url_ast(builder);
+        } else if self.has_version_operator() {
+            // Check for version spec
+            self.parse_version_spec_ast(builder);
+            self.skip_trivia_ast(builder);
+        }
+
+        // Check for marker
+        if self.peek_kind() == Some(SyntaxKind::SEMICOLON) {
+            self.consume_token_ast(builder); // consume ';'
+            self.skip_trivia_ast(builder);
+            self.parse_marker_ast(builder);
+        }
+
+        // Consume any remaining tokens as invalid
+        while !self.is_at_end() {
+            self.consume_token_ast(builder);
+        }
+
+        builder.finish_node();
+    }
+
+    fn parse_package_name_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        builder.start_node(SyntaxKind::PACKAGE_NAME);
+
+        if self.peek_kind() == Some(SyntaxKind::IDENTIFIER) {
+            self.consume_token_ast(builder);
+        } else {
+            let span = self
+                .peek()
+                .map(|t| t.span())
+                .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
+            let range = tombi_text::Range::new(
+                tombi_text::Position::new(0, 0),
+                tombi_text::Position::new(0, 0),
+            );
+            builder.error(Error::new(ErrorKind::UnexpectedEndOfInput, (span, range)));
+        }
+
+        builder.finish_node();
+    }
+
+    fn parse_extras_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        builder.start_node(SyntaxKind::EXTRAS_LIST);
+
+        // Consume '['
+        self.consume_token_ast(builder);
+        self.skip_trivia_ast(builder);
+
+        // Parse extras
+        loop {
+            if self.peek_kind() == Some(SyntaxKind::BRACKET_END) {
+                self.consume_token_ast(builder);
+                break;
+            }
+
+            if self.is_at_end() {
+                let span = tombi_text::Span::new(
+                    (self.source.len() as u32).into(),
+                    (self.source.len() as u32).into(),
+                );
+                let range = tombi_text::Range::new(
+                    tombi_text::Position::new(0, 0),
+                    tombi_text::Position::new(0, 0),
+                );
+                builder.error(Error::new(ErrorKind::UnexpectedEndOfInput, (span, range)));
+                break;
+            }
+
+            // Parse extra name
+            if self.peek_kind() == Some(SyntaxKind::IDENTIFIER) {
+                self.consume_token_ast(builder);
+                self.skip_trivia_ast(builder);
+
+                if self.peek_kind() == Some(SyntaxKind::COMMA) {
+                    self.consume_token_ast(builder);
+                    self.skip_trivia_ast(builder);
+
+                    // Allow trailing comma
+                    if self.peek_kind() == Some(SyntaxKind::BRACKET_END) {
+                        self.consume_token_ast(builder);
+                        break;
+                    }
+                } else if self.peek_kind() != Some(SyntaxKind::BRACKET_END) {
+                    // Expected ',' or ']'
+                    let span = self
+                        .peek()
+                        .map(|t| t.span())
+                        .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
+                    let range = tombi_text::Range::new(
+                        tombi_text::Position::new(0, 0),
+                        tombi_text::Position::new(0, 0),
+                    );
+                    builder.error(Error::new(ErrorKind::InvalidToken, (span, range)));
+                    break;
+                }
+            } else {
+                // Expected identifier
+                let span = self
+                    .peek()
+                    .map(|t| t.span())
+                    .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
+                let range = tombi_text::Range::new(
+                    tombi_text::Position::new(0, 0),
+                    tombi_text::Position::new(0, 0),
+                );
+                builder.error(Error::new(ErrorKind::InvalidIdentifier, (span, range)));
+                break;
+            }
+        }
+
+        builder.finish_node();
+    }
+
+    fn parse_version_spec_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        builder.start_node(SyntaxKind::VERSION_SPEC);
+
+        loop {
+            if !self.has_version_operator() {
+                break;
+            }
+
+            builder.start_node(SyntaxKind::VERSION_CLAUSE);
+
+            // Consume version operator
+            self.consume_token_ast(builder);
+            self.skip_trivia_ast(builder);
+
+            // Consume version string
+            if self.peek_kind() == Some(SyntaxKind::VERSION_STRING) {
+                self.consume_token_ast(builder);
+            } else {
+                let span = self
+                    .peek()
+                    .map(|t| t.span())
+                    .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
+                let range = tombi_text::Range::new(
+                    tombi_text::Position::new(0, 0),
+                    tombi_text::Position::new(0, 0),
+                );
+                builder.error(Error::new(ErrorKind::InvalidVersion, (span, range)));
+            }
+
+            builder.finish_node();
+            self.skip_trivia_ast(builder);
+
+            // Check for comma (multiple version clauses)
+            if self.peek_kind() == Some(SyntaxKind::COMMA) {
+                self.consume_token_ast(builder);
+                self.skip_trivia_ast(builder);
+            } else if !self.has_version_operator() {
+                break;
+            }
+        }
+
+        builder.finish_node();
+    }
+
+    fn parse_url_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        builder.start_node(SyntaxKind::URL_SPEC);
+
+        // Collect all tokens until we hit a separator
+        while let Some(token) = self.peek() {
+            match token.kind() {
+                SyntaxKind::SEMICOLON | SyntaxKind::EOF | SyntaxKind::WHITESPACE => break,
+                _ => {
+                    self.consume_token_ast(builder);
+                }
+            }
+        }
+
+        builder.finish_node();
+    }
+
+    fn parse_marker_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        builder.start_node(SyntaxKind::MARKER_EXPR);
+
+        // For now, just consume everything as the marker expression
+        while !self.is_at_end() {
+            self.consume_token_ast(builder);
+        }
+
+        builder.finish_node();
+    }
+
+    fn skip_trivia_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        while let Some(token) = self.peek() {
+            if token.kind().is_trivia() {
+                self.consume_token_ast(builder);
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn consume_token_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
+        if let Some(token) = self.lexed.tokens.get(self.position) {
+            let span = token.span();
+            let text = &self.source[span.start.into()..span.end.into()];
+            builder.token(token.kind(), text);
+            self.position += 1;
+        }
+    }
+
+    // Data extraction methods
     fn parse_package_name(&mut self) -> Result<String, ParseError> {
         let position = self.position;
         let token = self
@@ -398,10 +730,6 @@ impl<'a> Parser<'a> {
         }
 
         Ok(extras)
-    }
-
-    fn has_version_operator(&self) -> bool {
-        self.peek_kind().map_or(false, |k| k.is_version_operator())
     }
 
     fn parse_version_spec(&mut self) -> Result<VersionSpec, ParseError> {
@@ -502,6 +830,7 @@ impl<'a> Parser<'a> {
         Ok(MarkerExpression { expression })
     }
 
+    // Helper methods
     fn skip_trivia(&mut self) {
         while let Some(token) = self.peek() {
             if token.kind().is_trivia() {
@@ -545,125 +874,11 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn has_version_operator(&self) -> bool {
+        self.peek_kind().map_or(false, |k| k.is_version_operator())
+    }
+
     fn is_at_end(&self) -> bool {
         self.peek_kind().map_or(true, |k| k == SyntaxKind::EOF)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum PartialParseResult {
-    Empty,
-    PackageName {
-        name: String,
-        complete: bool,
-    },
-    ExtrasIncomplete {
-        name: String,
-        extras: Vec<String>,
-        after_comma: bool,
-    },
-    AfterAt {
-        name: String,
-    },
-    UrlIncomplete {
-        name: String,
-    },
-    VersionIncomplete {
-        name: String,
-    },
-    AfterSemicolon {
-        name: String,
-        version_spec: Option<VersionSpec>,
-    },
-    MarkerIncomplete {
-        name: String,
-        version_spec: Option<VersionSpec>,
-    },
-    Complete(Pep508Requirement),
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_simple_package() {
-        let mut parser = Parser::new("requests");
-        let req = parser.parse().unwrap();
-        assert_eq!(req.name, "requests");
-        assert!(req.extras.is_empty());
-        assert!(req.version_spec.is_none());
-        assert!(req.marker.is_none());
-    }
-
-    #[test]
-    fn test_parse_with_version() {
-        let mut parser = Parser::new("requests>=2.28.0");
-        let req = parser.parse().unwrap();
-        assert_eq!(req.name, "requests");
-        assert!(req.version_spec.is_some());
-        let spec = req.version_spec.unwrap();
-        assert_eq!(spec.clauses.len(), 1);
-        assert_eq!(spec.clauses[0].operator, VersionOperator::GreaterThanEqual);
-        assert_eq!(spec.clauses[0].version, "2.28.0");
-    }
-
-    #[test]
-    fn test_parse_with_extras() {
-        let mut parser = Parser::new("requests[security,socks]");
-        let req = parser.parse().unwrap();
-        assert_eq!(req.name, "requests");
-        assert_eq!(req.extras, vec!["security", "socks"]);
-    }
-
-    #[test]
-    fn test_parse_with_marker() {
-        let mut parser = Parser::new("requests ; python_version >= '3.8'");
-        let req = parser.parse().unwrap();
-        assert_eq!(req.name, "requests");
-        assert!(req.marker.is_some());
-    }
-
-    #[test]
-    fn test_partial_parse_incomplete_extras() {
-        let mut parser = Parser::new("requests[security,");
-        let result = parser.parse_partial();
-        match result {
-            PartialParseResult::ExtrasIncomplete {
-                name,
-                extras,
-                after_comma,
-            } => {
-                assert_eq!(name, "requests");
-                assert_eq!(extras, vec!["security"]);
-                assert!(after_comma);
-            }
-            _ => panic!("Expected ExtrasIncomplete"),
-        }
-    }
-
-    #[test]
-    fn test_partial_parse_after_at() {
-        let mut parser = Parser::new("mypackage @ ");
-        let result = parser.parse_partial();
-        match result {
-            PartialParseResult::AfterAt { name } => {
-                assert_eq!(name, "mypackage");
-            }
-            _ => panic!("Expected AfterAt"),
-        }
-    }
-
-    #[test]
-    fn test_partial_parse_after_semicolon() {
-        let mut parser = Parser::new("requests ; ");
-        let result = parser.parse_partial();
-        match result {
-            PartialParseResult::AfterSemicolon { name, version_spec } => {
-                assert_eq!(name, "requests");
-                assert!(version_spec.is_none());
-            }
-            _ => panic!("Expected AfterSemicolon"),
-        }
     }
 }

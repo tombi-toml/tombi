@@ -3763,6 +3763,7 @@ name = "tombi-pep508"
 version = "0.0.0-dev"
 dependencies = [
  "pretty_assertions",
+ "tombi-rg-tree",
  "tombi-text",
  "tracing",
 ]
