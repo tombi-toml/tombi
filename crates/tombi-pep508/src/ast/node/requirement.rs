@@ -1,5 +1,5 @@
 use crate::SyntaxKind;
-use super::traits::{AstNode, SyntaxNode};
+use crate::ast::traits::{AstNode, SyntaxNode};
 use super::package_name::PackageName;
 use super::extras_list::ExtrasList;
 use super::version_spec::VersionSpecNode;

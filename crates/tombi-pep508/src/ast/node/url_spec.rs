@@ -1,5 +1,5 @@
 use crate::SyntaxKind;
-use super::traits::{AstNode, SyntaxNode};
+use crate::ast::traits::{AstNode, SyntaxNode};
 
 /// URL specification node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

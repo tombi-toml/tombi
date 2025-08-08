@@ -1,5 +1,5 @@
 use crate::SyntaxKind;
-use super::traits::{AstNode, SyntaxNode};
+use crate::ast::traits::{AstNode, SyntaxNode};
 use super::requirement::Requirement;
 
 /// Root node of a PEP 508 requirement
