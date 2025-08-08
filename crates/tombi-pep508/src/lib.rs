@@ -1,20 +1,16 @@
 pub mod ast;
-mod cursor;
 mod error;
 mod language;
-mod lexed;
 pub mod parse;
 mod syntax_kind;
-mod token;
 
 pub mod lexer;
 pub mod parser;
 
 pub use error::{Error, ErrorKind};
 pub use language::Pep508Language;
-pub use lexed::Lexed;
+pub use lexer::{Cursor, Lexed, Token};
 pub use syntax_kind::SyntaxKind;
-pub use token::Token;
 
 // Re-export from ast module
 pub use ast::{

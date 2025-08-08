@@ -1,8 +1,13 @@
-use crate::cursor::Cursor;
+mod cursor;
+mod lexed;
+mod token;
+
+pub use cursor::Cursor;
+pub use lexed::Lexed;
+pub use token::Token;
+
 use crate::error::{Error, ErrorKind};
-use crate::lexed::Lexed;
 use crate::syntax_kind::SyntaxKind;
-use crate::token::Token;
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn lex(source: &str) -> Lexed {
