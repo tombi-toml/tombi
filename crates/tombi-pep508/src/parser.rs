@@ -3,7 +3,7 @@ use crate::{
         MarkerExpression, ParseError, Pep508Requirement, SyntaxTreeBuilder, VersionClause,
         VersionOperator, VersionSpec,
     },
-    lexer, Error, ErrorKind, Lexed, SyntaxKind, Token,
+    lexer, Error, Lexed, SyntaxKind, Token,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -57,14 +57,7 @@ impl<'a> Parser<'a> {
 
     /// Parse into an AST
     pub fn parse_ast(mut self) -> (crate::ast::SyntaxNode, Vec<Error>) {
-        let mut builder = SyntaxTreeBuilder::default();
-        builder.start_node(SyntaxKind::ROOT);
-        self.parse_requirement_ast(&mut builder);
-        builder.finish_node();
-
-        let (green, errors) = builder.finish();
-        let node = crate::ast::SyntaxNode::new_root(green);
-        (node, errors)
+        self.parse_with::<crate::parse::RequirementParse>()
     }
 
     /// Parse into a Pep508Requirement structure
@@ -328,230 +321,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // AST building methods
-    fn parse_requirement_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        builder.start_node(SyntaxKind::REQUIREMENT);
-
-        // Skip leading trivia
-        self.skip_trivia_ast(builder);
-
-        // Parse package name
-        self.parse_package_name_ast(builder);
-        self.skip_trivia_ast(builder);
-
-        // Check for extras
-        if self.peek_kind() == Some(SyntaxKind::BRACKET_START) {
-            self.parse_extras_ast(builder);
-            self.skip_trivia_ast(builder);
-        }
-
-        // Check for URL dependency (@ url)
-        if self.peek_kind() == Some(SyntaxKind::AT) {
-            self.consume_token_ast(builder); // consume '@'
-            self.skip_trivia_ast(builder);
-            self.parse_url_ast(builder);
-        } else if self.has_version_operator() {
-            // Check for version spec
-            self.parse_version_spec_ast(builder);
-            self.skip_trivia_ast(builder);
-        }
-
-        // Check for marker
-        if self.peek_kind() == Some(SyntaxKind::SEMICOLON) {
-            self.consume_token_ast(builder); // consume ';'
-            self.skip_trivia_ast(builder);
-            self.parse_marker_ast(builder);
-        }
-
-        // Consume any remaining tokens as invalid
-        while !self.is_at_end() {
-            self.consume_token_ast(builder);
-        }
-
-        builder.finish_node();
-    }
-
-    fn parse_package_name_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        builder.start_node(SyntaxKind::PACKAGE_NAME);
-
-        if self.peek_kind() == Some(SyntaxKind::IDENTIFIER) {
-            self.consume_token_ast(builder);
-        } else {
-            let span = self
-                .peek()
-                .map(|t| t.span())
-                .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
-            let range = tombi_text::Range::new(
-                tombi_text::Position::new(0, 0),
-                tombi_text::Position::new(0, 0),
-            );
-            builder.error(Error::new(ErrorKind::UnexpectedEndOfInput, (span, range)));
-        }
-
-        builder.finish_node();
-    }
-
-    fn parse_extras_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        builder.start_node(SyntaxKind::EXTRAS_LIST);
-
-        // Consume '['
-        self.consume_token_ast(builder);
-        self.skip_trivia_ast(builder);
-
-        // Parse extras
-        loop {
-            if self.peek_kind() == Some(SyntaxKind::BRACKET_END) {
-                self.consume_token_ast(builder);
-                break;
-            }
-
-            if self.is_at_end() {
-                let span = tombi_text::Span::new(
-                    (self.source.len() as u32).into(),
-                    (self.source.len() as u32).into(),
-                );
-                let range = tombi_text::Range::new(
-                    tombi_text::Position::new(0, 0),
-                    tombi_text::Position::new(0, 0),
-                );
-                builder.error(Error::new(ErrorKind::UnexpectedEndOfInput, (span, range)));
-                break;
-            }
-
-            // Parse extra name
-            if self.peek_kind() == Some(SyntaxKind::IDENTIFIER) {
-                self.consume_token_ast(builder);
-                self.skip_trivia_ast(builder);
-
-                if self.peek_kind() == Some(SyntaxKind::COMMA) {
-                    self.consume_token_ast(builder);
-                    self.skip_trivia_ast(builder);
-
-                    // Allow trailing comma
-                    if self.peek_kind() == Some(SyntaxKind::BRACKET_END) {
-                        self.consume_token_ast(builder);
-                        break;
-                    }
-                } else if self.peek_kind() != Some(SyntaxKind::BRACKET_END) {
-                    // Expected ',' or ']'
-                    let span = self
-                        .peek()
-                        .map(|t| t.span())
-                        .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
-                    let range = tombi_text::Range::new(
-                        tombi_text::Position::new(0, 0),
-                        tombi_text::Position::new(0, 0),
-                    );
-                    builder.error(Error::new(ErrorKind::InvalidToken, (span, range)));
-                    break;
-                }
-            } else {
-                // Expected identifier
-                let span = self
-                    .peek()
-                    .map(|t| t.span())
-                    .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
-                let range = tombi_text::Range::new(
-                    tombi_text::Position::new(0, 0),
-                    tombi_text::Position::new(0, 0),
-                );
-                builder.error(Error::new(ErrorKind::InvalidIdentifier, (span, range)));
-                break;
-            }
-        }
-
-        builder.finish_node();
-    }
-
-    fn parse_version_spec_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        builder.start_node(SyntaxKind::VERSION_SPEC);
-
-        loop {
-            if !self.has_version_operator() {
-                break;
-            }
-
-            builder.start_node(SyntaxKind::VERSION_CLAUSE);
-
-            // Consume version operator
-            self.consume_token_ast(builder);
-            self.skip_trivia_ast(builder);
-
-            // Consume version string
-            if self.peek_kind() == Some(SyntaxKind::VERSION_STRING) {
-                self.consume_token_ast(builder);
-            } else {
-                let span = self
-                    .peek()
-                    .map(|t| t.span())
-                    .unwrap_or_else(|| tombi_text::Span::new(0.into(), 0.into()));
-                let range = tombi_text::Range::new(
-                    tombi_text::Position::new(0, 0),
-                    tombi_text::Position::new(0, 0),
-                );
-                builder.error(Error::new(ErrorKind::InvalidVersion, (span, range)));
-            }
-
-            builder.finish_node();
-            self.skip_trivia_ast(builder);
-
-            // Check for comma (multiple version clauses)
-            if self.peek_kind() == Some(SyntaxKind::COMMA) {
-                self.consume_token_ast(builder);
-                self.skip_trivia_ast(builder);
-            } else if !self.has_version_operator() {
-                break;
-            }
-        }
-
-        builder.finish_node();
-    }
-
-    fn parse_url_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        builder.start_node(SyntaxKind::URL_SPEC);
-
-        // Collect all tokens until we hit a separator
-        while let Some(token) = self.peek() {
-            match token.kind() {
-                SyntaxKind::SEMICOLON | SyntaxKind::EOF | SyntaxKind::WHITESPACE => break,
-                _ => {
-                    self.consume_token_ast(builder);
-                }
-            }
-        }
-
-        builder.finish_node();
-    }
-
-    fn parse_marker_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        builder.start_node(SyntaxKind::MARKER_EXPR);
-
-        // For now, just consume everything as the marker expression
-        while !self.is_at_end() {
-            self.consume_token_ast(builder);
-        }
-
-        builder.finish_node();
-    }
-
-    fn skip_trivia_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        while let Some(token) = self.peek() {
-            if token.kind().is_trivia() {
-                self.consume_token_ast(builder);
-            } else {
-                break;
-            }
-        }
-    }
-
-    fn consume_token_ast(&mut self, builder: &mut SyntaxTreeBuilder<Error>) {
-        if let Some(token) = self.lexed.tokens.get(self.position) {
-            let span = token.span();
-            let text = &self.source[span.start.into()..span.end.into()];
-            builder.token(token.kind(), text);
-            self.position += 1;
-        }
-    }
 
     // Data extraction methods
     fn parse_package_name(&mut self) -> Result<String, ParseError> {
@@ -729,22 +498,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn peek(&self) -> Option<&Token> {
-        self.lexed.tokens.get(self.position)
-    }
-
-    fn peek_kind(&self) -> Option<SyntaxKind> {
-        self.peek().map(|t| t.kind())
-    }
-
-    fn advance(&mut self) -> Option<&Token> {
-        let token = self.lexed.tokens.get(self.position);
-        if token.is_some() {
-            self.position += 1;
-        }
-        token
-    }
-
     fn expect_kind(&mut self, kind: SyntaxKind) -> Result<&Token, ParseError> {
         match self.peek() {
             Some(token) if token.kind() == kind => {
@@ -762,11 +515,49 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn has_version_operator(&self) -> bool {
+    // Public methods for Parse trait
+    pub fn has_version_operator(&self) -> bool {
         self.peek_kind().map_or(false, |k| k.is_version_operator())
     }
 
-    fn is_at_end(&self) -> bool {
+    pub fn is_at_end(&self) -> bool {
         self.peek_kind().map_or(true, |k| k == SyntaxKind::EOF)
+    }
+
+    pub fn peek(&self) -> Option<&Token> {
+        self.lexed.tokens.get(self.position)
+    }
+
+    pub fn peek_kind(&self) -> Option<SyntaxKind> {
+        self.peek().map(|t| t.kind())
+    }
+
+    pub fn advance(&mut self) -> Option<&Token> {
+        let token = self.lexed.tokens.get(self.position);
+        if token.is_some() {
+            self.position += 1;
+        }
+        token
+    }
+
+    pub fn current_token(&self) -> Option<&Token> {
+        self.lexed.tokens.get(self.position)
+    }
+
+    pub fn token_text(&self, span: tombi_text::Span) -> &str {
+        &self.source[span.start.into()..span.end.into()]
+    }
+
+    pub fn source_len(&self) -> usize {
+        self.source.len()
+    }
+
+    /// Parse using the Parse trait
+    pub fn parse_with<P: crate::parse::Parse>(&mut self) -> (crate::ast::SyntaxNode, Vec<Error>) {
+        let mut builder = SyntaxTreeBuilder::default();
+        P::parse(self, &mut builder);
+        let (green, errors) = builder.finish();
+        let node = crate::ast::SyntaxNode::new_root(green);
+        (node, errors)
     }
 }
