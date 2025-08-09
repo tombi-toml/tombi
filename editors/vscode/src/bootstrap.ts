@@ -1,10 +1,10 @@
-import * as vscode from "vscode";
+import { exec } from "node:child_process";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as vscode from "vscode";
 import type * as extension from "@/extension";
 import { log } from "@/logging";
 import { LANGUAGE_SERVER_NAME } from "@/lsp/server";
-import { exec } from "node:child_process";
 import { getInterpreterDetails } from "@/python";
 
 export type Env = {
