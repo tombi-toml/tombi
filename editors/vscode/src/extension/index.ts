@@ -133,7 +133,11 @@ export class Extension {
 
   private async updateStatusBarItem(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (this.lspVersion && editor && SUPPORT_TOML_LANGUAGES.includes(editor.document.languageId)) {
+    if (
+      this.lspVersion &&
+      editor &&
+      SUPPORT_TOML_LANGUAGES.includes(editor.document.languageId)
+    ) {
       try {
         let tomlVersion: string;
         let source: string;
