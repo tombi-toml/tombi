@@ -45,5 +45,13 @@ pub async fn handle_get_toml_version(
 #[serde(rename_all = "camelCase")]
 pub struct GetTomlVersionResponse {
     pub toml_version: TomlVersion,
-    pub source: &'static str,
+    pub source: TomlVersionSource,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TomlVersionSource {
+    Config,
+    Schema,
+    Default,
 }
