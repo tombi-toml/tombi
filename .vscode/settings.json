@@ -9,9 +9,10 @@
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.comments.insertSpace": true,
-  "github.copilot.chat.commitMessageGeneration.instructions": [
-    { "file": ".gitcommitrule" }
-  ],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
   // NOTE: It's too slow!! Manually run `cargo clippy`
   // "rust-analyzer.check.command": "clippy",
   "rust-analyzer.runnables.extraEnv": {
