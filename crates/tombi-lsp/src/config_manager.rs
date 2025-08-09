@@ -95,7 +95,7 @@ impl ConfigManager {
             None => {
                 let text_document_path_buf: PathBuf = text_document_path.to_path_buf();
                 if let Ok((config, Some(config_path_buf))) =
-                    load_with_path(text_document_path_buf.parent().map(|p| p.to_path_buf()))
+                    load_with_path(text_document_path_buf.parent().map(ToOwned::to_owned))
                 {
                     source_config_paths.insert(text_document_path_buf, config_path_buf.clone());
 
