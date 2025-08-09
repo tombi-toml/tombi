@@ -166,9 +166,7 @@ export class Extension {
         this.statusBarItem.color = undefined;
         this.statusBarItem.backgroundColor = undefined;
         this.statusBarItem.command = `${Extension_ID}.showLanguageServerVersion`;
-        this.statusBarItem.tooltip = configPath
-          ? `TOML: ${tomlVersion} (${source})\nConfig: ${configPath}`
-          : `TOML: ${tomlVersion} (${source})`;
+        this.statusBarItem.tooltip = `TOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";
