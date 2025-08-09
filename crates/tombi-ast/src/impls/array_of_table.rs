@@ -57,8 +57,12 @@ impl crate::ArrayOfTable {
         support::node::next_siblings_nodes(self)
             .skip(1)
             .take_while(|t: &TableOrArrayOfTable| {
-                let keys = t.header().unwrap().keys();
-                let self_keys = self.header().unwrap().keys();
+                let Some(keys) = t.header().map(|header| header.keys()) else {
+                    return false;
+                };
+                let Some(self_keys) = self.header().map(|header| header.keys()) else {
+                    return false;
+                };
 
                 keys.starts_with(&self_keys) && keys.count() != self_keys.count()
             })
