@@ -130,7 +130,6 @@ impl ConfigManager {
                             tracing::error!("failed to load config: {err}");
                         }
 
-                        // Load associated schemas
                         for associated_schema in self.associated_schemas.read().await.iter() {
                             schema_store
                                 .associate_schema(
@@ -188,8 +187,21 @@ impl ConfigManager {
         } else {
             let config = Config::default();
             let schema_options = schema_store_options(&config, &self.backend_options);
-            let config_schema_store =
-                ConfigSchemaStore::new(config, SchemaStore::new_with_options(schema_options));
+            let schema_store = SchemaStore::new_with_options(schema_options);
+
+            if let Err(err) = schema_store.load_config(&config, None).await {
+                tracing::error!("failed to load default config: {err}");
+            }
+
+            for associated_schema in self.associated_schemas.read().await.iter() {
+                schema_store
+                    .associate_schema(
+                        associated_schema.schema_url.clone(),
+                        associated_schema.file_match.clone(),
+                    )
+                    .await;
+            }
+            let config_schema_store = ConfigSchemaStore::new(config, schema_store);
             *default_config_schema_store = Some(config_schema_store.clone());
             config_schema_store
         }
