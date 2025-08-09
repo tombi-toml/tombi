@@ -64,12 +64,11 @@ export class Extension {
 
     await client.start;
 
-    const extenstion = new Extension(context, client, server);
+    const extension = new Extension(context, client, server);
 
     // Get LSP version
     try {
-      extenstion.lspVersion = await server.showVersion();
-      log.info(`LSP version: ${extenstion.lspVersion}`);
+      extension.lspVersion = await server.showVersion();
     } catch (error) {
       log.error(`Failed to get LSP version: ${error}`);
     }
@@ -78,15 +77,15 @@ export class Extension {
     //       the Language Server will not start.
     //       Therefore, send the notification to the Language Server for all open TOML documents.
     for (const document of vscode.workspace.textDocuments) {
-      await extenstion.onDidOpenTextDocument(document);
+      await extension.onDidOpenTextDocument(document);
     }
 
     // Update status bar for initial state
-    extenstion.updateStatusBarItem();
+    extension.updateStatusBarItem();
 
     log.info("extension activated");
 
-    return extenstion;
+    return extension;
   }
 
   async deactivate(): Promise<void> {
