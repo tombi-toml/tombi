@@ -11,6 +11,7 @@ use crate::{
     completion::{
         extract_keys_and_hint, find_completion_contents_with_tree, get_comment_completion_contents,
     },
+    config_manager::ConfigSchemaStore,
 };
 
 #[tracing::instrument(level = "debug", skip_all)]
@@ -31,7 +32,13 @@ pub async fn handle_completion(
         ..
     } = params;
 
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(&text_document.uri)
+        .await;
 
     if !config
         .lsp()
@@ -46,6 +53,7 @@ pub async fn handle_completion(
 
     if !config
         .schema
+        .as_ref()
         .and_then(|s| s.enabled)
         .unwrap_or_default()
         .value()
@@ -58,14 +66,15 @@ pub async fn handle_completion(
         return Ok(None);
     };
 
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
         .await
         .ok()
         .flatten();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let document_sources = backend.document_sources.read().await;
     let Some(document_source) = document_sources.get(&text_document.uri) else {
@@ -115,7 +124,7 @@ pub async fn handle_completion(
         sub_schema_url_map: source_schema
             .as_ref()
             .map(|schema| &schema.sub_schema_url_map),
-        store: &backend.schema_store,
+        store: &schema_store,
     };
 
     completion_items.extend(

@@ -10,32 +10,23 @@ pub async fn handle_update_config(
     tracing::info!("handle_update_config");
     tracing::trace!(?params);
 
-    if let Ok(params_path) = tombi_url::url_to_file_path(&params.uri) {
-        if let Ok((config, config_path)) = serde_tombi::config::load_with_path() {
-            if let Some(config_path) = config_path {
-                if config_path == params_path {
-                    match backend
-                        .schema_store
-                        .reload_config(&config, Some(&config_path))
-                        .await
-                    {
-                        Ok(_) => {
-                            backend.update_config_with_path(config, config_path).await;
-                            tracing::info!("updated config: {}", params.uri);
-                            return Ok(true);
-                        }
-                        Err(err) => {
-                            tracing::error!("schema store reload failed: {}", err);
-                        }
-                    }
-                } else {
-                    tracing::info!("not used as a config file, update skipped: {}", params.uri);
+    if let Ok(config_path) = tombi_url::url_to_file_path(&params.uri) {
+        if let Ok(Some(config)) = serde_tombi::config::try_from_path(&config_path) {
+            match backend
+                .config_manager
+                .update_config_with_path(config, config_path)
+                .await
+            {
+                Ok(_) => {
+                    tracing::info!("updated config: {}", params.uri);
+                    return Ok(true);
                 }
-            } else {
-                tracing::info!("use default config, update skipped: {}", params.uri);
+                Err(err) => {
+                    tracing::error!("failed to update config: {}", err);
+                }
             }
         } else {
-            tracing::error!("config load failed: {}", params.uri);
+            tracing::error!("failed to load config for update: {}", params.uri);
         }
     }
 

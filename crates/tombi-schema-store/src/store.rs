@@ -36,6 +36,10 @@ impl SchemaStore {
         Self::new_with_options(crate::Options::default())
     }
 
+    pub async fn is_empty(&self) -> bool {
+        self.document_schemas.read().await.is_empty() && self.schemas.read().await.is_empty()
+    }
+
     /// New with options
     ///
     /// Create a store with the given options.

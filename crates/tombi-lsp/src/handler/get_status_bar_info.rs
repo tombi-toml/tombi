@@ -1,18 +1,22 @@
+use std::path::PathBuf;
+
 use itertools::Either;
 use tombi_config::TomlVersion;
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
-use crate::{backend::Backend, config_manager::ConfigSchemaStore};
+use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
 
 #[tracing::instrument(level = "debug", skip_all)]
-pub async fn handle_get_toml_version(
+pub async fn handle_get_status(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_get_toml_version");
+) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
+    tracing::info!("handle_get_status");
     tracing::trace!(?params);
 
     let TextDocumentIdentifier { uri } = params;
+
+    let config_path = backend.config_manager.get_config_path_for_url(&uri).await;
 
     let ConfigSchemaStore {
         config,
@@ -35,23 +39,17 @@ pub async fn handle_get_toml_version(
         .source_toml_version(source_schema.as_ref(), &config)
         .await;
 
-    Ok(GetTomlVersionResponse {
+    Ok(GetStatusResponse {
         toml_version,
         source,
+        config_path,
     })
 }
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetTomlVersionResponse {
+pub struct GetStatusResponse {
     pub toml_version: TomlVersion,
     pub source: TomlVersionSource,
-}
-
-#[derive(Debug, serde::Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TomlVersionSource {
-    Config,
-    Schema,
-    Default,
+    pub config_path: Option<PathBuf>,
 }

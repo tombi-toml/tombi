@@ -129,7 +129,8 @@ impl Serializer<'_> {
                     }
                 }
                 None => {
-                    let (config, config_path) = crate::config::load_with_path()?;
+                    let (config, config_path) =
+                        crate::config::load_with_path(std::env::current_dir().ok())?;
                     schema_store
                         .load_config(&config, config_path.as_deref())
                         .await?;
