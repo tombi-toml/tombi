@@ -34,6 +34,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
             },
         )
     })
+    .custom_method("tombi/getStatus", Backend::get_status)
     .custom_method("tombi/getTomlVersion", Backend::get_toml_version)
     .custom_method("tombi/updateSchema", Backend::update_schema)
     .custom_method("tombi/updateConfig", Backend::update_config)
