@@ -1,0 +1,18 @@
+[package]
+name = "tombi-comment-directive"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+clap = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+tombi-toml-version.workspace = true
+
+[features]
+clap = ["dep:clap"]
+jsonschema = ["dep:schemars", "serde", "tombi-toml-version/jsonschema"]
+serde = ["dep:serde"]

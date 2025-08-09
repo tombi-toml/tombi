@@ -3427,6 +3427,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-comment-directive"
+version = "0.0.0-dev"
+dependencies = [
+ "clap",
+ "schemars",
+ "serde",
+ "tombi-toml-version",
+]
+
+[[package]]
 name = "tombi-config"
 version = "0.0.0-dev"
 dependencies = [
