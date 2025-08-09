@@ -139,7 +139,7 @@ export class Extension {
         let source: string;
         let configPath: string | undefined;
 
-        if (gte(this.lspVersion, "0.5.0")) {
+        if (this.lspVersion && gte(this.lspVersion, "0.5.0")) {
           // Use getStatus for versions >= 0.5.0
           const response = await this.client.sendRequest(getStatus, {
             uri: editor.document.uri.toString(),
