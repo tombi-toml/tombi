@@ -31,3 +31,14 @@ export const associateSchema = new RequestType<
   void,
   void
 >("tombi/associateSchema");
+
+export type GetStatusParams = TextDocumentIdentifier;
+export const getStatus = new RequestType<
+  GetStatusParams,
+  {
+    tomlVersion: string;
+    source: TomlVersionSource;
+    configPath?: string;
+  },
+  void
+>("tombi/getStatus");

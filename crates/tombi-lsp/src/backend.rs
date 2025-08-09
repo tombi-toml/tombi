@@ -32,11 +32,12 @@ use crate::{
         handle_associate_schema, handle_code_action, handle_completion, handle_did_change,
         handle_did_change_configuration, handle_did_change_watched_files, handle_did_close,
         handle_did_open, handle_did_save, handle_document_link, handle_document_symbol,
-        handle_folding_range, handle_formatting, handle_get_toml_version, handle_goto_declaration,
-        handle_goto_definition, handle_goto_type_definition, handle_hover, handle_initialize,
-        handle_initialized, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
-        handle_update_config, handle_update_schema, publish_diagnostics, AssociateSchemaParams,
-        GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
+        handle_folding_range, handle_formatting, handle_get_status, handle_get_toml_version,
+        handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
+        handle_initialize, handle_initialized, handle_refresh_cache, handle_semantic_tokens_full,
+        handle_shutdown, handle_update_config, handle_update_schema, publish_diagnostics,
+        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams,
+        TomlVersionSource,
     },
 };
 
@@ -207,6 +208,14 @@ impl Backend {
         }
 
         (TomlVersion::default(), TomlVersionSource::Default)
+    }
+
+    #[inline]
+    pub async fn get_status(
+        &self,
+        params: TextDocumentIdentifier,
+    ) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
+        handle_get_status(self, params).await
     }
 
     #[inline]
