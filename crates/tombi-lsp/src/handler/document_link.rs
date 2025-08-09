@@ -2,7 +2,7 @@ use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
 
-use crate::Backend;
+use crate::{config_manager::ConfigSchemaStore, Backend};
 
 pub async fn handle_document_link(
     backend: &Backend,
@@ -13,7 +13,13 @@ pub async fn handle_document_link(
 
     let DocumentLinkParams { text_document, .. } = params;
 
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(&text_document.uri)
+        .await;
 
     if !config
         .lsp()
@@ -53,14 +59,15 @@ pub async fn handle_document_link(
     }
 
     // Document Link for Extensions
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
         .await
         .ok()
         .flatten();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 

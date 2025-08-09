@@ -37,7 +37,7 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
     };
 
     backend
-        .schema_store
-        .associate_schema(schema_url, params.file_match)
+        .config_manager
+        .associate_schema(&schema_url, &params.file_match)
         .await;
 }

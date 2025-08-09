@@ -556,7 +556,7 @@ mod completion_edit {
                             .as_str(),
                         );
                     backend
-                        .schema_store
+                        .config_manager
                         .load_schemas(
                             &[
                                 tombi_config::Schema::Root(tombi_config::RootSchema {

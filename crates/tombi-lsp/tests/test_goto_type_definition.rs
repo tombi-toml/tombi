@@ -178,7 +178,7 @@ mod goto_type_definition_tests {
                             .as_str(),
                         );
                     backend
-                        .schema_store
+                        .config_manager
                         .load_schemas(
                             &[tombi_config::Schema::Root(tombi_config::RootSchema {
                                 toml_version: None,

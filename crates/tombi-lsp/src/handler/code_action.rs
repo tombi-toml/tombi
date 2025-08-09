@@ -1,5 +1,6 @@
 use crate::{
     code_action::{dot_keys_to_inline_table_code_action, inline_table_to_dot_keys_code_action},
+    config_manager::ConfigSchemaStore,
     Backend,
 };
 use itertools::Either;
@@ -23,7 +24,13 @@ pub async fn handle_code_action(
     } = params;
 
     let position: tombi_text::Position = range.start.into();
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(&text_document.uri)
+        .await;
 
     if !config
         .lsp()
@@ -40,14 +47,15 @@ pub async fn handle_code_action(
         return Ok(None);
     };
 
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
         .await
         .ok()
         .flatten();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let Some((keys, key_contexts)) =
         get_completion_keys_with_context(&root, position, toml_version).await

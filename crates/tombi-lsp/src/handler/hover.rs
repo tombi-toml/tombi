@@ -7,6 +7,7 @@ use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 
 use crate::{
     backend,
+    config_manager::ConfigSchemaStore,
     hover::{get_hover_content, HoverContent},
 };
 
@@ -27,7 +28,13 @@ pub async fn handle_hover(
         ..
     } = params;
 
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(&text_document.uri)
+        .await;
 
     if !config
         .lsp()
@@ -45,14 +52,15 @@ pub async fn handle_hover(
         return Ok(None);
     };
 
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
         .await
         .ok()
         .flatten();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
         return Ok(None);
@@ -72,7 +80,7 @@ pub async fn handle_hover(
             toml_version,
             root_schema: source_schema.as_ref().and_then(|s| s.root_schema.as_ref()),
             sub_schema_url_map: source_schema.as_ref().map(|s| &s.sub_schema_url_map),
-            store: &backend.schema_store,
+            store: &schema_store,
         },
     )
     .await

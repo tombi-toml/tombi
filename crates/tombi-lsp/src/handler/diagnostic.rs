@@ -2,7 +2,7 @@ use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
-use crate::backend::Backend;
+use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
 pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
     #[derive(Debug)]
@@ -35,7 +35,13 @@ async fn diagnostics(
     backend: &Backend,
     text_document_uri: &Url,
 ) -> Option<Vec<tower_lsp::lsp_types::Diagnostic>> {
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(text_document_uri)
+        .await;
 
     if !config
         .lsp()
@@ -50,28 +56,24 @@ async fn diagnostics(
 
     let root = backend.get_incomplete_ast(text_document_uri).await?;
 
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
         .await
         .ok()
         .flatten();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let document_sources = backend.document_sources.read().await;
 
     match document_sources.get(text_document_uri) {
         Some(document) => tombi_linter::Linter::new(
             toml_version,
-            backend
-                .config()
-                .await
-                .lint
-                .as_ref()
-                .unwrap_or(&LintOptions::default()),
+            config.lint.as_ref().unwrap_or(&LintOptions::default()),
             Some(Either::Left(text_document_uri)),
-            &backend.schema_store,
+            &schema_store,
         )
         .lint(&document.text)
         .await

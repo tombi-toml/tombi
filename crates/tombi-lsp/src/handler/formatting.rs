@@ -6,7 +6,7 @@ use tower_lsp::lsp_types::{
     notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
 };
 
-use crate::backend::Backend;
+use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_formatting(
@@ -18,7 +18,13 @@ pub async fn handle_formatting(
 
     let DocumentFormattingParams { text_document, .. } = params;
 
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(&text_document.uri)
+        .await;
 
     if !config
         .lsp()
@@ -35,14 +41,15 @@ pub async fn handle_formatting(
         return Ok(None);
     };
 
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
         .await
         .ok()
         .flatten();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let mut document_sources = backend.document_sources.write().await;
     let Some(document_source) = document_sources.get_mut(&text_document.uri) else {
@@ -54,14 +61,9 @@ pub async fn handle_formatting(
     match tombi_formatter::Formatter::new(
         toml_version,
         &formatter_definitions,
-        backend
-            .config()
-            .await
-            .format
-            .as_ref()
-            .unwrap_or(&FormatOptions::default()),
+        config.format.as_ref().unwrap_or(&FormatOptions::default()),
         Some(Either::Left(&text_document.uri)),
-        &backend.schema_store,
+        &schema_store,
     )
     .format(&document_source.text)
     .await

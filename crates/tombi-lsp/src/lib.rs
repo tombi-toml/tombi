@@ -1,6 +1,7 @@
 pub mod backend;
 pub mod code_action;
 mod completion;
+mod config_manager;
 mod document;
 mod goto_definition;
 mod goto_type_definition;

@@ -13,13 +13,11 @@ pub async fn handle_update_schema(
     tracing::info!("handle_update_schema");
     tracing::trace!(?params);
 
-    let TextDocumentIdentifier {
-        uri: schema_url, ..
-    } = params;
+    let TextDocumentIdentifier { uri, .. } = params;
 
     match backend
-        .schema_store
-        .update_schema(&SchemaUrl::new(schema_url))
+        .config_manager
+        .update_schema(&SchemaUrl::new(uri))
         .await
     {
         Ok(is_updated) => Ok(is_updated),

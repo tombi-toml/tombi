@@ -25,6 +25,7 @@ use tower_lsp::{
 };
 
 use crate::{
+    config_manager::{ConfigManager, ConfigSchemaStore},
     document::DocumentSource,
     goto_definition::into_definition_locations,
     handler::{
@@ -44,9 +45,7 @@ pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<Url, DocumentSource>>>,
-    config_path: Arc<tokio::sync::RwLock<Option<std::path::PathBuf>>>,
-    config: Arc<tokio::sync::RwLock<Config>>,
-    pub schema_store: tombi_schema_store::SchemaStore,
+    pub config_manager: Arc<ConfigManager>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -58,29 +57,10 @@ pub struct Options {
 impl Backend {
     #[inline]
     pub fn new(client: tower_lsp::Client, options: &Options) -> Self {
-        let (config, config_path) = match serde_tombi::config::load_with_path() {
-            Ok((config, config_path)) => (config, config_path),
-            Err(err) => {
-                tracing::error!("{err}");
-                (Config::default(), None)
-            }
-        };
-
-        let options = tombi_schema_store::Options {
-            offline: options.offline,
-            strict: config.schema.as_ref().and_then(|schema| schema.strict()),
-            cache: Some(tombi_cache::Options {
-                no_cache: options.no_cache,
-                ..Default::default()
-            }),
-        };
-
         Self {
             client,
             document_sources: Default::default(),
-            config_path: Arc::new(tokio::sync::RwLock::new(config_path)),
-            config: Arc::new(tokio::sync::RwLock::new(config)),
-            schema_store: tombi_schema_store::SchemaStore::new_with_options(options),
+            config_manager: Arc::new(ConfigManager::new(options)),
         }
     }
 
@@ -98,12 +78,19 @@ impl Backend {
             }
         };
 
+        let ConfigSchemaStore {
+            config,
+            schema_store,
+        } = self
+            .config_manager
+            .config_schema_store_for_url(text_document_uri)
+            .await;
+
         let source_schema = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(&document_source.text)
                 .cast::<tombi_ast::Root>()
         {
-            match self
-                .schema_store
+            match schema_store
                 .resolve_source_schema_from_ast(
                     &parsed.tree(),
                     Some(Either::Left(text_document_uri)),
@@ -126,7 +113,7 @@ impl Backend {
                     .as_ref()
                     .and_then(|root| root.toml_version())
             })
-            .unwrap_or(self.config.read().await.toml_version.unwrap_or_default());
+            .unwrap_or(config.toml_version.unwrap_or_default());
 
         Some(tombi_parser::parse(&document_source.text, toml_version))
     }
@@ -164,37 +151,46 @@ impl Backend {
     ) -> Option<tombi_document_tree::DocumentTree> {
         let root = self.get_incomplete_ast(text_document_uri).await?;
 
-        let source_schema = self
-            .schema_store
+        let ConfigSchemaStore {
+            config,
+            schema_store,
+        } = self
+            .config_manager
+            .config_schema_store_for_url(text_document_uri)
+            .await;
+
+        let source_schema = schema_store
             .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
             .await
             .ok()
             .flatten();
 
-        let (toml_version, _) = self.source_toml_version(source_schema.as_ref()).await;
+        let (toml_version, _) = self
+            .source_toml_version(source_schema.as_ref(), &config)
+            .await;
 
         root.try_into_document_tree(toml_version).ok()
     }
 
     #[inline]
-    pub async fn config(&self) -> Config {
-        self.config.read().await.clone()
+    pub async fn config(&self, text_document_uri: &Url) -> Config {
+        self.config_manager
+            .config_schema_store_for_url(text_document_uri)
+            .await
+            .config
     }
 
     #[inline]
-    pub async fn update_config_with_path(&self, config: Config, config_path: std::path::PathBuf) {
-        *self.config.write().await = config;
-        *self.config_path.write().await = Some(config_path);
-    }
-
-    #[inline]
-    pub async fn config_path(&self) -> Option<std::path::PathBuf> {
-        self.config_path.read().await.clone()
+    pub async fn config_path(&self, text_document_uri: &Url) -> Option<std::path::PathBuf> {
+        self.config_manager
+            .get_config_path_for_url(text_document_uri)
+            .await
     }
 
     pub async fn source_toml_version(
         &self,
         source_schema: Option<&SourceSchema>,
+        config: &Config,
     ) -> (TomlVersion, &'static str) {
         if let Some(SourceSchema {
             root_schema: Some(document_schema),
@@ -206,7 +202,7 @@ impl Backend {
             }
         }
 
-        if let Some(toml_version) = self.config.read().await.toml_version {
+        if let Some(toml_version) = config.toml_version {
             return (toml_version, "config");
         }
 
