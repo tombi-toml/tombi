@@ -14,6 +14,7 @@ import { clientOptions } from "@/options/client-options";
 import { serverOptions } from "@/options/server-options";
 import { registerExtensionSchemas } from "@/tomlValidation";
 import type { Settings } from "./settings";
+import { gte } from "semver";
 export type { Settings };
 
 export const Extension_ID = "tombi";
@@ -134,24 +135,11 @@ export class Extension {
     const editor = vscode.window.activeTextEditor;
     if (editor && SUPPORT_TOML_LANGUAGES.includes(editor.document.languageId)) {
       try {
-        // Compare LSP version to determine which method to use
-        const useLegacyMethod = this.isVersionLessThan(
-          this.lspVersion,
-          "0.5.0",
-        );
-
         let tomlVersion: string;
         let source: string;
         let configPath: string | undefined;
 
-        if (useLegacyMethod) {
-          // Use getTomlVersion for versions < 0.5.0
-          const response = await this.client.sendRequest(getTomlVersion, {
-            uri: editor.document.uri.toString(),
-          });
-          tomlVersion = response.tomlVersion;
-          source = response.source;
-        } else {
+        if (this.lspVersion && gte(this.lspVersion, "0.5.0")) {
           // Use getStatus for versions >= 0.5.0
           const response = await this.client.sendRequest(getStatus, {
             uri: editor.document.uri.toString(),
@@ -159,6 +147,13 @@ export class Extension {
           tomlVersion = response.tomlVersion;
           source = response.source;
           configPath = response.configPath;
+        } else {
+          // Use getTomlVersion for versions < 0.5.0
+          const response = await this.client.sendRequest(getTomlVersion, {
+            uri: editor.document.uri.toString(),
+          });
+          tomlVersion = response.tomlVersion;
+          source = response.source;
         }
 
         this.statusBarItem.text = `TOML: ${tomlVersion} (${source})`;
@@ -169,7 +164,7 @@ export class Extension {
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";
-        this.statusBarItem.tooltip = `${error}`;
+        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion}\nTOML: <unknown>\nError: ${error}`;
         this.statusBarItem.color = new vscode.ThemeColor(
           "statusBarItem.errorForeground",
         );
@@ -181,41 +176,6 @@ export class Extension {
     } else {
       this.statusBarItem.hide();
     }
-  }
-
-  private isVersionLessThan(
-    version: string | undefined,
-    target: string,
-  ): boolean {
-    if (!version) {
-      // If version is undefined, assume it's an older version
-      return true;
-    }
-    if (version === "0.0.0-dev") {
-      return false;
-    }
-
-    // Parse semantic version numbers
-    const parseVersion = (v: string): number[] => {
-      return v.split(".").map((n) => Number.parseInt(n, 10) || 0);
-    };
-
-    const current = parseVersion(version);
-    const targetVersion = parseVersion(target);
-
-    for (let i = 0; i < Math.max(current.length, targetVersion.length); i++) {
-      const currentPart = current[i] || 0;
-      const targetPart = targetVersion[i] || 0;
-
-      if (currentPart < targetPart) {
-        return true;
-      }
-      if (currentPart > targetPart) {
-        return false;
-      }
-    }
-
-    return false; // Versions are equal
   }
 
   private async onDidOpenTextDocument(
