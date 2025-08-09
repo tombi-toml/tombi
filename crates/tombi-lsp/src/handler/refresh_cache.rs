@@ -12,14 +12,7 @@ pub async fn handle_refresh_cache(
 ) -> Result<bool, tower_lsp::jsonrpc::Error> {
     tracing::info!("handle_refresh_cache");
 
-    match backend
-        .schema_store
-        .refresh_cache(
-            &backend.config().await,
-            backend.config_path().await.as_deref(),
-        )
-        .await
-    {
+    match backend.config_manager.refresh_cache().await {
         Ok(true) => {
             tracing::info!("Cache refreshed");
             Ok(true)

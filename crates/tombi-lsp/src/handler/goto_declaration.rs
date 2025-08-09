@@ -4,6 +4,7 @@ use tombi_schema_store::get_accessors;
 use tower_lsp::lsp_types::request::GotoDeclarationParams;
 use tower_lsp::lsp_types::TextDocumentPositionParams;
 
+use crate::config_manager::ConfigSchemaStore;
 use crate::handler::hover::get_hover_keys_with_range;
 use crate::Backend;
 
@@ -24,7 +25,13 @@ pub async fn handle_goto_declaration(
         ..
     } = params;
 
-    let config = backend.config().await;
+    let ConfigSchemaStore {
+        config,
+        schema_store,
+    } = backend
+        .config_manager
+        .config_schema_store_for_url(&text_document.uri)
+        .await;
 
     if !config
         .lsp()
@@ -41,8 +48,7 @@ pub async fn handle_goto_declaration(
         return Ok(None);
     };
 
-    let source_schema = backend
-        .schema_store
+    let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
         .await
         .ok()
@@ -50,7 +56,9 @@ pub async fn handle_goto_declaration(
 
     let position = position.into();
 
-    let (toml_version, _) = backend.source_toml_version(source_schema.as_ref()).await;
+    let (toml_version, _) = backend
+        .source_toml_version(source_schema.as_ref(), &config)
+        .await;
 
     let Some((keys, _)) = get_hover_keys_with_range(&root, position, toml_version).await else {
         return Ok(None);

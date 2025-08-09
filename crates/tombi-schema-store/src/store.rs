@@ -36,6 +36,10 @@ impl SchemaStore {
         Self::new_with_options(crate::Options::default())
     }
 
+    pub async fn is_empty(&self) -> bool {
+        self.document_schemas.read().await.is_empty() && self.schemas.read().await.is_empty()
+    }
+
     /// New with options
     ///
     /// Create a store with the given options.
@@ -676,12 +680,8 @@ async fn load_catalog_from_cache_ignoring_ttl(
         if let Some(options) = &mut cache_options {
             options.cache_ttl = None;
         }
-        if let Ok(Some(catalog)) = load_catalog_from_cache(
-            catalog_url,
-            catalog_cache_path,
-            cache_options.as_ref(),
-        )
-        .await
+        if let Ok(Some(catalog)) =
+            load_catalog_from_cache(catalog_url, catalog_cache_path, cache_options.as_ref()).await
         {
             return Ok(Some(catalog));
         }
@@ -722,12 +722,8 @@ async fn load_json_schema_from_cache_ignoring_ttl(
         if let Some(options) = &mut cache_options {
             options.cache_ttl = None;
         }
-        if let Ok(Some(schema_value)) = load_json_schema_from_cache(
-            schema_url,
-            schema_cache_path,
-            cache_options.as_ref(),
-        )
-        .await
+        if let Ok(Some(schema_value)) =
+            load_json_schema_from_cache(schema_url, schema_cache_path, cache_options.as_ref()).await
         {
             return Ok(Some(schema_value));
         }

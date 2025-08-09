@@ -1292,7 +1292,7 @@ mod completion_labels {
                         );
 
                     backend
-                        .schema_store
+                        .config_manager
                         .load_schemas(
                             &[
                                 tombi_config::Schema::Root(
@@ -1543,7 +1543,7 @@ mod completion_labels {
                         );
 
                     backend
-                        .schema_store
+                        .config_manager
                         .load_schemas(
                             &[
                                 tombi_config::Schema::Root(
@@ -1569,7 +1569,7 @@ mod completion_labels {
                     );
 
                 backend
-                    .schema_store
+                    .config_manager
                     .load_schemas(
                         &[
                             tombi_config::Schema::Sub(

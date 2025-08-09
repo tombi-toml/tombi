@@ -40,14 +40,15 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
             None => TomlVersion::default(),
         };
 
-        let (config, config_path) = match serde_tombi::config::load_with_path() {
-            Ok((config, config_path)) => (config, config_path),
-            Err(err) => {
-                return Err(FormatError::Error {
-                    error: err.to_string(),
-                });
-            }
-        };
+        let (config, config_path) =
+            match serde_tombi::config::load_with_path(std::env::current_dir().ok()) {
+                Ok((config, config_path)) => (config, config_path),
+                Err(err) => {
+                    return Err(FormatError::Error {
+                        error: err.to_string(),
+                    });
+                }
+            };
 
         let schema_options = config.schema.as_ref();
         let schema_store =
@@ -121,14 +122,15 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             None => TomlVersion::default(),
         };
 
-        let (config, config_path) = match serde_tombi::config::load_with_path() {
-            Ok((config, config_path)) => (config, config_path),
-            Err(err) => {
-                return Err(LintError::Error {
-                    error: err.to_string(),
-                });
-            }
-        };
+        let (config, config_path) =
+            match serde_tombi::config::load_with_path(std::env::current_dir().ok()) {
+                Ok((config, config_path)) => (config, config_path),
+                Err(err) => {
+                    return Err(LintError::Error {
+                        error: err.to_string(),
+                    });
+                }
+            };
 
         let schema_options = config.schema.as_ref();
         let schema_store =

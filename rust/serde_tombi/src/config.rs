@@ -128,8 +128,9 @@ pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_confi
 }
 
 pub fn load_with_path_and_level(
+    search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
-    if let Ok(mut current_dir) = std::env::current_dir() {
+    if let Some(mut current_dir) = search_dir {
         loop {
             let config_path = current_dir.join(TOMBI_TOML_FILENAME);
             tracing::trace!("Checking config file at {:?}", &config_path);
@@ -183,14 +184,16 @@ pub fn load_with_path_and_level(
 }
 
 #[inline]
-pub fn load_with_path() -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
-    let (config, config_path, _) = load_with_path_and_level()?;
+pub fn load_with_path(
+    search_dir: Option<std::path::PathBuf>,
+) -> Result<(Config, Option<std::path::PathBuf>), tombi_config::Error> {
+    let (config, config_path, _) = load_with_path_and_level(search_dir)?;
     Ok((config, config_path))
 }
 
 #[inline]
-pub fn load() -> Result<Config, tombi_config::Error> {
-    let (config, _, _) = load_with_path_and_level()?;
+pub fn load(search_dir: Option<std::path::PathBuf>) -> Result<Config, tombi_config::Error> {
+    let (config, _, _) = load_with_path_and_level(search_dir)?;
     Ok(config)
 }
 

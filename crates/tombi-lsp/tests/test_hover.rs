@@ -464,7 +464,7 @@ mod hover_keys_value {
                         .as_str(),
                     );
                     backend
-                        .schema_store
+                        .config_manager
                         .load_schemas(
                             &[
                                 tombi_config::Schema::Root(
