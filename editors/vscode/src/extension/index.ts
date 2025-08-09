@@ -1,19 +1,19 @@
 import * as vscode from "vscode";
 import * as node from "vscode-languageclient/node";
-import { clientOptions } from "@/options/client-options";
-import { serverOptions } from "@/options/server-options";
-import { Server } from "@/lsp/server";
-import type { Settings } from "./settings";
-import * as command from "@/command";
 import { bootstrap } from "@/bootstrap";
+import * as command from "@/command";
 import { log } from "@/logging";
 import {
-  getTomlVersion,
   getStatus,
+  getTomlVersion,
   updateConfig,
   updateSchema,
 } from "@/lsp/client";
+import { Server } from "@/lsp/server";
+import { clientOptions } from "@/options/client-options";
+import { serverOptions } from "@/options/server-options";
 import { registerExtensionSchemas } from "@/tomlValidation";
+import type { Settings } from "./settings";
 export type { Settings };
 
 export const Extension_ID = "tombi";
