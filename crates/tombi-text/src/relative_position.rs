@@ -49,6 +49,16 @@ impl From<(Line, Column)> for RelativePosition {
     }
 }
 
+impl From<RelativePosition> for crate::Position {
+    #[inline]
+    fn from(relative: RelativePosition) -> Self {
+        crate::Position {
+            line: relative.line,
+            column: relative.column,
+        }
+    }
+}
+
 impl From<char> for RelativePosition {
     #[inline]
     fn from(c: char) -> Self {

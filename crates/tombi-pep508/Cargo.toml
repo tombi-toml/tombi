@@ -1,0 +1,12 @@
+[package]
+name = "tombi-pep508"
+version = "0.0.0-dev"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+tombi-rg-tree = { workspace = true }
+tombi-text = { workspace = true }
+tracing = { workspace = true }

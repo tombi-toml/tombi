@@ -95,6 +95,7 @@ tombi-lexer = { path = "crates/tombi-lexer" }
 tombi-linter = { path = "crates/tombi-linter" }
 tombi-lsp = { default-features = false, path = "crates/tombi-lsp" }
 tombi-parser = { path = "crates/tombi-parser" }
+tombi-pep508 = { path = "crates/tombi-pep508" }
 tombi-rg-tree = { path = "crates/tombi-rg-tree" }
 tombi-schema-store = { default-features = false, path = "crates/tombi-schema-store" }
 tombi-syntax = { path = "crates/tombi-syntax" }

@@ -11,7 +11,7 @@ mod x_taplo;
 
 pub use accessor::{Accessor, Accessors};
 pub use error::Error;
-pub use http_client::*;
+pub use http_client::{HttpClient, Bytes, FetchError};
 use itertools::Itertools;
 pub use options::Options;
 pub use schema::*;

@@ -1,4 +1,6 @@
 mod error;
+pub use bytes::Bytes;
+pub use error::FetchError;
 
 #[cfg(feature = "reqwest01")]
 mod reqwest_client;
