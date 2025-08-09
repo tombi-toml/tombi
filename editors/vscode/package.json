@@ -38,6 +38,7 @@
     "test": "vitest run --passWithNoTests ./src"
   },
   "dependencies": {
+    "semver": "^7.7.2",
     "valibot": "^1.0.0",
     "vscode-languageclient": "^9.0.1"
   },
