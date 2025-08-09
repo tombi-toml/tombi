@@ -1,7 +1,7 @@
 use std::{ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
-    get_tombi_schemastore_content, json::JsonCatalog, CatalogUrl, DocumentSchema, HttpClient,
+    get_tombi_schemastore_content, HttpClient, json::JsonCatalog, CatalogUrl, DocumentSchema,
     SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
 };
 use ahash::AHashMap;
@@ -400,7 +400,7 @@ impl SchemaStore {
                 }
 
                 Ok(Some(
-                    tombi_json::ValueNode::from_reader(std::io::Cursor::new(bytes)).map_err(
+                    tombi_json::ValueNode::from_reader(std::io::Cursor::new(&bytes)).map_err(
                         |err| crate::Error::SchemaFileParseFailed {
                             schema_url: schema_url.to_owned(),
                             reason: err.to_string(),

@@ -3,6 +3,9 @@ use crate::ast::traits::{AstNode, AstToken, SyntaxNode, SyntaxToken};
 use crate::SyntaxKind;
 
 /// Extras list node
+///
+/// "package[extra1, extra2]"
+///          ^^^^^^^^^^^^^^
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExtrasList {
     pub(crate) syntax: SyntaxNode,
