@@ -34,6 +34,13 @@ pub struct ConfigManager {
     default_config_schema_store: Arc<tokio::sync::RwLock<Option<ConfigSchemaStore>>>,
 
     backend_options: crate::backend::Options,
+    associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
+}
+
+#[derive(Debug)]
+struct AssociatedSchema {
+    schema_url: SchemaUrl,
+    file_match: Vec<String>,
 }
 
 impl ConfigManager {
@@ -71,6 +78,7 @@ impl ConfigManager {
                 default_config_schema_store,
             )),
             backend_options: backend_options.clone(),
+            associated_schemas: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         }
     }
 
@@ -120,6 +128,16 @@ impl ConfigManager {
                             .await
                         {
                             tracing::error!("failed to load config: {err}");
+                        }
+
+                        // Load associated schemas
+                        for associated_schema in self.associated_schemas.read().await.iter() {
+                            schema_store
+                                .associate_schema(
+                                    associated_schema.schema_url.clone(),
+                                    associated_schema.file_match.clone(),
+                                )
+                                .await;
                         }
                     }
 
@@ -209,19 +227,31 @@ impl ConfigManager {
     }
 
     pub async fn associate_schema(&self, schema_url: &SchemaUrl, file_match: &[String]) {
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        for config_schema_store in config_schema_stores.values_mut() {
-            config_schema_store
-                .schema_store
-                .associate_schema(schema_url.clone(), file_match.to_vec())
-                .await;
-        }
-        if let Some(ConfigSchemaStore { schema_store, .. }) =
-            &mut *self.default_config_schema_store.write().await
+        // Add to associated_schemas
+        self.associated_schemas
+            .write()
+            .await
+            .push(AssociatedSchema {
+                schema_url: schema_url.clone(),
+                file_match: file_match.to_vec(),
+            });
+
+        // Update config_schema_stores
         {
-            schema_store
-                .associate_schema(schema_url.clone(), file_match.to_vec())
-                .await;
+            let mut config_schema_stores = self.config_schema_stores.write().await;
+            for config_schema_store in config_schema_stores.values_mut() {
+                config_schema_store
+                    .schema_store
+                    .associate_schema(schema_url.clone(), file_match.to_vec())
+                    .await;
+            }
+            if let Some(ConfigSchemaStore { schema_store, .. }) =
+                &mut *self.default_config_schema_store.write().await
+            {
+                schema_store
+                    .associate_schema(schema_url.clone(), file_match.to_vec())
+                    .await;
+            }
         }
     }
 
