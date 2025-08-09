@@ -36,7 +36,6 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
         return;
     };
 
-    // Use dummy URL to get default config_schema_store since this is a global operation
     backend
         .config_manager
         .associate_schema(&schema_url, &params.file_match)
