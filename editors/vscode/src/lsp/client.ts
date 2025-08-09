@@ -3,10 +3,12 @@ import {
   type TextDocumentIdentifier,
 } from "vscode-languageclient";
 
+export type TomlVersionSource = "config" | "schema" | "default";
+
 export type GetTomlVersionParams = TextDocumentIdentifier;
 export const getTomlVersion = new RequestType<
   GetTomlVersionParams,
-  { tomlVersion: string; source: "config" | "schema" | "default" },
+  { tomlVersion: string; source: TomlVersionSource },
   void
 >("tombi/getTomlVersion");
 
