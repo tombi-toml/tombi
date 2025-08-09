@@ -39,7 +39,7 @@ pub use document_link::handle_document_link;
 pub use document_symbol::handle_document_symbol;
 pub use folding_range::handle_folding_range;
 pub use formatting::handle_formatting;
-pub use get_toml_version::{handle_get_toml_version, GetTomlVersionResponse};
+pub use get_toml_version::{handle_get_toml_version, GetTomlVersionResponse, TomlVersionSource};
 pub use goto_declaration::handle_goto_declaration;
 pub use goto_definition::handle_goto_definition;
 pub use goto_type_definition::handle_goto_type_definition;

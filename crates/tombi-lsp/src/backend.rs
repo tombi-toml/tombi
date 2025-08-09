@@ -36,7 +36,7 @@ use crate::{
         handle_goto_definition, handle_goto_type_definition, handle_hover, handle_initialize,
         handle_initialized, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
         handle_update_config, handle_update_schema, publish_diagnostics, AssociateSchemaParams,
-        GetTomlVersionResponse, RefreshCacheParams,
+        GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
     },
 };
 
@@ -191,22 +191,22 @@ impl Backend {
         &self,
         source_schema: Option<&SourceSchema>,
         config: &Config,
-    ) -> (TomlVersion, &'static str) {
+    ) -> (TomlVersion, TomlVersionSource) {
         if let Some(SourceSchema {
             root_schema: Some(document_schema),
             ..
         }) = source_schema
         {
             if let Some(toml_version) = document_schema.toml_version() {
-                return (toml_version, "schema");
+                return (toml_version, TomlVersionSource::Schema);
             }
         }
 
         if let Some(toml_version) = config.toml_version {
-            return (toml_version, "config");
+            return (toml_version, TomlVersionSource::Config);
         }
 
-        (TomlVersion::default(), "default")
+        (TomlVersion::default(), TomlVersionSource::Default)
     }
 
     #[inline]
