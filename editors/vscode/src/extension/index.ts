@@ -166,7 +166,7 @@ export class Extension {
         this.statusBarItem.color = undefined;
         this.statusBarItem.backgroundColor = undefined;
         this.statusBarItem.command = `${Extension_ID}.showLanguageServerVersion`;
-        this.statusBarItem.tooltip = `TOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
+        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion}\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";
@@ -191,6 +191,9 @@ export class Extension {
     if (!version) {
       // If version is undefined, assume it's an older version
       return true;
+    }
+    if (version === "0.0.0-dev") {
+      return false;
     }
 
     // Parse semantic version numbers
