@@ -48,7 +48,7 @@ impl<'a> Linter<'a> {
                 Ok(Some(schema)) => Some(schema),
                 Ok(None) => None,
                 Err((err, range)) => {
-                    self.diagnostics.push(Diagnostic::new_error(
+                    self.diagnostics.push(Diagnostic::new_warning(
                         err.to_string(),
                         err.code(),
                         range,
