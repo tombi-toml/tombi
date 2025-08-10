@@ -1,0 +1,25 @@
+{
+  "$schema": "tombi://json.tombi.dev/root-comment-directive.json",
+  "title": "RootCommentDirective",
+  "type": "object",
+  "properties": {
+    "toml-version": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TomlVersion"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "TomlVersion": {
+      "title": "TOML version.",
+      "type": "string",
+      "enum": ["v1.0.0", "v1.1.0-preview"]
+    }
+  }
+}

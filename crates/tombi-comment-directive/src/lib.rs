@@ -135,7 +135,7 @@ async fn get_schema_store() -> &'static tombi_schema_store::SchemaStore {
             let schema_store = tombi_schema_store::SchemaStore::new();
             let _ = schema_store
                 .load_catalog_from_url(&CatalogUrl::new(
-                    Url::parse("tombi://tombi.dev/schemas/comment-directive.json").unwrap(),
+                    Url::parse("tombi://json.tombi.dev/api/json/catalog.json").unwrap(),
                 ))
                 .await;
             schema_store
@@ -146,7 +146,7 @@ async fn get_schema_store() -> &'static tombi_schema_store::SchemaStore {
 #[inline]
 fn get_root_comment_directive_schema_url() -> &'static SchemaUrl {
     ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
-        let url = Url::parse("tombi://tombi.dev/schemas/comment-directive.json").unwrap();
+        let url = Url::parse("tombi://json.tombi.dev/root-comment-directive.json").unwrap();
         SchemaUrl::new(url)
     })
 }

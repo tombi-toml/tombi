@@ -13,8 +13,11 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
     std::fs::write(
         project_root_path().join("json.schemastore.org/tombi.json"),
-        serde_json::to_string_pretty(&generator.into_root_schema_for::<tombi_config::Config>())?
-            + "\n",
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<tombi_config::Config>(),
+        )? + "\n",
     )?;
     std::fs::write(
         project_root_path().join("json.tombi.dev/root-comment-directive.json"),

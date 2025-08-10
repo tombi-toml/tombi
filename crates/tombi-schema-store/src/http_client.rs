@@ -15,3 +15,21 @@ pub use gloo_net_client::HttpClient;
 mod surf_client;
 #[cfg(feature = "surf2")]
 pub use surf_client::HttpClient;
+
+// Provide a stub when no features are enabled
+#[cfg(not(any(feature = "reqwest01", feature = "gloo-net06", feature = "surf2")))]
+#[derive(Debug, Clone)]
+pub struct HttpClient;
+
+#[cfg(not(any(feature = "reqwest01", feature = "gloo-net06", feature = "surf2")))]
+impl HttpClient {
+    pub fn new() -> Self {
+        Self
+    }
+    
+    pub async fn get_bytes(&self, _url: &str) -> Result<bytes::Bytes, error::FetchError> {
+        Err(error::FetchError::FetchFailed {
+            reason: "No HTTP client feature enabled".to_string(),
+        })
+    }
+}

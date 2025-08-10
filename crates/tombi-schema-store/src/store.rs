@@ -1,8 +1,8 @@
 use std::{ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
-    get_tombi_schemastore_content, json::JsonCatalog, CatalogUrl, DocumentSchema, HttpClient,
-    SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
+    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog, CatalogUrl,
+    DocumentSchema, SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
 };
 use ahash::AHashMap;
 use itertools::Either;
