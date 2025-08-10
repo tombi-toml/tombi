@@ -42,7 +42,7 @@ pub async fn try_get_root_comment_directive(
             return Ok(None);
         };
 
-        for (tombi_directive, tombi_directive_range) in tombi_directives {
+        for ((tombi_directive, tombi_directive_range), _) in tombi_directives {
             let (root, errors) =
                 tombi_parser::parse(&tombi_directive, COMMENT_DIRECTIVE_TOML_VERSION)
                     .into_root_and_errors();

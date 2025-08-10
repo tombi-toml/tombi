@@ -12,7 +12,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                 for comment in comments {
                     if let Some(file_schema_range) = builder.file_schema_range {
                         if comment.syntax().range().contains(file_schema_range.start) {
-                            builder.add_schema_url_comment(comment, &file_schema_range);
+                            builder.add_schema_directive(comment, &file_schema_range);
                             continue;
                         }
                     }
@@ -24,7 +24,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                 for comment in comments {
                     if let Some(file_schema_range) = builder.file_schema_range {
                         if comment.syntax().range().contains(file_schema_range.start) {
-                            builder.add_schema_url_comment(comment, &file_schema_range);
+                            builder.add_schema_directive(comment, &file_schema_range);
                             continue;
                         }
                     }

@@ -35,7 +35,7 @@ impl SemanticTokensBuilder {
         self.last_range = range;
     }
 
-    pub fn add_schema_url_comment(
+    pub fn add_schema_directive(
         &mut self,
         comment: impl AsRef<tombi_ast::Comment>,
         file_schema_range: &tombi_text::Range,

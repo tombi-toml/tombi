@@ -55,7 +55,7 @@ impl Comment {
     /// ```toml
     /// # tombi: toml-version = "v1.0.0"
     /// ```
-    pub fn tombi_directive(&self) -> Option<(String, tombi_text::Range)> {
+    pub fn tombi_directive(&self) -> Option<((String, tombi_text::Range), tombi_text::Range)> {
         let comment_str = self.syntax().text();
 
         // Check if it starts with "#" (comments always start with #)
@@ -72,10 +72,15 @@ impl Comment {
             None => return None, // Not a tombi directive
         };
 
-        let mut range = self.syntax().range();
-        range.start.column +=
-            (comment_str.len() - tombi_comment_directive.len() + "tombi:".len()) as u32;
+        let mut tombi_directive_range = self.syntax().range();
+        let mut content_range = self.syntax().range();
 
-        Some((content, range))
+        let tombi_directive_offset = (comment_str.len() - tombi_comment_directive.len()) as u32;
+        tombi_directive_range.start.column += tombi_directive_offset;
+        tombi_directive_range.end.column += tombi_directive_offset + 6;
+
+        content_range.start.column += tombi_directive_offset + 7;
+
+        Some(((content, content_range), tombi_directive_range))
     }
 }

@@ -18,7 +18,9 @@ impl crate::Root {
         None
     }
 
-    pub fn tombi_directives(&self) -> Option<Vec<(String, tombi_text::Range)>> {
+    pub fn tombi_directives(
+        &self,
+    ) -> Option<Vec<((String, tombi_text::Range), tombi_text::Range)>> {
         let mut tombi_directives = vec![];
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
