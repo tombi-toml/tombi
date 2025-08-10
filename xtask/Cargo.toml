@@ -19,6 +19,7 @@ schemars = { workspace = true, features = ["chrono04"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 time = { workspace = true }
+tombi-comment-directive = { workspace = true }
 tombi-config = { workspace = true, features = ["jsonschema"] }
 ungrammar = { workspace = true }
 xshell = { workspace = true }

@@ -318,7 +318,7 @@ impl ConfigManager {
         Ok(updated)
     }
 
-    pub async fn load_schemas(
+    pub async fn load_config_schemas(
         &self,
         schemas: &[tombi_config::Schema],
         base_dir_path: Option<&std::path::Path>,

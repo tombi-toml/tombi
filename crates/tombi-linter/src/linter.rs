@@ -58,7 +58,7 @@ impl<'a> Linter<'a> {
             };
 
             let root_comment_directive =
-                match tombi_comment_directive::try_get_root_comment_directive(&root) {
+                match tombi_comment_directive::try_get_root_comment_directive(&root).await {
                     Ok(Some(directive)) => Some(directive),
                     Ok(None) => None,
                     Err(diagnostics) => {

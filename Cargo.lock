@@ -4825,6 +4825,7 @@ dependencies = [
  "serde",
  "serde_json",
  "time 0.3.41",
+ "tombi-comment-directive",
  "tombi-config",
  "ungrammar",
  "xshell",

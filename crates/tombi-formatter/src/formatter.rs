@@ -55,7 +55,7 @@ impl<'a> Formatter<'a> {
                     .await
                     .ok()
                     .flatten(),
-                tombi_comment_directive::get_root_comment_directive(&root),
+                tombi_comment_directive::get_root_comment_directive(&root).await,
             )
         } else {
             (None, None)
