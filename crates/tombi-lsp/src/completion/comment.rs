@@ -27,7 +27,7 @@ pub fn get_comment_completion_contents(
                                 comment_range.start.column + 1 + colon_pos as u32;
                             let mut completion_contents = Vec::new();
 
-                            if root.file_schema_url(None).is_none() {
+                            if root.schema_directive(None).is_none() {
                                 completion_contents.push(CompletionContent::new_comment_directive(
                                     "schema",
                                     "Schema URL/Path",

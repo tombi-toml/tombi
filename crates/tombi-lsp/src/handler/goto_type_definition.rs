@@ -59,7 +59,7 @@ pub async fn handle_goto_type_definition(
         .flatten();
 
     let (toml_version, _) = backend
-        .source_toml_version(source_schema.as_ref(), &config)
+        .source_toml_version(Some(&root), source_schema.as_ref(), &config)
         .await;
 
     let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {

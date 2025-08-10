@@ -63,7 +63,7 @@ async fn diagnostics(
         .flatten();
 
     let (toml_version, _) = backend
-        .source_toml_version(source_schema.as_ref(), &config)
+        .source_toml_version(Some(&root), source_schema.as_ref(), &config)
         .await;
 
     let document_sources = backend.document_sources.read().await;

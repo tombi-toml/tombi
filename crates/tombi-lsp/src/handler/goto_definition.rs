@@ -54,7 +54,7 @@ pub async fn handle_goto_definition(
         .flatten();
 
     let (toml_version, _) = backend
-        .source_toml_version(source_schema.as_ref(), &config)
+        .source_toml_version(Some(&root), source_schema.as_ref(), &config)
         .await;
 
     let position = position.into();

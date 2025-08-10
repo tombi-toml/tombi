@@ -503,7 +503,7 @@ impl SchemaStore {
             None => None,
         };
 
-        if let Some((schema_url, url_range)) = root.file_schema_url(source_path.as_deref()) {
+        if let Some((schema_url, url_range)) = root.schema_directive(source_path.as_deref()) {
             let schema_url = match schema_url {
                 Ok(schema_url) => schema_url,
                 Err(schema_url_or_file_path) => {

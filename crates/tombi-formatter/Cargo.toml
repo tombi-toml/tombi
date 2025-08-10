@@ -12,6 +12,7 @@ serde = { workspace = true, optional = true }
 tokio.workspace = true
 tombi-ast.workspace = true
 tombi-ast-editor.workspace = true
+tombi-comment-directive.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-parser.workspace = true

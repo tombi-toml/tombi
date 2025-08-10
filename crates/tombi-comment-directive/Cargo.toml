@@ -10,9 +10,16 @@ license.workspace = true
 clap = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+thiserror.workspace = true
+tombi-ast.workspace = true
+tombi-document.workspace = true
+tombi-document-tree.workspace = true
+tombi-parser.workspace = true
+tombi-text.workspace = true
 tombi-toml-version.workspace = true
+url.workspace = true
 
 [features]
 clap = ["dep:clap"]
 jsonschema = ["dep:schemars", "serde", "tombi-toml-version/jsonschema"]
-serde = ["dep:serde"]
+serde = ["dep:serde", "tombi-document/serde"]

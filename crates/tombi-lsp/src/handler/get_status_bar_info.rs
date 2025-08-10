@@ -26,17 +26,20 @@ pub async fn handle_get_status(
         .config_schema_store_for_url(&uri)
         .await;
 
-    let source_schema = match backend.get_incomplete_ast(&uri).await {
-        Some(root) => schema_store
-            .resolve_source_schema_from_ast(&root, Some(Either::Left(&uri)))
-            .await
-            .ok()
-            .flatten(),
-        None => None,
+    let (root, source_schema) = match backend.get_incomplete_ast(&uri).await {
+        Some(root) => {
+            let source_schema = schema_store
+                .resolve_source_schema_from_ast(&root, Some(Either::Left(&uri)))
+                .await
+                .ok()
+                .flatten();
+            (Some(root), source_schema)
+        }
+        None => (None, None),
     };
 
     let (toml_version, source) = backend
-        .source_toml_version(source_schema.as_ref(), &config)
+        .source_toml_version(root.as_ref(), source_schema.as_ref(), &config)
         .await;
 
     Ok(GetStatusResponse {

@@ -167,7 +167,7 @@ impl Backend {
             .flatten();
 
         let (toml_version, _) = self
-            .source_toml_version(source_schema.as_ref(), &config)
+            .source_toml_version(Some(&root), source_schema.as_ref(), &config)
             .await;
 
         root.try_into_document_tree(toml_version).ok()
@@ -190,9 +190,20 @@ impl Backend {
 
     pub async fn source_toml_version(
         &self,
+        root: Option<&tombi_ast::Root>,
         source_schema: Option<&SourceSchema>,
         config: &Config,
     ) -> (TomlVersion, TomlVersionSource) {
+        // Check tombi directive first (highest priority)
+        if let Some(root) = root {
+            if let Some(tombi_directive) = tombi_comment_directive::get_root_comment_directive(root)
+            {
+                if let Some(toml_version) = tombi_directive.toml_version {
+                    return (toml_version, TomlVersionSource::Comment);
+                }
+            }
+        }
+
         if let Some(SourceSchema {
             root_schema: Some(document_schema),
             ..

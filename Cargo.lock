@@ -3433,7 +3433,14 @@ dependencies = [
  "clap",
  "schemars",
  "serde",
+ "thiserror 2.0.12",
+ "tombi-ast",
+ "tombi-document",
+ "tombi-document-tree",
+ "tombi-parser",
+ "tombi-text",
  "tombi-toml-version",
+ "url",
 ]
 
 [[package]]
@@ -3585,6 +3592,7 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-ast-editor",
+ "tombi-comment-directive",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-parser",
@@ -3718,6 +3726,7 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-cache",
+ "tombi-comment-directive",
  "tombi-config",
  "tombi-date-time",
  "tombi-diagnostic",

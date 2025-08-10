@@ -45,7 +45,7 @@ pub async fn handle_document_link(
     // key = "value"
     // ```
     if let Some((Ok(schema_url), range)) =
-        root.file_schema_url(text_document.uri.to_file_path().ok().as_deref())
+        root.schema_directive(text_document.uri.to_file_path().ok().as_deref())
     {
         let tooltip = "Open JSON Schema".into();
         document_links.push(
@@ -66,7 +66,7 @@ pub async fn handle_document_link(
         .flatten();
 
     let (toml_version, _) = backend
-        .source_toml_version(source_schema.as_ref(), &config)
+        .source_toml_version(Some(&root), source_schema.as_ref(), &config)
         .await;
 
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;

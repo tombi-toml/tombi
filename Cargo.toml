@@ -75,6 +75,7 @@ tokio = { version = "1.45.0", default-features = false }
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
+tombi-comment-directive = { path = "crates/tombi-comment-directive" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
 tombi-diagnostic = { path = "crates/tombi-diagnostic" }
