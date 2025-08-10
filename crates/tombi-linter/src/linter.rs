@@ -57,7 +57,15 @@ impl<'a> Linter<'a> {
                 }
             };
 
-            let root_comment_directive = tombi_comment_directive::get_root_comment_directive(&root);
+            let root_comment_directive =
+                match tombi_comment_directive::try_get_root_comment_directive(&root) {
+                    Ok(Some(directive)) => Some(directive),
+                    Ok(None) => None,
+                    Err(diagnostics) => {
+                        self.diagnostics.extend(diagnostics);
+                        None
+                    }
+                };
 
             (source_schema, root_comment_directive)
         } else {
