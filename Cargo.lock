@@ -3435,6 +3435,7 @@ dependencies = [
  "serde",
  "thiserror 2.0.12",
  "tombi-ast",
+ "tombi-diagnostic",
  "tombi-document",
  "tombi-document-tree",
  "tombi-parser",

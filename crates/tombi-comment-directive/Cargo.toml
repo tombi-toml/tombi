@@ -12,6 +12,7 @@ schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
 tombi-ast.workspace = true
+tombi-diagnostic.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-parser.workspace = true
