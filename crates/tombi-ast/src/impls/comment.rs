@@ -18,17 +18,17 @@ impl Comment {
             let space_count = (original_len - url_str.len()) as u32;
             url_str = url_str.trim();
 
-            let mut schema_url_range = self.syntax().range();
-            schema_url_range = tombi_text::Range::new(
-                tombi_text::Position::new(schema_url_range.start.line, 9 + space_count),
+            let comment_range = self.syntax().range();
+            let scheme_range = tombi_text::Range::new(
+                tombi_text::Position::new(comment_range.start.line, 9 + space_count),
                 tombi_text::Position::new(
-                    schema_url_range.end.line,
+                    comment_range.end.line,
                     9 + space_count + url_str.len() as tombi_text::Column,
                 ),
             );
 
             if let Ok(url) = url_str.parse::<url::Url>() {
-                Some((Ok(url), schema_url_range))
+                Some((Ok(url), scheme_range))
             } else if let Some(source_dir_path) = source_path {
                 let mut schema_file_path = std::path::PathBuf::from(url_str);
                 if let Some(parent) = source_dir_path.parent() {
@@ -40,10 +40,10 @@ impl Comment {
 
                 Some((
                     url_from_file_path(&schema_file_path).map_err(|_| url_str.to_string()),
-                    schema_url_range,
+                    scheme_range,
                 ))
             } else {
-                Some((Err(url_str.to_string()), schema_url_range))
+                Some((Err(url_str.to_string()), scheme_range))
             }
         } else {
             None
@@ -64,23 +64,23 @@ impl Comment {
         }
 
         // Remove the '#' and any following spaces
-        let tombi_comment_directive = comment_str[1..].trim_start();
+        let tombi_directive_with_scheme = comment_str[1..].trim_start();
 
         // Check if it starts with "tombi:"
-        let content = match tombi_comment_directive.strip_prefix("tombi:") {
+        let content = match tombi_directive_with_scheme.strip_prefix("tombi:") {
             Some(content) => content.to_string(),
             None => return None, // Not a tombi directive
         };
 
-        let mut tombi_directive_range = self.syntax().range();
+        let mut scheme_range = self.syntax().range();
         let mut content_range = self.syntax().range();
 
-        let tombi_directive_offset = (comment_str.len() - tombi_comment_directive.len()) as u32;
-        tombi_directive_range.start.column += tombi_directive_offset;
-        tombi_directive_range.end.column += tombi_directive_offset + 6;
+        let tombi_directive_offset = (comment_str.len() - tombi_directive_with_scheme.len()) as u32;
+        scheme_range.start.column += tombi_directive_offset;
+        scheme_range.end.column = scheme_range.start.column + 6;
 
         content_range.start.column += tombi_directive_offset + 7;
 
-        Some(((content, content_range), tombi_directive_range))
+        Some(((content, content_range), scheme_range))
     }
 }

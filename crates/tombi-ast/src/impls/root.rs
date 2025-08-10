@@ -10,8 +10,8 @@ impl crate::Root {
     ) -> Option<(Result<url::Url, String>, tombi_text::Range)> {
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some((schema_url, url_range)) = comment.schema_directive(source_path) {
-                    return Some((schema_url, url_range));
+                if let Some((schema_url, scheme_range)) = comment.schema_directive(source_path) {
+                    return Some((schema_url, scheme_range));
                 }
             }
         }
@@ -24,8 +24,8 @@ impl crate::Root {
         let mut tombi_directives = vec![];
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some((tombi_directive, url_range)) = comment.tombi_directive() {
-                    tombi_directives.push((tombi_directive, url_range));
+                if let Some((tombi_directive, scheme_range)) = comment.tombi_directive() {
+                    tombi_directives.push((tombi_directive, scheme_range));
                 }
             }
         }
