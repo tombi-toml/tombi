@@ -1,3 +1,4 @@
+import { gte } from "semver";
 import * as vscode from "vscode";
 import * as node from "vscode-languageclient/node";
 import { bootstrap } from "@/bootstrap";
@@ -14,7 +15,6 @@ import { clientOptions } from "@/options/client-options";
 import { serverOptions } from "@/options/server-options";
 import { registerExtensionSchemas } from "@/tomlValidation";
 import type { Settings } from "./settings";
-import { gte } from "semver";
 export type { Settings };
 
 export const Extension_ID = "tombi";
@@ -143,8 +143,8 @@ export class Extension {
         let source: string;
         let configPath: string | undefined;
 
-        if (gte(this.lspVersion, "0.5.0")) {
-          // Use getStatus for versions >= 0.5.0
+        if (gte(this.lspVersion, "0.5.1")) {
+          // Use getStatus for versions >= 0.5.1
           const response = await this.client.sendRequest(getStatus, {
             uri: editor.document.uri.toString(),
           });
@@ -152,7 +152,7 @@ export class Extension {
           source = response.source;
           configPath = response.configPath;
         } else {
-          // Use getTomlVersion for versions < 0.5.0
+          // Use getTomlVersion for versions < 0.5.1
           const response = await this.client.sendRequest(getTomlVersion, {
             uri: editor.document.uri.toString(),
           });
