@@ -62,8 +62,9 @@ async fn diagnostics(
         .ok()
         .flatten();
 
+    let root_comment_directive = tombi_comment_directive::get_root_comment_directive(&root);
     let (toml_version, _) = backend
-        .source_toml_version(Some(&root), source_schema.as_ref(), &config)
+        .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
         .await;
 
     let document_sources = backend.document_sources.read().await;

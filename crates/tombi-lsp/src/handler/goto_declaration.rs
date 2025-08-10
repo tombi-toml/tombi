@@ -56,8 +56,9 @@ pub async fn handle_goto_declaration(
 
     let position = position.into();
 
+    let root_comment_directive = tombi_comment_directive::get_root_comment_directive(&root);
     let (toml_version, _) = backend
-        .source_toml_version(Some(&root), source_schema.as_ref(), &config)
+        .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
         .await;
 
     let Some((keys, _)) = get_hover_keys_with_range(&root, position, toml_version).await else {
