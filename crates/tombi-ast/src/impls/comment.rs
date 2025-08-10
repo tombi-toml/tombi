@@ -2,7 +2,12 @@ use crate::{AstToken, Comment};
 use tombi_url::url_from_file_path;
 
 impl Comment {
-    pub fn schema_url(
+    /// Returns the schema directive in the document header.
+    ///
+    /// ```toml
+    /// #:schema "https://example.com/schema.json"
+    /// ```
+    pub fn schema_directive(
         &self,
         source_path: Option<&std::path::Path>,
     ) -> Option<(Result<url::Url, String>, tombi_text::Range)> {
@@ -43,5 +48,34 @@ impl Comment {
         } else {
             None
         }
+    }
+
+    /// Returns the tombi directives in the document header.
+    ///
+    /// ```toml
+    /// # tombi: toml-version = "v1.0.0"
+    /// ```
+    pub fn tombi_directive(&self) -> Option<(String, tombi_text::Range)> {
+        let comment_str = self.syntax().text();
+
+        // Check if it starts with "#" (comments always start with #)
+        if !comment_str.starts_with('#') {
+            return None;
+        }
+
+        // Remove the '#' and any following spaces
+        let tombi_comment_directive = comment_str[1..].trim_start();
+
+        // Check if it starts with "tombi:"
+        let content = match tombi_comment_directive.strip_prefix("tombi:") {
+            Some(content) => content.to_string(),
+            None => return None, // Not a tombi directive
+        };
+
+        let mut range = self.syntax().range();
+        range.start.column +=
+            (comment_str.len() - tombi_comment_directive.len() + "tombi:".len()) as u32;
+
+        Some((content, range))
     }
 }

@@ -1,22 +1,16 @@
 use itertools::Itertools;
 use tombi_syntax::SyntaxKind;
 
-use crate::{support, AstNode, AstToken};
+use crate::{support, AstNode};
 
 impl crate::Root {
-    /// Returns the schema URL from the first dangling comment or the first key-value.
-    ///
-    /// ```toml
-    /// #:schema "https://example.com/schema.json"
-    /// key = "value"
-    /// ```
     pub fn schema_directive(
         &self,
         source_path: Option<&std::path::Path>,
     ) -> Option<(Result<url::Url, String>, tombi_text::Range)> {
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some((schema_url, url_range)) = comment.schema_url(source_path) {
+                if let Some((schema_url, url_range)) = comment.schema_directive(source_path) {
                     return Some((schema_url, url_range));
                 }
             }
@@ -24,36 +18,13 @@ impl crate::Root {
         None
     }
 
-    /// Returns the tombi directives in the document header.
-    ///
-    /// ```toml
-    /// # tombi: toml-version = "v1.0.0"
-    /// ```
     pub fn tombi_directives(&self) -> Option<Vec<(String, tombi_text::Range)>> {
         let mut tombi_directives = vec![];
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                let comment_str = comment.syntax().text();
-
-                // Check if it starts with "#" (comments always start with #)
-                if !comment_str.starts_with('#') {
-                    continue;
+                if let Some((tombi_directive, url_range)) = comment.tombi_directive() {
+                    tombi_directives.push((tombi_directive, url_range));
                 }
-
-                // Remove the '#' and any following spaces
-                let tombi_comment_directive = comment_str[1..].trim_start();
-
-                // Check if it starts with "tombi:"
-                let content = match tombi_comment_directive.strip_prefix("tombi:") {
-                    Some(content) => content.to_string(),
-                    None => continue, // Not a tombi directive
-                };
-
-                let mut range = comment.syntax().range();
-                range.start.column +=
-                    (comment_str.len() - tombi_comment_directive.len() + "tombi:".len()) as u32;
-
-                tombi_directives.push((content, range));
             }
         }
 
