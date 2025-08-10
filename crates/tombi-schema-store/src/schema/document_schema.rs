@@ -10,7 +10,6 @@ use crate::{Accessor, SchemaStore};
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {
     pub schema_url: SchemaUrl,
-    pub schema_id: Option<SchemaUrl>,
     pub(crate) toml_version: Option<TomlVersion>,
     pub value_schema: Option<ValueSchema>,
     pub definitions: SchemaDefinitions,
@@ -26,10 +25,6 @@ impl DocumentSchema {
                 }
                 _ => None,
             });
-        let schema_id = object
-            .get("$id")
-            .and_then(|v| v.as_str())
-            .and_then(|s| SchemaUrl::parse(s).ok());
 
         let value_schema = ValueSchema::new(&object);
         let mut definitions = AHashMap::default();
@@ -56,7 +51,6 @@ impl DocumentSchema {
 
         Self {
             schema_url,
-            schema_id,
             toml_version,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),

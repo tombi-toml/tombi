@@ -99,7 +99,7 @@ impl SchemaStore {
         };
 
         if schema_options.enabled.unwrap_or_default().value() {
-            self.load_schemas(
+            self.load_config_schemas(
                 match &config.schemas {
                     Some(schemas) => schemas,
                     None => &[],
@@ -118,7 +118,7 @@ impl SchemaStore {
                         });
                     };
                     let catalog_url = CatalogUrl::new(catalog_url);
-                    self.load_json_catalog_from_catalog_url(&catalog_url).await
+                    self.load_catalog_from_url(&catalog_url).await
                 }))
                 .await;
 
@@ -136,7 +136,11 @@ impl SchemaStore {
         Ok(())
     }
 
-    pub async fn load_schemas(&self, schemas: &[Schema], base_dir_path: Option<&std::path::Path>) {
+    pub async fn load_config_schemas(
+        &self,
+        schemas: &[Schema],
+        base_dir_path: Option<&std::path::Path>,
+    ) {
         futures::future::join_all(schemas.iter().map(|schema| async move {
             let schema_url = if let Ok(schema_url) = SchemaUrl::parse(schema.path()) {
                 schema_url
@@ -162,7 +166,7 @@ impl SchemaStore {
         .await;
     }
 
-    async fn load_json_catalog_from_catalog_url(
+    pub async fn load_catalog_from_url(
         &self,
         catalog_url: &CatalogUrl,
     ) -> Result<Option<JsonCatalog>, crate::Error> {

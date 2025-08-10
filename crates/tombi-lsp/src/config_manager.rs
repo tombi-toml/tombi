@@ -325,13 +325,17 @@ impl ConfigManager {
     ) {
         let mut config_schema_stores = self.config_schema_stores.write().await;
         for ConfigSchemaStore { schema_store, .. } in config_schema_stores.values_mut() {
-            schema_store.load_schemas(schemas, base_dir_path).await;
+            schema_store
+                .load_config_schemas(schemas, base_dir_path)
+                .await;
         }
 
         if let Some(ConfigSchemaStore { schema_store, .. }) =
             &mut *self.default_config_schema_store.write().await
         {
-            schema_store.load_schemas(schemas, base_dir_path).await;
+            schema_store
+                .load_config_schemas(schemas, base_dir_path)
+                .await;
         }
     }
 }

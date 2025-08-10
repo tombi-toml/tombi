@@ -3430,17 +3430,22 @@ dependencies = [
 name = "tombi-comment-directive"
 version = "0.0.0-dev"
 dependencies = [
+ "ahash",
  "clap",
  "schemars",
  "serde",
  "thiserror 2.0.12",
+ "tokio",
  "tombi-ast",
  "tombi-diagnostic",
  "tombi-document",
  "tombi-document-tree",
+ "tombi-json",
  "tombi-parser",
+ "tombi-schema-store",
  "tombi-text",
  "tombi-toml-version",
+ "tombi-validator",
  "url",
 ]
 
