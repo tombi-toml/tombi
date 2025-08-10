@@ -3439,7 +3439,6 @@ name = "tombi-comment-directive"
 version = "0.0.0-dev"
 dependencies = [
  "ahash",
- "clap",
  "schemars",
  "serde",
  "thiserror 2.0.12",
