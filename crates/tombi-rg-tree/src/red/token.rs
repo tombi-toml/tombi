@@ -20,7 +20,7 @@ impl<L: Language> fmt::Debug for RedToken<L> {
             "{:?} @{:?} @{:?}",
             self.kind(),
             self.span(),
-            tombi_text::Range::new_1_based(self.range())
+            self.range()
         )?;
         if self.text().len() < 25 {
             return write!(f, " {:?}", self.text());

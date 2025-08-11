@@ -38,14 +38,6 @@ impl Range {
             },
         }
     }
-    /// New range with 1-based line and column
-    #[inline]
-    pub fn new_1_based(range: Self) -> Self {
-        Self::new(
-            Position::new(range.start.line + 1, range.start.column + 1),
-            Position::new(range.end.line + 1, range.end.column + 1),
-        )
-    }
 
     #[inline]
     pub fn at(position: Position) -> Self {
