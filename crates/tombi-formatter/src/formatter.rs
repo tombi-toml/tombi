@@ -3,6 +3,7 @@ pub mod definitions;
 use std::fmt::Write;
 
 use itertools::Either;
+use tombi_comment_directive::COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_config::{DateTimeDelimiter, IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
@@ -14,6 +15,7 @@ pub struct Formatter<'a> {
     toml_version: TomlVersion,
     indent_depth: u8,
     skip_indent: bool,
+    single_line_mode: bool,
     definitions: &'a crate::FormatDefinitions,
     #[allow(dead_code)]
     options: &'a crate::FormatOptions,
@@ -35,6 +37,7 @@ impl<'a> Formatter<'a> {
             toml_version,
             indent_depth: 0,
             skip_indent: false,
+            single_line_mode: false,
             definitions,
             options,
             source_url_or_path,
@@ -131,6 +134,21 @@ impl<'a> Formatter<'a> {
         Ok(result)
     }
 
+    pub(crate) fn format_comment_directive(
+        &mut self,
+        directive: &str,
+    ) -> Result<String, std::fmt::Error> {
+        let Ok(root) =
+            tombi_parser::parse(directive, COMMENT_DIRECTIVE_TOML_VERSION).try_into_root()
+        else {
+            return Ok(directive.trim().to_string());
+        };
+        self.single_line_mode = true;
+        let formatted = self.format_to_string(&root)?;
+        self.single_line_mode = false;
+        Ok(formatted)
+    }
+
     #[inline]
     pub(crate) fn toml_version(&self) -> TomlVersion {
         self.toml_version
@@ -144,6 +162,11 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub fn line_ending(&self) -> &'static str {
         self.definitions.line_ending.unwrap_or_default().into()
+    }
+
+    #[inline]
+    pub(crate) fn single_line_mode(&self) -> bool {
+        self.single_line_mode
     }
 
     #[inline]

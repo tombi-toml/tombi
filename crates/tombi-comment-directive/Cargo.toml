@@ -25,5 +25,6 @@ tombi-validator.workspace = true
 url.workspace = true
 
 [features]
+default = ["serde"]
 jsonschema = ["dep:schemars", "serde", "tombi-toml-version/jsonschema"]
 serde = ["dep:serde", "tombi-document/serde"]

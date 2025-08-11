@@ -6,14 +6,9 @@ pub use root::RootCommentDirective;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{CatalogUrl, SchemaUrl};
 use tombi_toml_version::TomlVersion;
-use url::Url;
 
-static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
-    tokio::sync::OnceCell::const_new();
-static ROOT_COMMENT_DIRECTIVE_SCHEMA_URL: std::sync::OnceLock<SchemaUrl> =
-    std::sync::OnceLock::new();
+pub const COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
 #[cfg(feature = "serde")]
 pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootCommentDirective> {
@@ -30,11 +25,11 @@ pub async fn try_get_root_comment_directive(
 
     let mut total_diagnostics = Vec::new();
     if let Some(tombi_directives) = root.tombi_directives() {
-        const COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
-        let schema_store: &'static tombi_schema_store::SchemaStore = get_schema_store().await;
-        let schema_url = get_root_comment_directive_schema_url();
+        let schema_store: &'static tombi_schema_store::SchemaStore =
+            store::get_schema_store().await;
+        let schema_url = store::get_root_comment_directive_schema_url();
         let tombi_json::ValueNode::Object(object) = schema_store
-            .fetch_schema_value(get_root_comment_directive_schema_url())
+            .fetch_schema_value(store::get_root_comment_directive_schema_url())
             .await
             .unwrap()
             .unwrap()
@@ -128,25 +123,37 @@ fn into_directive_diagnostic(
     )
 }
 
-#[inline]
-async fn get_schema_store() -> &'static tombi_schema_store::SchemaStore {
-    COMMENT_DIRECTIVE_SCHEMA_STORE
-        .get_or_init(|| async {
-            let schema_store = tombi_schema_store::SchemaStore::new();
-            let _ = schema_store
-                .load_catalog_from_url(&CatalogUrl::new(
-                    Url::parse("tombi://json.tombi.dev/api/json/catalog.json").unwrap(),
-                ))
-                .await;
-            schema_store
-        })
-        .await
-}
+#[cfg(feature = "serde")]
+mod store {
+    use tombi_schema_store::{CatalogUrl, SchemaUrl};
+    use url::Url;
 
-#[inline]
-fn get_root_comment_directive_schema_url() -> &'static SchemaUrl {
-    ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
-        let url = Url::parse("tombi://json.tombi.dev/root-comment-directive.json").unwrap();
-        SchemaUrl::new(url)
-    })
+    static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
+        tokio::sync::OnceCell::const_new();
+    static ROOT_COMMENT_DIRECTIVE_SCHEMA_URL: std::sync::OnceLock<SchemaUrl> =
+        std::sync::OnceLock::new();
+
+    #[inline]
+    pub async fn get_schema_store() -> &'static tombi_schema_store::SchemaStore {
+        COMMENT_DIRECTIVE_SCHEMA_STORE
+            .get_or_init(|| async {
+                let schema_store = tombi_schema_store::SchemaStore::new();
+                let _ = schema_store
+                    .load_catalog_from_url(&CatalogUrl::new(
+                        Url::parse("tombi://json.tombi.dev/api/json/catalog.json").unwrap(),
+                    ))
+                    .await;
+                schema_store
+            })
+            .await
+    }
+
+    #[cfg(feature = "serde")]
+    #[inline]
+    pub fn get_root_comment_directive_schema_url() -> &'static SchemaUrl {
+        ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
+            let url = Url::parse("tombi://json.tombi.dev/root-comment-directive.json").unwrap();
+            SchemaUrl::new(url)
+        })
+    }
 }
