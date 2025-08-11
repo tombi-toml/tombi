@@ -392,12 +392,17 @@ impl CompletionContent {
             .collect()
     }
 
-    /// Creates a new comment directive completion content.
+    /// Creates a new schema comment directive completion content.
+    ///
+    /// NOTE: schema directive is formatted to follow Taplo's format.
+    ///       If Taplo didn't exist, it would be formatted as `# schema: ${1:url}`.
+    ///
+    ///       See: https://taplo.tamasfe.dev/configuration/directives.html#the-schema-directive
     ///
     /// ```toml
     /// #:schema https://...
     /// ```
-    pub fn new_comment_directive(
+    pub fn new_schema_directive(
         directive: &str,
         detail: impl Into<String>,
         documentation: impl Into<String>,
