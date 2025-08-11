@@ -1,9 +1,12 @@
 {
-  "$schema": "tombi://json.tombi.dev/root-comment-directive.json",
+  "$id": "tombi://json.tombi.dev/root-comment-directive.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RootCommentDirective",
   "type": "object",
   "properties": {
     "toml-version": {
+      "title": "TOML version.",
+      "description": "This directive specifies the TOML version of this document, with the highest priority.",
       "anyOf": [
         {
           "$ref": "#/definitions/TomlVersion"
@@ -19,7 +22,10 @@
     "TomlVersion": {
       "title": "TOML version.",
       "type": "string",
-      "enum": ["v1.0.0", "v1.1.0-preview"]
+      "enum": [
+        "v1.0.0",
+        "v1.1.0-preview"
+      ]
     }
   }
 }

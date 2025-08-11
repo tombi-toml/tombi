@@ -1,5 +1,3 @@
-# tombi: toml-version = "v1.0.0"
-
 [toolchain]
 channel = "stable"
 components = ["clippy", "rust-analyzer", "rustfmt"]

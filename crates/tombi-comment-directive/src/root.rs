@@ -4,6 +4,10 @@ use tombi_toml_version::TomlVersion;
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/root-comment-directive.json")))]
 pub struct RootCommentDirective {
+    /// # TOML version.
+    ///
+    /// This directive specifies the TOML version of this document, with the highest priority.
     pub toml_version: Option<TomlVersion>,
 }
