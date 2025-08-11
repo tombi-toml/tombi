@@ -146,7 +146,11 @@ pub async fn root_comment_directive_document_schema() -> DocumentSchema {
         .unwrap()
         .unwrap()
     else {
-        panic!("Failed to fetch root comment directive schema");
+        panic!(
+            "Failed to fetch root comment directive schema from URL '{}'. \
+             The fetched value was not an object.",
+            schema_url
+        );
     };
     DocumentSchema::new(object, schema_url.clone())
 }
