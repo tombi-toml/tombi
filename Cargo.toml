@@ -121,4 +121,4 @@ zed_extension_api = "0.1.0"
 zip = { version = "2.3.0" }
 
 [workspace.metadata.cargo-shear]
-ignored = ["semver"]
+ignored = ["semver", "tracing"]

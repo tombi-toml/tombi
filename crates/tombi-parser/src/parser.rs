@@ -25,12 +25,7 @@ impl<'t> Parser<'t> {
             source,
             input_tokens,
             toml_version: toml_version.unwrap_or_default(),
-            pos: input_tokens
-                .iter()
-                .enumerate()
-                .find(|(_, token)| !token.kind().is_trivia())
-                .map(|(i, _)| i)
-                .unwrap_or_default(),
+            pos: 0, // Start from the beginning to preserve leading trivia
             tokens: Vec::new(),
             events: Vec::new(),
         }

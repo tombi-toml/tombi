@@ -15,6 +15,7 @@ tombi-lexer.workspace = true
 tombi-rg-tree.workspace = true
 tombi-syntax.workspace = true
 tombi-text.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

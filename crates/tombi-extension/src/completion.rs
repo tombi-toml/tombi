@@ -403,13 +403,12 @@ impl CompletionContent {
     /// #:schema https://...
     /// ```
     pub fn new_schema_directive(
-        directive: &str,
         detail: impl Into<String>,
         documentation: impl Into<String>,
         edit: Option<CompletionEdit>,
     ) -> Self {
         Self {
-            label: directive.to_string(),
+            label: "schema".to_string(),
             kind: CompletionKind::CommentDirective,
             emoji_icon: Some('🦅'),
             priority: CompletionContentPriority::Key,
@@ -421,6 +420,11 @@ impl CompletionContent {
             deprecated: None,
             preselect: None,
         }
+    }
+
+    pub fn with_position(mut self, position: tombi_text::Position) -> Self {
+        self.edit = self.edit.map(|edit| edit.with_position(position));
+        self
     }
 }
 
