@@ -43,7 +43,7 @@ impl<L: Language> fmt::Debug for RedNode<L> {
                 "{:?} @{:?} @{:?}",
                 self.kind(),
                 self.span(),
-                tombi_text::Range::new_1_based(self.range())
+                self.range()
             )
         }
     }
