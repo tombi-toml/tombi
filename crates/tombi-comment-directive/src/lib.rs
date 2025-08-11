@@ -1,45 +1,33 @@
 mod error;
 mod root;
 
+use ahash::AHashMap;
 pub use error::Error;
 pub use root::RootCommentDirective;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_schema_store::{CatalogUrl, DocumentSchema, SchemaUrl, SourceSchema};
 use tombi_toml_version::TomlVersion;
+use url::Url;
 
-pub const COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
+pub const TOML_COMMENT_DIRECTIVE_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
-#[cfg(feature = "serde")]
 pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootCommentDirective> {
     try_get_root_comment_directive(root).await.ok().flatten()
 }
 
-#[cfg(feature = "serde")]
 pub async fn try_get_root_comment_directive(
     root: &tombi_ast::Root,
 ) -> Result<Option<RootCommentDirective>, Vec<tombi_diagnostic::Diagnostic>> {
-    use ahash::AHashMap;
     use serde::Deserialize;
-    use tombi_schema_store::DocumentSchema;
 
     let mut total_diagnostics = Vec::new();
     if let Some(tombi_directives) = root.tombi_directives() {
-        let schema_store: &'static tombi_schema_store::SchemaStore =
-            store::get_schema_store().await;
-        let schema_url = store::get_root_comment_directive_schema_url();
-        let tombi_json::ValueNode::Object(object) = schema_store
-            .fetch_schema_value(store::get_root_comment_directive_schema_url())
-            .await
-            .unwrap()
-            .unwrap()
-        else {
-            return Ok(None);
-        };
-
+        let schema_store = schema_store().await;
         for ((tombi_directive, tombi_directive_range), _) in tombi_directives {
             let (root, errors) =
-                tombi_parser::parse(&tombi_directive, COMMENT_DIRECTIVE_TOML_VERSION)
+                tombi_parser::parse(&tombi_directive, TOML_COMMENT_DIRECTIVE_VERSION)
                     .into_root_and_errors();
             // Check if there are any parsing errors
             if !errors.is_empty() {
@@ -54,7 +42,7 @@ pub async fn try_get_root_comment_directive(
             }
 
             let (document_tree, errors) = root
-                .into_document_tree_and_errors(COMMENT_DIRECTIVE_TOML_VERSION)
+                .into_document_tree_and_errors(TOML_COMMENT_DIRECTIVE_VERSION)
                 .into();
 
             // Check for errors during document tree construction
@@ -67,21 +55,17 @@ pub async fn try_get_root_comment_directive(
                     into_directive_diagnostic(&diagnostic, tombi_directive_range)
                 }));
             } else {
-                let document_schema = DocumentSchema::new(object.clone(), schema_url.clone());
+                let document_schema = root_comment_directive_document_schema().await;
                 let schema_context = tombi_schema_store::SchemaContext {
-                    toml_version: COMMENT_DIRECTIVE_TOML_VERSION,
+                    toml_version: TOML_COMMENT_DIRECTIVE_VERSION,
                     root_schema: None,
                     sub_schema_url_map: None,
                     store: schema_store,
                 };
-                let source_schema = tombi_schema_store::SourceSchema {
-                    root_schema: Some(document_schema),
-                    sub_schema_url_map: AHashMap::with_capacity(0),
-                };
 
                 if let Err(diagnostics) = tombi_validator::validate(
                     document_tree.clone(),
-                    &source_schema,
+                    root_comment_directive_source_schema(document_schema).await,
                     &schema_context,
                 )
                 .await
@@ -93,7 +77,7 @@ pub async fn try_get_root_comment_directive(
             }
 
             if let Ok(directive) = RootCommentDirective::deserialize(
-                &document_tree.into_document(COMMENT_DIRECTIVE_TOML_VERSION),
+                &document_tree.into_document(TOML_COMMENT_DIRECTIVE_VERSION),
             ) {
                 return Ok(Some(directive));
             }
@@ -123,37 +107,56 @@ fn into_directive_diagnostic(
     )
 }
 
-#[cfg(feature = "serde")]
-mod store {
-    use tombi_schema_store::{CatalogUrl, SchemaUrl};
-    use url::Url;
+static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
+    tokio::sync::OnceCell::const_new();
+static ROOT_COMMENT_DIRECTIVE_SCHEMA_URL: std::sync::OnceLock<SchemaUrl> =
+    std::sync::OnceLock::new();
+static ROOT_COMMENT_DIRECTIVE_SOURCE_SCHEMA: std::sync::OnceLock<SourceSchema> =
+    std::sync::OnceLock::new();
 
-    static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
-        tokio::sync::OnceCell::const_new();
-    static ROOT_COMMENT_DIRECTIVE_SCHEMA_URL: std::sync::OnceLock<SchemaUrl> =
-        std::sync::OnceLock::new();
-
-    #[inline]
-    pub async fn get_schema_store() -> &'static tombi_schema_store::SchemaStore {
-        COMMENT_DIRECTIVE_SCHEMA_STORE
-            .get_or_init(|| async {
-                let schema_store = tombi_schema_store::SchemaStore::new();
-                let _ = schema_store
-                    .load_catalog_from_url(&CatalogUrl::new(
-                        Url::parse("tombi://json.tombi.dev/api/json/catalog.json").unwrap(),
-                    ))
-                    .await;
-                schema_store
-            })
-            .await
-    }
-
-    #[cfg(feature = "serde")]
-    #[inline]
-    pub fn get_root_comment_directive_schema_url() -> &'static SchemaUrl {
-        ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
-            let url = Url::parse("tombi://json.tombi.dev/root-comment-directive.json").unwrap();
-            SchemaUrl::new(url)
+#[inline]
+pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
+    COMMENT_DIRECTIVE_SCHEMA_STORE
+        .get_or_init(|| async {
+            let schema_store = tombi_schema_store::SchemaStore::new();
+            let _ = schema_store
+                .load_catalog_from_url(&CatalogUrl::new(
+                    Url::parse("tombi://json.tombi.dev/api/json/catalog.json").unwrap(),
+                ))
+                .await;
+            schema_store
         })
-    }
+        .await
+}
+
+#[inline]
+pub fn root_comment_directive_schema_url() -> &'static SchemaUrl {
+    ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
+        let url = Url::parse("tombi://json.tombi.dev/root-comment-directive.json").unwrap();
+        SchemaUrl::new(url)
+    })
+}
+
+pub async fn root_comment_directive_document_schema() -> DocumentSchema {
+    let schema_store = schema_store().await;
+    let schema_url = root_comment_directive_schema_url();
+    let tombi_json::ValueNode::Object(object) = schema_store
+        .fetch_schema_value(schema_url)
+        .await
+        .unwrap()
+        .unwrap()
+    else {
+        panic!("Failed to fetch root comment directive schema");
+    };
+    DocumentSchema::new(object, schema_url.clone())
+}
+
+#[inline]
+pub async fn root_comment_directive_source_schema(
+    document_schema: DocumentSchema,
+) -> &'static SourceSchema {
+    ROOT_COMMENT_DIRECTIVE_SOURCE_SCHEMA.get_or_init(|| tombi_schema_store::SourceSchema {
+        root_schema: Some(document_schema),
+        sub_schema_url_map: AHashMap::with_capacity(0),
+    })
 }

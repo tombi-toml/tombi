@@ -3539,6 +3539,7 @@ dependencies = [
  "tombi-schema-store",
  "tombi-text",
  "tower-lsp",
+ "tracing",
 ]
 
 [[package]]
@@ -3781,6 +3782,7 @@ dependencies = [
  "tombi-rg-tree",
  "tombi-syntax",
  "tombi-text",
+ "tracing",
 ]
 
 [[package]]

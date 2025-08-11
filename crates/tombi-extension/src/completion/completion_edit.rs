@@ -286,4 +286,43 @@ impl CompletionEdit {
             }]),
         })
     }
+
+    pub fn with_position(mut self, position: tombi_text::Position) -> Self {
+        fn offset(
+            range: tower_lsp::lsp_types::Range,
+            position: tombi_text::Position,
+        ) -> tower_lsp::lsp_types::Range {
+            let mut start = range.start;
+            start.line += position.line;
+            start.character += position.column;
+            let mut end = range.end;
+            end.line += position.line;
+            end.character += position.column;
+
+            tower_lsp::lsp_types::Range { start, end }
+        }
+
+        self.text_edit = match self.text_edit {
+            CompletionTextEdit::Edit(text_edit) => CompletionTextEdit::Edit(TextEdit {
+                range: offset(text_edit.range, position),
+                new_text: text_edit.new_text,
+            }),
+            CompletionTextEdit::InsertAndReplace(insert_replace_edit) => {
+                CompletionTextEdit::InsertAndReplace(tower_lsp::lsp_types::InsertReplaceEdit {
+                    insert: offset(insert_replace_edit.insert, position),
+                    replace: offset(insert_replace_edit.replace, position),
+                    new_text: insert_replace_edit.new_text,
+                })
+            }
+        };
+
+        self.additional_text_edits = self.additional_text_edits.map(|mut edits| {
+            edits.iter_mut().for_each(|edit| {
+                edit.range = offset(edit.range, position);
+            });
+            edits
+        });
+
+        self
+    }
 }
