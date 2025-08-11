@@ -1,9 +1,9 @@
 import { Title } from "@solidjs/meta";
 import { FaSolidFeather } from "solid-icons/fa";
 import { TbBrandGithubFilled } from "solid-icons/tb";
-import { FeatureCard } from "~/components/FeatureCard";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { LinkButton } from "~/components/button/LinkButton";
-import { createSignal, onMount, onCleanup } from "solid-js";
+import { FeatureCard } from "~/components/FeatureCard";
 
 const FEATURES = [
   {

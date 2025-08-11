@@ -3,7 +3,7 @@ import {
   type TextDocumentIdentifier,
 } from "vscode-languageclient";
 
-export type TomlVersionSource = "config" | "schema" | "default";
+export type TomlVersionSource = "comment" | "schema" | "config" | "default";
 
 export type GetTomlVersionParams = TextDocumentIdentifier;
 export const getTomlVersion = new RequestType<

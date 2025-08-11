@@ -93,11 +93,12 @@ impl Deserializer<'_> {
     {
         let toml_version = self.get_toml_version(toml_text).await?;
         let parsed = tombi_parser::parse(toml_text, toml_version);
-        let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
         // Check if there are any parsing errors
         if !parsed.errors.is_empty() {
             return Err(parsed.errors.into());
         }
+
+        let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
         from_document(self.try_to_document(root, toml_version)?)
     }
 

@@ -9,7 +9,9 @@ use crate::Format;
 
 impl Format for tombi_ast::InlineTable {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        if self.should_be_multiline(f.toml_version()) || exceeds_line_width(self, f)? {
+        if !f.single_line_mode()
+            && (self.should_be_multiline(f.toml_version()) || exceeds_line_width(self, f)?)
+        {
             format_multiline_inline_table(self, f)
         } else {
             format_singleline_inline_table(self, f)

@@ -58,6 +58,11 @@ impl Diagnostic {
     }
 
     #[inline]
+    pub fn code(&self) -> &str {
+        &self.code
+    }
+
+    #[inline]
     pub fn message(&self) -> &str {
         &self.message
     }

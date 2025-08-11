@@ -36,40 +36,57 @@ impl<'a> Linter<'a> {
 
     pub async fn lint(mut self, source: &str) -> Result<(), Vec<Diagnostic>> {
         self.source_text = Cow::Borrowed(source);
-        let source_schema = if let Some(parsed) =
+        let (source_schema, root_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
-            match self
+            let root = parsed.tree();
+            let source_schema = match self
                 .schema_store
-                .resolve_source_schema_from_ast(&parsed.tree(), self.source_url_or_path)
+                .resolve_source_schema_from_ast(&root, self.source_url_or_path)
                 .await
             {
                 Ok(Some(schema)) => Some(schema),
                 Ok(None) => None,
                 Err((err, range)) => {
-                    self.diagnostics.push(Diagnostic::new_error(
+                    self.diagnostics.push(Diagnostic::new_warning(
                         err.to_string(),
                         err.code(),
                         range,
                     ));
                     None
                 }
-            }
+            };
+
+            let root_comment_directive =
+                match tombi_comment_directive::try_get_root_comment_directive(&root).await {
+                    Ok(Some(directive)) => Some(directive),
+                    Ok(None) => None,
+                    Err(diagnostics) => {
+                        self.diagnostics.extend(diagnostics);
+                        None
+                    }
+                };
+
+            (source_schema, root_comment_directive)
         } else {
-            None
+            (None, None)
         };
 
-        let toml_version = source_schema
-            .as_ref()
-            .and_then(|schema| {
-                schema
-                    .root_schema
+        self.toml_version = root_comment_directive
+            .and_then(|directive| directive.toml_version)
+            .unwrap_or_else(|| {
+                source_schema
                     .as_ref()
-                    .and_then(|root| root.toml_version())
-            })
-            .unwrap_or(self.toml_version);
+                    .and_then(|schema| {
+                        schema
+                            .root_schema
+                            .as_ref()
+                            .and_then(|root| root.toml_version())
+                    })
+                    .unwrap_or(self.toml_version)
+            });
 
-        let (root, errors) = tombi_parser::parse(source, toml_version).into_root_and_errors();
+        let (root, errors) = tombi_parser::parse(source, self.toml_version).into_root_and_errors();
         for error in errors {
             error.set_diagnostics(&mut self.diagnostics);
         }
@@ -77,13 +94,14 @@ impl<'a> Linter<'a> {
         root.lint(&mut self);
 
         if self.diagnostics.is_empty() {
-            let (document_tree, errors) = root.into_document_tree_and_errors(toml_version).into();
+            let (document_tree, errors) =
+                root.into_document_tree_and_errors(self.toml_version).into();
 
             errors.set_diagnostics(&mut self.diagnostics);
 
             if let Some(source_schema) = source_schema {
                 let schema_context = tombi_schema_store::SchemaContext {
-                    toml_version,
+                    toml_version: self.toml_version,
                     root_schema: source_schema.root_schema.as_ref(),
                     sub_schema_url_map: Some(&source_schema.sub_schema_url_map),
                     store: self.schema_store,

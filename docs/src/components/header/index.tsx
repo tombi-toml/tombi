@@ -1,11 +1,11 @@
-import { createSignal } from "solid-js";
 import { useLocation } from "@solidjs/router";
-import { HeaderLogo } from "./HeaderLogo";
-import { HeaderSearch } from "./HeaderSearch";
-import { HeaderIcons } from "./HeaderIcons";
-import { HeaderTab } from "./HeaderTab";
+import { createSignal } from "solid-js";
 import { flattenDocPages } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
+import { HeaderIcons } from "./HeaderIcons";
+import { HeaderLogo } from "./HeaderLogo";
+import { HeaderSearch } from "./HeaderSearch";
+import { HeaderTab } from "./HeaderTab";
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = createSignal(false);

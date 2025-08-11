@@ -179,7 +179,7 @@ mod goto_type_definition_tests {
                         );
                     backend
                         .config_manager
-                        .load_schemas(
+                        .load_config_schemas(
                             &[tombi_config::Schema::Root(tombi_config::RootSchema {
                                 toml_version: None,
                                 path: schema_file_url.to_string(),

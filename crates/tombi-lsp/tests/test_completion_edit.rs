@@ -557,7 +557,7 @@ mod completion_edit {
                         );
                     backend
                         .config_manager
-                        .load_schemas(
+                        .load_config_schemas(
                             &[
                                 tombi_config::Schema::Root(tombi_config::RootSchema {
                                     toml_version: None,

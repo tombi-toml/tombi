@@ -22,17 +22,24 @@ pub async fn handle_get_toml_version(
         .config_schema_store_for_url(&uri)
         .await;
 
-    let source_schema = match backend.get_incomplete_ast(&uri).await {
+    let root_ast = backend.get_incomplete_ast(&uri).await;
+
+    let source_schema = match &root_ast {
         Some(root) => schema_store
-            .resolve_source_schema_from_ast(&root, Some(Either::Left(&uri)))
+            .resolve_source_schema_from_ast(root, Some(Either::Left(&uri)))
             .await
             .ok()
             .flatten(),
         None => None,
     };
 
+    let root_comment_directive = match root_ast.as_ref() {
+        Some(root) => tombi_comment_directive::get_root_comment_directive(root).await,
+        None => None,
+    };
+
     let (toml_version, source) = backend
-        .source_toml_version(source_schema.as_ref(), &config)
+        .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
         .await;
 
     Ok(GetTomlVersionResponse {
@@ -51,7 +58,28 @@ pub struct GetTomlVersionResponse {
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TomlVersionSource {
-    Config,
+    /// Comment directive
+    ///
+    /// ```toml
+    /// # tombi: toml-version = "v1.0.0"
+    /// ```
+    Comment,
+
+    /// Schema directive
+    ///
+    /// ```toml
+    /// #:schema "https://example.com/schema.json"
+    /// ```
     Schema,
+
+    /// Config file
+    ///
+    /// ```toml
+    /// [tombi]
+    /// toml-version = "v1.0.0"
+    /// ```
+    Config,
+
+    /// Default
     Default,
 }

@@ -60,6 +60,16 @@ impl From<char> for RelativePosition {
     }
 }
 
+impl From<crate::Position> for RelativePosition {
+    #[inline]
+    fn from(position: crate::Position) -> Self {
+        Self {
+            line: position.line,
+            column: position.column,
+        }
+    }
+}
+
 impl Add for RelativePosition {
     type Output = RelativePosition;
 

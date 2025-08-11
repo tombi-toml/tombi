@@ -76,21 +76,31 @@ impl Parsed<SyntaxNode> {
         }
     }
 
-    pub fn into_root_and_errors(self) -> (tombi_ast::Root, Vec<crate::Error>) {
-        let Some(parsed) = self.cast::<tombi_ast::Root>() else {
-            unreachable!("TOML Root node is always a valid AST node even if source is empty.")
+    pub fn into_node_and_errors<N: AstNode>(self) -> (N, Vec<crate::Error>) {
+        let Some(parsed) = self.cast::<N>() else {
+            unreachable!("TOML node is always a valid AST node even if source is empty.")
         };
 
         (parsed.tree(), parsed.errors)
     }
 
-    pub fn try_into_root(self) -> Result<tombi_ast::Root, Vec<crate::Error>> {
-        let (root, errors) = self.into_root_and_errors();
+    #[inline]
+    pub fn into_root_and_errors(self) -> (tombi_ast::Root, Vec<crate::Error>) {
+        self.into_node_and_errors::<tombi_ast::Root>()
+    }
+
+    pub fn try_into_node<N: AstNode>(self) -> Result<N, Vec<crate::Error>> {
+        let (root, errors) = self.into_node_and_errors::<N>();
 
         if errors.is_empty() {
             Ok(root)
         } else {
             Err(errors)
         }
+    }
+
+    #[inline]
+    pub fn try_into_root(self) -> Result<tombi_ast::Root, Vec<crate::Error>> {
+        self.try_into_node::<tombi_ast::Root>()
     }
 }

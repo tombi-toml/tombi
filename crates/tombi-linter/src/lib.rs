@@ -59,7 +59,7 @@ macro_rules! test_lint {
             if let Some(schema_path) = $schema_path {
                 // Load schemas
                 schema_store
-                    .load_schemas(
+                    .load_config_schemas(
                         &[tombi_config::Schema::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path: schema_path.to_string_lossy().to_string(),
@@ -135,7 +135,7 @@ macro_rules! test_lint {
             if let Some(schema_path) = $schema_path {
                 // Load schemas
                 schema_store
-                    .load_schemas(
+                    .load_config_schemas(
                         &[tombi_config::Schema::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path: schema_path.to_string_lossy().to_string(),

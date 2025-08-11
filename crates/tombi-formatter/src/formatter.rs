@@ -3,6 +3,7 @@ pub mod definitions;
 use std::fmt::Write;
 
 use itertools::Either;
+use tombi_comment_directive::COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_config::{DateTimeDelimiter, IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
@@ -14,6 +15,7 @@ pub struct Formatter<'a> {
     toml_version: TomlVersion,
     indent_depth: u8,
     skip_indent: bool,
+    single_line_mode: bool,
     definitions: &'a crate::FormatDefinitions,
     #[allow(dead_code)]
     options: &'a crate::FormatOptions,
@@ -35,6 +37,7 @@ impl<'a> Formatter<'a> {
             toml_version,
             indent_depth: 0,
             skip_indent: false,
+            single_line_mode: false,
             definitions,
             options,
             source_url_or_path,
@@ -45,27 +48,35 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
-        let source_schema = if let Some(parsed) =
+        let (source_schema, root_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
-            self.schema_store
-                .resolve_source_schema_from_ast(&parsed.tree(), self.source_url_or_path)
-                .await
-                .ok()
-                .flatten()
+            let root = parsed.tree();
+            (
+                self.schema_store
+                    .resolve_source_schema_from_ast(&root, self.source_url_or_path)
+                    .await
+                    .ok()
+                    .flatten(),
+                tombi_comment_directive::get_root_comment_directive(&root).await,
+            )
         } else {
-            None
+            (None, None)
         };
 
-        self.toml_version = source_schema
-            .as_ref()
-            .and_then(|schema| {
-                schema
-                    .root_schema
+        self.toml_version = root_comment_directive
+            .and_then(|directive| directive.toml_version)
+            .unwrap_or_else(|| {
+                source_schema
                     .as_ref()
-                    .and_then(|root| root.toml_version())
-            })
-            .unwrap_or(self.toml_version);
+                    .and_then(|schema| {
+                        schema
+                            .root_schema
+                            .as_ref()
+                            .and_then(|root| root.toml_version())
+                    })
+                    .unwrap_or(self.toml_version)
+            });
 
         let root = tombi_parser::parse(source, self.toml_version)
             .try_into_root()
@@ -123,6 +134,21 @@ impl<'a> Formatter<'a> {
         Ok(result)
     }
 
+    pub(crate) fn format_comment_directive(
+        &mut self,
+        directive: &str,
+    ) -> Result<String, std::fmt::Error> {
+        let Ok(root) =
+            tombi_parser::parse(directive, COMMENT_DIRECTIVE_TOML_VERSION).try_into_root()
+        else {
+            return Ok(directive.trim().to_string());
+        };
+        self.single_line_mode = true;
+        let formatted = self.format_to_string(&root)?;
+        self.single_line_mode = false;
+        Ok(formatted)
+    }
+
     #[inline]
     pub(crate) fn toml_version(&self) -> TomlVersion {
         self.toml_version
@@ -136,6 +162,11 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub fn line_ending(&self) -> &'static str {
         self.definitions.line_ending.unwrap_or_default().into()
+    }
+
+    #[inline]
+    pub(crate) fn single_line_mode(&self) -> bool {
+        self.single_line_mode
     }
 
     #[inline]

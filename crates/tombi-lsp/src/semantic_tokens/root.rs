@@ -12,8 +12,16 @@ impl AppendSemanticTokens for tombi_ast::Root {
                 for comment in comments {
                     if let Some(file_schema_range) = builder.file_schema_range {
                         if comment.syntax().range().contains(file_schema_range.start) {
-                            builder.add_schema_url_comment(comment, &file_schema_range);
+                            builder.add_schema_directive(&comment, &file_schema_range);
                             continue;
+                        }
+                    }
+                    if let Some(tombi_directives) = self.tombi_directives() {
+                        for (_, tombi_scheme_range) in tombi_directives {
+                            if comment.syntax().range().contains(tombi_scheme_range.start) {
+                                builder.add_tombi_directive(&comment, &tombi_scheme_range);
+                                continue;
+                            }
                         }
                     }
                     builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
@@ -24,7 +32,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                 for comment in comments {
                     if let Some(file_schema_range) = builder.file_schema_range {
                         if comment.syntax().range().contains(file_schema_range.start) {
-                            builder.add_schema_url_comment(comment, &file_schema_range);
+                            builder.add_schema_directive(comment, &file_schema_range);
                             continue;
                         }
                     }

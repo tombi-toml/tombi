@@ -35,7 +35,7 @@ impl SemanticTokensBuilder {
         self.last_range = range;
     }
 
-    pub fn add_schema_url_comment(
+    pub fn add_schema_directive(
         &mut self,
         comment: impl AsRef<tombi_ast::Comment>,
         file_schema_range: &tombi_text::Range,
@@ -65,6 +65,43 @@ impl SemanticTokensBuilder {
             delta_line: 0,
             delta_start: (file_schema_range.start.column - comment_range.start.column - 1),
             length: (file_schema_range.end.column - file_schema_range.start.column),
+            token_type: TokenType::COMMENT as u32,
+            token_modifiers_bitset: 0,
+        });
+        self.last_range = comment_range;
+    }
+
+    pub fn add_tombi_directive(
+        &mut self,
+        comment: impl AsRef<tombi_ast::Comment>,
+        tombi_scheme_range: &tombi_text::Range,
+    ) {
+        let comment_range = comment.as_ref().syntax().range();
+        let relative = relative_range(comment_range, self.last_range);
+        let tombi_directive_offset =
+            (tombi_scheme_range.start.column - comment_range.start.column) as u32;
+        let tombi_directive_len = "tombi:".len() as u32;
+
+        self.tokens.push(SemanticToken {
+            delta_line: relative.start.line as u32,
+            delta_start: relative.start.character as u32,
+            length: tombi_directive_offset,
+            token_type: TokenType::COMMENT as u32,
+            token_modifiers_bitset: 0,
+        });
+
+        self.tokens.push(SemanticToken {
+            delta_line: 0,
+            delta_start: tombi_directive_offset,
+            length: tombi_directive_len,
+            token_type: TokenType::KEYWORD as u32,
+            token_modifiers_bitset: 0,
+        });
+
+        self.tokens.push(SemanticToken {
+            delta_line: 0,
+            delta_start: (tombi_scheme_range.start.column - comment_range.start.column - 1),
+            length: (tombi_scheme_range.end.column - tombi_scheme_range.start.column),
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
         });

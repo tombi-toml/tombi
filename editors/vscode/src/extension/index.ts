@@ -123,6 +123,7 @@ export class Extension {
       }),
       vscode.workspace.onDidSaveTextDocument(async (document) => {
         await this.onDidSaveTextDocument(document);
+        await this.updateStatusBarItem();
       }),
     );
   }
