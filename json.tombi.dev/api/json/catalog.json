@@ -1,5 +1,6 @@
 {
-  "$schema": "tombi://json.tombi.dev/api/json/catalog.json",
+  "$id": "tombi://json.tombi.dev/api/json/catalog.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "version": 1,
   "schemas": [
     {
