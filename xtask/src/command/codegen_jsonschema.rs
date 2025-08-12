@@ -20,7 +20,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         )? + "\n",
     )?;
     std::fs::write(
-        project_root_path().join("json.tombi.dev/root-comment-directive.json"),
+        project_root_path().join("json.tombi.dev/root-tombi-directive.json"),
         serde_json::to_string_pretty(
             &generator.into_root_schema_for::<tombi_comment_directive::RootCommentDirective>(),
         )? + "\n",

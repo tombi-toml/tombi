@@ -22,18 +22,18 @@ pub fn run() -> Result<(), anyhow::Error> {
     write_file(
         &generate_syntax_kind()
             .context("Failed to generate syntax kind from grammar.".to_string())?,
-        &project_root_path().join("crates/syntax/src/generated/syntax_kind.rs"),
+        &project_root_path().join("crates/tombi-syntax/src/generated/syntax_kind.rs"),
     );
 
     write_file(
         &generate_ast_node(&ast)
             .context("Failed to generate ast node from grammar.".to_string())?,
-        &project_root_path().join("crates/ast/src/generated/ast_node.rs"),
+        &project_root_path().join("crates/tombi-ast/src/generated/ast_node.rs"),
     );
 
     write_file(
         &generate_ast_token().context("Failed to generate ast node from grammar.".to_string())?,
-        &project_root_path().join("crates/ast/src/generated/ast_token.rs"),
+        &project_root_path().join("crates/tombi-ast/src/generated/ast_token.rs"),
     );
 
     Ok(())
