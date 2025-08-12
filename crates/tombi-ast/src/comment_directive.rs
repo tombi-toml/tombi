@@ -17,7 +17,7 @@ pub struct SchemaCommentDirective {
     pub url: Result<url::Url, String>,
 
     /// The range of the URL of the schema.
-    ///œ
+    ///
     /// ```toml
     /// #:schema https://example.com/schema.json
     ///          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This range
