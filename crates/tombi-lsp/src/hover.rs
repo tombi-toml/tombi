@@ -19,7 +19,7 @@ pub async fn get_hover_content(
     position: tombi_text::Position,
     keys: &[tombi_document_tree::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Option<HoverContent> {
+) -> Option<HoverValueContent> {
     let table = tree.deref();
     match schema_context.root_schema {
         Some(document_schema) => {
@@ -52,20 +52,20 @@ trait GetHoverContent {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>;
 }
 
 #[derive(Debug, Clone)]
-pub enum HoverInfo {
+pub enum HoverContent {
     Directive(HoverDirectiveContent),
-    Value(HoverContent),
+    Value(HoverValueContent),
 }
 
-impl From<HoverInfo> for tower_lsp::lsp_types::Hover {
-    fn from(value: HoverInfo) -> Self {
+impl From<HoverContent> for tower_lsp::lsp_types::Hover {
+    fn from(value: HoverContent) -> Self {
         match value {
-            HoverInfo::Directive(content) => content.into(),
-            HoverInfo::Value(content) => content.into(),
+            HoverContent::Directive(content) => content.into(),
+            HoverContent::Value(content) => content.into(),
         }
     }
 }
@@ -92,7 +92,7 @@ impl From<HoverDirectiveContent> for tower_lsp::lsp_types::Hover {
 }
 
 #[derive(Debug, Clone)]
-pub struct HoverContent {
+pub struct HoverValueContent {
     pub title: Option<String>,
     pub description: Option<String>,
     pub accessors: Accessors,
@@ -102,14 +102,14 @@ pub struct HoverContent {
     pub range: Option<tombi_text::Range>,
 }
 
-impl HoverContent {
-    pub fn into_nullable(mut self) -> HoverContent {
+impl HoverValueContent {
+    pub fn into_nullable(mut self) -> HoverValueContent {
         self.value_type = self.value_type.into_nullable();
         self
     }
 }
 
-impl PartialEq for HoverContent {
+impl PartialEq for HoverValueContent {
     fn eq(&self, other: &Self) -> bool {
         self.title == other.title
             && self.description == other.description
@@ -119,9 +119,9 @@ impl PartialEq for HoverContent {
     }
 }
 
-impl Eq for HoverContent {}
+impl Eq for HoverValueContent {}
 
-impl std::hash::Hash for HoverContent {
+impl std::hash::Hash for HoverValueContent {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.title.hash(state);
         self.description.hash(state);
@@ -131,7 +131,7 @@ impl std::hash::Hash for HoverContent {
     }
 }
 
-impl std::fmt::Display for HoverContent {
+impl std::fmt::Display for HoverValueContent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         const SECTION_SEPARATOR: &str = "-----";
 
@@ -166,8 +166,8 @@ impl std::fmt::Display for HoverContent {
     }
 }
 
-impl From<HoverContent> for tower_lsp::lsp_types::Hover {
-    fn from(value: HoverContent) -> Self {
+impl From<HoverValueContent> for tower_lsp::lsp_types::Hover {
+    fn from(value: HoverValueContent) -> Self {
         tower_lsp::lsp_types::Hover {
             contents: tower_lsp::lsp_types::HoverContents::Markup(
                 tower_lsp::lsp_types::MarkupContent {

@@ -6,7 +6,7 @@ use crate::hover::{
     constraints::{build_enumerate_values, ValueConstraints},
     display_value::DisplayValue,
     one_of::get_one_of_hover_content,
-    GetHoverContent, HoverContent,
+    GetHoverContent, HoverValueContent,
 };
 use tombi_future::Boxable;
 
@@ -18,7 +18,7 @@ impl GetHoverContent for tombi_document_tree::Integer {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
@@ -85,7 +85,7 @@ impl GetHoverContent for tombi_document_tree::Integer {
                     _ => None,
                 }
             } else {
-                Some(HoverContent {
+                Some(HoverValueContent {
                     title: None,
                     description: None,
                     accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
@@ -108,9 +108,9 @@ impl GetHoverContent for IntegerSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),

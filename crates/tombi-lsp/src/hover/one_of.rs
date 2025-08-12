@@ -7,7 +7,7 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaUrl};
 use super::{
     constraints::ValueConstraints,
     display_value::{DisplayValue, GetEnumerate},
-    GetHoverContent, HoverContent,
+    GetHoverContent, HoverValueContent,
 };
 
 pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
@@ -19,7 +19,7 @@ pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
     schema_url: &'a SchemaUrl,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
-) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
+) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>
 where
     T: GetHoverContent + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
 {
@@ -165,7 +165,7 @@ where
                     hover_content
                 })
         } else {
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title: None,
                 description: None,
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
@@ -214,7 +214,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             let Some(current_schema) = current_schema else {
                 unreachable!("schema must be provided");
@@ -264,7 +264,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 tombi_schema_store::ValueType::OneOf(value_type_set.into_iter().collect())
             };
 
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title,
                 description,
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),

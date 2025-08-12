@@ -8,14 +8,14 @@ use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 use crate::{
     backend,
     config_manager::ConfigSchemaStore,
-    hover::{get_comment_directive_hover_info, get_hover_content, HoverInfo},
+    hover::{get_comment_directive_hover_info, get_hover_content, HoverContent},
 };
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
-) -> Result<Option<HoverInfo>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
     tracing::info!("handle_hover");
     tracing::trace!(?params);
 
@@ -99,7 +99,7 @@ pub async fn handle_hover(
         {
             content.schema_url = Some(schema_url.into());
         }
-        HoverInfo::Value(content)
+        HoverContent::Value(content)
     }));
 }
 

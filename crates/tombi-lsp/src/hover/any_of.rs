@@ -7,7 +7,7 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUrl};
 use crate::hover::display_value::GetEnumerate;
 
 use super::{
-    constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverContent,
+    constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverValueContent,
 };
 
 pub fn get_any_of_hover_content<'a: 'b, 'b, T>(
@@ -19,7 +19,7 @@ pub fn get_any_of_hover_content<'a: 'b, 'b, T>(
     schema_url: &'a SchemaUrl,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a SchemaContext,
-) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
+) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>
 where
     T: GetHoverContent + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
 {
@@ -128,7 +128,7 @@ where
         } else if let Some(hover_content) = any_hover_contents.into_iter().next() {
             hover_content
         } else {
-            HoverContent {
+            HoverValueContent {
                 title: None,
                 description: None,
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
@@ -176,7 +176,7 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             let Some(current_schema) = current_schema else {
                 unreachable!("schema must be provided");
@@ -226,7 +226,7 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 tombi_schema_store::ValueType::AnyOf(value_type_set.into_iter().collect())
             };
 
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title,
                 description,
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
