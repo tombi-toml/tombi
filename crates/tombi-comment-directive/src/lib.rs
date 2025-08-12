@@ -3,7 +3,7 @@ mod root;
 
 use ahash::AHashMap;
 pub use error::Error;
-pub use root::RootCommentDirective;
+pub use root::RootTombiDirective;
 use tombi_ast::TombiCommentDirective;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
@@ -14,15 +14,16 @@ use url::Url;
 
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
-pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootCommentDirective> {
+pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootTombiDirective> {
     try_get_root_comment_directive(root).await.ok().flatten()
 }
 
 pub async fn try_get_root_comment_directive(
     root: &tombi_ast::Root,
-) -> Result<Option<RootCommentDirective>, Vec<tombi_diagnostic::Diagnostic>> {
+) -> Result<Option<RootTombiDirective>, Vec<tombi_diagnostic::Diagnostic>> {
     use serde::Deserialize;
 
+    let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
     if let Some(tombi_directives) = root.tombi_comment_directives() {
         let schema_store = schema_store().await;
@@ -87,20 +88,35 @@ pub async fn try_get_root_comment_directive(
                     );
                 }
             }
-
-            if let Ok(directive) = RootCommentDirective::deserialize(
-                &document_tree.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-            ) {
-                return Ok(Some(directive));
+            if let Some(total_document_tree_table) = total_document_tree_table.as_mut() {
+                if let Err(errors) = total_document_tree_table.merge(document_tree.into()) {
+                    let mut diagnostics = Vec::new();
+                    for error in errors {
+                        error.set_diagnostics(&mut diagnostics);
+                    }
+                    total_diagnostics.extend(
+                        diagnostics.into_iter().map(|diagnostic| {
+                            into_directive_diagnostic(&diagnostic, content_range)
+                        }),
+                    );
+                }
+            } else {
+                total_document_tree_table = Some(document_tree.into());
             }
         }
     }
 
     if !total_diagnostics.is_empty() {
         return Err(total_diagnostics);
-    } else {
-        Ok(None)
     }
+    if let Some(total_document_tree_table) = total_document_tree_table {
+        if let Ok(directive) = RootTombiDirective::deserialize(
+            &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+        ) {
+            return Ok(Some(directive));
+        }
+    }
+    Ok(None)
 }
 
 fn into_directive_diagnostic(
