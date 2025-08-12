@@ -8,6 +8,8 @@ use crate::{
         get_tombi_comment_directive, TombiCommentDirective, TombiDirectiveContent,
     },
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
+    SCHEMA_DIRECTIVE_DESCRIPTION, SCHEMA_DIRECTIVE_TITLE, TOMBI_DIRECTIVE_DESCRIPTION,
+    TOMBI_DIRECTIVE_TITLE,
 };
 
 use super::{CompletionContent, CompletionEdit};
@@ -78,15 +80,15 @@ fn directive_completion_contents(
     if root.schema_comment_directive(None).is_none() {
         completion_contents.push(CompletionContent::new_comment_directive(
             "schema",
-            "Schema Directive",
-            "This directive specifies the Schema URL/Path for the document.",
+            SCHEMA_DIRECTIVE_TITLE,
+            SCHEMA_DIRECTIVE_DESCRIPTION,
             CompletionEdit::new_schema_comment_directive(position, prefix_range, text_document_uri),
         ));
     }
     completion_contents.push(CompletionContent::new_comment_directive(
         "tombi",
-        "Tombi Directive",
-        "This directive specifies ",
+        TOMBI_DIRECTIVE_TITLE,
+        TOMBI_DIRECTIVE_DESCRIPTION,
         CompletionEdit::new_comment_directive("tombi", position, prefix_range),
     ));
 
