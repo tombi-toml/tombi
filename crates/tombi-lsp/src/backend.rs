@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use ahash::AHashMap;
 use itertools::Either;
-use tombi_comment_directive::RootCommentDirective;
+use tombi_comment_directive::RootTombiDirective;
 use tombi_config::{Config, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
@@ -193,7 +193,7 @@ impl Backend {
 
     pub async fn source_toml_version(
         &self,
-        root_comment_directive: Option<RootCommentDirective>,
+        root_comment_directive: Option<RootTombiDirective>,
         source_schema: Option<&SourceSchema>,
         config: &Config,
     ) -> (TomlVersion, TomlVersionSource) {
