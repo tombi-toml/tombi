@@ -7,6 +7,8 @@ use crate::{
     },
     handler::get_hover_keys_with_range,
     hover::{get_hover_content, HoverContent, HoverDirectiveContent},
+    SCHEMA_DIRECTIVE_DESCRIPTION, SCHEMA_DIRECTIVE_TITLE, TOMBI_DIRECTIVE_DESCRIPTION,
+    TOMBI_DIRECTIVE_TITLE,
 };
 
 pub async fn get_comment_directive_hover_info(
@@ -16,15 +18,15 @@ pub async fn get_comment_directive_hover_info(
     if let Some(schema_comment_directive) = get_schema_comment_directive(&root, position) {
         if schema_comment_directive.directive_range.contains(position) {
             return Some(HoverContent::Directive(HoverDirectiveContent {
-                title: "Schema Directive".to_string(),
-                description: "Specify the schema that applies only to this document.".to_string(),
+                title: SCHEMA_DIRECTIVE_TITLE.to_string(),
+                description: SCHEMA_DIRECTIVE_DESCRIPTION.to_string(),
                 range: schema_comment_directive.directive_range,
             }));
         }
         if schema_comment_directive.url_range.contains(position) {
             return Some(HoverContent::Directive(HoverDirectiveContent {
                 title: "Schema URL".to_string(),
-                description: "The URL/Path of the schema that applies only to this document."
+                description: "The URL/Path of the schema that applies to this document."
                     .to_string(),
                 range: schema_comment_directive.url_range,
             }));
@@ -40,10 +42,8 @@ pub async fn get_comment_directive_hover_info(
                     TombiCommentDirective::Directive(TombiDirective { directive_range }) => {
                         if directive_range.contains(position) {
                             return Some(HoverContent::Directive(HoverDirectiveContent {
-                                title: "Tombi Directive".to_string(),
-                                description:
-                                    "Specify the Tombi settings that apply only to this document."
-                                        .to_string(),
+                                title: TOMBI_DIRECTIVE_TITLE.to_string(),
+                                description: TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
                                 range: directive_range,
                             }));
                         }
