@@ -4,6 +4,7 @@ mod root;
 use ahash::AHashMap;
 pub use error::Error;
 pub use root::RootCommentDirective;
+use tombi_ast::TombiCommentDirective;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
@@ -11,7 +12,7 @@ use tombi_schema_store::{CatalogUrl, DocumentSchema, SchemaUrl, SourceSchema};
 use tombi_toml_version::TomlVersion;
 use url::Url;
 
-pub const TOMBI_COMMENT_DIRECTIVE_VERSION: TomlVersion = TomlVersion::V1_0_0;
+pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
 pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootCommentDirective> {
     try_get_root_comment_directive(root).await.ok().flatten()
@@ -23,11 +24,16 @@ pub async fn try_get_root_comment_directive(
     use serde::Deserialize;
 
     let mut total_diagnostics = Vec::new();
-    if let Some(tombi_directives) = root.tombi_directives() {
+    if let Some(tombi_directives) = root.tombi_comment_directives() {
         let schema_store = schema_store().await;
-        for ((tombi_directive, tombi_directive_range), _) in tombi_directives {
+        for TombiCommentDirective {
+            content,
+            content_range,
+            ..
+        } in tombi_directives
+        {
             let (root, errors) =
-                tombi_parser::parse(&tombi_directive, TOMBI_COMMENT_DIRECTIVE_VERSION)
+                tombi_parser::parse(&content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
                     .into_root_and_errors();
             // Check if there are any parsing errors
             if !errors.is_empty() {
@@ -35,14 +41,16 @@ pub async fn try_get_root_comment_directive(
                 for error in errors {
                     error.set_diagnostics(&mut diagnostics);
                 }
-                total_diagnostics.extend(diagnostics.into_iter().map(|diagnostic| {
-                    into_directive_diagnostic(&diagnostic, tombi_directive_range)
-                }));
+                total_diagnostics.extend(
+                    diagnostics
+                        .into_iter()
+                        .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_range)),
+                );
                 continue;
             }
 
             let (document_tree, errors) = root
-                .into_document_tree_and_errors(TOMBI_COMMENT_DIRECTIVE_VERSION)
+                .into_document_tree_and_errors(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
                 .into();
 
             // Check for errors during document tree construction
@@ -51,13 +59,15 @@ pub async fn try_get_root_comment_directive(
                 for error in errors {
                     error.set_diagnostics(&mut diagnostics);
                 }
-                total_diagnostics.extend(diagnostics.into_iter().map(|diagnostic| {
-                    into_directive_diagnostic(&diagnostic, tombi_directive_range)
-                }));
+                total_diagnostics.extend(
+                    diagnostics
+                        .into_iter()
+                        .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_range)),
+                );
             } else {
                 let document_schema = root_comment_directive_document_schema().await;
                 let schema_context = tombi_schema_store::SchemaContext {
-                    toml_version: TOMBI_COMMENT_DIRECTIVE_VERSION,
+                    toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
                     root_schema: None,
                     sub_schema_url_map: None,
                     store: schema_store,
@@ -70,14 +80,16 @@ pub async fn try_get_root_comment_directive(
                 )
                 .await
                 {
-                    total_diagnostics.extend(diagnostics.into_iter().map(|diagnostic| {
-                        into_directive_diagnostic(&diagnostic, tombi_directive_range)
-                    }));
+                    total_diagnostics.extend(
+                        diagnostics.into_iter().map(|diagnostic| {
+                            into_directive_diagnostic(&diagnostic, content_range)
+                        }),
+                    );
                 }
             }
 
             if let Ok(directive) = RootCommentDirective::deserialize(
-                &document_tree.into_document(TOMBI_COMMENT_DIRECTIVE_VERSION),
+                &document_tree.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             ) {
                 return Ok(Some(directive));
             }
@@ -93,16 +105,14 @@ pub async fn try_get_root_comment_directive(
 
 fn into_directive_diagnostic(
     diagnostic: &tombi_diagnostic::Diagnostic,
-    tombi_directive_range: tombi_text::Range,
+    content_range: tombi_text::Range,
 ) -> tombi_diagnostic::Diagnostic {
     tombi_diagnostic::Diagnostic::new_warning(
         diagnostic.message(),
         diagnostic.code(),
         tombi_text::Range::new(
-            tombi_directive_range.start
-                + tombi_text::RelativePosition::from(diagnostic.range().start),
-            tombi_directive_range.start
-                + tombi_text::RelativePosition::from(diagnostic.range().end),
+            content_range.start + tombi_text::RelativePosition::from(diagnostic.range().start),
+            content_range.start + tombi_text::RelativePosition::from(diagnostic.range().end),
         ),
     )
 }

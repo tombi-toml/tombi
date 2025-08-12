@@ -133,7 +133,7 @@ mod hover_keys_value {
             #[tokio::test]
             async fn tombi_comment_directive_toml_version(
                 r#"
-                # tombi: toml-version█ = "v1.0.0"
+                #:tombi toml-version█ = "v1.0.0"
                 "#,
                 tombi_schema_path(),
             ) -> Ok({
@@ -531,7 +531,7 @@ mod hover_keys_value {
                 )
                 .await;
 
-                let Ok(Some(hover_content)) = tombi_lsp::handler::handle_hover(
+                let Ok(Some(tombi_lsp::HoverInfo::Value(hover_content))) = tombi_lsp::handler::handle_hover(
                     &backend,
                     tower_lsp::lsp_types::HoverParams {
                         text_document_position_params: tower_lsp::lsp_types::TextDocumentPositionParams {

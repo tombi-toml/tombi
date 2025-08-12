@@ -114,9 +114,9 @@ fn format_comment(
             return write!(f, "#:schema {}", schema_url.trim());
         }
 
-        if let Some(tombi_directive) = comment[1..].trim_start().strip_prefix("tombi:") {
-            let formatted = f.format_comment_directive(tombi_directive)?;
-            return write!(f, "# tombi: {}", formatted);
+        if let Some(content) = comment.strip_prefix("#:tombi ") {
+            let formatted = f.format_tombi_comment_directive_content(content)?;
+            return write!(f, "#:tombi {}", formatted);
         }
     }
 
@@ -251,8 +251,8 @@ mod tests {
 
     test_format! {
         #[test]
-        fn tombi_comment_directive(r"#   tombi:   toml-version   = 'v1.0.0'  ") -> Ok(
-            "# tombi: toml-version = \"v1.0.0\""
+        fn tombi_comment_directive(r"#:tombi   toml-version   = 'v1.0.0'  ") -> Ok(
+            "#:tombi toml-version = \"v1.0.0\""
         );
     }
 }

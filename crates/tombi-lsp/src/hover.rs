@@ -56,6 +56,42 @@ trait GetHoverContent {
 }
 
 #[derive(Debug, Clone)]
+pub enum HoverInfo {
+    Directive(HoverDirectiveContent),
+    Value(HoverContent),
+}
+
+impl From<HoverInfo> for tower_lsp::lsp_types::Hover {
+    fn from(value: HoverInfo) -> Self {
+        match value {
+            HoverInfo::Directive(content) => content.into(),
+            HoverInfo::Value(content) => content.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct HoverDirectiveContent {
+    pub title: String,
+    pub description: String,
+    pub range: tombi_text::Range,
+}
+
+impl From<HoverDirectiveContent> for tower_lsp::lsp_types::Hover {
+    fn from(value: HoverDirectiveContent) -> Self {
+        tower_lsp::lsp_types::Hover {
+            contents: tower_lsp::lsp_types::HoverContents::Markup(
+                tower_lsp::lsp_types::MarkupContent {
+                    kind: tower_lsp::lsp_types::MarkupKind::Markdown,
+                    value: format!("#### {}\n\n{}", value.title, value.description),
+                },
+            ),
+            range: Some(value.range.into()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct HoverContent {
     pub title: Option<String>,
     pub description: Option<String>,

@@ -6,15 +6,13 @@ use super::token_type::TokenType;
 pub struct SemanticTokensBuilder {
     tokens: Vec<SemanticToken>,
     last_range: tombi_text::Range,
-    pub file_schema_range: Option<tombi_text::Range>,
 }
 
 impl SemanticTokensBuilder {
-    pub fn new(file_schema_range: Option<tombi_text::Range>) -> Self {
+    pub fn new() -> Self {
         Self {
             tokens: Vec::new(),
             last_range: tombi_text::Range::default(),
-            file_schema_range,
         }
     }
 
@@ -35,15 +33,15 @@ impl SemanticTokensBuilder {
         self.last_range = range;
     }
 
-    pub fn add_schema_directive(
+    pub fn add_comment_directive(
         &mut self,
         comment: impl AsRef<tombi_ast::Comment>,
-        file_schema_range: &tombi_text::Range,
+        directive_range: &tombi_text::Range,
     ) {
         let comment_range = comment.as_ref().syntax().range();
 
         let relative = relative_range(comment_range, self.last_range);
-        let schema_keyword_len = ":schema".len() as u32;
+        let directive_len = directive_range.end.column - directive_range.start.column;
 
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
@@ -56,52 +54,15 @@ impl SemanticTokensBuilder {
         self.tokens.push(SemanticToken {
             delta_line: 0,
             delta_start: 1_u32,
-            length: schema_keyword_len,
+            length: directive_len,
             token_type: TokenType::KEYWORD as u32,
             token_modifiers_bitset: 0,
         });
 
         self.tokens.push(SemanticToken {
             delta_line: 0,
-            delta_start: (file_schema_range.start.column - comment_range.start.column - 1),
-            length: (file_schema_range.end.column - file_schema_range.start.column),
-            token_type: TokenType::COMMENT as u32,
-            token_modifiers_bitset: 0,
-        });
-        self.last_range = comment_range;
-    }
-
-    pub fn add_tombi_directive(
-        &mut self,
-        comment: impl AsRef<tombi_ast::Comment>,
-        tombi_scheme_range: &tombi_text::Range,
-    ) {
-        let comment_range = comment.as_ref().syntax().range();
-        let relative = relative_range(comment_range, self.last_range);
-        let tombi_directive_offset =
-            (tombi_scheme_range.start.column - comment_range.start.column) as u32;
-        let tombi_directive_len = "tombi:".len() as u32;
-
-        self.tokens.push(SemanticToken {
-            delta_line: relative.start.line as u32,
-            delta_start: relative.start.character as u32,
-            length: tombi_directive_offset,
-            token_type: TokenType::COMMENT as u32,
-            token_modifiers_bitset: 0,
-        });
-
-        self.tokens.push(SemanticToken {
-            delta_line: 0,
-            delta_start: tombi_directive_offset,
-            length: tombi_directive_len,
-            token_type: TokenType::KEYWORD as u32,
-            token_modifiers_bitset: 0,
-        });
-
-        self.tokens.push(SemanticToken {
-            delta_line: 0,
-            delta_start: (tombi_scheme_range.start.column - comment_range.start.column - 1),
-            length: (tombi_scheme_range.end.column - tombi_scheme_range.start.column),
+            delta_start: directive_len,
+            length: (comment_range.end.column - directive_range.end.column),
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
         });

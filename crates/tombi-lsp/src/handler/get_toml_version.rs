@@ -61,7 +61,7 @@ pub enum TomlVersionSource {
     /// Comment directive
     ///
     /// ```toml
-    /// # tombi: toml-version = "v1.0.0"
+    /// #:tombi toml-version = "v1.0.0"
     /// ```
     Comment,
 

@@ -32,14 +32,17 @@ pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp
 
             if url.path().ends_with("/json/catalog.json") {
                 tower_lsp::lsp_types::Url::parse(&format!(
-                    "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/json.schemastore.org/api/json/catalog.json"
+                    "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/{host}/api/json/catalog.json",
+                    host = url.host_str().unwrap()
                 ))
                 .ok()
-            } else if let Some(schema_filename) =
-                url.path_segments().and_then(|mut segments| segments.next_back())
+            } else if let Some(schema_filename) = url
+                .path_segments()
+                .and_then(|mut segments| segments.next_back())
             {
                 tower_lsp::lsp_types::Url::parse(&format!(
-                    "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/json.schemastore.org/{schema_filename}"
+                    "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/{host}/{schema_filename}",
+                    host = url.host_str().unwrap()
                 )).ok()
             } else {
                 None

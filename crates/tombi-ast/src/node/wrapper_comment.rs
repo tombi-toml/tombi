@@ -20,6 +20,14 @@ macro_rules! impl_comment {
             }
         }
 
+        impl std::ops::Deref for $name {
+            type Target = crate::Comment;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
         impl From<crate::Comment> for $name {
             fn from(comment: crate::Comment) -> Self {
                 $name(comment)

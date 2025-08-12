@@ -137,6 +137,7 @@ pub fn get_tombi_schemastore_content(schema_url: &url::Url) -> Option<&'static s
             _ => None,
         },
 
+        // TODO: Remove this deprecated url after v1.0.0 release.
         None => match schema_url.path() {
             "/json/catalog.json" => Some(include_str!(
                 "../../../json.schemastore.org/api/json/catalog.json"
