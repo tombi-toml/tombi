@@ -142,7 +142,7 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
 #[inline]
 pub fn root_comment_directive_schema_url() -> &'static SchemaUrl {
     ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
-        let url = Url::parse("tombi://json.tombi.dev/root-comment-directive.json").unwrap();
+        let url = Url::parse("tombi://json.tombi.dev/root-tombi-directive.json").unwrap();
         SchemaUrl::new(url)
     })
 }

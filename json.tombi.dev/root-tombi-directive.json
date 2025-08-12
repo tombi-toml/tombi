@@ -1,5 +1,5 @@
 {
-  "$id": "tombi://json.tombi.dev/root-comment-directive.json",
+  "$id": "tombi://json.tombi.dev/root-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RootCommentDirective",
   "type": "object",
