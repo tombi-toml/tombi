@@ -1,5 +1,4 @@
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_extension::get_tombi_github_url;
 
 use crate::{
     comment_directive::{
@@ -103,13 +102,6 @@ pub async fn get_comment_directive_hover_info(
                             .await
                             .map(|mut content| {
                                 content.range = adjusted_range;
-                                if let Some(schema_url) = content
-                                    .schema_url
-                                    .as_ref()
-                                    .and_then(|url| get_tombi_github_url(url))
-                                {
-                                    content.schema_url = Some(schema_url.into());
-                                }
                                 HoverContent::Value(content)
                             });
                         }

@@ -10,6 +10,7 @@ use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
 pub use comment::get_comment_directive_hover_info;
 use constraints::ValueConstraints;
+use tombi_extension::get_tombi_github_url;
 use tombi_schema_store::{
     get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUrl, ValueType,
 };
@@ -156,7 +157,11 @@ impl std::fmt::Display for HoverValueContent {
             writeln!(f, "{constraints}")?;
         }
 
-        if let Some(schema_url) = &self.schema_url {
+        if let Some(schema_url) = &self
+            .schema_url
+            .as_ref()
+            .and_then(|url| get_tombi_github_url(url))
+        {
             if let Some(schema_filename) = get_schema_name(schema_url) {
                 writeln!(f, "Schema: [{schema_filename}]({schema_url})\n",)?;
             }
