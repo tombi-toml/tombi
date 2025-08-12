@@ -1,5 +1,5 @@
 use tombi_ast::AstToken;
-use tombi_comment_directive::TOML_COMMENT_DIRECTIVE_VERSION;
+use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_VERSION;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::Url;
 
@@ -46,7 +46,7 @@ pub async fn get_comment_completion_contents(
 
                             return Some(completion_contents);
                         } else if comment_text[1..colon_pos].trim_start() == "tombi" {
-                            let toml_version = TOML_COMMENT_DIRECTIVE_VERSION;
+                            let toml_version = TOMBI_COMMENT_DIRECTIVE_VERSION;
                             let tombi_directive = &comment_text[colon_pos + 1..];
                             if comment_range.start.column + (colon_pos as u32) < position.column {
                                 let mut position_in_content = position;

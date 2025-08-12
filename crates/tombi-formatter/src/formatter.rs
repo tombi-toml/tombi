@@ -3,7 +3,7 @@ pub mod definitions;
 use std::fmt::Write;
 
 use itertools::Either;
-use tombi_comment_directive::TOML_COMMENT_DIRECTIVE_VERSION;
+use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_VERSION;
 use tombi_config::{DateTimeDelimiter, IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
@@ -139,7 +139,7 @@ impl<'a> Formatter<'a> {
         directive: &str,
     ) -> Result<String, std::fmt::Error> {
         let Ok(root) =
-            tombi_parser::parse(directive, TOML_COMMENT_DIRECTIVE_VERSION).try_into_root()
+            tombi_parser::parse(directive, TOMBI_COMMENT_DIRECTIVE_VERSION).try_into_root()
         else {
             return Ok(directive.trim().to_string());
         };
