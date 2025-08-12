@@ -11,7 +11,7 @@ use tombi_schema_store::{CatalogUrl, DocumentSchema, SchemaUrl, SourceSchema};
 use tombi_toml_version::TomlVersion;
 use url::Url;
 
-pub const TOML_COMMENT_DIRECTIVE_VERSION: TomlVersion = TomlVersion::V1_0_0;
+pub const TOMBI_COMMENT_DIRECTIVE_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
 pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootCommentDirective> {
     try_get_root_comment_directive(root).await.ok().flatten()
@@ -27,7 +27,7 @@ pub async fn try_get_root_comment_directive(
         let schema_store = schema_store().await;
         for ((tombi_directive, tombi_directive_range), _) in tombi_directives {
             let (root, errors) =
-                tombi_parser::parse(&tombi_directive, TOML_COMMENT_DIRECTIVE_VERSION)
+                tombi_parser::parse(&tombi_directive, TOMBI_COMMENT_DIRECTIVE_VERSION)
                     .into_root_and_errors();
             // Check if there are any parsing errors
             if !errors.is_empty() {
@@ -42,7 +42,7 @@ pub async fn try_get_root_comment_directive(
             }
 
             let (document_tree, errors) = root
-                .into_document_tree_and_errors(TOML_COMMENT_DIRECTIVE_VERSION)
+                .into_document_tree_and_errors(TOMBI_COMMENT_DIRECTIVE_VERSION)
                 .into();
 
             // Check for errors during document tree construction
@@ -57,7 +57,7 @@ pub async fn try_get_root_comment_directive(
             } else {
                 let document_schema = root_comment_directive_document_schema().await;
                 let schema_context = tombi_schema_store::SchemaContext {
-                    toml_version: TOML_COMMENT_DIRECTIVE_VERSION,
+                    toml_version: TOMBI_COMMENT_DIRECTIVE_VERSION,
                     root_schema: None,
                     sub_schema_url_map: None,
                     store: schema_store,
@@ -77,7 +77,7 @@ pub async fn try_get_root_comment_directive(
             }
 
             if let Ok(directive) = RootCommentDirective::deserialize(
-                &document_tree.into_document(TOML_COMMENT_DIRECTIVE_VERSION),
+                &document_tree.into_document(TOMBI_COMMENT_DIRECTIVE_VERSION),
             ) {
                 return Ok(Some(directive));
             }

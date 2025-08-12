@@ -45,7 +45,7 @@ pub use get_toml_version::{handle_get_toml_version, GetTomlVersionResponse, Toml
 pub use goto_declaration::handle_goto_declaration;
 pub use goto_definition::handle_goto_definition;
 pub use goto_type_definition::handle_goto_type_definition;
-pub use hover::handle_hover;
+pub use hover::{get_hover_keys_with_range, handle_hover};
 pub use initialize::handle_initialize;
 pub use initialized::handle_initialized;
 pub use refresh_cache::{handle_refresh_cache, RefreshCacheParams};

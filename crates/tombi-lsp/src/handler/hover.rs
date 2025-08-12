@@ -8,7 +8,7 @@ use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 use crate::{
     backend,
     config_manager::ConfigSchemaStore,
-    hover::{get_hover_content, HoverContent},
+    hover::{get_comment_directive_hover_info, get_hover_content, HoverContent},
 };
 
 #[tracing::instrument(level = "debug", skip_all)]
@@ -63,6 +63,11 @@ pub async fn handle_hover(
         .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
         .await;
 
+    // Check if position is in a tombi: comment directive
+    if let Some(content) = get_comment_directive_hover_info(&root, position).await {
+        return Ok(Some(content));
+    }
+
     let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
         return Ok(None);
     };
@@ -98,7 +103,7 @@ pub async fn handle_hover(
     }));
 }
 
-pub(crate) async fn get_hover_keys_with_range(
+pub async fn get_hover_keys_with_range(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     toml_version: tombi_config::TomlVersion,

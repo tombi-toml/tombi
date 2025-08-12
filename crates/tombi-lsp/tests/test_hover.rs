@@ -128,6 +128,19 @@ mod hover_keys_value {
                 "Value": "String"
             });
         );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn tombi_comment_directive_toml_version(
+                r#"
+                # tombi: toml-version█ = "v1.0.0"
+                "#,
+                tombi_schema_path(),
+            ) -> Ok({
+                "Keys": "toml-version",
+                "Value": "String?"
+            });
+        );
     }
 
     mod cargo_schema {

@@ -1,5 +1,6 @@
 mod all_of;
 mod any_of;
+mod comment;
 mod constraints;
 mod display_value;
 mod one_of;
@@ -7,6 +8,7 @@ mod value;
 
 use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
+pub use comment::get_comment_directive_hover_info;
 use constraints::ValueConstraints;
 use tombi_schema_store::{
     get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUrl, ValueType,
