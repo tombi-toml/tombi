@@ -402,13 +402,14 @@ impl CompletionContent {
     /// ```toml
     /// #:schema https://...
     /// ```
-    pub fn new_schema_directive(
+    pub fn new_comment_directive(
+        directive_name: &str,
         detail: impl Into<String>,
         documentation: impl Into<String>,
         edit: Option<CompletionEdit>,
     ) -> Self {
         Self {
-            label: "schema".to_string(),
+            label: directive_name.to_string(),
             kind: CompletionKind::CommentDirective,
             emoji_icon: Some('🦅'),
             priority: CompletionContentPriority::Key,

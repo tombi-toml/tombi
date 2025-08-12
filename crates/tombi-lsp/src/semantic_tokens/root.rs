@@ -7,36 +7,63 @@ impl AppendSemanticTokens for tombi_ast::Root {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         let key_values = self.key_values().collect_vec();
 
+        let schema_comment_directive = self.schema_comment_directive(None);
         if key_values.is_empty() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
-                    if let Some(file_schema_range) = builder.file_schema_range {
-                        if comment.syntax().range().contains(file_schema_range.start) {
-                            builder.add_schema_directive(&comment, &file_schema_range);
+                    if let Some(schema_comment_directive) = &schema_comment_directive {
+                        if comment
+                            .syntax()
+                            .range()
+                            .contains(schema_comment_directive.directive_range.start)
+                        {
+                            builder.add_comment_directive(
+                                &comment,
+                                &schema_comment_directive.directive_range,
+                            );
                             continue;
                         }
                     }
-                    if let Some(tombi_directives) = self.tombi_directives() {
-                        for (_, tombi_scheme_range) in tombi_directives {
-                            if comment.syntax().range().contains(tombi_scheme_range.start) {
-                                builder.add_tombi_directive(&comment, &tombi_scheme_range);
-                                continue;
-                            }
-                        }
+                    if let Some(tombi_comment_directive) = comment.tombi_directive() {
+                        builder.add_comment_directive(
+                            &comment,
+                            &tombi_comment_directive.directive_range,
+                        );
+                    } else {
+                        builder.add_token(
+                            TokenType::COMMENT,
+                            comment.as_ref().syntax().clone().into(),
+                        );
                     }
-                    builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
                 }
             }
         } else {
             for comments in self.key_values_begin_dangling_comments() {
                 for comment in comments {
-                    if let Some(file_schema_range) = builder.file_schema_range {
-                        if comment.syntax().range().contains(file_schema_range.start) {
-                            builder.add_schema_directive(comment, &file_schema_range);
+                    if let Some(schema_comment_directive) = &schema_comment_directive {
+                        if comment
+                            .syntax()
+                            .range()
+                            .contains(schema_comment_directive.directive_range.start)
+                        {
+                            builder.add_comment_directive(
+                                &comment,
+                                &schema_comment_directive.directive_range,
+                            );
                             continue;
                         }
                     }
-                    builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
+                    if let Some(tombi_comment_directive) = comment.tombi_directive() {
+                        builder.add_comment_directive(
+                            &comment,
+                            &tombi_comment_directive.directive_range,
+                        );
+                    } else {
+                        builder.add_token(
+                            TokenType::COMMENT,
+                            comment.as_ref().syntax().clone().into(),
+                        );
+                    }
                 }
             }
 

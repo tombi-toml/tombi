@@ -44,7 +44,7 @@ mod completion_labels {
             async fn tombi_comment_schema_directive(
                 "#:█",
                 Schema(tombi_schema_path()),
-            ) -> Ok(["schema"]);
+            ) -> Ok(["schema", "tombi"]);
         }
 
         test_completion_labels! {
@@ -52,7 +52,7 @@ mod completion_labels {
             async fn tombi_comment_space_schema_directive(
                 "# :█",
                 Schema(tombi_schema_path()),
-            ) -> Ok(["schema"]);
+            ) -> Ok(["schema", "tombi"]);
         }
 
         test_completion_labels! {
@@ -74,7 +74,7 @@ mod completion_labels {
                 #:█
                 "#,
                 Schema(tombi_schema_path()),
-            ) -> Ok([]);
+            ) -> Ok(["tombi"]);
         }
 
         test_completion_labels! {

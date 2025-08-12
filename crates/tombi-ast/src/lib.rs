@@ -1,4 +1,5 @@
 pub mod algo;
+mod comment_directive;
 mod generated;
 mod impls;
 mod node;
@@ -6,6 +7,7 @@ pub mod support;
 
 use std::{fmt::Debug, marker::PhantomData};
 
+pub use comment_directive::*;
 pub use generated::*;
 pub use node::*;
 

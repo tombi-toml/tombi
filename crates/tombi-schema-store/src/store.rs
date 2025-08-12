@@ -7,6 +7,7 @@ use crate::{
 use ahash::AHashMap;
 use itertools::Either;
 use tokio::sync::RwLock;
+use tombi_ast::SchemaCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
@@ -507,8 +508,10 @@ impl SchemaStore {
             None => None,
         };
 
-        if let Some((schema_url, url_range)) = root.schema_directive(source_path.as_deref()) {
-            let schema_url = match schema_url {
+        if let Some(SchemaCommentDirective { url, url_range, .. }) =
+            root.schema_comment_directive(source_path.as_deref())
+        {
+            let schema_url = match url {
                 Ok(schema_url) => schema_url,
                 Err(schema_url_or_file_path) => {
                     return Err((

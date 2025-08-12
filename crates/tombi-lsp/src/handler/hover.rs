@@ -8,14 +8,14 @@ use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 use crate::{
     backend,
     config_manager::ConfigSchemaStore,
-    hover::{get_comment_directive_hover_info, get_hover_content, HoverContent},
+    hover::{get_comment_directive_hover_info, get_hover_content, HoverInfo},
 };
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
-) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverInfo>, tower_lsp::jsonrpc::Error> {
     tracing::info!("handle_hover");
     tracing::trace!(?params);
 
@@ -63,7 +63,7 @@ pub async fn handle_hover(
         .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
         .await;
 
-    // Check if position is in a tombi: comment directive
+    // Check if position is in a #:tombi comment directive
     if let Some(content) = get_comment_directive_hover_info(&root, position).await {
         return Ok(Some(content));
     }
@@ -99,7 +99,7 @@ pub async fn handle_hover(
         {
             content.schema_url = Some(schema_url.into());
         }
-        content
+        HoverInfo::Value(content)
     }));
 }
 

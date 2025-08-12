@@ -19,11 +19,7 @@ pub async fn handle_semantic_tokens_full(
         return Ok(None);
     };
 
-    let file_schema_range = root
-        .schema_directive(text_document.uri.to_file_path().ok().as_deref())
-        .map(|(_, range)| range);
-
-    let mut tokens_builder = SemanticTokensBuilder::new(file_schema_range);
+    let mut tokens_builder = SemanticTokensBuilder::new();
     root.append_semantic_tokens(&mut tokens_builder);
     let tokens = tokens_builder.build();
 

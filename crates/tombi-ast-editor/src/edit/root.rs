@@ -17,7 +17,7 @@ impl crate::Edit for tombi_ast::Root {
             let mut key_values = vec![];
             let mut table_or_array_of_tables = vec![];
 
-            if self.schema_directive(None).is_some() {
+            if self.schema_comment_directive(None).is_some() {
                 changes.push(crate::Change::AppendTop {
                     new: self
                         .get_document_header_comments()

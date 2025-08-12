@@ -1,4 +1,5 @@
 use itertools::Either;
+use tombi_ast::SchemaCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
 
@@ -38,14 +39,11 @@ pub async fn handle_document_link(
 
     let mut document_links = vec![];
 
-    // Document Inline Comment Schema URL
-    //
-    // ```toml
-    // #:schema https://example.com/schema.json
-    // key = "value"
-    // ```
-    if let Some((Ok(schema_url), range)) =
-        root.schema_directive(text_document.uri.to_file_path().ok().as_deref())
+    if let Some(SchemaCommentDirective {
+        url: Ok(schema_url),
+        url_range: range,
+        ..
+    }) = root.schema_comment_directive(text_document.uri.to_file_path().ok().as_deref())
     {
         let tooltip = "Open JSON Schema".into();
         document_links.push(
