@@ -11,7 +11,7 @@ mod hover;
 mod semantic_tokens;
 
 pub use backend::Backend;
-pub use hover::HoverInfo;
+pub use hover::HoverContent;
 
 /// Run TOML Language Server
 #[derive(Debug)]

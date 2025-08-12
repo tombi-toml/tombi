@@ -531,7 +531,7 @@ mod hover_keys_value {
                 )
                 .await;
 
-                let Ok(Some(tombi_lsp::HoverInfo::Value(hover_content))) = tombi_lsp::handler::handle_hover(
+                let Ok(Some(tombi_lsp::HoverContent::Value(hover_content))) = tombi_lsp::handler::handle_hover(
                     &backend,
                     tower_lsp::lsp_types::HoverParams {
                         text_document_position_params: tower_lsp::lsp_types::TextDocumentPositionParams {

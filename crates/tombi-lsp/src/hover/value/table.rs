@@ -11,7 +11,7 @@ use crate::hover::{
     any_of::get_any_of_hover_content,
     constraints::{build_enumerate_values, ValueConstraints},
     one_of::get_one_of_hover_content,
-    GetHoverContent, HoverContent,
+    GetHoverContent, HoverValueContent,
 };
 
 impl GetHoverContent for tombi_document_tree::Table {
@@ -22,7 +22,7 @@ impl GetHoverContent for tombi_document_tree::Table {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
         tracing::trace!("accessors = {:?}", accessors);
@@ -472,7 +472,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                             .await;
                     }
                 }
-                Some(HoverContent {
+                Some(HoverValueContent {
                     title: None,
                     description: None,
                     accessors: Accessors::new(accessors.to_vec()),
@@ -495,9 +495,9 @@ impl GetHoverContent for TableSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: Accessors::new(accessors.to_vec()),

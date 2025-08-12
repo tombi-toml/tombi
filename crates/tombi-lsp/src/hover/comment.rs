@@ -7,25 +7,25 @@ use crate::{
         TombiDirective, TombiDirectiveContent,
     },
     handler::get_hover_keys_with_range,
-    hover::{get_hover_content, HoverDirectiveContent, HoverInfo},
+    hover::{get_hover_content, HoverContent, HoverDirectiveContent},
 };
 
 pub async fn get_comment_directive_hover_info(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
-) -> Option<HoverInfo> {
+) -> Option<HoverContent> {
     if let Some(schema_comment_directive) = get_schema_comment_directive(&root, position) {
         if schema_comment_directive.directive_range.contains(position) {
-            return Some(HoverInfo::Directive(HoverDirectiveContent {
+            return Some(HoverContent::Directive(HoverDirectiveContent {
                 title: "Schema Directive".to_string(),
                 description: "Specify the schema that applies only to this document.".to_string(),
                 range: schema_comment_directive.directive_range,
             }));
         }
         if schema_comment_directive.url_range.contains(position) {
-            return Some(HoverInfo::Directive(HoverDirectiveContent {
+            return Some(HoverContent::Directive(HoverDirectiveContent {
                 title: "Schema URL".to_string(),
-                description: "The URL of the schema that applies only to this document."
+                description: "The URL/Path of the schema that applies only to this document."
                     .to_string(),
                 range: schema_comment_directive.url_range,
             }));
@@ -40,7 +40,7 @@ pub async fn get_comment_directive_hover_info(
                 match comment_directive {
                     TombiCommentDirective::Directive(TombiDirective { directive_range }) => {
                         if directive_range.contains(position) {
-                            return Some(HoverInfo::Directive(HoverDirectiveContent {
+                            return Some(HoverContent::Directive(HoverDirectiveContent {
                                 title: "Tombi Directive".to_string(),
                                 description:
                                     "Specify the Tombi settings that apply only to this document."
@@ -110,7 +110,7 @@ pub async fn get_comment_directive_hover_info(
                                 {
                                     content.schema_url = Some(schema_url.into());
                                 }
-                                HoverInfo::Value(content)
+                                HoverContent::Value(content)
                             });
                         }
                     }

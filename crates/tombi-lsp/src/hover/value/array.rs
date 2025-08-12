@@ -11,7 +11,7 @@ use crate::hover::{
     constraints::{build_enumerate_values, ValueConstraints},
     display_value::DisplayValue,
     one_of::get_one_of_hover_content,
-    GetHoverContent, HoverContent,
+    GetHoverContent, HoverValueContent,
 };
 
 impl GetHoverContent for tombi_document_tree::Array {
@@ -22,7 +22,7 @@ impl GetHoverContent for tombi_document_tree::Array {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
         tracing::trace!("accessors = {:?}", accessors);
@@ -203,7 +203,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             }
                         }
 
-                        return Some(HoverContent {
+                        return Some(HoverValueContent {
                             title: None,
                             description: None,
                             accessors: Accessors::new(accessors.to_vec()),
@@ -235,7 +235,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                         .await;
                 }
             }
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title: None,
                 description: None,
                 accessors: Accessors::new(accessors.to_vec()),
@@ -257,9 +257,9 @@ impl GetHoverContent for ArraySchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
-            Some(HoverContent {
+            Some(HoverValueContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: Accessors::new(accessors.to_vec()),
