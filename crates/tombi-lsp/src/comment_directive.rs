@@ -4,7 +4,7 @@ pub const SCHEMA_DIRECTIVE_TITLE: &str = "Schema Directive";
 pub const SCHEMA_DIRECTIVE_DESCRIPTION: &str = "Specify the Schema URL/Path for the document.";
 
 pub const TOMBI_DIRECTIVE_TITLE: &str = "Tombi Directive";
-pub const TOMBI_DIRECTIVE_DESCRIPTION: &str = "Specify the Tombi settings for the document.";
+pub const TOMBI_DIRECTIVE_DESCRIPTION: &str = "Directives that apply only to this document.";
 
 #[derive(Debug)]
 pub enum TombiCommentDirective {
