@@ -3375,6 +3375,7 @@ dependencies = [
  "tombi-toml-text",
  "tombi-toml-version",
  "tombi-url",
+ "tracing",
  "url",
 ]
 
