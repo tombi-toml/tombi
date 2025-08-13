@@ -1,10 +1,11 @@
 {
   "recommendations": [
     "biomejs.biome",
+    "charliermarsh.ruff",
+    "ms-python.python",
     "rust-lang.rust-analyzer",
     "tombi-toml.tombi",
-    "ms-python.python",
-    "charliermarsh.ruff"
+    "unifiedjs.vscode-mdx"
   ],
   "unwantedRecommendations": ["tamasfe.even-better-toml"]
 }

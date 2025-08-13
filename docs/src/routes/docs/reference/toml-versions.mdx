@@ -5,8 +5,8 @@ import { Note } from "~/components/Highlight";
 ## TOML v1.1.0
 [TOML v1.1.0](https://github.com/toml-lang/toml/issues/928) has not been officially released yet, but Tombi supports `v1.1.0-preview`.
 
-Tombi's formatter shows its true power with `v1.1.0`.
-While many existing systems ([Cargo.toml](https://doc.rust-lang.org/cargo/reference/manifest.html), [pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)) use `v1.0.0`. 
+Tombi's formatter shows its true power with `v1.1.0`.  
+While many existing systems use `v1.0.0` ([Cargo.toml](https://doc.rust-lang.org/cargo/reference/manifest.html), [pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/), etc...).
 
 <Note>
 To use `v1.1.0-preview`, you need to specify the configuration in `tombi.toml`.
@@ -20,6 +20,8 @@ To use `v1.1.0-preview`, you need to specify the configuration in `tombi.toml`.
 
 Tombi determines the TOML version for the target file in the following order of priority.
 
-- The value of `toml-version` specified in `[[schemas]]` of Config
-- The value specified in `x-tombi-toml-version` on the root object of JSON Schema
-- The value of `toml-version` specified in the root of Config
+1. The comment directive `#:tombi toml-version = "v1.0.0"` in the TOML document.
+2. `toml-version` specified in `[[schemas]]` in the Tombi config.
+3. `x-tombi-toml-version` in the root object of JSON Schema.
+4. `toml-version` specified in the Tombi config.
+5. The default TOML version (Currently `v1.0.0`).
