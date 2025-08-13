@@ -168,7 +168,7 @@ impl Backend {
             .flatten();
 
         let root_comment_directive =
-            tombi_comment_directive::get_root_comment_directive(&root).await;
+            tombi_comment_directive::get_tombi_comment_directive(&root).await;
         let (toml_version, _) = self
             .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
             .await;

@@ -14,11 +14,11 @@ use url::Url;
 
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
-pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<TombiDirective> {
-    try_get_root_comment_directive(root).await.ok().flatten()
+pub async fn get_tombi_comment_directive(root: &tombi_ast::Root) -> Option<TombiDirective> {
+    try_get_tombi_comment_directive(root).await.ok().flatten()
 }
 
-pub async fn try_get_root_comment_directive(
+pub async fn try_get_tombi_comment_directive(
     root: &tombi_ast::Root,
 ) -> Result<Option<TombiDirective>, Vec<tombi_diagnostic::Diagnostic>> {
     use serde::Deserialize;
