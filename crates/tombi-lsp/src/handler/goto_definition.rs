@@ -53,9 +53,14 @@ pub async fn handle_goto_definition(
         .ok()
         .flatten();
 
-    let root_comment_directive = tombi_comment_directive::get_tombi_comment_directive(&root).await;
+    let document_tombi_comment_directive =
+        tombi_comment_directive::get_document_tombi_comment_directive(&root).await;
     let (toml_version, _) = backend
-        .source_toml_version(root_comment_directive, source_schema.as_ref(), &config)
+        .source_toml_version(
+            document_tombi_comment_directive,
+            source_schema.as_ref(),
+            &config,
+        )
         .await;
 
     let position = position.into();

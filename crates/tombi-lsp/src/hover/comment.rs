@@ -79,7 +79,7 @@ pub async fn get_comment_directive_hover_info(
                             };
 
                             let document_schema =
-                                tombi_comment_directive::root_comment_directive_document_schema()
+                                tombi_comment_directive::document_comment_directive_document_schema()
                                     .await;
 
                             let schema_store = tombi_comment_directive::schema_store().await;

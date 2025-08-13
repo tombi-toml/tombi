@@ -1,4 +1,4 @@
-use tombi_ast::SchemaCommentDirective;
+use tombi_ast::DocumentSchemaCommentDirective;
 
 pub const SCHEMA_DIRECTIVE_TITLE: &str = "Schema Directive";
 pub const SCHEMA_DIRECTIVE_DESCRIPTION: &str = "Specify the Schema URL/Path for the document.";
@@ -47,8 +47,8 @@ pub struct TombiDirectiveContent {
 pub fn get_schema_comment_directive(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
-) -> Option<SchemaCommentDirective> {
-    if let Some(schema_comment_directive) = root.schema_comment_directive(None) {
+) -> Option<DocumentSchemaCommentDirective> {
+    if let Some(schema_comment_directive) = root.document_schema_comment_directive(None) {
         if schema_comment_directive.directive_range.contains(position)
             || schema_comment_directive.url_range.contains(position)
         {
@@ -62,7 +62,7 @@ pub fn get_tombi_comment_directive(
     comment: &tombi_ast::Comment,
     position: tombi_text::Position,
 ) -> Option<TombiCommentDirective> {
-    if let Some(tombi_ast::TombiCommentDirective {
+    if let Some(tombi_ast::DocumentTombiCommentDirective {
         directive_range,
         content,
         content_range,

@@ -1,5 +1,5 @@
 {
-  "$id": "tombi://json.tombi.dev/tombi-directive.json",
+  "$id": "tombi://json.tombi.dev/document-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TombiDirective",
   "type": "object",

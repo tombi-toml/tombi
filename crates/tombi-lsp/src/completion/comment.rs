@@ -41,7 +41,7 @@ pub async fn get_comment_completion_contents(
                                 .chars()
                                 .all(|c| c.is_whitespace())
                             {
-                                return Some(directive_completion_contents(
+                                return Some(document_comment_directive_completion_contents(
                                     root,
                                     position,
                                     prefix_range,
@@ -50,7 +50,8 @@ pub async fn get_comment_completion_contents(
                             }
 
                             if let Some(completions) =
-                                tombi_directive_completion_contents(&comment, position).await
+                                document_tombi_directive_completion_contents(&comment, position)
+                                    .await
                             {
                                 return Some(completions);
                             }
@@ -68,7 +69,7 @@ pub async fn get_comment_completion_contents(
     }
 }
 
-fn directive_completion_contents(
+fn document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     prefix_range: tombi_text::Range,
@@ -77,7 +78,7 @@ fn directive_completion_contents(
     let mut completion_contents = Vec::new();
 
     // Add schema directive completion if not already present
-    if root.schema_comment_directive(None).is_none() {
+    if root.document_schema_comment_directive(None).is_none() {
         completion_contents.push(CompletionContent::new_comment_directive(
             "schema",
             SCHEMA_DIRECTIVE_TITLE,
@@ -95,7 +96,7 @@ fn directive_completion_contents(
     completion_contents
 }
 
-async fn tombi_directive_completion_contents(
+async fn document_tombi_directive_completion_contents(
     comment: &tombi_ast::Comment,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
@@ -117,7 +118,7 @@ async fn tombi_directive_completion_contents(
         let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
         let document_schema =
-            tombi_comment_directive::root_comment_directive_document_schema().await;
+            tombi_comment_directive::document_comment_directive_document_schema().await;
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version,
             root_schema: Some(&document_schema),
