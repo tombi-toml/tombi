@@ -1,0 +1,34 @@
+{
+  "$defs": {
+    "Type1Untagged": {
+      "properties": {
+        "favorite_color": {
+          "title": "Favorite Color",
+          "type": "string"
+        }
+      },
+      "required": ["favorite_color"],
+      "title": "Type1Untagged",
+      "type": "object"
+    },
+    "Type2Untagged": {
+      "properties": {
+        "number_of_pets": {
+          "title": "Number Of Pets",
+          "type": "integer"
+        }
+      },
+      "required": ["number_of_pets"],
+      "title": "Type2Untagged",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Type1Untagged"
+    },
+    {
+      "$ref": "#/$defs/Type2Untagged"
+    }
+  ]
+}
