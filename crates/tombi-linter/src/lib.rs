@@ -83,7 +83,11 @@ macro_rules! test_lint {
             match linter.lint($source).await {
                 Ok(_) => {}
                 Err(errors) => {
-                    pretty_assertions::assert_eq!(Vec::<tombi_diagnostic::Diagnostic>::new(), errors);
+                    pretty_assertions::assert_eq!(
+                        Vec::<tombi_diagnostic::Diagnostic>::new(),
+                        errors,
+                        "Expected success but got errors."
+                    );
                 }
             }
         }
