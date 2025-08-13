@@ -11,6 +11,6 @@ tombi-syntax.workspace = true
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-tombi-url.workspace = true
+tombi-uri.workspace = true
 tracing.workspace = true
 url.workspace = true

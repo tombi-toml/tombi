@@ -1,5 +1,5 @@
 use crate::{AstToken, Comment, DocumentSchemaCommentDirective, DocumentTombiCommentDirective};
-use tombi_url::url_from_file_path;
+use tombi_uri::url_from_file_path;
 
 impl Comment {
     /// Returns the schema directive in the document header.

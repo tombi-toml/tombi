@@ -1,5 +1,5 @@
 [package]
-name = "tombi-url"
+name = "tombi-uri"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

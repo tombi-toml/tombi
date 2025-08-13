@@ -10,7 +10,7 @@ pub async fn handle_update_config(
     tracing::info!("handle_update_config");
     tracing::trace!(?params);
 
-    if let Ok(config_path) = tombi_url::url_to_file_path(&params.uri) {
+    if let Ok(config_path) = tombi_uri::url_to_file_path(&params.uri) {
         if let Ok(Some(config)) = serde_tombi::config::try_from_path(&config_path) {
             match backend
                 .config_manager

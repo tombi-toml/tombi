@@ -2868,7 +2868,7 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
- "tombi-url",
+ "tombi-uri",
  "tracing",
  "typed-builder",
  "url",
@@ -3374,7 +3374,7 @@ dependencies = [
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",
- "tombi-url",
+ "tombi-uri",
  "tracing",
  "url",
 ]
@@ -3466,7 +3466,7 @@ dependencies = [
  "serde",
  "thiserror 2.0.12",
  "tombi-toml-version",
- "tombi-url",
+ "tombi-uri",
  "tombi-x-keyword",
  "url",
 ]
@@ -3761,7 +3761,7 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
- "tombi-url",
+ "tombi-uri",
  "tombi-validator",
  "tombi-x-keyword",
  "tower-lsp",
@@ -3825,7 +3825,7 @@ dependencies = [
  "tombi-future",
  "tombi-json",
  "tombi-text",
- "tombi-url",
+ "tombi-uri",
  "tombi-x-keyword",
  "tracing",
  "url",
@@ -3877,7 +3877,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tombi-url"
+name = "tombi-uri"
 version = "0.0.0-dev"
 dependencies = [
  "url",
