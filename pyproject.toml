@@ -1,4 +1,4 @@
-#:schema https://json.schemastore.org/pyproject.json
+#:schema tombi://json.schemastore.org/pyproject.json
 #:tombi toml-version = "v1.0.0"
 
 [project]
