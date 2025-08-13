@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use futures::future::join_all;
+use tombi_x_keyword::StringFormat;
 
 use super::{ReferableValueSchemas, ValueSchema};
 use crate::Referable;
@@ -17,7 +18,7 @@ pub struct AllOfSchema {
 }
 
 impl AllOfSchema {
-    pub fn new(object: &tombi_json::ObjectNode) -> Self {
+    pub fn new(object: &tombi_json::ObjectNode, string_formats: Option<&[StringFormat]>) -> Self {
         let title = object
             .get("title")
             .and_then(|v| v.as_str())
@@ -33,8 +34,8 @@ impl AllOfSchema {
                 array
                     .items
                     .iter()
-                    .filter_map(|v| v.as_object())
-                    .filter_map(Referable::<ValueSchema>::new)
+                    .filter_map(|value| value.as_object())
+                    .filter_map(|obj| Referable::<ValueSchema>::new(obj, string_formats))
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default();
@@ -46,7 +47,7 @@ impl AllOfSchema {
             default: object.get("default").cloned().map(|v| v.into()),
             examples: object
                 .get("examples")
-                .and_then(|v| v.as_array())
+                .and_then(|value| value.as_array())
                 .map(|array| array.items.iter().map(|v| v.into()).collect()),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
             range: object.range,

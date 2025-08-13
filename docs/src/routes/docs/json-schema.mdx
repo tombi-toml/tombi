@@ -67,6 +67,42 @@ This differs from the standard JSON Schema specification but provides more preci
 
 To disable strict mode, add `schema.strict = false` to your `tombi.toml` configuration.
 
+### x-tombi-string-formats
+
+In Tombi default behavior, the `format` used in JSON Schema's `“type”: “string"` only recognizes conversions to the following built-in types:
+
+- `date-time`
+- `date-time-local`
+- `date`
+- `time-local`
+
+By adding the `x-tombi-string-formats` key to the root of the JSON Schema, you can add the `format` of the string to the validation target.
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-tombi-string-formats": [
+    "email",
+    "hostname",
+    "uri",
+    "uuid"
+  ]
+}
+```
+
+Currently supported `format` targets are as follows:
+
+| format         | Specification                                             |
+|----------------|-----------------------------------------------------------|
+| `email`        | [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322) |
+| `hostname`     | [RFC 1034](https://datatracker.ietf.org/doc/html/rfc1034) |
+| `uri`          | [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986) |
+| `uuid`         | [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122) |
+
+<Note>
+If you want to support additional `format` in Tombi, please check if it exists in [JSON Schema Specification](https://json-schema.org/draft/2020-12/json-schema-validation#name-defined-formats) or [OpenAPI Format Registry](https://spec.openapis.org/registry/format/).
+</Note>
+
 ## Language Gap
 While TOML and JSON are different languages, JSON Schema remains a valuable tool for representing TOML structures, especially given the abundance of existing schema assets.
 

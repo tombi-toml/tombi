@@ -1,7 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use tombi_future::{BoxFuture, Boxable};
-use tombi_x_keyword::{ArrayValuesOrder, X_TOMBI_ARRAY_VALUES_ORDER};
+use tombi_x_keyword::{ArrayValuesOrder, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUrl,
@@ -27,7 +27,7 @@ pub struct ArraySchema {
 }
 
 impl ArraySchema {
-    pub fn new(object: &tombi_json::ObjectNode) -> Self {
+    pub fn new(object: &tombi_json::ObjectNode, string_formats: Option<&[StringFormat]>) -> Self {
         Self {
             title: object
                 .get("title")
@@ -38,7 +38,7 @@ impl ArraySchema {
             items: object.get("items").and_then(|value| {
                 value
                     .as_object()
-                    .and_then(Referable::<ValueSchema>::new)
+                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats))
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             }),
             min_items: object

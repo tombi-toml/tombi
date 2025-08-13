@@ -3,6 +3,9 @@ use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
+use tombi_x_keyword::StringFormat;
+
+use crate::validate::format;
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -123,6 +126,59 @@ impl Validate for tombi_document_tree::String {
                             range: self.range(),
                         }
                         .set_diagnostics(&mut diagnostics);
+                    }
+                }
+
+                if let Some(format) = string_schema.format {
+                    match format {
+                        StringFormat::Email => {
+                            if !format::email::validate_format(&value) {
+                                crate::Error {
+                                    kind: crate::ErrorKind::Format {
+                                        format,
+                                        actual: value.to_owned(),
+                                    },
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
+                        StringFormat::Hostname => {
+                            if !format::hostname::validate_format(&value) {
+                                crate::Error {
+                                    kind: crate::ErrorKind::Format {
+                                        format,
+                                        actual: value.to_owned(),
+                                    },
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
+                        StringFormat::Uri => {
+                            if !format::uri::validate_format(&value) {
+                                crate::Error {
+                                    kind: crate::ErrorKind::Format {
+                                        format,
+                                        actual: value.to_owned(),
+                                    },
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
+                        StringFormat::Uuid => {
+                            if !format::uuid::validate_format(&value) {
+                                crate::Error {
+                                    kind: crate::ErrorKind::Format {
+                                        format,
+                                        actual: value.to_owned(),
+                                    },
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
+                            }
+                        }
                     }
                 }
 

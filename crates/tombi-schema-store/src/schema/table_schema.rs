@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use indexmap::IndexMap;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_json::StringNode;
-use tombi_x_keyword::{TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
+use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
@@ -33,14 +33,18 @@ pub struct TableSchema {
 }
 
 impl TableSchema {
-    pub fn new(object_node: &tombi_json::ObjectNode) -> Self {
+    pub fn new(
+        object_node: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+    ) -> Self {
         let mut properties = IndexMap::new();
         if let Some(tombi_json::ValueNode::Object(object_node)) = object_node.get("properties") {
             for (key_node, value_node) in object_node.properties.iter() {
                 let Some(object) = value_node.as_object() else {
                     continue;
                 };
-                if let Some(property_schema) = Referable::<ValueSchema>::new(object) {
+                if let Some(property_schema) = Referable::<ValueSchema>::new(object, string_formats)
+                {
                     properties.insert(
                         SchemaAccessor::Key(key_node.value.to_string()),
                         PropertySchema {
@@ -58,7 +62,9 @@ impl TableSchema {
                     let Some(object) = value.as_object() else {
                         continue;
                     };
-                    if let Some(value_schema) = Referable::<ValueSchema>::new(object) {
+                    if let Some(value_schema) =
+                        Referable::<ValueSchema>::new(object, string_formats)
+                    {
                         pattern_properties.insert(pattern.clone(), value_schema);
                     }
                 }
@@ -71,7 +77,7 @@ impl TableSchema {
             match object_node.get("additionalProperties") {
                 Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
                 Some(tombi_json::ValueNode::Object(object_node)) => {
-                    let value_schema = Referable::<ValueSchema>::new(object_node);
+                    let value_schema = Referable::<ValueSchema>::new(object_node, string_formats);
                     (
                         Some(true),
                         value_schema.map(|schema| {

@@ -133,6 +133,7 @@ impl GetHoverContent for StringSchema {
                     }),
                     min_length: self.min_length,
                     max_length: self.max_length,
+                    format: self.format,
                     pattern: self.pattern.clone(),
                     ..Default::default()
                 }),

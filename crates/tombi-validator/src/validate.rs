@@ -3,6 +3,7 @@ mod any_of;
 mod array;
 mod boolean;
 mod float;
+pub mod format;
 mod integer;
 mod local_date;
 mod local_date_time;

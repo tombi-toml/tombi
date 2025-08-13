@@ -1,3 +1,5 @@
+use tombi_x_keyword::StringFormat;
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct StringSchema {
     pub title: Option<String>,
@@ -5,6 +7,7 @@ pub struct StringSchema {
     pub range: tombi_text::Range,
     pub min_length: Option<usize>,
     pub max_length: Option<usize>,
+    pub format: Option<StringFormat>,
     pub pattern: Option<String>,
     pub enumerate: Option<Vec<String>>,
     pub examples: Option<Vec<String>>,
@@ -14,7 +17,7 @@ pub struct StringSchema {
 }
 
 impl StringSchema {
-    pub fn new(object: &tombi_json::ObjectNode) -> Self {
+    pub fn new(object: &tombi_json::ObjectNode, format: Option<StringFormat>) -> Self {
         Self {
             title: object
                 .get("title")
@@ -29,6 +32,7 @@ impl StringSchema {
             max_length: object
                 .get("maxLength")
                 .and_then(|v| v.as_u64().map(|n| n as usize)),
+            format,
             pattern: object
                 .get("pattern")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
