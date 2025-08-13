@@ -8,6 +8,7 @@ impl crate::Edit for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::SchemaAccessor],
+        source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
@@ -28,7 +29,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                     for key_value in self.key_values() {
                         changes.extend(
                             key_value
-                                .edit(accessors, Some(current_schema), schema_context)
+                                .edit(accessors, source_path, Some(current_schema), schema_context)
                                 .await,
                         );
                     }
@@ -42,7 +43,11 @@ impl crate::Edit for tombi_ast::InlineTable {
                     &key_value,
                     comma.as_ref(),
                 ));
-                changes.extend(key_value.edit(accessors, None, schema_context).await);
+                changes.extend(
+                    key_value
+                        .edit(accessors, source_path, None, schema_context)
+                        .await,
+                );
             }
 
             changes

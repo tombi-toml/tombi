@@ -7,15 +7,18 @@ use crate::{
     },
     handler::get_hover_keys_with_range,
     hover::{get_hover_content, HoverContent, HoverDirectiveContent},
-    DOCUMENT_SCHEMA_DIRECTIVE_TITLE, DOCUMENT_TOMBI_DIRECTIVE_TITLE, DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION,
-    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION,
+    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
+    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
 };
 
 pub async fn get_comment_directive_hover_info(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
+    source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
-    if let Some(schema_comment_directive) = get_document_schema_comment_directive(&root, position) {
+    if let Some(schema_comment_directive) =
+        get_document_schema_comment_directive(&root, position, source_path)
+    {
         if schema_comment_directive.directive_range.contains(position) {
             return Some(HoverContent::Directive(HoverDirectiveContent {
                 title: DOCUMENT_SCHEMA_DIRECTIVE_TITLE.to_string(),

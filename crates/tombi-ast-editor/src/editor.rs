@@ -9,14 +9,20 @@ pub struct Editor<'a> {
     root: tombi_ast::Root,
     #[allow(dead_code)]
     changes: Vec<Change>,
+    source_path: Option<&'a std::path::Path>,
     schema_context: &'a SchemaContext<'a>,
 }
 
 impl<'a> Editor<'a> {
-    pub fn new(root: tombi_ast::Root, schema_context: &'a SchemaContext<'a>) -> Self {
+    pub fn new(
+        root: tombi_ast::Root,
+        source_path: Option<&'a std::path::Path>,
+        schema_context: &'a SchemaContext<'a>,
+    ) -> Self {
         Self {
             root,
             changes: vec![],
+            source_path,
             schema_context,
         }
     }
@@ -35,7 +41,12 @@ impl<'a> Editor<'a> {
         });
 
         let changes = new_root
-            .edit(&[], current_schema.as_ref(), self.schema_context)
+            .edit(
+                &[],
+                self.source_path,
+                current_schema.as_ref(),
+                self.schema_context,
+            )
             .await;
 
         for change in changes {

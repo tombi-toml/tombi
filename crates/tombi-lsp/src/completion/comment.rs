@@ -78,8 +78,13 @@ fn document_comment_directive_completion_contents(
 ) -> Vec<CompletionContent> {
     let mut completion_contents = Vec::new();
 
+    let source_path = text_document_uri.to_file_path().ok();
+
     // Add schema directive completion if not already present
-    if root.document_schema_comment_directive(None).is_none() {
+    if root
+        .document_schema_comment_directive(source_path.as_deref())
+        .is_none()
+    {
         completion_contents.push(CompletionContent::new_comment_directive(
             "schema",
             DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
