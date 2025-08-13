@@ -36,6 +36,12 @@ pub fn type_test_schema_path() -> PathBuf {
         .join("type-test.schema.json")
 }
 
+pub fn untagged_union_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("untagged-union.schema.json")
+}
+
 pub fn x_tombi_table_keys_order_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")

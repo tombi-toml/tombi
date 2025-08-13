@@ -1,8 +1,9 @@
-use std::{ops::Deref, str::FromStr, sync::Arc};
+use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
-    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog, CatalogUrl,
-    DocumentSchema, SchemaAccessor, SchemaAccessors, SchemaUrl, SourceSchema,
+    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog, AllOfSchema,
+    AnyOfSchema, CatalogUrl, DocumentSchema, OneOfSchema, SchemaAccessor, SchemaAccessors,
+    SchemaUrl, SourceSchema, ValueSchema,
 };
 use ahash::AHashMap;
 use itertools::Either;
@@ -452,8 +453,30 @@ impl SchemaStore {
             }
             None => return Ok(None),
         };
+        let document_schema = DocumentSchema::new(object, schema_url.clone());
+        if let Some(value_schema) = &document_schema.value_schema {
+            match value_schema {
+                ValueSchema::AllOf(AllOfSchema { schemas, .. })
+                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+                    for referable_schema in schemas.write().await.iter_mut() {
+                        if let Err(err) = referable_schema
+                            .resolve(
+                                Cow::Borrowed(schema_url),
+                                Cow::Borrowed(&document_schema.definitions),
+                                self,
+                            )
+                            .await
+                        {
+                            return Err(err);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
 
-        Ok(Some(DocumentSchema::new(object, schema_url.clone())))
+        Ok(Some(document_schema))
     }
 
     pub fn try_get_document_schema<'a: 'b, 'b>(
@@ -461,6 +484,7 @@ impl SchemaStore {
         schema_url: &'a SchemaUrl,
     ) -> BoxFuture<'b, Result<Option<DocumentSchema>, crate::Error>> {
         async move {
+            // Use memory cache first
             if let Some(document_schema) = self.document_schemas.read().await.get(schema_url) {
                 return match document_schema {
                     Ok(document_schema) => Ok(Some(document_schema.clone())),
@@ -468,6 +492,7 @@ impl SchemaStore {
                 };
             }
 
+            // Then fetch from remote
             match self.fetch_document_schema(schema_url).await.transpose() {
                 Some(document_schema) => {
                     self.document_schemas
@@ -575,10 +600,8 @@ impl SchemaStore {
             if already_loaded {
                 continue;
             }
-            if let Ok(Some(document_schema)) =
-                self.try_get_document_schema(&matching_schema.url).await
-            {
-                match &matching_schema.sub_root_keys {
+            match self.try_get_document_schema(&matching_schema.url).await {
+                Ok(Some(document_schema)) => match &matching_schema.sub_root_keys {
                     Some(sub_root_keys) => match source_schema {
                         Some(ref mut source_schema) => {
                             if !source_schema.sub_schema_url_map.contains_key(sub_root_keys) {
@@ -613,9 +636,13 @@ impl SchemaStore {
                             });
                         }
                     },
+                },
+                Ok(None) => {
+                    tracing::error!("cannot find document schema: {}", matching_schema.url);
                 }
-            } else {
-                tracing::error!("Can't find matching schema for {}", matching_schema.url);
+                Err(err) => {
+                    tracing::error!("failed to get document schema: {}", err);
+                }
             }
         }
 

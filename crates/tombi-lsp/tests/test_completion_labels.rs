@@ -968,6 +968,23 @@ mod completion_labels {
         }
     }
 
+    mod untagged_union {
+        use tombi_test_lib::untagged_union_schema_path;
+
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn untagged_union(
+                "█",
+                Schema(untagged_union_schema_path()),
+            ) -> Ok([
+                "favorite_color",
+                "number_of_pets",
+            ]);
+        }
+    }
+
     mod without_schema {
         use super::*;
 
