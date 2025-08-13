@@ -7,7 +7,7 @@
   "properties": {
     "toml-version": {
       "title": "TOML version.",
-      "description": "TOML version to use if not specified in the schema.",
+      "description": "TOML version to use if not specified in the schema and comment directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/TomlVersion"
