@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ErrorKind {
@@ -59,6 +60,12 @@ pub enum ErrorKind {
     #[error("The length must be ≥ {minimum}, but found {actual}")]
     MinimumLength { minimum: usize, actual: usize },
 
+    #[error("\"{actual}\" is not a valid \"{format}\" format")]
+    Format {
+        format: StringFormat,
+        actual: String,
+    },
+
     #[error("\"{actual}\" does not match the pattern \"{pattern}\"")]
     Pattern { pattern: String, actual: String },
 
@@ -114,6 +121,7 @@ impl Error {
             ErrorKind::MultipleOfFloat { .. } => "multiple-of-float",
             ErrorKind::MaximumLength { .. } => "maximum-length",
             ErrorKind::MinimumLength { .. } => "minimum-length",
+            ErrorKind::Format { .. } => "format",
             ErrorKind::Pattern { .. } => "pattern",
             ErrorKind::MaxValues { .. } => "max-values",
             ErrorKind::MinValues { .. } => "min-values",
