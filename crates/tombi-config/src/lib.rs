@@ -39,7 +39,7 @@ pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
 pub struct Config {
     /// # TOML version.
     ///
-    /// TOML version to use if not specified in the schema.
+    /// TOML version to use if not specified in the schema and comment directive.
     #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
 
