@@ -132,7 +132,7 @@ impl Validate for tombi_document_tree::String {
                 if let Some(format) = string_schema.format {
                     match format {
                         StringFormat::Email => {
-                            if !format::email::validate(&value) {
+                            if !format::email::validate_format(&value) {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
@@ -144,7 +144,7 @@ impl Validate for tombi_document_tree::String {
                             }
                         }
                         StringFormat::Hostname => {
-                            if !format::hostname::validate(&value) {
+                            if !format::hostname::validate_format(&value) {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
@@ -156,7 +156,7 @@ impl Validate for tombi_document_tree::String {
                             }
                         }
                         StringFormat::Uri => {
-                            if !format::uri::validate(&value) {
+                            if !format::uri::validate_format(&value) {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
@@ -168,7 +168,7 @@ impl Validate for tombi_document_tree::String {
                             }
                         }
                         StringFormat::Uuid => {
-                            if !format::uuid::validate(&value) {
+                            if !format::uuid::validate_format(&value) {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
