@@ -5,16 +5,17 @@ use tower_lsp::lsp_types::Url;
 
 use crate::{
     comment_directive::{
-        get_tombi_comment_directive, TombiCommentDirective, TombiDirectiveContent,
+        get_document_tombi_comment_directive, DocumentTombiCommentDirective,
+        DocumentTombiDirectiveContent,
     },
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
-    SCHEMA_DIRECTIVE_DESCRIPTION, SCHEMA_DIRECTIVE_TITLE, TOMBI_DIRECTIVE_DESCRIPTION,
-    TOMBI_DIRECTIVE_TITLE,
+    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
+    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
 };
 
 use super::{CompletionContent, CompletionEdit};
 
-pub async fn get_comment_completion_contents(
+pub async fn get_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     text_document_uri: &Url,
@@ -81,15 +82,15 @@ fn document_comment_directive_completion_contents(
     if root.document_schema_comment_directive(None).is_none() {
         completion_contents.push(CompletionContent::new_comment_directive(
             "schema",
-            SCHEMA_DIRECTIVE_TITLE,
-            SCHEMA_DIRECTIVE_DESCRIPTION,
+            DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
+            DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION,
             CompletionEdit::new_schema_comment_directive(position, prefix_range, text_document_uri),
         ));
     }
     completion_contents.push(CompletionContent::new_comment_directive(
         "tombi",
-        TOMBI_DIRECTIVE_TITLE,
-        TOMBI_DIRECTIVE_DESCRIPTION,
+        DOCUMENT_TOMBI_DIRECTIVE_TITLE,
+        DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION,
         CompletionEdit::new_comment_directive("tombi", position, prefix_range),
     ));
 
@@ -100,11 +101,11 @@ async fn document_tombi_directive_completion_contents(
     comment: &tombi_ast::Comment,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
-    if let Some(TombiCommentDirective::Content(TombiDirectiveContent {
+    if let Some(DocumentTombiCommentDirective::Content(DocumentTombiDirectiveContent {
         content,
         position_in_content,
         content_range,
-    })) = get_tombi_comment_directive(&comment, position)
+    })) = get_document_tombi_comment_directive(&comment, position)
     {
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

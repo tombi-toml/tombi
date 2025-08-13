@@ -7,7 +7,7 @@ impl Comment {
     /// ```toml
     /// #:schema "https://example.com/schema.json"
     /// ```
-    pub fn schema_directive(
+    pub fn document_schema_directive(
         &self,
         source_path: Option<&std::path::Path>,
     ) -> Option<DocumentSchemaCommentDirective> {
@@ -71,7 +71,7 @@ impl Comment {
     /// ```toml
     /// #:tombi toml-version = "v1.0.0"
     /// ```
-    pub fn tombi_directive(&self) -> Option<DocumentTombiCommentDirective> {
+    pub fn document_tombi_directive(&self) -> Option<DocumentTombiCommentDirective> {
         let comment_str = self.syntax().text();
         if let Some(content) = comment_str.strip_prefix("#:tombi ") {
             let comment_range = self.syntax().range();

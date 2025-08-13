@@ -9,7 +9,8 @@ use tower_lsp::lsp_types::{
 use crate::{
     backend,
     completion::{
-        extract_keys_and_hint, find_completion_contents_with_tree, get_comment_completion_contents,
+        extract_keys_and_hint, find_completion_contents_with_tree,
+        get_comment_directive_completion_contents,
     },
     config_manager::ConfigSchemaStore,
 };
@@ -115,7 +116,7 @@ pub async fn handle_completion(
     let position = position.into();
 
     if let Some(comment_completion_contents) =
-        get_comment_completion_contents(&root, position, &text_document.uri).await
+        get_comment_directive_completion_contents(&root, position, &text_document.uri).await
     {
         return Ok(Some(comment_completion_contents));
     }
