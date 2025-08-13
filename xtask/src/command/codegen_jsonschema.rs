@@ -20,9 +20,9 @@ pub fn run() -> Result<(), anyhow::Error> {
         )? + "\n",
     )?;
     std::fs::write(
-        project_root_path().join("json.tombi.dev/root-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-directive.json"),
         serde_json::to_string_pretty(
-            &generator.into_root_schema_for::<tombi_comment_directive::RootTombiDirective>(),
+            &generator.into_root_schema_for::<tombi_comment_directive::TombiDirective>(),
         )? + "\n",
     )?;
     Ok(())
