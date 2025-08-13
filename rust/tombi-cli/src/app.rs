@@ -22,8 +22,10 @@ pub struct Args {
     #[command(subcommand)]
     pub subcommand: command::TomlCommand,
 
-    /// Do not fetch from remote
-    #[clap(long, global = true)]
+    /// Disable network access
+    ///
+    /// Don't fetch from remote and use local schemas cache.
+    #[clap(long, global = true, env("TOMBI_OFFLINE"))]
     offline: bool,
 
     /// Do not use cache
@@ -103,7 +105,7 @@ fn app_about() -> String {
         .fg_color(Some(Color::Ansi(AnsiColor::White)));
 
     format!(
-        "{title_style}              {title} {title_style:#}{desc_style}: TOML Toolkit              {desc_style:#}"
+        "{title_style}                      {title} {title_style:#}{desc_style}: TOML Toolkit                      {desc_style:#}"
     )
 }
 
