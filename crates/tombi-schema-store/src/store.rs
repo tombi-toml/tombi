@@ -461,6 +461,7 @@ impl SchemaStore {
         schema_url: &'a SchemaUrl,
     ) -> BoxFuture<'b, Result<Option<DocumentSchema>, crate::Error>> {
         async move {
+            // Use memory cache first
             if let Some(document_schema) = self.document_schemas.read().await.get(schema_url) {
                 return match document_schema {
                     Ok(document_schema) => Ok(Some(document_schema.clone())),
@@ -468,6 +469,7 @@ impl SchemaStore {
                 };
             }
 
+            // Then fetch from remote
             match self.fetch_document_schema(schema_url).await.transpose() {
                 Some(document_schema) => {
                     self.document_schemas
