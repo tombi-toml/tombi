@@ -105,7 +105,7 @@ fn app_about() -> String {
         .fg_color(Some(Color::Ansi(AnsiColor::White)));
 
     format!(
-        "{title_style}                      {title} {title_style:#}{desc_style}: TOML Toolkit                      {desc_style:#}"
+        "{title_style}                          {title} {title_style:#}{desc_style}: TOML Toolkit                          {desc_style:#}"
     )
 }
 
