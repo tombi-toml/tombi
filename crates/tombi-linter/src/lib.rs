@@ -80,12 +80,10 @@ macro_rules! test_lint {
                 &schema_store,
             );
 
-            let result = linter.lint($source).await;
-
-            match result {
+            match linter.lint($source).await {
                 Ok(_) => {}
                 Err(errors) => {
-                    panic!("Expected success but got errors: {:?}", errors);
+                    pretty_assertions::assert_eq!(Vec::<tombi_diagnostic::Diagnostic>::new(), errors);
                 }
             }
         }
@@ -179,7 +177,7 @@ macro_rules! test_lint {
 mod tests {
     use super::*;
 
-    mod cargo {
+    mod cargo_schema {
         use super::*;
         use tombi_test_lib::cargo_schema_path;
 
@@ -278,6 +276,23 @@ mod tests {
                     actual: "\"undefined\"".to_string()
                 }
             ]);
+        }
+    }
+
+    mod untagged_union_schema {
+        use super::*;
+        use tombi_test_lib::untagged_union_schema_path;
+
+        test_lint! {
+            #[test]
+            fn test_untagged_union_schema(
+                r#"
+                #:schema schemas/untagged-union.schema.json
+
+                favorite_color = "blue"
+                "#,
+                untagged_union_schema_path(),
+            ) -> Ok(_);
         }
     }
 
