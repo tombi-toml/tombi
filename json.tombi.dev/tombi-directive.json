@@ -1,7 +1,7 @@
 {
-  "$id": "tombi://json.tombi.dev/root-tombi-directive.json",
+  "$id": "tombi://json.tombi.dev/tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "RootTombiDirective",
+  "title": "TombiDirective",
   "type": "object",
   "properties": {
     "toml-version": {

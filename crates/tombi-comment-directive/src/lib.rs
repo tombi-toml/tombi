@@ -3,7 +3,7 @@ mod root;
 
 use ahash::AHashMap;
 pub use error::Error;
-pub use root::RootTombiDirective;
+pub use root::TombiDirective;
 use tombi_ast::TombiCommentDirective;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
@@ -14,13 +14,13 @@ use url::Url;
 
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
-pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<RootTombiDirective> {
+pub async fn get_root_comment_directive(root: &tombi_ast::Root) -> Option<TombiDirective> {
     try_get_root_comment_directive(root).await.ok().flatten()
 }
 
 pub async fn try_get_root_comment_directive(
     root: &tombi_ast::Root,
-) -> Result<Option<RootTombiDirective>, Vec<tombi_diagnostic::Diagnostic>> {
+) -> Result<Option<TombiDirective>, Vec<tombi_diagnostic::Diagnostic>> {
     use serde::Deserialize;
 
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
@@ -110,7 +110,7 @@ pub async fn try_get_root_comment_directive(
         return Err(total_diagnostics);
     }
     if let Some(total_document_tree_table) = total_document_tree_table {
-        if let Ok(directive) = RootTombiDirective::deserialize(
+        if let Ok(directive) = TombiDirective::deserialize(
             &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
         ) {
             return Ok(Some(directive));
@@ -158,7 +158,7 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
 #[inline]
 pub fn root_comment_directive_schema_url() -> &'static SchemaUrl {
     ROOT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
-        let url = Url::parse("tombi://json.tombi.dev/root-tombi-directive.json").unwrap();
+        let url = Url::parse("tombi://json.tombi.dev/tombi-directive.json").unwrap();
         SchemaUrl::new(url)
     })
 }
