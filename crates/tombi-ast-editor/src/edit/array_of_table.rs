@@ -11,6 +11,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
         _accessors: &'a [tombi_schema_store::SchemaAccessor],
+        source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
@@ -63,7 +64,12 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
             for key_value in self.key_values() {
                 changes.extend(
                     key_value
-                        .edit(&header_accessors, current_schema.as_ref(), schema_context)
+                        .edit(
+                            &header_accessors,
+                            source_path,
+                            current_schema.as_ref(),
+                            schema_context,
+                        )
                         .await,
                 );
             }

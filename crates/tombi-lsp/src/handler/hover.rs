@@ -67,8 +67,12 @@ pub async fn handle_hover(
         )
         .await;
 
+    let source_path = text_document.uri.to_file_path().ok();
+
     // Check if position is in a #:tombi comment directive
-    if let Some(content) = get_comment_directive_hover_info(&root, position).await {
+    if let Some(content) =
+        get_comment_directive_hover_info(&root, position, source_path.as_deref()).await
+    {
         return Ok(Some(content));
     }
 

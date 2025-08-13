@@ -7,7 +7,9 @@ impl AppendSemanticTokens for tombi_ast::Root {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         let key_values = self.key_values().collect_vec();
 
-        let schema_comment_directive = self.document_schema_comment_directive(None);
+        let source_path = builder.text_document_uri.to_file_path().ok();
+        let schema_comment_directive =
+            self.document_schema_comment_directive(source_path.as_deref());
         if key_values.is_empty() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {

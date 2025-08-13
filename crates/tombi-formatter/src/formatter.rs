@@ -89,8 +89,14 @@ impl<'a> Formatter<'a> {
                 diagnostics
             })?;
 
+        let source_path = self.source_url_or_path.and_then(|path| match path {
+            Either::Left(url) => url.to_file_path().ok(),
+            Either::Right(path) => Some(path.to_path_buf()),
+        });
+
         let root = tombi_ast_editor::Editor::new(
             root,
+            source_path.as_deref(),
             &tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
                 root_schema: source_schema

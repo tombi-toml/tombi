@@ -11,6 +11,7 @@ impl crate::Edit for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
         _accessors: &'a [tombi_schema_store::SchemaAccessor],
+        source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
@@ -48,6 +49,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                             value
                                 .edit(
                                     &[],
+                                    source_path,
                                     Some(&CurrentSchema {
                                         value_schema: Cow::Owned(value_schema),
                                         schema_url: current_schema.schema_url.clone(),
@@ -63,7 +65,7 @@ impl crate::Edit for tombi_ast::KeyValue {
             }
 
             if let Some(value) = self.value() {
-                changes.extend(value.edit(&[], None, schema_context).await);
+                changes.extend(value.edit(&[], source_path, None, schema_context).await);
             }
 
             changes

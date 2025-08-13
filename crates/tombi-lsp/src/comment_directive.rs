@@ -49,8 +49,11 @@ pub struct DocumentTombiDirectiveContent {
 pub fn get_document_schema_comment_directive(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
+    source_path: Option<&std::path::Path>,
 ) -> Option<DocumentSchemaCommentDirective> {
-    if let Some(document_schema_comment_directive) = root.document_schema_comment_directive(None) {
+    if let Some(document_schema_comment_directive) =
+        root.document_schema_comment_directive(source_path)
+    {
         if document_schema_comment_directive
             .directive_range
             .contains(position)
