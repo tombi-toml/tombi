@@ -638,10 +638,13 @@ impl SchemaStore {
                     },
                 },
                 Ok(None) => {
-                    tracing::error!("cannot find document schema: {}", matching_schema.url);
+                    tracing::error!("failed to find document schema: {}", matching_schema.url);
                 }
                 Err(err) => {
-                    tracing::error!("failed to get document schema: {}", err);
+                    tracing::error!(
+                        "failed to get document schema for {url}: {err}",
+                        url = matching_schema.url,
+                    );
                 }
             }
         }
