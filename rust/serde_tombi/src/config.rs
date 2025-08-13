@@ -3,7 +3,7 @@ use tombi_config::{
     Config, ConfigLevel, TomlVersion, CONFIG_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
     TOMBI_CONFIG_TOML_VERSION, TOMBI_TOML_FILENAME,
 };
-use tombi_url::url_to_file_path;
+use tombi_uri::url_to_file_path;
 
 /// Parse the TOML text into a `Config` struct.
 ///

@@ -103,7 +103,7 @@ tombi-test-lib = { path = "crates/tombi-test-lib" }
 tombi-text = { path = "crates/tombi-text" }
 tombi-toml-text = { path = "crates/tombi-toml-text" }
 tombi-toml-version = { path = "crates/tombi-toml-version" }
-tombi-url = { path = "crates/tombi-url" }
+tombi-uri = { path = "crates/tombi-uri" }
 tombi-validator = { path = "crates/tombi-validator" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }

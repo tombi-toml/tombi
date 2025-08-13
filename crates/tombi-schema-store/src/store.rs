@@ -11,7 +11,7 @@ use tombi_ast::DocumentSchemaCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_url::url_to_file_path;
+use tombi_uri::url_to_file_path;
 
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
