@@ -60,8 +60,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                     ValueSchema::Table(table_schema) => {
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
-                                let key_str = key.to_raw_text(schema_context.toml_version);
-                                let accessor = Accessor::Key(key_str.clone());
+                                let key_string = key.to_raw_text(schema_context.toml_version);
+                                let accessor = Accessor::Key(key_string.clone());
                                 let key_patterns = match table_schema.pattern_properties.as_ref() {
                                     Some(pattern_properties) => Some(
                                         pattern_properties
@@ -86,7 +86,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     let required = table_schema
                                         .required
                                         .as_ref()
-                                        .map(|r| r.contains(&key_str))
+                                        .map(|r| r.contains(&key_string))
                                         .unwrap_or(false);
 
                                     if let Ok(Some(current_schema)) = property_schema
@@ -195,7 +195,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     ) in pattern_properties.write().await.iter_mut()
                                     {
                                         if let Ok(pattern) = regex::Regex::new(property_key) {
-                                            if pattern.is_match(&key_str) {
+                                            if pattern.is_match(&key_string) {
                                                 if let Ok(Some(current_schema)) = property_schema
                                                     .resolve(
                                                         current_schema.schema_url.clone(),
