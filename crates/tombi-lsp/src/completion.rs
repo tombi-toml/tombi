@@ -5,7 +5,7 @@ mod value;
 use std::borrow::Cow;
 
 use ahash::AHashMap;
-pub use comment::get_comment_completion_contents;
+pub use comment::get_comment_directive_completion_contents;
 use itertools::Itertools;
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_config::TomlVersion;

@@ -36,7 +36,7 @@ impl<'a> Linter<'a> {
 
     pub async fn lint(mut self, source: &str) -> Result<(), Vec<Diagnostic>> {
         self.source_text = Cow::Borrowed(source);
-        let (source_schema, root_comment_directive) = if let Some(parsed) =
+        let (source_schema, document_tombi_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
@@ -57,8 +57,9 @@ impl<'a> Linter<'a> {
                 }
             };
 
-            let root_comment_directive =
-                match tombi_comment_directive::try_get_tombi_comment_directive(&root).await {
+            let document_tombi_comment_directive =
+                match tombi_comment_directive::try_get_document_tombi_comment_directive(&root).await
+                {
                     Ok(Some(directive)) => Some(directive),
                     Ok(None) => None,
                     Err(diagnostics) => {
@@ -67,12 +68,12 @@ impl<'a> Linter<'a> {
                     }
                 };
 
-            (source_schema, root_comment_directive)
+            (source_schema, document_tombi_comment_directive)
         } else {
             (None, None)
         };
 
-        self.toml_version = root_comment_directive
+        self.toml_version = document_tombi_comment_directive
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
                 source_schema

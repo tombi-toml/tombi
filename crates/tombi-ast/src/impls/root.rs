@@ -1,16 +1,16 @@
 use itertools::Itertools;
 use tombi_syntax::SyntaxKind;
 
-use crate::{support, AstNode, SchemaCommentDirective, TombiCommentDirective};
+use crate::{support, AstNode, DocumentSchemaCommentDirective, DocumentTombiCommentDirective};
 
 impl crate::Root {
-    pub fn schema_comment_directive(
+    pub fn document_schema_comment_directive(
         &self,
         source_path: Option<&std::path::Path>,
-    ) -> Option<SchemaCommentDirective> {
+    ) -> Option<DocumentSchemaCommentDirective> {
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some(schema_directive) = comment.schema_directive(source_path) {
+                if let Some(schema_directive) = comment.document_schema_directive(source_path) {
                     return Some(schema_directive);
                 }
             }
@@ -18,11 +18,11 @@ impl crate::Root {
         None
     }
 
-    pub fn tombi_comment_directives(&self) -> Option<Vec<TombiCommentDirective>> {
+    pub fn document_tombi_comment_directives(&self) -> Option<Vec<DocumentTombiCommentDirective>> {
         let mut tombi_directives = vec![];
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some(tombi_directive) = comment.tombi_directive() {
+                if let Some(tombi_directive) = comment.document_tombi_directive() {
                     tombi_directives.push(tombi_directive);
                 }
             }

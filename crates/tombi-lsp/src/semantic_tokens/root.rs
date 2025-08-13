@@ -7,7 +7,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         let key_values = self.key_values().collect_vec();
 
-        let schema_comment_directive = self.schema_comment_directive(None);
+        let schema_comment_directive = self.document_schema_comment_directive(None);
         if key_values.is_empty() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
@@ -24,7 +24,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             continue;
                         }
                     }
-                    if let Some(tombi_comment_directive) = comment.tombi_directive() {
+                    if let Some(tombi_comment_directive) = comment.document_tombi_directive() {
                         builder.add_comment_directive(
                             &comment,
                             &tombi_comment_directive.directive_range,
@@ -53,7 +53,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             continue;
                         }
                     }
-                    if let Some(tombi_comment_directive) = comment.tombi_directive() {
+                    if let Some(tombi_comment_directive) = comment.document_tombi_directive() {
                         builder.add_comment_directive(
                             &comment,
                             &tombi_comment_directive.directive_range,
