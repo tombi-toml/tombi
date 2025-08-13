@@ -1,9 +1,10 @@
-use std::{borrow::Cow, sync::Arc};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use futures::future::join_all;
 use indexmap::IndexSet;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_json::StringNode;
+use tombi_x_keyword::StringFormat;
 
 use super::{
     referable_schema::CurrentSchema, AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema,
@@ -31,10 +32,13 @@ pub enum ValueSchema {
 }
 
 impl ValueSchema {
-    pub fn new(object: &tombi_json::ObjectNode) -> Option<Self> {
+    pub fn new(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+    ) -> Option<Self> {
         match object.get("type") {
             Some(tombi_json::ValueNode::String(type_str)) => {
-                return Self::new_single(type_str.value.as_str(), object)
+                return Self::new_single(type_str.value.as_str(), object, string_formats)
             }
             Some(tombi_json::ValueNode::Array(types)) => {
                 let schemas = types
@@ -42,7 +46,7 @@ impl ValueSchema {
                     .iter()
                     .filter_map(|type_value| {
                         if let tombi_json::ValueNode::String(type_str) = type_value {
-                            Self::new_single(type_str.value.as_str(), object)
+                            Self::new_single(type_str.value.as_str(), object, string_formats)
                         } else {
                             None
                         }
@@ -62,30 +66,35 @@ impl ValueSchema {
         }
 
         if object.get("oneOf").is_some() {
-            return Some(ValueSchema::OneOf(OneOfSchema::new(object)));
+            return Some(ValueSchema::OneOf(OneOfSchema::new(object, string_formats)));
         }
         if object.get("anyOf").is_some() {
-            return Some(ValueSchema::AnyOf(AnyOfSchema::new(object)));
+            return Some(ValueSchema::AnyOf(AnyOfSchema::new(object, string_formats)));
         }
         if object.get("allOf").is_some() {
-            return Some(ValueSchema::AllOf(AllOfSchema::new(object)));
+            return Some(ValueSchema::AllOf(AllOfSchema::new(object, string_formats)));
         }
         if let Some(tombi_json::ValueNode::Array(enum_values)) = object.get("enum") {
-            return Self::new_enum_value(object, enum_values);
+            return Self::new_enum_value(object, enum_values, string_formats);
         }
 
         None
     }
 
-    fn new_single(type_str: &str, object: &tombi_json::ObjectNode) -> Option<Self> {
+    fn new_single(
+        type_str: &str,
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+    ) -> Option<Self> {
         match type_str {
             "null" => Some(ValueSchema::Null),
             "boolean" => Some(ValueSchema::Boolean(BooleanSchema::new(object))),
             "integer" => Some(ValueSchema::Integer(IntegerSchema::new(object))),
             "number" => Some(ValueSchema::Float(FloatSchema::new(object))),
             "string" => {
-                if let Some(tombi_json::ValueNode::String(StringNode {
-                    value: format_str, ..
+                let string_format = if let Some(tombi_json::ValueNode::String(StringNode {
+                    value: format_str,
+                    ..
                 })) = object.get("format")
                 {
                     // See: https://json-schema.org/understanding-json-schema/reference/type#built-in-formats
@@ -112,13 +121,28 @@ impl ValueSchema {
                             //       partial-time: used [schemars](https://github.com/GREsau/schemars).
                             return Some(ValueSchema::LocalTime(LocalTimeSchema::new(object)));
                         }
-                        _ => {}
+                        _ => string_formats.and_then(|string_formats| {
+                            if let Some(string_format) =
+                                StringFormat::from_str(format_str.as_str()).ok()
+                            {
+                                if string_formats.contains(&string_format) {
+                                    return Some(string_format);
+                                }
+                            }
+                            None
+                        }),
                     }
-                }
-                Some(ValueSchema::String(StringSchema::new(object)))
+                } else {
+                    None
+                };
+
+                Some(ValueSchema::String(StringSchema::new(
+                    object,
+                    string_format,
+                )))
             }
-            "array" => Some(ValueSchema::Array(ArraySchema::new(object))),
-            "object" => Some(ValueSchema::Table(TableSchema::new(object))),
+            "array" => Some(ValueSchema::Array(ArraySchema::new(object, string_formats))),
+            "object" => Some(ValueSchema::Table(TableSchema::new(object, string_formats))),
             _ => None,
         }
     }
@@ -126,6 +150,7 @@ impl ValueSchema {
     fn new_enum_value(
         object: &tombi_json::ObjectNode,
         enum_values: &tombi_json::ArrayNode,
+        string_formats: Option<&[StringFormat]>,
     ) -> Option<Self> {
         let mut enum_types = IndexSet::new();
         for enum_value in &enum_values.items {
@@ -152,12 +177,12 @@ impl ValueSchema {
             0 => None,
             1 => {
                 let value_type = enum_types.into_iter().next().unwrap();
-                Self::new_single(value_type, object)
+                Self::new_single(value_type, object, string_formats)
             }
             _ => {
                 let mut schemas = Vec::with_capacity(enum_types.len());
                 for value_type in enum_types {
-                    if let Some(schema) = Self::new_single(value_type, object) {
+                    if let Some(schema) = Self::new_single(value_type, object, string_formats) {
                         schemas.push(Referable::Resolved {
                             schema_url: None,
                             value: schema,

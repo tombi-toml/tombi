@@ -1,4 +1,4 @@
-use tombi_x_keyword::{ArrayValuesOrder, TableKeysOrder};
+use tombi_x_keyword::{ArrayValuesOrder, StringFormat, TableKeysOrder};
 
 use super::display_value::DisplayValue;
 
@@ -54,6 +54,7 @@ pub struct ValueConstraints {
     // String
     pub min_length: Option<usize>,
     pub max_length: Option<usize>,
+    pub format: Option<StringFormat>,
     pub pattern: Option<String>,
 
     // Array
@@ -119,6 +120,10 @@ impl std::fmt::Display for ValueConstraints {
 
         if let Some(max_length) = self.max_length {
             write!(f, "Maximum Length: `{max_length}`\n\n")?;
+        }
+
+        if let Some(format) = &self.format {
+            write!(f, "Format: `{format}`\n\n")?;
         }
 
         if let Some(pattern) = &self.pattern {

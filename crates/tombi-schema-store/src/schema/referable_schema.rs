@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use tombi_x_keyword::StringFormat;
+
 use crate::x_taplo::XTaplo;
 
 use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUrl, ValueSchema};
@@ -44,7 +46,10 @@ impl<T> Referable<T> {
 }
 
 impl Referable<ValueSchema> {
-    pub fn new(object: &tombi_json::ObjectNode) -> Option<Self> {
+    pub fn new(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+    ) -> Option<Self> {
         if let Some(x_taplo) = object.get("x-taplo") {
             if let Ok(x_taplo) = tombi_json::from_value_node::<XTaplo>(x_taplo.to_owned()) {
                 if x_taplo.hidden == Some(true) {
@@ -67,7 +72,7 @@ impl Referable<ValueSchema> {
             });
         }
 
-        ValueSchema::new(object).map(|value_schema| Referable::Resolved {
+        ValueSchema::new(object, string_formats).map(|value_schema| Referable::Resolved {
             schema_url: None,
             value: value_schema,
         })
@@ -130,7 +135,7 @@ impl Referable<ValueSchema> {
                             schema_store.fetch_schema_value(&schema_url).await?
                         {
                             if let Some(mut resolved_schema) =
-                                resolve_json_pointer(&schema_value, pointer)?
+                                resolve_json_pointer(&schema_value, pointer, None)?
                             {
                                 if title.is_some() || description.is_some() {
                                     resolved_schema.set_title(title.to_owned());
@@ -264,6 +269,7 @@ pub fn is_json_pointer(reference: &str) -> bool {
 pub fn resolve_json_pointer(
     schema_node: &tombi_json::ValueNode,
     pointer: &str,
+    string_formats: Option<&[StringFormat]>,
 ) -> Result<Option<ValueSchema>, crate::Error> {
     if !pointer.starts_with('#') {
         return Ok(None);
@@ -271,7 +277,9 @@ pub fn resolve_json_pointer(
 
     let path = &pointer[1..]; // Remove the leading '#'
     if path.is_empty() {
-        return Ok(schema_node.as_object().and_then(ValueSchema::new));
+        return Ok(schema_node
+            .as_object()
+            .and_then(|obj| ValueSchema::new(obj, string_formats)));
     }
 
     // RFC 6901: Percent-decode the path before splitting on '/'
@@ -309,7 +317,7 @@ pub fn resolve_json_pointer(
 
     // Convert the final ValueNode to ValueSchema
     match current {
-        tombi_json::ValueNode::Object(obj) => Ok(ValueSchema::new(obj)),
+        tombi_json::ValueNode::Object(obj) => Ok(ValueSchema::new(obj, string_formats)),
         _ => Ok(None),
     }
 }
@@ -366,15 +374,15 @@ mod test {
 
         // Test case 1: Basic percent decoding
         let json = r#"{
-        "foo": {
-            "bar%2Fbaz": "value1",
-            "qux": "value2"
-        }
-    }"#;
+            "foo": {
+                "bar%2Fbaz": "value1",
+                "qux": "value2"
+            }
+        }"#;
         let value_node = ValueNode::from_str(json).unwrap();
 
         // Test with percent-encoded slash
-        let result = resolve_json_pointer(&value_node, "#/foo/bar%2Fbaz");
+        let result = resolve_json_pointer(&value_node, "#/foo/bar%2Fbaz", None);
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             // The schema should be resolved correctly
@@ -383,13 +391,13 @@ mod test {
 
         // Test case 2: Multiple percent-encoded characters
         let json = r#"{
-        "test": {
-            "path%2Fwith%20spaces": "value"
-        }
-    }"#;
+            "test": {
+                "path%2Fwith%20spaces": "value"
+            }
+        }"#;
         let value_node = ValueNode::from_str(json).unwrap();
 
-        let result = resolve_json_pointer(&value_node, "#/test/path%2Fwith%20spaces");
+        let result = resolve_json_pointer(&value_node, "#/test/path%2Fwith%20spaces", None);
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
@@ -397,19 +405,19 @@ mod test {
 
         // Test case 3: Invalid percent encoding should be preserved
         let json = r#"{
-        "foo": {
-            "bar%2": "value1",
-            "baz%2G": "value2"
-        }
-    }"#;
+            "foo": {
+                "bar%2": "value1",
+                "baz%2G": "value2"
+            }
+        }"#;
         let value_node = ValueNode::from_str(json).unwrap();
 
         // These should return None because the keys don't exist after failed decoding
-        let result = resolve_json_pointer(&value_node, "#/foo/bar%2");
+        let result = resolve_json_pointer(&value_node, "#/foo/bar%2", None);
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
 
-        let result = resolve_json_pointer(&value_node, "#/foo/baz%2G");
+        let result = resolve_json_pointer(&value_node, "#/foo/baz%2G", None);
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
 
@@ -423,13 +431,13 @@ mod test {
         let value_node = ValueNode::from_str(json).unwrap();
 
         // Test JSON pointer escape sequences (should work as before)
-        let result = resolve_json_pointer(&value_node, "#/foo/bar~1baz");
+        let result = resolve_json_pointer(&value_node, "#/foo/bar~1baz", None);
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
         }
 
-        let result = resolve_json_pointer(&value_node, "#/foo/qux~0tilde");
+        let result = resolve_json_pointer(&value_node, "#/foo/qux~0tilde", None);
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
