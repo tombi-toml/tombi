@@ -1,4 +1,3 @@
-mod arg;
 mod command;
 mod tracing_formatter;
 

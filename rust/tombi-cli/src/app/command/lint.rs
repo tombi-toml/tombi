@@ -1,8 +1,7 @@
 use tokio::io::AsyncReadExt;
 use tombi_config::{LintOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
-
-use crate::app::arg;
+use tombi_file_search::FileSearch;
 
 /// Lint TOML files.
 #[derive(clap::Args, Debug)]
@@ -88,7 +87,12 @@ where
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            arg::FileInput::new(&args.files, &config, config_path.as_deref(), config_level)
+            tombi_file_search::FileSearch::new(
+                &args.files,
+                &config,
+                config_path.as_deref(),
+                config_level
+            )
         );
 
         schema_result?;
@@ -97,7 +101,7 @@ where
         let mut error_num = 0;
 
         match input {
-            arg::FileInput::Stdin => {
+            FileSearch::Stdin => {
                 tracing::debug!("linting... stdin input");
                 if lint_file(
                     tokio::io::stdin(),
@@ -114,7 +118,7 @@ where
                     error_num += 1;
                 }
             }
-            arg::FileInput::Files(files) => {
+            FileSearch::Files(files) => {
                 let mut tasks = tokio::task::JoinSet::new();
 
                 for file in files {
@@ -141,7 +145,10 @@ where
                                 }
                                 Err(err) => {
                                     if err.kind() == std::io::ErrorKind::NotFound {
-                                        crate::Error::FileNotFound(source_path).print(&mut printer);
+                                        crate::Error::FileSearch(
+                                            tombi_file_search::Error::FileNotFound(source_path),
+                                        )
+                                        .print(&mut printer);
                                     } else {
                                         crate::Error::Io(err).print(&mut printer);
                                     }
@@ -150,7 +157,7 @@ where
                             }
                         }
                         Err(err) => {
-                            err.print(&mut printer);
+                            crate::Error::FileSearch(err).print(&mut printer);
                             error_num += 1;
                         }
                     }
