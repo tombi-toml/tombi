@@ -3487,7 +3487,6 @@ dependencies = [
  "tombi-diagnostic",
  "tombi-file-search",
  "tombi-formatter",
- "tombi-glob",
  "tombi-linter",
  "tombi-lsp",
  "tombi-schema-store",
