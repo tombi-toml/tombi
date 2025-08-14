@@ -83,18 +83,12 @@ where
     };
 
     runtime.block_on(async {
-        let files_options = config.files.clone().unwrap_or_default();
         let lint_options = config.lint.clone().unwrap_or_default();
 
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            arg::FileInput::new(
-                &args.files,
-                config_path.as_deref(),
-                config_level,
-                files_options,
-            )
+            arg::FileInput::new(&args.files, &config, config_path.as_deref(), config_level)
         );
 
         schema_result?;
