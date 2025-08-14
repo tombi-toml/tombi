@@ -10,12 +10,8 @@ use tombi_diagnostic::{
 pub enum Error {
     #[error(transparent)]
     NotFormatted(#[from] NotFormattedError),
-    #[error("{0:?} file not found")]
-    FileNotFound(PathBuf),
-    #[error("{0:?} is invalid glob pattern")]
-    GlobPatternInvalid(String),
     #[error(transparent)]
-    GlobSearchFailed(tombi_glob::Error),
+    FileSearch(#[from] tombi_file_search::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }

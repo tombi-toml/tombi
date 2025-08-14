@@ -1,13 +1,16 @@
 use std::path::PathBuf;
 
-use tombi_config::{ConfigLevel, FilesOptions};
+use tombi_config::{Config, ConfigLevel, FilesOptions};
 use tombi_glob::WalkDir;
+mod error;
+
+pub use error::Error;
 
 /// Input source for TOML files.
 ///
 /// Standard input or file paths. Contains a list of files that match the glob pattern.
 #[derive(Debug)]
-pub enum FileInput {
+pub enum FileSearch {
     Stdin,
     Files(Vec<Result<PathBuf, crate::Error>>),
 }
@@ -29,24 +32,25 @@ impl<T: AsRef<str>> From<&[T]> for FileInputType {
     }
 }
 
-impl FileInput {
+impl FileSearch {
     pub async fn new<T: AsRef<str>>(
         files: &[T],
+        config: &Config,
         config_path: Option<&std::path::Path>,
         config_level: ConfigLevel,
-        files_options: FilesOptions,
     ) -> Self {
         let root = match config_level {
             ConfigLevel::Project => config_path.and_then(|p| p.parent()).unwrap_or(".".as_ref()),
             _ => ".".as_ref(),
         };
+        let files_options = config.files.clone().unwrap_or_default();
 
         match FileInputType::from(files) {
-            FileInputType::Stdin => FileInput::Stdin,
+            FileInputType::Stdin => FileSearch::Stdin,
             FileInputType::Project => {
                 tracing::debug!("Searching for TOML files using configured patterns...");
 
-                FileInput::Files(search_with_patterns_async(root, files_options).await)
+                FileSearch::Files(search_with_patterns_async(root, files_options).await)
             }
             FileInputType::Files => {
                 tracing::debug!("Searching for TOML files using user input patterns...");
@@ -81,15 +85,15 @@ impl FileInput {
                     }
                 }
 
-                FileInput::Files(matched_paths)
+                FileSearch::Files(matched_paths)
             }
         }
     }
 
     pub fn len(&self) -> usize {
         match self {
-            FileInput::Stdin => 1,
-            FileInput::Files(files) => files.len(),
+            FileSearch::Stdin => 1,
+            FileSearch::Files(files) => files.len(),
         }
     }
 }

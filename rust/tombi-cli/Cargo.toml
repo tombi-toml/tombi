@@ -22,8 +22,8 @@ tokio.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
+tombi-file-search.workspace = true
 tombi-formatter.workspace = true
-tombi-glob.workspace = true
 tombi-linter.workspace = true
 tombi-lsp = { workspace = true, features = ["clap", "native"] }
 tombi-schema-store = { workspace = true, features = ["native"] }

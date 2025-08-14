@@ -3485,8 +3485,8 @@ dependencies = [
  "tombi-cache",
  "tombi-config",
  "tombi-diagnostic",
+ "tombi-file-search",
  "tombi-formatter",
- "tombi-glob",
  "tombi-linter",
  "tombi-lsp",
  "tombi-schema-store",
@@ -3651,6 +3651,16 @@ dependencies = [
  "tombi-schema-store",
  "tombi-text",
  "tower-lsp",
+]
+
+[[package]]
+name = "tombi-file-search"
+version = "0.0.0-dev"
+dependencies = [
+ "thiserror 2.0.12",
+ "tombi-config",
+ "tombi-glob",
+ "tracing",
 ]
 
 [[package]]

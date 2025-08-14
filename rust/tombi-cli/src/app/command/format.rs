@@ -1,9 +1,8 @@
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
+use tombi_file_search::{FileInputType, FileSearch};
 use tombi_formatter::formatter::definitions::FormatDefinitions;
-
-use crate::app::arg::{self, file::FileInputType};
 
 /// Format TOML files.
 #[derive(clap::Args, Debug)]
@@ -106,18 +105,12 @@ where
     };
 
     runtime.block_on(async {
-        let files_options = config.files.clone().unwrap_or_default();
         let format_options = config.format.clone().unwrap_or_default();
 
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            arg::FileInput::new(
-                &args.files,
-                config_path.as_deref(),
-                config_level,
-                files_options,
-            )
+            FileSearch::new(&args.files, &config, config_path.as_deref(), config_level,)
         );
 
         schema_result?;
@@ -127,7 +120,7 @@ where
         let mut error_num = 0;
 
         match input {
-            arg::FileInput::Stdin => {
+            FileSearch::Stdin => {
                 tracing::debug!("formatting... stdin input");
                 match format_stdin(
                     FormatFile::from_stdin(),
@@ -144,7 +137,7 @@ where
                     Err(_) => error_num += 1,
                 }
             }
-            arg::FileInput::Files(files) => {
+            FileSearch::Files(files) => {
                 let mut tasks = tokio::task::JoinSet::new();
 
                 for file in files {
@@ -172,7 +165,10 @@ where
                                 }
                                 Err(err) => {
                                     if err.kind() == std::io::ErrorKind::NotFound {
-                                        crate::Error::FileNotFound(source_path).print(&mut printer);
+                                        crate::Error::FileSearch(
+                                            tombi_file_search::Error::FileNotFound(source_path),
+                                        )
+                                        .print(&mut printer);
                                     } else {
                                         crate::Error::Io(err).print(&mut printer);
                                     }
@@ -181,7 +177,7 @@ where
                             }
                         }
                         Err(err) => {
-                            err.print(&mut printer);
+                            crate::Error::FileSearch(err).print(&mut printer);
                             error_num += 1;
                         }
                     }
