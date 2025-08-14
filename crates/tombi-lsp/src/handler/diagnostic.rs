@@ -1,5 +1,7 @@
+use ahash::AHashMap;
 use itertools::{Either, Itertools};
-use tombi_config::LintOptions;
+use tombi_config::{ConfigLevel, LintOptions};
+use tombi_uri::url_to_file_path;
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
@@ -29,6 +31,67 @@ pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, vers
         .client
         .publish_diagnostics(params.text_document.uri, diagnostics, params.version)
         .await
+}
+
+pub async fn publish_workspace_diagnostics(backend: &Backend) {
+    let workspace_folder_paths =
+        backend
+            .client
+            .workspace_folders()
+            .await
+            .ok()
+            .flatten()
+            .map(|workspace_folders| {
+                workspace_folders
+                    .into_iter()
+                    .filter_map(|workspace| url_to_file_path(&workspace.uri).ok())
+                    .collect_vec()
+            });
+
+    if let Some(workspace_folder_paths) = workspace_folder_paths {
+        let mut configs = AHashMap::new();
+        for workspace_folder_path in workspace_folder_paths {
+            if let Ok((config, config_path, config_level)) =
+                serde_tombi::config::load_with_path_and_level(Some(workspace_folder_path.clone()))
+            {
+                configs.entry(config_path).or_insert((config, config_level));
+            };
+            for (config_path, (config, config_level)) in configs {
+                let file_search = tombi_file_search::FileSearch::new(
+                    &[config_path.to_str().unwrap()],
+                    &config,
+                    config_path.as_deref(),
+                    config_level,
+                )
+                .await;
+            }
+        }
+
+        // config_path 上で見つかる全てのファイルに対して diagnostics を実行する。
+        // この処理は rust/tombi-cli/src/app/command/lint.rs と同じ。
+        // let mut tasks = tokio::task::JoinSet::new();
+
+        // for (config_path, (config, config_level)) in configs {
+        //     let config_path = config_path.clone();
+        //     let config = config.clone();
+        //     let config_level = config_level;
+
+        //     let file_input = arg::FileInput::new(
+        //         &[config_path.to_str().unwrap()],
+        //         Some(&config_path),
+        //         config_level,
+        //         arg::FilesOptions::default(),
+        //     );
+        // }
+    }
+
+    let Ok((config, config_path, config_level)) =
+        serde_tombi::config::load_with_path_and_level(std::env::current_dir().ok())
+    else {
+        return;
+    };
+
+    if config_level == ConfigLevel::Project {}
 }
 
 async fn diagnostics(
