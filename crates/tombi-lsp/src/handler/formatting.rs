@@ -88,7 +88,7 @@ pub async fn handle_formatting(
                     .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
                         uri: text_document.uri,
                         diagnostics: Vec::with_capacity(0),
-                        version: Some(document_source.version),
+                        version: document_source.version,
                     })
                     .await;
             }
@@ -100,7 +100,7 @@ pub async fn handle_formatting(
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
                     uri: text_document.uri,
                     diagnostics: diagnostics.into_iter().map(Into::into).collect(),
-                    version: Some(document_source.version),
+                    version: document_source.version,
                 })
                 .await;
         }

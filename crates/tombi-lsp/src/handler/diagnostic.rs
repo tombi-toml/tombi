@@ -3,38 +3,136 @@ use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
 use tombi_file_search::FileSearch;
 use tombi_uri::{url_from_file_path, url_to_file_path};
-use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
+use tower_lsp::lsp_types::{
+    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
+    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, TextDocumentIdentifier, Url,
+    WorkspaceDiagnosticParams, WorkspaceDiagnosticReport, WorkspaceDiagnosticReportResult,
+    WorkspaceDocumentDiagnosticReport, WorkspaceFullDocumentDiagnosticReport,
+};
 
-use crate::{backend::Backend, config_manager::ConfigSchemaStore};
+use crate::{
+    backend::{Backend, DiagnosticType},
+    config_manager::ConfigSchemaStore,
+    document::DocumentSource,
+};
 
-pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+/// Pull diagnostics
+pub async fn handle_diagnostic(
+    backend: &Backend,
+    params: DocumentDiagnosticParams,
+) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+    let DocumentDiagnosticParams { text_document, .. } = params;
+
+    Ok({
+        DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(
+            RelatedFullDocumentDiagnosticReport {
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    items: diagnostic(backend, &text_document.uri)
+                        .await
+                        .map(|result| result.diagnostics)
+                        .unwrap_or_default(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        ))
+    })
+}
+
+/// Push diagnostics
+pub async fn push_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+    if backend.capabilities.read().await.diagnostic_type != DiagnosticType::Push {
+        return;
+    }
+
     #[derive(Debug)]
-    struct PublishDiagnosticsParams {
+    struct PushDiagnosticsParams {
         text_document: TextDocumentIdentifier,
         version: Option<i32>,
     }
 
-    let params = PublishDiagnosticsParams {
+    let params = PushDiagnosticsParams {
         text_document: TextDocumentIdentifier {
             uri: text_document_uri,
         },
         version,
     };
 
-    tracing::info!("publish_diagnostics");
+    tracing::info!("push_diagnostics");
     tracing::trace!(?params);
 
-    let Some(diagnostics) = diagnostics(backend, &params.text_document.uri).await else {
+    publish_diagnostics(backend, params.text_document.uri, params.version).await;
+}
+
+pub async fn handle_workspace_diagnostic(
+    backend: &Backend,
+    params: WorkspaceDiagnosticParams,
+) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+    tracing::info!("handle_workspace_diagnostic");
+    tracing::trace!(?params);
+
+    if let Some(workspace_diagnostic_targets) = get_workspace_diagnostic_targets(backend).await {
+        let mut items = Vec::new();
+        for WorkspaceDiagnosticTarget { uri, version } in workspace_diagnostic_targets {
+            if let Some(diagnostics) = diagnostic(backend, &uri).await {
+                items.push(WorkspaceDocumentDiagnosticReport::Full(
+                    WorkspaceFullDocumentDiagnosticReport {
+                        uri,
+                        version: version.map(|version| version as i64),
+                        full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                            items: diagnostics.diagnostics,
+                            ..Default::default()
+                        },
+                    },
+                ));
+            }
+        }
+
+        return Ok(WorkspaceDiagnosticReportResult::Report(
+            WorkspaceDiagnosticReport { items },
+        ));
+    }
+
+    Ok(WorkspaceDiagnosticReportResult::Report(
+        WorkspaceDiagnosticReport { items: vec![] },
+    ))
+}
+
+pub async fn push_workspace_diagnostics(backend: &Backend) {
+    if backend.capabilities.read().await.diagnostic_type != DiagnosticType::Push {
+        return;
+    }
+
+    if let Some(workspace_diagnostic_targets) = get_workspace_diagnostic_targets(backend).await {
+        for WorkspaceDiagnosticTarget { uri, version } in workspace_diagnostic_targets {
+            publish_diagnostics(backend, uri, version).await;
+        }
+    };
+}
+
+async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+    let Some(DiagnosticsResult {
+        diagnostics,
+        version: old_version,
+    }) = diagnostic(backend, &text_document_uri).await
+    else {
         return;
     };
 
     backend
         .client
-        .publish_diagnostics(params.text_document.uri, diagnostics, params.version)
+        .publish_diagnostics(text_document_uri, diagnostics, version.or(old_version))
         .await
 }
 
-pub async fn publish_workspace_diagnostics(backend: &Backend) {
+struct WorkspaceDiagnosticTarget {
+    uri: Url,
+    version: Option<i32>,
+}
+
+async fn get_workspace_diagnostic_targets(
+    backend: &Backend,
+) -> Option<Vec<WorkspaceDiagnosticTarget>> {
     let workspace_folder_paths =
         backend
             .client
@@ -49,11 +147,14 @@ pub async fn publish_workspace_diagnostics(backend: &Backend) {
                     .collect_vec()
             });
 
+    tracing::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
     let Some(workspace_folder_paths) = workspace_folder_paths else {
-        return;
+        return None;
     };
 
+    let mut total_diagnostic_targets = Vec::new();
     let mut configs = AHashMap::new();
+
     for workspace_folder_path in workspace_folder_paths {
         let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
             continue;
@@ -80,31 +181,46 @@ pub async fn publish_workspace_diagnostics(backend: &Backend) {
                 tracing::debug!("Founded files: {:?}", files);
 
                 for file in files {
-                    if let Some(file_path) = file
-                        .ok()
-                        .and_then(|file_path| url_from_file_path(&file_path).ok())
-                    {
+                    let Ok(file_path) = file else {
+                        continue;
+                    };
+                    if let Ok(file_url) = url_from_file_path(&file_path) {
+                        let Ok(content) = tokio::fs::read_to_string(&file_path).await else {
+                            continue;
+                        };
                         let version = {
                             backend
                                 .document_sources
-                                .read()
+                                .write()
                                 .await
-                                .get(&file_path)
-                                .map(|document_source| document_source.version)
+                                .entry(file_url.clone())
+                                .or_insert_with(|| DocumentSource::new(content, None))
+                                .version
                         };
 
-                        publish_diagnostics(backend, file_path, version).await;
+                        total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
+                            uri: file_url,
+                            version,
+                        });
                     }
                 }
             }
         }
     }
+
+    if total_diagnostic_targets.is_empty() {
+        None
+    } else {
+        Some(total_diagnostic_targets)
+    }
 }
 
-async fn diagnostics(
-    backend: &Backend,
-    text_document_uri: &Url,
-) -> Option<Vec<tower_lsp::lsp_types::Diagnostic>> {
+struct DiagnosticsResult {
+    diagnostics: Vec<tower_lsp::lsp_types::Diagnostic>,
+    version: Option<i32>,
+}
+
+async fn diagnostic(backend: &Backend, text_document_uri: &Url) -> Option<DiagnosticsResult> {
     let ConfigSchemaStore {
         config,
         schema_store,
@@ -145,18 +261,21 @@ async fn diagnostics(
     let document_sources = backend.document_sources.read().await;
 
     match document_sources.get(text_document_uri) {
-        Some(document) => tombi_linter::Linter::new(
-            toml_version,
-            config.lint.as_ref().unwrap_or(&LintOptions::default()),
-            Some(Either::Left(text_document_uri)),
-            &schema_store,
-        )
-        .lint(&document.text)
-        .await
-        .map_or_else(
-            |diagnostics| Some(diagnostics.into_iter().unique().map(Into::into).collect()),
-            |_| Some(Vec::with_capacity(0)),
-        ),
+        Some(document) => Some(DiagnosticsResult {
+            diagnostics: match tombi_linter::Linter::new(
+                toml_version,
+                config.lint.as_ref().unwrap_or(&LintOptions::default()),
+                Some(Either::Left(text_document_uri)),
+                &schema_store,
+            )
+            .lint(&document.text)
+            .await
+            {
+                Ok(_) => Vec::with_capacity(0),
+                Err(diagnostics) => diagnostics.into_iter().unique().map(Into::into).collect(),
+            },
+            version: document.version,
+        }),
         None => None,
     }
 }

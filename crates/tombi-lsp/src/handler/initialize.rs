@@ -1,15 +1,19 @@
 use tower_lsp::lsp_types::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
-    CompletionOptionsCompletionItem, DeclarationCapability, DocumentLinkOptions,
-    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
-    MessageType, OneOf, PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend,
-    SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
-    TypeDefinitionProviderCapability, WorkDoneProgressOptions,
+    CompletionOptionsCompletionItem, DeclarationCapability, DiagnosticOptions,
+    DiagnosticServerCapabilities, DocumentLinkOptions, FileOperationFilter, FileOperationPattern,
+    FileOperationPatternKind, FileOperationRegistrationOptions, FoldingRangeProviderCapability,
+    HoverProviderCapability, InitializeParams, InitializeResult, MessageType, OneOf,
+    PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability,
+    WorkDoneProgressOptions, WorkspaceFileOperationsServerCapabilities,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
 };
 
 use crate::{
-    handler::diagnostic::publish_workspace_diagnostics, semantic_tokens::SUPPORTED_TOKEN_TYPES,
+    backend::{BackendCapabilities, DiagnosticType},
+    semantic_tokens::SUPPORTED_TOKEN_TYPES,
     Backend,
 };
 
@@ -44,21 +48,65 @@ pub async fn handle_initialize(
             .await;
     }
 
-    tracing::info!("Publishing workspace diagnostics...");
-    publish_workspace_diagnostics(backend).await;
+    let mut backend_capabilities = backend.capabilities.write().await;
+    if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
+        if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
+            if diagnostic_capabilities.dynamic_registration == Some(true) {
+                backend_capabilities.diagnostic_type = DiagnosticType::Pull;
+            }
+        }
+    }
 
     Ok(InitializeResult {
         server_info: Some(ServerInfo {
             name: String::from("Tombi LSP"),
             version: Some(env!("CARGO_PKG_VERSION").to_string()),
         }),
-        capabilities: server_capabilities(&client_capabilities),
+        capabilities: server_capabilities(client_capabilities, &backend_capabilities),
     })
 }
 
-pub fn server_capabilities(client_capabilities: &ClientCapabilities) -> ServerCapabilities {
+pub fn server_capabilities(
+    client_capabilities: ClientCapabilities,
+    backend_capabilities: &BackendCapabilities,
+) -> ServerCapabilities {
+    let toml_file_operation_filter = FileOperationFilter {
+        scheme: Some("file".to_string()),
+        pattern: FileOperationPattern {
+            glob: "**/*.toml".to_string(),
+            matches: Some(FileOperationPatternKind::File),
+            ..Default::default()
+        },
+    };
+
+    let workspace = client_capabilities.workspace.and_then(|workspace| {
+        if workspace.workspace_folders == Some(true) {
+            Some(WorkspaceServerCapabilities {
+                workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                    supported: Some(true),
+                    change_notifications: Some(OneOf::Left(true)),
+                }),
+                file_operations: Some(WorkspaceFileOperationsServerCapabilities {
+                    did_create: Some(FileOperationRegistrationOptions {
+                        filters: vec![toml_file_operation_filter.clone()],
+                    }),
+                    did_rename: Some(FileOperationRegistrationOptions {
+                        filters: vec![toml_file_operation_filter.clone()],
+                    }),
+                    did_delete: Some(FileOperationRegistrationOptions {
+                        filters: vec![toml_file_operation_filter],
+                    }),
+                    ..Default::default()
+                }),
+            })
+        } else {
+            None
+        }
+    });
+
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
+        workspace,
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
                 open_close: Some(true),
@@ -117,8 +165,15 @@ pub fn server_capabilities(client_capabilities: &ClientCapabilities) -> ServerCa
             }
             .into(),
         ),
-        diagnostic_provider: None,
-
+        diagnostic_provider: if backend_capabilities.diagnostic_type == DiagnosticType::Pull {
+            Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                inter_file_dependencies: false,
+                workspace_diagnostics: true,
+                ..Default::default()
+            }))
+        } else {
+            None
+        },
         ..Default::default()
     }
 }

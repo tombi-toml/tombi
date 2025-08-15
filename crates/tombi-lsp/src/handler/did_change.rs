@@ -28,6 +28,6 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
 
     // Publish diagnostics for the changed document
     backend
-        .publish_diagnostics(text_document.uri, Some(text_document.version))
+        .push_diagnostics(text_document.uri, Some(text_document.version))
         .await;
 }
