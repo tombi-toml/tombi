@@ -27,7 +27,7 @@ pub async fn handle_diagnostic(
         DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(
             RelatedFullDocumentDiagnosticReport {
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    items: diagnostic(backend, &text_document.uri)
+                    items: get_diagnostics_result(backend, &text_document.uri)
                         .await
                         .map(|result| result.diagnostics)
                         .unwrap_or_default(),
@@ -74,7 +74,7 @@ pub async fn handle_workspace_diagnostic(
     if let Some(workspace_diagnostic_targets) = get_workspace_diagnostic_targets(backend).await {
         let mut items = Vec::new();
         for WorkspaceDiagnosticTarget { uri, version } in workspace_diagnostic_targets {
-            if let Some(diagnostics) = diagnostic(backend, &uri).await {
+            if let Some(diagnostics) = get_diagnostics_result(backend, &uri).await {
                 items.push(WorkspaceDocumentDiagnosticReport::Full(
                     WorkspaceFullDocumentDiagnosticReport {
                         uri,
@@ -114,7 +114,7 @@ async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version:
     let Some(DiagnosticsResult {
         diagnostics,
         version: old_version,
-    }) = diagnostic(backend, &text_document_uri).await
+    }) = get_diagnostics_result(backend, &text_document_uri).await
     else {
         return;
     };
@@ -220,7 +220,10 @@ struct DiagnosticsResult {
     version: Option<i32>,
 }
 
-async fn diagnostic(backend: &Backend, text_document_uri: &Url) -> Option<DiagnosticsResult> {
+async fn get_diagnostics_result(
+    backend: &Backend,
+    text_document_uri: &Url,
+) -> Option<DiagnosticsResult> {
     let ConfigSchemaStore {
         config,
         schema_store,
