@@ -29,7 +29,7 @@ mod update_schema;
 pub use associate_schema::{handle_associate_schema, AssociateSchemaParams};
 pub use code_action::handle_code_action;
 pub use completion::handle_completion;
-pub use diagnostic::publish_diagnostics;
+pub use diagnostic::push_diagnostics;
 pub use did_change::handle_did_change;
 pub use did_change_configuration::handle_did_change_configuration;
 pub use did_change_watched_files::handle_did_change_watched_files;

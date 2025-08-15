@@ -1,17 +1,17 @@
 use tower_lsp::lsp_types::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
     CompletionOptionsCompletionItem, DeclarationCapability, DocumentLinkOptions,
-    FoldingRangeProviderCapability, HoverProviderCapability, InitializeParams, InitializeResult,
-    MessageType, OneOf, PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend,
-    SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
-    TypeDefinitionProviderCapability, WorkDoneProgressOptions,
+    FileOperationFilter, FileOperationPattern, FileOperationPatternKind,
+    FileOperationRegistrationOptions, FoldingRangeProviderCapability, HoverProviderCapability,
+    InitializeParams, InitializeResult, MessageType, OneOf, PositionEncodingKind,
+    SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities,
+    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability, WorkDoneProgressOptions,
+    WorkspaceFileOperationsServerCapabilities, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
 };
 
-use crate::{
-    handler::diagnostic::publish_workspace_diagnostics, semantic_tokens::SUPPORTED_TOKEN_TYPES,
-    Backend,
-};
+use crate::{semantic_tokens::SUPPORTED_TOKEN_TYPES, Backend};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialize(
@@ -44,21 +44,53 @@ pub async fn handle_initialize(
             .await;
     }
 
-    tracing::info!("Publishing workspace diagnostics...");
-    publish_workspace_diagnostics(backend).await;
-
     Ok(InitializeResult {
         server_info: Some(ServerInfo {
             name: String::from("Tombi LSP"),
             version: Some(env!("CARGO_PKG_VERSION").to_string()),
         }),
-        capabilities: server_capabilities(&client_capabilities),
+        capabilities: server_capabilities(client_capabilities),
     })
 }
 
-pub fn server_capabilities(client_capabilities: &ClientCapabilities) -> ServerCapabilities {
+pub fn server_capabilities(client_capabilities: ClientCapabilities) -> ServerCapabilities {
+    let toml_file_operation_filter = FileOperationFilter {
+        scheme: Some("file".to_string()),
+        pattern: FileOperationPattern {
+            glob: "**/*.toml".to_string(),
+            matches: Some(FileOperationPatternKind::File),
+            ..Default::default()
+        },
+    };
+
+    let workspace = client_capabilities.workspace.and_then(|workspace| {
+        if workspace.workspace_folders == Some(true) {
+            Some(WorkspaceServerCapabilities {
+                workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                    supported: Some(true),
+                    change_notifications: Some(OneOf::Left(true)),
+                }),
+                file_operations: Some(WorkspaceFileOperationsServerCapabilities {
+                    did_create: Some(FileOperationRegistrationOptions {
+                        filters: vec![toml_file_operation_filter.clone()],
+                    }),
+                    did_rename: Some(FileOperationRegistrationOptions {
+                        filters: vec![toml_file_operation_filter.clone()],
+                    }),
+                    did_delete: Some(FileOperationRegistrationOptions {
+                        filters: vec![toml_file_operation_filter],
+                    }),
+                    ..Default::default()
+                }),
+            })
+        } else {
+            None
+        }
+    });
+
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
+        workspace,
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
                 open_close: Some(true),

@@ -12,12 +12,12 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     let mut document_sources = backend.document_sources.write().await;
     document_sources.insert(
         text_document.uri.clone(),
-        DocumentSource::new(text_document.text, text_document.version),
+        DocumentSource::new(text_document.text, Some(text_document.version)),
     );
     drop(document_sources);
 
     // Publish diagnostics for the opened document
     backend
-        .publish_diagnostics(text_document.uri, Some(text_document.version))
+        .push_diagnostics(text_document.uri, Some(text_document.version))
         .await;
 }

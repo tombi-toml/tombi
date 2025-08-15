@@ -36,7 +36,7 @@ use crate::{
         handle_folding_range, handle_formatting, handle_get_status, handle_get_toml_version,
         handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
         handle_initialize, handle_initialized, handle_refresh_cache, handle_semantic_tokens_full,
-        handle_shutdown, handle_update_config, handle_update_schema, publish_diagnostics,
+        handle_shutdown, handle_update_config, handle_update_schema, push_diagnostics,
         AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams,
         TomlVersionSource,
     },
@@ -271,8 +271,8 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn publish_diagnostics(&self, text_document_uri: Url, version: Option<i32>) {
-        publish_diagnostics(self, text_document_uri, version).await
+    pub async fn push_diagnostics(&self, text_document_uri: Url, version: Option<i32>) {
+        push_diagnostics(self, text_document_uri, version).await
     }
 }
 

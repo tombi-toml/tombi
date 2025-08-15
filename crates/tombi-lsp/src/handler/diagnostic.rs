@@ -5,32 +5,36 @@ use tombi_file_search::FileSearch;
 use tombi_uri::{url_from_file_path, url_to_file_path};
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
-use crate::{backend::Backend, config_manager::ConfigSchemaStore};
+use crate::{backend::Backend, config_manager::ConfigSchemaStore, document::DocumentSource};
 
-pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+pub async fn push_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
     #[derive(Debug)]
-    struct PublishDiagnosticsParams {
+    struct PushDiagnosticsParams {
         text_document: TextDocumentIdentifier,
         version: Option<i32>,
     }
 
-    let params = PublishDiagnosticsParams {
+    let params = PushDiagnosticsParams {
         text_document: TextDocumentIdentifier {
             uri: text_document_uri,
         },
         version,
     };
 
-    tracing::info!("publish_diagnostics");
+    tracing::info!("push_diagnostics");
     tracing::trace!(?params);
 
-    let Some(diagnostics) = diagnostics(backend, &params.text_document.uri).await else {
+    publish_diagnostics(backend, params.text_document.uri, params.version).await;
+}
+
+async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+    let Some(diagnostics) = diagnostics(backend, &text_document_uri).await else {
         return;
     };
 
     backend
         .client
-        .publish_diagnostics(params.text_document.uri, diagnostics, params.version)
+        .publish_diagnostics(text_document_uri, diagnostics, version)
         .await
 }
 
@@ -49,6 +53,7 @@ pub async fn publish_workspace_diagnostics(backend: &Backend) {
                     .collect_vec()
             });
 
+    tracing::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
     let Some(workspace_folder_paths) = workspace_folder_paths else {
         return;
     };
@@ -80,20 +85,24 @@ pub async fn publish_workspace_diagnostics(backend: &Backend) {
                 tracing::debug!("Founded files: {:?}", files);
 
                 for file in files {
-                    if let Some(file_path) = file
-                        .ok()
-                        .and_then(|file_path| url_from_file_path(&file_path).ok())
-                    {
+                    let Ok(file_path) = file else {
+                        continue;
+                    };
+                    if let Ok(file_url) = url_from_file_path(&file_path) {
+                        let Ok(content) = tokio::fs::read_to_string(&file_path).await else {
+                            continue;
+                        };
                         let version = {
                             backend
                                 .document_sources
-                                .read()
+                                .write()
                                 .await
-                                .get(&file_path)
-                                .map(|document_source| document_source.version)
+                                .entry(file_url.clone())
+                                .or_insert_with(|| DocumentSource::new(content, None))
+                                .version
                         };
 
-                        publish_diagnostics(backend, file_path, version).await;
+                        publish_diagnostics(backend, file_url, version).await;
                     }
                 }
             }
