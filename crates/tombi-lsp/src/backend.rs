@@ -17,10 +17,11 @@ use tower_lsp::{
         CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
         DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
         DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentLink, DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse,
-        FoldingRange, FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover,
-        HoverParams, InitializeParams, InitializeResult, InitializedParams, SemanticTokensParams,
-        SemanticTokensResult, TextDocumentIdentifier, Url,
+        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
+        DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
+        GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
+        InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
+        TextDocumentIdentifier, Url, WorkspaceDiagnosticParams, WorkspaceDiagnosticReportResult,
     },
     LanguageServer,
 };
@@ -30,15 +31,15 @@ use crate::{
     document::DocumentSource,
     goto_definition::into_definition_locations,
     handler::{
-        handle_associate_schema, handle_code_action, handle_completion, handle_did_change,
-        handle_did_change_configuration, handle_did_change_watched_files, handle_did_close,
-        handle_did_open, handle_did_save, handle_document_link, handle_document_symbol,
-        handle_folding_range, handle_formatting, handle_get_status, handle_get_toml_version,
-        handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
-        handle_initialize, handle_initialized, handle_refresh_cache, handle_semantic_tokens_full,
-        handle_shutdown, handle_update_config, handle_update_schema, push_diagnostics,
-        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams,
-        TomlVersionSource,
+        handle_associate_schema, handle_code_action, handle_completion, handle_diagnostic,
+        handle_did_change, handle_did_change_configuration, handle_did_change_watched_files,
+        handle_did_close, handle_did_open, handle_did_save, handle_document_link,
+        handle_document_symbol, handle_folding_range, handle_formatting, handle_get_status,
+        handle_get_toml_version, handle_goto_declaration, handle_goto_definition,
+        handle_goto_type_definition, handle_hover, handle_initialize, handle_initialized,
+        handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown, handle_update_config,
+        handle_update_schema, handle_workspace_diagnostic, push_diagnostics, AssociateSchemaParams,
+        GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
     },
 };
 
@@ -46,8 +47,20 @@ use crate::{
 pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
+    pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<Url, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
+}
+
+#[derive(Debug)]
+pub struct BackendCapabilities {
+    pub diagnostic_type: DiagnosticType,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiagnosticType {
+    Push,
+    Pull,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -61,6 +74,9 @@ impl Backend {
     pub fn new(client: tower_lsp::Client, options: &Options) -> Self {
         Self {
             client,
+            capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
+                diagnostic_type: DiagnosticType::Push,
+            })),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
         }
@@ -394,5 +410,19 @@ impl LanguageServer for Backend {
         params: CodeActionParams,
     ) -> Result<Option<CodeActionResponse>, tower_lsp::jsonrpc::Error> {
         handle_code_action(self, params).await
+    }
+
+    async fn diagnostic(
+        &self,
+        params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+        handle_diagnostic(self, params).await
+    }
+
+    async fn workspace_diagnostic(
+        &self,
+        params: WorkspaceDiagnosticParams,
+    ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+        handle_workspace_diagnostic(self, params).await
     }
 }

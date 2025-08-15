@@ -1,17 +1,21 @@
 use tower_lsp::lsp_types::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
-    CompletionOptionsCompletionItem, DeclarationCapability, DocumentLinkOptions,
-    FileOperationFilter, FileOperationPattern, FileOperationPatternKind,
-    FileOperationRegistrationOptions, FoldingRangeProviderCapability, HoverProviderCapability,
-    InitializeParams, InitializeResult, MessageType, OneOf, PositionEncodingKind,
-    SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities,
-    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability, WorkDoneProgressOptions,
-    WorkspaceFileOperationsServerCapabilities, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    CompletionOptionsCompletionItem, DeclarationCapability, DiagnosticOptions,
+    DiagnosticServerCapabilities, DocumentLinkOptions, FileOperationFilter, FileOperationPattern,
+    FileOperationPatternKind, FileOperationRegistrationOptions, FoldingRangeProviderCapability,
+    HoverProviderCapability, InitializeParams, InitializeResult, MessageType, OneOf,
+    PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability,
+    WorkDoneProgressOptions, WorkspaceFileOperationsServerCapabilities,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
 };
 
-use crate::{semantic_tokens::SUPPORTED_TOKEN_TYPES, Backend};
+use crate::{
+    backend::{BackendCapabilities, DiagnosticType},
+    semantic_tokens::SUPPORTED_TOKEN_TYPES,
+    Backend,
+};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialize(
@@ -44,16 +48,28 @@ pub async fn handle_initialize(
             .await;
     }
 
+    let mut backend_capabilities = backend.capabilities.write().await;
+    if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
+        if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
+            if diagnostic_capabilities.dynamic_registration == Some(true) {
+                backend_capabilities.diagnostic_type = DiagnosticType::Pull;
+            }
+        }
+    }
+
     Ok(InitializeResult {
         server_info: Some(ServerInfo {
             name: String::from("Tombi LSP"),
             version: Some(env!("CARGO_PKG_VERSION").to_string()),
         }),
-        capabilities: server_capabilities(client_capabilities),
+        capabilities: server_capabilities(client_capabilities, &backend_capabilities),
     })
 }
 
-pub fn server_capabilities(client_capabilities: ClientCapabilities) -> ServerCapabilities {
+pub fn server_capabilities(
+    client_capabilities: ClientCapabilities,
+    backend_capabilities: &BackendCapabilities,
+) -> ServerCapabilities {
     let toml_file_operation_filter = FileOperationFilter {
         scheme: Some("file".to_string()),
         pattern: FileOperationPattern {
@@ -149,8 +165,15 @@ pub fn server_capabilities(client_capabilities: ClientCapabilities) -> ServerCap
             }
             .into(),
         ),
-        diagnostic_provider: None,
-
+        diagnostic_provider: if backend_capabilities.diagnostic_type == DiagnosticType::Pull {
+            Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                inter_file_dependencies: false,
+                workspace_diagnostics: true,
+                ..Default::default()
+            }))
+        } else {
+            None
+        },
         ..Default::default()
     }
 }
