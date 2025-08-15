@@ -54,7 +54,8 @@
     "vitest": "^2.1.9"
   },
   "activationEvents": [
-    "onLanguage:cargoLock"
+    "onLanguage:cargoLock",
+    "workspaceContains:**/*.toml"
   ],
   "icon": "icon.png",
   "sponsor": {
