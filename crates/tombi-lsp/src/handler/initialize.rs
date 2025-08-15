@@ -8,7 +8,10 @@ use tower_lsp::lsp_types::{
     TypeDefinitionProviderCapability, WorkDoneProgressOptions,
 };
 
-use crate::{semantic_tokens::SUPPORTED_TOKEN_TYPES, Backend};
+use crate::{
+    handler::diagnostic::publish_workspace_diagnostics, semantic_tokens::SUPPORTED_TOKEN_TYPES,
+    Backend,
+};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialize(
@@ -40,6 +43,9 @@ pub async fn handle_initialize(
             .show_message(MessageType::ERROR, error_message)
             .await;
     }
+
+    tracing::info!("Publishing workspace diagnostics...");
+    publish_workspace_diagnostics(backend).await;
 
     Ok(InitializeResult {
         server_info: Some(ServerInfo {

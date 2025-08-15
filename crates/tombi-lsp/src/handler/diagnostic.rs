@@ -1,7 +1,8 @@
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
-use tombi_config::{ConfigLevel, LintOptions};
-use tombi_uri::url_to_file_path;
+use tombi_config::LintOptions;
+use tombi_file_search::FileSearch;
+use tombi_uri::{url_from_file_path, url_to_file_path};
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
@@ -48,50 +49,56 @@ pub async fn publish_workspace_diagnostics(backend: &Backend) {
                     .collect_vec()
             });
 
-    if let Some(workspace_folder_paths) = workspace_folder_paths {
-        let mut configs = AHashMap::new();
-        for workspace_folder_path in workspace_folder_paths {
-            if let Ok((config, config_path, config_level)) =
-                serde_tombi::config::load_with_path_and_level(Some(workspace_folder_path.clone()))
-            {
-                configs.entry(config_path).or_insert((config, config_level));
-            };
-            for (config_path, (config, config_level)) in configs {
-                let file_search = tombi_file_search::FileSearch::new(
-                    &[config_path.to_str().unwrap()],
-                    &config,
-                    config_path.as_deref(),
-                    config_level,
-                )
-                .await;
-            }
-        }
-
-        // config_path 上で見つかる全てのファイルに対して diagnostics を実行する。
-        // この処理は rust/tombi-cli/src/app/command/lint.rs と同じ。
-        // let mut tasks = tokio::task::JoinSet::new();
-
-        // for (config_path, (config, config_level)) in configs {
-        //     let config_path = config_path.clone();
-        //     let config = config.clone();
-        //     let config_level = config_level;
-
-        //     let file_input = arg::FileInput::new(
-        //         &[config_path.to_str().unwrap()],
-        //         Some(&config_path),
-        //         config_level,
-        //         arg::FilesOptions::default(),
-        //     );
-        // }
-    }
-
-    let Ok((config, config_path, config_level)) =
-        serde_tombi::config::load_with_path_and_level(std::env::current_dir().ok())
-    else {
+    let Some(workspace_folder_paths) = workspace_folder_paths else {
         return;
     };
 
-    if config_level == ConfigLevel::Project {}
+    let mut configs = AHashMap::new();
+    for workspace_folder_path in workspace_folder_paths {
+        let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
+            continue;
+        };
+        if let Ok((config, config_path, config_level)) =
+            serde_tombi::config::load_with_path_and_level(Some(workspace_folder_path.clone()))
+        {
+            configs.entry(config_path).or_insert((config, config_level));
+        };
+        for (config_path, (config, config_level)) in &configs {
+            if let FileSearch::Files(files) = tombi_file_search::FileSearch::new(
+                &[workspace_folder_path_str],
+                config,
+                config_path.as_deref(),
+                *config_level,
+            )
+            .await
+            {
+                tracing::debug!(
+                    "Found {} files, in {}",
+                    files.len(),
+                    workspace_folder_path_str
+                );
+                tracing::debug!("Founded files: {:?}", files);
+
+                for file in files {
+                    if let Some(file_path) = file
+                        .ok()
+                        .and_then(|file_path| url_from_file_path(&file_path).ok())
+                    {
+                        let version = {
+                            backend
+                                .document_sources
+                                .read()
+                                .await
+                                .get(&file_path)
+                                .map(|document_source| document_source.version)
+                        };
+
+                        publish_diagnostics(backend, file_path, version).await;
+                    }
+                }
+            }
+        }
+    }
 }
 
 async fn diagnostics(
