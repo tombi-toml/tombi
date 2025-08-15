@@ -3820,6 +3820,7 @@ dependencies = [
  "tombi-extension-cargo",
  "tombi-extension-tombi",
  "tombi-extension-uv",
+ "tombi-file-search",
  "tombi-formatter",
  "tombi-future",
  "tombi-json",

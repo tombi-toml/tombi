@@ -1,5 +1,8 @@
+use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
+use tombi_file_search::FileSearch;
+use tombi_uri::{url_from_file_path, url_to_file_path};
 use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
@@ -29,6 +32,73 @@ pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, vers
         .client
         .publish_diagnostics(params.text_document.uri, diagnostics, params.version)
         .await
+}
+
+pub async fn publish_workspace_diagnostics(backend: &Backend) {
+    let workspace_folder_paths =
+        backend
+            .client
+            .workspace_folders()
+            .await
+            .ok()
+            .flatten()
+            .map(|workspace_folders| {
+                workspace_folders
+                    .into_iter()
+                    .filter_map(|workspace| url_to_file_path(&workspace.uri).ok())
+                    .collect_vec()
+            });
+
+    let Some(workspace_folder_paths) = workspace_folder_paths else {
+        return;
+    };
+
+    let mut configs = AHashMap::new();
+    for workspace_folder_path in workspace_folder_paths {
+        let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
+            continue;
+        };
+        if let Ok((config, config_path, config_level)) =
+            serde_tombi::config::load_with_path_and_level(Some(workspace_folder_path.clone()))
+        {
+            configs.entry(config_path).or_insert((config, config_level));
+        };
+        for (config_path, (config, config_level)) in &configs {
+            if let FileSearch::Files(files) = tombi_file_search::FileSearch::new(
+                &[workspace_folder_path_str],
+                config,
+                config_path.as_deref(),
+                *config_level,
+            )
+            .await
+            {
+                tracing::debug!(
+                    "Found {} files, in {}",
+                    files.len(),
+                    workspace_folder_path_str
+                );
+                tracing::debug!("Founded files: {:?}", files);
+
+                for file in files {
+                    if let Some(file_path) = file
+                        .ok()
+                        .and_then(|file_path| url_from_file_path(&file_path).ok())
+                    {
+                        let version = {
+                            backend
+                                .document_sources
+                                .read()
+                                .await
+                                .get(&file_path)
+                                .map(|document_source| document_source.version)
+                        };
+
+                        publish_diagnostics(backend, file_path, version).await;
+                    }
+                }
+            }
+        }
+    }
 }
 
 async fn diagnostics(
