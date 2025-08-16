@@ -25,11 +25,12 @@ mod semantic_tokens_full;
 mod shutdown;
 mod update_config;
 mod update_schema;
+mod workspace_diagnostic;
 
 pub use associate_schema::{handle_associate_schema, AssociateSchemaParams};
 pub use code_action::handle_code_action;
 pub use completion::handle_completion;
-pub use diagnostic::{handle_diagnostic, handle_workspace_diagnostic, push_diagnostics};
+pub use diagnostic::{handle_diagnostic, push_diagnostics};
 pub use did_change::handle_did_change;
 pub use did_change_configuration::handle_did_change_configuration;
 pub use did_change_watched_files::handle_did_change_watched_files;
@@ -53,3 +54,4 @@ pub use semantic_tokens_full::handle_semantic_tokens_full;
 pub use shutdown::handle_shutdown;
 pub use update_config::handle_update_config;
 pub use update_schema::handle_update_schema;
+pub use workspace_diagnostic::{handle_workspace_diagnostic, push_workspace_diagnostics};

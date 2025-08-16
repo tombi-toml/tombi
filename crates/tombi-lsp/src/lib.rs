@@ -3,6 +3,7 @@ pub mod code_action;
 mod comment_directive;
 mod completion;
 mod config_manager;
+mod diagnostic;
 mod document;
 mod goto_definition;
 mod goto_type_definition;
