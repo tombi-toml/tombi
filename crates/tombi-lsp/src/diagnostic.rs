@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
-use tombi_glob::is_target_text_document_path;
+use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_uri::{url_from_file_path, url_to_file_path};
 use tower_lsp::lsp_types::Url;
 
@@ -53,11 +53,16 @@ pub async fn get_diagnostics_result(
     }
 
     if let Ok(text_document_path) = url_to_file_path(text_document_uri) {
-        if !is_target_text_document_path(&text_document_path, config_path.as_deref(), &config) {
-            tracing::info!(
-                "text_document_uri {text_document_path:?} is not in config.files.include"
-            );
-            return None;
+        match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
+            MatchResult::Matched => {}
+            MatchResult::IncludeNotMatched => {
+                tracing::info!("{text_document_path:?} is not in config.files.include");
+                return None;
+            }
+            MatchResult::ExcludeMatched => {
+                tracing::info!("{text_document_path:?} is in config.files.exclude");
+                return None;
+            }
         }
     }
 

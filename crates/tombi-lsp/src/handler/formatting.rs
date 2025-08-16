@@ -1,7 +1,7 @@
 use itertools::Either;
 use tombi_config::FormatOptions;
 use tombi_formatter::formatter::definitions::FormatDefinitions;
-use tombi_glob::is_target_text_document_path;
+use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::{Position, Range};
 use tombi_uri::url_to_file_path;
 use tower_lsp::lsp_types::{
@@ -41,11 +41,16 @@ pub async fn handle_formatting(
     }
 
     if let Ok(text_document_path) = url_to_file_path(&text_document.uri) {
-        if !is_target_text_document_path(&text_document_path, config_path.as_deref(), &config) {
-            tracing::info!(
-                "text_document_uri {text_document_path:?} is not in config.files.include"
-            );
-            return Ok(None);
+        match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
+            MatchResult::Matched => {}
+            MatchResult::IncludeNotMatched => {
+                tracing::info!("{text_document_path:?} is not in config.files.include");
+                return Ok(None);
+            }
+            MatchResult::ExcludeMatched => {
+                tracing::info!("{text_document_path:?} is in config.files.exclude");
+                return Ok(None);
+            }
         }
     }
 

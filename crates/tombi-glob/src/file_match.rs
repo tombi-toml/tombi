@@ -3,13 +3,20 @@ use std::path::Path;
 use fast_glob::glob_match;
 use tombi_config::Config;
 
-pub fn is_target_text_document_path(
+#[derive(Debug, PartialEq, Eq)]
+pub enum MatchResult {
+    Matched,
+    IncludeNotMatched,
+    ExcludeMatched,
+}
+
+pub fn matches_file_patterns(
     text_document_path: &Path,
     config_path: Option<&Path>,
     config: &Config,
-) -> bool {
+) -> MatchResult {
     let Some(files) = config.files.as_ref() else {
-        return true;
+        return MatchResult::Matched;
     };
 
     let text_document_absolute_path = match text_document_path.canonicalize() {
@@ -30,7 +37,7 @@ pub fn is_target_text_document_path(
             }
         }
         if !matches_include {
-            return false;
+            return MatchResult::IncludeNotMatched;
         }
     }
 
@@ -38,12 +45,12 @@ pub fn is_target_text_document_path(
     if let Some(exclude) = files.exclude.as_ref() {
         for exclude_pattern in exclude.iter() {
             if glob_match(exclude_pattern, path_for_patterns.as_ref()) {
-                return false;
+                return MatchResult::ExcludeMatched;
             }
         }
     }
 
-    true
+    MatchResult::Matched
 }
 
 /// Determine the path to use for pattern matching
