@@ -44,11 +44,13 @@ pub async fn handle_formatting(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                tracing::info!("{text_document_path:?} is not in config.files.include");
+                tracing::info!(
+                    "skip {text_document_path:?} because it is not in config.files.include"
+                );
                 return Ok(None);
             }
             MatchResult::ExcludeMatched => {
-                tracing::info!("{text_document_path:?} is in config.files.exclude");
+                tracing::info!("skip {text_document_path:?} because it is in config.files.exclude");
                 return Ok(None);
             }
         }
