@@ -2,33 +2,6 @@ use std::path::Path;
 
 use fast_glob::glob_match;
 use tombi_config::Config;
-mod error;
-
-pub use error::Error;
-
-/// Determine the path to use for pattern matching
-/// Returns relative path from config directory if possible, otherwise absolute path
-fn relative_document_text_path<'a>(
-    text_document_absolute_path: &'a Path,
-    config_path: Option<&Path>,
-) -> std::borrow::Cow<'a, str> {
-    if let Some(config_path) = config_path {
-        let config_pathbuf = match config_path.canonicalize() {
-            Ok(path) => path,
-            Err(_) => config_path.to_path_buf(),
-        };
-
-        if let Some(config_dir) = config_pathbuf.parent() {
-            if text_document_absolute_path.starts_with(config_dir) {
-                // Use relative path from config directory
-                if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
-                    return rel_path.to_string_lossy();
-                }
-            }
-        }
-    }
-    text_document_absolute_path.to_string_lossy()
-}
 
 pub fn is_target_text_document_path(
     text_document_path: &Path,
@@ -71,4 +44,28 @@ pub fn is_target_text_document_path(
     }
 
     true
+}
+
+/// Determine the path to use for pattern matching
+/// Returns relative path from config directory if possible, otherwise absolute path
+fn relative_document_text_path<'a>(
+    text_document_absolute_path: &'a Path,
+    config_path: Option<&Path>,
+) -> std::borrow::Cow<'a, str> {
+    if let Some(config_path) = config_path {
+        let config_pathbuf = match config_path.canonicalize() {
+            Ok(path) => path,
+            Err(_) => config_path.to_path_buf(),
+        };
+
+        if let Some(config_dir) = config_pathbuf.parent() {
+            if text_document_absolute_path.starts_with(config_dir) {
+                // Use relative path from config directory
+                if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
+                    return rel_path.to_string_lossy();
+                }
+            }
+        }
+    }
+    text_document_absolute_path.to_string_lossy()
 }

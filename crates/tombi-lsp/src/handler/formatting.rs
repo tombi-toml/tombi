@@ -1,7 +1,7 @@
 use itertools::Either;
 use tombi_config::FormatOptions;
-use tombi_file_search::is_target_text_document_path;
 use tombi_formatter::formatter::definitions::FormatDefinitions;
+use tombi_glob::is_target_text_document_path;
 use tombi_text::{Position, Range};
 use tombi_uri::url_to_file_path;
 use tower_lsp::lsp_types::{
