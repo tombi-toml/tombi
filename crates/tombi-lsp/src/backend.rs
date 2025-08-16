@@ -99,6 +99,7 @@ impl Backend {
         let ConfigSchemaStore {
             config,
             schema_store,
+            ..
         } = self
             .config_manager
             .config_schema_store_for_url(text_document_uri)
@@ -172,6 +173,7 @@ impl Backend {
         let ConfigSchemaStore {
             config,
             schema_store,
+            ..
         } = self
             .config_manager
             .config_schema_store_for_url(text_document_uri)

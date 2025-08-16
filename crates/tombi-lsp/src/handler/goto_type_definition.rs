@@ -31,6 +31,7 @@ pub async fn handle_goto_type_definition(
     let ConfigSchemaStore {
         config,
         schema_store,
+        ..
     } = backend
         .config_manager
         .config_schema_store_for_url(&text_document.uri)

@@ -11,13 +11,15 @@ use tower_lsp::lsp_types::Url;
 #[derive(Debug, Clone)]
 pub struct ConfigSchemaStore {
     pub config: Config,
+    pub config_path: Option<PathBuf>,
     pub schema_store: SchemaStore,
 }
 
 impl ConfigSchemaStore {
-    pub fn new(config: Config, schema_store: SchemaStore) -> Self {
+    pub fn new(config: Config, config_path: Option<PathBuf>, schema_store: SchemaStore) -> Self {
         Self {
             config,
+            config_path,
             schema_store,
         }
     }
@@ -61,12 +63,17 @@ impl ConfigManager {
         if let Some(config_path) = config_path {
             let schema_options = schema_store_options(&config, backend_options);
             config_schema_stores.insert(
-                config_path,
-                ConfigSchemaStore::new(config, SchemaStore::new_with_options(schema_options)),
+                config_path.clone(),
+                ConfigSchemaStore::new(
+                    config,
+                    Some(config_path),
+                    SchemaStore::new_with_options(schema_options),
+                ),
             );
         } else {
             default_config_schema_store = Some(ConfigSchemaStore::new(
                 config,
+                None,
                 SchemaStore::new_with_options(Default::default()),
             ));
         }
@@ -112,11 +119,13 @@ impl ConfigManager {
                     let ConfigSchemaStore {
                         config,
                         schema_store,
+                        ..
                     } = config_schema_stores
                         .entry(config_path_buf.clone())
                         .or_insert_with(|| {
                             ConfigSchemaStore::new(
                                 config,
+                                Some(config_path_buf.clone()),
                                 SchemaStore::new_with_options(schema_options),
                             )
                         });
@@ -169,6 +178,7 @@ impl ConfigManager {
                 .entry(config_path.clone())
                 .or_insert(ConfigSchemaStore::new(
                     config.clone(),
+                    Some(config_path.clone()),
                     SchemaStore::new_with_options(schema_options),
                 ));
         config_schema_store
@@ -201,7 +211,7 @@ impl ConfigManager {
                     )
                     .await;
             }
-            let config_schema_store = ConfigSchemaStore::new(config, schema_store);
+            let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
             *default_config_schema_store = Some(config_schema_store.clone());
             config_schema_store
         }
@@ -274,6 +284,7 @@ impl ConfigManager {
             ConfigSchemaStore {
                 config,
                 schema_store,
+                ..
             },
         ) in config_schema_stores.iter_mut()
         {
@@ -283,6 +294,7 @@ impl ConfigManager {
         if let Some(ConfigSchemaStore {
             config,
             schema_store,
+            ..
         }) = &mut *self.default_config_schema_store.write().await
         {
             schema_store.load_config(config, None).await?;
@@ -299,6 +311,7 @@ impl ConfigManager {
             ConfigSchemaStore {
                 config,
                 schema_store,
+                ..
             },
         ) in config_schema_stores.iter_mut()
         {
@@ -310,6 +323,7 @@ impl ConfigManager {
         if let Some(ConfigSchemaStore {
             config,
             schema_store,
+            ..
         }) = &mut *self.default_config_schema_store.write().await
         {
             updated |= schema_store.refresh_cache(config, None).await?;

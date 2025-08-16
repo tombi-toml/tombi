@@ -21,6 +21,7 @@ pub async fn handle_get_status(
     let ConfigSchemaStore {
         config,
         schema_store,
+        ..
     } = backend
         .config_manager
         .config_schema_store_for_url(&uri)

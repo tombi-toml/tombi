@@ -7,6 +7,8 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+fast-glob.workspace = true
+pathdiff = "0.2.3"
 thiserror.workspace = true
 tombi-config.workspace = true
 tombi-glob.workspace = true

@@ -1,7 +1,9 @@
 use itertools::Either;
 use tombi_config::FormatOptions;
+use tombi_file_search::is_target_text_document_path;
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_text::{Position, Range};
+use tombi_uri::url_to_file_path;
 use tower_lsp::lsp_types::{
     notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
 };
@@ -21,6 +23,7 @@ pub async fn handle_formatting(
     let ConfigSchemaStore {
         config,
         schema_store,
+        config_path,
     } = backend
         .config_manager
         .config_schema_store_for_url(&text_document.uri)
@@ -35,6 +38,15 @@ pub async fn handle_formatting(
     {
         tracing::debug!("`server.formatting.enabled` is false");
         return Ok(None);
+    }
+
+    if let Ok(text_document_path) = url_to_file_path(&text_document.uri) {
+        if !is_target_text_document_path(&text_document_path, config_path.as_deref(), &config) {
+            tracing::info!(
+                "text_document_uri {text_document_path:?} is not in config.files.include"
+            );
+            return Ok(None);
+        }
     }
 
     let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
