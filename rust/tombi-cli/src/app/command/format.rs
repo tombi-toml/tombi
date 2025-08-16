@@ -1,8 +1,8 @@
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
-use tombi_file_search::{FileInputType, FileSearch};
 use tombi_formatter::formatter::definitions::FormatDefinitions;
+use tombi_glob::{FileInputType, FileSearch};
 
 /// Format TOML files.
 #[derive(clap::Args, Debug)]
@@ -165,9 +165,9 @@ where
                                 }
                                 Err(err) => {
                                     if err.kind() == std::io::ErrorKind::NotFound {
-                                        crate::Error::FileSearch(
-                                            tombi_file_search::Error::FileNotFound(source_path),
-                                        )
+                                        crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
+                                            source_path,
+                                        ))
                                         .print(&mut printer);
                                     } else {
                                         crate::Error::Io(err).print(&mut printer);
@@ -177,7 +177,7 @@ where
                             }
                         }
                         Err(err) => {
-                            crate::Error::FileSearch(err).print(&mut printer);
+                            crate::Error::TombiGlob(err).print(&mut printer);
                             error_num += 1;
                         }
                     }

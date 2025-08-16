@@ -35,6 +35,7 @@ tombi-extension-uv.workspace = true
 tombi-file-search.workspace = true
 tombi-formatter.workspace = true
 tombi-future.workspace = true
+tombi-glob.workspace = true
 tombi-json.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true

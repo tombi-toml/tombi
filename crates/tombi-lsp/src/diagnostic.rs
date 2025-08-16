@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
-use tombi_file_search::{is_target_text_document_path, FileSearch};
+use tombi_file_search::is_target_text_document_path;
 use tombi_uri::{url_from_file_path, url_to_file_path};
 use tower_lsp::lsp_types::Url;
 
@@ -142,7 +142,7 @@ pub async fn get_workspace_diagnostic_targets(
             configs.entry(config_path).or_insert((config, config_level));
         };
         for (config_path, (config, config_level)) in &configs {
-            if let FileSearch::Files(files) = tombi_file_search::FileSearch::new(
+            if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
                 &[workspace_folder_path_str],
                 config,
                 config_path.as_deref(),

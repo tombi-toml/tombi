@@ -1,7 +1,7 @@
 use tokio::io::AsyncReadExt;
 use tombi_config::{LintOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
-use tombi_file_search::FileSearch;
+use tombi_glob::FileSearch;
 
 /// Lint TOML files.
 #[derive(clap::Args, Debug)]
@@ -87,12 +87,7 @@ where
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
-            tombi_file_search::FileSearch::new(
-                &args.files,
-                &config,
-                config_path.as_deref(),
-                config_level
-            )
+            tombi_glob::FileSearch::new(&args.files, &config, config_path.as_deref(), config_level)
         );
 
         schema_result?;
@@ -145,9 +140,9 @@ where
                                 }
                                 Err(err) => {
                                     if err.kind() == std::io::ErrorKind::NotFound {
-                                        crate::Error::FileSearch(
-                                            tombi_file_search::Error::FileNotFound(source_path),
-                                        )
+                                        crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
+                                            source_path,
+                                        ))
                                         .print(&mut printer);
                                     } else {
                                         crate::Error::Io(err).print(&mut printer);
@@ -157,7 +152,7 @@ where
                             }
                         }
                         Err(err) => {
-                            crate::Error::FileSearch(err).print(&mut printer);
+                            crate::Error::TombiGlob(err).print(&mut printer);
                             error_num += 1;
                         }
                     }

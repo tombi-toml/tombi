@@ -1,10 +1,13 @@
 mod error;
+mod file_search;
+
 use fast_glob::glob_match;
 use ignore::WalkBuilder;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub use error::Error;
+pub use file_search::{FileInputType, FileSearch};
 use tombi_config::FilesOptions;
 
 /// WalkDir-like structure for parallel async directory walking

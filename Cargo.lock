@@ -3493,6 +3493,7 @@ dependencies = [
  "tombi-diagnostic",
  "tombi-file-search",
  "tombi-formatter",
+ "tombi-glob",
  "tombi-linter",
  "tombi-lsp",
  "tombi-schema-store",
@@ -3714,6 +3715,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-config",
+ "tracing",
 ]
 
 [[package]]
@@ -3831,6 +3833,7 @@ dependencies = [
  "tombi-file-search",
  "tombi-formatter",
  "tombi-future",
+ "tombi-glob",
  "tombi-json",
  "tombi-linter",
  "tombi-parser",
