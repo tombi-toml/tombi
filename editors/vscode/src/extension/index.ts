@@ -180,7 +180,7 @@ export class Extension {
 
         if (ignore) {
           text = `$(extensions-warning-message) ${text}`;
-          tooltip += `\nIgnore: ${ignore}`;
+          tooltip += `\nIgnore: ${ignore.replaceAll("-", " ")}`;
           color = "#D0D0D0";
         }
 
