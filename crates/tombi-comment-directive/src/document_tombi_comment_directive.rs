@@ -25,17 +25,17 @@ pub struct DocumentTombiCommentDirective {
     pub toml_version: Option<TomlVersion>,
 
     /// # Formatter options.
-    pub format: Option<Format>,
+    pub format: Option<FormatOptions>,
 
     /// # Linter options.
-    pub lint: Option<Lint>,
+    pub lint: Option<LintOptions>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct Format {
+pub struct FormatOptions {
     /// # Format disable
     ///
     /// Disable formatting for this document.
@@ -47,7 +47,7 @@ pub struct Format {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct Lint {
+pub struct LintOptions {
     /// # Lint disable
     ///
     /// Disable linting for this document.
