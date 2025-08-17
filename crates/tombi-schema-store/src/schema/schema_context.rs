@@ -5,12 +5,13 @@ pub struct SchemaContext<'a> {
     pub root_schema: Option<&'a crate::DocumentSchema>,
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
     pub store: &'a crate::SchemaStore,
+    pub strict: Option<bool>,
 }
 
 impl SchemaContext<'_> {
     #[inline]
     pub fn strict(&self) -> bool {
-        self.store.strict()
+        self.strict.unwrap_or_else(|| self.store.strict())
     }
 
     pub async fn get_subschema(

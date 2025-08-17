@@ -135,6 +135,7 @@ pub async fn handle_completion(
             .as_ref()
             .map(|schema| &schema.sub_schema_uri_map),
         store: &schema_store,
+        strict: None,
     };
 
     completion_items.extend(

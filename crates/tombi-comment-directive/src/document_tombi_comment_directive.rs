@@ -29,6 +29,9 @@ pub struct DocumentTombiCommentDirective {
 
     /// # Linter options.
     pub lint: Option<LintOptions>,
+
+    /// # Schema options.
+    pub schema: Option<SchemaOptions>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -39,7 +42,7 @@ pub struct FormatOptions {
     /// # Format disable
     ///
     /// Disable formatting for this document.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_disable"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
     pub disable: Option<bool>,
 }
 
@@ -51,14 +54,35 @@ pub struct LintOptions {
     /// # Lint disable
     ///
     /// Disable linting for this document.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_disable"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
     pub disable: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct SchemaOptions {
+    /// # Enable strict schema validation.
+    ///
+    /// If `additionalProperties` is not specified in the JSON Schema,
+    /// the strict mode treats it as `additionalProperties: false`,
+    /// which is different from the JSON Schema specification.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_true"))]
+    pub strict: Option<bool>,
 }
 
 #[cfg(feature = "jsonschema")]
 #[allow(unused)]
 #[inline]
-fn default_disable() -> Option<bool> {
+fn default_true() -> Option<bool> {
+    Some(true)
+}
+
+#[cfg(feature = "jsonschema")]
+#[allow(unused)]
+#[inline]
+fn default_false() -> Option<bool> {
     Some(false)
 }
 
@@ -125,6 +149,7 @@ pub async fn try_get_document_tombi_comment_directive(
                     root_schema: None,
                     sub_schema_uri_map: None,
                     store: schema_store,
+                    strict: None,
                 };
 
                 if let Err(diagnostics) = tombi_validator::validate(

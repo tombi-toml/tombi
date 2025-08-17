@@ -97,6 +97,7 @@ pub async fn handle_hover(
             root_schema: source_schema.as_ref().and_then(|s| s.root_schema.as_ref()),
             sub_schema_uri_map: source_schema.as_ref().map(|s| &s.sub_schema_uri_map),
             store: &schema_store,
+            strict: None,
         },
     )
     .await

@@ -130,6 +130,7 @@ async fn document_tombi_directive_completion_contents(
             root_schema: Some(&document_schema),
             sub_schema_uri_map: None,
             store: tombi_comment_directive::schema_store().await,
+            strict: None,
         };
 
         return Some(

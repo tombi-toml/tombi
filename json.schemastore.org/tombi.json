@@ -501,7 +501,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable or disable the schema.",
+          "title": "Enable the schema validation.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -512,7 +512,7 @@
           ]
         },
         "strict": {
-          "title": "Enable or disable strict schema validation.",
+          "title": "Enable strict schema validation.",
           "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
           "anyOf": [
             {
