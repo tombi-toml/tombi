@@ -48,6 +48,7 @@ impl WalkDir {
 
         let mut builder = WalkBuilder::new(root_path);
         builder
+            .hidden(false)
             .follow_links(false)
             .ignore(false)
             .git_global(false)
