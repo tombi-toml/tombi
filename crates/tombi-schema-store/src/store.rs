@@ -547,12 +547,10 @@ impl SchemaStore {
                     ));
                 }
             };
-            if let Ok(Some(source_schema)) = self
+            return self
                 .try_get_source_schema_from_remote_url(&SchemaUri::new(schema_uri))
                 .await
-            {
-                return Ok(Some(source_schema));
-            }
+                .map_err(|err| (err, uri_range));
         }
 
         if let Some(source_uri_or_path) = source_uri_or_path {
@@ -674,7 +672,7 @@ impl SchemaStore {
         }
     }
 
-    async fn resolve_source_schema(
+    pub(crate) async fn resolve_source_schema(
         &self,
         source_uri_or_path: Either<&tombi_uri::Uri, &std::path::Path>,
     ) -> Result<Option<SourceSchema>, crate::Error> {

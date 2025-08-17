@@ -12,7 +12,7 @@ mod x_taplo;
 pub use accessor::{Accessor, Accessors};
 pub use error::Error;
 pub use http_client::*;
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 pub use options::Options;
 pub use schema::*;
 pub use store::SchemaStore;
@@ -244,4 +244,33 @@ pub fn build_accessor_contexts(
             Accessor::Index(_) => Some(AccessorContext::Index),
         })
         .collect_vec()
+}
+
+pub async fn lint_source_schema_from_ast(
+    root: &tombi_ast::Root,
+    source_uri_or_path: Option<Either<&tombi_uri::Uri, &std::path::Path>>,
+    schema_store: &SchemaStore,
+) -> (
+    Option<SourceSchema>,
+    Option<(crate::Error, tombi_text::Range)>,
+) {
+    match schema_store
+        .resolve_source_schema_from_ast(&root, source_uri_or_path)
+        .await
+    {
+        Ok(Some(schema)) => (Some(schema), None),
+        Ok(None) => (None, None),
+        Err(error_with_range) => {
+            let source_schema = if let Some(source_uri_or_path) = source_uri_or_path {
+                schema_store
+                    .resolve_source_schema(source_uri_or_path)
+                    .await
+                    .ok()
+                    .flatten()
+            } else {
+                None
+            };
+            (source_schema, Some(error_with_range))
+        }
+    }
 }
