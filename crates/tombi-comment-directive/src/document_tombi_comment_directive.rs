@@ -20,7 +20,45 @@ pub struct DocumentTombiCommentDirective {
     /// # TOML version.
     ///
     /// This directive specifies the TOML version of this document, with the highest priority.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
+
+    /// # Formatter options.
+    pub format: Option<Format>,
+
+    /// # Linter options.
+    pub lint: Option<Lint>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct Format {
+    /// # Format disable
+    ///
+    /// Disable formatting for this document.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_disable"))]
+    pub disable: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct Lint {
+    /// # Lint disable
+    ///
+    /// Disable linting for this document.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_disable"))]
+    pub disable: Option<bool>,
+}
+
+#[cfg(feature = "jsonschema")]
+#[allow(unused)]
+#[inline]
+fn default_disable() -> Option<bool> {
+    Some(false)
 }
 
 pub async fn get_document_tombi_comment_directive(

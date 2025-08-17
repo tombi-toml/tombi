@@ -1,7 +1,7 @@
 {
   "$id": "tombi://json.tombi.dev/document-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TombiDirective",
+  "title": "DocumentTombiCommentDirective",
   "type": "object",
   "properties": {
     "toml-version": {
@@ -10,6 +10,29 @@
       "anyOf": [
         {
           "$ref": "#/definitions/TomlVersion"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "v1.0.0"
+    },
+    "format": {
+      "title": "Formatter options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Format"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lint": {
+      "title": "Linter options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Lint"
         },
         {
           "type": "null"
@@ -26,6 +49,36 @@
         "v1.0.0",
         "v1.1.0-preview"
       ]
+    },
+    "Format": {
+      "type": "object",
+      "properties": {
+        "disable": {
+          "title": "Format disable",
+          "description": "Disable formatting for this document.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Lint": {
+      "type": "object",
+      "properties": {
+        "disable": {
+          "title": "Lint disable",
+          "description": "Disable linting for this document.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
