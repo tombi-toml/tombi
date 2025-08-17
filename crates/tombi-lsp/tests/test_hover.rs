@@ -469,7 +469,7 @@ mod hover_keys_value {
                 let backend = service.inner();
 
                 if let Some(schema_file_path) = &$schema_file_path {
-                    let schema_file_url = tombi_schema_store::SchemaUrl::from_file_path(schema_file_path).expect(
+                    let schema_file_url = tombi_schema_store::SchemaUri::from_file_path(schema_file_path).expect(
                         format!(
                             "failed to convert schema path to URL: {}",
                             schema_file_path.display()
@@ -552,9 +552,9 @@ mod hover_keys_value {
                 tracing::debug!("hover_content: {:#?}", hover_content);
 
                 if $schema_file_path.is_some() {
-                    assert!(hover_content.schema_url.is_some(), "The hover target is not defined in the schema.");
+                    assert!(hover_content.schema_uri.is_some(), "The hover target is not defined in the schema.");
                 } else {
-                    assert!(hover_content.schema_url.is_none(), "The hover target is defined in the schema.");
+                    assert!(hover_content.schema_uri.is_none(), "The hover target is defined in the schema.");
                 }
 
                 pretty_assertions::assert_eq!(hover_content.accessors.to_string(), $keys, "Keys are not equal");

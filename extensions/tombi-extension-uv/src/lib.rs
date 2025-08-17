@@ -10,7 +10,6 @@ use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{dig_accessors, matches_accessors};
-use tower_lsp::lsp_types::Url;
 
 #[derive(Debug, Clone)]
 struct PackageLocation {
@@ -20,7 +19,7 @@ struct PackageLocation {
 
 impl From<PackageLocation> for Option<tombi_extension::DefinitionLocation> {
     fn from(package_location: PackageLocation) -> Self {
-        let Ok(uri) = Url::from_file_path(&package_location.pyproject_toml_path) else {
+        let Ok(uri) = tombi_uri::Uri::from_file_path(&package_location.pyproject_toml_path) else {
             return None;
         };
 
@@ -296,7 +295,8 @@ fn goto_workspace_member(
     };
 
     if jump_to_package {
-        let Ok(package_pyproject_toml_uri) = Url::from_file_path(&package_toml_path) else {
+        let Ok(package_pyproject_toml_uri) = tombi_uri::Uri::from_file_path(&package_toml_path)
+        else {
             return Ok(None);
         };
         let Some(member_document_tree) = load_pyproject_toml(pyproject_toml_path, toml_version)
@@ -312,7 +312,8 @@ fn goto_workspace_member(
             range: package_name.unquoted_range(),
         }))
     } else {
-        let Ok(workspace_pyproject_toml_uri) = Url::from_file_path(&workspace_pyproject_toml_path)
+        let Ok(workspace_pyproject_toml_uri) =
+            tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
         else {
             return Ok(None);
         };

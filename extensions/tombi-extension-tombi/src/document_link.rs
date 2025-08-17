@@ -1,9 +1,8 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, str::FromStr};
 
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
-use tombi_extension::get_tombi_github_url;
-use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
+use tombi_extension::get_tombi_github_uri;
 
 pub enum DocumentLinkToolTip {
     Catalog,
@@ -38,16 +37,16 @@ impl std::fmt::Display for DocumentLinkToolTip {
 }
 
 pub async fn document_link(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     _toml_version: TomlVersion,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is tombi.toml
-    if !text_document.uri.path().ends_with("tombi.toml") {
+    if !text_document_uri.path().ends_with("tombi.toml") {
         return Ok(None);
     }
 
-    let Some(tombi_toml_path) = text_document.uri.to_file_path().ok() else {
+    let Some(tombi_toml_path) = text_document_uri.to_file_path().ok() else {
         return Ok(None);
     };
 
@@ -127,16 +126,16 @@ pub async fn document_link(
     Ok(Some(document_links))
 }
 
-fn get_document_link(url: &str, tombi_toml_path: &std::path::Path) -> Option<Url> {
-    if let Ok(target) = Url::parse(url) {
-        get_tombi_github_url(&target)
+fn get_document_link(uri: &str, tombi_toml_path: &std::path::Path) -> Option<tombi_uri::Uri> {
+    if let Ok(target) = tombi_uri::Uri::from_str(uri) {
+        get_tombi_github_uri(&target)
     } else if let Some(tombi_config_dir) = tombi_toml_path.parent() {
-        let mut file_path = std::path::PathBuf::from(url);
+        let mut file_path = std::path::PathBuf::from(uri);
         if file_path.is_relative() {
             file_path = tombi_config_dir.join(file_path);
         }
         if file_path.exists() {
-            Url::from_file_path(file_path).ok()
+            tombi_uri::Uri::from_file_path(file_path).ok()
         } else {
             None
         }

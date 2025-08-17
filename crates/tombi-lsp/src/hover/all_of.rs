@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUrl};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
 use crate::hover::display_value::GetEnumerate;
 
@@ -15,7 +15,7 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     keys: &'a [tombi_document_tree::Key],
     accessors: &'a [tombi_schema_store::Accessor],
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
-    schema_url: &'a SchemaUrl,
+    schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>
@@ -35,7 +35,7 @@ where
         for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
             let Ok(Some(current_schema)) = referable_schema
                 .resolve(
-                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(schema_uri),
                     Cow::Borrowed(definitions),
                     schema_context.store,
                 )
@@ -47,7 +47,7 @@ where
             if let Some(values) = current_schema
                 .value_schema
                 .as_ref()
-                .get_enumerate(schema_url, definitions, schema_context)
+                .get_enumerate(schema_uri, definitions, schema_context)
                 .await
             {
                 enumerate_values.extend(values);
@@ -128,7 +128,7 @@ where
             accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
             value_type,
             constraints,
-            schema_url: Some(schema_url.to_owned()),
+            schema_uri: Some(schema_uri.to_owned()),
             range: None,
         })
     }
@@ -156,7 +156,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
             for referable_schema in schemas.iter_mut() {
                 let Ok(Some(CurrentSchema { value_schema, .. })) = referable_schema
                     .resolve(
-                        current_schema.schema_url.clone(),
+                        current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
                     )
@@ -200,7 +200,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                 value_type,
                 constraints: None,
-                schema_url: Some(current_schema.schema_url.as_ref().to_owned()),
+                schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
                 range: None,
             })
         }

@@ -8,21 +8,21 @@ pub struct DocumentSchemaCommentDirective {
     /// ```
     pub directive_range: tombi_text::Range,
 
-    /// The URL of the schema.
+    /// The URI of the schema.
     ///
     /// ```toml
     /// #:schema https://example.com/schema.json
-    ///          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This URL
+    ///          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This URI
     /// ```
-    pub url: Result<url::Url, String>,
+    pub uri: Result<tombi_uri::Uri, String>,
 
-    /// The range of the URL of the schema.
+    /// The range of the URI of the schema.
     ///
     /// ```toml
     /// #:schema https://example.com/schema.json
     ///          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This range
     /// ```
-    pub url_range: tombi_text::Range,
+    pub uri_range: tombi_text::Range,
 }
 
 #[derive(Debug)]

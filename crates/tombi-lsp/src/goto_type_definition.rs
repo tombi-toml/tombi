@@ -5,7 +5,7 @@ mod value;
 
 use std::{borrow::Cow, ops::Deref};
 
-use tombi_schema_store::{CurrentSchema, SchemaUrl};
+use tombi_schema_store::{CurrentSchema, SchemaUri};
 
 pub async fn get_type_definition(
     tree: &tombi_document_tree::DocumentTree,
@@ -22,7 +22,7 @@ pub async fn get_type_definition(
                     .as_ref()
                     .map(|value_schema| CurrentSchema {
                         value_schema: Cow::Borrowed(value_schema),
-                        schema_url: Cow::Borrowed(&document_schema.schema_url),
+                        schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
@@ -39,7 +39,7 @@ pub async fn get_type_definition(
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypeDefinition {
-    pub schema_url: SchemaUrl,
+    pub schema_uri: SchemaUri,
     pub schema_accessors: Vec<tombi_schema_store::SchemaAccessor>,
     pub range: tombi_text::Range,
 }

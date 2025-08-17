@@ -115,7 +115,6 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"
-url = { version = "2.5.4", features = ["serde"] }
 uuid = { version = "1.18.0", features = ["v1", "v3", "v4", "v5", "v7", "v8"] }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"

@@ -40,7 +40,7 @@ where
         for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
             if let Ok(Some(current_schema)) = referable_schema
                 .resolve(
-                    current_schema.schema_url.clone(),
+                    current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
@@ -63,7 +63,7 @@ where
 
         let detail = any_of_schema
             .detail(
-                &current_schema.schema_url,
+                &current_schema.schema_uri,
                 &current_schema.definitions,
                 schema_context.store,
                 completion_hint,
@@ -72,7 +72,7 @@ where
 
         let documentation = any_of_schema
             .documentation(
-                &current_schema.schema_url,
+                &current_schema.schema_uri,
                 &current_schema.definitions,
                 schema_context.store,
                 completion_hint,
@@ -100,7 +100,7 @@ where
                 position,
                 detail,
                 documentation,
-                Some(&current_schema.schema_url),
+                Some(&current_schema.schema_uri),
                 completion_hint,
             ) {
                 completion_items.push(completion_item);

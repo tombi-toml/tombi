@@ -26,6 +26,7 @@ pub async fn handle_hover(
             },
         ..
     } = params;
+    let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
         config,
@@ -33,7 +34,7 @@ pub async fn handle_hover(
         ..
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document.uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     if !config
@@ -48,12 +49,12 @@ pub async fn handle_hover(
     }
 
     let position = position.into();
-    let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
+    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(None);
     };
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -68,7 +69,7 @@ pub async fn handle_hover(
         )
         .await;
 
-    let source_path = text_document.uri.to_file_path().ok();
+    let source_path = text_document_uri.to_file_path().ok();
 
     // Check if position is in a #:tombi comment directive
     if let Some(content) =
@@ -94,7 +95,7 @@ pub async fn handle_hover(
         &SchemaContext {
             toml_version,
             root_schema: source_schema.as_ref().and_then(|s| s.root_schema.as_ref()),
-            sub_schema_url_map: source_schema.as_ref().map(|s| &s.sub_schema_url_map),
+            sub_schema_uri_map: source_schema.as_ref().map(|s| &s.sub_schema_uri_map),
             store: &schema_store,
         },
     )

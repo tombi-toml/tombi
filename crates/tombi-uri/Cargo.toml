@@ -7,4 +7,5 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-url.workspace = true
+serde.workspace = true
+url = { version = "2.5.4", features = ["serde"] }

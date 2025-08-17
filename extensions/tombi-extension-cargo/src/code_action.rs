@@ -2,8 +2,7 @@ use tombi_document_tree::{dig_keys, TableKind};
 use tombi_schema_store::{dig_accessors, matches_accessors, Accessor, AccessorContext};
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionOrCommand, DocumentChanges, OneOf,
-    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextDocumentIdentifier, TextEdit,
-    WorkspaceEdit,
+    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
 use crate::{find_workspace_cargo_toml, get_workspace_path};
@@ -31,16 +30,16 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 }
 
 pub fn code_action(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
-    if !text_document.uri.path().ends_with("Cargo.toml") {
+    if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
-    let Some(cargo_toml_path) = text_document.uri.to_file_path().ok() else {
+    let Some(cargo_toml_path) = text_document_uri.to_file_path().ok() else {
         return Ok(None);
     };
 
@@ -48,7 +47,7 @@ pub fn code_action(
 
     if document_tree.contains_key("workspace") {
         code_actions.extend(code_actions_for_workspace_cargo_toml(
-            text_document,
+            text_document_uri,
             document_tree,
             &cargo_toml_path,
             accessors,
@@ -57,7 +56,7 @@ pub fn code_action(
         ))
     } else {
         code_actions.extend(code_actions_for_crate_cargo_toml(
-            text_document,
+            text_document_uri,
             document_tree,
             &cargo_toml_path,
             accessors,
@@ -74,7 +73,7 @@ pub fn code_action(
 }
 
 fn code_actions_for_workspace_cargo_toml(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     _cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
@@ -84,7 +83,7 @@ fn code_actions_for_workspace_cargo_toml(
     let mut code_actions = Vec::new();
 
     if let Some(action) =
-        crate_version_code_action(text_document, document_tree, accessors, contexts)
+        crate_version_code_action(text_document_uri, document_tree, accessors, contexts)
     {
         code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
@@ -93,7 +92,7 @@ fn code_actions_for_workspace_cargo_toml(
 }
 
 fn code_actions_for_crate_cargo_toml(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     crate_document_tree: &tombi_document_tree::DocumentTree,
     crate_cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
@@ -109,7 +108,7 @@ fn code_actions_for_crate_cargo_toml(
     ) {
         // Add workspace-specific code actions here
         if let Some(action) = workspace_code_action(
-            text_document,
+            text_document_uri,
             crate_document_tree,
             &workspace_document_tree,
             accessors,
@@ -119,7 +118,7 @@ fn code_actions_for_crate_cargo_toml(
         }
 
         if let Some(action) = use_workspace_depencency_code_action(
-            text_document,
+            text_document_uri,
             crate_document_tree,
             &workspace_document_tree,
             accessors,
@@ -131,7 +130,7 @@ fn code_actions_for_crate_cargo_toml(
 
     // Add crate-specific code actions here
     if let Some(action) =
-        crate_version_code_action(text_document, crate_document_tree, accessors, contexts)
+        crate_version_code_action(text_document_uri, crate_document_tree, accessors, contexts)
     {
         code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
@@ -140,7 +139,7 @@ fn code_actions_for_crate_cargo_toml(
 }
 
 fn workspace_code_action(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     crate_document_tree: &tombi_document_tree::DocumentTree,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
@@ -203,7 +202,7 @@ fn workspace_code_action(
             changes: None,
             document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                 text_document: OptionalVersionedTextDocumentIdentifier {
-                    uri: text_document.clone().uri,
+                    uri: text_document_uri.to_owned().into(),
                     version: None,
                 },
                 edits: vec![OneOf::Left(TextEdit {
@@ -218,7 +217,7 @@ fn workspace_code_action(
 }
 
 fn use_workspace_depencency_code_action(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     crate_document_tree: &tombi_document_tree::DocumentTree,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
@@ -258,7 +257,7 @@ fn use_workspace_depencency_code_action(
                     changes: None,
                     document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                         text_document: OptionalVersionedTextDocumentIdentifier {
-                            uri: text_document.clone().uri,
+                            uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
                         edits: vec![OneOf::Left(TextEdit {
@@ -311,7 +310,7 @@ fn use_workspace_depencency_code_action(
                     changes: None,
                     document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                         text_document: OptionalVersionedTextDocumentIdentifier {
-                            uri: text_document.clone().uri,
+                            uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
                         edits: vec![OneOf::Left(text_edit)],
@@ -328,7 +327,7 @@ fn use_workspace_depencency_code_action(
 }
 
 fn crate_version_code_action(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     _contexts: &[AccessorContext],
@@ -349,7 +348,7 @@ fn crate_version_code_action(
                     changes: None,
                     document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                         text_document: OptionalVersionedTextDocumentIdentifier {
-                            uri: text_document.clone().uri,
+                            uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
                         edits: vec![

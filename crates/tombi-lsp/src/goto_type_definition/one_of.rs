@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaUrl};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 
 use super::{GetTypeDefinition, TypeDefinition};
 
@@ -12,7 +12,7 @@ pub fn get_one_of_type_definition<'a: 'b, 'b, T>(
     keys: &'a [tombi_document_tree::Key],
     accessors: &'a [tombi_schema_store::Accessor],
     one_of_schema: &'a tombi_schema_store::OneOfSchema,
-    schema_url: &'a SchemaUrl,
+    schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>>
@@ -23,7 +23,7 @@ where
         for referable_schema in one_of_schema.schemas.write().await.iter_mut() {
             let Ok(Some(current_schema)) = referable_schema
                 .resolve(
-                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(schema_uri),
                     Cow::Borrowed(definitions),
                     schema_context.store,
                 )
@@ -59,11 +59,11 @@ where
             }
         }
 
-        let mut schema_url = schema_url.clone();
-        schema_url.set_fragment(Some(&format!("L{}", one_of_schema.range.start.line + 1)));
+        let mut schema_uri = schema_uri.clone();
+        schema_uri.set_fragment(Some(&format!("L{}", one_of_schema.range.start.line + 1)));
 
         Some(TypeDefinition {
-            schema_url,
+            schema_uri,
             schema_accessors: accessors.iter().map(Into::into).collect_vec(),
             range: tombi_text::Range::default(),
         })
@@ -85,11 +85,11 @@ impl GetTypeDefinition for tombi_schema_store::OneOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut schema_url = current_schema.schema_url.as_ref().to_owned();
-            schema_url.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
+            let mut schema_uri = current_schema.schema_uri.as_ref().to_owned();
+            schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
 
             Some(TypeDefinition {
-                schema_url,
+                schema_uri,
                 schema_accessors: accessors.iter().map(Into::into).collect_vec(),
                 range: tombi_text::Range::default(),
             })

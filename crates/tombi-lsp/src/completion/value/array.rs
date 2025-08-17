@@ -5,7 +5,7 @@ use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUrl, ValueSchema,
+    Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUri, ValueSchema,
 };
 
 use super::{
@@ -33,7 +33,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
         async move {
             if let Some(Ok(DocumentSchema {
                 value_schema: Some(value_schema),
-                schema_url,
+                schema_uri,
                 definitions,
                 ..
             })) = schema_context
@@ -47,7 +47,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         accessors,
                         Some(&CurrentSchema {
                             value_schema: Cow::Owned(value_schema),
-                            schema_url: Cow::Owned(schema_url),
+                            schema_uri: Cow::Owned(schema_uri),
                             definitions: Cow::Owned(definitions),
                         }),
                         schema_context,
@@ -71,7 +71,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         .write()
                                         .await
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -100,7 +100,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                 .write()
                                 .await
                                 .resolve(
-                                    current_schema.schema_url.clone(),
+                                    current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
                                     schema_context.store,
                                 )
@@ -250,10 +250,10 @@ impl FindCompletionContents for ArraySchema {
             match completion_hint {
                 Some(CompletionHint::InTableHeader) => Vec::with_capacity(0),
                 _ => {
-                    let schema_url = current_schema.map(|schema| schema.schema_url.as_ref());
+                    let schema_uri = current_schema.map(|schema| schema.schema_uri.as_ref());
 
                     let mut completion_items =
-                        type_hint_array(position, schema_url, completion_hint);
+                        type_hint_array(position, schema_uri, completion_hint);
 
                     if let Some(default) = &self.default {
                         let label = default.to_string();
@@ -264,7 +264,7 @@ impl FindCompletionContents for ArraySchema {
                             self.title.clone(),
                             self.description.clone(),
                             edit,
-                            schema_url,
+                            schema_uri,
                             self.deprecated,
                         ));
                     }
@@ -279,7 +279,7 @@ impl FindCompletionContents for ArraySchema {
 
 pub fn type_hint_array(
     position: tombi_text::Position,
-    schema_url: Option<&SchemaUrl>,
+    schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
     let edit = CompletionEdit::new_array_literal(position, completion_hint);
@@ -289,6 +289,6 @@ pub fn type_hint_array(
         "[]",
         "Array",
         edit,
-        schema_url,
+        schema_uri,
     )]
 }

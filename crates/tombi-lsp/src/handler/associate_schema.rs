@@ -31,13 +31,13 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
     tracing::info!("handle_associate_schema");
     tracing::trace!(?params);
 
-    let Ok(schema_url) = tombi_schema_store::SchemaUrl::parse(&params.uri) else {
+    let Ok(schema_uri) = tombi_schema_store::SchemaUri::parse(&params.uri) else {
         tracing::error!("Invalid schema URL");
         return;
     };
 
     backend
         .config_manager
-        .associate_schema(&schema_url, &params.file_match)
+        .associate_schema(&schema_uri, &params.file_match)
         .await;
 }

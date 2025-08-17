@@ -272,11 +272,11 @@ impl CompletionEdit {
             .unwrap_or("unknown")
             .to_lowercase();
 
-        let schema_url = format!("https://json.schemastore.org/{file_name}.json",);
+        let schema_uri = format!("https://json.schemastore.org/{file_name}.json",);
 
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
-                new_text: format!("#:schema ${{0:{schema_url}}}"),
+                new_text: format!("#:schema ${{0:{schema_uri}}}"),
                 range: tombi_text::Range::at(position).into(),
             }),
             insert_text_format: Some(InsertTextFormat::SNIPPET),

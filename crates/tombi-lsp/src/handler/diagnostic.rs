@@ -1,6 +1,6 @@
 use tower_lsp::lsp_types::{
     DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, TextDocumentIdentifier, Url,
+    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, TextDocumentIdentifier,
 };
 
 use crate::{
@@ -15,11 +15,13 @@ pub async fn handle_diagnostic(
 ) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
     let DocumentDiagnosticParams { text_document, .. } = params;
 
+    let text_document_uri = text_document.uri.into();
+
     Ok({
         DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(
             RelatedFullDocumentDiagnosticReport {
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    items: get_diagnostics_result(backend, &text_document.uri)
+                    items: get_diagnostics_result(backend, &text_document_uri)
                         .await
                         .map(|result| result.diagnostics)
                         .unwrap_or_default(),
@@ -32,7 +34,11 @@ pub async fn handle_diagnostic(
 }
 
 /// Push diagnostics
-pub async fn push_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+pub async fn push_diagnostics(
+    backend: &Backend,
+    text_document_uri: tombi_uri::Uri,
+    version: Option<i32>,
+) {
     if backend.capabilities.read().await.diagnostic_type != DiagnosticType::Push {
         return;
     }
@@ -45,7 +51,7 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: Url, version
 
     let params = PushDiagnosticsParams {
         text_document: TextDocumentIdentifier {
-            uri: text_document_uri,
+            uri: text_document_uri.into(),
         },
         version,
     };
@@ -53,5 +59,5 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: Url, version
     tracing::info!("push_diagnostics");
     tracing::trace!(?params);
 
-    publish_diagnostics(backend, params.text_document.uri, params.version).await;
+    publish_diagnostics(backend, params.text_document.uri.into(), params.version).await;
 }

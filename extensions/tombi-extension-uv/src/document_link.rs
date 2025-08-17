@@ -4,7 +4,6 @@ use std::str::FromStr;
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
-use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{find_member_project_toml, find_workspace_pyproject_toml, goto_member_pyprojects};
 
@@ -49,16 +48,16 @@ impl std::fmt::Display for DocumentLinkToolTip {
 }
 
 pub async fn document_link(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     toml_version: TomlVersion,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is Cargo.toml
-    if !text_document.uri.path().ends_with("pyproject.toml") {
+    if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
     }
 
-    let Some(pyproject_toml_path) = text_document.uri.to_file_path().ok() else {
+    let Some(pyproject_toml_path) = text_document_uri.to_file_path().ok() else {
         return Ok(None);
     };
 
@@ -169,13 +168,13 @@ fn document_link_for_workspace_pyproject_toml(
 
         let mut member_document_links =
             member_paskage_locations.into_iter().filter_map(|location| {
-                let Ok(member_pyproject_toml_url) =
-                    Url::from_file_path(&location.pyproject_toml_path)
+                let Ok(member_pyproject_toml_uri) =
+                    tombi_uri::Uri::from_file_path(&location.pyproject_toml_path)
                 else {
                     return None;
                 };
                 Some(tombi_extension::DocumentLink {
-                    target: member_pyproject_toml_url,
+                    target: member_pyproject_toml_uri,
                     range: member.unquoted_range(),
                     tooltip: DocumentLinkToolTip::PyprojectTomlFirstMember.into(),
                 })
@@ -213,7 +212,8 @@ fn document_link_for_member_pyproject_toml(
         return Ok(Vec::with_capacity(0));
     };
 
-    let Ok(workspace_pyproject_toml_url) = Url::from_file_path(&workspace_pyproject_toml_path)
+    let Ok(workspace_pyproject_toml_uri) =
+        tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
     else {
         return Ok(Vec::with_capacity(0));
     };
@@ -229,16 +229,17 @@ fn document_link_for_member_pyproject_toml(
                 &workspace_pyproject_toml_path,
                 toml_version,
             ) {
-                if let Ok(member_project_toml_url) = Url::from_file_path(&member_project_toml_path)
+                if let Ok(member_project_toml_uri) =
+                    tombi_uri::Uri::from_file_path(&member_project_toml_path)
                 {
                     document_links.push(tombi_extension::DocumentLink {
-                        target: member_project_toml_url,
+                        target: member_project_toml_uri,
                         range: package_name_key.unquoted_range(),
                         tooltip: DocumentLinkToolTip::PyprojectToml.into(),
                     });
                 }
                 document_links.push(tombi_extension::DocumentLink {
-                    target: workspace_pyproject_toml_url.clone(),
+                    target: workspace_pyproject_toml_uri.clone(),
                     range: workspace_key.range() + is_workspace.range(),
                     tooltip: DocumentLinkToolTip::WorkspacePyprojectToml.into(),
                 });
@@ -300,11 +301,11 @@ fn document_link_for_project_dependencies(
                     }
                 } else {
                     // Create PyPI URL for external packages
-                    if let Ok(pypi_url) =
-                        Url::parse(&format!("https://pypi.org/project/{package_name}/"))
-                    {
+                    if let Ok(pypi_uri) = tombi_uri::Uri::from_str(&format!(
+                        "https://pypi.org/project/{package_name}/"
+                    )) {
                         document_links.push(tombi_extension::DocumentLink {
-                            target: pypi_url,
+                            target: pypi_uri,
                             range: dep_spec.unquoted_range(),
                             tooltip: DocumentLinkToolTip::PyPI.into(),
                         });

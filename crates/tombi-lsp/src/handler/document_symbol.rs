@@ -14,8 +14,9 @@ pub async fn handle_document_symbol(
 
     let DocumentSymbolParams { text_document, .. } = params;
 
+    let text_document_uri = text_document.uri.into();
     let Some(tree) = backend
-        .get_incomplete_document_tree(&text_document.uri)
+        .get_incomplete_document_tree(&text_document_uri)
         .await
     else {
         return Ok(None);

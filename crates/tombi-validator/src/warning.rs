@@ -1,4 +1,4 @@
-use tombi_schema_store::{SchemaAccessors, SchemaUrl};
+use tombi_schema_store::{SchemaAccessors, SchemaUri};
 
 #[derive(thiserror::Error, Debug)]
 pub enum WarningKind {
@@ -7,13 +7,13 @@ pub enum WarningKind {
 
     #[error(
         r#"In strict mode, `{accessors}` does not allow "{key}" key.
-Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_url},
+Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_uri},
 or set `schema.strict = false` in your `tombi.toml`"#
     )]
     StrictAdditionalProperties {
         accessors: SchemaAccessors,
         key: String,
-        schema_url: SchemaUrl,
+        schema_uri: SchemaUri,
     },
 }
 

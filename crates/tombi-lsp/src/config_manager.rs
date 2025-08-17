@@ -4,7 +4,7 @@ use std::sync::Arc;
 use ahash::AHashMap;
 use serde_tombi::config::load_with_path;
 use tombi_config::Config;
-use tombi_schema_store::{SchemaStore, SchemaUrl};
+use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
 
 /// Holds a Config and its associated SchemaStore
@@ -41,7 +41,7 @@ pub struct ConfigManager {
 
 #[derive(Debug)]
 struct AssociatedSchema {
-    schema_url: SchemaUrl,
+    schema_uri: SchemaUri,
     file_match: Vec<String>,
 }
 
@@ -89,9 +89,9 @@ impl ConfigManager {
         }
     }
 
-    /// Get config for a URL
-    pub async fn config_schema_store_for_url(&self, url: &Url) -> ConfigSchemaStore {
-        if let Ok(path) = url.to_file_path() {
+    /// Get config for a URI
+    pub async fn config_schema_store_for_uri(&self, uri: &tombi_uri::Uri) -> ConfigSchemaStore {
+        if let Ok(path) = uri.to_file_path() {
             self.config_schema_store_for_file(&path).await
         } else {
             self.default_config_schema_store().await
@@ -142,7 +142,7 @@ impl ConfigManager {
                         for associated_schema in self.associated_schemas.read().await.iter() {
                             schema_store
                                 .associate_schema(
-                                    associated_schema.schema_url.clone(),
+                                    associated_schema.schema_uri.clone(),
                                     associated_schema.file_match.clone(),
                                 )
                                 .await;
@@ -206,7 +206,7 @@ impl ConfigManager {
             for associated_schema in self.associated_schemas.read().await.iter() {
                 schema_store
                     .associate_schema(
-                        associated_schema.schema_url.clone(),
+                        associated_schema.schema_uri.clone(),
                         associated_schema.file_match.clone(),
                     )
                     .await;
@@ -230,31 +230,31 @@ impl ConfigManager {
 
     pub async fn update_schema(
         &self,
-        schema_url: &SchemaUrl,
+        schema_uri: &SchemaUri,
     ) -> Result<bool, tombi_schema_store::Error> {
         let mut updated = false;
         let mut config_schema_stores = self.config_schema_stores.write().await;
         for config_schema_store in config_schema_stores.values_mut() {
             updated |= config_schema_store
                 .schema_store
-                .update_schema(schema_url)
+                .update_schema(schema_uri)
                 .await?;
         }
         if let Some(ConfigSchemaStore { schema_store, .. }) =
             &mut *self.default_config_schema_store.write().await
         {
-            updated |= schema_store.update_schema(schema_url).await?;
+            updated |= schema_store.update_schema(schema_uri).await?;
         }
         Ok(updated)
     }
 
-    pub async fn associate_schema(&self, schema_url: &SchemaUrl, file_match: &[String]) {
+    pub async fn associate_schema(&self, schema_uri: &SchemaUri, file_match: &[String]) {
         // Add to associated_schemas
         self.associated_schemas
             .write()
             .await
             .push(AssociatedSchema {
-                schema_url: schema_url.clone(),
+                schema_uri: schema_uri.clone(),
                 file_match: file_match.to_vec(),
             });
 
@@ -264,14 +264,14 @@ impl ConfigManager {
             for config_schema_store in config_schema_stores.values_mut() {
                 config_schema_store
                     .schema_store
-                    .associate_schema(schema_url.clone(), file_match.to_vec())
+                    .associate_schema(schema_uri.clone(), file_match.to_vec())
                     .await;
             }
             if let Some(ConfigSchemaStore { schema_store, .. }) =
                 &mut *self.default_config_schema_store.write().await
             {
                 schema_store
-                    .associate_schema(schema_url.clone(), file_match.to_vec())
+                    .associate_schema(schema_uri.clone(), file_match.to_vec())
                     .await;
             }
         }

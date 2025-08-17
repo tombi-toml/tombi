@@ -1,10 +1,11 @@
 mod document_tombi_comment_directive;
 mod error;
 
+use std::str::FromStr;
+
 pub use error::Error;
-use tombi_schema_store::{CatalogUrl, SchemaUrl, SourceSchema};
+use tombi_schema_store::{CatalogUri, SchemaUri, SourceSchema};
 use tombi_toml_version::TomlVersion;
-use url::Url;
 
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
@@ -26,7 +27,7 @@ fn into_directive_diagnostic(
 
 static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
     tokio::sync::OnceCell::const_new();
-static DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URL: std::sync::OnceLock<SchemaUrl> =
+static DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI: std::sync::OnceLock<SchemaUri> =
     std::sync::OnceLock::new();
 static DOCUMENT_COMMENT_DIRECTIVE_SOURCE_SCHEMA: std::sync::OnceLock<SourceSchema> =
     std::sync::OnceLock::new();
@@ -37,8 +38,9 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
         .get_or_init(|| async {
             let schema_store = tombi_schema_store::SchemaStore::new();
             let _ = schema_store
-                .load_catalog_from_url(&CatalogUrl::new(
-                    Url::parse("tombi://json.tombi.dev/api/json/catalog.json").unwrap(),
+                .load_catalog_from_uri(&CatalogUri::new(
+                    tombi_uri::Uri::from_str("tombi://json.tombi.dev/api/json/catalog.json")
+                        .unwrap(),
                 ))
                 .await;
             schema_store

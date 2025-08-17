@@ -26,12 +26,12 @@ pub async fn get_comment_directive_hover_info(
                 range: schema_comment_directive.directive_range,
             }));
         }
-        if schema_comment_directive.url_range.contains(position) {
+        if schema_comment_directive.uri_range.contains(position) {
             return Some(HoverContent::Directive(HoverDirectiveContent {
                 title: "Schema URL".to_string(),
                 description: "The URL/Path of the schema that applies to this document."
                     .to_string(),
-                range: schema_comment_directive.url_range,
+                range: schema_comment_directive.uri_range,
             }));
         }
         return None;
@@ -94,7 +94,7 @@ pub async fn get_comment_directive_hover_info(
                             let schema_context = tombi_schema_store::SchemaContext {
                                 toml_version,
                                 root_schema: Some(&document_schema),
-                                sub_schema_url_map: None,
+                                sub_schema_uri_map: None,
                                 store: &schema_store,
                             };
 

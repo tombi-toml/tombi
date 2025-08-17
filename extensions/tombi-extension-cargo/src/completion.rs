@@ -11,7 +11,6 @@ use tombi_schema_store::matches_accessors;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
 use tombi_version_sort::version_sort;
-use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::find_path_crate_cargo_toml;
 use crate::find_workspace_cargo_toml;
@@ -40,17 +39,17 @@ struct CratesIoVersionDetailResponse {
 }
 
 pub async fn completion(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
-    if !text_document.uri.path().ends_with("Cargo.toml") {
+    if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
-    let cargo_toml_path = std::path::Path::new(text_document.uri.path());
+    let cargo_toml_path = std::path::Path::new(text_document_uri.path());
 
     if let Some(Accessor::Key(first)) = accessors.first() {
         if first == "workspace" {
@@ -244,7 +243,7 @@ async fn complete_crate_version(
                 detail: Some("Crate version".to_string()),
                 documentation: None,
                 filter_text: None,
-                schema_url: None,
+                schema_uri: None,
                 deprecated: None,
                 edit: match version_value {
                     Some(value) => Some(tombi_extension::CompletionEdit {
@@ -397,7 +396,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                             .join("\n")
                 }),
                 filter_text: None,
-                schema_url: None,
+                schema_uri: None,
                 deprecated: None,
                 edit: editing_feature_string.map(|value| tombi_extension::CompletionEdit {
                     text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(

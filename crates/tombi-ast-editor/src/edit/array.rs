@@ -33,7 +33,7 @@ impl crate::Edit for tombi_ast::Array {
                             .write()
                             .await
                             .resolve(
-                                Cow::Borrowed(&current_schema.schema_url),
+                                Cow::Borrowed(&current_schema.schema_uri),
                                 Cow::Borrowed(&current_schema.definitions),
                                 schema_context.store,
                             )

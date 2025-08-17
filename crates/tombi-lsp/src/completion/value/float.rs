@@ -1,6 +1,6 @@
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, SchemaUrl};
+use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, SchemaUri};
 
 use crate::completion::{
     CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
@@ -18,7 +18,7 @@ impl FindCompletionContents for FloatSchema {
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         async move {
             let mut completion_items = vec![];
-            let schema_url = current_schema.map(|schema| schema.schema_url.as_ref());
+            let schema_uri = current_schema.map(|schema| schema.schema_uri.as_ref());
 
             if let Some(const_value) = &self.const_value {
                 let label = const_value.to_string();
@@ -29,7 +29,7 @@ impl FindCompletionContents for FloatSchema {
                     self.title.clone(),
                     self.description.clone(),
                     edit,
-                    schema_url,
+                    schema_uri,
                     self.deprecated,
                 ));
                 return completion_items;
@@ -45,7 +45,7 @@ impl FindCompletionContents for FloatSchema {
                         self.title.clone(),
                         self.description.clone(),
                         edit,
-                        schema_url,
+                        schema_uri,
                         self.deprecated,
                     ));
                 }
@@ -60,13 +60,13 @@ impl FindCompletionContents for FloatSchema {
                     self.title.clone(),
                     self.description.clone(),
                     edit,
-                    schema_url,
+                    schema_uri,
                     self.deprecated,
                 ));
             }
 
             if completion_items.is_empty() {
-                completion_items.extend(type_hint_float(position, schema_url, completion_hint));
+                completion_items.extend(type_hint_float(position, schema_uri, completion_hint));
             }
 
             completion_items
@@ -77,7 +77,7 @@ impl FindCompletionContents for FloatSchema {
 
 pub fn type_hint_float(
     position: tombi_text::Position,
-    schema_url: Option<&SchemaUrl>,
+    schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
     let label = "3.14";
@@ -87,6 +87,6 @@ pub fn type_hint_float(
         label,
         "Float",
         edit,
-        schema_url,
+        schema_uri,
     )]
 }

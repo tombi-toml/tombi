@@ -69,7 +69,7 @@ where
     async move {
         if let Some(CurrentSchema {
             value_schema,
-            schema_url,
+            schema_uri,
             definitions,
         }) = current_schema
         {
@@ -80,7 +80,7 @@ where
                     for schema in schemas.write().await.iter_mut() {
                         if let Ok(Some(current_schema)) = schema
                             .resolve(
-                                Cow::Borrowed(schema_url),
+                                Cow::Borrowed(schema_uri),
                                 Cow::Borrowed(definitions),
                                 schema_context.store,
                             )
@@ -183,7 +183,7 @@ where
                                 {
                                     if let Ok(Some(current_schema)) = property_schema
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -214,7 +214,7 @@ where
                                         .write()
                                         .await
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -258,7 +258,7 @@ where
                                 .write()
                                 .await
                                 .resolve(
-                                    current_schema.schema_url.clone(),
+                                    current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
                                     schema_context.store,
                                 )

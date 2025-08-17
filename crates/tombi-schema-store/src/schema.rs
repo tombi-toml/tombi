@@ -2,7 +2,7 @@ mod all_of_schema;
 mod any_of_schema;
 mod array_schema;
 mod boolean_schema;
-mod catalog_url;
+mod catalog_uri;
 mod document_schema;
 mod float_schema;
 mod integer_schema;
@@ -14,7 +14,7 @@ mod one_of_schema;
 mod referable_schema;
 mod schema_accessor;
 mod schema_context;
-mod schema_url;
+mod schema_uri;
 mod source_schema;
 mod string_schema;
 mod table_schema;
@@ -27,7 +27,7 @@ pub use all_of_schema::AllOfSchema;
 pub use any_of_schema::AnyOfSchema;
 pub use array_schema::ArraySchema;
 pub use boolean_schema::BooleanSchema;
-pub use catalog_url::CatalogUrl;
+pub use catalog_uri::CatalogUri;
 pub use document_schema::DocumentSchema;
 pub use float_schema::FloatSchema;
 pub use integer_schema::IntegerSchema;
@@ -39,8 +39,8 @@ pub use one_of_schema::OneOfSchema;
 pub use referable_schema::{is_online_url, CurrentSchema, Referable};
 pub use schema_accessor::{GetHeaderSchemarAccessors, SchemaAccessor, SchemaAccessors};
 pub use schema_context::SchemaContext;
-pub use schema_url::SchemaUrl;
-pub use source_schema::{SourceSchema, SubSchemaUrlMap};
+pub use schema_uri::SchemaUri;
+pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
 pub use table_schema::TableSchema;
 pub use value_schema::*;
@@ -63,7 +63,7 @@ pub struct PropertySchema {
 #[derive(Debug, Clone)]
 pub struct Schema {
     pub toml_version: Option<tombi_config::TomlVersion>,
-    pub url: crate::SchemaUrl,
+    pub url: crate::SchemaUri,
     pub include: Vec<String>,
     pub sub_root_keys: Option<Vec<SchemaAccessor>>,
 }
@@ -72,7 +72,7 @@ pub trait FindSchemaCandidates {
     fn find_schema_candidates<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> tombi_future::BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)>;

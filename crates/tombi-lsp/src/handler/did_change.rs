@@ -12,8 +12,9 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         content_changes,
     } = params;
 
+    let text_document_uri = text_document.uri.into();
     let mut document_sources = backend.document_sources.write().await;
-    let Some(document) = document_sources.get_mut(&text_document.uri) else {
+    let Some(document) = document_sources.get_mut(&text_document_uri) else {
         return;
     };
 
@@ -28,6 +29,6 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
 
     // Publish diagnostics for the changed document
     backend
-        .push_diagnostics(text_document.uri, Some(text_document.version))
+        .push_diagnostics(text_document_uri, Some(text_document.version))
         .await;
 }

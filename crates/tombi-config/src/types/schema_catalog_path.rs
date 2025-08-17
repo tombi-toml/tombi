@@ -1,5 +1,4 @@
 use super::OneOrMany;
-use tombi_uri::url_from_file_path;
 
 pub const TOMBI_SCHEMASTORE_CATALOG_URL: &str =
     "tombi://json.schemastore.org/api/json/catalog.json";
@@ -20,12 +19,12 @@ impl SchemaCatalogPath {
     pub fn try_to_catalog_url(
         &self,
         base_dir_path: Option<&std::path::Path>,
-    ) -> Result<url::Url, url::ParseError> {
+    ) -> Result<tombi_uri::Uri, tombi_uri::ParseError> {
         match self.0.parse() {
             Ok(url) => Ok(url),
             Err(err) => match base_dir_path {
-                Some(base_dir_path) => url_from_file_path(base_dir_path.join(&self.0)),
-                None => url_from_file_path(&self.0),
+                Some(base_dir_path) => tombi_uri::Uri::from_file_path(base_dir_path.join(&self.0)),
+                None => tombi_uri::Uri::from_file_path(&self.0),
             }
             .map_err(|_| err),
         }

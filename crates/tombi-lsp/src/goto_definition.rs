@@ -19,18 +19,18 @@ pub async fn into_definition_locations(
         return Ok(None);
     };
 
-    let mut url_set = AHashMap::new();
+    let mut uri_set = AHashMap::new();
     for definition in &definitions {
-        if let Ok(Some(remote_url)) = open_remote_file(backend, &definition.uri).await {
-            url_set.insert(definition.uri.clone(), remote_url);
+        if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
+            uri_set.insert(definition.uri.clone(), remote_uri);
         }
     }
 
     let definitions = definitions
         .into_iter()
         .map(|mut definition| {
-            if let Some(remote_url) = url_set.get(&definition.uri) {
-                definition.uri = remote_url.clone();
+            if let Some(remote_uri) = uri_set.get(&definition.uri) {
+                definition.uri = remote_uri.clone();
             }
             definition
         })
@@ -52,22 +52,24 @@ pub async fn into_definition_locations(
 
 pub async fn open_remote_file(
     backend: &Backend,
-    url: &Url,
-) -> Result<Option<Url>, tower_lsp::jsonrpc::Error> {
-    match url.scheme() {
+    uri: &tombi_uri::Uri,
+) -> Result<Option<tombi_uri::Uri>, tower_lsp::jsonrpc::Error> {
+    match uri.scheme() {
         "http" | "https" => {
-            let remote_url = Url::parse(&format!("untitled://{}", url.path())).unwrap();
-            let content = fetch_remote_content(url).await?;
-            open_remote_content(backend, &remote_url, content).await?;
-            Ok(Some(remote_url))
+            let remote_uri =
+                tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
+            let content = fetch_remote_content(uri).await?;
+            open_remote_content(backend, &remote_uri, content).await?;
+            Ok(Some(remote_uri))
         }
         "tombi" => {
-            let remote_url = Url::parse(&format!("untitled://{}", url.path())).unwrap();
-            let Some(content) = get_tombi_schemastore_content(url) else {
+            let remote_uri =
+                tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
+            let Some(content) = get_tombi_schemastore_content(uri) else {
                 return Ok(None);
             };
-            open_remote_content(backend, &remote_url, content).await?;
-            Ok(Some(remote_url))
+            open_remote_content(backend, &remote_uri, content).await?;
+            Ok(Some(remote_uri))
         }
         _ => Ok(None),
     }

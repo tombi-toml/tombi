@@ -13,6 +13,7 @@ pub async fn handle_get_toml_version(
     tracing::trace!(?params);
 
     let TextDocumentIdentifier { uri } = params;
+    let text_document_uri = uri.into();
 
     let ConfigSchemaStore {
         config,
@@ -20,14 +21,14 @@ pub async fn handle_get_toml_version(
         ..
     } = backend
         .config_manager
-        .config_schema_store_for_url(&uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    let root_ast = backend.get_incomplete_ast(&uri).await;
+    let root_ast = backend.get_incomplete_ast(&text_document_uri).await;
 
     let source_schema = match &root_ast {
         Some(root) => schema_store
-            .resolve_source_schema_from_ast(root, Some(Either::Left(&uri)))
+            .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
             .await
             .ok()
             .flatten(),

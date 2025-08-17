@@ -1,10 +1,10 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, str::FromStr};
 
 use tombi_schema_store::get_tombi_schemastore_content;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentLink {
-    pub target: tower_lsp::lsp_types::Url,
+    pub target: tombi_uri::Uri,
     pub range: tombi_text::Range,
     pub tooltip: Cow<'static, str>,
 }
@@ -13,16 +13,16 @@ impl From<DocumentLink> for tower_lsp::lsp_types::DocumentLink {
     fn from(value: DocumentLink) -> Self {
         tower_lsp::lsp_types::DocumentLink {
             range: value.range.into(),
-            target: Some(value.target),
+            target: Some(value.target.into()),
             tooltip: Some(value.tooltip.into_owned()),
             data: None,
         }
     }
 }
 
-pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp::lsp_types::Url> {
-    if url.scheme() == "tombi" {
-        if get_tombi_schemastore_content(url).is_some() {
+pub fn get_tombi_github_uri(uri: &tombi_uri::Uri) -> Option<tombi_uri::Uri> {
+    if uri.scheme() == "tombi" {
+        if get_tombi_schemastore_content(uri).is_some() {
             let version = env!("CARGO_PKG_VERSION");
             let branch = if version == "0.0.0-dev" {
                 "main".to_string()
@@ -30,19 +30,19 @@ pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp
                 format!("refs/tags/v{version}")
             };
 
-            if url.path().ends_with("/json/catalog.json") {
-                tower_lsp::lsp_types::Url::parse(&format!(
+            if uri.path().ends_with("/json/catalog.json") {
+                tombi_uri::Uri::from_str(&format!(
                     "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/{host}/api/json/catalog.json",
-                    host = url.host_str().unwrap()
+                    host = uri.host_str().unwrap()
                 ))
                 .ok()
-            } else if let Some(schema_filename) = url
+            } else if let Some(schema_filename) = uri
                 .path_segments()
                 .and_then(|mut segments| segments.next_back())
             {
-                tower_lsp::lsp_types::Url::parse(&format!(
+                tombi_uri::Uri::from_str(&format!(
                     "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/{host}/{schema_filename}",
-                    host = url.host_str().unwrap()
+                    host = uri.host_str().unwrap()
                 )).ok()
             } else {
                 None
@@ -51,6 +51,6 @@ pub fn get_tombi_github_url(url: &tower_lsp::lsp_types::Url) -> Option<tower_lsp
             None
         }
     } else {
-        Some(url.clone())
+        Some(uri.clone())
     }
 }

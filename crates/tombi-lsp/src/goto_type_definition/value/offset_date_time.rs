@@ -37,7 +37,7 @@ impl GetTypeDefinition for tombi_document_tree::OffsetDateTime {
                             keys,
                             accessors,
                             one_of_schema,
-                            current_schema.schema_url.as_ref(),
+                            current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
                         )
@@ -50,7 +50,7 @@ impl GetTypeDefinition for tombi_document_tree::OffsetDateTime {
                             keys,
                             accessors,
                             any_of_schema,
-                            current_schema.schema_url.as_ref(),
+                            current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
                         )
@@ -63,7 +63,7 @@ impl GetTypeDefinition for tombi_document_tree::OffsetDateTime {
                             keys,
                             accessors,
                             all_of_schema,
-                            current_schema.schema_url.as_ref(),
+                            current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
                         )
@@ -90,11 +90,11 @@ impl GetTypeDefinition for tombi_schema_store::OffsetDateTimeSchema {
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {
-                let mut schema_url = schema.schema_url.as_ref().clone();
-                schema_url.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
+                let mut schema_uri = schema.schema_uri.as_ref().clone();
+                schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
 
                 TypeDefinition {
-                    schema_url,
+                    schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
                     range: schema.value_schema.range(),
                 }

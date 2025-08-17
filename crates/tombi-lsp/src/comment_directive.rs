@@ -58,7 +58,7 @@ pub fn get_document_schema_comment_directive(
             .directive_range
             .contains(position)
             || document_schema_comment_directive
-                .url_range
+                .uri_range
                 .contains(position)
         {
             return Some(document_schema_comment_directive);

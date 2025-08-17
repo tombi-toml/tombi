@@ -44,7 +44,7 @@ async fn get_schema<'a: 'b, 'b>(
                     for referable_schema in schemas.write().await.iter_mut() {
                         if let Ok(Some(current_schema)) = referable_schema
                             .resolve(
-                                current_schema.schema_url.clone(),
+                                current_schema.schema_uri.clone(),
                                 current_schema.definitions.clone(),
                                 schema_context.store,
                             )
@@ -95,7 +95,7 @@ async fn get_schema<'a: 'b, 'b>(
                             {
                                 if let Ok(Some(current_schema)) = property_schema
                                     .resolve(
-                                        current_schema.schema_url.clone(),
+                                        current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
                                     )
@@ -123,7 +123,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         if pattern.is_match(&key.to_string()) {
                                             if let Ok(Some(current_schema)) = property_schema
                                                 .resolve(
-                                                    current_schema.schema_url.clone(),
+                                                    current_schema.schema_uri.clone(),
                                                     current_schema.definitions.clone(),
                                                     schema_context.store,
                                                 )
@@ -154,7 +154,7 @@ async fn get_schema<'a: 'b, 'b>(
                                     .write()
                                     .await
                                     .resolve(
-                                        current_schema.schema_url.clone(),
+                                        current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
                                     )
@@ -187,7 +187,7 @@ async fn get_schema<'a: 'b, 'b>(
                                     .write()
                                     .await
                                     .resolve(
-                                        current_schema.schema_url.clone(),
+                                        current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
                                     )

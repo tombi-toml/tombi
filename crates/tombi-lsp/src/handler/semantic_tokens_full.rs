@@ -14,12 +14,13 @@ pub async fn handle_semantic_tokens_full(
     tracing::trace!(?params);
 
     let SemanticTokensParams { text_document, .. } = params;
+    let text_document_uri: tombi_uri::Uri = text_document.uri.into();
 
-    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document.uri).await else {
+    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document_uri).await else {
         return Ok(None);
     };
 
-    let mut tokens_builder = SemanticTokensBuilder::new(text_document.uri);
+    let mut tokens_builder = SemanticTokensBuilder::new(text_document_uri);
     root.append_semantic_tokens(&mut tokens_builder);
     let tokens = tokens_builder.build();
 

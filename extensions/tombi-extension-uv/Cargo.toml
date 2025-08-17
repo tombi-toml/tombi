@@ -18,6 +18,7 @@ tombi-extension.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
+tombi-uri.workspace = true
 tower-lsp.workspace = true
 
 [dev-dependencies]

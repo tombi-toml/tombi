@@ -19,19 +19,19 @@ impl Validate for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
-            if let Some(sub_schema_url) = schema_context
-                .sub_schema_url_map
+            if let Some(sub_schema_uri) = schema_context
+                .sub_schema_uri_map
                 .and_then(|map| map.get(accessors))
             {
-                if current_schema.map(|schema| schema.schema_url.as_ref()) != Some(sub_schema_url) {
+                if current_schema.map(|schema| schema.schema_uri.as_ref()) != Some(sub_schema_uri) {
                     if let Ok(Some(DocumentSchema {
                         value_schema: Some(value_schema),
-                        schema_url,
+                        schema_uri,
                         definitions,
                         ..
                     })) = schema_context
                         .store
-                        .try_get_document_schema(sub_schema_url)
+                        .try_get_document_schema(sub_schema_uri)
                         .await
                     {
                         return self
@@ -39,7 +39,7 @@ impl Validate for tombi_document_tree::Table {
                                 accessors,
                                 Some(&CurrentSchema {
                                     value_schema: Cow::Borrowed(&value_schema),
-                                    schema_url: Cow::Borrowed(&schema_url),
+                                    schema_uri: Cow::Borrowed(&schema_uri),
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
@@ -129,7 +129,7 @@ impl Validate for tombi_document_tree::Table {
                         matche_key = true;
                         match property_schema
                             .resolve(
-                                current_schema.schema_url.clone(),
+                                current_schema.schema_uri.clone(),
                                 current_schema.definitions.clone(),
                                 schema_context.store,
                             )
@@ -175,7 +175,7 @@ impl Validate for tombi_document_tree::Table {
                                 matche_key = true;
                                 if let Ok(Some(current_schema)) = property_schema
                                     .resolve(
-                                        current_schema.schema_url.clone(),
+                                        current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
                                     )
@@ -230,7 +230,7 @@ impl Validate for tombi_document_tree::Table {
                                 referable_additional_property_schema.write().await;
                             if let Ok(Some(current_schema)) = referable_schema
                                 .resolve(
-                                    current_schema.schema_url.clone(),
+                                    current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
                                     schema_context.store,
                                 )
@@ -261,7 +261,7 @@ impl Validate for tombi_document_tree::Table {
                             crate::Warning {
                                 kind: Box::new(crate::WarningKind::StrictAdditionalProperties {
                                     accessors: SchemaAccessors::new(accessors.to_vec()),
-                                    schema_url: current_schema.schema_url.as_ref().clone(),
+                                    schema_uri: current_schema.schema_uri.as_ref().clone(),
                                     key: key.to_string(),
                                 }),
                                 range: key.range() + value.range(),

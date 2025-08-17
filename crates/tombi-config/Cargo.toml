@@ -13,7 +13,6 @@ thiserror.workspace = true
 tombi-toml-version.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
-url.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

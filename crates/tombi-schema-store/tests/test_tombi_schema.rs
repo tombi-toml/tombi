@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use tombi_schema_store::SchemaUrl;
+use tombi_schema_store::SchemaUri;
 
 fn project_root_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let cargo_manifest_dir = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?);
@@ -36,7 +36,7 @@ fn tombi_schema() -> Result<(), Box<dyn std::error::Error>> {
     match value_node {
         tombi_json::ValueNode::Object(_) => Ok(()),
         _ => Err(Box::new(tombi_schema_store::Error::SchemaMustBeObject {
-            schema_url: SchemaUrl::from_file_path(&document_path).unwrap(),
+            schema_uri: SchemaUri::from_file_path(&document_path).unwrap(),
         })),
     }
 }

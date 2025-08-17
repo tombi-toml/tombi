@@ -10,7 +10,9 @@ pub async fn handle_update_config(
     tracing::info!("handle_update_config");
     tracing::trace!(?params);
 
-    if let Ok(config_path) = tombi_uri::url_to_file_path(&params.uri) {
+    let text_document_uri: tombi_uri::Uri = params.uri.into();
+
+    if let Ok(config_path) = text_document_uri.to_file_path() {
         if let Ok(Some(config)) = serde_tombi::config::try_from_path(&config_path) {
             match backend
                 .config_manager
@@ -18,7 +20,7 @@ pub async fn handle_update_config(
                 .await
             {
                 Ok(_) => {
-                    tracing::info!("updated config: {}", params.uri);
+                    tracing::info!("updated config: {}", text_document_uri);
                     return Ok(true);
                 }
                 Err(err) => {
@@ -26,7 +28,7 @@ pub async fn handle_update_config(
                 }
             }
         } else {
-            tracing::error!("failed to load config for update: {}", params.uri);
+            tracing::error!("failed to load config for update: {}", text_document_uri);
         }
     }
 

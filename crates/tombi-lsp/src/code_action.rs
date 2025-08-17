@@ -2,7 +2,7 @@ use tombi_document_tree::TableKind;
 use tombi_schema_store::{dig_accessors, Accessor, AccessorContext, AccessorKeyKind};
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextDocumentIdentifier, TextEdit, WorkspaceEdit,
+    TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
 pub enum CodeActionRefactorRewriteName {
@@ -24,7 +24,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 }
 
 pub fn dot_keys_to_inline_table_code_action(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
@@ -60,7 +60,7 @@ pub fn dot_keys_to_inline_table_code_action(
                     changes: None,
                     document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                         text_document: OptionalVersionedTextDocumentIdentifier {
-                            uri: text_document.clone().uri,
+                            uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
                         edits: vec![
@@ -97,7 +97,7 @@ pub fn dot_keys_to_inline_table_code_action(
 }
 
 pub fn inline_table_to_dot_keys_code_action(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
@@ -125,7 +125,7 @@ pub fn inline_table_to_dot_keys_code_action(
                     changes: None,
                     document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                         text_document: OptionalVersionedTextDocumentIdentifier {
-                            uri: text_document.uri.clone(),
+                            uri: text_document_uri.to_owned().into(),
                             version: None,
                         },
                         edits: vec![

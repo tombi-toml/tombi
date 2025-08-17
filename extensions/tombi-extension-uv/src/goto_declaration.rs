@@ -4,7 +4,6 @@ use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_keys, Value};
 use tombi_schema_store::{dig_accessors, matches_accessors};
-use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml,
@@ -12,16 +11,16 @@ use crate::{
 };
 
 pub async fn goto_declaration(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
-    if !text_document.uri.path().ends_with("pyproject.toml") {
+    if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(Default::default());
     }
-    let Ok(pyproject_toml_path) = text_document.uri.to_file_path() else {
+    let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Default::default());
     };
 
@@ -119,7 +118,8 @@ fn get_workspace_dependency_declaration(
         toml_version,
     )?;
 
-    let Ok(workspace_pyproject_toml_uri) = Url::from_file_path(&workspace_pyproject_toml_path)
+    let Ok(workspace_pyproject_toml_uri) =
+        tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path)
     else {
         return None;
     };

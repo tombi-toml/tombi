@@ -4,7 +4,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{ArrayValuesOrder, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER};
 
 use super::{
-    CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUrl,
+    CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUri,
     ValueSchema,
 };
 use crate::{Accessor, SchemaStore};
@@ -101,7 +101,7 @@ impl FindSchemaCandidates for ArraySchema {
     fn find_schema_candidates<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
@@ -115,12 +115,12 @@ impl FindSchemaCandidates for ArraySchema {
 
             let mut referable_schema = items.write().await;
             if let Ok(Some(CurrentSchema {
-                schema_url,
+                schema_uri,
                 value_schema,
                 definitions,
             })) = referable_schema
                 .resolve(
-                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(schema_uri),
                     Cow::Borrowed(definitions),
                     schema_store,
                 )
@@ -129,7 +129,7 @@ impl FindSchemaCandidates for ArraySchema {
                 let (mut item_candidates, mut item_errors) = value_schema
                     .find_schema_candidates(
                         &accessors[1..],
-                        &schema_url,
+                        &schema_uri,
                         &definitions,
                         schema_store,
                     )

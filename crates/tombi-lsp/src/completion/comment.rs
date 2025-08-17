@@ -128,7 +128,7 @@ async fn document_tombi_directive_completion_contents(
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version,
             root_schema: Some(&document_schema),
-            sub_schema_url_map: None,
+            sub_schema_uri_map: None,
             store: tombi_comment_directive::schema_store().await,
         };
 

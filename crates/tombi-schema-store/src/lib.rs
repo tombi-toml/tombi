@@ -18,18 +18,17 @@ pub use schema::*;
 pub use store::SchemaStore;
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::TryIntoDocumentTree;
-use url::Url;
 pub use value_type::ValueType;
 
 pub use crate::accessor::{AccessorContext, AccessorKeyKind, KeyContext};
 
-pub fn get_schema_name(schema_url: &Url) -> Option<&str> {
-    if let Some(path) = schema_url.path().split('/').next_back() {
+pub fn get_schema_name(schema_uri: &tombi_uri::Uri) -> Option<&str> {
+    if let Some(path) = schema_uri.path().split('/').next_back() {
         if !path.is_empty() {
             return Some(path);
         }
     }
-    schema_url.host_str()
+    schema_uri.host_str()
 }
 
 pub fn get_accessors(
@@ -112,13 +111,13 @@ pub fn dig_accessors<'a>(
     Some((current_accessor, value))
 }
 
-pub fn get_tombi_schemastore_content(schema_url: &url::Url) -> Option<&'static str> {
-    if schema_url.scheme() != "tombi" {
+pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'static str> {
+    if schema_uri.scheme() != "tombi" {
         return None;
     }
 
-    match schema_url.host_str() {
-        Some("json.schemastore.org") => match schema_url.path() {
+    match schema_uri.host_str() {
+        Some("json.schemastore.org") => match schema_uri.path() {
             "/api/json/catalog.json" => Some(include_str!(
                 "../../../json.schemastore.org/api/json/catalog.json"
             )),
@@ -127,7 +126,7 @@ pub fn get_tombi_schemastore_content(schema_url: &url::Url) -> Option<&'static s
             "/tombi.json" => Some(include_str!("../../../json.schemastore.org/tombi.json")),
             _ => None,
         },
-        Some("json.tombi.dev") => match schema_url.path() {
+        Some("json.tombi.dev") => match schema_uri.path() {
             "/api/json/catalog.json" => Some(include_str!(
                 "../../../json.tombi.dev/api/json/catalog.json"
             )),
@@ -137,8 +136,8 @@ pub fn get_tombi_schemastore_content(schema_url: &url::Url) -> Option<&'static s
             _ => None,
         },
 
-        // TODO: Remove this deprecated url after v1.0.0 release.
-        None => match schema_url.path() {
+        // TODO: Remove this deprecated uri after v1.0.0 release.
+        None => match schema_uri.path() {
             "/json/catalog.json" => Some(include_str!(
                 "../../../json.schemastore.org/api/json/catalog.json"
             )),

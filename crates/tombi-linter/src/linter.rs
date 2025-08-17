@@ -4,7 +4,6 @@ use itertools::Either;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use url::Url;
 
 use crate::lint::Lint;
 
@@ -12,7 +11,7 @@ pub struct Linter<'a> {
     toml_version: TomlVersion,
     options: Cow<'a, crate::LintOptions>,
     source_text: Cow<'a, str>,
-    source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
+    source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     pub(crate) diagnostics: Vec<crate::Diagnostic>,
 }
@@ -21,14 +20,14 @@ impl<'a> Linter<'a> {
     pub fn new(
         toml_version: TomlVersion,
         options: &'a crate::LintOptions,
-        source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
+        source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
         schema_store: &'a tombi_schema_store::SchemaStore,
     ) -> Self {
         Self {
             toml_version,
             options: Cow::Borrowed(options),
             source_text: Cow::Borrowed(""),
-            source_url_or_path,
+            source_uri_or_path,
             schema_store,
             diagnostics: Vec::new(),
         }
@@ -42,7 +41,7 @@ impl<'a> Linter<'a> {
             let root = parsed.tree();
             let source_schema = match self
                 .schema_store
-                .resolve_source_schema_from_ast(&root, self.source_url_or_path)
+                .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
                 .await
             {
                 Ok(Some(schema)) => Some(schema),
@@ -76,7 +75,7 @@ impl<'a> Linter<'a> {
         if let Some(document_tombi_comment_directive) = &document_tombi_comment_directive {
             if let Some(lint) = &document_tombi_comment_directive.lint {
                 if lint.disable == Some(true) {
-                    match self.source_url_or_path.map(|path| match path {
+                    match self.source_uri_or_path.map(|path| match path {
                         Either::Left(url) => url.to_string(),
                         Either::Right(path) => path.to_string_lossy().to_string(),
                     }) {
@@ -125,7 +124,7 @@ impl<'a> Linter<'a> {
                 let schema_context = tombi_schema_store::SchemaContext {
                     toml_version: self.toml_version,
                     root_schema: source_schema.root_schema.as_ref(),
-                    sub_schema_url_map: Some(&source_schema.sub_schema_url_map),
+                    sub_schema_uri_map: Some(&source_schema.sub_schema_uri_map),
                     store: self.schema_store,
                 };
                 if let Err(schema_diagnostics) =

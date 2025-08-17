@@ -12,4 +12,5 @@ tombi-document-tree.workspace = true
 tombi-extension.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
+tombi-uri.workspace = true
 tower-lsp.workspace = true

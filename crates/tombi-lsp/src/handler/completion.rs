@@ -33,13 +33,15 @@ pub async fn handle_completion(
         ..
     } = params;
 
+    let text_document_uri = text_document.uri.into();
+
     let ConfigSchemaStore {
         config,
         schema_store,
         ..
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document.uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     if !config
@@ -64,12 +66,12 @@ pub async fn handle_completion(
         return Ok(None);
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
+    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(None);
     };
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -85,7 +87,7 @@ pub async fn handle_completion(
         .await;
 
     let document_sources = backend.document_sources.read().await;
-    let Some(document_source) = document_sources.get(&text_document.uri) else {
+    let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(None);
     };
 
@@ -117,7 +119,7 @@ pub async fn handle_completion(
     let position = position.into();
 
     if let Some(comment_completion_contents) =
-        get_comment_directive_completion_contents(&root, position, &text_document.uri).await
+        get_comment_directive_completion_contents(&root, position, &text_document_uri).await
     {
         return Ok(Some(comment_completion_contents));
     }
@@ -129,9 +131,9 @@ pub async fn handle_completion(
     let schema_context = tombi_schema_store::SchemaContext {
         toml_version,
         root_schema,
-        sub_schema_url_map: source_schema
+        sub_schema_uri_map: source_schema
             .as_ref()
-            .map(|schema| &schema.sub_schema_url_map),
+            .map(|schema| &schema.sub_schema_uri_map),
         store: &schema_store,
     };
 
@@ -148,7 +150,7 @@ pub async fn handle_completion(
 
     let accessors = get_accessors(&document_tree, &keys, position);
     if let Some(items) = tombi_extension_cargo::completion(
-        &text_document,
+        &text_document_uri,
         &document_tree,
         position,
         &accessors,

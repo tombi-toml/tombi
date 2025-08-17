@@ -1,13 +1,14 @@
+use std::str::FromStr;
+
 use ahash::AHashMap;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{DocumentSchema, SchemaUrl, SourceSchema};
+use tombi_schema_store::{DocumentSchema, SchemaUri, SourceSchema};
 use tombi_toml_version::TomlVersion;
-use url::Url;
 
 use crate::{
-    into_directive_diagnostic, schema_store, DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URL,
+    into_directive_diagnostic, schema_store, DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI,
     DOCUMENT_COMMENT_DIRECTIVE_SOURCE_SCHEMA, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 
@@ -122,7 +123,7 @@ pub async fn try_get_document_tombi_comment_directive(
                 let schema_context = tombi_schema_store::SchemaContext {
                     toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
                     root_schema: None,
-                    sub_schema_url_map: None,
+                    sub_schema_uri_map: None,
                     store: schema_store,
                 };
 
@@ -172,18 +173,19 @@ pub async fn try_get_document_tombi_comment_directive(
 }
 
 #[inline]
-pub fn document_comment_directive_schema_url() -> &'static SchemaUrl {
-    DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URL.get_or_init(|| {
-        let url = Url::parse("tombi://json.tombi.dev/document-tombi-directive.json").unwrap();
-        SchemaUrl::new(url)
+pub fn document_comment_directive_schema_uri() -> &'static SchemaUri {
+    DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI.get_or_init(|| {
+        let uri = tombi_uri::Uri::from_str("tombi://json.tombi.dev/document-tombi-directive.json")
+            .unwrap();
+        SchemaUri::new(uri)
     })
 }
 
 pub async fn document_comment_directive_document_schema() -> DocumentSchema {
     let schema_store = schema_store().await;
-    let schema_url = document_comment_directive_schema_url();
+    let schema_uri = document_comment_directive_schema_uri();
     let tombi_json::ValueNode::Object(object) = schema_store
-        .fetch_schema_value(schema_url)
+        .fetch_schema_value(schema_uri)
         .await
         .unwrap()
         .unwrap()
@@ -191,10 +193,10 @@ pub async fn document_comment_directive_document_schema() -> DocumentSchema {
         panic!(
             "Failed to fetch document comment directive schema from URL '{}'. \
              The fetched value was not an object.",
-            schema_url
+            schema_uri
         );
     };
-    DocumentSchema::new(object, schema_url.clone())
+    DocumentSchema::new(object, schema_uri.clone())
 }
 
 #[inline]
@@ -203,6 +205,6 @@ pub async fn document_comment_directive_source_schema(
 ) -> &'static SourceSchema {
     DOCUMENT_COMMENT_DIRECTIVE_SOURCE_SCHEMA.get_or_init(|| tombi_schema_store::SourceSchema {
         root_schema: Some(document_schema),
-        sub_schema_url_map: AHashMap::with_capacity(0),
+        sub_schema_uri_map: AHashMap::with_capacity(0),
     })
 }

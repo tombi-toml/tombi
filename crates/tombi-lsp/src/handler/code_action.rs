@@ -23,14 +23,16 @@ pub async fn handle_code_action(
         ..
     } = params;
 
+    let text_document_uri = text_document.uri.into();
     let position: tombi_text::Position = range.start.into();
+
     let ConfigSchemaStore {
         config,
         schema_store,
         ..
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document.uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     if !config
@@ -44,12 +46,12 @@ pub async fn handle_code_action(
         return Ok(None);
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
+    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(None);
     };
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -81,7 +83,7 @@ pub async fn handle_code_action(
     let mut code_actions = Vec::new();
 
     if let Some(code_action) = dot_keys_to_inline_table_code_action(
-        &text_document,
+        &text_document_uri,
         &document_tree,
         &accessors,
         &accessor_contexts,
@@ -89,7 +91,7 @@ pub async fn handle_code_action(
         code_actions.push(code_action.into());
     }
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
-        &text_document,
+        &text_document_uri,
         &document_tree,
         &accessors,
         &accessor_contexts,
@@ -98,7 +100,7 @@ pub async fn handle_code_action(
     }
 
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
-        &text_document,
+        &text_document_uri,
         &document_tree,
         &accessors,
         &accessor_contexts,

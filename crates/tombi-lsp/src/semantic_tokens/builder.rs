@@ -1,16 +1,16 @@
 use tombi_ast::AstToken;
-use tower_lsp::lsp_types::{SemanticToken, Url};
+use tower_lsp::lsp_types::SemanticToken;
 
 use super::token_type::TokenType;
 
 pub struct SemanticTokensBuilder {
     tokens: Vec<SemanticToken>,
     last_range: tombi_text::Range,
-    pub text_document_uri: Url,
+    pub text_document_uri: tombi_uri::Uri,
 }
 
 impl SemanticTokensBuilder {
-    pub fn new(text_document_uri: Url) -> Self {
+    pub fn new(text_document_uri: tombi_uri::Uri) -> Self {
         Self {
             tokens: Vec::new(),
             last_range: tombi_text::Range::default(),

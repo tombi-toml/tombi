@@ -3,7 +3,6 @@ use tombi_config::{
     Config, ConfigLevel, TomlVersion, CONFIG_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
     TOMBI_CONFIG_TOML_VERSION, TOMBI_TOML_FILENAME,
 };
-use tombi_uri::url_to_file_path;
 
 /// Parse the TOML text into a `Config` struct.
 ///
@@ -111,18 +110,18 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
     }
 }
 
-pub fn try_from_url(config_url: &url::Url) -> Result<Option<Config>, tombi_config::Error> {
-    match config_url.scheme() {
+pub fn try_from_uri(config_uri: &tombi_uri::Uri) -> Result<Option<Config>, tombi_config::Error> {
+    match config_uri.scheme() {
         "file" => {
-            let config_path = url_to_file_path(config_url).map_err(|_| {
-                tombi_config::Error::ConfigUrlParseFailed {
-                    config_url: config_url.clone(),
+            let config_path = tombi_uri::Uri::to_file_path(config_uri).map_err(|_| {
+                tombi_config::Error::ConfigUriParseFailed {
+                    config_uri: config_uri.clone(),
                 }
             })?;
             try_from_path(config_path)
         }
-        _ => Err(tombi_config::Error::ConfigUrlUnsupported {
-            config_url: config_url.clone(),
+        _ => Err(tombi_config::Error::ConfigUriUnsupported {
+            config_uri: config_uri.clone(),
         }),
     }
 }

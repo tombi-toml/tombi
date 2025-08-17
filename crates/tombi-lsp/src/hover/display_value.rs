@@ -2,7 +2,7 @@ use std::{borrow::Cow, str::FromStr};
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaDefinitions, SchemaUrl, ValueSchema,
+    AllOfSchema, AnyOfSchema, OneOfSchema, SchemaContext, SchemaDefinitions, SchemaUri, ValueSchema,
 };
 
 #[derive(Debug, Clone)]
@@ -131,7 +131,7 @@ impl std::fmt::Display for DisplayValue {
 pub trait GetEnumerate {
     fn get_enumerate<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>>;
@@ -140,7 +140,7 @@ pub trait GetEnumerate {
 impl GetEnumerate for ValueSchema {
     fn get_enumerate<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
@@ -185,17 +185,17 @@ impl GetEnumerate for ValueSchema {
                 ValueSchema::Array(_) | ValueSchema::Table(_) | ValueSchema::Null => None,
                 ValueSchema::OneOf(schema) => {
                     schema
-                        .get_enumerate(schema_url, definitions, schema_context)
+                        .get_enumerate(schema_uri, definitions, schema_context)
                         .await
                 }
                 ValueSchema::AnyOf(schema) => {
                     schema
-                        .get_enumerate(schema_url, definitions, schema_context)
+                        .get_enumerate(schema_uri, definitions, schema_context)
                         .await
                 }
                 ValueSchema::AllOf(schema) => {
                     schema
-                        .get_enumerate(schema_url, definitions, schema_context)
+                        .get_enumerate(schema_uri, definitions, schema_context)
                         .await
                 }
             }
@@ -207,40 +207,40 @@ impl GetEnumerate for ValueSchema {
 impl GetEnumerate for OneOfSchema {
     fn get_enumerate<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
-        get_enumerate_from_schemas(&self.schemas, schema_url, definitions, schema_context)
+        get_enumerate_from_schemas(&self.schemas, schema_uri, definitions, schema_context)
     }
 }
 
 impl GetEnumerate for AnyOfSchema {
     fn get_enumerate<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
-        get_enumerate_from_schemas(&self.schemas, schema_url, definitions, schema_context)
+        get_enumerate_from_schemas(&self.schemas, schema_uri, definitions, schema_context)
     }
 }
 
 impl GetEnumerate for AllOfSchema {
     fn get_enumerate<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_context: &'a SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
-        get_enumerate_from_schemas(&self.schemas, schema_url, definitions, schema_context)
+        get_enumerate_from_schemas(&self.schemas, schema_uri, definitions, schema_context)
     }
 }
 
 /// Helper function to get enumerate values from a collection of schemas
 fn get_enumerate_from_schemas<'a: 'b, 'b>(
     schemas: &'a tombi_schema_store::ReferableValueSchemas,
-    schema_url: &'a SchemaUrl,
+    schema_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
@@ -249,7 +249,7 @@ fn get_enumerate_from_schemas<'a: 'b, 'b>(
         for schema in schemas.write().await.iter_mut() {
             match schema
                 .resolve(
-                    Cow::Borrowed(schema_url),
+                    Cow::Borrowed(schema_uri),
                     Cow::Borrowed(definitions),
                     schema_context.store,
                 )
@@ -258,7 +258,7 @@ fn get_enumerate_from_schemas<'a: 'b, 'b>(
                 Ok(Some(resolved)) => {
                     if let Some(values) = resolved
                         .value_schema
-                        .get_enumerate(schema_url, definitions, schema_context)
+                        .get_enumerate(schema_uri, definitions, schema_context)
                         .await
                     {
                         enumerate_values.extend(values);

@@ -1,6 +1,6 @@
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, SchemaUrl};
+use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, SchemaUri};
 
 use crate::completion::{
     CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
@@ -17,7 +17,7 @@ impl FindCompletionContents for BooleanSchema {
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         async move {
-            let schema_url = current_schema.map(|schema| schema.schema_url.as_ref());
+            let schema_uri = current_schema.map(|schema| schema.schema_uri.as_ref());
 
             if let Some(const_value) = &self.const_value {
                 let label = const_value.to_string();
@@ -28,7 +28,7 @@ impl FindCompletionContents for BooleanSchema {
                     self.title.clone(),
                     self.description.clone(),
                     edit,
-                    schema_url,
+                    schema_uri,
                     self.deprecated,
                 )];
             }
@@ -45,13 +45,13 @@ impl FindCompletionContents for BooleanSchema {
                             self.title.clone(),
                             self.description.clone(),
                             edit,
-                            schema_url,
+                            schema_uri,
                             self.deprecated,
                         )
                     })
                     .collect()
             } else {
-                type_hint_boolean(position, schema_url, completion_hint)
+                type_hint_boolean(position, schema_uri, completion_hint)
             }
         }
         .boxed()
@@ -60,7 +60,7 @@ impl FindCompletionContents for BooleanSchema {
 
 pub fn type_hint_boolean(
     position: tombi_text::Position,
-    schema_url: Option<&SchemaUrl>,
+    schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
     [true, false]
@@ -69,7 +69,7 @@ pub fn type_hint_boolean(
             CompletionContent::new_type_hint_boolean(
                 value,
                 CompletionEdit::new_literal(&value.to_string(), position, completion_hint),
-                schema_url,
+                schema_uri,
             )
         })
         .collect()

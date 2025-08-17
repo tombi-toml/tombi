@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use itertools::Either;
 use tombi_config::TomlVersion;
 use tombi_glob::{matches_file_patterns, MatchResult};
-use tombi_uri::url_to_file_path;
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
@@ -16,9 +15,8 @@ pub async fn handle_get_status(
     tracing::info!("handle_get_status");
     tracing::trace!(?params);
 
-    let TextDocumentIdentifier {
-        uri: text_document_uri,
-    } = params;
+    let TextDocumentIdentifier { uri } = params;
+    let text_document_uri = uri.into();
 
     let ConfigSchemaStore {
         config,
@@ -26,7 +24,7 @@ pub async fn handle_get_status(
         config_path,
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document_uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     let (root, source_schema) = match backend.get_incomplete_ast(&text_document_uri).await {
@@ -55,7 +53,7 @@ pub async fn handle_get_status(
         .await;
 
     let mut ignore = None;
-    if let Ok(text_document_path) = url_to_file_path(&text_document_uri) {
+    if let Ok(text_document_path) = text_document_uri.to_file_path() {
         ignore = match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::IncludeNotMatched => Some(IgnoreReason::IncludeFilePatternNotMatched),
             MatchResult::ExcludeMatched => Some(IgnoreReason::ExcludeFilePatternMatched),

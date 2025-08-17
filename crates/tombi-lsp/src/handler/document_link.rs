@@ -13,6 +13,7 @@ pub async fn handle_document_link(
     tracing::trace!(?params);
 
     let DocumentLinkParams { text_document, .. } = params;
+    let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
         config,
@@ -20,7 +21,7 @@ pub async fn handle_document_link(
         ..
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document.uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     if !config
@@ -34,23 +35,23 @@ pub async fn handle_document_link(
         return Ok(None);
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
+    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(None);
     };
 
     let mut document_links = vec![];
 
     if let Some(DocumentSchemaCommentDirective {
-        url: Ok(schema_url),
-        url_range: range,
+        uri: Ok(schema_uri),
+        uri_range: range,
         ..
-    }) = root.document_schema_comment_directive(text_document.uri.to_file_path().ok().as_deref())
+    }) = root.document_schema_comment_directive(text_document_uri.to_file_path().ok().as_deref())
     {
         let tooltip = "Open JSON Schema".into();
         document_links.push(
             tombi_extension::DocumentLink {
                 range,
-                target: schema_url,
+                target: schema_uri,
                 tooltip,
             }
             .into(),
@@ -59,7 +60,7 @@ pub async fn handle_document_link(
 
     // Document Link for Extensions
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -77,19 +78,21 @@ pub async fn handle_document_link(
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
     if let Some(locations) =
-        tombi_extension_cargo::document_link(&text_document, &document_tree, toml_version).await?
+        tombi_extension_cargo::document_link(&text_document_uri, &document_tree, toml_version)
+            .await?
     {
         document_links.extend(locations.into_iter().map(Into::into));
     }
 
     if let Some(locations) =
-        tombi_extension_tombi::document_link(&text_document, &document_tree, toml_version).await?
+        tombi_extension_tombi::document_link(&text_document_uri, &document_tree, toml_version)
+            .await?
     {
         document_links.extend(locations.into_iter().map(Into::into));
     }
 
     if let Some(locations) =
-        tombi_extension_uv::document_link(&text_document, &document_tree, toml_version).await?
+        tombi_extension_uv::document_link(&text_document_uri, &document_tree, toml_version).await?
     {
         document_links.extend(locations.into_iter().map(Into::into));
     }

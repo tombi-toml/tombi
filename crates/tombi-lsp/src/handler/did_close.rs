@@ -8,6 +8,8 @@ pub async fn handle_did_close(backend: &Backend, params: DidCloseTextDocumentPar
 
     let DidCloseTextDocumentParams { text_document } = params;
 
+    let text_document_uri = text_document.uri.into();
     let mut document_sources = backend.document_sources.write().await;
-    document_sources.remove(&text_document.uri);
+
+    document_sources.remove(&text_document_uri);
 }
