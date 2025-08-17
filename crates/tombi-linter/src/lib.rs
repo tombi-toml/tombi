@@ -362,7 +362,7 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_schema_url(
+            fn test_schema_uri(
                 r#"
                 #:schema https://json.schemastore.org/tombi.json
                 "#,

@@ -19,19 +19,19 @@ impl SchemaContext<'_> {
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<Result<crate::DocumentSchema, crate::Error>> {
-        if let Some(sub_schema_url_map) = self.sub_schema_uri_map {
-            if let Some(sub_schema_url) = sub_schema_url_map.get(
+        if let Some(sub_schema_uri_map) = self.sub_schema_uri_map {
+            if let Some(sub_schema_uri) = sub_schema_uri_map.get(
                 &accessors
                     .iter()
                     .map(SchemaAccessor::from)
                     .collect::<Vec<_>>(),
             ) {
                 if current_schema
-                    .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_url)
+                    .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
                 {
                     return self
                         .store
-                        .try_get_document_schema(sub_schema_url)
+                        .try_get_document_schema(sub_schema_uri)
                         .await
                         .transpose();
                 }

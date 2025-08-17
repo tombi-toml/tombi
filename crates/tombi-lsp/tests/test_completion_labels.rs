@@ -1576,7 +1576,7 @@ mod completion_labels {
                         .await;
                 }
 
-                let subschema_url = tombi_schema_store::SchemaUri::from_file_path($subschema_file_path)
+                let subschema_uri = tombi_schema_store::SchemaUri::from_file_path($subschema_file_path)
                     .expect(
                         format!(
                             "failed to convert subschema path to URL: {}",
@@ -1591,7 +1591,7 @@ mod completion_labels {
                         &[
                             tombi_config::Schema::Sub(
                                 tombi_config::SubSchema {
-                                    path: subschema_url.to_string(),
+                                    path: subschema_uri.to_string(),
                                     include: vec!["*.toml".to_string()],
                                     root: $root.to_string(),
                                 }

@@ -39,21 +39,16 @@ impl<'a> Linter<'a> {
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
-            let source_schema = match self
-                .schema_store
-                .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
-                .await
-            {
-                Ok(Some(schema)) => Some(schema),
-                Ok(None) => None,
-                Err((err, range)) => {
-                    self.diagnostics.push(Diagnostic::new_warning(
-                        err.to_string(),
-                        err.code(),
-                        range,
-                    ));
-                    None
-                }
+            let (source_schema, error_with_range) =
+                tombi_schema_store::lint_source_schema_from_ast(
+                    &root,
+                    self.source_uri_or_path,
+                    self.schema_store,
+                )
+                .await;
+            if let Some((err, range)) = error_with_range {
+                self.diagnostics
+                    .push(Diagnostic::new_warning(err.to_string(), err.code(), range));
             };
 
             let document_tombi_comment_directive =
