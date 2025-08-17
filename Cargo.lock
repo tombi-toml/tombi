@@ -3777,6 +3777,7 @@ dependencies = [
  "tombi-test-lib",
  "tombi-text",
  "tombi-validator",
+ "tracing",
  "url",
 ]
 

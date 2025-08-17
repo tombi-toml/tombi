@@ -64,6 +64,27 @@ impl<'a> Formatter<'a> {
             (None, None)
         };
 
+        if let Some(document_tombi_comment_directive) = &document_tombi_comment_directive {
+            if let Some(format) = &document_tombi_comment_directive.format {
+                if format.disable == Some(true) {
+                    match self.source_url_or_path.map(|path| match path {
+                        Either::Left(url) => url.to_string(),
+                        Either::Right(path) => path.to_string_lossy().to_string(),
+                    }) {
+                        Some(source_url_or_path) => {
+                            tracing::info!(
+                                "Skip formatting for \"{source_url_or_path}\" due to `format.disable`"
+                            );
+                        }
+                        None => {
+                            tracing::info!("Skip formatting for stdin due to `format.disable`");
+                        }
+                    }
+                    return Ok(source.to_string());
+                }
+            }
+        }
+
         self.toml_version = document_tombi_comment_directive
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {

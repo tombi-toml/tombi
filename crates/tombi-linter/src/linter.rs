@@ -73,6 +73,27 @@ impl<'a> Linter<'a> {
             (None, None)
         };
 
+        if let Some(document_tombi_comment_directive) = &document_tombi_comment_directive {
+            if let Some(lint) = &document_tombi_comment_directive.lint {
+                if lint.disable == Some(true) {
+                    match self.source_url_or_path.map(|path| match path {
+                        Either::Left(url) => url.to_string(),
+                        Either::Right(path) => path.to_string_lossy().to_string(),
+                    }) {
+                        Some(source_url_or_path) => {
+                            tracing::info!(
+                                "Skip linting for \"{source_url_or_path}\" due to `lint.disable`"
+                            );
+                        }
+                        None => {
+                            tracing::info!("Skip linting for stdin due to `lint.disable`");
+                        }
+                    }
+                    return Ok(());
+                }
+            }
+        }
+
         self.toml_version = document_tombi_comment_directive
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
