@@ -1,0 +1,55 @@
+import { Warning } from "~/components/Highlight";
+
+# Comment Directive
+
+Tombi supports comment directives to control the behavior of the document.
+
+There are two types of comment directories with different scopes of application, as follows.
+
+| Type | Directive | Scope |
+|-----------|-----------|-------------|
+| Document Comment Directive | `#:tombi` | Document |
+| Value Comment Directive | `# tombi:` | Value |
+
+## Document Comment Directive
+
+Document comment directives are comments that apply to the entire document.
+
+This only works in the comment group at the beginning of the document, so you need to add a blank line before the document value.
+
+### `#:schema`
+
+`#:schema` is used to specify the schema to use for the document.
+
+```toml
+#:schema tombi://json.schemastore.org/pyproject.json
+
+[project]
+name = "tombi"
+```
+
+### `#:tombi`
+
+`#:tombi` adds instructions to Tombi. The instructions can be written in the TOML syntax, and can specify the TOML version information, etc.
+
+The following instructions are currently available.
+
+```toml
+#:tombi toml-version = "v1.0.0"
+#:tombi format.disable = true
+#:tombi lint.disable = true
+#:tombi schema.strict = false
+```
+
+## (Draft) Value Comment Directive
+
+<Warning>
+This feature is not yet implemented and will be implemented in the future.
+</Warning>
+
+Value comment directives are comments that apply to a specific value. 
+
+```toml
+# tombi: lint.rules.key-empty = "off"
+"" = "value"
+```

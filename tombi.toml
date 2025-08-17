@@ -1,3 +1,4 @@
+#:schema https://json.schemastore.org/tombi.json
 # Tombi config for this project.
 #
 # This file is for checking if the JsonSchema is correct.
