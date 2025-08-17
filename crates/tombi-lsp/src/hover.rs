@@ -62,7 +62,7 @@ pub enum HoverContent {
     Value(HoverValueContent),
 }
 
-impl From<HoverContent> for tower_lsp::lsp_types::Hover {
+impl From<HoverContent> for tower_lsp_server::ls_types::lsp::Hover {
     fn from(value: HoverContent) -> Self {
         match value {
             HoverContent::Directive(content) => content.into(),
@@ -78,12 +78,12 @@ pub struct HoverDirectiveContent {
     pub range: tombi_text::Range,
 }
 
-impl From<HoverDirectiveContent> for tower_lsp::lsp_types::Hover {
+impl From<HoverDirectiveContent> for tower_lsp_server::ls_types::lsp::Hover {
     fn from(value: HoverDirectiveContent) -> Self {
-        tower_lsp::lsp_types::Hover {
-            contents: tower_lsp::lsp_types::HoverContents::Markup(
-                tower_lsp::lsp_types::MarkupContent {
-                    kind: tower_lsp::lsp_types::MarkupKind::Markdown,
+        tower_lsp_server::ls_types::lsp::Hover {
+            contents: tower_lsp_server::ls_types::lsp::HoverContents::Markup(
+                tower_lsp_server::ls_types::lsp::MarkupContent {
+                    kind: tower_lsp_server::ls_types::lsp::MarkupKind::Markdown,
                     value: format!("#### {}\n\n{}", value.title, value.description),
                 },
             ),
@@ -171,12 +171,12 @@ impl std::fmt::Display for HoverValueContent {
     }
 }
 
-impl From<HoverValueContent> for tower_lsp::lsp_types::Hover {
+impl From<HoverValueContent> for tower_lsp_server::ls_types::lsp::Hover {
     fn from(value: HoverValueContent) -> Self {
-        tower_lsp::lsp_types::Hover {
-            contents: tower_lsp::lsp_types::HoverContents::Markup(
-                tower_lsp::lsp_types::MarkupContent {
-                    kind: tower_lsp::lsp_types::MarkupKind::Markdown,
+        tower_lsp_server::ls_types::lsp::Hover {
+            contents: tower_lsp_server::ls_types::lsp::HoverContents::Markup(
+                tower_lsp_server::ls_types::lsp::MarkupContent {
+                    kind: tower_lsp_server::ls_types::lsp::MarkupKind::Markdown,
                     value: value.to_string(),
                 },
             ),

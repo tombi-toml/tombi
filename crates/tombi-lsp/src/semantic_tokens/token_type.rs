@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::SemanticTokenType;
+use tower_lsp_server::ls_types::lsp::SemanticTokenType;
 
 macro_rules! token_types {
     (

@@ -1,5 +1,5 @@
 use tombi_ast::AstToken;
-use tower_lsp::lsp_types::SemanticToken;
+use tower_lsp_server::ls_types::lsp::SemanticToken;
 
 use super::token_type::TokenType;
 
@@ -76,25 +76,28 @@ impl SemanticTokensBuilder {
     }
 }
 
-fn relative_range(from: tombi_text::Range, to: tombi_text::Range) -> tower_lsp::lsp_types::Range {
+fn relative_range(
+    from: tombi_text::Range,
+    to: tombi_text::Range,
+) -> tower_lsp_server::ls_types::lsp::Range {
     let line_diff = from.end.line - from.start.line;
     let start = from.start - to.start;
-    let start = tower_lsp::lsp_types::Position {
+    let start = tower_lsp_server::ls_types::lsp::Position {
         line: start.line,
         character: start.column,
     };
 
     let end = if line_diff == 0 {
-        tower_lsp::lsp_types::Position {
+        tower_lsp_server::ls_types::lsp::Position {
             line: start.line,
             character: start.character + from.end.column - from.start.column,
         }
     } else {
-        tower_lsp::lsp_types::Position {
+        tower_lsp_server::ls_types::lsp::Position {
             line: start.line + line_diff,
             character: from.end.column,
         }
     };
 
-    tower_lsp::lsp_types::Range { start, end }
+    tower_lsp_server::ls_types::lsp::Range { start, end }
 }

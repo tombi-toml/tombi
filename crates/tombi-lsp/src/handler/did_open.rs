@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::DidOpenTextDocumentParams;
+use tower_lsp_server::ls_types::lsp::DidOpenTextDocumentParams;
 
 use crate::{backend::Backend, document::DocumentSource};
 

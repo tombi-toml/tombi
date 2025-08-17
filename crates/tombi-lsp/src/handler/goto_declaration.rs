@@ -1,8 +1,8 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::get_accessors;
-use tower_lsp::lsp_types::request::GotoDeclarationParams;
-use tower_lsp::lsp_types::TextDocumentPositionParams;
+use tower_lsp_server::ls_types::lsp::TextDocumentPositionParams;
+use tower_lsp_server::ls_types::request::GotoDeclarationParams;
 
 use crate::config_manager::ConfigSchemaStore;
 use crate::handler::hover::get_hover_keys_with_range;
@@ -12,7 +12,7 @@ use crate::Backend;
 pub async fn handle_goto_declaration(
     backend: &Backend,
     params: GotoDeclarationParams,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_goto_declaration");
     tracing::trace!(?params);
 

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 pub use url::ParseError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -28,6 +30,30 @@ impl From<url::Url> for Uri {
 impl From<Uri> for url::Url {
     fn from(uri: Uri) -> Self {
         uri.0
+    }
+}
+
+impl From<Uri> for fluent_uri::Uri<String> {
+    fn from(uri: Uri) -> Self {
+        fluent_uri::Uri::parse(uri.0.to_string()).unwrap()
+    }
+}
+
+impl From<fluent_uri::Uri<String>> for Uri {
+    fn from(uri: fluent_uri::Uri<String>) -> Self {
+        Self(url::Url::from_str(&uri.to_string()).unwrap())
+    }
+}
+
+impl From<Uri> for tower_lsp_server::ls_types::Uri {
+    fn from(uri: Uri) -> Self {
+        tower_lsp_server::ls_types::Uri::from_str(&uri.0.to_string()).unwrap()
+    }
+}
+
+impl From<tower_lsp_server::ls_types::Uri> for Uri {
+    fn from(uri: tower_lsp_server::ls_types::Uri) -> Self {
+        Self(url::Url::from_str(&uri.to_string()).unwrap())
     }
 }
 

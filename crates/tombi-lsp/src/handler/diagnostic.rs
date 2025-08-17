@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
     FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, TextDocumentIdentifier,
 };
@@ -12,7 +12,7 @@ use crate::{
 pub async fn handle_diagnostic(
     backend: &Backend,
     params: DocumentDiagnosticParams,
-) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+) -> Result<DocumentDiagnosticReportResult, tower_lsp_server::jsonrpc::Error> {
     let DocumentDiagnosticParams { text_document, .. } = params;
 
     let text_document_uri = text_document.uri.into();

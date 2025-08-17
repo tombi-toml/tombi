@@ -45,7 +45,7 @@ tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
-tower-lsp.workspace = true
+tower-lsp-server.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]

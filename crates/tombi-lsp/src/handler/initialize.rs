@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
     CompletionOptionsCompletionItem, DeclarationCapability, DiagnosticOptions,
     DiagnosticServerCapabilities, DocumentLinkOptions, FileOperationFilter, FileOperationPattern,
@@ -21,7 +21,7 @@ use crate::{
 pub async fn handle_initialize(
     backend: &Backend,
     params: InitializeParams,
-) -> Result<InitializeResult, tower_lsp::jsonrpc::Error> {
+) -> Result<InitializeResult, tower_lsp_server::jsonrpc::Error> {
     tracing::debug!("handle_initialize");
     tracing::trace!(?params);
 

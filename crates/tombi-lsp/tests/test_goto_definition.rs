@@ -279,11 +279,11 @@ mod goto_definition_tests {
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use tombi_lsp::handler::{handle_did_open, handle_goto_definition};
                 use tombi_lsp::Backend;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    ls_types::lsp::{
                         DidOpenTextDocumentParams, GotoDefinitionParams,
                         PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
-                        TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentPositionParams, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -296,7 +296,7 @@ mod goto_definition_tests {
 
                 let backend = service.inner();
 
-                let toml_file_url = Url::from_file_path($file_path).expect("failed to convert file path to URL");
+                let toml_file_uri = tombi_uri::Uri::from_file_path($file_path).expect("failed to convert file path to URI");
 
                 let mut toml_text = textwrap::dedent($source).trim().to_string();
                 let Some(index) = toml_text.as_str().find("█") else {
@@ -308,7 +308,7 @@ mod goto_definition_tests {
                     backend,
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
-                            uri: toml_file_url.clone(),
+                            uri: toml_file_uri.clone().into(),
                             language_id: "toml".to_string(),
                             version: 0,
                             text: toml_text.clone(),
@@ -319,7 +319,7 @@ mod goto_definition_tests {
 
                 let params = GotoDefinitionParams {
                     text_document_position_params: TextDocumentPositionParams {
-                        text_document: TextDocumentIdentifier { uri: toml_file_url },
+                        text_document: TextDocumentIdentifier { uri: toml_file_uri.into() },
                         position: (tombi_text::Position::default()
                             + tombi_text::RelativePosition::of(&toml_text[..index]))
                         .into(),

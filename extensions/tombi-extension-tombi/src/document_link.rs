@@ -40,7 +40,7 @@ pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     _toml_version: TomlVersion,
-) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is tombi.toml
     if !text_document_uri.path().ends_with("tombi.toml") {
         return Ok(None);

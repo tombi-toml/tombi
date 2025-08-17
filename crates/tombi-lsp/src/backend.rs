@@ -8,20 +8,23 @@ use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::SourceSchema;
 use tombi_syntax::SyntaxNode;
-use tower_lsp::{
-    lsp_types::{
+use tower_lsp_server::{
+    ls_types::{
+        lsp::{
+            CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
+            DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
+            DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+            DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink,
+            DocumentLinkParams, DocumentSymbolParams, DocumentSymbolResponse, FoldingRange,
+            FoldingRangeParams, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+            InitializeParams, InitializeResult, InitializedParams, SemanticTokensParams,
+            SemanticTokensResult, TextDocumentIdentifier, WorkspaceDiagnosticParams,
+            WorkspaceDiagnosticReportResult,
+        },
         request::{
             GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
             GotoTypeDefinitionResponse,
         },
-        CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
-        DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
-        DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
-        DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-        GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
-        TextDocumentIdentifier, Url, WorkspaceDiagnosticParams, WorkspaceDiagnosticReportResult,
     },
     LanguageServer,
 };
@@ -46,7 +49,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Backend {
     #[allow(dead_code)]
-    pub client: tower_lsp::Client,
+    pub client: tower_lsp_server::Client,
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
@@ -71,7 +74,7 @@ pub struct Options {
 
 impl Backend {
     #[inline]
-    pub fn new(client: tower_lsp::Client, options: &Options) -> Self {
+    pub fn new(client: tower_lsp_server::Client, options: &Options) -> Self {
         Self {
             client,
             capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
@@ -210,9 +213,12 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn config_path(&self, text_document_uri: &Url) -> Option<std::path::PathBuf> {
+    pub async fn config_path(
+        &self,
+        text_document_uri: &tombi_uri::Uri,
+    ) -> Option<std::path::PathBuf> {
         self.config_manager
-            .get_config_path_for_url(text_document_uri)
+            .get_config_path_for_uri(text_document_uri)
             .await
     }
 
@@ -250,7 +256,7 @@ impl Backend {
     pub async fn get_status(
         &self,
         params: TextDocumentIdentifier,
-    ) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
+    ) -> Result<GetStatusResponse, tower_lsp_server::jsonrpc::Error> {
         handle_get_status(self, params).await
     }
 
@@ -258,7 +264,7 @@ impl Backend {
     pub async fn get_toml_version(
         &self,
         params: TextDocumentIdentifier,
-    ) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
+    ) -> Result<GetTomlVersionResponse, tower_lsp_server::jsonrpc::Error> {
         handle_get_toml_version(self, params).await
     }
 
@@ -266,7 +272,7 @@ impl Backend {
     pub async fn update_schema(
         &self,
         params: TextDocumentIdentifier,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+    ) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
         handle_update_schema(self, params).await
     }
 
@@ -274,7 +280,7 @@ impl Backend {
     pub async fn update_config(
         &self,
         params: TextDocumentIdentifier,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+    ) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
         handle_update_config(self, params).await
     }
 
@@ -287,7 +293,7 @@ impl Backend {
     pub async fn refresh_cache(
         &self,
         params: RefreshCacheParams,
-    ) -> Result<bool, tower_lsp::jsonrpc::Error> {
+    ) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
         handle_refresh_cache(self, params).await
     }
 
@@ -297,12 +303,11 @@ impl Backend {
     }
 }
 
-#[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(
         &self,
         params: InitializeParams,
-    ) -> Result<InitializeResult, tower_lsp::jsonrpc::Error> {
+    ) -> Result<InitializeResult, tower_lsp_server::jsonrpc::Error> {
         handle_initialize(self, params).await
     }
 
@@ -310,7 +315,7 @@ impl LanguageServer for Backend {
         handle_initialized(self, params).await
     }
 
-    async fn shutdown(&self) -> Result<(), tower_lsp::jsonrpc::Error> {
+    async fn shutdown(&self) -> Result<(), tower_lsp_server::jsonrpc::Error> {
         handle_shutdown().await
     }
 
@@ -341,7 +346,7 @@ impl LanguageServer for Backend {
     async fn completion(
         &self,
         params: CompletionParams,
-    ) -> Result<Option<CompletionResponse>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<CompletionResponse>, tower_lsp_server::jsonrpc::Error> {
         handle_completion(self, params).await.map(|response| {
             response
                 .map(|items| CompletionResponse::Array(items.into_iter().map(Into::into).collect()))
@@ -351,25 +356,28 @@ impl LanguageServer for Backend {
     async fn semantic_tokens_full(
         &self,
         params: SemanticTokensParams,
-    ) -> Result<Option<SemanticTokensResult>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<SemanticTokensResult>, tower_lsp_server::jsonrpc::Error> {
         handle_semantic_tokens_full(self, params).await
     }
 
     async fn document_symbol(
         &self,
         params: DocumentSymbolParams,
-    ) -> Result<Option<DocumentSymbolResponse>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<DocumentSymbolResponse>, tower_lsp_server::jsonrpc::Error> {
         handle_document_symbol(self, params).await
     }
 
     async fn document_link(
         &self,
         params: DocumentLinkParams,
-    ) -> Result<Option<Vec<DocumentLink>>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<Vec<DocumentLink>>, tower_lsp_server::jsonrpc::Error> {
         handle_document_link(self, params).await
     }
 
-    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>, tower_lsp::jsonrpc::Error> {
+    async fn hover(
+        &self,
+        params: HoverParams,
+    ) -> Result<Option<Hover>, tower_lsp_server::jsonrpc::Error> {
         handle_hover(self, params)
             .await
             .map(|response| response.map(Into::into))
@@ -378,56 +386,59 @@ impl LanguageServer for Backend {
     async fn folding_range(
         &self,
         params: FoldingRangeParams,
-    ) -> Result<Option<Vec<FoldingRange>>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<Vec<FoldingRange>>, tower_lsp_server::jsonrpc::Error> {
         handle_folding_range(self, params).await
     }
 
     async fn formatting(
         &self,
-        params: tower_lsp::lsp_types::DocumentFormattingParams,
-    ) -> Result<Option<Vec<tower_lsp::lsp_types::TextEdit>>, tower_lsp::jsonrpc::Error> {
+        params: tower_lsp_server::ls_types::lsp::DocumentFormattingParams,
+    ) -> Result<
+        Option<Vec<tower_lsp_server::ls_types::lsp::TextEdit>>,
+        tower_lsp_server::jsonrpc::Error,
+    > {
         handle_formatting(self, params).await
     }
 
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
-    ) -> Result<Option<GotoDefinitionResponse>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<GotoDefinitionResponse>, tower_lsp_server::jsonrpc::Error> {
         into_definition_locations(self, handle_goto_definition(self, params).await?).await
     }
 
     async fn goto_type_definition(
         &self,
         params: GotoTypeDefinitionParams,
-    ) -> Result<Option<GotoTypeDefinitionResponse>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<GotoTypeDefinitionResponse>, tower_lsp_server::jsonrpc::Error> {
         into_definition_locations(self, handle_goto_type_definition(self, params).await?).await
     }
 
     async fn goto_declaration(
         &self,
         params: GotoDeclarationParams,
-    ) -> Result<Option<GotoDeclarationResponse>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<GotoDeclarationResponse>, tower_lsp_server::jsonrpc::Error> {
         into_definition_locations(self, handle_goto_declaration(self, params).await?).await
     }
 
     async fn code_action(
         &self,
         params: CodeActionParams,
-    ) -> Result<Option<CodeActionResponse>, tower_lsp::jsonrpc::Error> {
+    ) -> Result<Option<CodeActionResponse>, tower_lsp_server::jsonrpc::Error> {
         handle_code_action(self, params).await
     }
 
     async fn diagnostic(
         &self,
         params: DocumentDiagnosticParams,
-    ) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+    ) -> Result<DocumentDiagnosticReportResult, tower_lsp_server::jsonrpc::Error> {
         handle_diagnostic(self, params).await
     }
 
     async fn workspace_diagnostic(
         &self,
         params: WorkspaceDiagnosticParams,
-    ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+    ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp_server::jsonrpc::Error> {
         handle_workspace_diagnostic(self, params).await
     }
 }

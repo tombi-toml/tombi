@@ -32,7 +32,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (service, socket) = tower_lsp::LspService::build(|client| {
+    let (service, socket) = tower_lsp_server::LspService::build(|client| {
         Backend::new(
             client,
             &crate::backend::Options {
@@ -49,7 +49,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     .custom_method("tombi/refreshCache", Backend::refresh_cache)
     .finish();
 
-    tower_lsp::Server::new(stdin, stdout, socket)
+    tower_lsp_server::Server::new(stdin, stdout, socket)
         .serve(service)
         .await;
 

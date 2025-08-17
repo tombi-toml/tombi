@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use tombi_ast::AstNode;
-use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
+use tower_lsp_server::ls_types::lsp::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
 
 use crate::backend::Backend;
 
@@ -8,7 +8,7 @@ use crate::backend::Backend;
 pub async fn handle_folding_range(
     backend: &Backend,
     params: FoldingRangeParams,
-) -> Result<Option<Vec<FoldingRange>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<FoldingRange>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_folding_range");
     tracing::trace!(?params);
 

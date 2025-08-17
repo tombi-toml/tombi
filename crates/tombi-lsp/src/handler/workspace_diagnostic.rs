@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     FullDocumentDiagnosticReport, WorkspaceDiagnosticParams, WorkspaceDiagnosticReport,
     WorkspaceDiagnosticReportResult, WorkspaceDocumentDiagnosticReport,
     WorkspaceFullDocumentDiagnosticReport,
@@ -15,7 +15,7 @@ use crate::{
 pub async fn handle_workspace_diagnostic(
     backend: &Backend,
     params: WorkspaceDiagnosticParams,
-) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
+) -> Result<WorkspaceDiagnosticReportResult, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_workspace_diagnostic");
     tracing::trace!(?params);
 

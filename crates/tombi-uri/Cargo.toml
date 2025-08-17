@@ -7,5 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+fluent-uri = { version = "0.3.2" }
 serde.workspace = true
+tower-lsp-server.workspace = true
 url = { version = "2.5.4", features = ["serde"] }

@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, SymbolKind,
 };
 
@@ -8,7 +8,7 @@ use crate::backend::Backend;
 pub async fn handle_document_symbol(
     backend: &Backend,
     params: DocumentSymbolParams,
-) -> Result<Option<DocumentSymbolResponse>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<DocumentSymbolResponse>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_document_symbol");
     tracing::trace!(?params);
 
@@ -24,11 +24,15 @@ pub async fn handle_document_symbol(
 
     let symbols = create_symbols(&tree);
 
-    Ok(Some(DocumentSymbolResponse::Nested(symbols)))
+    Ok(Some(
+        tower_lsp_server::ls_types::lsp::DocumentSymbolResponse::Nested(symbols),
+    ))
 }
 
-fn create_symbols(tree: &tombi_document_tree::DocumentTree) -> Vec<DocumentSymbol> {
-    let mut symbols: Vec<DocumentSymbol> = vec![];
+fn create_symbols(
+    tree: &tombi_document_tree::DocumentTree,
+) -> Vec<tower_lsp_server::ls_types::lsp::DocumentSymbol> {
+    let mut symbols: Vec<tower_lsp_server::ls_types::lsp::DocumentSymbol> = vec![];
 
     for (key, value) in tree.key_values() {
         symbols_for_value(key.to_string(), value, None, &mut symbols);

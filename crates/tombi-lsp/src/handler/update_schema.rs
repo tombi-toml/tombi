@@ -1,6 +1,7 @@
 use tombi_schema_store::SchemaUri;
-use tower_lsp::lsp_types::{
-    notification::ShowMessage, MessageType, ShowMessageParams, TextDocumentIdentifier,
+use tower_lsp_server::ls_types::{
+    lsp::{MessageType, ShowMessageParams, TextDocumentIdentifier},
+    notification::ShowMessage,
 };
 
 use crate::backend::Backend;
@@ -9,7 +10,7 @@ use crate::backend::Backend;
 pub async fn handle_update_schema(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<bool, tower_lsp::jsonrpc::Error> {
+) -> Result<bool, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_update_schema");
     tracing::trace!(?params);
 

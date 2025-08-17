@@ -3,10 +3,10 @@ use std::str::FromStr;
 use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_schema_store::get_tombi_schemastore_content;
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     CreateFile, CreateFileOptions, DocumentChangeOperation, DocumentChanges,
     GotoDefinitionResponse, OneOf, OptionalVersionedTextDocumentIdentifier, ResourceOp,
-    TextDocumentEdit, TextEdit, Url, WorkspaceEdit,
+    TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
 use crate::Backend;
@@ -14,7 +14,7 @@ use crate::Backend;
 pub async fn into_definition_locations(
     backend: &Backend,
     definitions: Option<Vec<tombi_extension::DefinitionLocation>>,
-) -> Result<Option<GotoDefinitionResponse>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<GotoDefinitionResponse>, tower_lsp_server::jsonrpc::Error> {
     let Some(definitions) = definitions else {
         return Ok(None);
     };
@@ -52,20 +52,20 @@ pub async fn into_definition_locations(
 
 pub async fn open_remote_file(
     backend: &Backend,
-    uri: &tombi_uri::Uri,
-) -> Result<Option<tombi_uri::Uri>, tower_lsp::jsonrpc::Error> {
-    match uri.scheme() {
+    target_uri: &tombi_uri::Uri,
+) -> Result<Option<tombi_uri::Uri>, tower_lsp_server::jsonrpc::Error> {
+    match target_uri.scheme() {
         "http" | "https" => {
             let remote_uri =
-                tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
-            let content = fetch_remote_content(uri).await?;
+                tombi_uri::Uri::from_str(&format!("untitled://{}", target_uri.path())).unwrap();
+            let content = fetch_remote_content(target_uri).await?;
             open_remote_content(backend, &remote_uri, content).await?;
             Ok(Some(remote_uri))
         }
         "tombi" => {
             let remote_uri =
-                tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
-            let Some(content) = get_tombi_schemastore_content(uri) else {
+                tombi_uri::Uri::from_str(&format!("untitled://{}", target_uri.path())).unwrap();
+            let Some(content) = get_tombi_schemastore_content(target_uri) else {
                 return Ok(None);
             };
             open_remote_content(backend, &remote_uri, content).await?;
@@ -77,10 +77,11 @@ pub async fn open_remote_file(
 
 async fn open_remote_content(
     backend: &Backend,
-    remote_url: &Url,
+    remote_url: &tombi_uri::Uri,
     content: impl Into<String>,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
-    let remote_url_path = Url::parse(&format!("untitled://{}", remote_url.path())).unwrap();
+) -> Result<(), tower_lsp_server::jsonrpc::Error> {
+    let remote_url_path =
+        tombi_uri::Uri::from_str(&format!("untitled://{}", remote_url.path())).unwrap();
 
     create_empty_file(backend, &remote_url_path).await?;
     insert_content(backend, &remote_url_path, content).await?;
@@ -90,11 +91,11 @@ async fn open_remote_content(
 
 async fn create_empty_file(
     backend: &Backend,
-    remote_url_path: &Url,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+    remote_uri: &tombi_uri::Uri,
+) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     // First, create the file
     let create_file = CreateFile {
-        uri: remote_url_path.clone(),
+        uri: remote_uri.to_owned().into(),
         options: Some(CreateFileOptions {
             overwrite: Some(true),
             ignore_if_exists: Some(false),
@@ -114,8 +115,8 @@ async fn create_empty_file(
     // Apply the workspace edit
     let _ = backend
         .client
-        .send_request::<tower_lsp::lsp_types::request::ApplyWorkspaceEdit>(
-            tower_lsp::lsp_types::ApplyWorkspaceEditParams {
+        .send_request::<tower_lsp_server::ls_types::request::ApplyWorkspaceEdit>(
+            tower_lsp_server::ls_types::lsp::ApplyWorkspaceEditParams {
                 label: Some("Create remote file".to_string()),
                 edit,
             },
@@ -127,13 +128,13 @@ async fn create_empty_file(
 
 async fn insert_content(
     backend: &Backend,
-    remote_url_path: &Url,
+    remote_uri: &tombi_uri::Uri,
     content: impl Into<String>,
-) -> Result<(), tower_lsp::jsonrpc::Error> {
+) -> Result<(), tower_lsp_server::jsonrpc::Error> {
     // Then, create the text document edit
     let text_document_edit = TextDocumentEdit {
         text_document: OptionalVersionedTextDocumentIdentifier {
-            uri: remote_url_path.clone(),
+            uri: remote_uri.to_owned().into(),
             version: Some(0),
         },
         edits: vec![OneOf::Left(TextEdit {
@@ -152,8 +153,8 @@ async fn insert_content(
     // Apply the workspace edit
     let _ = backend
         .client
-        .send_request::<tower_lsp::lsp_types::request::ApplyWorkspaceEdit>(
-            tower_lsp::lsp_types::ApplyWorkspaceEditParams {
+        .send_request::<tower_lsp_server::ls_types::request::ApplyWorkspaceEdit>(
+            tower_lsp_server::ls_types::lsp::ApplyWorkspaceEditParams {
                 label: Some("Create remote file".to_string()),
                 edit,
             },
@@ -163,30 +164,32 @@ async fn insert_content(
     Ok(())
 }
 
-async fn fetch_remote_content(url: &Url) -> Result<String, tower_lsp::jsonrpc::Error> {
+async fn fetch_remote_content(
+    target_uri: &tombi_uri::Uri,
+) -> Result<String, tower_lsp_server::jsonrpc::Error> {
     let client = reqwest::Client::new();
-    let content = match client.get(url.to_string()).send().await {
+    let content = match client.get(target_uri.to_string()).send().await {
         Ok(response) => match response.text().await {
             Ok(content) => content,
             Err(e) => {
                 tracing::error!("Error fetching content: {}", e);
-                return Err(tower_lsp::jsonrpc::Error::new(
-                    tower_lsp::jsonrpc::ErrorCode::InternalError,
+                return Err(tower_lsp_server::jsonrpc::Error::new(
+                    tower_lsp_server::jsonrpc::ErrorCode::InternalError,
                 ));
             }
         },
         Err(e) => {
             tracing::error!("Error fetching content: {}", e);
-            return Err(tower_lsp::jsonrpc::Error::new(
-                tower_lsp::jsonrpc::ErrorCode::InternalError,
+            return Err(tower_lsp_server::jsonrpc::Error::new(
+                tower_lsp_server::jsonrpc::ErrorCode::InternalError,
             ));
         }
     };
 
     // Check if the content is valid JSON
     tombi_json::ValueNode::from_str(&content.clone()).map_err(|e| {
-        tracing::error!("Error parsing {url} content: {}", e);
-        tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError)
+        tracing::error!("Error parsing {target_uri} content: {e}");
+        tower_lsp_server::jsonrpc::Error::new(tower_lsp_server::jsonrpc::ErrorCode::InternalError)
     })?;
 
     Ok(content)

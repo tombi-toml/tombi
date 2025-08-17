@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::DidChangeTextDocumentParams;
+use tower_lsp_server::ls_types::lsp::DidChangeTextDocumentParams;
 
 use crate::backend::Backend;
 

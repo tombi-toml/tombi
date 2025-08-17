@@ -30,7 +30,7 @@ pub async fn publish_diagnostics(
 
 #[derive(Debug)]
 pub struct DiagnosticsResult {
-    pub diagnostics: Vec<tower_lsp::lsp_types::Diagnostic>,
+    pub diagnostics: Vec<tower_lsp_server::ls_types::lsp::Diagnostic>,
     pub version: Option<i32>,
 }
 

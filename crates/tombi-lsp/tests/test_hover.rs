@@ -453,9 +453,9 @@ mod hover_keys_value {
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
-                        TextDocumentIdentifier, Url, WorkDoneProgressParams, DidOpenTextDocumentParams,
+                use tower_lsp_server::{
+                    ls_types::lsp::{
+                        TextDocumentIdentifier,  WorkDoneProgressParams, DidOpenTextDocumentParams,
                         TextDocumentItem,
                     },
                     LspService,
@@ -514,7 +514,7 @@ mod hover_keys_value {
                     return Err("failed to write to temporary file".into());
                 };
 
-                let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
+                let Ok(toml_file_uri) = tombi_uri::Uri::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
 
@@ -522,7 +522,7 @@ mod hover_keys_value {
                     backend,
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
-                            uri: toml_file_url.clone(),
+                            uri: toml_file_uri.clone().into(),
                             language_id: "toml".to_string(),
                             version: 0,
                             text: toml_text.clone(),
@@ -533,10 +533,10 @@ mod hover_keys_value {
 
                 let Ok(Some(tombi_lsp::HoverContent::Value(hover_content))) = tombi_lsp::handler::handle_hover(
                     &backend,
-                    tower_lsp::lsp_types::HoverParams {
-                        text_document_position_params: tower_lsp::lsp_types::TextDocumentPositionParams {
+                    tower_lsp_server::ls_types::lsp::HoverParams {
+                        text_document_position_params: tower_lsp_server::ls_types::lsp::TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier {
-                                uri: toml_file_url,
+                                uri: toml_file_uri.into(),
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))

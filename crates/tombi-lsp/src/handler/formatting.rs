@@ -3,8 +3,9 @@ use tombi_config::FormatOptions;
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::{Position, Range};
-use tower_lsp::lsp_types::{
-    notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
+use tower_lsp_server::ls_types::{
+    lsp::{DocumentFormattingParams, PublishDiagnosticsParams, TextEdit},
+    notification::PublishDiagnostics,
 };
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
@@ -13,7 +14,7 @@ use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 pub async fn handle_formatting(
     backend: &Backend,
     params: DocumentFormattingParams,
-) -> Result<Option<Vec<TextEdit>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<TextEdit>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_formatting");
     tracing::trace!(?params);
 
@@ -230,7 +231,7 @@ mod tests {
         // Line-based approach replaces the entire line
         assert_eq!(edit.new_text, "hello universe");
 
-        let expected_range: tower_lsp::lsp_types::Range = Range::new(
+        let expected_range: tower_lsp_server::ls_types::lsp::Range = Range::new(
             Position::new(0, 0),  // Start of line 0
             Position::new(0, 11), // End of last character in line 0
         )
@@ -250,7 +251,7 @@ mod tests {
         // We're replacing the entire "line2\n" with "modified line2\n"
         assert_eq!(edit.new_text, "modified line2\n");
 
-        let expected_range: tower_lsp::lsp_types::Range = Range::new(
+        let expected_range: tower_lsp_server::ls_types::lsp::Range = Range::new(
             Position::new(1, 0), // Start of line 1 (line2)
             Position::new(2, 0), // Start of line 2 (line3)
         )

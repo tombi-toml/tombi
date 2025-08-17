@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use itertools::Either;
 use tombi_config::TomlVersion;
 use tombi_glob::{matches_file_patterns, MatchResult};
-use tower_lsp::lsp_types::TextDocumentIdentifier;
+use tower_lsp_server::ls_types::lsp::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
 
@@ -11,7 +11,7 @@ use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVe
 pub async fn handle_get_status(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
+) -> Result<GetStatusResponse, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_get_status");
     tracing::trace!(?params);
 

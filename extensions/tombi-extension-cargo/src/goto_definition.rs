@@ -6,7 +6,7 @@ pub async fn goto_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(Default::default());

@@ -51,7 +51,7 @@ pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     toml_version: TomlVersion,
-) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(None);
@@ -140,7 +140,7 @@ fn document_link_for_workspace_pyproject_toml(
     workspace: &tombi_document_tree::Table,
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let Some(tombi_document_tree::Value::Array(members)) = workspace.get("members") else {
         return Ok(Vec::with_capacity(0));
     };
@@ -201,7 +201,7 @@ fn document_link_for_member_pyproject_toml(
     source: &tombi_document_tree::Value,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let tombi_document_tree::Value::Table(source) = source else {
         return Ok(Vec::with_capacity(0));
     };
@@ -255,7 +255,7 @@ fn document_link_for_project_dependencies(
     uv_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut document_links = Vec::with_capacity(dependencies.len());
 
     for dep_value in dependencies.values() {
@@ -323,7 +323,7 @@ fn document_link_for_dependency_groups(
     uv_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut document_links = Vec::new();
 
     // Iterate through each dependency group
@@ -347,7 +347,7 @@ fn document_link_for_optional_dependencies(
     uv_sources: Option<&tombi_document_tree::Table>,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut document_links = Vec::new();
 
     // Iterate through each optional dependency group

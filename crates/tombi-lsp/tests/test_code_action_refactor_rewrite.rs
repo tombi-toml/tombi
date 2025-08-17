@@ -81,9 +81,9 @@ macro_rules! test_code_action_refactor_rewrite {
             use tombi_lsp::handler::handle_code_action;
             use tombi_lsp::handler::handle_did_open;
             use tombi_lsp::Backend;
-            use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
-            use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
-            use tower_lsp::LspService;
+            use tower_lsp_server::ls_types::lsp::{CodeActionParams, TextDocumentIdentifier};
+            use tower_lsp_server::ls_types::lsp::{DidOpenTextDocumentParams, TextDocumentItem};
+            use tower_lsp_server::LspService;
 
             tombi_test_lib::init_tracing();
 
@@ -106,18 +106,18 @@ macro_rules! test_code_action_refactor_rewrite {
             tracing::debug!(?toml_text, "test toml text");
             tracing::debug!(?index, "test toml text index");
 
-            let toml_file_url = $toml_file_path
-                .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
+            let toml_file_uri = $toml_file_path
+                .map(|path| tombi_uri::Uri::from_file_path(path).expect("failed to convert file path to URI"))
                 .unwrap_or_else(|| {
-                    Url::from_file_path(temp_file.path())
-                        .expect("failed to convert temp file path to URL")
+                    tombi_uri::Uri::from_file_path(temp_file.path())
+                        .expect("failed to convert temp file path to URI")
                 });
 
             handle_did_open(
                 backend,
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
-                        uri: toml_file_url.clone(),
+                        uri: toml_file_uri.clone().into(),
                         language_id: "toml".to_string(),
                         version: 0,
                         text: toml_text.clone(),
@@ -128,7 +128,7 @@ macro_rules! test_code_action_refactor_rewrite {
 
             let params = CodeActionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: toml_file_url.clone(),
+                    uri: toml_file_uri.clone().into(),
                 },
                 range: tombi_text::Range::at(
                     (tombi_text::Position::default()
@@ -152,7 +152,7 @@ macro_rules! test_code_action_refactor_rewrite {
                     let selected: &str = &selected.to_string();
 
                     let Some(action) = actions.into_iter().find_map(|a| match a {
-                        tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
+                        tower_lsp_server::ls_types::lsp::CodeActionOrCommand::CodeAction(ca)
                             if ca.title == selected =>
                         {
                             Some(ca)
@@ -171,7 +171,7 @@ macro_rules! test_code_action_refactor_rewrite {
 
                     let mut new_text = toml_text.clone();
 
-                    if let Some(tower_lsp::lsp_types::DocumentChanges::Edits(edits)) =
+                    if let Some(tower_lsp_server::ls_types::lsp::DocumentChanges::Edits(edits)) =
                         edit.document_changes
                     {
                         let mut all_edits: Vec<_> =
@@ -179,11 +179,11 @@ macro_rules! test_code_action_refactor_rewrite {
                         // Sort by range.start in descending order to apply edits from the end of the text.
                         all_edits.sort_by(|a, b| {
                             let a = match a {
-                                tower_lsp::lsp_types::OneOf::Left(ref e) => &e.range.start,
+                                tower_lsp_server::ls_types::lsp::OneOf::Left(ref e) => &e.range.start,
                                 _ => return std::cmp::Ordering::Equal,
                             };
                             let b = match b {
-                                tower_lsp::lsp_types::OneOf::Left(ref e) => &e.range.start,
+                                tower_lsp_server::ls_types::lsp::OneOf::Left(ref e) => &e.range.start,
                                 _ => return std::cmp::Ordering::Equal,
                             };
                             b.line.cmp(&a.line).then(b.character.cmp(&a.character))
@@ -197,7 +197,7 @@ macro_rules! test_code_action_refactor_rewrite {
                         }
                         let mut text = new_text.clone();
                         for text_edit in all_edits {
-                            if let tower_lsp::lsp_types::OneOf::Left(edit) = text_edit {
+                            if let tower_lsp_server::ls_types::lsp::OneOf::Left(edit) = text_edit {
                                 let start_line = edit.range.start.line as usize;
                                 let start_char = edit.range.start.character as usize;
                                 let end_line = edit.range.end.line as usize;
@@ -230,7 +230,7 @@ macro_rules! test_code_action_refactor_rewrite {
                     let selected: &str = &selected.to_string();
 
                     let None = actions.iter().find_map(|a| match a {
-                        tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
+                        tower_lsp_server::ls_types::lsp::CodeActionOrCommand::CodeAction(ca)
                             if ca.title == selected =>
                         {
                             Some(ca)
@@ -243,7 +243,7 @@ macro_rules! test_code_action_refactor_rewrite {
                             actions
                                 .iter()
                                 .filter_map(|a| match a {
-                                    tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca) =>
+                                    tower_lsp_server::ls_types::lsp::CodeActionOrCommand::CodeAction(ca) =>
                                         Some(ca.title.clone()),
                                     _ => None,
                                 })

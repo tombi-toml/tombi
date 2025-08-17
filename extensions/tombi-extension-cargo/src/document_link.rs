@@ -63,7 +63,7 @@ pub async fn document_link(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     toml_version: TomlVersion,
-) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is Cargo.toml
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
@@ -109,7 +109,7 @@ fn document_link_for_workspace_cargo_toml(
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut total_document_links = vec![];
 
     let registories = get_registories(workspace_cargo_toml_path, toml_version).unwrap_or_default();
@@ -227,7 +227,7 @@ fn document_link_for_workspace_depencencies(
     workspace_cargo_toml_path: &std::path::Path,
     registories: &RegistoryMap,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut total_document_links = vec![];
     for (crate_name, crate_value) in dependencies.key_values() {
         if let Ok(document_links) = document_link_for_workspace_dependency(
@@ -248,7 +248,7 @@ fn document_link_for_crate_cargo_toml(
     crate_document_tree: &tombi_document_tree::DocumentTree,
     crate_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut total_dependencies = vec![];
     for key in ["dependencies", "dev-dependencies", "build-dependencies"] {
         if let Some((_, tombi_document_tree::Value::Table(dependencies))) =
@@ -396,7 +396,7 @@ fn document_link_for_workspace_dependency(
     workspace_cargo_toml_path: &std::path::Path,
     registories: &RegistoryMap,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     match document_link_for_dependency(
         crate_key,
         crate_value,
@@ -426,7 +426,7 @@ fn document_link_for_crate_dependency_has_workspace(
     workspace_cargo_toml_path: &std::path::Path,
     registories: &RegistoryMap,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     match document_link_for_dependency(
         crate_key,
         crate_value,
@@ -497,7 +497,7 @@ fn document_link_for_dependency(
     crate_cargo_toml_path: &std::path::Path,
     registories: &RegistoryMap,
     toml_version: TomlVersion,
-) -> Result<Option<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::DocumentLink>, tower_lsp_server::jsonrpc::Error> {
     let mut package_name = crate_key.value();
     if let tombi_document_tree::Value::Table(table) = crate_value {
         if let Some(tombi_document_tree::Value::String(real_package)) = table.get("package") {
@@ -581,7 +581,7 @@ fn document_link_for_dependency(
 fn get_registories(
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<RegistoryMap, tower_lsp::jsonrpc::Error> {
+) -> Result<RegistoryMap, tower_lsp_server::jsonrpc::Error> {
     let mut registories = RegistoryMap::default();
     if let Some(cargo_toml_document_tree) = load_cargo_toml(
         &workspace_cargo_toml_path.join(".cargo/config.toml"),
