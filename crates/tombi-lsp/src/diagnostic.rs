@@ -158,11 +158,11 @@ pub async fn get_workspace_diagnostic_targets(
             .await
             {
                 tracing::debug!(
-                    "Found {} files, in {}",
+                    "Found {} files in {}: {:?}",
                     files.len(),
-                    workspace_folder_path_str
+                    workspace_folder_path_str,
+                    files
                 );
-                tracing::debug!("Founded files: {:?}", files);
 
                 for file in files {
                     let Ok(file_path) = file else {
