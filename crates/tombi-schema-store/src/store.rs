@@ -533,32 +533,31 @@ impl SchemaStore {
             None => None,
         };
 
-        if let Some(DocumentSchemaCommentDirective {
-            uri: url,
-            uri_range: url_range,
-            ..
-        }) = root.document_schema_comment_directive(source_path.as_deref())
+        if let Some(DocumentSchemaCommentDirective { uri, uri_range, .. }) =
+            root.document_schema_comment_directive(source_path.as_deref())
         {
-            let schema_uri = match url {
+            let schema_uri = match uri {
                 Ok(schema_uri) => schema_uri,
-                Err(schema_url_or_file_path) => {
+                Err(schema_uri_or_file_path) => {
                     return Err((
                         crate::Error::InvalidSchemaUriOrFilePath {
-                            schema_uri_or_file_path: schema_url_or_file_path,
+                            schema_uri_or_file_path,
                         },
-                        url_range,
+                        uri_range,
                     ));
                 }
             };
-            return self
+            if let Ok(Some(source_schema)) = self
                 .try_get_source_schema_from_remote_url(&SchemaUri::new(schema_uri))
                 .await
-                .map_err(|err| (err, url_range));
+            {
+                return Ok(Some(source_schema));
+            }
         }
 
-        if let Some(source_url_or_path) = source_uri_or_path {
+        if let Some(source_uri_or_path) = source_uri_or_path {
             Ok(self
-                .resolve_source_schema(source_url_or_path)
+                .resolve_source_schema(source_uri_or_path)
                 .await
                 .ok()
                 .flatten())

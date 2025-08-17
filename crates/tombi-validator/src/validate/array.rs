@@ -17,12 +17,12 @@ impl Validate for tombi_document_tree::Array {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
-            if let Some(sub_schema_url) = schema_context
+            if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
                 .and_then(|map| map.get(accessors))
             {
                 if current_schema
-                    .is_some_and(|current_schema| &*current_schema.schema_uri != sub_schema_url)
+                    .is_some_and(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
                 {
                     if let Ok(Some(DocumentSchema {
                         value_schema: Some(value_schema),
@@ -31,7 +31,7 @@ impl Validate for tombi_document_tree::Array {
                         ..
                     })) = schema_context
                         .store
-                        .try_get_document_schema(sub_schema_url)
+                        .try_get_document_schema(sub_schema_uri)
                         .await
                     {
                         return self
