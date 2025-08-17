@@ -3485,8 +3485,8 @@ dependencies = [
  "tombi-cache",
  "tombi-config",
  "tombi-diagnostic",
- "tombi-file-search",
  "tombi-formatter",
+ "tombi-glob",
  "tombi-linter",
  "tombi-lsp",
  "tombi-schema-store",
@@ -3654,16 +3654,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tombi-file-search"
-version = "0.0.0-dev"
-dependencies = [
- "thiserror 2.0.12",
- "tombi-config",
- "tombi-glob",
- "tracing",
-]
-
-[[package]]
 name = "tombi-formatter"
 version = "0.0.0-dev"
 dependencies = [
@@ -3706,6 +3696,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-config",
+ "tracing",
 ]
 
 [[package]]
@@ -3820,9 +3811,9 @@ dependencies = [
  "tombi-extension-cargo",
  "tombi-extension-tombi",
  "tombi-extension-uv",
- "tombi-file-search",
  "tombi-formatter",
  "tombi-future",
+ "tombi-glob",
  "tombi-json",
  "tombi-linter",
  "tombi-parser",

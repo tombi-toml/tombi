@@ -7,6 +7,7 @@ import { log } from "@/logging";
 import {
   getStatus,
   getTomlVersion,
+  type IgnoreReason,
   updateConfig,
   updateSchema,
 } from "@/lsp/client";
@@ -153,8 +154,9 @@ export class Extension {
         let tomlVersion: string;
         let source: string;
         let configPath: string | undefined;
+        let ignore: IgnoreReason | undefined;
 
-        if (gte(this.lspVersion, "0.5.1")) {
+        if (gte(this.lspVersion, "0.5.1") || this.lspVersion === "0.0.0-dev") {
           // Use getStatus for versions >= 0.5.1
           const response = await this.client.sendRequest(getStatus, {
             uri: editor.document.uri.toString(),
@@ -162,6 +164,7 @@ export class Extension {
           tomlVersion = response.tomlVersion;
           source = response.source;
           configPath = response.configPath;
+          ignore = response.ignore;
         } else {
           // Use getTomlVersion for versions < 0.5.1
           const response = await this.client.sendRequest(getTomlVersion, {
@@ -171,11 +174,21 @@ export class Extension {
           source = response.source;
         }
 
-        this.statusBarItem.text = `TOML: ${tomlVersion} (${source})`;
-        this.statusBarItem.color = undefined;
+        let text = `TOML: ${tomlVersion} (${source})`;
+        let tooltip = `Tombi: ${this.lspVersion}\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
+        let color: string | vscode.ThemeColor | undefined;
+
+        if (ignore) {
+          text = `$(extensions-warning-message) ${text}`;
+          tooltip += `\nIgnore: ${ignore}`;
+          color = "#D0D0D0";
+        }
+
+        this.statusBarItem.text = text;
+        this.statusBarItem.color = color;
         this.statusBarItem.backgroundColor = undefined;
         this.statusBarItem.command = `${Extension_ID}.showLanguageServerVersion`;
-        this.statusBarItem.tooltip = `Tombi: ${this.lspVersion}\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
+        this.statusBarItem.tooltip = tooltip;
         this.statusBarItem.show();
       } catch (error) {
         this.statusBarItem.text = "TOML: <unknown>";

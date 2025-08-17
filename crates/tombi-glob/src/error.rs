@@ -2,6 +2,9 @@ use std::path::PathBuf;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("{0:?} file not found")]
+    FileNotFound(PathBuf),
+
     #[error("Invalid glob pattern: '{pattern}'")]
     InvalidPattern { pattern: String },
 

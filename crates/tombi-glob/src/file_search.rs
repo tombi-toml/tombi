@@ -1,10 +1,7 @@
 use std::path::PathBuf;
-
 use tombi_config::{Config, ConfigLevel, FilesOptions};
-use tombi_glob::WalkDir;
-mod error;
 
-pub use error::Error;
+use crate::WalkDir;
 
 /// Input source for TOML files.
 ///
@@ -98,15 +95,6 @@ impl FileSearch {
     }
 }
 
-fn is_glob_pattern(value: &str) -> bool {
-    for c in value.chars() {
-        if matches!(c, '*' | '?' | '[' | ']') {
-            return true;
-        }
-    }
-    false
-}
-
 async fn search_with_patterns_async<P: AsRef<std::path::Path>>(
     root: P,
     files_options: FilesOptions,
@@ -121,7 +109,16 @@ async fn search_with_patterns_async<P: AsRef<std::path::Path>>(
             matched_paths
         }
         Err(err) => {
-            vec![Err(crate::Error::GlobSearchFailed(err))]
+            vec![Err(err)]
         }
     }
+}
+
+fn is_glob_pattern(path_str: &str) -> bool {
+    for c in path_str.chars() {
+        if matches!(c, '*' | '?' | '[' | ']') {
+            return true;
+        }
+    }
+    false
 }

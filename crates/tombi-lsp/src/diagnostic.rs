@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
-use tombi_file_search::FileSearch;
+use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_uri::{url_from_file_path, url_to_file_path};
 use tower_lsp::lsp_types::Url;
 
@@ -35,6 +35,7 @@ pub async fn get_diagnostics_result(
     let ConfigSchemaStore {
         config,
         schema_store,
+        config_path,
     } = backend
         .config_manager
         .config_schema_store_for_url(text_document_uri)
@@ -49,6 +50,22 @@ pub async fn get_diagnostics_result(
     {
         tracing::debug!("`server.diagnostics.enabled` is false");
         return None;
+    }
+
+    if let Ok(text_document_path) = url_to_file_path(text_document_uri) {
+        match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
+            MatchResult::Matched => {}
+            MatchResult::IncludeNotMatched => {
+                tracing::info!(
+                    "skip {text_document_path:?} because it is not in config.files.include"
+                );
+                return None;
+            }
+            MatchResult::ExcludeMatched => {
+                tracing::info!("skip {text_document_path:?} because it is in config.files.exclude");
+                return None;
+            }
+        }
     }
 
     let root = backend.get_incomplete_ast(text_document_uri).await?;
@@ -132,7 +149,7 @@ pub async fn get_workspace_diagnostic_targets(
             configs.entry(config_path).or_insert((config, config_level));
         };
         for (config_path, (config, config_level)) in &configs {
-            if let FileSearch::Files(files) = tombi_file_search::FileSearch::new(
+            if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
                 &[workspace_folder_path_str],
                 config,
                 config_path.as_deref(),

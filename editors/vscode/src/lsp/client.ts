@@ -4,6 +4,7 @@ import {
 } from "vscode-languageclient";
 
 export type TomlVersionSource = "comment" | "schema" | "config" | "default";
+export type IgnoreReason = "includeNotMatched" | "excludeMatched";
 
 export type GetTomlVersionParams = TextDocumentIdentifier;
 export const getTomlVersion = new RequestType<
@@ -39,6 +40,7 @@ export const getStatus = new RequestType<
     tomlVersion: string;
     source: TomlVersionSource;
     configPath?: string;
+    ignore?: IgnoreReason;
   },
   void
 >("tombi/getStatus");

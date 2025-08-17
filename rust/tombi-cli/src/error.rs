@@ -11,7 +11,7 @@ pub enum Error {
     #[error(transparent)]
     NotFormatted(#[from] NotFormattedError),
     #[error(transparent)]
-    FileSearch(#[from] tombi_file_search::Error),
+    TombiGlob(#[from] tombi_glob::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }
