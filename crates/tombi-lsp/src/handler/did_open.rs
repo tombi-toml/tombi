@@ -9,15 +9,16 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
 
     let DidOpenTextDocumentParams { text_document, .. } = params;
 
+    let text_document_uri: tombi_uri::Uri = text_document.uri.into();
     let mut document_sources = backend.document_sources.write().await;
     document_sources.insert(
-        text_document.uri.clone(),
+        text_document_uri.clone(),
         DocumentSource::new(text_document.text, Some(text_document.version)),
     );
     drop(document_sources);
 
     // Publish diagnostics for the opened document
     backend
-        .push_diagnostics(text_document.uri, Some(text_document.version))
+        .push_diagnostics(text_document_uri, Some(text_document.version))
         .await;
 }

@@ -8,7 +8,7 @@ use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
-    SchemaItem, SchemaPatternProperties, SchemaUrl, ValueSchema,
+    SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
 use crate::{Accessor, Referable, SchemaProperties, SchemaStore};
 
@@ -203,7 +203,7 @@ impl FindSchemaCandidates for TableSchema {
     fn find_schema_candidates<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
@@ -218,11 +218,11 @@ impl FindSchemaCandidates for TableSchema {
                 {
                     if let Ok(Some(CurrentSchema {
                         value_schema,
-                        schema_url,
+                        schema_uri,
                         definitions,
                     })) = property_schema
                         .resolve(
-                            Cow::Borrowed(schema_url),
+                            Cow::Borrowed(schema_uri),
                             Cow::Borrowed(definitions),
                             schema_store,
                         )
@@ -231,7 +231,7 @@ impl FindSchemaCandidates for TableSchema {
                         let (schema_candidates, schema_errors) = value_schema
                             .find_schema_candidates(
                                 accessors,
-                                &schema_url,
+                                &schema_uri,
                                 &definitions,
                                 schema_store,
                             )
@@ -254,11 +254,11 @@ impl FindSchemaCandidates for TableSchema {
             {
                 if let Ok(Some(CurrentSchema {
                     value_schema,
-                    schema_url,
+                    schema_uri,
                     definitions,
                 })) = property_schema
                     .resolve(
-                        Cow::Borrowed(schema_url),
+                        Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
                         schema_store,
                     )
@@ -267,7 +267,7 @@ impl FindSchemaCandidates for TableSchema {
                     return value_schema
                         .find_schema_candidates(
                             &accessors[1..],
-                            &schema_url,
+                            &schema_uri,
                             &definitions,
                             schema_store,
                         )

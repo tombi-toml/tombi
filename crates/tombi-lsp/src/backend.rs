@@ -48,7 +48,7 @@ pub struct Backend {
     #[allow(dead_code)]
     pub client: tower_lsp::Client,
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
-    pub document_sources: Arc<tokio::sync::RwLock<AHashMap<Url, DocumentSource>>>,
+    pub document_sources: Arc<tokio::sync::RwLock<AHashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
 }
 
@@ -85,7 +85,7 @@ impl Backend {
     #[inline]
     async fn get_parsed(
         &self,
-        text_document_uri: &Url,
+        text_document_uri: &tombi_uri::Uri,
     ) -> Option<tombi_parser::Parsed<SyntaxNode>> {
         let document_source = self.document_sources.read().await;
         let document_source = match document_source.get(text_document_uri) {
@@ -102,7 +102,7 @@ impl Backend {
             ..
         } = self
             .config_manager
-            .config_schema_store_for_url(text_document_uri)
+            .config_schema_store_for_uri(text_document_uri)
             .await;
 
         let source_schema = if let Some(parsed) =
@@ -138,7 +138,10 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn get_incomplete_ast(&self, text_document_uri: &Url) -> Option<tombi_ast::Root> {
+    pub async fn get_incomplete_ast(
+        &self,
+        text_document_uri: &tombi_uri::Uri,
+    ) -> Option<tombi_ast::Root> {
         self.get_parsed(text_document_uri)
             .await?
             .cast::<tombi_ast::Root>()
@@ -148,7 +151,7 @@ impl Backend {
     #[inline]
     pub async fn get_ast_and_diagnostics(
         &self,
-        text_document_uri: &Url,
+        text_document_uri: &tombi_uri::Uri,
     ) -> Option<(tombi_ast::Root, Vec<Diagnostic>)> {
         let (root, errors) = self
             .get_parsed(text_document_uri)
@@ -166,7 +169,7 @@ impl Backend {
     #[inline]
     pub async fn get_incomplete_document_tree(
         &self,
-        text_document_uri: &Url,
+        text_document_uri: &tombi_uri::Uri,
     ) -> Option<tombi_document_tree::DocumentTree> {
         let root = self.get_incomplete_ast(text_document_uri).await?;
 
@@ -176,7 +179,7 @@ impl Backend {
             ..
         } = self
             .config_manager
-            .config_schema_store_for_url(text_document_uri)
+            .config_schema_store_for_uri(text_document_uri)
             .await;
 
         let source_schema = schema_store
@@ -199,9 +202,9 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn config(&self, text_document_uri: &Url) -> Config {
+    pub async fn config(&self, text_document_uri: &tombi_uri::Uri) -> Config {
         self.config_manager
-            .config_schema_store_for_url(text_document_uri)
+            .config_schema_store_for_uri(text_document_uri)
             .await
             .config
     }
@@ -289,7 +292,7 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn push_diagnostics(&self, text_document_uri: Url, version: Option<i32>) {
+    pub async fn push_diagnostics(&self, text_document_uri: tombi_uri::Uri, version: Option<i32>) {
         push_diagnostics(self, text_document_uri, version).await
     }
 }

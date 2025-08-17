@@ -2930,7 +2930,6 @@ dependencies = [
  "tombi-uri",
  "tracing",
  "typed-builder",
- "url",
 ]
 
 [[package]]
@@ -3435,7 +3434,6 @@ dependencies = [
  "tombi-toml-version",
  "tombi-uri",
  "tracing",
- "url",
 ]
 
 [[package]]
@@ -3466,8 +3464,8 @@ dependencies = [
  "dirs",
  "thiserror 2.0.12",
  "tokio",
+ "tombi-uri",
  "tracing",
- "url",
 ]
 
 [[package]]
@@ -3512,8 +3510,8 @@ dependencies = [
  "tombi-schema-store",
  "tombi-text",
  "tombi-toml-version",
+ "tombi-uri",
  "tombi-validator",
- "url",
 ]
 
 [[package]]
@@ -3527,7 +3525,6 @@ dependencies = [
  "tombi-toml-version",
  "tombi-uri",
  "tombi-x-keyword",
- "url",
 ]
 
 [[package]]
@@ -3598,6 +3595,7 @@ version = "0.0.0-dev"
 dependencies = [
  "tombi-schema-store",
  "tombi-text",
+ "tombi-uri",
  "tower-lsp",
  "tracing",
 ]
@@ -3619,6 +3617,7 @@ dependencies = [
  "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-uri",
  "tombi-version-sort",
  "tower-lsp",
  "tracing",
@@ -3633,6 +3632,7 @@ dependencies = [
  "tombi-extension",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-uri",
  "tower-lsp",
 ]
 
@@ -3650,6 +3650,7 @@ dependencies = [
  "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-uri",
  "tower-lsp",
 ]
 
@@ -3673,9 +3674,9 @@ dependencies = [
  "tombi-schema-store",
  "tombi-syntax",
  "tombi-test-lib",
+ "tombi-uri",
  "tracing",
  "unicode-segmentation",
- "url",
 ]
 
 [[package]]
@@ -3776,9 +3777,9 @@ dependencies = [
  "tombi-schema-store",
  "tombi-test-lib",
  "tombi-text",
+ "tombi-uri",
  "tombi-validator",
  "tracing",
- "url",
 ]
 
 [[package]]
@@ -3890,7 +3891,6 @@ dependencies = [
  "tombi-uri",
  "tombi-x-keyword",
  "tracing",
- "url",
 ]
 
 [[package]]
@@ -3942,6 +3942,7 @@ dependencies = [
 name = "tombi-uri"
 version = "0.0.0-dev"
 dependencies = [
+ "serde",
  "url",
 ]
 
@@ -3960,9 +3961,9 @@ dependencies = [
  "tombi-future",
  "tombi-schema-store",
  "tombi-text",
+ "tombi-uri",
  "tombi-x-keyword",
  "tracing",
- "url",
  "uuid",
 ]
 

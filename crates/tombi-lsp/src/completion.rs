@@ -14,7 +14,7 @@ use tombi_extension::{CompletionContent, CompletionEdit, CompletionHint, Complet
 use tombi_future::Boxable;
 use tombi_rg_tree::TokenAtOffset;
 use tombi_schema_store::{
-    Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUrl,
+    Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUri,
     ValueSchema,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind};
@@ -162,7 +162,7 @@ pub async fn find_completion_contents_with_tree(
             .as_ref()
             .map(|value_schema| CurrentSchema {
                 value_schema: Cow::Borrowed(value_schema),
-                schema_url: Cow::Borrowed(&document_schema.schema_url),
+                schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                 definitions: Cow::Borrowed(&document_schema.definitions),
             })
     });
@@ -207,7 +207,7 @@ pub trait FindCompletionContents {
 pub trait CompletionCandidate {
     fn title<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
@@ -215,7 +215,7 @@ pub trait CompletionCandidate {
 
     fn description<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
@@ -223,23 +223,23 @@ pub trait CompletionCandidate {
 
     async fn detail(
         &self,
-        schema_url: &SchemaUrl,
+        schema_uri: &SchemaUri,
         definitions: &SchemaDefinitions,
         schema_store: &SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
-        self.title(schema_url, definitions, schema_store, completion_hint)
+        self.title(schema_uri, definitions, schema_store, completion_hint)
             .await
     }
 
     async fn documentation(
         &self,
-        schema_url: &SchemaUrl,
+        schema_uri: &SchemaUri,
         definitions: &SchemaDefinitions,
         schema_store: &SchemaStore,
         completion_hint: Option<CompletionHint>,
     ) -> Option<String> {
-        self.description(schema_url, definitions, schema_store, completion_hint)
+        self.description(schema_uri, definitions, schema_store, completion_hint)
             .await
     }
 }
@@ -253,7 +253,7 @@ trait CompositeSchemaImpl {
 impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
     fn title<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
@@ -264,11 +264,11 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                 for referable_schema in self.schemas().write().await.iter_mut() {
                     if let Ok(Some(CurrentSchema {
                         value_schema,
-                        schema_url,
+                        schema_uri,
                         definitions,
                     })) = referable_schema
                         .resolve(
-                            Cow::Borrowed(schema_url),
+                            Cow::Borrowed(schema_uri),
                             Cow::Borrowed(definitions),
                             schema_store,
                         )
@@ -280,7 +280,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
 
                         if let Some(candidate) = CompletionCandidate::title(
                             value_schema.as_ref(),
-                            &schema_url,
+                            &schema_uri,
                             &definitions,
                             schema_store,
                             completion_hint,
@@ -303,7 +303,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
 
     fn description<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
@@ -314,11 +314,11 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                 for referable_schema in self.schemas().write().await.iter_mut() {
                     if let Ok(Some(CurrentSchema {
                         value_schema,
-                        schema_url,
+                        schema_uri,
                         definitions,
                     })) = referable_schema
                         .resolve(
-                            Cow::Borrowed(schema_url),
+                            Cow::Borrowed(schema_uri),
                             Cow::Borrowed(definitions),
                             schema_store,
                         )
@@ -330,7 +330,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
 
                         if let Some(candidate) = CompletionCandidate::description(
                             value_schema.as_ref(),
-                            &schema_url,
+                            &schema_uri,
                             &definitions,
                             schema_store,
                             completion_hint,
@@ -360,7 +360,7 @@ fn tombi_json_value_to_completion_default_item(
     position: tombi_text::Position,
     detail: Option<String>,
     documentation: Option<String>,
-    schema_url: Option<&SchemaUrl>,
+    schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionContent> {
     let (kind, value) = match value {
@@ -382,7 +382,7 @@ fn tombi_json_value_to_completion_default_item(
         detail,
         documentation,
         CompletionEdit::new_literal(&value, position, completion_hint),
-        schema_url,
+        schema_uri,
         None,
     ))
 }

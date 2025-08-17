@@ -6,20 +6,20 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION};
 
 use super::{
-    referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUrl, ValueSchema,
+    referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUri, ValueSchema,
 };
 use crate::{Accessor, SchemaStore};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {
-    pub schema_url: SchemaUrl,
+    pub schema_uri: SchemaUri,
     pub(crate) toml_version: Option<TomlVersion>,
     pub value_schema: Option<ValueSchema>,
     pub definitions: SchemaDefinitions,
 }
 
 impl DocumentSchema {
-    pub fn new(object: tombi_json::ObjectNode, schema_url: SchemaUrl) -> Self {
+    pub fn new(object: tombi_json::ObjectNode, schema_uri: SchemaUri) -> Self {
         let toml_version = object.get(X_TOMBI_TOML_VERSION).and_then(|obj| match obj {
             tombi_json::ValueNode::String(version) => TomlVersion::from_str(&version.value).ok(),
             _ => None,
@@ -72,7 +72,7 @@ impl DocumentSchema {
         }
 
         Self {
-            schema_url,
+            schema_uri,
             toml_version,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
@@ -83,7 +83,7 @@ impl DocumentSchema {
         self.toml_version.inspect(|version| {
             tracing::trace!(
                 "use schema TOML version \"{version}\" for {}",
-                self.schema_url
+                self.schema_uri
             );
         })
     }
@@ -93,14 +93,14 @@ impl FindSchemaCandidates for DocumentSchema {
     fn find_schema_candidates<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
             if let Some(value_schema) = &self.value_schema {
                 value_schema
-                    .find_schema_candidates(accessors, schema_url, definitions, schema_store)
+                    .find_schema_candidates(accessors, schema_uri, definitions, schema_store)
                     .await
             } else {
                 (Vec::with_capacity(0), Vec::with_capacity(0))

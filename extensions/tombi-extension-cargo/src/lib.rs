@@ -14,7 +14,6 @@ use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_keys, TryIntoDocumentTree, ValueImpl};
 use tombi_schema_store::{dig_accessors, matches_accessors};
-use tower_lsp::lsp_types::Url;
 
 #[derive(Debug, Clone)]
 struct CrateLocation {
@@ -24,7 +23,7 @@ struct CrateLocation {
 
 impl From<CrateLocation> for Option<tombi_extension::DefinitionLocation> {
     fn from(crate_location: CrateLocation) -> Self {
-        let Ok(uri) = Url::from_file_path(&crate_location.cargo_toml_path) else {
+        let Ok(uri) = tombi_uri::Uri::from_file_path(&crate_location.cargo_toml_path) else {
             return None;
         };
 
@@ -191,7 +190,7 @@ fn goto_workspace(
                         tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
                     {
                         return Ok(Some(tombi_extension::DefinitionLocation {
-                            uri: Url::from_file_path(subcrate_cargo_toml_path).unwrap(),
+                            uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
                             range: package_name.unquoted_range(),
                         }));
                     }
@@ -200,7 +199,8 @@ fn goto_workspace(
         }
     }
 
-    let Ok(workspace_cargo_toml_uri) = Url::from_file_path(&workspace_cargo_toml_path) else {
+    let Ok(workspace_cargo_toml_uri) = tombi_uri::Uri::from_file_path(&workspace_cargo_toml_path)
+    else {
         return Ok(None);
     };
 
@@ -252,7 +252,7 @@ fn goto_dependency_crates(
                     tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
                 {
                     locations.push(tombi_extension::DefinitionLocation {
-                        uri: Url::from_file_path(subcrate_cargo_toml_path).unwrap(),
+                        uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
                         range: package_name.unquoted_range(),
                     });
                 }
@@ -355,7 +355,7 @@ fn goto_crate_package(
                 tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
             {
                 return Ok(Some(tombi_extension::DefinitionLocation {
-                    uri: Url::from_file_path(subcrate_cargo_toml_path).unwrap(),
+                    uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
                     range: package_name.unquoted_range(),
                 }));
             }

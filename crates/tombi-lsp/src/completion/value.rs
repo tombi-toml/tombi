@@ -29,7 +29,7 @@ use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema, IntegerSchema,
     LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema, SchemaDefinitions,
-    SchemaStore, SchemaUrl, StringSchema, TableSchema, ValueSchema,
+    SchemaStore, SchemaUri, StringSchema, TableSchema, ValueSchema,
 };
 
 use super::{
@@ -145,22 +145,22 @@ pub fn type_hint_value(
     key: Option<&tombi_document_tree::Key>,
     position: tombi_text::Position,
     toml_version: TomlVersion,
-    schema_url: Option<&SchemaUrl>,
+    schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
     let mut completion_contents = itertools::concat([
-        type_hint_boolean(position, schema_url, completion_hint),
-        type_hint_integer(position, schema_url, completion_hint),
-        type_hint_float(position, schema_url, completion_hint),
-        type_hint_string(position, schema_url, completion_hint),
-        type_hint_local_date_time(position, schema_url, completion_hint),
-        type_hint_local_date(position, schema_url, completion_hint),
-        type_hint_local_time(position, schema_url, completion_hint),
-        type_hint_offset_date_time(position, schema_url, completion_hint),
-        type_hint_array(position, schema_url, completion_hint),
+        type_hint_boolean(position, schema_uri, completion_hint),
+        type_hint_integer(position, schema_uri, completion_hint),
+        type_hint_float(position, schema_uri, completion_hint),
+        type_hint_string(position, schema_uri, completion_hint),
+        type_hint_local_date_time(position, schema_uri, completion_hint),
+        type_hint_local_date(position, schema_uri, completion_hint),
+        type_hint_local_time(position, schema_uri, completion_hint),
+        type_hint_offset_date_time(position, schema_uri, completion_hint),
+        type_hint_array(position, schema_uri, completion_hint),
         vec![CompletionContent::new_type_hint_inline_table(
             position,
-            schema_url,
+            schema_uri,
             completion_hint,
         )],
     ]);
@@ -176,14 +176,14 @@ pub fn type_hint_value(
             completion_contents.push(CompletionContent::new_type_hint_key(
                 &key.to_raw_text(toml_version),
                 key.range(),
-                schema_url,
+                schema_uri,
                 completion_hint,
             ));
         }
     } else {
         completion_contents.push(CompletionContent::new_type_hint_empty_key(
             position,
-            schema_url,
+            schema_uri,
             completion_hint,
         ))
     }
@@ -194,7 +194,7 @@ pub fn type_hint_value(
 impl CompletionCandidate for ValueSchema {
     fn title<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
@@ -215,17 +215,17 @@ impl CompletionCandidate for ValueSchema {
                 }
                 Self::OneOf(one_of) => {
                     one_of
-                        .title(schema_url, definitions, schema_store, completion_hint)
+                        .title(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
                 Self::AnyOf(any_of) => {
                     any_of
-                        .title(schema_url, definitions, schema_store, completion_hint)
+                        .title(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
                 Self::AllOf(all_of) => {
                     all_of
-                        .title(schema_url, definitions, schema_store, completion_hint)
+                        .title(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
                 Self::Null => None,
@@ -236,7 +236,7 @@ impl CompletionCandidate for ValueSchema {
 
     fn description<'a: 'b, 'b>(
         &'a self,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
         completion_hint: Option<CompletionHint>,
@@ -257,17 +257,17 @@ impl CompletionCandidate for ValueSchema {
                 }
                 Self::OneOf(one_of) => {
                     one_of
-                        .description(schema_url, definitions, schema_store, completion_hint)
+                        .description(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
                 Self::AnyOf(any_of) => {
                     any_of
-                        .description(schema_url, definitions, schema_store, completion_hint)
+                        .description(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
                 Self::AllOf(all_of) => {
                     all_of
-                        .description(schema_url, definitions, schema_store, completion_hint)
+                        .description(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
                 Self::Null => None,

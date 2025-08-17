@@ -7,9 +7,9 @@ use std::ops::Deref;
 pub use completion_edit::CompletionEdit;
 pub use completion_hint::CompletionHint;
 pub use completion_kind::CompletionKind;
-use tombi_schema_store::{get_schema_name, SchemaUrl};
+use tombi_schema_store::{get_schema_name, SchemaUri};
 
-use crate::get_tombi_github_url;
+use crate::get_tombi_github_uri;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -56,7 +56,7 @@ pub struct CompletionContent {
     pub detail: Option<String>,
     pub documentation: Option<String>,
     pub filter_text: Option<String>,
-    pub schema_url: Option<SchemaUrl>,
+    pub schema_uri: Option<SchemaUri>,
     pub deprecated: Option<bool>,
     pub edit: Option<CompletionEdit>,
     pub preselect: Option<bool>,
@@ -69,7 +69,7 @@ impl CompletionContent {
         detail: Option<String>,
         documentation: Option<String>,
         edit: Option<CompletionEdit>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
     ) -> Self {
         Self {
@@ -80,7 +80,7 @@ impl CompletionContent {
             detail,
             documentation,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated,
             preselect: None,
@@ -93,7 +93,7 @@ impl CompletionContent {
         detail: Option<String>,
         documentation: Option<String>,
         edit: Option<CompletionEdit>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
     ) -> Self {
         Self {
@@ -104,7 +104,7 @@ impl CompletionContent {
             detail,
             documentation,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated,
             preselect: None,
@@ -117,7 +117,7 @@ impl CompletionContent {
         detail: Option<String>,
         documentation: Option<String>,
         edit: Option<CompletionEdit>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
     ) -> Self {
         Self {
@@ -128,7 +128,7 @@ impl CompletionContent {
             detail,
             documentation,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated,
             preselect: Some(true),
@@ -140,7 +140,7 @@ impl CompletionContent {
         label: impl Into<String>,
         detail: impl Into<String>,
         edit: Option<CompletionEdit>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
     ) -> Self {
         Self {
             label: label.into(),
@@ -150,7 +150,7 @@ impl CompletionContent {
             detail: Some(detail.into()),
             documentation: None,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
@@ -160,7 +160,7 @@ impl CompletionContent {
     pub fn new_type_hint_boolean(
         value: bool,
         edit: Option<CompletionEdit>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
     ) -> Self {
         Self {
             label: value.to_string(),
@@ -174,7 +174,7 @@ impl CompletionContent {
             detail: Some("Boolean".to_string()),
             documentation: None,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
@@ -186,7 +186,7 @@ impl CompletionContent {
         quote: char,
         detail: impl Into<String>,
         edit: Option<CompletionEdit>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
     ) -> Self {
         Self {
             label: format!("{quote}{quote}"),
@@ -196,7 +196,7 @@ impl CompletionContent {
             detail: Some(detail.into()),
             documentation: None,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
@@ -205,7 +205,7 @@ impl CompletionContent {
 
     pub fn new_type_hint_inline_table(
         position: tombi_text::Position,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
         Self {
@@ -216,7 +216,7 @@ impl CompletionContent {
             detail: Some("InlineTable".to_string()),
             documentation: None,
             filter_text: None,
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit: CompletionEdit::new_inline_table(position, completion_hint),
             deprecated: None,
             preselect: None,
@@ -226,7 +226,7 @@ impl CompletionContent {
     pub fn new_type_hint_key(
         key_name: &str,
         key_range: tombi_text::Range,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
         let edit = CompletionEdit::new_key(key_name, key_range, completion_hint);
@@ -239,7 +239,7 @@ impl CompletionContent {
             detail: Some("Key".to_string()),
             documentation: None,
             filter_text: Some(key_name.to_string()),
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             edit,
             deprecated: None,
             preselect: None,
@@ -248,7 +248,7 @@ impl CompletionContent {
 
     pub fn new_type_hint_empty_key(
         position: tombi_text::Position,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
         Self {
@@ -264,7 +264,7 @@ impl CompletionContent {
                 tombi_text::Range::at(position),
                 completion_hint,
             ),
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             deprecated: None,
             preselect: None,
         }
@@ -276,7 +276,7 @@ impl CompletionContent {
         detail: Option<String>,
         documentation: Option<String>,
         required_keys: Option<&Vec<String>>,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
@@ -305,7 +305,7 @@ impl CompletionContent {
             documentation,
             filter_text: None,
             edit: CompletionEdit::new_key(key_name, key_range, completion_hint),
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             deprecated,
             preselect: None,
         }
@@ -314,7 +314,7 @@ impl CompletionContent {
     pub fn new_pattern_key(
         patterns: &[String],
         position: tombi_text::Position,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
         Self {
@@ -338,7 +338,7 @@ impl CompletionContent {
                 tombi_text::Range::at(position),
                 completion_hint,
             ),
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             deprecated: None,
             preselect: None,
         }
@@ -346,7 +346,7 @@ impl CompletionContent {
 
     pub fn new_additional_key(
         position: tombi_text::Position,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
@@ -363,7 +363,7 @@ impl CompletionContent {
                 tombi_text::Range::at(position),
                 completion_hint,
             ),
-            schema_url: schema_url.cloned(),
+            schema_uri: schema_uri.cloned(),
             deprecated,
             preselect: None,
         }
@@ -372,7 +372,7 @@ impl CompletionContent {
     pub fn new_magic_triggers(
         key: &str,
         position: tombi_text::Position,
-        schema_url: Option<&SchemaUrl>,
+        schema_uri: Option<&SchemaUri>,
     ) -> Vec<Self> {
         [(".", "Dot Trigger"), ("=", "Equal Trigger")]
             .into_iter()
@@ -385,7 +385,7 @@ impl CompletionContent {
                 documentation: None,
                 filter_text: Some(format!("{key}{trigger}")),
                 edit: CompletionEdit::new_magic_trigger(trigger, position),
-                schema_url: schema_url.cloned(),
+                schema_uri: schema_uri.cloned(),
                 deprecated: None,
                 preselect: None,
             })
@@ -417,7 +417,7 @@ impl CompletionContent {
             documentation: Some(documentation.into()),
             filter_text: None,
             edit,
-            schema_url: None,
+            schema_uri: None,
             deprecated: None,
             preselect: None,
         }
@@ -440,13 +440,13 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
         );
 
         let mut schema_text = None;
-        if let Some(schema_url) = &completion_content.schema_url {
-            let schema_url = match get_tombi_github_url(schema_url) {
-                Some(schema_url) => schema_url,
-                None => schema_url.deref().clone(),
+        if let Some(schema_uri) = &completion_content.schema_uri {
+            let schema_uri = match get_tombi_github_uri(schema_uri) {
+                Some(schema_uri) => schema_uri,
+                None => schema_uri.deref().clone(),
             };
-            if let Some(schema_filename) = get_schema_name(&schema_url) {
-                schema_text = Some(format!("Schema: [{schema_filename}]({schema_url})\n"));
+            if let Some(schema_filename) = get_schema_name(&schema_uri) {
+                schema_text = Some(format!("Schema: [{schema_filename}]({schema_uri})\n"));
             }
         }
         let documentation = match completion_content.documentation {

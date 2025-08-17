@@ -9,7 +9,7 @@ use tombi_x_keyword::StringFormat;
 use super::{
     referable_schema::CurrentSchema, AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema,
     FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema, LocalDateTimeSchema,
-    LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUrl, StringSchema, TableSchema,
+    LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
 use crate::{Accessor, Referable, SchemaDefinitions, SchemaStore};
 
@@ -52,7 +52,7 @@ impl ValueSchema {
                         }
                     })
                     .map(|value_schema| Referable::Resolved {
-                        schema_url: None,
+                        schema_uri: None,
                         value: value_schema,
                     })
                     .collect();
@@ -184,7 +184,7 @@ impl ValueSchema {
                 for value_type in enum_types {
                     if let Some(schema) = Self::new_single(value_type, object, string_formats) {
                         schemas.push(Referable::Resolved {
-                            schema_url: None,
+                            schema_uri: None,
                             value: schema,
                         });
                     }
@@ -404,7 +404,7 @@ impl ValueSchema {
     pub fn match_flattened_schemas<'a: 'b, 'b, T: Fn(&ValueSchema) -> bool + Sync + Send>(
         &'a self,
         condition: &'a T,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, Vec<ValueSchema>> {
@@ -417,7 +417,7 @@ impl ValueSchema {
                     for referable_schema in schemas.write().await.iter_mut() {
                         if let Ok(Some(current_schema)) = referable_schema
                             .resolve(
-                                Cow::Borrowed(schema_url),
+                                Cow::Borrowed(schema_uri),
                                 Cow::Borrowed(definitions),
                                 schema_store,
                             )
@@ -428,7 +428,7 @@ impl ValueSchema {
                                     .value_schema
                                     .match_flattened_schemas(
                                         condition,
-                                        &current_schema.schema_url,
+                                        &current_schema.schema_uri,
                                         &current_schema.definitions,
                                         schema_store,
                                     )
@@ -452,7 +452,7 @@ impl ValueSchema {
     pub fn is_match<'a, 'b, T: Fn(&ValueSchema) -> bool + Sync + Send>(
         &'a self,
         condition: &'a T,
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, bool>
@@ -470,18 +470,18 @@ impl ValueSchema {
                         .map(|referable_schema| async {
                             if let Ok(Some(CurrentSchema {
                                 value_schema,
-                                schema_url,
+                                schema_uri,
                                 definitions,
                             })) = referable_schema
                                 .resolve(
-                                    Cow::Borrowed(schema_url),
+                                    Cow::Borrowed(schema_uri),
                                     Cow::Borrowed(definitions),
                                     schema_store,
                                 )
                                 .await
                             {
                                 value_schema
-                                    .is_match(condition, &schema_url, &definitions, schema_store)
+                                    .is_match(condition, &schema_uri, &definitions, schema_store)
                                     .await
                             } else {
                                 false
@@ -499,18 +499,18 @@ impl ValueSchema {
                         .map(|referable_schema| async {
                             if let Ok(Some(CurrentSchema {
                                 value_schema,
-                                schema_url,
+                                schema_uri,
                                 definitions,
                             })) = referable_schema
                                 .resolve(
-                                    Cow::Borrowed(schema_url),
+                                    Cow::Borrowed(schema_uri),
                                     Cow::Borrowed(definitions),
                                     schema_store,
                                 )
                                 .await
                             {
                                 value_schema
-                                    .is_match(condition, &schema_url, &definitions, schema_store)
+                                    .is_match(condition, &schema_uri, &definitions, schema_store)
                                     .await
                             } else {
                                 false
@@ -531,7 +531,7 @@ impl FindSchemaCandidates for ValueSchema {
     fn find_schema_candidates<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
-        schema_url: &'a SchemaUrl,
+        schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
@@ -561,7 +561,7 @@ impl FindSchemaCandidates for ValueSchema {
                     for referable_schema in schemas.write().await.iter_mut() {
                         let Ok(Some(current_schema)) = referable_schema
                             .resolve(
-                                Cow::Borrowed(schema_url),
+                                Cow::Borrowed(schema_uri),
                                 Cow::Borrowed(definitions),
                                 schema_store,
                             )
@@ -574,7 +574,7 @@ impl FindSchemaCandidates for ValueSchema {
                             .value_schema
                             .find_schema_candidates(
                                 accessors,
-                                &current_schema.schema_url,
+                                &current_schema.schema_uri,
                                 &current_schema.definitions,
                                 schema_store,
                             )

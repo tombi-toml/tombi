@@ -24,6 +24,7 @@ pub async fn handle_goto_declaration(
             },
         ..
     } = params;
+    let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
         config,
@@ -31,7 +32,7 @@ pub async fn handle_goto_declaration(
         ..
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document.uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     if !config
@@ -45,12 +46,12 @@ pub async fn handle_goto_declaration(
         return Ok(None);
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
+    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(None);
     };
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -75,7 +76,7 @@ pub async fn handle_goto_declaration(
     let accessors = get_accessors(&document_tree, &keys, position);
 
     if let Some(locations) = tombi_extension_cargo::goto_declaration(
-        &text_document,
+        &text_document_uri,
         &document_tree,
         &accessors,
         toml_version,
@@ -86,7 +87,7 @@ pub async fn handle_goto_declaration(
     }
 
     if let Some(locations) = tombi_extension_uv::goto_declaration(
-        &text_document,
+        &text_document_uri,
         &document_tree,
         &accessors,
         toml_version,

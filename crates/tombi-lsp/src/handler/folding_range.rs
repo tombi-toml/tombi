@@ -13,8 +13,9 @@ pub async fn handle_folding_range(
     tracing::trace!(?params);
 
     let FoldingRangeParams { text_document, .. } = params;
+    let text_document_uri = text_document.uri.into();
 
-    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document.uri).await else {
+    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document_uri).await else {
         return Ok(None);
     };
 

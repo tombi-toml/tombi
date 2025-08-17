@@ -33,13 +33,13 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     None
 }
 
-pub async fn get_cache_file_path(cache_file_url: &url::Url) -> Option<std::path::PathBuf> {
+pub async fn get_cache_file_path(cache_file_uri: &tombi_uri::Uri) -> Option<std::path::PathBuf> {
     get_tombi_cache_dir_path().await.map(|mut dir_path| {
-        dir_path.push(cache_file_url.scheme());
-        if let Some(host) = cache_file_url.host() {
+        dir_path.push(cache_file_uri.scheme());
+        if let Some(host) = cache_file_uri.host() {
             dir_path.push(host.to_string());
         }
-        if let Some(path_segments) = cache_file_url.path_segments() {
+        if let Some(path_segments) = cache_file_uri.path_segments() {
             for segment in path_segments {
                 dir_path.push(segment)
             }

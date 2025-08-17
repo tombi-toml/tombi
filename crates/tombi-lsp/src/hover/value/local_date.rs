@@ -42,7 +42,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             keys,
                             accessors,
                             one_of_schema,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
                         )
@@ -55,7 +55,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             keys,
                             accessors,
                             any_of_schema,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
                         )
@@ -68,7 +68,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             keys,
                             accessors,
                             all_of_schema,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
                         )
@@ -83,7 +83,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                     accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
                     value_type: tombi_schema_store::ValueType::LocalDate,
                     constraints: None,
-                    schema_url: None,
+                    schema_uri: None,
                     range: Some(self.range()),
                 })
             }
@@ -125,8 +125,8 @@ impl GetHoverContent for LocalDateSchema {
                     }),
                     ..Default::default()
                 }),
-                schema_url: current_schema
-                    .map(|current_schema| current_schema.schema_url.as_ref().clone()),
+                schema_uri: current_schema
+                    .map(|current_schema| current_schema.schema_uri.as_ref().clone()),
                 range: None,
             })
         }

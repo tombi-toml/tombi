@@ -35,7 +35,7 @@ impl<'a> Editor<'a> {
                 .as_ref()
                 .map(|value_schema| CurrentSchema {
                     value_schema: Cow::Borrowed(value_schema),
-                    schema_url: Cow::Borrowed(&document_schema.schema_url),
+                    schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                     definitions: Cow::Borrowed(&document_schema.definitions),
                 })
         });

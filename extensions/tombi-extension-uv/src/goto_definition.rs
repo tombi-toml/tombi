@@ -4,7 +4,6 @@ use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_keys, Value};
 use tombi_schema_store::{dig_accessors, matches_accessors, Accessor};
-use tower_lsp::lsp_types::{TextDocumentIdentifier, Url};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
@@ -13,16 +12,16 @@ use crate::{
 };
 
 pub async fn goto_definition(
-    text_document: &TextDocumentIdentifier,
+    text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
     // Check if current file is pyproject.toml
-    if !text_document.uri.path().ends_with("pyproject.toml") {
+    if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(Default::default());
     }
-    let Ok(pyproject_toml_path) = text_document.uri.to_file_path() else {
+    let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         return Ok(Default::default());
     };
 
@@ -133,7 +132,8 @@ fn get_workspace_dependency_definition(
 
     let member_document_tree = load_pyproject_toml(&member_pyproject_toml_path, toml_version)?;
     let package_name = get_project_name(&member_document_tree)?;
-    let member_pyproject_toml_uri = Url::from_file_path(&member_pyproject_toml_path).ok()?;
+    let member_pyproject_toml_uri =
+        tombi_uri::Uri::from_file_path(&member_pyproject_toml_path).ok()?;
 
     Some(tombi_extension::DefinitionLocation {
         uri: member_pyproject_toml_uri,
@@ -151,7 +151,7 @@ pub fn get_path_dependency_definition(
 
     let package_name = get_project_name(&member_document_tree)?;
 
-    let member_pyproject_toml_uri = Url::from_file_path(&pyproject_toml_path).ok()?;
+    let member_pyproject_toml_uri = tombi_uri::Uri::from_file_path(&pyproject_toml_path).ok()?;
 
     Some(tombi_extension::DefinitionLocation {
         uri: member_pyproject_toml_uri,

@@ -36,7 +36,7 @@ impl crate::Edit for tombi_ast::Table {
                     .await
                     .map(|value_schema| tombi_schema_store::CurrentSchema {
                         value_schema: Cow::Owned(value_schema),
-                        schema_url: current_schema.schema_url.clone(),
+                        schema_uri: current_schema.schema_uri.clone(),
                         definitions: current_schema.definitions.clone(),
                     })
             } else {

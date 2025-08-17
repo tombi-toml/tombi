@@ -2,12 +2,14 @@ use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::LintOptions;
 use tombi_glob::{matches_file_patterns, MatchResult};
-use tombi_uri::{url_from_file_path, url_to_file_path};
-use tower_lsp::lsp_types::Url;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, document::DocumentSource};
 
-pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, version: Option<i32>) {
+pub async fn publish_diagnostics(
+    backend: &Backend,
+    text_document_uri: tombi_uri::Uri,
+    version: Option<i32>,
+) {
     let Some(DiagnosticsResult {
         diagnostics,
         version: old_version,
@@ -18,7 +20,11 @@ pub async fn publish_diagnostics(backend: &Backend, text_document_uri: Url, vers
 
     backend
         .client
-        .publish_diagnostics(text_document_uri, diagnostics, version.or(old_version))
+        .publish_diagnostics(
+            text_document_uri.into(),
+            diagnostics,
+            version.or(old_version),
+        )
         .await
 }
 
@@ -30,7 +36,7 @@ pub struct DiagnosticsResult {
 
 pub async fn get_diagnostics_result(
     backend: &Backend,
-    text_document_uri: &Url,
+    text_document_uri: &tombi_uri::Uri,
 ) -> Option<DiagnosticsResult> {
     let ConfigSchemaStore {
         config,
@@ -38,7 +44,7 @@ pub async fn get_diagnostics_result(
         config_path,
     } = backend
         .config_manager
-        .config_schema_store_for_url(text_document_uri)
+        .config_schema_store_for_uri(text_document_uri)
         .await;
 
     if !config
@@ -52,7 +58,7 @@ pub async fn get_diagnostics_result(
         return None;
     }
 
-    if let Ok(text_document_path) = url_to_file_path(text_document_uri) {
+    if let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) {
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
@@ -110,7 +116,7 @@ pub async fn get_diagnostics_result(
 
 #[derive(Debug)]
 pub struct WorkspaceDiagnosticTarget {
-    pub uri: Url,
+    pub uri: tombi_uri::Uri,
     pub version: Option<i32>,
 }
 
@@ -127,7 +133,9 @@ pub async fn get_workspace_diagnostic_targets(
             .map(|workspace_folders| {
                 workspace_folders
                     .into_iter()
-                    .filter_map(|workspace| url_to_file_path(&workspace.uri).ok())
+                    .filter_map(|workspace| {
+                        tombi_uri::Uri::to_file_path(&workspace.uri.into()).ok()
+                    })
                     .collect_vec()
             });
 
@@ -168,7 +176,7 @@ pub async fn get_workspace_diagnostic_targets(
                     let Ok(file_path) = file else {
                         continue;
                     };
-                    if let Ok(file_url) = url_from_file_path(&file_path) {
+                    if let Ok(file_uri) = tombi_uri::Uri::from_file_path(&file_path) {
                         let Ok(content) = tokio::fs::read_to_string(&file_path).await else {
                             continue;
                         };
@@ -177,13 +185,13 @@ pub async fn get_workspace_diagnostic_targets(
                                 .document_sources
                                 .write()
                                 .await
-                                .entry(file_url.clone())
+                                .entry(file_uri.clone())
                                 .or_insert_with(|| DocumentSource::new(content, None))
                                 .version
                         };
 
                         total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
-                            uri: file_url,
+                            uri: file_uri,
                             version,
                         });
                     }

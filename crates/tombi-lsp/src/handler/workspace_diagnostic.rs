@@ -25,7 +25,7 @@ pub async fn handle_workspace_diagnostic(
             if let Some(diagnostics) = get_diagnostics_result(backend, &uri).await {
                 items.push(WorkspaceDocumentDiagnosticReport::Full(
                     WorkspaceFullDocumentDiagnosticReport {
-                        uri,
+                        uri: uri.into(),
                         version: version.map(|version| version as i64),
                         full_document_diagnostic_report: FullDocumentDiagnosticReport {
                             items: diagnostics.diagnostics,

@@ -4,12 +4,12 @@ use tombi_x_keyword::StringFormat;
 
 use crate::x_taplo::XTaplo;
 
-use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUrl, ValueSchema};
+use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUri, ValueSchema};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Referable<T> {
     Resolved {
-        schema_url: Option<SchemaUrl>,
+        schema_uri: Option<SchemaUri>,
         value: T,
     },
     Ref {
@@ -23,7 +23,7 @@ pub enum Referable<T> {
 #[derive(Clone)]
 pub struct CurrentSchema<'a> {
     pub value_schema: Cow<'a, ValueSchema>,
-    pub schema_url: Cow<'a, SchemaUrl>,
+    pub schema_uri: Cow<'a, SchemaUri>,
     pub definitions: Cow<'a, SchemaDefinitions>,
 }
 
@@ -31,7 +31,7 @@ impl std::fmt::Debug for CurrentSchema<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CurrentSchema")
             .field("value_schema", &self.value_schema)
-            .field("schema_url", &self.schema_url.to_string())
+            .field("schema_uri", &self.schema_uri.to_string())
             .finish()
     }
 }
@@ -73,7 +73,7 @@ impl Referable<ValueSchema> {
         }
 
         ValueSchema::new(object, string_formats).map(|value_schema| Referable::Resolved {
-            schema_url: None,
+            schema_uri: None,
             value: value_schema,
         })
     }
@@ -96,7 +96,7 @@ impl Referable<ValueSchema> {
 
     pub fn resolve<'a: 'b, 'b>(
         &'a mut self,
-        schema_url: Cow<'a, SchemaUrl>,
+        schema_uri: Cow<'a, SchemaUri>,
         definitions: Cow<'a, SchemaDefinitions>,
         schema_store: &'a crate::SchemaStore,
     ) -> tombi_future::BoxFuture<'b, Result<Option<CurrentSchema<'a>>, crate::Error>> {
@@ -132,7 +132,7 @@ impl Referable<ValueSchema> {
                         // Therefore, schema_value is not cached in memory, but read from file cache.
                         // Execution speed decreases, but memory usage can be reduced.
                         if let Some(schema_value) =
-                            schema_store.fetch_schema_value(&schema_url).await?
+                            schema_store.fetch_schema_value(&schema_uri).await?
                         {
                             if let Some(mut resolved_schema) =
                                 resolve_json_pointer(&schema_value, pointer, None)?
@@ -146,13 +146,13 @@ impl Referable<ValueSchema> {
                                 }
 
                                 *self = Referable::Resolved {
-                                    schema_url: Some(schema_url.as_ref().clone()),
+                                    schema_uri: Some(schema_uri.as_ref().clone()),
                                     value: resolved_schema,
                                 };
                             } else {
                                 return Err(crate::Error::InvalidJsonPointer {
                                     pointer: pointer.to_owned(),
-                                    schema_url: schema_url.as_ref().clone(),
+                                    schema_uri: schema_uri.as_ref().clone(),
                                 });
                             }
                         } else {
@@ -160,10 +160,10 @@ impl Referable<ValueSchema> {
                             return Ok(None);
                         }
                     } else if is_online_url(reference) {
-                        let schema_url = SchemaUrl::parse(reference)?;
+                        let schema_uri = SchemaUri::parse(reference)?;
 
                         if let Some(mut document_schema) =
-                            schema_store.try_get_document_schema(&schema_url).await?
+                            schema_store.try_get_document_schema(&schema_uri).await?
                         {
                             if let Some(value_schema) = &mut document_schema.value_schema {
                                 if title.is_some() || description.is_some() {
@@ -175,13 +175,13 @@ impl Referable<ValueSchema> {
                                 }
 
                                 *self = Referable::Resolved {
-                                    schema_url: Some(document_schema.schema_url.clone()),
+                                    schema_uri: Some(document_schema.schema_uri.clone()),
                                     value: value_schema.clone(),
                                 };
 
                                 return self
                                     .resolve(
-                                        Cow::Owned(document_schema.schema_url),
+                                        Cow::Owned(document_schema.schema_uri),
                                         Cow::Owned(document_schema.definitions),
                                         schema_store,
                                     )
@@ -189,7 +189,7 @@ impl Referable<ValueSchema> {
                             } else {
                                 return Err(crate::Error::InvalidJsonSchemaReference {
                                     reference: reference.to_owned(),
-                                    schema_url: schema_url.clone(),
+                                    schema_uri: schema_uri.clone(),
                                 });
                             }
                         } else {
@@ -198,32 +198,32 @@ impl Referable<ValueSchema> {
                     } else {
                         return Err(crate::Error::UnsupportedReference {
                             reference: reference.to_owned(),
-                            schema_url: schema_url.as_ref().clone(),
+                            schema_uri: schema_uri.as_ref().clone(),
                         });
                     }
 
-                    self.resolve(schema_url, definitions, schema_store).await
+                    self.resolve(schema_uri, definitions, schema_store).await
                 }
                 Referable::Resolved {
-                    schema_url: reference_url,
+                    schema_uri: reference_url,
                     value: value_schema,
                     ..
                 } => {
-                    let (schema_url, definitions) = {
+                    let (schema_uri, definitions) = {
                         match reference_url {
                             Some(reference_url) => {
                                 if let Some(document_schema) =
                                     schema_store.try_get_document_schema(reference_url).await?
                                 {
                                     (
-                                        Cow::Owned(document_schema.schema_url),
+                                        Cow::Owned(document_schema.schema_uri),
                                         Cow::Owned(document_schema.definitions),
                                     )
                                 } else {
-                                    (schema_url, definitions)
+                                    (schema_uri, definitions)
                                 }
                             }
-                            None => (schema_url, definitions),
+                            None => (schema_uri, definitions),
                         }
                     };
 
@@ -233,7 +233,7 @@ impl Referable<ValueSchema> {
                         | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
                             for schema in schemas.write().await.iter_mut() {
                                 schema
-                                    .resolve(schema_url.clone(), definitions.clone(), schema_store)
+                                    .resolve(schema_uri.clone(), definitions.clone(), schema_store)
                                     .await?;
                             }
                         }
@@ -242,7 +242,7 @@ impl Referable<ValueSchema> {
 
                     Ok(Some(CurrentSchema {
                         value_schema: Cow::Borrowed(value_schema),
-                        schema_url,
+                        schema_uri,
                         definitions,
                     }))
                 }

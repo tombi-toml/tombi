@@ -12,14 +12,16 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
         text,
     } = params;
 
+    let text_document_uri = text_document.uri.into();
+
     if let Some(text) = text {
         let mut document_sources = backend.document_sources.write().await;
-        if let Some(document) = document_sources.get_mut(&text_document.uri) {
+        if let Some(document) = document_sources.get_mut(&text_document_uri) {
             document.text = text;
         }
         drop(document_sources);
     }
 
     // Publish diagnostics for the saved document
-    backend.push_diagnostics(text_document.uri, None).await
+    backend.push_diagnostics(text_document_uri, None).await
 }

@@ -18,15 +18,15 @@ impl Validate for tombi_document_tree::Array {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             if let Some(sub_schema_url) = schema_context
-                .sub_schema_url_map
+                .sub_schema_uri_map
                 .and_then(|map| map.get(accessors))
             {
                 if current_schema
-                    .is_some_and(|current_schema| &*current_schema.schema_url != sub_schema_url)
+                    .is_some_and(|current_schema| &*current_schema.schema_uri != sub_schema_url)
                 {
                     if let Ok(Some(DocumentSchema {
                         value_schema: Some(value_schema),
-                        schema_url,
+                        schema_uri,
                         definitions,
                         ..
                     })) = schema_context
@@ -39,7 +39,7 @@ impl Validate for tombi_document_tree::Array {
                                 accessors,
                                 Some(&CurrentSchema {
                                     value_schema: Cow::Borrowed(&value_schema),
-                                    schema_url: Cow::Borrowed(&schema_url),
+                                    schema_uri: Cow::Borrowed(&schema_uri),
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
@@ -110,7 +110,7 @@ impl Validate for tombi_document_tree::Array {
                     let mut referable_schema = items.write().await;
                     if let Ok(Some(current_schema)) = referable_schema
                         .resolve(
-                            current_schema.schema_url.clone(),
+                            current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
                             schema_context.store,
                         )

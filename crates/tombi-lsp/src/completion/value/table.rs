@@ -34,7 +34,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
         async move {
             if let Some(Ok(DocumentSchema {
                 value_schema: Some(value_schema),
-                schema_url,
+                schema_uri,
                 definitions,
                 ..
             })) = schema_context
@@ -48,7 +48,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         accessors,
                         Some(&CurrentSchema {
                             value_schema: Cow::Borrowed(&value_schema),
-                            schema_url: Cow::Borrowed(&schema_url),
+                            schema_uri: Cow::Borrowed(&schema_uri),
                             definitions: Cow::Borrowed(&definitions),
                         }),
                         schema_context,
@@ -90,13 +90,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         return CompletionContent::new_magic_triggers(
                                             accessor_str,
                                             position,
-                                            Some(current_schema.schema_url.as_ref()),
+                                            Some(current_schema.schema_uri.as_ref()),
                                         );
                                     }
 
                                     if let Ok(Some(current_schema)) = property_schema
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -147,7 +147,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                         if let Ok(Some(current_schema)) = property_schema
                                             .resolve(
-                                                current_schema.schema_url.clone(),
+                                                current_schema.schema_uri.clone(),
                                                 current_schema.definitions.clone(),
                                                 schema_context.store,
                                             )
@@ -204,7 +204,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             );
                                             if let Ok(Some(current_schema)) = property_schema
                                                 .resolve(
-                                                    current_schema.schema_url.clone(),
+                                                    current_schema.schema_uri.clone(),
                                                     current_schema.definitions.clone(),
                                                     schema_context.store,
                                                 )
@@ -239,7 +239,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             .write()
                                             .await
                                             .resolve(
-                                                current_schema.schema_url.clone(),
+                                                current_schema.schema_uri.clone(),
                                                 current_schema.definitions.clone(),
                                                 schema_context.store,
                                             )
@@ -312,7 +312,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             title.clone(),
                                             description.clone(),
                                             table_schema.required.as_ref(),
-                                            Some(current_schema.schema_url.as_ref()),
+                                            Some(current_schema.schema_uri.as_ref()),
                                             *deprecated,
                                             completion_hint,
                                         ));
@@ -323,7 +323,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                 if let Ok(Some(current_schema)) = property_schema
                                     .resolve(
-                                        current_schema.schema_url.clone(),
+                                        current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
                                     )
@@ -347,7 +347,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
 
-                            if let Some(sub_schema_url_map) = schema_context.sub_schema_url_map {
+                            if let Some(sub_schema_url_map) = schema_context.sub_schema_uri_map {
                                 for (root_accessors, sub_schema_url) in sub_schema_url_map {
                                     if let Some(SchemaAccessor::Key(last_key)) =
                                         root_accessors.last()
@@ -369,7 +369,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                             position,
                                                             value_schema
                                                                 .detail(
-                                                                    &current_schema.schema_url,
+                                                                    &current_schema.schema_uri,
                                                                     &current_schema.definitions,
                                                                     schema_context.store,
                                                                     completion_hint,
@@ -377,7 +377,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                                 .await,
                                                             value_schema
                                                                 .documentation(
-                                                                    &current_schema.schema_url,
+                                                                    &current_schema.schema_uri,
                                                                     &current_schema.definitions,
                                                                     schema_context.store,
                                                                     completion_hint,
@@ -385,7 +385,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                                 .await,
                                                             None,
                                                             Some(
-                                                                current_schema.schema_url.as_ref(),
+                                                                current_schema.schema_uri.as_ref(),
                                                             ),
                                                             value_schema.deprecated().await,
                                                             completion_hint,
@@ -409,7 +409,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     completion_contents.push(CompletionContent::new_pattern_key(
                                         patterns.as_ref(),
                                         position,
-                                        Some(current_schema.schema_url.as_ref()),
+                                        Some(current_schema.schema_uri.as_ref()),
                                         completion_hint,
                                     ))
                                 } else if let Some((_, additional_property_schema)) =
@@ -417,13 +417,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 {
                                     if let Ok(Some(CurrentSchema {
                                         value_schema,
-                                        schema_url,
+                                        schema_uri,
                                         ..
                                     })) = additional_property_schema
                                         .write()
                                         .await
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -432,7 +432,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         completion_contents.push(
                                             CompletionContent::new_additional_key(
                                                 position,
-                                                Some(schema_url.as_ref()),
+                                                Some(schema_uri.as_ref()),
                                                 value_schema.deprecated().await,
                                                 completion_hint,
                                             ),
@@ -540,7 +540,7 @@ impl FindCompletionContents for TableSchema {
 
                 if let Ok(Some(current_schema)) = property_schema
                     .resolve(
-                        current_schema.schema_url.clone(),
+                        current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
                     )
@@ -550,7 +550,7 @@ impl FindCompletionContents for TableSchema {
                         .value_schema
                         .find_schema_candidates(
                             accessors,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context.store,
                         )
@@ -575,7 +575,7 @@ impl FindCompletionContents for TableSchema {
                             position,
                             schema_candidate
                                 .detail(
-                                    &current_schema.schema_url,
+                                    &current_schema.schema_uri,
                                     &current_schema.definitions,
                                     schema_context.store,
                                     completion_hint,
@@ -583,14 +583,14 @@ impl FindCompletionContents for TableSchema {
                                 .await,
                             schema_candidate
                                 .documentation(
-                                    &current_schema.schema_url,
+                                    &current_schema.schema_uri,
                                     &current_schema.definitions,
                                     schema_context.store,
                                     completion_hint,
                                 )
                                 .await,
                             self.required.as_ref(),
-                            Some(current_schema.schema_url.as_ref()),
+                            Some(current_schema.schema_uri.as_ref()),
                             current_schema.value_schema.deprecated().await,
                             completion_hint,
                         ));
@@ -600,7 +600,7 @@ impl FindCompletionContents for TableSchema {
 
             completion_items.push(CompletionContent::new_type_hint_inline_table(
                 position,
-                Some(current_schema.schema_url.as_ref()),
+                Some(current_schema.schema_uri.as_ref()),
                 completion_hint,
             ));
 
@@ -619,7 +619,7 @@ async fn count_table_or_array_schema(
             .value_schema
             .match_flattened_schemas(
                 &|schema| matches!(schema, ValueSchema::Table(_) | ValueSchema::Array(_)),
-                &current_schema.schema_url,
+                &current_schema.schema_uri,
                 &current_schema.definitions,
                 schema_store,
             )
@@ -630,14 +630,14 @@ async fn count_table_or_array_schema(
                     ValueSchema::Array(array_schema) => {
                         if let Some(item) = array_schema.items {
                             if let Ok(Some(CurrentSchema {
-                                schema_url,
+                                schema_uri,
                                 value_schema,
                                 definitions,
                             })) = item
                                 .write()
                                 .await
                                 .resolve(
-                                    Cow::Borrowed(&current_schema.schema_url),
+                                    Cow::Borrowed(&current_schema.schema_uri),
                                     Cow::Borrowed(&current_schema.definitions),
                                     schema_store,
                                 )
@@ -646,7 +646,7 @@ async fn count_table_or_array_schema(
                                 return value_schema
                                     .is_match(
                                         &|schema| matches!(schema, ValueSchema::Table(_)),
-                                        &schema_url,
+                                        &schema_uri,
                                         &definitions,
                                         schema_store,
                                     )
@@ -738,14 +738,14 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                                 return CompletionContent::new_magic_triggers(
                                     &key.to_raw_text(schema_context.toml_version),
                                     position,
-                                    current_schema.map(|schema| schema.schema_url.as_ref()),
+                                    current_schema.map(|schema| schema.schema_uri.as_ref()),
                                 );
                             }
                             Some(CompletionHint::InArray) => {
                                 return vec![CompletionContent::new_type_hint_key(
                                     &key.to_raw_text(schema_context.toml_version),
                                     key.range(),
-                                    current_schema.map(|schema| schema.schema_url.as_ref()),
+                                    current_schema.map(|schema| schema.schema_uri.as_ref()),
                                     completion_hint,
                                 )];
                             }
@@ -825,7 +825,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
             .value_schema
             .find_schema_candidates(
                 accessors,
-                &current_schema.schema_url,
+                &current_schema.schema_uri,
                 &current_schema.definitions,
                 schema_context.store,
             )
@@ -893,7 +893,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                 position,
                 schema_candidate
                     .detail(
-                        &current_schema.schema_url,
+                        &current_schema.schema_uri,
                         &current_schema.definitions,
                         schema_context.store,
                         completion_hint,
@@ -901,14 +901,14 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                     .await,
                 schema_candidate
                     .documentation(
-                        &current_schema.schema_url,
+                        &current_schema.schema_uri,
                         &current_schema.definitions,
                         schema_context.store,
                         completion_hint,
                     )
                     .await,
                 table_schema.required.as_ref(),
-                Some(&current_schema.schema_url),
+                Some(&current_schema.schema_uri),
                 current_schema.value_schema.deprecated().await,
                 completion_hint,
             ));

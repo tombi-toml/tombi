@@ -210,7 +210,7 @@ mod tests {
                 accessors: tombi_schema_store::SchemaAccessors::new(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
-                schema_url: tombi_schema_store::SchemaUrl::from_file_path(cargo_schema_path()).unwrap(),
+                schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
                 key: "aaa".to_string(),
             }]);
         }
@@ -322,7 +322,7 @@ mod tests {
     }
 
     mod non_schema {
-        use tombi_schema_store::SchemaUrl;
+        use tombi_schema_store::SchemaUri;
 
         use super::*;
 
@@ -386,7 +386,7 @@ mod tests {
                 "#,
             ) -> Err([
                 tombi_schema_store::Error::SchemaFetchFailed{
-                    schema_url: SchemaUrl::parse("https://does-not-exist.co.jp").unwrap(),
+                    schema_uri: SchemaUri::parse("https://does-not-exist.co.jp").unwrap(),
                     reason: "error sending request for url (https://does-not-exist.co.jp/)".to_string(),
                 }
             ]);

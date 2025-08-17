@@ -29,7 +29,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
         async move {
             if let Some(Ok(DocumentSchema {
                 value_schema,
-                schema_url,
+                schema_uri,
                 definitions,
                 ..
             })) = schema_context
@@ -38,7 +38,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
             {
                 let current_schema = value_schema.map(|value_schema| CurrentSchema {
                     value_schema: Cow::Owned(value_schema),
-                    schema_url: Cow::Owned(schema_url),
+                    schema_uri: Cow::Owned(schema_uri),
                     definitions: Cow::Owned(definitions),
                 });
 
@@ -81,7 +81,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
 
                                     if let Ok(Some(current_schema)) = property_schema
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -125,7 +125,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             if pattern.is_match(&key_str) {
                                                 if let Ok(Some(current_schema)) = property_schema
                                                     .resolve(
-                                                        current_schema.schema_url.clone(),
+                                                        current_schema.schema_uri.clone(),
                                                         current_schema.definitions.clone(),
                                                         schema_context.store,
                                                     )
@@ -174,7 +174,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         referable_additional_property_schema.write().await;
                                     if let Ok(Some(current_schema)) = referable_schema
                                         .resolve(
-                                            current_schema.schema_url.clone(),
+                                            current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
                                         )
@@ -206,14 +206,14 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     )
                                     .await
                             } else {
-                                let mut schema_url = current_schema.schema_url.as_ref().clone();
-                                schema_url.set_fragment(Some(&format!(
+                                let mut schema_uri = current_schema.schema_uri.as_ref().clone();
+                                schema_uri.set_fragment(Some(&format!(
                                     "L{}",
                                     key.range().start.line + 1
                                 )));
 
                                 Some(TypeDefinition {
-                                    schema_url,
+                                    schema_uri,
                                     schema_accessors: accessors
                                         .iter()
                                         .map(Into::into)
@@ -240,7 +240,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             keys,
                             accessors,
                             one_of_schema,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
                         )
@@ -253,7 +253,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             keys,
                             accessors,
                             any_of_schema,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
                         )
@@ -266,14 +266,14 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             keys,
                             accessors,
                             all_of_schema,
-                            &current_schema.schema_url,
+                            &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
                         )
                         .await
                     }
                     _ => Some(TypeDefinition {
-                        schema_url: current_schema.schema_url.as_ref().clone(),
+                        schema_uri: current_schema.schema_uri.as_ref().clone(),
                         schema_accessors: accessors.iter().map(Into::into).collect_vec(),
                         range: tombi_text::Range::default(),
                     }),
@@ -316,11 +316,11 @@ impl GetTypeDefinition for TableSchema {
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {
-                let mut schema_url = schema.schema_url.as_ref().clone();
-                schema_url.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
+                let mut schema_uri = schema.schema_uri.as_ref().clone();
+                schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
 
                 TypeDefinition {
-                    schema_url,
+                    schema_uri,
                     schema_accessors: accessors.iter().map(Into::into).collect_vec(),
                     range: schema.value_schema.range(),
                 }

@@ -27,7 +27,7 @@ where
         for referable_schema in schemas.iter_mut() {
             let Ok(Some(current_schema)) = referable_schema
                 .resolve(
-                    current_schema.schema_url.clone(),
+                    current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )

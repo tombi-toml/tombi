@@ -10,9 +10,9 @@ use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
 pub use comment::get_comment_directive_hover_info;
 use constraints::ValueConstraints;
-use tombi_extension::get_tombi_github_url;
+use tombi_extension::get_tombi_github_uri;
 use tombi_schema_store::{
-    get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUrl, ValueType,
+    get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUri, ValueType,
 };
 
 pub async fn get_hover_content(
@@ -30,7 +30,7 @@ pub async fn get_hover_content(
                     .as_ref()
                     .map(|value_schema| CurrentSchema {
                         value_schema: Cow::Borrowed(value_schema),
-                        schema_url: Cow::Borrowed(&document_schema.schema_url),
+                        schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
@@ -99,7 +99,7 @@ pub struct HoverValueContent {
     pub accessors: Accessors,
     pub value_type: ValueType,
     pub constraints: Option<ValueConstraints>,
-    pub schema_url: Option<SchemaUrl>,
+    pub schema_uri: Option<SchemaUri>,
     pub range: Option<tombi_text::Range>,
 }
 
@@ -157,13 +157,13 @@ impl std::fmt::Display for HoverValueContent {
             writeln!(f, "{constraints}")?;
         }
 
-        if let Some(schema_url) = &self
-            .schema_url
+        if let Some(schema_uri) = &self
+            .schema_uri
             .as_ref()
-            .and_then(|url| get_tombi_github_url(url))
+            .and_then(|url| get_tombi_github_uri(url))
         {
-            if let Some(schema_filename) = get_schema_name(schema_url) {
-                writeln!(f, "Schema: [{schema_filename}]({schema_url})\n",)?;
+            if let Some(schema_filename) = get_schema_name(schema_uri) {
+                writeln!(f, "Schema: [{schema_filename}]({schema_uri})\n",)?;
             }
         }
 
@@ -188,7 +188,7 @@ impl From<HoverValueContent> for tower_lsp::lsp_types::Hover {
 #[cfg(test)]
 mod test {
     use rstest::rstest;
-    use tombi_schema_store::SchemaUrl;
+    use tombi_schema_store::SchemaUri;
 
     use super::*;
 
@@ -198,7 +198,7 @@ mod test {
     #[case("file://./tombi.schema.json")]
     #[case("file://tombi.schema.json")]
     fn url_content(#[case] url: &str) {
-        let url = SchemaUrl::parse(url).unwrap();
+        let url = SchemaUri::parse(url).unwrap();
         pretty_assertions::assert_eq!(get_schema_name(&url).unwrap(), "tombi.schema.json");
     }
 }

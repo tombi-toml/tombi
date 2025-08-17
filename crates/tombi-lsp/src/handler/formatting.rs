@@ -3,7 +3,6 @@ use tombi_config::FormatOptions;
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::{Position, Range};
-use tombi_uri::url_to_file_path;
 use tower_lsp::lsp_types::{
     notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
 };
@@ -19,6 +18,7 @@ pub async fn handle_formatting(
     tracing::trace!(?params);
 
     let DocumentFormattingParams { text_document, .. } = params;
+    let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
         config,
@@ -26,7 +26,7 @@ pub async fn handle_formatting(
         config_path,
     } = backend
         .config_manager
-        .config_schema_store_for_url(&text_document.uri)
+        .config_schema_store_for_uri(&text_document_uri)
         .await;
 
     if !config
@@ -40,7 +40,7 @@ pub async fn handle_formatting(
         return Ok(None);
     }
 
-    if let Ok(text_document_path) = url_to_file_path(&text_document.uri) {
+    if let Ok(text_document_path) = text_document_uri.to_file_path() {
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
@@ -56,12 +56,12 @@ pub async fn handle_formatting(
         }
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document.uri).await else {
+    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(None);
     };
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document.uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -77,7 +77,7 @@ pub async fn handle_formatting(
         .await;
 
     let mut document_sources = backend.document_sources.write().await;
-    let Some(document_source) = document_sources.get_mut(&text_document.uri) else {
+    let Some(document_source) = document_sources.get_mut(&text_document_uri) else {
         return Ok(None);
     };
 
@@ -87,7 +87,7 @@ pub async fn handle_formatting(
         toml_version,
         &formatter_definitions,
         config.format.as_ref().unwrap_or(&FormatOptions::default()),
-        Some(Either::Left(&text_document.uri)),
+        Some(Either::Left(&text_document_uri)),
         &schema_store,
     )
     .format(&document_source.text)
@@ -105,7 +105,7 @@ pub async fn handle_formatting(
                 backend
                     .client
                     .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
-                        uri: text_document.uri,
+                        uri: text_document_uri.into(),
                         diagnostics: Vec::with_capacity(0),
                         version: document_source.version,
                     })
@@ -117,7 +117,7 @@ pub async fn handle_formatting(
             backend
                 .client
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
-                    uri: text_document.uri,
+                    uri: text_document_uri.into(),
                     diagnostics: diagnostics.into_iter().map(Into::into).collect(),
                     version: document_source.version,
                 })

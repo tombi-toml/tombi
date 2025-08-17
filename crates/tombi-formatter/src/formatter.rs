@@ -7,7 +7,6 @@ use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_config::{DateTimeDelimiter, IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
-use url::Url;
 
 use crate::Format;
 
@@ -19,7 +18,7 @@ pub struct Formatter<'a> {
     definitions: &'a crate::FormatDefinitions,
     #[allow(dead_code)]
     options: &'a crate::FormatOptions,
-    source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
+    source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     buf: String,
 }
@@ -30,7 +29,7 @@ impl<'a> Formatter<'a> {
         toml_version: TomlVersion,
         definitions: &'a crate::FormatDefinitions,
         options: &'a crate::FormatOptions,
-        source_url_or_path: Option<Either<&'a Url, &'a std::path::Path>>,
+        source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
         schema_store: &'a tombi_schema_store::SchemaStore,
     ) -> Self {
         Self {
@@ -40,7 +39,7 @@ impl<'a> Formatter<'a> {
             single_line_mode: false,
             definitions,
             options,
-            source_url_or_path,
+            source_uri_or_path,
             schema_store,
             buf: String::new(),
         }
@@ -54,7 +53,7 @@ impl<'a> Formatter<'a> {
             let root = parsed.tree();
             (
                 self.schema_store
-                    .resolve_source_schema_from_ast(&root, self.source_url_or_path)
+                    .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
                     .await
                     .ok()
                     .flatten(),
@@ -67,7 +66,7 @@ impl<'a> Formatter<'a> {
         if let Some(document_tombi_comment_directive) = &document_tombi_comment_directive {
             if let Some(format) = &document_tombi_comment_directive.format {
                 if format.disable == Some(true) {
-                    match self.source_url_or_path.map(|path| match path {
+                    match self.source_uri_or_path.map(|path| match path {
                         Either::Left(url) => url.to_string(),
                         Either::Right(path) => path.to_string_lossy().to_string(),
                     }) {
@@ -110,7 +109,7 @@ impl<'a> Formatter<'a> {
                 diagnostics
             })?;
 
-        let source_path = self.source_url_or_path.and_then(|path| match path {
+        let source_path = self.source_uri_or_path.and_then(|path| match path {
             Either::Left(url) => url.to_file_path().ok(),
             Either::Right(path) => Some(path.to_path_buf()),
         });
@@ -123,9 +122,9 @@ impl<'a> Formatter<'a> {
                 root_schema: source_schema
                     .as_ref()
                     .and_then(|schema| schema.root_schema.as_ref()),
-                sub_schema_url_map: source_schema
+                sub_schema_uri_map: source_schema
                     .as_ref()
-                    .map(|schema| &schema.sub_schema_url_map),
+                    .map(|schema| &schema.sub_schema_uri_map),
                 store: self.schema_store,
             },
         )

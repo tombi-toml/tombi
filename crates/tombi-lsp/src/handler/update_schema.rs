@@ -1,4 +1,4 @@
-use tombi_schema_store::SchemaUrl;
+use tombi_schema_store::SchemaUri;
 use tower_lsp::lsp_types::{
     notification::ShowMessage, MessageType, ShowMessageParams, TextDocumentIdentifier,
 };
@@ -17,7 +17,7 @@ pub async fn handle_update_schema(
 
     match backend
         .config_manager
-        .update_schema(&SchemaUrl::new(uri))
+        .update_schema(&SchemaUri::new(uri.into()))
         .await
     {
         Ok(is_updated) => Ok(is_updated),

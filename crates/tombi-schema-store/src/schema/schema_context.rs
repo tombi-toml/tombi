@@ -3,7 +3,7 @@ use super::SchemaAccessor;
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
-    pub sub_schema_url_map: Option<&'a crate::SubSchemaUrlMap>,
+    pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
     pub store: &'a crate::SchemaStore,
 }
 
@@ -18,7 +18,7 @@ impl SchemaContext<'_> {
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<Result<crate::DocumentSchema, crate::Error>> {
-        if let Some(sub_schema_url_map) = self.sub_schema_url_map {
+        if let Some(sub_schema_url_map) = self.sub_schema_uri_map {
             if let Some(sub_schema_url) = sub_schema_url_map.get(
                 &accessors
                     .iter()
@@ -26,7 +26,7 @@ impl SchemaContext<'_> {
                     .collect::<Vec<_>>(),
             ) {
                 if current_schema
-                    .is_none_or(|current_schema| &*current_schema.schema_url != sub_schema_url)
+                    .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_url)
                 {
                     return self
                         .store

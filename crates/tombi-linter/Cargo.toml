@@ -17,9 +17,9 @@ tombi-document-tree.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
+tombi-uri.workspace = true
 tombi-validator.workspace = true
 tracing.workspace = true
-url.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
