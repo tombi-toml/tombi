@@ -4,7 +4,9 @@ import {
 } from "vscode-languageclient";
 
 export type TomlVersionSource = "comment" | "schema" | "config" | "default";
-export type IgnoreReason = "includeNotMatched" | "excludeMatched";
+export type IgnoreReason =
+  | "include-file-pattern-not-matched"
+  | "exclude-file-pattern-matched";
 
 export type GetTomlVersionParams = TextDocumentIdentifier;
 export const getTomlVersion = new RequestType<

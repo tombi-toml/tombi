@@ -57,8 +57,8 @@ pub async fn handle_get_status(
     let mut ignore = None;
     if let Ok(text_document_path) = url_to_file_path(&text_document_uri) {
         ignore = match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
-            MatchResult::IncludeNotMatched => Some(IgnoreReason::IncludeNotMatched),
-            MatchResult::ExcludeMatched => Some(IgnoreReason::ExcludeMatched),
+            MatchResult::IncludeNotMatched => Some(IgnoreReason::IncludeFilePatternNotMatched),
+            MatchResult::ExcludeMatched => Some(IgnoreReason::ExcludeFilePatternMatched),
             MatchResult::Matched => None,
         };
     }
@@ -81,8 +81,8 @@ pub struct GetStatusResponse {
 }
 
 #[derive(Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub enum IgnoreReason {
-    IncludeNotMatched,
-    ExcludeMatched,
+    IncludeFilePatternNotMatched,
+    ExcludeFilePatternMatched,
 }
