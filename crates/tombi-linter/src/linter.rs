@@ -94,6 +94,7 @@ impl<'a> Linter<'a> {
         }
 
         self.toml_version = document_tombi_comment_directive
+            .as_ref()
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
                 source_schema
@@ -126,6 +127,11 @@ impl<'a> Linter<'a> {
                     root_schema: source_schema.root_schema.as_ref(),
                     sub_schema_uri_map: Some(&source_schema.sub_schema_uri_map),
                     store: self.schema_store,
+                    strict: document_tombi_comment_directive
+                        .as_ref()
+                        .and_then(|directive| {
+                            directive.schema.as_ref().and_then(|schema| schema.strict)
+                        }),
                 };
                 if let Err(schema_diagnostics) =
                     tombi_validator::validate(document_tree, &source_schema, &schema_context).await

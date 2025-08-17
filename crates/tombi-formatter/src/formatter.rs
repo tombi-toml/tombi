@@ -85,6 +85,7 @@ impl<'a> Formatter<'a> {
         }
 
         self.toml_version = document_tombi_comment_directive
+            .as_ref()
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
                 source_schema
@@ -126,6 +127,11 @@ impl<'a> Formatter<'a> {
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
                 store: self.schema_store,
+                strict: document_tombi_comment_directive
+                    .as_ref()
+                    .and_then(|directive| {
+                        directive.schema.as_ref().and_then(|schema| schema.strict)
+                    }),
             },
         )
         .edit()

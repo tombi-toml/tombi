@@ -21,7 +21,7 @@
       "title": "Formatter options.",
       "anyOf": [
         {
-          "$ref": "#/definitions/Format"
+          "$ref": "#/definitions/FormatOptions"
         },
         {
           "type": "null"
@@ -32,7 +32,18 @@
       "title": "Linter options.",
       "anyOf": [
         {
-          "$ref": "#/definitions/Lint"
+          "$ref": "#/definitions/LintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schema": {
+      "title": "Schema options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SchemaOptions"
         },
         {
           "type": "null"
@@ -50,7 +61,7 @@
         "v1.1.0-preview"
       ]
     },
-    "Format": {
+    "FormatOptions": {
       "type": "object",
       "properties": {
         "disable": {
@@ -65,7 +76,7 @@
       },
       "additionalProperties": false
     },
-    "Lint": {
+    "LintOptions": {
       "type": "object",
       "properties": {
         "disable": {
@@ -76,6 +87,21 @@
             "null"
           ],
           "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SchemaOptions": {
+      "type": "object",
+      "properties": {
+        "strict": {
+          "title": "Enable strict schema validation.",
+          "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": true
         }
       },
       "additionalProperties": false

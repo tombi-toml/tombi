@@ -96,6 +96,7 @@ pub async fn get_comment_directive_hover_info(
                                 root_schema: Some(&document_schema),
                                 sub_schema_uri_map: None,
                                 store: &schema_store,
+                                strict: None,
                             };
 
                             return get_hover_content(

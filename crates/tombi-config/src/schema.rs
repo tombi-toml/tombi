@@ -12,10 +12,10 @@ use crate::{
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOptions {
-    /// # Enable or disable the schema.
+    /// # Enable the schema validation.
     pub enabled: Option<BoolDefaultTrue>,
 
-    /// # Enable or disable strict schema validation.
+    /// # Enable strict schema validation.
     ///
     /// If `additionalProperties` is not specified in the JSON Schema,
     /// the strict mode treats it as `additionalProperties: false`,
