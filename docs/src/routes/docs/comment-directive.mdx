@@ -19,7 +19,8 @@ This only works in the comment group at the beginning of the document, so you ne
 
 ### `#:schema`
 
-`#:schema` is used to specify the schema to use for the document.
+Same as [Taplo](https://taplo.tamasfe.dev/configuration/directives.html#the-schema-directive), `#:schema` is used to specify the schema to use for the document.
+However, Tombi only allows document comment directives at the beginning of the document, so you need to add a blank line between the value and the directive.
 
 ```toml
 #:schema tombi://json.schemastore.org/pyproject.json
