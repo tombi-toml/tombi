@@ -39,7 +39,7 @@ pub fn leading_comments<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
 pub fn tailing_comment<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
     iter: I,
     end: tombi_syntax::SyntaxKind,
-) -> Option<crate::TailingComment> {
+) -> Option<crate::TrailingComment> {
     let mut iter = iter
         .skip_while(|item| item.kind() != end && item.kind() != EOF)
         .skip(1);

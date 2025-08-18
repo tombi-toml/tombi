@@ -19,7 +19,7 @@ where
         support::node::leading_comments(self.syntax().children_with_tokens())
     }
 
-    fn tailing_comment(&self) -> Option<crate::TailingComment> {
+    fn tailing_comment(&self) -> Option<crate::TrailingComment> {
         self.syntax()
             .last_token()
             .and_then(crate::Comment::cast)

@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use tombi_ast::{
-    BeginDanglingComment, DanglingComment, EndDanglingComment, LeadingComment, TailingComment,
+    BeginDanglingComment, DanglingComment, EndDanglingComment, LeadingComment, TrailingComment,
 };
 
 use super::Format;
@@ -93,7 +93,7 @@ impl Format for Vec<LeadingComment> {
     }
 }
 
-impl Format for TailingComment {
+impl Format for TrailingComment {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{}", f.tailing_comment_space())?;

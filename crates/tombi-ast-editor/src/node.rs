@@ -6,7 +6,7 @@ pub fn make_comma() -> tombi_syntax::SyntaxNode {
 }
 
 pub fn make_comma_with_tailing_comment(
-    tailing_comment: &tombi_ast::TailingComment,
+    tailing_comment: &tombi_ast::TrailingComment,
 ) -> tombi_syntax::SyntaxNode {
     parse_as::<tombi_ast::Comma>(
         &format!(",{}", tailing_comment.syntax().text()),

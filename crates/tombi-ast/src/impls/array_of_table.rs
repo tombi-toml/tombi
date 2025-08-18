@@ -8,7 +8,7 @@ impl crate::ArrayOfTable {
         support::node::leading_comments(self.syntax().children_with_tokens())
     }
 
-    pub fn header_tailing_comment(&self) -> Option<crate::TailingComment> {
+    pub fn header_tailing_comment(&self) -> Option<crate::TrailingComment> {
         support::node::tailing_comment(self.syntax().children_with_tokens(), T!("]]"))
     }
 
