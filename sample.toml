@@ -8,7 +8,7 @@
 
 # key value1 leading comment1
 # key value1 leading comment2
-key1 = 1  # key value1 tailing comment
+key1 = 1  # key value1 trailing comment
 # key value2 leading comment1
 key2 = "2"
 key3 = """
@@ -33,14 +33,14 @@ multi line literal string
 [aaaa.bbb]
 bool1 = true
 bool2 = false
-dec = 1  # dec tailing comment
-bin = 0b01  # bin tailing comment
-oct = 0o01  # oct tailing comment
-hex = 0x01  # hex tailing comment
-float1 = 0.1234  # float tailing comment
+dec = 1  # dec trailing comment
+bin = 0b01  # bin trailing comment
+oct = 0o01  # oct trailing comment
+hex = 0x01  # hex trailing comment
+float1 = 0.1234  # float trailing comment
 infa = inf
-bs = "2"  # bs tailing comment
-ls = "3"  # ls tailing comment
+bs = "2"  # bs trailing comment
+ls = "3"  # ls trailing comment
 array1 = [
   # array begin dangling comment1
   # array begin dangling comment2
@@ -52,12 +52,12 @@ array1 = [
   # value1 comma leading comment1
   # value1 comma leading comment2
   # value1 comma leading comment3
-  ,  # value1 comma tailing comment
+  ,  # value1 comma trailing comment
   { key3 = 11, key4 = 2024-01-01T10:10:00 },
 
   # array end dangling comment1
   # array end dangling comment2
-]  # array tailing comment
+]  # array trailing comment
 array2 = [1, 2, 3]
 array3 = [
   1,
@@ -80,9 +80,9 @@ array5 = [
 
     # key1 leading comment1
     # key1 leading comment2
-    key1 = 1,  # key1 tailing comment
+    key1 = 1,  # key1 trailing comment
     # key2 leading comment1
-    key2 = 2,  # key2 tailing comment
+    key2 = 2,  # key2 trailing comment
 
     # inline end dangling comment1
     # inline end dangling comment2
@@ -90,18 +90,18 @@ array5 = [
 
   # comment
 ]
-date = 2024-01-01  # date tailing comment
-time = 10:11:00  # time tailing comment
-odt1 = 1979-05-27T07:32:00Z  # odt1 tailing comment
-odt2 = 1979-05-27T00:32:00-07:00  # odt2 tailing comment
-odt3 = 1979-05-27T00:32:00.999999-07:00  # odt3 tailing comment
-odt4 = 1979-05-27T07:32:00Z  # odt4 tailing comment
-ldt1 = 1979-05-27T07:32:00  # ldt1 tailing comment
-ldt2 = 1979-05-27T00:32:00.999999  # ldt2 tailing comment
-ld1 = 1979-05-27  # ld1 tailing comment
-lt1 = 07:32:00  # lt1 tailing comment
-# lt2 leading tailing comment
-lt2 = 00:32:00.999999  # lt2 tailing comment
+date = 2024-01-01  # date trailing comment
+time = 10:11:00  # time trailing comment
+odt1 = 1979-05-27T07:32:00Z  # odt1 trailing comment
+odt2 = 1979-05-27T00:32:00-07:00  # odt2 trailing comment
+odt3 = 1979-05-27T00:32:00.999999-07:00  # odt3 trailing comment
+odt4 = 1979-05-27T07:32:00Z  # odt4 trailing comment
+ldt1 = 1979-05-27T07:32:00  # ldt1 trailing comment
+ldt2 = 1979-05-27T00:32:00.999999  # ldt2 trailing comment
+ld1 = 1979-05-27  # ld1 trailing comment
+lt1 = 07:32:00  # lt1 trailing comment
+# lt2 leading trailing comment
+lt2 = 00:32:00.999999  # lt2 trailing comment
 
 # table key values end dangling comment1
 # table key values end dangling comment2
@@ -119,7 +119,7 @@ key2 = "22"
 [bbb]
 key5 = true
 
-[ddd.eee]  # header tailing comment
+[ddd.eee]  # header trailing comment
 key5 = true
 
 [[ffff.ggg]]
@@ -131,7 +131,7 @@ key6 = 2
 [ffff.ggg.kkk]
 b = 3
 
-[[ffff.ggg]]  # header tailing comment
+[[ffff.ggg]]  # header trailing comment
 # table key values begin dangling comment1
 # table key values begin dangling comment2
 
@@ -140,7 +140,7 @@ b = 3
 
 # key value leading comment1
 # key value leading comment2
-key6 = 3  # key value tailing comment
+key6 = 3  # key value trailing comment
 
 # table key values end dangling comment1
 # table key values end dangling comment2

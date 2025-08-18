@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::rule::{inline_table_comma_tailing_comment, inline_table_keys_order};
+use crate::rule::{inline_table_comma_trailing_comment, inline_table_keys_order};
 
 impl crate::Edit for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
@@ -39,7 +39,7 @@ impl crate::Edit for tombi_ast::InlineTable {
             }
 
             for (key_value, comma) in self.key_values_with_comma() {
-                changes.extend(inline_table_comma_tailing_comment(
+                changes.extend(inline_table_comma_trailing_comment(
                     &key_value,
                     comma.as_ref(),
                 ));

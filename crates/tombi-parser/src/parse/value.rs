@@ -1,6 +1,6 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{key::eat_key, leading_comments, peek_leading_comments, tailing_comment, Parse};
+use super::{key::eat_key, leading_comments, peek_leading_comments, trailing_comment, Parse};
 use crate::{parser::Parser, token_set::TS_COMMEMT_OR_LINE_END, ErrorKind::*};
 
 impl Parse for tombi_ast::Value {
@@ -36,7 +36,7 @@ impl Parse for tombi_ast::Value {
                         m.complete(p, KEYS);
                     }
                 }
-                tailing_comment(p);
+                trailing_comment(p);
                 m.complete(p, KEY_VALUE);
             }
             _ => parse_invalid_value(p, n),
@@ -53,7 +53,7 @@ fn parse_literal_value(p: &mut Parser<'_>) {
 
     p.bump(kind);
 
-    tailing_comment(p);
+    trailing_comment(p);
 
     m.complete(p, kind);
 }
@@ -73,7 +73,7 @@ fn parse_invalid_value(p: &mut Parser<'_>, n: usize) {
     }
     p.error(crate::Error::new(ExpectedValue, start_range + end_range));
 
-    tailing_comment(p);
+    trailing_comment(p);
 
     m.complete(p, INVALID_TOKEN);
 }

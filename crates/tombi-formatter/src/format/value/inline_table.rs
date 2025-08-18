@@ -59,10 +59,10 @@ pub(crate) fn exceeds_line_width(
         first = false;
     }
 
-    if let Some(tailing_comment) = node.tailing_comment() {
-        length += f.tailing_comment_space().len();
+    if let Some(trailing_comment) = node.trailing_comment() {
+        length += f.trailing_comment_space().len();
         length += f
-            .format_to_string(&tailing_comment)?
+            .format_to_string(&trailing_comment)?
             .graphemes(true)
             .count();
     }
@@ -99,10 +99,10 @@ fn format_multiline_inline_table(
 
             // comma format
             {
-                let (comma_leading_comments, comma_tailing_comment) = match comma {
+                let (comma_leading_comments, comma_trailing_comment) = match comma {
                     Some(comma) => (
                         comma.leading_comments().collect_vec(),
-                        comma.tailing_comment(),
+                        comma.trailing_comment(),
                     ),
                     None => (vec![], None),
                 };
@@ -112,7 +112,7 @@ fn format_multiline_inline_table(
                     comma_leading_comments.format(f)?;
                     f.write_indent()?;
                     write!(f, ",")?;
-                } else if key_value.tailing_comment().is_some() {
+                } else if key_value.trailing_comment().is_some() {
                     write!(f, "{}", f.line_ending())?;
                     f.write_indent()?;
                     write!(f, ",")?;
@@ -120,7 +120,7 @@ fn format_multiline_inline_table(
                     write!(f, ",")?;
                 }
 
-                if let Some(comment) = comma_tailing_comment {
+                if let Some(comment) = comma_trailing_comment {
                     comment.format(f)?;
                 }
             }
@@ -135,7 +135,7 @@ fn format_multiline_inline_table(
     f.write_indent()?;
     write!(f, "}}")?;
 
-    if let Some(comment) = table.tailing_comment() {
+    if let Some(comment) = table.trailing_comment() {
         comment.format(f)?;
     }
 
@@ -161,7 +161,7 @@ fn format_singleline_inline_table(
 
     write!(f, "{}}}", f.singleline_inline_table_brace_inner_space())?;
 
-    if let Some(comment) = table.tailing_comment() {
+    if let Some(comment) = table.trailing_comment() {
         comment.format(f)?;
     }
 

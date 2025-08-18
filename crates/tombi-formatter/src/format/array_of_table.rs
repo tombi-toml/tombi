@@ -12,7 +12,7 @@ impl Format for tombi_ast::ArrayOfTable {
 
         write!(f, "[[{header}]]")?;
 
-        if let Some(comment) = self.header_tailing_comment() {
+        if let Some(comment) = self.header_trailing_comment() {
             comment.format(f)?;
         }
 
@@ -88,7 +88,7 @@ mod tests {
             r#"
             # header leading comment1
             # header leading comment2
-            [[header]]  # header tailing comment
+            [[header]]  # header trailing comment
             # table begin dangling comment group 1-1
             # table begin dangling comment group 1-2
 
@@ -100,7 +100,7 @@ mod tests {
 
             # key value leading comment1
             # key value leading comment2
-            key = "value"  # key tailing comment
+            key = "value"  # key trailing comment
             "#
         ) -> Ok(source);
     }

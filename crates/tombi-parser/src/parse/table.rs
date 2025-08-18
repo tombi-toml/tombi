@@ -3,7 +3,7 @@ use tombi_syntax::{SyntaxKind::*, T};
 use crate::{
     parse::{
         begin_dangling_comments, end_dangling_comments, invalid_line, leading_comments,
-        peek_leading_comments, tailing_comment, Parse, TS_LINE_END,
+        peek_leading_comments, trailing_comment, Parse, TS_LINE_END,
     },
     parser::Parser,
     token_set::TS_NEXT_SECTION,
@@ -26,7 +26,7 @@ impl Parse for tombi_ast::Table {
             invalid_line(p, ExpectedBracketEnd);
         }
 
-        tailing_comment(p);
+        trailing_comment(p);
 
         if !p.at_ts(TS_LINE_END) {
             invalid_line(p, ExpectedLineBreak);
@@ -127,7 +127,7 @@ mod test {
 
     test_parser! {
         #[test]
-        fn invalid_key_value_tailing_comment(
+        fn invalid_key_value_trailing_comment(
             r#"
             [aaa.bbb]
             key1 = 1 INVALID COMMENT

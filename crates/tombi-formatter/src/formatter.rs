@@ -216,8 +216,8 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) const fn tailing_comment_space(&self) -> &'static str {
-        self.definitions.tailing_comment_space()
+    pub(crate) const fn trailing_comment_space(&self) -> &'static str {
+        self.definitions.trailing_comment_space()
     }
 
     #[inline]

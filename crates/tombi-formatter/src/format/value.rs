@@ -49,7 +49,7 @@ where
         f.write_indent()?;
         write!(f, "{}", self.token().unwrap())?;
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             comment.format(f)?;
         }
 

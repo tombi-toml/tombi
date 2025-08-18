@@ -51,7 +51,7 @@ impl AppendSemanticTokens for tombi_ast::Value {
             Self::InlineTable(inline_table) => inline_table.append_semantic_tokens(builder),
         }
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into())
         }
     }

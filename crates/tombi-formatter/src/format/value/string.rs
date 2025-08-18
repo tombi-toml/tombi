@@ -25,7 +25,7 @@ impl Format for tombi_ast::BasicString {
         };
         write!(f, "{text}")?;
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             comment.format(f)?;
         }
 
@@ -52,7 +52,7 @@ impl Format for tombi_ast::LiteralString {
         };
         write!(f, "{text}")?;
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             comment.format(f)?;
         }
 

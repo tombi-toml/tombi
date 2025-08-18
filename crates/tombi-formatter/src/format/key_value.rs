@@ -16,7 +16,7 @@ impl Format for tombi_ast::KeyValue {
         f.skip_indent();
         self.value().unwrap().format(f)?;
 
-        // NOTE: tailing comment is output by `value.fmt(f)`.
+        // NOTE: trailing comment is output by `value.fmt(f)`.
 
         Ok(())
     }
@@ -48,7 +48,7 @@ mod tests {
             r#"
             # leading comment1
             # leading comment2
-            key = "value"  # tailing comment
+            key = "value"  # trailing comment
             "#
         ) -> Ok(source);
     }

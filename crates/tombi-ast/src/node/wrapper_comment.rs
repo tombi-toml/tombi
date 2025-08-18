@@ -64,5 +64,5 @@ impl_comment!(
 
 impl_comment!(
     #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
-    pub struct TailingComment(crate::Comment);
+    pub struct TrailingComment(crate::Comment);
 );

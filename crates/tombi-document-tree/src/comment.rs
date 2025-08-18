@@ -45,8 +45,8 @@ impl From<tombi_ast::LeadingComment> for Comment {
     }
 }
 
-impl From<tombi_ast::TailingComment> for Comment {
-    fn from(comment: tombi_ast::TailingComment) -> Self {
+impl From<tombi_ast::TrailingComment> for Comment {
+    fn from(comment: tombi_ast::TrailingComment) -> Self {
         Self::new(comment.text(), comment.syntax().range())
     }
 }
