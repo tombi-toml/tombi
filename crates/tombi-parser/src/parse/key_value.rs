@@ -1,6 +1,6 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{leading_comments, tailing_comment, Parse, TS_LINE_END};
+use super::{leading_comments, trailing_comment, Parse, TS_LINE_END};
 use crate::{parser::Parser, ErrorKind::*};
 
 impl Parse for tombi_ast::KeyValue {
@@ -25,7 +25,7 @@ impl Parse for tombi_ast::KeyValue {
             tombi_ast::Value::parse(p);
         }
 
-        tailing_comment(p);
+        trailing_comment(p);
 
         m.complete(p, KEY_VALUE);
     }

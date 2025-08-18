@@ -13,7 +13,7 @@ pub struct OffsetDateTime {
     value: tombi_date_time::OffsetDateTime,
     node: tombi_ast::OffsetDateTime,
     leading_comments: Vec<Comment>,
-    tailing_comment: Option<Comment>,
+    trailing_comment: Option<Comment>,
 }
 
 impl OffsetDateTime {
@@ -202,14 +202,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
         match try_new_offset_date_time(&self, toml_version) {
             Ok(value) => {
                 let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-                let tailing_comment = self.tailing_comment().map(Comment::from);
+                let trailing_comment = self.trailing_comment().map(Comment::from);
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
                         value,
                         node: self,
                         leading_comments,
-                        tailing_comment,
+                        trailing_comment,
                     }),
                     errors: Vec::with_capacity(0),
                 }

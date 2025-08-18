@@ -12,7 +12,7 @@ pub struct Float {
     value: f64,
     node: tombi_ast::Float,
     leading_comments: Vec<Comment>,
-    tailing_comment: Option<Comment>,
+    trailing_comment: Option<Comment>,
 }
 
 impl Float {
@@ -63,14 +63,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
         match try_from_float(token.text()) {
             Ok(value) => {
                 let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-                let tailing_comment = self.tailing_comment().map(Comment::from);
+                let trailing_comment = self.trailing_comment().map(Comment::from);
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Float(crate::Float {
                         value,
                         node: self,
                         leading_comments,
-                        tailing_comment,
+                        trailing_comment,
                     }),
                     errors: Vec::with_capacity(0),
                 }

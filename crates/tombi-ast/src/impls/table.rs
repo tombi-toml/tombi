@@ -9,7 +9,7 @@ impl crate::Table {
     }
 
     pub fn header_tailing_comment(&self) -> Option<crate::TrailingComment> {
-        support::node::tailing_comment(self.syntax().children_with_tokens(), T!(']'))
+        support::node::trailing_comment(self.syntax().children_with_tokens(), T!(']'))
     }
 
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {

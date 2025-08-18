@@ -20,7 +20,7 @@ macro_rules! impl_date_time_format {
                 f.write_indent()?;
                 write!(f, "{}", text)?;
 
-                if let Some(comment) = self.tailing_comment() {
+                if let Some(comment) = self.trailing_comment() {
                     comment.format(f)?;
                 }
 

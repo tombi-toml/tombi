@@ -17,7 +17,7 @@ pub struct String {
     kind: StringKind,
     value: std::string::String,
     leading_comments: Vec<Comment>,
-    tailing_comment: Option<Comment>,
+    trailing_comment: Option<Comment>,
 }
 
 impl crate::String {
@@ -28,26 +28,26 @@ impl crate::String {
     ) -> Result<Self, tombi_toml_text::ParseError> {
         let quoted_string = quoted_string.into();
 
-        let (value, leading_comments, tailing_comment) = match &kind {
+        let (value, leading_comments, trailing_comment) = match &kind {
             StringKind::BasicString(node) => (
                 tombi_toml_text::try_from_basic_string(&quoted_string, toml_version)?,
                 node.leading_comments().map(Comment::from).collect_vec(),
-                node.tailing_comment().map(Comment::from),
+                node.trailing_comment().map(Comment::from),
             ),
             StringKind::LiteralString(node) => (
                 tombi_toml_text::try_from_literal_string(&quoted_string)?,
                 node.leading_comments().map(Comment::from).collect_vec(),
-                node.tailing_comment().map(Comment::from),
+                node.trailing_comment().map(Comment::from),
             ),
             StringKind::MultiLineBasicString(node) => (
                 tombi_toml_text::try_from_multi_line_basic_string(&quoted_string, toml_version)?,
                 node.leading_comments().map(Comment::from).collect_vec(),
-                node.tailing_comment().map(Comment::from),
+                node.trailing_comment().map(Comment::from),
             ),
             StringKind::MultiLineLiteralString(node) => (
                 tombi_toml_text::try_from_multi_line_literal_string(&quoted_string)?,
                 node.leading_comments().map(Comment::from).collect_vec(),
-                node.tailing_comment().map(Comment::from),
+                node.trailing_comment().map(Comment::from),
             ),
         };
 
@@ -55,7 +55,7 @@ impl crate::String {
             kind,
             value,
             leading_comments,
-            tailing_comment,
+            trailing_comment,
         })
     }
 

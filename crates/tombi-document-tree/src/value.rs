@@ -102,7 +102,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
             }
         }
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             if let Err(error) = try_new_comment(comment.as_ref()) {
                 errors.push(error);
             }

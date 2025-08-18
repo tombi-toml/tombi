@@ -47,7 +47,7 @@ pub struct Array {
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
     leading_comments: Vec<Comment>,
-    tailing_comment: Option<Comment>,
+    trailing_comment: Option<Comment>,
     inner_begin_dangling_comments: Vec<Vec<Comment>>,
     inner_end_dangling_comments: Vec<Vec<Comment>>,
 }
@@ -68,7 +68,7 @@ impl Array {
                 .leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            tailing_comment: node.tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.trailing_comment().map(crate::Comment::from),
             inner_begin_dangling_comments: node
                 .inner_begin_dangling_comments()
                 .into_iter()
@@ -89,7 +89,7 @@ impl Array {
             range: table.range(),
             symbol_range: table.symbol_range(),
             leading_comments: table.leading_comments().to_vec(),
-            tailing_comment: table.tailing_comment().cloned(),
+            trailing_comment: table.trailing_comment().cloned(),
             inner_begin_dangling_comments: table.key_values_begin_dangling_comments().to_vec(),
             inner_end_dangling_comments: table.key_values_end_dangling_comments().to_vec(),
         }
@@ -102,7 +102,7 @@ impl Array {
             range: table.range(),
             symbol_range: table.symbol_range(),
             leading_comments: table.leading_comments().to_vec(),
-            tailing_comment: table.tailing_comment().cloned(),
+            trailing_comment: table.trailing_comment().cloned(),
             inner_begin_dangling_comments: table.key_values_begin_dangling_comments().to_vec(),
             inner_end_dangling_comments: table.key_values_end_dangling_comments().to_vec(),
         }
@@ -258,7 +258,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                         errors.push(error);
                     }
                 }
-                if let Some(comment) = comma.tailing_comment() {
+                if let Some(comment) = comma.trailing_comment() {
                     if let Err(error) = try_new_comment(comment.as_ref()) {
                         errors.push(error);
                     }

@@ -3,7 +3,7 @@ use tombi_syntax::{SyntaxKind::*, T};
 use crate::{
     parse::{
         begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
-        tailing_comment, Parse,
+        trailing_comment, Parse,
     },
     parser::Parser,
     ErrorKind::*,
@@ -44,7 +44,7 @@ impl Parse for tombi_ast::Array {
             p.error(crate::Error::new(ExpectedBracketEnd, p.current_range()));
         }
 
-        tailing_comment(p);
+        trailing_comment(p);
 
         m.complete(p, ARRAY);
     }

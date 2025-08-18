@@ -9,7 +9,7 @@ pub struct Boolean {
     value: bool,
     node: tombi_ast::Boolean,
     leading_comments: Vec<Comment>,
-    tailing_comment: Option<Comment>,
+    trailing_comment: Option<Comment>,
 }
 
 impl Boolean {
@@ -64,14 +64,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
         };
 
         let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-        let tailing_comment = self.tailing_comment().map(Comment::from);
+        let trailing_comment = self.trailing_comment().map(Comment::from);
 
         DocumentTreeAndErrors {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
                 node: self,
                 leading_comments,
-                tailing_comment,
+                trailing_comment,
             }),
             errors: Vec::with_capacity(0),
         }

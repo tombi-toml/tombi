@@ -37,7 +37,7 @@ pub struct Table {
     /// ```
     leading_comments: Vec<Comment>,
 
-    /// The tailing comment of the table header.
+    /// The trailing comment of the table header.
     ///
     /// ```toml
     /// [table]  # This comment
@@ -45,7 +45,7 @@ pub struct Table {
     /// [inline_table]
     /// table = {}  # This comment
     /// ```
-    tailing_comment: Option<Comment>,
+    trailing_comment: Option<Comment>,
 
     /// The leading comments of the key-value pairs.
     ///
@@ -64,7 +64,7 @@ pub struct Table {
     /// ```
     key_values_begin_dangling_comments: Vec<Vec<Comment>>,
 
-    /// The tailing comments of the key-value pairs.
+    /// The trailing comments of the key-value pairs.
     ///
     /// ```toml
     /// [table]
@@ -90,7 +90,7 @@ impl Table {
             range: tombi_text::Range::default(),
             symbol_range: tombi_text::Range::default(),
             leading_comments: Default::default(),
-            tailing_comment: Default::default(),
+            trailing_comment: Default::default(),
             key_values_begin_dangling_comments: Default::default(),
             key_values_end_dangling_comments: Default::default(),
         }
@@ -103,7 +103,7 @@ impl Table {
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
             leading_comments: vec![],
-            tailing_comment: None,
+            trailing_comment: None,
             key_values_begin_dangling_comments: node
                 .key_values_begin_dangling_comments()
                 .into_iter()
@@ -132,7 +132,7 @@ impl Table {
                 .header_leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            tailing_comment: node.header_tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.header_tailing_comment().map(crate::Comment::from),
             key_values_begin_dangling_comments: node
                 .key_values_begin_dangling_comments()
                 .into_iter()
@@ -161,7 +161,7 @@ impl Table {
                 .header_leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            tailing_comment: node.header_tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.header_tailing_comment().map(crate::Comment::from),
             key_values_begin_dangling_comments: node
                 .key_values_begin_dangling_comments()
                 .into_iter()
@@ -190,7 +190,7 @@ impl Table {
                 .leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            tailing_comment: node.tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.trailing_comment().map(crate::Comment::from),
             key_values_begin_dangling_comments: node
                 .inner_begin_dangling_comments()
                 .into_iter()
@@ -214,7 +214,7 @@ impl Table {
                 .leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            tailing_comment: node.tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.trailing_comment().map(crate::Comment::from),
             key_values_begin_dangling_comments: vec![],
             key_values_end_dangling_comments: vec![],
         }
@@ -227,7 +227,7 @@ impl Table {
             range: self.range,
             symbol_range: self.symbol_range,
             leading_comments: vec![],
-            tailing_comment: None,
+            trailing_comment: None,
             key_values_begin_dangling_comments: vec![],
             key_values_end_dangling_comments: vec![],
         }
@@ -240,7 +240,7 @@ impl Table {
             range: tombi_text::Range::new(parent_key.range().start, self.range.end),
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
             leading_comments: vec![],
-            tailing_comment: None,
+            trailing_comment: None,
             key_values_begin_dangling_comments: vec![],
             key_values_end_dangling_comments: vec![],
         }
@@ -439,8 +439,8 @@ impl Table {
     }
 
     #[inline]
-    pub fn tailing_comment(&self) -> Option<&Comment> {
-        self.tailing_comment.as_ref()
+    pub fn trailing_comment(&self) -> Option<&Comment> {
+        self.trailing_comment.as_ref()
     }
 
     #[inline]
@@ -751,7 +751,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                         errors.push(error);
                     }
                 }
-                if let Some(comment) = comma.tailing_comment() {
+                if let Some(comment) = comma.trailing_comment() {
                     if let Err(error) = try_new_comment(comment.as_ref()) {
                         errors.push(error);
                     }

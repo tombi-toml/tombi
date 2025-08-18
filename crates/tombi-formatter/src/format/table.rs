@@ -88,7 +88,7 @@ mod tests {
             r#"
             # header leading comment1
             # header leading comment2
-            [header]  # header tailing comment
+            [header]  # header trailing comment
             # table begin dangling comment group 1-1
             # table begin dangling comment group 1-2
 
@@ -100,7 +100,7 @@ mod tests {
 
             # key value leading comment1
             # key value leading comment2
-            key = "value"  # key tailing comment
+            key = "value"  # key trailing comment
             "#
         ) -> Ok(source);
     }
@@ -121,7 +121,7 @@ mod tests {
 
             # key values leading comment1
             # key values leading comment2
-            key = "value"  # key tailing comment
+            key = "value"  # key trailing comment
             "#
         ) -> Ok(source);
     }
@@ -131,7 +131,7 @@ mod tests {
         fn table_end_dangling_comment1(
             r#"
             [header]
-            key = "value"  # key tailing comment
+            key = "value"  # key trailing comment
 
             # key values end dangling comment 1-1
             # key values end dangling comment 1-2
@@ -144,7 +144,7 @@ mod tests {
         fn table_end_dangling_comment2(
             r#"
             [header]
-            key = "value"  # key tailing comment
+            key = "value"  # key trailing comment
 
             # key values end dangling comment 1-1
             # key values end dangling comment 1-2
@@ -163,7 +163,7 @@ mod tests {
         fn table_end_dangling_comment3(
             r#"
             [header]
-            key = "value"  # key tailing comment
+            key = "value"  # key trailing comment
 
             # key values end dangling comment1
             # key values end dangling comment2

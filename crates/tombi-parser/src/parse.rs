@@ -102,7 +102,7 @@ mod support {
     }
 
     #[inline]
-    pub fn tailing_comment(p: &mut crate::parser::Parser<'_>) {
+    pub fn trailing_comment(p: &mut crate::parser::Parser<'_>) {
         while p.eat_ts(TS_TAILING_COMMENT_KINDS) {}
     }
 }
