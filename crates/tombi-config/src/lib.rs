@@ -44,11 +44,17 @@ pub struct Config {
     pub toml_version: Option<TomlVersion>,
 
     /// # Deprecated. Use `files.include` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `files.include` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     include: Option<Vec<String>>,
 
     /// # Deprecated. Use `files.exclude` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `files.exclude` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     exclude: Option<Vec<String>>,
@@ -65,6 +71,9 @@ pub struct Config {
     lsp: Option<LspOptions>,
 
     /// # Deprecated. Use `lsp` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `lsp` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
     server: Option<LspOptions>,
 

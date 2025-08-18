@@ -90,8 +90,11 @@ impl ConfigManager {
     }
 
     /// Get config for a URI
-    pub async fn config_schema_store_for_uri(&self, uri: &tombi_uri::Uri) -> ConfigSchemaStore {
-        if let Ok(path) = uri.to_file_path() {
+    pub async fn config_schema_store_for_uri(
+        &self,
+        text_document_uri: &tombi_uri::Uri,
+    ) -> ConfigSchemaStore {
+        if let Ok(path) = text_document_uri.to_file_path() {
             self.config_schema_store_for_file(&path).await
         } else {
             self.default_config_schema_store().await

@@ -13,8 +13,15 @@ pub struct LspOptions {
     /// # Completion Feature options.
     pub completion: Option<LspCompletion>,
 
-    /// # Diagnostics Feature options.
-    pub diagnostics: Option<LspDiagnostics>,
+    /// # Diagnostic Feature options.
+    diagnostic: Option<LspDiagnostic>,
+
+    /// # Deprecated. Use `lsp.diagnostic` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `lsp.diagnostic` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
+    diagnostics: Option<LspDiagnostic>,
 
     /// # Document Link Feature options.
     pub document_link: Option<LspDocumentLink>,
@@ -33,6 +40,9 @@ pub struct LspOptions {
 
     /// # Hover Feature options.
     pub hover: Option<LspHover>,
+
+    /// # Workspace Diagnostics Feature options.
+    pub workspace_diagnostic: Option<LspWorkspaceDiagnostic>,
 }
 
 impl LspOptions {
@@ -40,6 +50,8 @@ impl LspOptions {
         Self {
             code_action: None,
             completion: None,
+            diagnostic: None,
+            #[allow(deprecated)]
             diagnostics: None,
             document_link: None,
             formatting: None,
@@ -47,7 +59,15 @@ impl LspOptions {
             goto_definition: None,
             goto_type_definition: None,
             hover: None,
+            workspace_diagnostic: None,
         }
+    }
+
+    pub fn diagnostic(&self) -> Option<&LspDiagnostic> {
+        self.diagnostic.as_ref().or_else(|| {
+            #[allow(deprecated)]
+            self.diagnostics.as_ref()
+        })
     }
 }
 
@@ -104,10 +124,10 @@ pub struct LspFormatting {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct LspDiagnostics {
-    /// # Enable diagnostics feature.
+pub struct LspDiagnostic {
+    /// # Enable diagnostic feature.
     ///
-    /// Whether to enable diagnostics.
+    /// Whether to enable diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
 }
 
@@ -132,5 +152,17 @@ pub struct LspGotoDefinition {
     /// # Enable goto definition feature.
     ///
     /// Whether to enable goto definition.
+    pub enabled: Option<BoolDefaultTrue>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct LspWorkspaceDiagnostic {
+    /// # Enable workspace diagnostic feature.
+    ///
+    /// Whether to enable workspace diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
 }

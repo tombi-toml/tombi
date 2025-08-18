@@ -20,6 +20,7 @@
     },
     "include": {
       "title": "Deprecated. Use `files.include` instead.",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
       "type": [
         "array",
         "null"
@@ -32,6 +33,7 @@
     },
     "exclude": {
       "title": "Deprecated. Use `files.exclude` instead.",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
       "type": [
         "array",
         "null"
@@ -87,6 +89,7 @@
     },
     "server": {
       "title": "Deprecated. Use `lsp` instead.",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
       "anyOf": [
         {
           "$ref": "#/definitions/LspOptions"
@@ -286,16 +289,29 @@
             }
           ]
         },
-        "diagnostics": {
-          "title": "Diagnostics Feature options.",
+        "diagnostic": {
+          "title": "Diagnostic Feature options.",
           "anyOf": [
             {
-              "$ref": "#/definitions/LspDiagnostics"
+              "$ref": "#/definitions/LspDiagnostic"
             },
             {
               "type": "null"
             }
           ]
+        },
+        "diagnostics": {
+          "title": "Deprecated. Use `lsp.diagnostic` instead.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp.diagnostic` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LspDiagnostic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true
         },
         "document-link": {
           "title": "Document Link Feature options.",
@@ -362,6 +378,17 @@
               "type": "null"
             }
           ]
+        },
+        "workspace-diagnostic": {
+          "title": "Workspace Diagnostics Feature options.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LspWorkspaceDiagnostic"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -407,12 +434,12 @@
       },
       "additionalProperties": false
     },
-    "LspDiagnostics": {
+    "LspDiagnostic": {
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable diagnostics feature.",
-          "description": "Whether to enable diagnostics.",
+          "title": "Enable diagnostic feature.",
+          "description": "Whether to enable diagnostic.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -485,6 +512,24 @@
         "enabled": {
           "title": "Enable hover feature.",
           "description": "Whether to enable hover.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LspWorkspaceDiagnostic": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Enable workspace diagnostic feature.",
+          "description": "Whether to enable workspace diagnostic.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
