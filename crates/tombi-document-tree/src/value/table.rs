@@ -4,8 +4,8 @@ use tombi_ast::{AstChildren, AstNode};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::comment::try_new_comment, Array, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
-    Key, Value, ValueImpl, ValueType,
+    support::comment::try_new_comment, Array, Comment, DocumentTreeAndErrors,
+    IntoDocumentTreeAndErrors, Key, Value, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +24,62 @@ pub struct Table {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     key_values: IndexMap<Key, Value>,
+
+    /// The leading comments of the table header.
+    ///
+    /// ```toml
+    /// # This comment
+    /// [table]
+    ///
+    /// [inline_table]
+    /// # This comment
+    /// table = {}
+    /// ```
+    leading_comments: Vec<Comment>,
+
+    /// The tailing comment of the table header.
+    ///
+    /// ```toml
+    /// [table]  # This comment
+    ///
+    /// [inline_table]
+    /// table = {}  # This comment
+    /// ```
+    tailing_comment: Option<Comment>,
+
+    /// The leading comments of the key-value pairs.
+    ///
+    /// ```toml
+    /// [table]
+    /// # This comments
+    ///
+    /// key = "value"
+    ///
+    /// [inline_table]
+    /// table = {
+    ///   # This comments
+    ///
+    ///   key = "value"
+    /// }
+    /// ```
+    key_values_begin_dangling_comments: Vec<Vec<Comment>>,
+
+    /// The tailing comments of the key-value pairs.
+    ///
+    /// ```toml
+    /// [table]
+    /// key = "value"
+    ///
+    /// # This comments
+    ///
+    /// [inline_table]
+    /// table = {
+    ///   key = "value"
+    ///
+    ///   # This comments
+    /// }
+    /// ```
+    key_values_end_dangling_comments: Vec<Vec<Comment>>,
 }
 
 impl Table {
@@ -33,6 +89,10 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::default(),
             symbol_range: tombi_text::Range::default(),
+            leading_comments: Default::default(),
+            tailing_comment: Default::default(),
+            key_values_begin_dangling_comments: Default::default(),
+            key_values_end_dangling_comments: Default::default(),
         }
     }
 
@@ -42,6 +102,18 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
+            leading_comments: vec![],
+            tailing_comment: None,
+            key_values_begin_dangling_comments: node
+                .key_values_begin_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
+            key_values_end_dangling_comments: node
+                .key_values_end_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
         }
     }
 
@@ -56,6 +128,21 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
+            leading_comments: node
+                .header_leading_comments()
+                .map(crate::Comment::from)
+                .collect_vec(),
+            tailing_comment: node.header_tailing_comment().map(crate::Comment::from),
+            key_values_begin_dangling_comments: node
+                .key_values_begin_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
+            key_values_end_dangling_comments: node
+                .key_values_end_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
         }
     }
 
@@ -70,6 +157,21 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
+            leading_comments: node
+                .header_leading_comments()
+                .map(crate::Comment::from)
+                .collect_vec(),
+            tailing_comment: node.header_tailing_comment().map(crate::Comment::from),
+            key_values_begin_dangling_comments: node
+                .key_values_begin_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
+            key_values_end_dangling_comments: node
+                .key_values_end_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
         }
     }
 
@@ -84,6 +186,21 @@ impl Table {
                 node.brace_end()
                     .map_or_else(|| node.range().end, |brace| brace.range().end),
             ),
+            leading_comments: node
+                .leading_comments()
+                .map(crate::Comment::from)
+                .collect_vec(),
+            tailing_comment: node.tailing_comment().map(crate::Comment::from),
+            key_values_begin_dangling_comments: node
+                .inner_begin_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
+            key_values_end_dangling_comments: node
+                .inner_end_dangling_comments()
+                .into_iter()
+                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
+                .collect_vec(),
         }
     }
 
@@ -93,6 +210,13 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
+            leading_comments: node
+                .leading_comments()
+                .map(crate::Comment::from)
+                .collect_vec(),
+            tailing_comment: node.tailing_comment().map(crate::Comment::from),
+            key_values_begin_dangling_comments: vec![],
+            key_values_end_dangling_comments: vec![],
         }
     }
 
@@ -102,6 +226,10 @@ impl Table {
             key_values: Default::default(),
             range: self.range,
             symbol_range: self.symbol_range,
+            leading_comments: vec![],
+            tailing_comment: None,
+            key_values_begin_dangling_comments: vec![],
+            key_values_end_dangling_comments: vec![],
         }
     }
 
@@ -111,6 +239,10 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::new(parent_key.range().start, self.range.end),
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
+            leading_comments: vec![],
+            tailing_comment: None,
+            key_values_begin_dangling_comments: vec![],
+            key_values_end_dangling_comments: vec![],
         }
     }
 
@@ -299,6 +431,26 @@ impl Table {
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.symbol_range
+    }
+
+    #[inline]
+    pub fn leading_comments(&self) -> &[Comment] {
+        &self.leading_comments
+    }
+
+    #[inline]
+    pub fn tailing_comment(&self) -> Option<&Comment> {
+        self.tailing_comment.as_ref()
+    }
+
+    #[inline]
+    pub fn key_values_begin_dangling_comments(&self) -> &[Vec<Comment>] {
+        &self.key_values_begin_dangling_comments
+    }
+
+    #[inline]
+    pub fn key_values_end_dangling_comments(&self) -> &[Vec<Comment>] {
+        &self.key_values_end_dangling_comments
     }
 }
 

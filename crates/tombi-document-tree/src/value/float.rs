@@ -1,14 +1,18 @@
+use itertools::Itertools;
+use tombi_ast::AstNode;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::float::try_from_float, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
-    ValueType,
+    support::float::try_from_float, Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
+    ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Float {
     value: f64,
     node: tombi_ast::Float,
+    leading_comments: Vec<Comment>,
+    tailing_comment: Option<Comment>,
 }
 
 impl Float {
@@ -57,10 +61,20 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
         };
 
         match try_from_float(token.text()) {
-            Ok(value) => DocumentTreeAndErrors {
-                tree: crate::Value::Float(crate::Float { value, node: self }),
-                errors: Vec::with_capacity(0),
-            },
+            Ok(value) => {
+                let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
+                let tailing_comment = self.tailing_comment().map(Comment::from);
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Float(crate::Float {
+                        value,
+                        node: self,
+                        leading_comments,
+                        tailing_comment,
+                    }),
+                    errors: Vec::with_capacity(0),
+                }
+            }
             Err(error) => DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![crate::Error::ParseFloatError { error, range }],
