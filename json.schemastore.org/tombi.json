@@ -20,6 +20,7 @@
     },
     "include": {
       "title": "Deprecated. Use `files.include` instead.",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
       "type": [
         "array",
         "null"
@@ -32,6 +33,7 @@
     },
     "exclude": {
       "title": "Deprecated. Use `files.exclude` instead.",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
       "type": [
         "array",
         "null"
@@ -87,6 +89,7 @@
     },
     "server": {
       "title": "Deprecated. Use `lsp` instead.",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
       "anyOf": [
         {
           "$ref": "#/definitions/LspOptions"
@@ -299,6 +302,7 @@
         },
         "diagnostics": {
           "title": "Deprecated. Use `lsp.diagnostic` instead.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp.diagnostic` instead.",
           "anyOf": [
             {
               "$ref": "#/definitions/LspDiagnostic"

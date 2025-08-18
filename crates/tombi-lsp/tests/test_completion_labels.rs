@@ -409,6 +409,7 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "code-action",
+                "diagnostic",
                 "diagnostics",
                 "document-link",
                 "formatting",
@@ -416,6 +417,7 @@ mod completion_labels {
                 "goto-definition",
                 "goto-type-definition",
                 "hover",
+                "workspace-diagnostic",
             ]);
         }
 
@@ -431,12 +433,14 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "code-action",
+                "diagnostic",
                 "diagnostics",
                 "document-link",
                 "goto-declaration",
                 "goto-definition",
                 "goto-type-definition",
                 "hover",
+                "workspace-diagnostic",
             ]);
         }
 
@@ -453,12 +457,14 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "completion",
+                "diagnostic",
                 "diagnostics",
                 "document-link",
                 "goto-declaration",
                 "goto-definition",
                 "goto-type-definition",
                 "hover",
+                "workspace-diagnostic",
             ]);
         }
 

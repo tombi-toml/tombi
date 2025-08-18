@@ -17,6 +17,9 @@ pub struct LspOptions {
     diagnostic: Option<LspDiagnostic>,
 
     /// # Deprecated. Use `lsp.diagnostic` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `lsp.diagnostic` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
     diagnostics: Option<LspDiagnostic>,
 
