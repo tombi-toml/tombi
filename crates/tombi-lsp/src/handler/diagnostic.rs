@@ -21,7 +21,7 @@ pub async fn handle_diagnostic(
         DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(
             RelatedFullDocumentDiagnosticReport {
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    items: get_diagnostics_result(backend, &text_document_uri)
+                    items: get_diagnostics_result(backend, &text_document_uri, false)
                         .await
                         .map(|result| result.diagnostics)
                         .unwrap_or_default(),
@@ -59,5 +59,11 @@ pub async fn push_diagnostics(
     tracing::info!("push_diagnostics");
     tracing::trace!(?params);
 
-    publish_diagnostics(backend, params.text_document.uri.into(), params.version).await;
+    publish_diagnostics(
+        backend,
+        params.text_document.uri.into(),
+        params.version,
+        false,
+    )
+    .await;
 }

@@ -6,6 +6,7 @@ use tower_lsp::lsp_types::{
 
 use crate::{
     backend::{Backend, DiagnosticType},
+    config_manager::ConfigSchemaStore,
     diagnostic::{
         get_diagnostics_result, get_workspace_diagnostic_targets, publish_diagnostics,
         WorkspaceDiagnosticTarget,
@@ -21,11 +22,17 @@ pub async fn handle_workspace_diagnostic(
 
     if let Some(workspace_diagnostic_targets) = get_workspace_diagnostic_targets(backend).await {
         let mut items = Vec::new();
-        for WorkspaceDiagnosticTarget { uri, version } in workspace_diagnostic_targets {
-            if let Some(diagnostics) = get_diagnostics_result(backend, &uri).await {
+        for WorkspaceDiagnosticTarget {
+            text_document_uri,
+            version,
+        } in workspace_diagnostic_targets
+        {
+            if let Some(diagnostics) =
+                get_diagnostics_result(backend, &text_document_uri, true).await
+            {
                 items.push(WorkspaceDocumentDiagnosticReport::Full(
                     WorkspaceFullDocumentDiagnosticReport {
-                        uri: uri.into(),
+                        uri: text_document_uri.into(),
                         version: version.map(|version| version as i64),
                         full_document_diagnostic_report: FullDocumentDiagnosticReport {
                             items: diagnostics.diagnostics,
@@ -54,8 +61,12 @@ pub async fn push_workspace_diagnostics(backend: &Backend) {
     tracing::info!("push_workspace_diagnostics");
 
     if let Some(workspace_diagnostic_targets) = get_workspace_diagnostic_targets(backend).await {
-        for WorkspaceDiagnosticTarget { uri, version } in workspace_diagnostic_targets {
-            publish_diagnostics(backend, uri, version).await;
+        for WorkspaceDiagnosticTarget {
+            text_document_uri,
+            version,
+        } in workspace_diagnostic_targets
+        {
+            publish_diagnostics(backend, text_document_uri, version, true).await;
         }
     };
 }

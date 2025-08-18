@@ -9,11 +9,12 @@ pub async fn publish_diagnostics(
     backend: &Backend,
     text_document_uri: tombi_uri::Uri,
     version: Option<i32>,
+    is_workspace_diagnostic: bool,
 ) {
     let Some(DiagnosticsResult {
         diagnostics,
         version: old_version,
-    }) = get_diagnostics_result(backend, &text_document_uri).await
+    }) = get_diagnostics_result(backend, &text_document_uri, is_workspace_diagnostic).await
     else {
         return;
     };
@@ -37,6 +38,7 @@ pub struct DiagnosticsResult {
 pub async fn get_diagnostics_result(
     backend: &Backend,
     text_document_uri: &tombi_uri::Uri,
+    is_workspace_diagnostic: bool,
 ) -> Option<DiagnosticsResult> {
     let ConfigSchemaStore {
         config,
@@ -49,13 +51,26 @@ pub async fn get_diagnostics_result(
 
     if !config
         .lsp()
-        .and_then(|server| server.diagnostics.as_ref())
-        .and_then(|diagnostics| diagnostics.enabled)
+        .and_then(|lsp| lsp.diagnostic())
+        .and_then(|diagnostic| diagnostic.enabled)
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.diagnostics.enabled` is false");
+        tracing::debug!("`lsp.diagnostic.enabled` is false");
         return None;
+    }
+
+    if is_workspace_diagnostic {
+        if !config
+            .lsp()
+            .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
+            .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
+            .unwrap_or_default()
+            .value()
+        {
+            tracing::debug!("`lsp.workspace-diagnostic.enabled` is false");
+            return None;
+        }
     }
 
     if let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) {
@@ -116,7 +131,7 @@ pub async fn get_diagnostics_result(
 
 #[derive(Debug)]
 pub struct WorkspaceDiagnosticTarget {
-    pub uri: tombi_uri::Uri,
+    pub text_document_uri: tombi_uri::Uri,
     pub version: Option<i32>,
 }
 
@@ -173,11 +188,14 @@ pub async fn get_workspace_diagnostic_targets(
                 );
 
                 for file in files {
-                    let Ok(file_path) = file else {
+                    let Ok(text_document_path) = file else {
                         continue;
                     };
-                    if let Ok(file_uri) = tombi_uri::Uri::from_file_path(&file_path) {
-                        let Ok(content) = tokio::fs::read_to_string(&file_path).await else {
+                    if let Ok(text_document_uri) =
+                        tombi_uri::Uri::from_file_path(&text_document_path)
+                    {
+                        let Ok(content) = tokio::fs::read_to_string(&text_document_path).await
+                        else {
                             continue;
                         };
                         let version = {
@@ -185,13 +203,13 @@ pub async fn get_workspace_diagnostic_targets(
                                 .document_sources
                                 .write()
                                 .await
-                                .entry(file_uri.clone())
+                                .entry(text_document_uri.clone())
                                 .or_insert_with(|| DocumentSource::new(content, None))
                                 .version
                         };
 
                         total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
-                            uri: file_uri,
+                            text_document_uri,
                             version,
                         });
                     }
