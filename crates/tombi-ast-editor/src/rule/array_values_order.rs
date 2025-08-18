@@ -7,7 +7,7 @@ use tombi_x_keyword::ArrayValuesOrder;
 
 use crate::node::make_comma;
 
-use super::array_comma_tailing_comment;
+use super::array_comma_trailing_comment;
 
 pub async fn array_values_order<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
@@ -75,7 +75,7 @@ pub async fn array_values_order<'a>(
     }
 
     for (value, comma) in &sorted_values_with_comma {
-        changes.extend(array_comma_tailing_comment(
+        changes.extend(array_comma_trailing_comment(
             value,
             comma.as_ref(),
             schema_context,

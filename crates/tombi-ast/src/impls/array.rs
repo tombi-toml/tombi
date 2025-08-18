@@ -67,13 +67,13 @@ impl crate::Array {
     }
 
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
-        self.has_tailing_comma_after_last_value()
+        self.has_trailing_comma_after_last_value()
             || self.has_multiline_values(toml_version)
             // || self.has_only_comments()
             || self.has_inner_comments()
     }
 
-    pub fn has_tailing_comma_after_last_value(&self) -> bool {
+    pub fn has_trailing_comma_after_last_value(&self) -> bool {
         self.syntax()
             .children_with_tokens()
             .collect_vec()

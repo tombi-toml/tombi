@@ -3,9 +3,9 @@ use tombi_ast::AstNode;
 use tombi_schema_store::SchemaContext;
 use tombi_syntax::SyntaxElement;
 
-use crate::{change::Change, node::make_comma_with_tailing_comment};
+use crate::{change::Change, node::make_comma_with_trailing_comment};
 
-pub fn array_comma_tailing_comment(
+pub fn array_comma_trailing_comment(
     value: &tombi_ast::Value,
     comma: Option<&tombi_ast::Comma>,
     _schema_context: &SchemaContext,
@@ -18,7 +18,7 @@ pub fn array_comma_tailing_comment(
             }
             None => true,
         } {
-            let comma_with_tailing_comment = make_comma_with_tailing_comment(&trailing_comment);
+            let comma_with_trailing_comment = make_comma_with_trailing_comment(&trailing_comment);
 
             return vec![
                 Change::Remove {
@@ -26,7 +26,7 @@ pub fn array_comma_tailing_comment(
                 },
                 Change::Append {
                     base: SyntaxElement::Node(value.syntax().clone()),
-                    new: vec![SyntaxElement::Node(comma_with_tailing_comment)],
+                    new: vec![SyntaxElement::Node(comma_with_trailing_comment)],
                 },
             ];
         }

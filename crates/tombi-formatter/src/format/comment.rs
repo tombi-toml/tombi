@@ -96,7 +96,7 @@ impl Format for Vec<LeadingComment> {
 impl Format for TrailingComment {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", f.tailing_comment_space())?;
+        write!(f, "{}", f.trailing_comment_space())?;
         format_comment(f, self.as_ref(), true)
     }
 }

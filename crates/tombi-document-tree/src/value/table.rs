@@ -132,7 +132,7 @@ impl Table {
                 .header_leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            trailing_comment: node.header_tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.header_trailing_comment().map(crate::Comment::from),
             key_values_begin_dangling_comments: node
                 .key_values_begin_dangling_comments()
                 .into_iter()
@@ -161,7 +161,7 @@ impl Table {
                 .header_leading_comments()
                 .map(crate::Comment::from)
                 .collect_vec(),
-            trailing_comment: node.header_tailing_comment().map(crate::Comment::from),
+            trailing_comment: node.header_trailing_comment().map(crate::Comment::from),
             key_values_begin_dangling_comments: node
                 .key_values_begin_dangling_comments()
                 .into_iter()
@@ -484,7 +484,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
             }
         }
 
-        if let Some(comment) = self.header_tailing_comment() {
+        if let Some(comment) = self.header_trailing_comment() {
             if let Err(error) = try_new_comment(comment.as_ref()) {
                 errors.push(error);
             }
@@ -561,7 +561,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
             }
         }
 
-        if let Some(comment) = self.header_tailing_comment() {
+        if let Some(comment) = self.header_trailing_comment() {
             if let Err(error) = try_new_comment(comment.as_ref()) {
                 errors.push(error);
             }

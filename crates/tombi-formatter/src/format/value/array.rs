@@ -54,7 +54,7 @@ pub(crate) fn exceeds_line_width(
     }
 
     if let Some(trailing_comment) = node.trailing_comment() {
-        length += f.tailing_comment_space().len();
+        length += f.trailing_comment_space().len();
         length += f
             .format_to_string(&trailing_comment)?
             .graphemes(true)
@@ -93,7 +93,7 @@ fn format_multiline_array(
 
             // comma format
             {
-                let (comma_leading_comments, comma_tailing_comment) = match comma {
+                let (comma_leading_comments, comma_trailing_comment) = match comma {
                     Some(comma) => (
                         comma.leading_comments().collect_vec(),
                         comma.trailing_comment(),
@@ -114,7 +114,7 @@ fn format_multiline_array(
                     write!(f, ",")?;
                 }
 
-                if let Some(comment) = comma_tailing_comment {
+                if let Some(comment) = comma_trailing_comment {
                     comment.format(f)?;
                 }
             }
@@ -401,12 +401,12 @@ mod tests {
     #[rstest]
     #[case("[1, 2, 3,]", true)]
     #[case("[1, 2, 3]", false)]
-    fn has_tailing_comma_after_last_value(#[case] source: &str, #[case] expected: bool) {
+    fn has_trailing_comma_after_last_value(#[case] source: &str, #[case] expected: bool) {
         let p = tombi_parser::parse_as::<tombi_ast::Array>(source, TomlVersion::default());
         pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
 
         let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
-        pretty_assertions::assert_eq!(ast.has_tailing_comma_after_last_value(), expected);
+        pretty_assertions::assert_eq!(ast.has_trailing_comma_after_last_value(), expected);
     }
 
     test_format! {

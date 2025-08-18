@@ -72,7 +72,7 @@ impl FormatDefinitions {
     /// #            ^^  <- this
     /// ```
     #[inline]
-    pub const fn tailing_comment_space(&self) -> &'static str {
+    pub const fn trailing_comment_space(&self) -> &'static str {
         "  "
     }
 

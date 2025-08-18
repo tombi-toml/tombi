@@ -127,7 +127,7 @@ mod test {
 
     test_parser! {
         #[test]
-        fn invalid_key_value_tailing_comment(
+        fn invalid_key_value_trailing_comment(
             r#"
             [aaa.bbb]
             key1 = 1 INVALID COMMENT

@@ -12,7 +12,7 @@ impl Format for tombi_ast::ArrayOfTable {
 
         write!(f, "[[{header}]]")?;
 
-        if let Some(comment) = self.header_tailing_comment() {
+        if let Some(comment) = self.header_trailing_comment() {
             comment.format(f)?;
         }
 

@@ -105,14 +105,14 @@ mod test {
 
     test_parser! {
         #[test]
-        fn inline_table_multi_keys_with_tailing_comma_v1_0_0("key = { key = 1, key = 2, }", TomlVersion::V1_0_0) -> Err([
+        fn inline_table_multi_keys_with_trailing_comma_v1_0_0("key = { key = 1, key = 2, }", TomlVersion::V1_0_0) -> Err([
             SyntaxError(ForbiddenInlineTableLastComma, 0:24..0:25),
         ])
     }
 
     test_parser! {
         #[test]
-        fn inline_table_multi_keys_with_tailing_comma_v1_1_0("key = { key = 1, key = 2, }", TomlVersion::V1_1_0_Preview) -> Ok(_)
+        fn inline_table_multi_keys_with_trailing_comma_v1_1_0("key = { key = 1, key = 2, }", TomlVersion::V1_1_0_Preview) -> Ok(_)
     }
 
     test_parser! {

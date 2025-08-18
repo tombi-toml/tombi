@@ -66,7 +66,7 @@ mod test {
 
     test_parser! {
         #[test]
-        fn number_array_with_tailing_comma("key = [1, 2,]") -> Ok(_)
+        fn number_array_with_trailing_comma("key = [1, 2,]") -> Ok(_)
     }
 
     test_parser! {

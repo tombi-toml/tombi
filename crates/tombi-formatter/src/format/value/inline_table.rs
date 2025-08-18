@@ -60,7 +60,7 @@ pub(crate) fn exceeds_line_width(
     }
 
     if let Some(trailing_comment) = node.trailing_comment() {
-        length += f.tailing_comment_space().len();
+        length += f.trailing_comment_space().len();
         length += f
             .format_to_string(&trailing_comment)?
             .graphemes(true)
@@ -99,7 +99,7 @@ fn format_multiline_inline_table(
 
             // comma format
             {
-                let (comma_leading_comments, comma_tailing_comment) = match comma {
+                let (comma_leading_comments, comma_trailing_comment) = match comma {
                     Some(comma) => (
                         comma.leading_comments().collect_vec(),
                         comma.trailing_comment(),
@@ -120,7 +120,7 @@ fn format_multiline_inline_table(
                     write!(f, ",")?;
                 }
 
-                if let Some(comment) = comma_tailing_comment {
+                if let Some(comment) = comma_trailing_comment {
                     comment.format(f)?;
                 }
             }

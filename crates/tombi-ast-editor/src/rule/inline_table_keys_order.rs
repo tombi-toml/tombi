@@ -1,4 +1,4 @@
-use crate::rule::inline_table_comma_tailing_comment;
+use crate::rule::inline_table_comma_trailing_comment;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_schema_store::{SchemaContext, TableSchema};
@@ -116,7 +116,7 @@ pub async fn inline_table_keys_order<'a>(
     }
 
     for (key_value, comma) in &sorted_key_values_with_comma {
-        changes.extend(inline_table_comma_tailing_comment(
+        changes.extend(inline_table_comma_trailing_comment(
             key_value,
             comma.as_ref(),
         ));
