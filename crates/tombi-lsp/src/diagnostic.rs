@@ -1,6 +1,8 @@
+use std::path::PathBuf;
+
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
-use tombi_config::LintOptions;
+use tombi_config::{Config, ConfigLevel, LintOptions};
 use tombi_glob::{matches_file_patterns, MatchResult};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, document::DocumentSource};
@@ -9,12 +11,11 @@ pub async fn publish_diagnostics(
     backend: &Backend,
     text_document_uri: tombi_uri::Uri,
     version: Option<i32>,
-    is_workspace_diagnostic: bool,
 ) {
     let Some(DiagnosticsResult {
         diagnostics,
         version: old_version,
-    }) = get_diagnostics_result(backend, &text_document_uri, is_workspace_diagnostic).await
+    }) = get_diagnostics_result(backend, &text_document_uri).await
     else {
         return;
     };
@@ -38,7 +39,6 @@ pub struct DiagnosticsResult {
 pub async fn get_diagnostics_result(
     backend: &Backend,
     text_document_uri: &tombi_uri::Uri,
-    is_workspace_diagnostic: bool,
 ) -> Option<DiagnosticsResult> {
     let ConfigSchemaStore {
         config,
@@ -58,19 +58,6 @@ pub async fn get_diagnostics_result(
     {
         tracing::debug!("`lsp.diagnostic.enabled` is false");
         return None;
-    }
-
-    if is_workspace_diagnostic {
-        if !config
-            .lsp()
-            .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
-            .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
-            .unwrap_or_default()
-            .value()
-        {
-            tracing::debug!("`lsp.workspace-diagnostic.enabled` is false");
-            return None;
-        }
     }
 
     if let Ok(text_document_path) = tombi_uri::Uri::to_file_path(text_document_uri) {
@@ -130,14 +117,16 @@ pub async fn get_diagnostics_result(
 }
 
 #[derive(Debug)]
-pub struct WorkspaceDiagnosticTarget {
-    pub text_document_uri: tombi_uri::Uri,
-    pub version: Option<i32>,
+pub struct WorkspaceConfig {
+    pub workspace_folder_path: PathBuf,
+    pub config: Config,
+    pub config_path: Option<PathBuf>,
+    pub config_level: ConfigLevel,
 }
 
-pub async fn get_workspace_diagnostic_targets(
+pub async fn get_workspace_configs(
     backend: &Backend,
-) -> Option<Vec<WorkspaceDiagnosticTarget>> {
+) -> Option<AHashMap<Option<PathBuf>, WorkspaceConfig>> {
     let workspace_folder_paths =
         backend
             .client
@@ -159,61 +148,85 @@ pub async fn get_workspace_diagnostic_targets(
         return None;
     };
 
-    let mut total_diagnostic_targets = Vec::new();
     let mut configs = AHashMap::new();
 
     for workspace_folder_path in workspace_folder_paths {
-        let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
-            continue;
-        };
         if let Ok((config, config_path, config_level)) =
             serde_tombi::config::load_with_path_and_level(Some(workspace_folder_path.clone()))
         {
-            configs.entry(config_path).or_insert((config, config_level));
+            configs
+                .entry(config_path.clone())
+                .or_insert(WorkspaceConfig {
+                    workspace_folder_path,
+                    config,
+                    config_path,
+                    config_level,
+                });
         };
-        for (config_path, (config, config_level)) in &configs {
-            if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
-                &[workspace_folder_path_str],
-                config,
-                config_path.as_deref(),
-                *config_level,
-            )
-            .await
-            {
-                tracing::debug!(
-                    "Found {} files in {}: {:?}",
-                    files.len(),
-                    workspace_folder_path_str,
-                    files
-                );
+    }
 
-                for file in files {
-                    let Ok(text_document_path) = file else {
-                        continue;
-                    };
-                    if let Ok(text_document_uri) =
-                        tombi_uri::Uri::from_file_path(&text_document_path)
-                    {
-                        let Ok(content) = tokio::fs::read_to_string(&text_document_path).await
-                        else {
-                            continue;
-                        };
-                        let version = {
-                            backend
-                                .document_sources
-                                .write()
-                                .await
-                                .entry(text_document_uri.clone())
-                                .or_insert_with(|| DocumentSource::new(content, None))
-                                .version
-                        };
+    Some(configs)
+}
 
-                        total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
-                            text_document_uri,
-                            version,
-                        });
-                    }
-                }
+#[derive(Debug)]
+pub struct WorkspaceDiagnosticTarget {
+    pub text_document_uri: tombi_uri::Uri,
+    pub version: Option<i32>,
+}
+
+pub async fn get_workspace_diagnostic_targets(
+    backend: &Backend,
+    workspace_config: &WorkspaceConfig,
+) -> Option<Vec<WorkspaceDiagnosticTarget>> {
+    let mut total_diagnostic_targets = Vec::new();
+
+    let WorkspaceConfig {
+        workspace_folder_path,
+        config,
+        config_level,
+        config_path,
+    } = workspace_config;
+
+    let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
+        return None;
+    };
+    if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
+        &[workspace_folder_path_str],
+        config,
+        config_path.as_deref(),
+        *config_level,
+    )
+    .await
+    {
+        tracing::debug!(
+            "Found {} files in {}: {:?}",
+            files.len(),
+            workspace_folder_path_str,
+            files
+        );
+
+        for file in files {
+            let Ok(text_document_path) = file else {
+                continue;
+            };
+            if let Ok(text_document_uri) = tombi_uri::Uri::from_file_path(&text_document_path) {
+                let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
+                    continue;
+                };
+                let version = {
+                    backend
+                        .document_sources
+                        .write()
+                        .await
+                        .entry(text_document_uri.clone())
+                        .or_insert_with(|| DocumentSource::new(content, None))
+                        .version
+                };
+
+                total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
+                    text_document_uri,
+                    version,
+                });
             }
         }
     }
