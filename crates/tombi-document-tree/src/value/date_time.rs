@@ -1,14 +1,19 @@
+use itertools::Itertools;
+use tombi_ast::AstNode;
+
 use crate::{
     support::chrono::{
         try_new_local_date, try_new_local_date_time, try_new_local_time, try_new_offset_date_time,
     },
-    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
+    Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OffsetDateTime {
     value: tombi_date_time::OffsetDateTime,
     node: tombi_ast::OffsetDateTime,
+    leading_comments: Vec<Comment>,
+    tailing_comment: Option<Comment>,
 }
 
 impl OffsetDateTime {
@@ -195,10 +200,20 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
         };
 
         match try_new_offset_date_time(&self, toml_version) {
-            Ok(value) => DocumentTreeAndErrors {
-                tree: crate::Value::OffsetDateTime(crate::OffsetDateTime { value, node: self }),
-                errors: Vec::with_capacity(0),
-            },
+            Ok(value) => {
+                let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
+                let tailing_comment = self.tailing_comment().map(Comment::from);
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
+                        value,
+                        node: self,
+                        leading_comments,
+                        tailing_comment,
+                    }),
+                    errors: Vec::with_capacity(0),
+                }
+            }
             Err(error) => DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![error],

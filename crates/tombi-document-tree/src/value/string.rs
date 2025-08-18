@@ -1,6 +1,8 @@
+use itertools::Itertools;
+use tombi_ast::AstNode;
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StringKind {
@@ -14,6 +16,8 @@ pub enum StringKind {
 pub struct String {
     kind: StringKind,
     value: std::string::String,
+    leading_comments: Vec<Comment>,
+    tailing_comment: Option<Comment>,
 }
 
 impl crate::String {
@@ -24,22 +28,35 @@ impl crate::String {
     ) -> Result<Self, tombi_toml_text::ParseError> {
         let quoted_string = quoted_string.into();
 
-        let value = match &kind {
-            StringKind::BasicString(_) => {
-                tombi_toml_text::try_from_basic_string(&quoted_string, toml_version)
-            }
-            StringKind::LiteralString(_) => {
-                tombi_toml_text::try_from_literal_string(&quoted_string)
-            }
-            StringKind::MultiLineBasicString(_) => {
-                tombi_toml_text::try_from_multi_line_basic_string(&quoted_string, toml_version)
-            }
-            StringKind::MultiLineLiteralString(_) => {
-                tombi_toml_text::try_from_multi_line_literal_string(&quoted_string)
-            }
-        }?;
+        let (value, leading_comments, tailing_comment) = match &kind {
+            StringKind::BasicString(node) => (
+                tombi_toml_text::try_from_basic_string(&quoted_string, toml_version)?,
+                node.leading_comments().map(Comment::from).collect_vec(),
+                node.tailing_comment().map(Comment::from),
+            ),
+            StringKind::LiteralString(node) => (
+                tombi_toml_text::try_from_literal_string(&quoted_string)?,
+                node.leading_comments().map(Comment::from).collect_vec(),
+                node.tailing_comment().map(Comment::from),
+            ),
+            StringKind::MultiLineBasicString(node) => (
+                tombi_toml_text::try_from_multi_line_basic_string(&quoted_string, toml_version)?,
+                node.leading_comments().map(Comment::from).collect_vec(),
+                node.tailing_comment().map(Comment::from),
+            ),
+            StringKind::MultiLineLiteralString(node) => (
+                tombi_toml_text::try_from_multi_line_literal_string(&quoted_string)?,
+                node.leading_comments().map(Comment::from).collect_vec(),
+                node.tailing_comment().map(Comment::from),
+            ),
+        };
 
-        Ok(Self { kind, value })
+        Ok(Self {
+            kind,
+            value,
+            leading_comments,
+            tailing_comment,
+        })
     }
 
     #[inline]
