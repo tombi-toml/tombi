@@ -113,7 +113,7 @@ jobs:
           distribution: zulu
           java-version: 21
       - name: Run Qodana
-        uses: JetBrains/qodana-action@v2025.1
+        uses: JetBrains/qodana-action@v2025.2
         with:
           args: --project-dir,editors/intellij
           cache-default-branch-only: true
