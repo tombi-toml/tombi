@@ -8,7 +8,8 @@ pub enum WarningKind {
     #[error(
         r#"In strict mode, `{accessors}` does not allow "{key}" key.
 Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_uri},
-or set `schema.strict = false` in your `tombi.toml`"#
+or add `#:tombi schema.strict = false` as a document comment directive at the top of your document,
+or set `schema.strict = false` in your `tombi.toml`."#
     )]
     StrictAdditionalProperties {
         accessors: SchemaAccessors,
