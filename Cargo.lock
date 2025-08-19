@@ -3829,6 +3829,7 @@ dependencies = [
  "tombi-x-keyword",
  "tower-lsp",
  "tracing",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -3918,6 +3919,7 @@ dependencies = [
  "serde",
  "tower-lsp",
  "tracing",
+ "unicode-segmentation",
  "wasm-bindgen",
 ]
 

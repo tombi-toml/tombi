@@ -47,6 +47,7 @@ tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
 tower-lsp.workspace = true
 tracing.workspace = true
+unicode-segmentation.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

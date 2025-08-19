@@ -6,6 +6,7 @@ use tombi_text::{Position, Range};
 use tower_lsp::lsp_types::{
     notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
@@ -196,7 +197,7 @@ fn compute_text_edits(
         let last_line = old_lines.last().unwrap_or(&"");
         Position::new(
             (old_lines.len() - 1) as u32,
-            last_line.chars().count() as u32,
+            UnicodeSegmentation::graphemes(*last_line, true).count() as u32,
         )
     };
 
