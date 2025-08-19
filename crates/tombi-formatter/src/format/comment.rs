@@ -116,7 +116,7 @@ fn format_comment(
 
         if let Some(content) = comment.strip_prefix("#:tombi ") {
             let formatted = f.format_tombi_comment_directive_content(content)?;
-            return write!(f, "#:tombi {}", formatted);
+            return write!(f, "#:tombi {formatted}");
         }
     }
 
