@@ -35,7 +35,7 @@ impl crate::Offset {
         let mut line = 0;
         let mut column = 0;
         let mut offset = 0;
-        for (i, c) in UnicodeSegmentation::graphemes(source, true).enumerate() {
+        for c in UnicodeSegmentation::graphemes(source, true) {
             if line == position.line && column == position.character {
                 return Self::new(offset as u32);
             }
@@ -45,8 +45,42 @@ impl crate::Offset {
             } else {
                 column += 1;
             }
-            offset = i + c.len();
+            offset += c.len();
         }
         Self::new(offset as u32)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_offset_from_source_multibyte() {
+        let source = "こんにちは🦅世界";
+
+        // デバッグ用：各文字のバイト数を確認
+        println!("Source: {}", source);
+        for (i, c) in UnicodeSegmentation::graphemes(source, true).enumerate() {
+            println!("Character {}: '{}' ({} bytes)", i, c, c.len());
+        }
+
+        // 最初の文字（こ）の位置
+        let pos = tower_lsp::lsp_types::Position::new(0, 0);
+        let offset = crate::Offset::from_source(source, pos);
+        println!("Position (0, 0) -> offset: {}", offset.raw);
+        assert_eq!(offset.raw, 0);
+
+        // 絵文字（🦅）の位置
+        let pos = tower_lsp::lsp_types::Position::new(0, 5);
+        let offset = crate::Offset::from_source(source, pos);
+        println!("Position (0, 5) -> offset: {}", offset.raw);
+        assert_eq!(offset.raw, 15); // "こんにちは" は15バイト
+
+        // 最後の文字（界）の位置
+        let pos = tower_lsp::lsp_types::Position::new(0, 7);
+        let offset = crate::Offset::from_source(source, pos);
+        println!("Position (0, 7) -> offset: {}", offset.raw);
+        assert_eq!(offset.raw, 22); // "こんにちは��世" は22バイト
     }
 }

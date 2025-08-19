@@ -3829,6 +3829,7 @@ dependencies = [
  "tombi-x-keyword",
  "tower-lsp",
  "tracing",
+ "unicode-segmentation",
 ]
 
 [[package]]

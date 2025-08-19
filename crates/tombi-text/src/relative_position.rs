@@ -107,6 +107,11 @@ mod test {
     #[case("a", (0, 1))]
     #[case("abc\ndef\nghi", (2, 3))]
     #[case("abc\r\ndef\r\nghi", (2, 3))]
+    #[case("🦅", (0, 1))]
+    #[case("こんにちは", (0, 5))]
+    #[case("Hello🦅World", (0, 11))]
+    #[case("こんにちは🦅世界", (0, 8))]
+    #[case("🦅\nこんにちは", (1, 5))]
     fn test_position(#[case] source: &str, #[case] expected: (Line, Column)) {
         pretty_assertions::assert_eq!(RelativePosition::of(source), expected.into());
     }
