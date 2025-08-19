@@ -79,7 +79,11 @@ impl Add for RelativePosition {
     fn add(self, rhs: RelativePosition) -> Self::Output {
         Self {
             line: self.line + rhs.line,
-            column: rhs.column,
+            column: if rhs.line == 0 {
+                self.column + rhs.column
+            } else {
+                rhs.column
+            },
         }
     }
 }
@@ -114,5 +118,23 @@ mod test {
     #[case("🦅\nこんにちは", (1, 5))]
     fn test_position(#[case] source: &str, #[case] expected: (Line, Column)) {
         pretty_assertions::assert_eq!(RelativePosition::of(source), expected.into());
+    }
+
+    #[test]
+    fn test_add() {
+        let pos1 = RelativePosition::from((0, 5));
+        let pos2 = RelativePosition::from((0, 3));
+        let result = pos1 + pos2;
+        assert_eq!(result, RelativePosition::from((0, 8)));
+
+        let pos1 = RelativePosition::from((1, 5));
+        let pos2 = RelativePosition::from((0, 3));
+        let result = pos1 + pos2;
+        assert_eq!(result, RelativePosition::from((1, 8)));
+
+        let pos1 = RelativePosition::from((1, 5));
+        let pos2 = RelativePosition::from((1, 3));
+        let result = pos1 + pos2;
+        assert_eq!(result, RelativePosition::from((2, 3)));
     }
 }
