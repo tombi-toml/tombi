@@ -108,7 +108,7 @@ impl Validate for tombi_document_tree::Array {
 
                 if let Some(items) = &array_schema.items {
                     let mut referable_schema = items.write().await;
-                    if let Ok(Some(current_schema)) = referable_schema
+                    match referable_schema
                         .resolve(
                             current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
@@ -116,28 +116,36 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     {
-                        let new_accessors = accessors
-                            .iter()
-                            .cloned()
-                            .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
-                            .collect::<Vec<_>>();
-                        if current_schema.value_schema.deprecated().await == Some(true) {
-                            crate::Warning {
-                                kind: Box::new(crate::WarningKind::Deprecated(
-                                    tombi_schema_store::SchemaAccessors::new(new_accessors.clone()),
-                                )),
-                                range: self.range(),
+                        Ok(Some(current_schema)) => {
+                            let new_accessors = accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
+                                .collect::<Vec<_>>();
+                            if current_schema.value_schema.deprecated().await == Some(true) {
+                                crate::Warning {
+                                    kind: Box::new(crate::WarningKind::Deprecated(
+                                        tombi_schema_store::SchemaAccessors::new(
+                                            new_accessors.clone(),
+                                        ),
+                                    )),
+                                    range: self.range(),
+                                }
+                                .set_diagnostics(&mut diagnostics);
                             }
-                            .set_diagnostics(&mut diagnostics);
-                        }
 
-                        for value in self.values().iter() {
-                            if let Err(schema_diagnostics) = value
-                                .validate(&new_accessors, Some(&current_schema), schema_context)
-                                .await
-                            {
-                                diagnostics.extend(schema_diagnostics);
+                            for value in self.values().iter() {
+                                if let Err(schema_diagnostics) = value
+                                    .validate(&new_accessors, Some(&current_schema), schema_context)
+                                    .await
+                                {
+                                    diagnostics.extend(schema_diagnostics);
+                                }
                             }
+                        }
+                        Ok(None) => {}
+                        Err(err) => {
+                            tracing::warn!("{}", err);
                         }
                     }
                 }

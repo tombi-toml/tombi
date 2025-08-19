@@ -247,7 +247,7 @@ fn get_enumerate_from_schemas<'a: 'b, 'b>(
     async move {
         let mut enumerate_values = Vec::new();
         for schema in schemas.write().await.iter_mut() {
-            match schema
+            if let Ok(Some(resolved)) = schema
                 .resolve(
                     Cow::Borrowed(schema_uri),
                     Cow::Borrowed(definitions),
@@ -255,16 +255,13 @@ fn get_enumerate_from_schemas<'a: 'b, 'b>(
                 )
                 .await
             {
-                Ok(Some(resolved)) => {
-                    if let Some(values) = resolved
-                        .value_schema
-                        .get_enumerate(schema_uri, definitions, schema_context)
-                        .await
-                    {
-                        enumerate_values.extend(values);
-                    }
+                if let Some(values) = resolved
+                    .value_schema
+                    .get_enumerate(schema_uri, definitions, schema_context)
+                    .await
+                {
+                    enumerate_values.extend(values);
                 }
-                _ => {}
             }
         }
 

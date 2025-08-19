@@ -154,7 +154,7 @@ impl Validate for tombi_document_tree::Table {
                             }
                             Ok(None) => {}
                             Err(err) => {
-                                tracing::error!("{}", err);
+                                tracing::warn!("{}", err);
                             }
                         }
                     }
@@ -173,7 +173,7 @@ impl Validate for tombi_document_tree::Table {
                             };
                             if pattern.is_match(&accessor_raw_text) {
                                 matche_key = true;
-                                if let Ok(Some(current_schema)) = property_schema
+                                match property_schema
                                     .resolve(
                                         current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
@@ -181,25 +181,32 @@ impl Validate for tombi_document_tree::Table {
                                     )
                                     .await
                                 {
-                                    if current_schema.value_schema.deprecated().await == Some(true)
-                                    {
-                                        crate::Warning {
-                                            kind: Box::new(crate::WarningKind::Deprecated(
-                                                SchemaAccessors::new(new_accessors.clone()),
-                                            )),
-                                            range: key.range() + value.range(),
+                                    Ok(Some(current_schema)) => {
+                                        if current_schema.value_schema.deprecated().await
+                                            == Some(true)
+                                        {
+                                            crate::Warning {
+                                                kind: Box::new(crate::WarningKind::Deprecated(
+                                                    SchemaAccessors::new(new_accessors.clone()),
+                                                )),
+                                                range: key.range() + value.range(),
+                                            }
+                                            .set_diagnostics(&mut diagnostics);
                                         }
-                                        .set_diagnostics(&mut diagnostics);
+                                        if let Err(schema_diagnostics) = value
+                                            .validate(
+                                                &new_accessors,
+                                                Some(&current_schema),
+                                                schema_context,
+                                            )
+                                            .await
+                                        {
+                                            diagnostics.extend(schema_diagnostics);
+                                        }
                                     }
-                                    if let Err(schema_diagnostics) = value
-                                        .validate(
-                                            &new_accessors,
-                                            Some(&current_schema),
-                                            schema_context,
-                                        )
-                                        .await
-                                    {
-                                        diagnostics.extend(schema_diagnostics);
+                                    Ok(None) => {}
+                                    Err(err) => {
+                                        tracing::warn!("{}", err);
                                     }
                                 }
                             } else if !table_schema
@@ -228,7 +235,7 @@ impl Validate for tombi_document_tree::Table {
                         {
                             let mut referable_schema =
                                 referable_additional_property_schema.write().await;
-                            if let Ok(Some(current_schema)) = referable_schema
+                            match referable_schema
                                 .resolve(
                                     current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
@@ -236,24 +243,34 @@ impl Validate for tombi_document_tree::Table {
                                 )
                                 .await
                             {
-                                if current_schema.value_schema.deprecated().await == Some(true) {
-                                    crate::Warning {
-                                        kind: Box::new(crate::WarningKind::Deprecated(
-                                            SchemaAccessors::new(new_accessors.clone()),
-                                        )),
-                                        range: key.range() + value.range(),
+                                Ok(Some(current_schema)) => {
+                                    if current_schema.value_schema.deprecated().await == Some(true)
+                                    {
+                                        crate::Warning {
+                                            kind: Box::new(crate::WarningKind::Deprecated(
+                                                SchemaAccessors::new(new_accessors.clone()),
+                                            )),
+                                            range: key.range() + value.range(),
+                                        }
+                                        .set_diagnostics(&mut diagnostics);
                                     }
-                                    .set_diagnostics(&mut diagnostics);
-                                }
 
-                                if let Err(schema_diagnostics) = value
-                                    .validate(&new_accessors, Some(&current_schema), schema_context)
-                                    .await
-                                {
-                                    diagnostics.extend(schema_diagnostics);
+                                    if let Err(schema_diagnostics) = value
+                                        .validate(
+                                            &new_accessors,
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await
+                                    {
+                                        diagnostics.extend(schema_diagnostics);
+                                    }
+                                }
+                                Ok(None) => {}
+                                Err(err) => {
+                                    tracing::warn!("{}", err);
                                 }
                             }
-                            continue;
                         }
                         if table_schema
                             .check_strict_additional_properties_violation(schema_context.strict())
