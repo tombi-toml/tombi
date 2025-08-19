@@ -1,6 +1,7 @@
 use itertools::Either;
 use tombi_ast::DocumentSchemaCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_extension::get_tombi_github_uri;
 use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
 
 use crate::{config_manager::ConfigSchemaStore, Backend};
@@ -51,7 +52,7 @@ pub async fn handle_document_link(
         document_links.push(
             tombi_extension::DocumentLink {
                 range,
-                target: schema_uri,
+                target: get_tombi_github_uri(&schema_uri).unwrap_or(schema_uri),
                 tooltip,
             }
             .into(),
