@@ -38,6 +38,7 @@ impl crate::Edit for tombi_ast::Array {
                                 schema_context.store,
                             )
                             .await
+                            .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             for value in self.values() {
                                 changes.extend(

@@ -49,6 +49,7 @@ async fn get_schema<'a: 'b, 'b>(
                                 schema_context.store,
                             )
                             .await
+                            .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             if let Some(value_schema) = inner_get_schema(
                                 value,
@@ -100,6 +101,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         schema_context.store,
                                     )
                                     .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
                                 {
                                     return inner_get_schema(
                                         value,
@@ -128,6 +130,7 @@ async fn get_schema<'a: 'b, 'b>(
                                                     schema_context.store,
                                                 )
                                                 .await
+                                                .inspect_err(|err| tracing::warn!("{err}"))
                                             {
                                                 return inner_get_schema(
                                                     value,
@@ -159,6 +162,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         schema_context.store,
                                     )
                                     .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
                                 {
                                     return inner_get_schema(
                                         value,
@@ -192,6 +196,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         schema_context.store,
                                     )
                                     .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
                                 {
                                     return inner_get_schema(
                                         value,
