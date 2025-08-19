@@ -24,15 +24,11 @@ pub async fn handle_document_symbol(
 
     let symbols = create_symbols(&tree);
 
-    Ok(Some(
-        tower_lsp_server::ls_types::lsp::DocumentSymbolResponse::Nested(symbols),
-    ))
+    Ok(Some(DocumentSymbolResponse::Nested(symbols)))
 }
 
-fn create_symbols(
-    tree: &tombi_document_tree::DocumentTree,
-) -> Vec<tower_lsp_server::ls_types::lsp::DocumentSymbol> {
-    let mut symbols: Vec<tower_lsp_server::ls_types::lsp::DocumentSymbol> = vec![];
+fn create_symbols(tree: &tombi_document_tree::DocumentTree) -> Vec<DocumentSymbol> {
+    let mut symbols: Vec<DocumentSymbol> = vec![];
 
     for (key, value) in tree.key_values() {
         symbols_for_value(key.to_string(), value, None, &mut symbols);
