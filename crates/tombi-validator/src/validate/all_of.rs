@@ -23,15 +23,20 @@ where
 
         let mut schemas = all_of_schema.schemas.write().await;
         for referable_schema in schemas.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
+            let current_schema = match referable_schema
                 .resolve(
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
                 .await
-            else {
-                continue;
+            {
+                Ok(Some(current_schema)) => current_schema,
+                Ok(None) => continue,
+                Err(err) => {
+                    tracing::warn!("{}", err);
+                    continue;
+                }
             };
 
             match value
