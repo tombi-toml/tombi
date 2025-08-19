@@ -110,7 +110,7 @@ async fn document_tombi_directive_completion_contents(
         content,
         position_in_content,
         content_range,
-    })) = get_document_tombi_comment_directive(&comment, position)
+    })) = get_document_tombi_comment_directive(comment, position)
     {
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

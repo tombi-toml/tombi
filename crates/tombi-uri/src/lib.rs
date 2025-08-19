@@ -4,10 +4,12 @@ pub use url::ParseError;
 pub struct Uri(url::Url);
 
 impl Uri {
+    #[allow(clippy::result_unit_err)]
     pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, ()> {
         url_from_file_path(path).map(Self)
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn to_file_path(&self) -> Result<std::path::PathBuf, ()> {
         url_to_file_path(self)
     }

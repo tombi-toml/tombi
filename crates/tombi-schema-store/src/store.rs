@@ -454,25 +454,22 @@ impl SchemaStore {
             None => return Ok(None),
         };
         let document_schema = DocumentSchema::new(object, schema_uri.clone());
-        if let Some(value_schema) = &document_schema.value_schema {
-            match value_schema {
-                ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                    for referable_schema in schemas.write().await.iter_mut() {
-                        if let Err(err) = referable_schema
-                            .resolve(
-                                Cow::Borrowed(schema_uri),
-                                Cow::Borrowed(&document_schema.definitions),
-                                self,
-                            )
-                            .await
-                        {
-                            return Err(err);
-                        }
-                    }
+        if let Some(
+            ValueSchema::AllOf(AllOfSchema { schemas, .. })
+            | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+            | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
+        ) = &document_schema.value_schema
+        {
+            {
+                for referable_schema in schemas.write().await.iter_mut() {
+                    referable_schema
+                        .resolve(
+                            Cow::Borrowed(schema_uri),
+                            Cow::Borrowed(&document_schema.definitions),
+                            self,
+                        )
+                        .await?;
                 }
-                _ => {}
             }
         }
 

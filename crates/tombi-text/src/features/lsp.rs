@@ -60,7 +60,7 @@ mod tests {
         let source = "こんにちは🦅世界";
 
         // デバッグ用：各文字のバイト数を確認
-        println!("Source: {}", source);
+        println!("Source: {source}");
         for (i, c) in UnicodeSegmentation::graphemes(source, true).enumerate() {
             println!("Character {}: '{}' ({} bytes)", i, c, c.len());
         }

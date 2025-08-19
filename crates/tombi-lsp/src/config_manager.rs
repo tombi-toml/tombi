@@ -136,7 +136,7 @@ impl ConfigManager {
                     if schema_store.is_empty().await {
                         tracing::info!("add new SchemaStore for {config_path_buf:?}");
                         if let Err(err) = schema_store
-                            .load_config(&config, Some(&config_path_buf))
+                            .load_config(config, Some(&config_path_buf))
                             .await
                         {
                             tracing::error!("failed to load config: {err}");

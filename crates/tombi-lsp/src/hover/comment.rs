@@ -17,7 +17,7 @@ pub async fn get_comment_directive_hover_info(
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
     if let Some(schema_comment_directive) =
-        get_document_schema_comment_directive(&root, position, source_path)
+        get_document_schema_comment_directive(root, position, source_path)
     {
         if schema_comment_directive.directive_range.contains(position) {
             return Some(HoverContent::Directive(HoverDirectiveContent {
@@ -95,7 +95,7 @@ pub async fn get_comment_directive_hover_info(
                                 toml_version,
                                 root_schema: Some(&document_schema),
                                 sub_schema_uri_map: None,
-                                store: &schema_store,
+                                store: schema_store,
                                 strict: None,
                             };
 

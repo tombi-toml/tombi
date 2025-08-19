@@ -122,9 +122,7 @@ impl ValueSchema {
                             return Some(ValueSchema::LocalTime(LocalTimeSchema::new(object)));
                         }
                         _ => string_formats.and_then(|string_formats| {
-                            if let Some(string_format) =
-                                StringFormat::from_str(format_str.as_str()).ok()
-                            {
+                            if let Ok(string_format) = StringFormat::from_str(format_str.as_str()) {
                                 if string_formats.contains(&string_format) {
                                     return Some(string_format);
                                 }

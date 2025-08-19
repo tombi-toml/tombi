@@ -144,9 +144,8 @@ pub async fn get_workspace_configs(
             });
 
     tracing::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
-    let Some(workspace_folder_paths) = workspace_folder_paths else {
-        return None;
-    };
+
+    let workspace_folder_paths = workspace_folder_paths?;
 
     let mut configs = AHashMap::new();
 
@@ -187,9 +186,7 @@ pub async fn get_workspace_diagnostic_targets(
         config_path,
     } = workspace_config;
 
-    let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
-        return None;
-    };
+    let workspace_folder_path_str = workspace_folder_path.to_str()?;
     if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
         &[workspace_folder_path_str],
         config,
