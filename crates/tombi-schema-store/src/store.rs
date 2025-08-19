@@ -454,10 +454,12 @@ impl SchemaStore {
             None => return Ok(None),
         };
         let document_schema = DocumentSchema::new(object, schema_uri.clone());
-        if let Some(value_schema) = &document_schema.value_schema {
-            if let ValueSchema::AllOf(AllOfSchema { schemas, .. })
+        if let Some(
+            ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-            | ValueSchema::OneOf(OneOfSchema { schemas, .. }) = value_schema
+            | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
+        ) = &document_schema.value_schema
+        {
             {
                 for referable_schema in schemas.write().await.iter_mut() {
                     referable_schema
