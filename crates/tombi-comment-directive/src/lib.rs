@@ -1,5 +1,6 @@
-mod document_tombi_comment_directive;
+mod document;
 mod error;
+mod value;
 
 use std::str::FromStr;
 
@@ -9,7 +10,7 @@ use tombi_toml_version::TomlVersion;
 
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
-pub use document_tombi_comment_directive::*;
+pub use document::*;
 
 fn into_directive_diagnostic(
     diagnostic: &tombi_diagnostic::Diagnostic,
