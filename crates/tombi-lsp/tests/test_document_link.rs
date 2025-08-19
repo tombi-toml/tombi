@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use tombi_test_lib::project_root_path;
 
 mod document_link_tests {
@@ -402,10 +403,10 @@ macro_rules! test_document_link {
             // Use handler functions from tombi_lsp
             use tombi_lsp::handler::{handle_did_open, handle_document_link};
             use tombi_lsp::Backend;
-            use tower_lsp::{
-                lsp_types::{
+            use tower_lsp_server::{
+                ls_types::lsp::{
                     DidOpenTextDocumentParams, DocumentLinkParams, PartialResultParams,
-                    TextDocumentIdentifier, TextDocumentItem, Url, WorkDoneProgressParams,
+                    TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
                 },
                 LspService,
             };
@@ -418,8 +419,8 @@ macro_rules! test_document_link {
 
             let backend = service.inner();
 
-            let toml_file_url =
-                Url::from_file_path($file_path).expect("failed to convert file path to URL");
+            let toml_file_uri =
+                tombi_uri::Uri::from_file_path($file_path).expect("failed to convert file path to URI");
 
             let toml_text = textwrap::dedent($source).trim().to_string();
 
@@ -427,7 +428,7 @@ macro_rules! test_document_link {
                 backend,
                 DidOpenTextDocumentParams {
                     text_document: TextDocumentItem {
-                        uri: toml_file_url.clone(),
+                        uri: toml_file_uri.clone().into(),
                         language_id: "toml".to_string(),
                         version: 0,
                         text: toml_text.clone(),
@@ -437,7 +438,7 @@ macro_rules! test_document_link {
             .await;
 
             let params = DocumentLinkParams {
-                text_document: TextDocumentIdentifier { uri: toml_file_url },
+                text_document: TextDocumentIdentifier { uri: toml_file_uri.into() },
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 partial_result_params: PartialResultParams::default(),
             };
@@ -485,18 +486,18 @@ macro_rules! _document_link {
         range: $start_line:literal : $start_char:literal .. $end_line:literal : $end_char:literal,
         tooltip: $tooltip:expr $(,)?
     }) => {
-        tower_lsp::lsp_types::DocumentLink {
-            range: tower_lsp::lsp_types::Range {
-                start: tower_lsp::lsp_types::Position {
+        tower_lsp_server::ls_types::lsp::DocumentLink {
+            range: tower_lsp_server::ls_types::lsp::Range {
+                start: tower_lsp_server::ls_types::lsp::Position {
                     line: $start_line,
                     character: $start_char,
                 },
-                end: tower_lsp::lsp_types::Position {
+                end: tower_lsp_server::ls_types::lsp::Position {
                     line: $end_line,
                     character: $end_char,
                 },
             },
-            target: Url::from_file_path($path).ok(),
+            target: tombi_uri::Uri::from_file_path($path).ok().map(Into::into),
             tooltip: Some($tooltip.to_string()),
             data: None,
         }
@@ -506,18 +507,18 @@ macro_rules! _document_link {
         range: $start_line:literal : $start_char:literal .. $end_line:literal : $end_char:literal,
         tooltip: $tooltip:expr $(,)?
     }) => {
-        tower_lsp::lsp_types::DocumentLink {
-            range: tower_lsp::lsp_types::Range {
-                start: tower_lsp::lsp_types::Position {
+        tower_lsp_server::ls_types::lsp::DocumentLink {
+            range: tower_lsp_server::ls_types::lsp::Range {
+                start: tower_lsp_server::ls_types::lsp::Position {
                     line: $start_line,
                     character: $start_char,
                 },
-                end: tower_lsp::lsp_types::Position {
+                end: tower_lsp_server::ls_types::lsp::Position {
                     line: $end_line,
                     character: $end_char,
                 },
             },
-            target: Url::parse($url).ok(),
+            target: tombi_uri::Uri::from_str($url).ok().map(Into::into),
             tooltip: Some($tooltip.to_string()),
             data: None,
         }

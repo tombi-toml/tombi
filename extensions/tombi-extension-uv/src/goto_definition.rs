@@ -16,7 +16,7 @@ pub async fn goto_definition(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[tombi_schema_store::Accessor],
     toml_version: TomlVersion,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp_server::jsonrpc::Error> {
     // Check if current file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
         return Ok(Default::default());
@@ -76,7 +76,7 @@ fn goto_definition_for_dependency_package(
     accessors: &[Accessor],
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp_server::jsonrpc::Error> {
     // Get the dependency string from the current position
     let Some((_, Value::String(dependency))) = dig_accessors(document_tree, accessors) else {
         return Ok(None);

@@ -1,7 +1,6 @@
 use tombi_ast::AstToken;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tower_lsp::lsp_types::Url;
 
 use crate::{
     comment_directive::{
@@ -18,7 +17,7 @@ use super::{CompletionContent, CompletionEdit};
 pub async fn get_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
-    text_document_uri: &Url,
+    text_document_uri: &tombi_uri::Uri,
 ) -> Option<Vec<CompletionContent>> {
     let mut in_comments = false;
     if let Some(comments) = root.get_document_header_comments() {
@@ -74,7 +73,7 @@ fn document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     prefix_range: tombi_text::Range,
-    text_document_uri: &Url,
+    text_document_uri: &tombi_uri::Uri,
 ) -> Vec<CompletionContent> {
     let mut completion_contents = Vec::new();
 

@@ -1,12 +1,12 @@
-use tower_lsp::lsp_types::{CompletionTextEdit, InsertTextFormat, TextEdit, Url};
+use tower_lsp_server::ls_types::lsp::{CompletionTextEdit, InsertTextFormat, TextEdit};
 
 use super::CompletionHint;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompletionEdit {
-    pub text_edit: tower_lsp::lsp_types::CompletionTextEdit,
-    pub insert_text_format: Option<tower_lsp::lsp_types::InsertTextFormat>,
-    pub additional_text_edits: Option<Vec<tower_lsp::lsp_types::TextEdit>>,
+    pub text_edit: tower_lsp_server::ls_types::lsp::CompletionTextEdit,
+    pub insert_text_format: Option<tower_lsp_server::ls_types::lsp::InsertTextFormat>,
+    pub additional_text_edits: Option<Vec<tower_lsp_server::ls_types::lsp::TextEdit>>,
 }
 
 impl CompletionEdit {
@@ -264,7 +264,7 @@ impl CompletionEdit {
     pub fn new_schema_comment_directive(
         position: tombi_text::Position,
         prefix_range: tombi_text::Range,
-        text_document_uri: &Url,
+        text_document_uri: &tombi_uri::Uri,
     ) -> Option<Self> {
         let file_name = std::path::Path::new(text_document_uri.path())
             .file_stem() // "ccc"
@@ -307,9 +307,9 @@ impl CompletionEdit {
 
     pub fn with_position(mut self, position: tombi_text::Position) -> Self {
         fn offset(
-            range: tower_lsp::lsp_types::Range,
+            range: tower_lsp_server::ls_types::lsp::Range,
             position: tombi_text::Position,
-        ) -> tower_lsp::lsp_types::Range {
+        ) -> tower_lsp_server::ls_types::lsp::Range {
             let mut start = range.start;
             start.line += position.line;
             start.character += position.column;
@@ -317,7 +317,7 @@ impl CompletionEdit {
             end.line += position.line;
             end.character += position.column;
 
-            tower_lsp::lsp_types::Range { start, end }
+            tower_lsp_server::ls_types::lsp::Range { start, end }
         }
 
         self.text_edit = match self.text_edit {
@@ -326,11 +326,13 @@ impl CompletionEdit {
                 new_text: text_edit.new_text,
             }),
             CompletionTextEdit::InsertAndReplace(insert_replace_edit) => {
-                CompletionTextEdit::InsertAndReplace(tower_lsp::lsp_types::InsertReplaceEdit {
-                    insert: offset(insert_replace_edit.insert, position),
-                    replace: offset(insert_replace_edit.replace, position),
-                    new_text: insert_replace_edit.new_text,
-                })
+                CompletionTextEdit::InsertAndReplace(
+                    tower_lsp_server::ls_types::lsp::InsertReplaceEdit {
+                        insert: offset(insert_replace_edit.insert, position),
+                        replace: offset(insert_replace_edit.replace, position),
+                        new_text: insert_replace_edit.new_text,
+                    },
+                )
             }
         };
 

@@ -429,7 +429,7 @@ impl CompletionContent {
     }
 }
 
-impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
+impl From<CompletionContent> for tower_lsp_server::ls_types::lsp::CompletionItem {
     fn from(completion_content: CompletionContent) -> Self {
         const SECTION_SEPARATOR: &str = "-----";
 
@@ -472,13 +472,13 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
 
         let label_details = match completion_content.priority {
             CompletionContentPriority::Custom(_) => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: None,
                     description: completion_content.detail.clone(),
                 })
             }
             CompletionContentPriority::Default => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: None,
                     description: Some(match &completion_content.detail {
                         Some(detail) => format!("[Default] {detail}"),
@@ -487,7 +487,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
                 })
             }
             CompletionContentPriority::Const => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: None,
                     description: Some(match &completion_content.detail {
                         Some(detail) => detail.to_string(),
@@ -496,7 +496,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
                 })
             }
             CompletionContentPriority::Enum => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: None,
                     description: Some(match &completion_content.detail {
                         Some(detail) => detail.to_string(),
@@ -505,13 +505,13 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
                 })
             }
             CompletionContentPriority::Key => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: None,
                     description: completion_content.detail.clone(),
                 })
             }
             CompletionContentPriority::OptionalKey | CompletionContentPriority::AdditionalKey => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: Some("?".to_string()),
                     description: completion_content.detail.clone(),
                 })
@@ -520,7 +520,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             | CompletionContentPriority::TypeHintKey
             | CompletionContentPriority::TypeHintTrue
             | CompletionContentPriority::TypeHintFalse => {
-                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                Some(tower_lsp_server::ls_types::lsp::CompletionItemLabelDetails {
                     detail: None,
                     description: Some("Type Hint".to_string()),
                 })
@@ -537,7 +537,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             details
         });
 
-        tower_lsp::lsp_types::CompletionItem {
+        tower_lsp_server::ls_types::lsp::CompletionItem {
             label: completion_content.label,
             label_details,
             kind: Some(completion_content.kind.into()),
@@ -549,9 +549,9 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
                 }
             }),
             documentation: documentation.map(|documentation| {
-                tower_lsp::lsp_types::Documentation::MarkupContent(
-                    tower_lsp::lsp_types::MarkupContent {
-                        kind: tower_lsp::lsp_types::MarkupKind::Markdown,
+                tower_lsp_server::ls_types::lsp::Documentation::MarkupContent(
+                    tower_lsp_server::ls_types::lsp::MarkupContent {
+                        kind: tower_lsp_server::ls_types::lsp::MarkupKind::Markdown,
                         value: documentation,
                     },
                 )
@@ -560,7 +560,7 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             filter_text: completion_content.filter_text,
             insert_text_format,
             text_edit,
-            insert_text_mode: Some(tower_lsp::lsp_types::InsertTextMode::ADJUST_INDENTATION),
+            insert_text_mode: Some(tower_lsp_server::ls_types::lsp::InsertTextMode::ADJUST_INDENTATION),
             additional_text_edits,
             preselect: completion_content.preselect,
             deprecated: completion_content.deprecated,

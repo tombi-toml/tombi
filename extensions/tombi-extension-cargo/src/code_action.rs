@@ -1,6 +1,6 @@
 use tombi_document_tree::{dig_keys, TableKind};
 use tombi_schema_store::{dig_accessors, matches_accessors, Accessor, AccessorContext};
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     CodeAction, CodeActionOrCommand, DocumentChanges, OneOf,
     OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
@@ -35,7 +35,7 @@ pub fn code_action(
     accessors: &[Accessor],
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
-) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -85,7 +85,7 @@ fn code_actions_for_workspace_cargo_toml(
     if let Some(action) =
         crate_version_code_action(text_document_uri, document_tree, accessors, contexts)
     {
-        code_actions.push(CodeActionOrCommand::CodeAction(action));
+        code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
     }
 
     code_actions
@@ -114,7 +114,7 @@ fn code_actions_for_crate_cargo_toml(
             accessors,
             contexts,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(action));
+            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
         }
 
         if let Some(action) = use_workspace_depencency_code_action(
@@ -124,7 +124,7 @@ fn code_actions_for_crate_cargo_toml(
             accessors,
             contexts,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(action));
+            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
         }
     }
 
@@ -132,7 +132,7 @@ fn code_actions_for_crate_cargo_toml(
     if let Some(action) =
         crate_version_code_action(text_document_uri, crate_document_tree, accessors, contexts)
     {
-        code_actions.push(CodeActionOrCommand::CodeAction(action));
+        code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
     }
 
     code_actions
@@ -196,7 +196,7 @@ fn workspace_code_action(
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::InheritFromWorkspace.to_string(),
-        kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+        kind: Some(tower_lsp_server::ls_types::lsp::CodeActionKind::REFACTOR_REWRITE),
         diagnostics: None,
         edit: Some(WorkspaceEdit {
             changes: None,
@@ -251,7 +251,7 @@ fn use_workspace_depencency_code_action(
             )?;
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
-                kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+                kind: Some(tower_lsp_server::ls_types::lsp::CodeActionKind::REFACTOR_REWRITE),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
                     changes: None,
@@ -304,7 +304,7 @@ fn use_workspace_depencency_code_action(
 
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
-                kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+                kind: Some(tower_lsp_server::ls_types::lsp::CodeActionKind::REFACTOR_REWRITE),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
                     changes: None,
@@ -342,7 +342,7 @@ fn crate_version_code_action(
         {
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::ConvertDependencyToTableFormat.to_string(),
-                kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+                kind: Some(tower_lsp_server::ls_types::lsp::CodeActionKind::REFACTOR_REWRITE),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
                     changes: None,

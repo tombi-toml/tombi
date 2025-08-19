@@ -2,7 +2,7 @@ use itertools::{Either, Itertools};
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_schema_store::SchemaContext;
-use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
+use tower_lsp_server::ls_types::lsp::{HoverParams, TextDocumentPositionParams};
 
 use crate::{
     backend,
@@ -14,7 +14,7 @@ use crate::{
 pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
-) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<HoverContent>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_hover");
     tracing::trace!(?params);
 

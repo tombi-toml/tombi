@@ -1289,11 +1289,11 @@ mod completion_labels {
                 use itertools::Itertools;
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    ls_types::lsp::{
                         CompletionItem, CompletionParams, DidOpenTextDocumentParams,
                         PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
-                        TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentPositionParams, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -1354,14 +1354,14 @@ mod completion_labels {
                     );
                 };
 
-                let toml_file_url = match $source_file_path {
+                let toml_file_uri = match $source_file_path {
                     Some(path) => {
-                        Url::from_file_path(path)
-                            .map_err(|_| "failed to convert temporary file path to URL")?
+                        tombi_uri::Uri::from_file_path(path)
+                            .map_err(|_| "failed to convert temporary file path to URI")?
                     },
                     None => {
-                        Url::from_file_path(temp_file.path())
-                            .map_err(|_| "failed to convert temporary file path to URL")?
+                        tombi_uri::Uri::from_file_path(temp_file.path())
+                            .map_err(|_| "failed to convert temporary file path to URI")?
                     }
                 };
 
@@ -1369,7 +1369,7 @@ mod completion_labels {
                     backend,
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
-                            uri: toml_file_url.clone(),
+                            uri: toml_file_uri.clone().into(),
                             language_id: "toml".to_string(),
                             version: 0,
                             text: toml_text.clone(),
@@ -1383,7 +1383,7 @@ mod completion_labels {
                     CompletionParams {
                         text_document_position: TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier {
-                                uri: toml_file_url,
+                                uri: toml_file_uri.into(),
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
@@ -1540,11 +1540,11 @@ mod completion_labels {
                 use itertools::Itertools;
                 use tombi_lsp::Backend;
                 use std::io::Write;
-                use tower_lsp::{
-                    lsp_types::{
+                use tower_lsp_server::{
+                    ls_types::lsp::{
                         CompletionItem, CompletionParams, DidOpenTextDocumentParams,
                         PartialResultParams, TextDocumentIdentifier, TextDocumentItem,
-                        TextDocumentPositionParams, Url, WorkDoneProgressParams,
+                        TextDocumentPositionParams, WorkDoneProgressParams,
                     },
                     LspService,
                 };
@@ -1630,7 +1630,7 @@ mod completion_labels {
                     );
                 };
 
-                let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
+                let Ok(toml_file_uri) = tombi_uri::Uri::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
 
@@ -1638,7 +1638,7 @@ mod completion_labels {
                     backend,
                     DidOpenTextDocumentParams {
                         text_document: TextDocumentItem {
-                            uri: toml_file_url.clone(),
+                            uri: toml_file_uri.clone().into(),
                             language_id: "toml".to_string(),
                             version: 0,
                             text: toml_text.clone(),
@@ -1652,7 +1652,7 @@ mod completion_labels {
                     CompletionParams {
                         text_document_position: TextDocumentPositionParams {
                             text_document: TextDocumentIdentifier {
-                                uri: toml_file_url,
+                                uri: toml_file_uri.into(),
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))

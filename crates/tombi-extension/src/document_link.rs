@@ -9,9 +9,9 @@ pub struct DocumentLink {
     pub tooltip: Cow<'static, str>,
 }
 
-impl From<DocumentLink> for tower_lsp::lsp_types::DocumentLink {
+impl From<DocumentLink> for tower_lsp_server::ls_types::lsp::DocumentLink {
     fn from(value: DocumentLink) -> Self {
-        tower_lsp::lsp_types::DocumentLink {
+        tower_lsp_server::ls_types::lsp::DocumentLink {
             range: value.range.into(),
             target: Some(value.target.into()),
             tooltip: Some(value.tooltip.into_owned()),

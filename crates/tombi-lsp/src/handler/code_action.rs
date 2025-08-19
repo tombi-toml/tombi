@@ -8,12 +8,12 @@ use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{
     build_accessor_contexts, get_accessors, get_completion_keys_with_context,
 };
-use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
+use tower_lsp_server::ls_types::lsp::{CodeActionOrCommand, CodeActionParams};
 
 pub async fn handle_code_action(
     backend: &Backend,
     params: CodeActionParams,
-) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_code_action");
     tracing::trace!(?params);
 

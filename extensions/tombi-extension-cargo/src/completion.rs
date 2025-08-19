@@ -45,7 +45,7 @@ pub async fn completion(
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
@@ -85,7 +85,7 @@ async fn completion_workspace(
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["workspace", "dependencies", _]) {
         if let Some(Accessor::Key(crate_name)) = accessors.last() {
             return complete_crate_version(
@@ -148,7 +148,7 @@ async fn completion_member(
     accessors: &[Accessor],
     completion_hint: Option<CompletionHint>,
     toml_version: TomlVersion,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["dependencies", _, "version"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "version"])
         || matches_accessors!(accessors, ["build-dependencies", _, "version"])
@@ -220,7 +220,7 @@ async fn complete_crate_version(
     accessors: &[Accessor],
     position: tombi_text::Position,
     completion_hint: Option<CompletionHint>,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     let version_value = match dig_accessors(document_tree, accessors) {
         Some((_, tombi_document_tree::Value::String(value_string))) => Some(value_string),
         Some((_, tombi_document_tree::Value::Incomplete { .. })) => None,
@@ -247,16 +247,16 @@ async fn complete_crate_version(
                 deprecated: None,
                 edit: match version_value {
                     Some(value) => Some(tombi_extension::CompletionEdit {
-                        text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                            tower_lsp::lsp_types::TextEdit {
+                        text_edit: tower_lsp_server::ls_types::lsp::CompletionTextEdit::Edit(
+                            tower_lsp_server::ls_types::lsp::TextEdit {
                                 range: tombi_text::Range::at(position).into(),
                                 new_text: format!("\"{ver}\""),
                             },
                         ),
                         insert_text_format: Some(
-                            tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT,
+                            tower_lsp_server::ls_types::lsp::InsertTextFormat::PLAIN_TEXT,
                         ),
-                        additional_text_edits: Some(vec![tower_lsp::lsp_types::TextEdit {
+                        additional_text_edits: Some(vec![tower_lsp_server::ls_types::lsp::TextEdit {
                             range: value.range().into(),
                             new_text: "".to_string(),
                         }]),
@@ -284,7 +284,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
     position: tombi_text::Position,
     toml_version: TomlVersion,
     editing_feature_string: Option<&'a tombi_document_tree::String>,
-) -> tombi_future::BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error>>
+) -> tombi_future::BoxFuture<'b, Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error>>
 {
     async move {
         // Check if this is a path dependency
@@ -399,14 +399,14 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 schema_uri: None,
                 deprecated: None,
                 edit: editing_feature_string.map(|value| tombi_extension::CompletionEdit {
-                    text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                        tower_lsp::lsp_types::TextEdit {
+                    text_edit: tower_lsp_server::ls_types::lsp::CompletionTextEdit::Edit(
+                        tower_lsp_server::ls_types::lsp::TextEdit {
                             range: tombi_text::Range::at(position).into(),
                             new_text: format!("\"{feature}\""),
                         },
                     ),
-                    insert_text_format: Some(tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT),
-                    additional_text_edits: Some(vec![tower_lsp::lsp_types::TextEdit {
+                    insert_text_format: Some(tower_lsp_server::ls_types::lsp::InsertTextFormat::PLAIN_TEXT),
+                    additional_text_edits: Some(vec![tower_lsp_server::ls_types::lsp::TextEdit {
                         range: value.range().into(),
                         new_text: "".to_string(),
                     }]),

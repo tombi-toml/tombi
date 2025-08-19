@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::DidChangeConfigurationParams;
+use tower_lsp_server::ls_types::lsp::DidChangeConfigurationParams;
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_did_change_configuration(params: DidChangeConfigurationParams) {

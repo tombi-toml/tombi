@@ -109,7 +109,7 @@ tombi-uri = { path = "crates/tombi-uri" }
 tombi-validator = { path = "crates/tombi-validator" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
-tower-lsp = { version = "0.20.0" }
+tower-lsp-server = { version = "0.22.1" }
 tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 typed-builder = "0.21.0"
@@ -124,3 +124,6 @@ zip = { version = "2.3.0" }
 
 [workspace.metadata.cargo-shear]
 ignored = ["semver", "tracing"]
+
+[patch.crates-io]
+tower-lsp-server = { branch = "main", git = "https://github.com/tower-lsp-community/tower-lsp-server" }

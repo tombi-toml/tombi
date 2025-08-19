@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{SemanticTokens, SemanticTokensParams, SemanticTokensResult};
+use tower_lsp_server::ls_types::lsp::{SemanticTokens, SemanticTokensParams, SemanticTokensResult};
 
 use crate::{
     backend::Backend,
@@ -9,7 +9,7 @@ use crate::{
 pub async fn handle_semantic_tokens_full(
     backend: &Backend,
     params: SemanticTokensParams,
-) -> Result<Option<SemanticTokensResult>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<SemanticTokensResult>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_semantic_tokens_full");
     tracing::trace!(?params);
 

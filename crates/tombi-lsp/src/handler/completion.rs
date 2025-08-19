@@ -2,7 +2,7 @@ use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::CompletionContent;
 use tombi_schema_store::get_accessors;
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     CompletionContext, CompletionParams, CompletionTriggerKind, TextDocumentPositionParams,
 };
 
@@ -19,7 +19,7 @@ use crate::{
 pub async fn handle_completion(
     backend: &backend::Backend,
     params: CompletionParams,
-) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<CompletionContent>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_completion");
     tracing::trace!(?params);
 

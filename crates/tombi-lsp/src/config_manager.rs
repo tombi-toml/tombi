@@ -5,7 +5,6 @@ use ahash::AHashMap;
 use serde_tombi::config::load_with_path;
 use tombi_config::Config;
 use tombi_schema_store::{SchemaStore, SchemaUri};
-use tower_lsp::lsp_types::Url;
 
 /// Holds a Config and its associated SchemaStore
 #[derive(Debug, Clone)]
@@ -221,8 +220,11 @@ impl ConfigManager {
     }
 
     /// Get the config path for a specific URL
-    pub async fn get_config_path_for_url(&self, url: &Url) -> Option<PathBuf> {
-        if let Ok(path) = url.to_file_path() {
+    pub async fn get_config_path_for_uri(
+        &self,
+        text_document_uri: &tombi_uri::Uri,
+    ) -> Option<PathBuf> {
+        if let Ok(path) = text_document_uri.to_file_path() {
             let source_config_paths = self.source_config_paths.read().await;
             if let Some(config_path) = source_config_paths.get(&path) {
                 return Some(config_path.clone());

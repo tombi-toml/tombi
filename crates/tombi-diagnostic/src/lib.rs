@@ -3,7 +3,7 @@ pub mod printer;
 
 pub use level::Level;
 pub use printer::Print;
-use tower_lsp::lsp_types::NumberOrString;
+use tower_lsp_server::ls_types::lsp::NumberOrString;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
@@ -98,18 +98,24 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
     }
 }
 
-impl From<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
+impl From<Diagnostic> for tower_lsp_server::ls_types::lsp::Diagnostic {
     fn from(diagnostic: Diagnostic) -> Self {
-        tower_lsp::lsp_types::Diagnostic {
+        let message = diagnostic.message().to_string();
+        tower_lsp_server::ls_types::lsp::Diagnostic {
             range: diagnostic.range().into(),
             severity: Some(match diagnostic.level() {
-                level::Level::WARNING => tower_lsp::lsp_types::DiagnosticSeverity::WARNING,
-                level::Level::ERROR => tower_lsp::lsp_types::DiagnosticSeverity::ERROR,
+                level::Level::WARNING => {
+                    tower_lsp_server::ls_types::lsp::DiagnosticSeverity::WARNING
+                }
+                level::Level::ERROR => tower_lsp_server::ls_types::lsp::DiagnosticSeverity::ERROR,
             }),
-            message: diagnostic.message().to_string(),
-            source: Some("Tombi".to_owned()),
             code: Some(NumberOrString::String(diagnostic.code)),
-            ..Default::default()
+            code_description: None,
+            source: Some("Tombi".to_owned()),
+            message,
+            related_information: None,
+            tags: None,
+            data: None,
         }
     }
 }

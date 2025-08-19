@@ -1,14 +1,14 @@
 use itertools::Either;
 use tombi_ast::DocumentSchemaCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
+use tower_lsp_server::ls_types::lsp::{DocumentLink, DocumentLinkParams};
 
 use crate::{config_manager::ConfigSchemaStore, Backend};
 
 pub async fn handle_document_link(
     backend: &Backend,
     params: DocumentLinkParams,
-) -> Result<Option<Vec<DocumentLink>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<DocumentLink>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_document_link");
     tracing::trace!(?params);
 

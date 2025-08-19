@@ -1,7 +1,7 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaContext;
-use tower_lsp::lsp_types::request::GotoTypeDefinitionParams;
+use tower_lsp_server::ls_types::request::GotoTypeDefinitionParams;
 
 use crate::{
     backend::Backend,
@@ -14,13 +14,13 @@ use crate::{
 pub async fn handle_goto_type_definition(
     backend: &Backend,
     params: GotoTypeDefinitionParams,
-) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_goto_type_definition");
     tracing::trace!(?params);
 
     let GotoTypeDefinitionParams {
         text_document_position_params:
-            tower_lsp::lsp_types::TextDocumentPositionParams {
+            tower_lsp_server::ls_types::lsp::TextDocumentPositionParams {
                 text_document,
                 position,
                 ..

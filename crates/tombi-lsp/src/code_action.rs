@@ -1,6 +1,6 @@
 use tombi_document_tree::TableKind;
 use tombi_schema_store::{dig_accessors, Accessor, AccessorContext, AccessorKeyKind};
-use tower_lsp::lsp_types::{
+use tower_lsp_server::ls_types::lsp::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };

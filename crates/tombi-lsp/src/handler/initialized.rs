@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::InitializedParams;
+use tower_lsp_server::ls_types::lsp::InitializedParams;
 
 use crate::{backend::Backend, handler::push_workspace_diagnostics};
 

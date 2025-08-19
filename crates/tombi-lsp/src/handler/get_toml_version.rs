@@ -1,6 +1,6 @@
 use itertools::Either;
 use tombi_config::TomlVersion;
-use tower_lsp::lsp_types::TextDocumentIdentifier;
+use tower_lsp_server::ls_types::lsp::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
@@ -8,7 +8,7 @@ use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 pub async fn handle_get_toml_version(
     backend: &Backend,
     params: TextDocumentIdentifier,
-) -> Result<GetTomlVersionResponse, tower_lsp::jsonrpc::Error> {
+) -> Result<GetTomlVersionResponse, tower_lsp_server::jsonrpc::Error> {
     tracing::info!("handle_get_toml_version");
     tracing::trace!(?params);
 

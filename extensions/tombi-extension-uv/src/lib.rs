@@ -201,7 +201,7 @@ fn goto_definition_for_member_pyproject_toml(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     jump_to_package: bool,
-) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "sources", _])
         || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
     {
@@ -225,7 +225,7 @@ fn goto_definition_for_workspace_pyproject_toml(
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp_server::jsonrpc::Error> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members"])
         || matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _])
     {
@@ -258,7 +258,7 @@ fn goto_workspace_member(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
     jump_to_package: bool,
-) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp_server::jsonrpc::Error> {
     assert!(
         matches_accessors!(accessors, ["tool", "uv", "sources", _])
             || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
@@ -336,7 +336,7 @@ fn goto_member_pyprojects(
     accessors: &[tombi_schema_store::Accessor],
     workspace_pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<Vec<PackageLocation>, tower_lsp::jsonrpc::Error> {
+) -> Result<Vec<PackageLocation>, tower_lsp_server::jsonrpc::Error> {
     let member_patterns = extract_member_patterns(workspace_document_tree, accessors);
     if member_patterns.is_empty() {
         return Ok(Vec::with_capacity(0));
