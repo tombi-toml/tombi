@@ -1,3 +1,5 @@
+use unicode_segmentation::UnicodeSegmentation;
+
 impl From<crate::Position> for tower_lsp::lsp_types::Position {
     fn from(val: crate::Position) -> Self {
         tower_lsp::lsp_types::Position {
@@ -33,17 +35,17 @@ impl crate::Offset {
         let mut line = 0;
         let mut column = 0;
         let mut offset = 0;
-        for (i, c) in source.char_indices() {
+        for (i, c) in UnicodeSegmentation::graphemes(source, true).enumerate() {
             if line == position.line && column == position.character {
                 return Self::new(offset as u32);
             }
-            if c == '\n' {
+            if matches!(c, "\n" | "\r\n") {
                 line += 1;
                 column = 0;
             } else {
                 column += 1;
             }
-            offset = i + c.len_utf8();
+            offset = i + c.len();
         }
         Self::new(offset as u32)
     }

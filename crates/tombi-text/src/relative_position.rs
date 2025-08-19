@@ -3,6 +3,8 @@ use std::{
     ops::{Add, AddAssign},
 };
 
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::{Column, Line};
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -15,8 +17,8 @@ impl RelativePosition {
     pub fn of(text: &str) -> Self {
         let mut line = 0;
         let mut column = 0;
-        for c in text.chars() {
-            if c == '\n' {
+        for c in UnicodeSegmentation::graphemes(text, true) {
+            if matches!(c, "\n" | "\r\n") {
                 line += 1;
                 column = 0;
             } else {

@@ -3918,6 +3918,7 @@ dependencies = [
  "serde",
  "tower-lsp",
  "tracing",
+ "unicode-segmentation",
  "wasm-bindgen",
 ]
 
