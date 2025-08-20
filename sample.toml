@@ -18,6 +18,7 @@ multi line basic string
 key4 = '''
 multi line literal string
 '''
+key5 = { key6 = 1 }
 
 # key values end dangling comment1
 # key values end dangling comment2

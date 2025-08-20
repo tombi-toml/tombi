@@ -1,7 +1,8 @@
+use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
+use crate::{Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyKind {
@@ -15,6 +16,7 @@ pub struct Key {
     kind: KeyKind,
     value: String,
     range: tombi_text::Range,
+    leading_comments: Vec<Comment>,
 }
 
 impl std::borrow::Borrow<String> for Key {
@@ -35,18 +37,32 @@ impl Key {
         value: String,
         range: tombi_text::Range,
         toml_version: TomlVersion,
+        leading_comments: Vec<Comment>,
     ) -> Result<Self, crate::Error> {
-        let key = Self { kind, value, range };
+        let key = Self {
+            kind,
+            value,
+            range,
+            leading_comments,
+        };
         key.try_to_raw_string(toml_version)?;
 
         Ok(key)
     }
+
+    #[inline]
     pub fn kind(&self) -> KeyKind {
         self.kind
     }
 
+    #[inline]
     pub fn value(&self) -> &str {
         &self.value
+    }
+
+    #[inline]
+    pub fn leading_comments(&self) -> &[Comment] {
+        self.leading_comments.as_ref()
     }
 
     pub fn to_raw_text(&self, toml_version: TomlVersion) -> String {
@@ -148,6 +164,7 @@ impl IntoDocumentTreeAndErrors<Option<Key>> for tombi_ast::Key {
             token.text().to_string(),
             token.range(),
             toml_version,
+            self.leading_comments().map(Comment::from).collect_vec(),
         ) {
             Ok(key) => DocumentTreeAndErrors {
                 tree: Some(key),
