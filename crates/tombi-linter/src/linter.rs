@@ -35,7 +35,7 @@ impl<'a> Linter<'a> {
 
     pub async fn lint(mut self, source: &str) -> Result<(), Vec<Diagnostic>> {
         self.source_text = Cow::Borrowed(source);
-        let (source_schema, document_tombi_comment_directive) = if let Some(parsed) =
+        let (source_schema, tombi_document_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
@@ -51,24 +51,20 @@ impl<'a> Linter<'a> {
                     .push(Diagnostic::new_warning(err.to_string(), err.code(), range));
             };
 
-            let document_tombi_comment_directive =
-                match tombi_comment_directive::try_get_document_tombi_comment_directive(&root).await
-                {
-                    Ok(Some(directive)) => Some(directive),
-                    Ok(None) => None,
-                    Err(diagnostics) => {
-                        self.diagnostics.extend(diagnostics);
-                        None
-                    }
-                };
+            let (tombi_document_comment_directive, diagnostics) =
+                tombi_comment_directive::get_tombi_document_comment_directive_and_diagnostics(
+                    &root,
+                )
+                .await;
+            self.diagnostics.extend(diagnostics);
 
-            (source_schema, document_tombi_comment_directive)
+            (source_schema, tombi_document_comment_directive)
         } else {
             (None, None)
         };
 
-        if let Some(document_tombi_comment_directive) = &document_tombi_comment_directive {
-            if let Some(lint) = &document_tombi_comment_directive.lint {
+        if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive {
+            if let Some(lint) = &tombi_document_comment_directive.lint {
                 if lint.disable == Some(true) {
                     match self.source_uri_or_path.map(|path| match path {
                         Either::Left(url) => url.to_string(),
@@ -88,7 +84,7 @@ impl<'a> Linter<'a> {
             }
         }
 
-        self.toml_version = document_tombi_comment_directive
+        self.toml_version = tombi_document_comment_directive
             .as_ref()
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
@@ -122,7 +118,7 @@ impl<'a> Linter<'a> {
                     root_schema: source_schema.root_schema.as_ref(),
                     sub_schema_uri_map: Some(&source_schema.sub_schema_uri_map),
                     store: self.schema_store,
-                    strict: document_tombi_comment_directive
+                    strict: tombi_document_comment_directive
                         .as_ref()
                         .and_then(|directive| {
                             directive.schema.as_ref().and_then(|schema| schema.strict)

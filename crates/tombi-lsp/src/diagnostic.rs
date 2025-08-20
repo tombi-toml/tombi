@@ -84,11 +84,11 @@ pub async fn get_diagnostics_result(
         .ok()
         .flatten();
 
-    let document_tombi_comment_directive =
-        tombi_comment_directive::get_document_tombi_comment_directive(&root).await;
+    let tombi_document_comment_directive =
+        tombi_comment_directive::get_tombi_document_comment_directive(&root).await;
     let (toml_version, _) = backend
         .source_toml_version(
-            document_tombi_comment_directive,
+            tombi_document_comment_directive,
             source_schema.as_ref(),
             &config,
         )

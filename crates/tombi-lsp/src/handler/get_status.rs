@@ -39,14 +39,14 @@ pub async fn handle_get_status(
         None => (None, None),
     };
 
-    let document_tombi_comment_directive = match root.as_ref() {
-        Some(root) => tombi_comment_directive::get_document_tombi_comment_directive(root).await,
+    let tombi_document_comment_directive = match root.as_ref() {
+        Some(root) => tombi_comment_directive::get_tombi_document_comment_directive(root).await,
         None => None,
     };
 
     let (toml_version, source) = backend
         .source_toml_version(
-            document_tombi_comment_directive,
+            tombi_document_comment_directive,
             source_schema.as_ref(),
             &config,
         )

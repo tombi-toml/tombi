@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub struct DocumentSchemaCommentDirective {
+pub struct SchemaDocumentCommentDirective {
     /// The range of the directive.
     ///
     /// ```toml
@@ -26,7 +26,7 @@ pub struct DocumentSchemaCommentDirective {
 }
 
 #[derive(Debug)]
-pub struct DocumentTombiCommentDirective {
+pub struct TombiDocumentCommentDirective {
     /// The range of the directive.
     ///
     /// ```toml

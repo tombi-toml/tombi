@@ -23,7 +23,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         project_root_path().join("json.tombi.dev/document-tombi-directive.json"),
         serde_json::to_string_pretty(
             &generator
-                .into_root_schema_for::<tombi_comment_directive::DocumentTombiCommentDirective>(),
+                .into_root_schema_for::<tombi_comment_directive::TombiDocumentCommentDirective>(),
         )? + "\n",
     )?;
     Ok(())

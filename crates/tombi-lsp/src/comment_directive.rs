@@ -1,4 +1,4 @@
-use tombi_ast::DocumentSchemaCommentDirective;
+use tombi_ast::SchemaDocumentCommentDirective;
 
 pub const DOCUMENT_SCHEMA_DIRECTIVE_TITLE: &str = "DocumentSchema Directive";
 pub const DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION: &str =
@@ -9,7 +9,7 @@ pub const DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION: &str =
     "Directives that apply only to this document.";
 
 #[derive(Debug)]
-pub enum DocumentTombiCommentDirective {
+pub enum TombiDocumentCommentDirective {
     Directive(DocumentTombiDirective),
     Content(DocumentTombiDirectiveContent),
 }
@@ -46,39 +46,39 @@ pub struct DocumentTombiDirectiveContent {
     pub content_range: tombi_text::Range,
 }
 
-pub fn get_document_schema_comment_directive(
+pub fn get_schema_document_comment_directive(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
-) -> Option<DocumentSchemaCommentDirective> {
-    if let Some(document_schema_comment_directive) =
-        root.document_schema_comment_directive(source_path)
+) -> Option<SchemaDocumentCommentDirective> {
+    if let Some(schema_document_comment_directive) =
+        root.schema_document_comment_directive(source_path)
     {
-        if document_schema_comment_directive
+        if schema_document_comment_directive
             .directive_range
             .contains(position)
-            || document_schema_comment_directive
+            || schema_document_comment_directive
                 .uri_range
                 .contains(position)
         {
-            return Some(document_schema_comment_directive);
+            return Some(schema_document_comment_directive);
         }
     }
     None
 }
 
-pub fn get_document_tombi_comment_directive(
+pub fn get_tombi_document_comment_directive(
     comment: &tombi_ast::Comment,
     position: tombi_text::Position,
-) -> Option<DocumentTombiCommentDirective> {
-    if let Some(tombi_ast::DocumentTombiCommentDirective {
+) -> Option<TombiDocumentCommentDirective> {
+    if let Some(tombi_ast::TombiDocumentCommentDirective {
         directive_range,
         content,
         content_range,
-    }) = comment.document_tombi_directive()
+    }) = comment.tombi_document_directive()
     {
         if directive_range.contains(position) {
-            return Some(DocumentTombiCommentDirective::Directive(
+            return Some(TombiDocumentCommentDirective::Directive(
                 DocumentTombiDirective { directive_range },
             ));
         }
@@ -86,7 +86,7 @@ pub fn get_document_tombi_comment_directive(
             let position_in_content =
                 tombi_text::Position::new(0, position.column - (directive_range.end.column + 1));
 
-            return Some(DocumentTombiCommentDirective::Content(
+            return Some(TombiDocumentCommentDirective::Content(
                 DocumentTombiDirectiveContent {
                     content,
                     position_in_content,
