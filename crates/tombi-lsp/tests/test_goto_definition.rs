@@ -339,7 +339,7 @@ mod goto_definition_tests {
                 match result {
                     Some(definition_links) => {
                         pretty_assertions::assert_eq!(
-                            definition_links.into_iter().map(|link| link.uri.to_file_path().unwrap()).collect::<Vec<_>>(),
+                            definition_links.into_iter().map(|link| link.uri.to_file_path().unwrap()).collect_vec(),
                             expected_paths,
                         );
                     },

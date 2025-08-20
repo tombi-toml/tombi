@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use futures::future::join_all;
+use itertools::Itertools;
 use tombi_x_keyword::StringFormat;
 
 use super::{ReferableValueSchemas, ValueSchema};
@@ -36,7 +37,7 @@ impl AllOfSchema {
                     .iter()
                     .filter_map(|value| value.as_object())
                     .filter_map(|obj| Referable::<ValueSchema>::new(obj, string_formats))
-                    .collect::<Vec<_>>()
+                    .collect_vec()
             })
             .unwrap_or_default();
 

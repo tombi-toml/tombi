@@ -168,7 +168,7 @@ macro_rules! test_lint {
                         errors
                             .into_iter()
                             .map(|error| error.message().to_string())
-                            .collect::<Vec<_>>(),
+                            .collect_vec(),
                         [$($error.to_string()),*].into_iter().collect::<Vec<String>>()
                     );
                 }

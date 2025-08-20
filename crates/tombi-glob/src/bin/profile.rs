@@ -29,7 +29,7 @@ fn main() {
         .unwrap_or(&default_include)
         .iter()
         .map(|s| s.as_str())
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     let exclude_patterns = config
         .exclude
@@ -37,7 +37,7 @@ fn main() {
         .unwrap_or_default()
         .iter()
         .map(|s| s.as_str())
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     println!("Include patterns: {:?}", include_patterns);
     println!("Exclude patterns: {:?}", exclude_patterns);

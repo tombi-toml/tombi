@@ -10,6 +10,7 @@ mod token_set;
 
 pub use error::{Error, ErrorKind};
 pub use event::Event;
+use itertools::Itertools;
 use output::Output;
 use parse::Parse;
 pub use parsed::Parsed;
@@ -35,7 +36,7 @@ pub fn parse_document_header_comments(source: &str) -> Parsed<SyntaxNode> {
 
     let (green_tree, errs) = build_green_tree(source, &tokens, output);
 
-    let mut errors = lexed.errors.into_iter().map(Into::into).collect::<Vec<_>>();
+    let mut errors = lexed.errors.into_iter().map(Into::into).collect_vec();
 
     errors.extend(errs);
 
@@ -58,7 +59,7 @@ pub fn parse_as<P: Parse>(
 
     let (green_tree, errs) = build_green_tree(source, &tokens, output);
 
-    let mut errors = lexed.errors.into_iter().map(Into::into).collect::<Vec<_>>();
+    let mut errors = lexed.errors.into_iter().map(Into::into).collect_vec();
 
     errors.extend(errs);
 

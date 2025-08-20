@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use itertools::Itertools;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -115,7 +116,7 @@ impl Validate for tombi_document_tree::Table {
                         .chain(std::iter::once(SchemaAccessor::Key(
                             accessor_raw_text.clone(),
                         )))
-                        .collect::<Vec<_>>();
+                        .collect_vec();
 
                     let mut matched_key = false;
                     if let Some(PropertySchema {
@@ -283,7 +284,7 @@ impl Validate for tombi_document_tree::Table {
                     let keys = self
                         .keys()
                         .map(|key| key.to_raw_text(schema_context.toml_version))
-                        .collect::<Vec<_>>();
+                        .collect_vec();
 
                     for required_key in required {
                         if !keys.contains(required_key) {
@@ -333,7 +334,7 @@ impl Validate for tombi_document_tree::Table {
                                 .chain(std::iter::once(SchemaAccessor::Key(
                                     key.to_raw_text(schema_context.toml_version),
                                 )))
-                                .collect::<Vec<_>>(),
+                                .collect_vec(),
                             None,
                             schema_context,
                         )

@@ -74,7 +74,7 @@ fn format_multiline_inline_table(
     table: &tombi_ast::InlineTable,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    table.leading_comments().collect::<Vec<_>>().format(f)?;
+    table.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
     write!(f, "{{{}", f.line_ending())?;
@@ -146,7 +146,7 @@ fn format_singleline_inline_table(
     table: &tombi_ast::InlineTable,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    table.leading_comments().collect::<Vec<_>>().format(f)?;
+    table.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
     write!(f, "{{{}", f.singleline_inline_table_brace_inner_space())?;

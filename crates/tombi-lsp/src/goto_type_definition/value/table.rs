@@ -65,7 +65,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     .iter()
                                     .cloned()
                                     .chain(std::iter::once(accessor))
-                                    .collect::<Vec<_>>();
+                                    .collect_vec();
 
                                 if let Some(PropertySchema {
                                     key_range,
@@ -291,7 +291,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     .iter()
                                     .cloned()
                                     .chain(std::iter::once(accessor))
-                                    .collect::<Vec<_>>(),
+                                    .collect_vec(),
                                 None,
                                 schema_context,
                             )

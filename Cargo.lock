@@ -3837,6 +3837,7 @@ name = "tombi-parser"
 version = "0.0.0-dev"
 dependencies = [
  "drop_bomb",
+ "itertools 0.14.0",
  "pretty_assertions",
  "textwrap",
  "thiserror 2.0.12",

@@ -457,7 +457,7 @@ macro_rules! test_document_link {
                             });
                             document_link
                         })
-                        .collect::<Vec<_>>()
+                        .collect_vec()
                 })
             });
 
