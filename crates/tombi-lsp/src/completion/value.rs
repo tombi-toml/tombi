@@ -173,7 +173,9 @@ pub fn type_hint_value(
             Some(
                 CompletionHint::InTableHeader
                 | CompletionHint::InArray
-                | CompletionHint::LastComma { .. },
+                | CompletionHint::LastComma { .. }
+                | CompletionHint::NeedHeadComma { .. }
+                | CompletionHint::NeedTailComma,
             )
             | None => true,
         };

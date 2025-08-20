@@ -95,7 +95,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         Some(
                                             CompletionHint::InArray
                                             | CompletionHint::InTableHeader
-                                            | CompletionHint::LastComma { .. },
+                                            | CompletionHint::LastComma { .. }
+                                            | CompletionHint::NeedHeadComma { .. }
+                                            | CompletionHint::NeedTailComma,
                                         ) => false,
                                         None => true,
                                     };
@@ -703,15 +705,6 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
     async move {
         if keys.len() == 1 {
             match completion_hint {
-                Some(CompletionHint::InArray | CompletionHint::LastComma { .. }) => {
-                    return type_hint_value(
-                        Some(key),
-                        position,
-                        schema_context.toml_version,
-                        None,
-                        completion_hint,
-                    )
-                }
                 Some(
                     CompletionHint::DotTrigger { range } | CompletionHint::EqualTrigger { range },
                 ) => {
@@ -743,7 +736,13 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                         }
                     }
                 }
-                None => {
+                Some(
+                    CompletionHint::InArray
+                    | CompletionHint::NeedHeadComma { .. }
+                    | CompletionHint::NeedTailComma
+                    | CompletionHint::LastComma { .. },
+                )
+                | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
                         return CompletionContent::new_magic_triggers(
                             &key.to_raw_text(schema_context.toml_version),
