@@ -195,6 +195,113 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_pyright_and_comma_select_include_group(
+                r#"
+                [dependency-groups]
+                dev=["pyright", █]
+                "#,
+                Select("include-group"),
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev=["pyright", { include-group$1 }$0]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_pyright_select_include_group(
+                r#"
+                [dependency-groups]
+                dev=["pyright" █]
+                "#,
+                Select("include-group"),
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev=["pyright", { include-group$1 }$0]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_pyright_and_newline_select_include_group(
+                r#"
+                [dependency-groups]
+                dev=[
+                  "pyright"
+                  █
+                ]
+                "#,
+                Select("include-group"),
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev=[
+                  "pyright",
+                  { include-group$1 }$0
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_pydantic_and_pyright_select_include_group(
+                r#"
+                [dependency-groups]
+                dev=[
+                  "pydantic"
+                  █
+                  "pyright"
+                ]
+                "#,
+                Select("include-group"),
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev=[
+                  "pydantic",
+                  { include-group$1 }$0
+                  "pyright"
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_pydantic_comma_and_pyright_select_include_group(
+                r#"
+                [dependency-groups]
+                dev=[
+                  "pydantic",
+                  █
+                  "pyright"
+                ]
+                "#,
+                Select("include-group"),
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev=[
+                  "pydantic",
+                  { include-group$1 },$0
+                  "pyright"
+                ]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_tool_mytool_key_select_dot(
                 r#"
                 [tool.mytool]
@@ -665,18 +772,33 @@ mod completion_edit {
 
                 let mut new_text = "".to_string();
                 match completion_edit.text_edit {
-                    tower_lsp::lsp_types::CompletionTextEdit::Edit(edit) => {
-                        for (index, line) in toml_text.split('\n').enumerate() {
+                    tower_lsp::lsp_types::CompletionTextEdit::Edit(text_edit) => {
+                        let mut cursor = toml_text.split('\n').enumerate();
+                        let start_line = text_edit.range.start.line as usize;
+                        let end_line = text_edit.range.end.line as usize;
+
+                        while let Some((index, line)) = cursor.next() {
                             if index != 0 {
                                 new_text.push('\n');
                             }
-                            if edit.range.start.line as usize == index {
-                                new_text.push_str(&line[..edit.range.start.character as usize]);
-                                new_text.push_str(&edit.new_text);
-                                new_text.push_str(&line[edit.range.end.character as usize..]);
+
+                            if start_line == index {
+                                new_text.push_str(&line[..text_edit.range.start.character as usize]);
+                                new_text.push_str(&text_edit.new_text);
+                                if index == end_line {
+                                    new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                    continue;
+                                }
+                                while let Some((index, line)) = cursor.next() {
+                                    if index == end_line {
+                                        new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                        break;
+                                    }
+                                }
                             } else {
                                 new_text.push_str(line);
                             }
+
                         }
                     }
                     _ => {
@@ -687,19 +809,33 @@ mod completion_edit {
                 if let Some(text_edits) = completion_edit.additional_text_edits {
                     for text_edit in text_edits {
                         let mut additional_new_text = "".to_string();
-                        for (index, line) in new_text.split('\n').enumerate() {
+                        let mut cursor = new_text.split('\n').enumerate();
+                        let start_line = text_edit.range.start.line as usize;
+                        let end_line = text_edit.range.end.line as usize;
+
+                        while let Some((index, line)) = cursor.next() {
                             if index != 0 {
                                 additional_new_text.push('\n');
                             }
-                            if text_edit.range.start.line as usize == index {
-                                additional_new_text
-                                    .push_str(&line[..text_edit.range.start.character as usize]);
+
+                            if start_line == index {
+                                additional_new_text.push_str(&line[..text_edit.range.start.character as usize]);
                                 additional_new_text.push_str(&text_edit.new_text);
-                                additional_new_text
-                                    .push_str(&line[text_edit.range.end.character as usize..]);
+                                if index == end_line {
+                                    additional_new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                    continue;
+                                }
+                                while let Some((index, line)) = cursor.next() {
+                                    if index == end_line {
+                                        additional_new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                        break;
+                                    }
+                                }
+                                continue
                             } else {
                                 additional_new_text.push_str(line);
                             }
+
                         }
                         new_text = additional_new_text;
                     }

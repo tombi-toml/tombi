@@ -17,7 +17,7 @@ use tombi_schema_store::{
     Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUri,
     ValueSchema,
 };
-use tombi_syntax::{SyntaxElement, SyntaxKind};
+use tombi_syntax::{Direction, SyntaxElement, SyntaxKind};
 
 pub fn extract_keys_and_hint(
     root: &tombi_ast::Root,
@@ -39,7 +39,7 @@ pub fn extract_keys_and_hint(
         _ => {}
     }
 
-    for node in ancestors_at_position(root.syntax(), position) {
+    for (index, node) in ancestors_at_position(root.syntax(), position).enumerate() {
         let ast_keys = if tombi_ast::Keys::cast(node.to_owned()).is_some() {
             if let Some(SyntaxElement::Token(last_token)) = node.last_child_or_token() {
                 if last_token.kind() == SyntaxKind::DOT {
@@ -116,6 +116,28 @@ pub fn extract_keys_and_hint(
                 array_of_table.header()
             }
         } else {
+            if index == 0 {
+                if let Some(child) = node.last_child() {
+                    if child.kind() == SyntaxKind::COMMA {
+                        completion_hint = Some(CompletionHint::LastComma {
+                            range: child.range(),
+                        });
+                    }
+                }
+
+                if let Some(sibling) = node
+                    .siblings_with_tokens(Direction::Prev)
+                    .skip_while(|node_or_token| node_or_token.range().contains(position))
+                    .next()
+                {
+                    if sibling.kind() == SyntaxKind::COMMA {
+                        completion_hint = Some(CompletionHint::LastComma {
+                            range: sibling.range(),
+                        });
+                    }
+                }
+            }
+
             continue;
         };
 

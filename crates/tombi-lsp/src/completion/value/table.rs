@@ -93,7 +93,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             | CompletionHint::EqualTrigger { range, .. },
                                         ) => range.end <= key.range().start,
                                         Some(
-                                            CompletionHint::InArray | CompletionHint::InTableHeader,
+                                            CompletionHint::InArray
+                                            | CompletionHint::InTableHeader
+                                            | CompletionHint::LastComma { .. }
+                                            | CompletionHint::NeedHeadComma { .. }
+                                            | CompletionHint::NeedTailComma,
                                         ) => false,
                                         None => true,
                                     };
@@ -701,15 +705,6 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
     async move {
         if keys.len() == 1 {
             match completion_hint {
-                Some(CompletionHint::InArray) => {
-                    return type_hint_value(
-                        Some(key),
-                        position,
-                        schema_context.toml_version,
-                        None,
-                        completion_hint,
-                    )
-                }
                 Some(
                     CompletionHint::DotTrigger { range } | CompletionHint::EqualTrigger { range },
                 ) => {
@@ -741,30 +736,19 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                         }
                     }
                 }
-                None => {
+                Some(
+                    CompletionHint::InArray
+                    | CompletionHint::NeedHeadComma { .. }
+                    | CompletionHint::NeedTailComma
+                    | CompletionHint::LastComma { .. },
+                )
+                | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
-                        match completion_hint {
-                            Some(
-                                CompletionHint::InTableHeader
-                                | CompletionHint::DotTrigger { .. }
-                                | CompletionHint::EqualTrigger { .. },
-                            )
-                            | None => {
-                                return CompletionContent::new_magic_triggers(
-                                    &key.to_raw_text(schema_context.toml_version),
-                                    position,
-                                    current_schema.map(|schema| schema.schema_uri.as_ref()),
-                                );
-                            }
-                            Some(CompletionHint::InArray) => {
-                                return vec![CompletionContent::new_type_hint_key(
-                                    &key.to_raw_text(schema_context.toml_version),
-                                    key.range(),
-                                    current_schema.map(|schema| schema.schema_uri.as_ref()),
-                                    completion_hint,
-                                )];
-                            }
-                        }
+                        return CompletionContent::new_magic_triggers(
+                            &key.to_raw_text(schema_context.toml_version),
+                            position,
+                            current_schema.map(|schema| schema.schema_uri.as_ref()),
+                        );
                     }
                 }
             }
