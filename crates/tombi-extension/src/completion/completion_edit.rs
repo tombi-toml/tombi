@@ -138,7 +138,9 @@ impl CompletionEdit {
         completion_hint: Option<CompletionHint>,
     ) -> Option<Self> {
         match completion_hint {
-            Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
+            Some(
+                CompletionHint::DotTrigger { range, .. } | CompletionHint::EqualTrigger { range },
+            ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: " = { $1 }$0".to_string(),
                     range: tombi_text::Range::at(position).into(),
@@ -150,16 +152,14 @@ impl CompletionEdit {
                 }]),
             }),
             Some(CompletionHint::InTableHeader) => None,
-            Some(CompletionHint::InArray | CompletionHint::EqualTrigger { .. }) | None => {
-                Some(Self {
-                    text_edit: CompletionTextEdit::Edit(TextEdit {
-                        new_text: "{ $1 }$0".to_string(),
-                        range: tombi_text::Range::at(position).into(),
-                    }),
-                    insert_text_format: Some(InsertTextFormat::SNIPPET),
-                    additional_text_edits: None,
-                })
-            }
+            Some(CompletionHint::InArray) | None => Some(Self {
+                text_edit: CompletionTextEdit::Edit(TextEdit {
+                    new_text: "{ $1 }$0".to_string(),
+                    range: tombi_text::Range::at(position).into(),
+                }),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                additional_text_edits: None,
+            }),
         }
     }
 
