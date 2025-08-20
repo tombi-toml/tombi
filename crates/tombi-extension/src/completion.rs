@@ -522,7 +522,10 @@ impl From<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             | CompletionContentPriority::TypeHintFalse => {
                 Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
                     detail: None,
-                    description: Some("Type Hint".to_string()),
+                    description: Some(match &completion_content.detail {
+                        Some(detail) if !detail.trim().is_empty() => detail.clone(),
+                        _ => "Type Hint".to_string(),
+                    }),
                 })
             }
         }
