@@ -664,7 +664,7 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn pyproject_project_dynamic_array_with_values(
+            async fn pyproject_project_dynamic_array_in_values_with_last_comma(
                 // Check `unique_items = true` case.
                 r#"
                 [project]
