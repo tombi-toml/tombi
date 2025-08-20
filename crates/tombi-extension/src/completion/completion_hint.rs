@@ -4,4 +4,5 @@ pub enum CompletionHint {
     InArray,
     DotTrigger { range: tombi_text::Range },
     EqualTrigger { range: tombi_text::Range },
+    LastComma { range: tombi_text::Range },
 }

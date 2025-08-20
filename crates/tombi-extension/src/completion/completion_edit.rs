@@ -78,7 +78,12 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InArray | CompletionHint::InTableHeader) | None => Some(Self {
+            Some(
+                CompletionHint::InArray
+                | CompletionHint::InTableHeader
+                | CompletionHint::LastComma { .. },
+            )
+            | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!("{quote}$1{quote}$0"),
                     range: tombi_text::Range::at(position).into(),
@@ -122,7 +127,12 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InArray | CompletionHint::InTableHeader) | None => Some(Self {
+            Some(
+                CompletionHint::InArray
+                | CompletionHint::InTableHeader
+                | CompletionHint::LastComma { .. },
+            )
+            | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: "[$1]$0".to_string(),
                     range: tombi_text::Range::at(position).into(),
@@ -152,7 +162,7 @@ impl CompletionEdit {
                 }]),
             }),
             Some(CompletionHint::InTableHeader) => None,
-            Some(CompletionHint::InArray) | None => Some(Self {
+            Some(CompletionHint::InArray | CompletionHint::LastComma { .. }) | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: "{ $1 }$0".to_string(),
                     range: tombi_text::Range::at(position).into(),
@@ -199,7 +209,7 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InTableHeader) | None => None,
+            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => None,
         }
     }
 
@@ -239,14 +249,16 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InTableHeader) | None => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("${{0:{key_name}}}"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
+            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text: format!("${{0:{key_name}}}"),
+                        range: key_range.into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits: None,
+                })
+            }
         }
     }
 

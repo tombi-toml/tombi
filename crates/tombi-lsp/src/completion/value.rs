@@ -170,7 +170,12 @@ pub fn type_hint_value(
             Some(
                 CompletionHint::DotTrigger { range, .. } | CompletionHint::EqualTrigger { range },
             ) => range.end == position || range.end <= key.range().start,
-            Some(CompletionHint::InTableHeader | CompletionHint::InArray) | None => true,
+            Some(
+                CompletionHint::InTableHeader
+                | CompletionHint::InArray
+                | CompletionHint::LastComma { .. },
+            )
+            | None => true,
         };
         if need_key_hint {
             completion_contents.push(CompletionContent::new_type_hint_key(

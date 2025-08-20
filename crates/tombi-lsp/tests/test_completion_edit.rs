@@ -195,6 +195,23 @@ mod completion_edit {
 
         test_completion_edit! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_pyright_and_comma_select_include_group(
+                r#"
+                [dependency-groups]
+                dev=["pyright", █]
+                "#,
+                Select("include-group"),
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev=["pyright", { include-group$1 }$0]
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
             async fn pyproject_tool_mytool_key_select_dot(
                 r#"
                 [tool.mytool]

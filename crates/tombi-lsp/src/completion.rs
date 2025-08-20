@@ -116,6 +116,13 @@ pub fn extract_keys_and_hint(
                 array_of_table.header()
             }
         } else {
+            if let Some(SyntaxElement::Token(last_token)) = node.last_child_or_token() {
+                if last_token.kind() == SyntaxKind::COMMA {
+                    completion_hint = Some(CompletionHint::LastComma {
+                        range: last_token.range(),
+                    });
+                }
+            }
             continue;
         };
 
