@@ -33,6 +33,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
         async move {
             if keys.is_empty() && self.kind() != tombi_document_tree::TableKind::InlineTable {
+                // Skip if the cursor is the end space of key value like:
+                //
+                // ```toml
+                // key = "value" █
+                // ```
                 for value in self.values() {
                     let end = value.range().end;
                     if end.line == position.line && end.column < position.column {
