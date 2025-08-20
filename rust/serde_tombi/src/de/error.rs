@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 pub struct Error(Box<InnerError>);

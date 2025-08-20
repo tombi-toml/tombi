@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,

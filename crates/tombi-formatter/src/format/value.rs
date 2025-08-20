@@ -6,6 +6,7 @@ mod inline_table;
 mod integer;
 mod string;
 
+use itertools::Itertools;
 use std::fmt::Write;
 
 use tombi_syntax::SyntaxToken;

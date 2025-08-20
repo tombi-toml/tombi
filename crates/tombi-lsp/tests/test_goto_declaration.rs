@@ -87,6 +87,7 @@ mod goto_declaration_tests {
         ) -> Ok([$($expected_file_path:expr),*$(,)?]);) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
+                use itertools::Itertools;
                 use tombi_lsp::handler::{handle_did_open, handle_goto_declaration};
                 use tombi_lsp::Backend;
                 use tower_lsp::{

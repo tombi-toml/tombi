@@ -128,6 +128,7 @@ macro_rules! test_lint {
         #[tokio::test]
         async fn $name() {
             use tombi_config::TomlVersion;
+            use itertools::Itertools;
 
             tombi_test_lib::init_tracing();
 

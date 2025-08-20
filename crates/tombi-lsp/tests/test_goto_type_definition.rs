@@ -149,6 +149,7 @@ mod goto_type_definition_tests {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
                 use std::io::Write;
+                use itertools::Itertools;
                 use tombi_lsp::handler::{handle_did_open, handle_goto_type_definition};
                 use tombi_lsp::Backend;
                 use tower_lsp::{

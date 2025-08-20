@@ -1,5 +1,6 @@
 use std::fmt::Write;
 
+use itertools::Itertools;
 use tombi_ast::AstNode;
 
 use crate::Format;
