@@ -193,6 +193,16 @@ impl Array {
         self.symbol_range
     }
 
+    #[inline]
+    pub fn leading_comments(&self) -> &[Comment] {
+        self.leading_comments.as_ref()
+    }
+
+    #[inline]
+    pub fn trailing_comment(&self) -> Option<&Comment> {
+        self.trailing_comment.as_ref()
+    }
+
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
         self.values.iter()
     }

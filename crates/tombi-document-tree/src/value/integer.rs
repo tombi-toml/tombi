@@ -50,6 +50,16 @@ impl Integer {
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.range()
     }
+
+    #[inline]
+    pub fn leading_comments(&self) -> &[Comment] {
+        self.leading_comments.as_ref()
+    }
+
+    #[inline]
+    pub fn trailing_comment(&self) -> Option<&Comment> {
+        self.trailing_comment.as_ref()
+    }
 }
 
 impl ValueImpl for Integer {
