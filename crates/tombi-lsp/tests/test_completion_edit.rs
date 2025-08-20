@@ -796,9 +796,6 @@ mod completion_edit {
                                     }
                                 }
                             }
-                            if end_line == index {
-                                new_text.push_str(&line[text_edit.range.end.character as usize..]);
-                            }
                             if (index < start_line) || (end_line < index) {
                                 new_text.push_str(line);
                             }
@@ -834,9 +831,6 @@ mod completion_edit {
                                         break;
                                     }
                                 }
-                            }
-                            if end_line == index {
-                                additional_new_text.push_str(&line[text_edit.range.end.character as usize..]);
                             }
                             if (index < start_line) || (end_line < index) {
                                 additional_new_text.push_str(line);
