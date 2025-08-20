@@ -9,7 +9,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
 
         let source_path = builder.text_document_uri.to_file_path().ok();
         let schema_comment_directive =
-            self.document_schema_comment_directive(source_path.as_deref());
+            self.schema_document_comment_directive(source_path.as_deref());
         if key_values.is_empty() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
@@ -26,7 +26,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             continue;
                         }
                     }
-                    if let Some(tombi_comment_directive) = comment.document_tombi_directive() {
+                    if let Some(tombi_comment_directive) = comment.tombi_document_directive() {
                         builder.add_comment_directive(
                             &comment,
                             &tombi_comment_directive.directive_range,
@@ -55,7 +55,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             continue;
                         }
                     }
-                    if let Some(tombi_comment_directive) = comment.document_tombi_directive() {
+                    if let Some(tombi_comment_directive) = comment.tombi_document_directive() {
                         builder.add_comment_directive(
                             &comment,
                             &tombi_comment_directive.directive_range,
