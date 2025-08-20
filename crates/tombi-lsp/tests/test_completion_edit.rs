@@ -795,10 +795,10 @@ mod completion_edit {
                                         break;
                                     }
                                 }
-                            }
-                            if (index < start_line) || (end_line < index) {
+                            } else {
                                 new_text.push_str(line);
                             }
+
                         }
                     }
                     _ => {
@@ -831,10 +831,11 @@ mod completion_edit {
                                         break;
                                     }
                                 }
-                            }
-                            if (index < start_line) || (end_line < index) {
+                                continue
+                            } else {
                                 additional_new_text.push_str(line);
                             }
+
                         }
                         new_text = additional_new_text;
                     }
