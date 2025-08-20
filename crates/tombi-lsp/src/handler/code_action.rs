@@ -72,6 +72,21 @@ pub async fn handle_code_action(
         return Ok(None);
     };
 
+    let mut code_actions = Vec::new();
+
+    // Try to create code actions using AST first
+    if let Some(code_action) =
+        dot_keys_to_inline_table_code_action(&text_document_uri, &root, position, &[], &[])
+    {
+        code_actions.push(code_action.into());
+    }
+    if let Some(code_action) =
+        inline_table_to_dot_keys_code_action(&text_document_uri, &root, position, &[], &[])
+    {
+        code_actions.push(code_action.into());
+    }
+
+    // Create document tree for other operations
     let Ok(document_tree) = root.try_into_document_tree(toml_version) else {
         return Ok(None);
     };
@@ -79,25 +94,6 @@ pub async fn handle_code_action(
     let accessors = get_accessors(&document_tree, &keys, position);
     let mut key_contexts = key_contexts.into_iter();
     let accessor_contexts = build_accessor_contexts(&accessors, &mut key_contexts);
-
-    let mut code_actions = Vec::new();
-
-    if let Some(code_action) = dot_keys_to_inline_table_code_action(
-        &text_document_uri,
-        &document_tree,
-        &accessors,
-        &accessor_contexts,
-    ) {
-        code_actions.push(code_action.into());
-    }
-    if let Some(code_action) = inline_table_to_dot_keys_code_action(
-        &text_document_uri,
-        &document_tree,
-        &accessors,
-        &accessor_contexts,
-    ) {
-        code_actions.push(code_action.into());
-    }
 
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
         &text_document_uri,
