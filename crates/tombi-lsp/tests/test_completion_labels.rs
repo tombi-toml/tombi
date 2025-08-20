@@ -941,6 +941,30 @@ mod completion_labels {
         }
 
         test_completion_labels! {
+         #[tokio::test]
+            async fn cargo_dependencies_tombi_date_time_features_with_workspace_eq_true_comma(
+                r#"
+                [dependencies]
+                tombi-date-time = { workspace = true, █ }
+                "#,
+                Source(project_root_path().join("crates/subcrate/Cargo.toml")),
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "branch",
+                "default-features",
+                "features",
+                "git",
+                "optional",
+                "package",
+                "path",
+                "registry",
+                "rev",
+                "tag",
+                "version",
+            ]);
+        }
+
+        test_completion_labels! {
             #[tokio::test]
             async fn cargo_dependencies_tombi_date_time_features_with_workspace(
                 r#"
