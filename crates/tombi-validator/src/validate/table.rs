@@ -127,34 +127,30 @@ impl Validate for tombi_document_tree::Table {
                         .get_mut(&SchemaAccessor::from(&accessor))
                     {
                         matche_key = true;
-                        match property_schema
+
+                        if let Ok(Some(current_schema)) = property_schema
                             .resolve(
                                 current_schema.schema_uri.clone(),
                                 current_schema.definitions.clone(),
                                 schema_context.store,
                             )
                             .await
+                            .inspect_err(|err| tracing::warn!("{err}"))
                         {
-                            Ok(Some(current_schema)) => {
-                                if current_schema.value_schema.deprecated().await == Some(true) {
-                                    crate::Warning {
-                                        kind: Box::new(crate::WarningKind::Deprecated(
-                                            SchemaAccessors::new(new_accessors.clone()),
-                                        )),
-                                        range: key.range() + value.range(),
-                                    }
-                                    .set_diagnostics(&mut diagnostics);
+                            if current_schema.value_schema.deprecated().await == Some(true) {
+                                crate::Warning {
+                                    kind: Box::new(crate::WarningKind::Deprecated(
+                                        SchemaAccessors::new(new_accessors.clone()),
+                                    )),
+                                    range: key.range() + value.range(),
                                 }
-                                if let Err(schema_diagnostics) = value
-                                    .validate(&new_accessors, Some(&current_schema), schema_context)
-                                    .await
-                                {
-                                    diagnostics.extend(schema_diagnostics);
-                                }
+                                .set_diagnostics(&mut diagnostics);
                             }
-                            Ok(None) => {}
-                            Err(err) => {
-                                tracing::warn!("{}", err);
+                            if let Err(schema_diagnostics) = value
+                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .await
+                            {
+                                diagnostics.extend(schema_diagnostics);
                             }
                         }
                     }
@@ -173,40 +169,34 @@ impl Validate for tombi_document_tree::Table {
                             };
                             if pattern.is_match(&accessor_raw_text) {
                                 matche_key = true;
-                                match property_schema
+                                if let Ok(Some(current_schema)) = property_schema
                                     .resolve(
                                         current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
                                     )
                                     .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
                                 {
-                                    Ok(Some(current_schema)) => {
-                                        if current_schema.value_schema.deprecated().await
-                                            == Some(true)
-                                        {
-                                            crate::Warning {
-                                                kind: Box::new(crate::WarningKind::Deprecated(
-                                                    SchemaAccessors::new(new_accessors.clone()),
-                                                )),
-                                                range: key.range() + value.range(),
-                                            }
-                                            .set_diagnostics(&mut diagnostics);
+                                    if current_schema.value_schema.deprecated().await == Some(true)
+                                    {
+                                        crate::Warning {
+                                            kind: Box::new(crate::WarningKind::Deprecated(
+                                                SchemaAccessors::new(new_accessors.clone()),
+                                            )),
+                                            range: key.range() + value.range(),
                                         }
-                                        if let Err(schema_diagnostics) = value
-                                            .validate(
-                                                &new_accessors,
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await
-                                        {
-                                            diagnostics.extend(schema_diagnostics);
-                                        }
+                                        .set_diagnostics(&mut diagnostics);
                                     }
-                                    Ok(None) => {}
-                                    Err(err) => {
-                                        tracing::warn!("{}", err);
+                                    if let Err(schema_diagnostics) = value
+                                        .validate(
+                                            &new_accessors,
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await
+                                    {
+                                        diagnostics.extend(schema_diagnostics);
                                     }
                                 }
                             } else if !table_schema
@@ -235,40 +225,30 @@ impl Validate for tombi_document_tree::Table {
                         {
                             let mut referable_schema =
                                 referable_additional_property_schema.write().await;
-                            match referable_schema
+                            if let Ok(Some(current_schema)) = referable_schema
                                 .resolve(
                                     current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
                                     schema_context.store,
                                 )
                                 .await
+                                .inspect_err(|err| tracing::warn!("{err}"))
                             {
-                                Ok(Some(current_schema)) => {
-                                    if current_schema.value_schema.deprecated().await == Some(true)
-                                    {
-                                        crate::Warning {
-                                            kind: Box::new(crate::WarningKind::Deprecated(
-                                                SchemaAccessors::new(new_accessors.clone()),
-                                            )),
-                                            range: key.range() + value.range(),
-                                        }
-                                        .set_diagnostics(&mut diagnostics);
+                                if current_schema.value_schema.deprecated().await == Some(true) {
+                                    crate::Warning {
+                                        kind: Box::new(crate::WarningKind::Deprecated(
+                                            SchemaAccessors::new(new_accessors.clone()),
+                                        )),
+                                        range: key.range() + value.range(),
                                     }
-
-                                    if let Err(schema_diagnostics) = value
-                                        .validate(
-                                            &new_accessors,
-                                            Some(&current_schema),
-                                            schema_context,
-                                        )
-                                        .await
-                                    {
-                                        diagnostics.extend(schema_diagnostics);
-                                    }
+                                    .set_diagnostics(&mut diagnostics);
                                 }
-                                Ok(None) => {}
-                                Err(err) => {
-                                    tracing::warn!("{}", err);
+
+                                if let Err(schema_diagnostics) = value
+                                    .validate(&new_accessors, Some(&current_schema), schema_context)
+                                    .await
+                                {
+                                    diagnostics.extend(schema_diagnostics);
                                 }
                             }
                         }

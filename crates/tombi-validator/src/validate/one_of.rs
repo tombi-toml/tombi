@@ -23,20 +23,18 @@ where
         let mut schemas = one_of_schema.schemas.write().await;
         let mut each_diagnostics = Vec::with_capacity(schemas.len());
         for referable_schema in schemas.iter_mut() {
-            let current_schema = match referable_schema
+            let current_schema = if let Ok(Some(current_schema)) = referable_schema
                 .resolve(
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
                 .await
+                .inspect_err(|err| tracing::warn!("{err}"))
             {
-                Ok(Some(current_schema)) => current_schema,
-                Ok(None) => continue,
-                Err(err) => {
-                    tracing::warn!("{}", err);
-                    continue;
-                }
+                current_schema
+            } else {
+                continue;
             };
 
             let diagnostics = match (value.value_type(), current_schema.value_schema.as_ref()) {
