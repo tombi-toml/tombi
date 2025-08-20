@@ -126,7 +126,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     .await;
 
                                 if array_schema.unique_items == Some(true) {
-                                    let values = self
+                                    let unique_values = self
                                         .values()
                                         .iter()
                                         .filter_map(Option::<LiteralValueRef>::from)
@@ -137,7 +137,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         .into_iter()
                                         .filter(|completion| {
                                             !(completion.kind.is_literal()
-                                                && values.contains(&completion.label))
+                                                && unique_values.contains(&completion.label))
                                         })
                                         .collect_vec();
                                 }
