@@ -68,7 +68,7 @@ fn format_multiline_array(
     array: &tombi_ast::Array,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    array.leading_comments().collect::<Vec<_>>().format(f)?;
+    array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
     write!(f, "[{}", f.line_ending())?;
@@ -140,7 +140,7 @@ fn format_singleline_array(
     array: &tombi_ast::Array,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    array.leading_comments().collect::<Vec<_>>().format(f)?;
+    array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
     write!(f, "[{}", f.singleline_array_bracket_inner_space())?;

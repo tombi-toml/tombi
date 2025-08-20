@@ -333,7 +333,7 @@ fn fmt_composit_types(types: &[ValueType], separator: char, is_root: bool) -> St
                 true
             }
         })
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     if nullable {
         if non_null_types.len() == 1 {

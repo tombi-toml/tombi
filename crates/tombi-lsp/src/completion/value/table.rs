@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use futures::future::join_all;
+use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
@@ -129,7 +130,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                     .iter()
                                                     .cloned()
                                                     .chain(std::iter::once(accessor))
-                                                    .collect::<Vec<_>>(),
+                                                    .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
                                                 completion_hint,
@@ -419,7 +420,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         .await
                                         .keys()
                                         .map(ToString::to_string)
-                                        .collect::<Vec<_>>();
+                                        .collect_vec();
                                     completion_contents.push(CompletionContent::new_pattern_key(
                                         patterns.as_ref(),
                                         position,
@@ -779,7 +780,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                     .chain(std::iter::once(Accessor::Key(
                         key.to_raw_text(schema_context.toml_version),
                     )))
-                    .collect::<Vec<_>>(),
+                    .collect_vec(),
                 current_schema,
                 schema_context,
                 completion_hint,

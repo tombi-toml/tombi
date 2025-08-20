@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
@@ -69,7 +70,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             .await
                                             .keys()
                                             .map(ToString::to_string)
-                                            .collect::<Vec<_>>(),
+                                            .collect_vec(),
                                     ),
                                     None => None,
                                 };
@@ -105,7 +106,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     .iter()
                                                     .cloned()
                                                     .chain(std::iter::once(accessor))
-                                                    .collect::<Vec<_>>(),
+                                                    .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
                                             )
@@ -161,7 +162,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 .iter()
                                                 .cloned()
                                                 .chain(std::iter::once(accessor))
-                                                .collect::<Vec<_>>(),
+                                                .collect_vec(),
                                             None,
                                             schema_context,
                                         )
@@ -212,7 +213,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                                 .iter()
                                                                 .cloned()
                                                                 .chain(std::iter::once(accessor))
-                                                                .collect::<Vec<_>>(),
+                                                                .collect_vec(),
                                                             Some(&current_schema),
                                                             schema_context,
                                                         )
@@ -278,7 +279,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                             .iter()
                                                             .cloned()
                                                             .chain(std::iter::once(accessor))
-                                                            .collect::<Vec<_>>(),
+                                                            .collect_vec(),
                                                         None,
                                                         schema_context,
                                                     )
@@ -333,7 +334,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     .iter()
                                                     .cloned()
                                                     .chain(std::iter::once(accessor.clone()))
-                                                    .collect::<Vec<_>>(),
+                                                    .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
                                             )
@@ -387,7 +388,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             .iter()
                                             .cloned()
                                             .chain(std::iter::once(accessor))
-                                            .collect::<Vec<_>>(),
+                                            .collect_vec(),
                                         None,
                                         schema_context,
                                     )
@@ -465,7 +466,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     .iter()
                                     .cloned()
                                     .chain(std::iter::once(accessor))
-                                    .collect::<Vec<_>>(),
+                                    .collect_vec(),
                                 None,
                                 schema_context,
                             )

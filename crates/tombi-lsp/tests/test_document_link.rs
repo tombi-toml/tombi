@@ -400,6 +400,7 @@ macro_rules! test_document_link {
         #[tokio::test]
         async fn $name() -> Result<(), Box<dyn std::error::Error>> {
             // Use handler functions from tombi_lsp
+            use itertools::Itertools;
             use tombi_lsp::handler::{handle_did_open, handle_document_link};
             use tombi_lsp::Backend;
             use tower_lsp::{
@@ -457,7 +458,7 @@ macro_rules! test_document_link {
                             });
                             document_link
                         })
-                        .collect::<Vec<_>>()
+                        .collect_vec()
                 })
             });
 

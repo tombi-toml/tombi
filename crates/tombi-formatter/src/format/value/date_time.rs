@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::fmt::Write;
 
 use tombi_ast::AstNode;
@@ -9,7 +10,7 @@ macro_rules! impl_date_time_format {
     (impl Format for $type:ty;) => {
         impl Format for $type {
             fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-                self.leading_comments().collect::<Vec<_>>().format(f)?;
+                self.leading_comments().collect_vec().format(f)?;
 
                 let token = self.token().unwrap();
                 let mut text = token.text().to_string();

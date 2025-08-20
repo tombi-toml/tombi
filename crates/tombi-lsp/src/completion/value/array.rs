@@ -215,7 +215,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     .iter()
                                     .cloned()
                                     .chain(std::iter::once(accessor))
-                                    .collect::<Vec<_>>(),
+                                    .collect_vec(),
                                 None,
                                 schema_context,
                                 completion_hint,

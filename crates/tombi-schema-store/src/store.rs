@@ -6,7 +6,7 @@ use crate::{
     SchemaUri, SourceSchema, ValueSchema,
 };
 use ahash::AHashMap;
-use itertools::Either;
+use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
 use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
@@ -581,7 +581,7 @@ impl SchemaStore {
                         .unwrap_or(false)
                 })
             })
-            .collect::<Vec<_>>();
+            .collect_vec();
 
         let mut source_schema: Option<SourceSchema> = None;
         for matching_schema in matching_schemas {

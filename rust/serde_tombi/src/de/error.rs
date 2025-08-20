@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 pub struct Error(Box<InnerError>);
@@ -16,10 +18,10 @@ enum InnerError {
     #[error(transparent)]
     DocumentDeserialize(#[from] tombi_document::de::Error),
 
-    #[error("{}", .0.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
+    #[error("{}", .0.iter().map(|e| e.to_string()).collect_vec().join(", "))]
     Parser(Vec<tombi_parser::Error>),
 
-    #[error("{}", .0.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
+    #[error("{}", .0.iter().map(|e| e.to_string()).collect_vec().join(", "))]
     DocumentTree(Vec<tombi_document_tree::Error>),
 }
 

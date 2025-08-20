@@ -1,12 +1,13 @@
 use std::fmt::Write;
 
+use itertools::Itertools;
 use tombi_ast::AstNode;
 
 use crate::Format;
 
 impl Format for tombi_ast::KeyValue {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        self.leading_comments().collect::<Vec<_>>().format(f)?;
+        self.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
         self.keys().unwrap().format(f)?;
