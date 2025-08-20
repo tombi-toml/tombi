@@ -117,7 +117,7 @@ impl Validate for tombi_document_tree::Table {
                         )))
                         .collect::<Vec<_>>();
 
-                    let mut matche_key = false;
+                    let mut matched_key = false;
                     if let Some(PropertySchema {
                         property_schema, ..
                     }) = table_schema
@@ -126,7 +126,7 @@ impl Validate for tombi_document_tree::Table {
                         .await
                         .get_mut(&SchemaAccessor::from(&accessor))
                     {
-                        matche_key = true;
+                        matched_key = true;
 
                         if let Ok(Some(current_schema)) = property_schema
                             .resolve(
@@ -168,7 +168,7 @@ impl Validate for tombi_document_tree::Table {
                                 continue;
                             };
                             if pattern.is_match(&accessor_raw_text) {
-                                matche_key = true;
+                                matched_key = true;
                                 if let Ok(Some(current_schema)) = property_schema
                                     .resolve(
                                         current_schema.schema_uri.clone(),
@@ -219,7 +219,7 @@ impl Validate for tombi_document_tree::Table {
                             }
                         }
                     }
-                    if !matche_key {
+                    if !matched_key {
                         if let Some((_, referable_additional_property_schema)) =
                             &table_schema.additional_property_schema
                         {
