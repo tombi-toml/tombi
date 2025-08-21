@@ -121,14 +121,30 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         schema_context,
                                         if self.kind() == ArrayKind::Array {
                                             if new_item_index == 0 {
+                                                let add_trailing_comma = if self.len() == 0
+                                                    || matches!(
+                                                        completion_hint,
+                                                        Some(CompletionHint::Comma {
+                                                            trailing_comma: Some(_),
+                                                            ..
+                                                        })
+                                                    ) {
+                                                    None
+                                                } else {
+                                                    Some(AddTrailingComma)
+                                                };
+
                                                 Some(CompletionHint::InArray {
                                                     add_leading_comma: None,
-                                                    add_trailing_comma: None,
+                                                    add_trailing_comma,
                                                 })
                                             } else {
                                                 let add_leading_comma = if matches!(
                                                     completion_hint,
-                                                    Some(CompletionHint::LastComma { .. })
+                                                    Some(CompletionHint::Comma {
+                                                        leading_comma: Some(_),
+                                                        ..
+                                                    })
                                                 ) {
                                                     None
                                                 } else if let Some(start_position) =
@@ -141,15 +157,18 @@ impl FindCompletionContents for tombi_document_tree::Array {
 
                                                 let add_trailing_comma = if matches!(
                                                     completion_hint,
-                                                    Some(CompletionHint::LastComma { .. })
+                                                    Some(CompletionHint::Comma {
+                                                        trailing_comma: Some(_),
+                                                        ..
+                                                    })
                                                 ) {
-                                                    if new_item_index == self.len() {
-                                                        None
-                                                    } else {
-                                                        Some(AddTrailingComma)
-                                                    }
-                                                } else {
                                                     None
+                                                } else {
+                                                    if new_item_index != self.len() {
+                                                        Some(AddTrailingComma)
+                                                    } else {
+                                                        None
+                                                    }
                                                 };
 
                                                 Some(CompletionHint::InArray {
