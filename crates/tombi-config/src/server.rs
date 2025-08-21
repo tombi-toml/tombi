@@ -64,7 +64,7 @@ impl LspOptions {
     }
 
     pub fn diagnostic(&self) -> Option<&LspDiagnostic> {
-        self.diagnostic.as_ref().or_else(|| {
+        self.diagnostic.as_ref().or({
             #[allow(deprecated)]
             self.diagnostics.as_ref()
         })

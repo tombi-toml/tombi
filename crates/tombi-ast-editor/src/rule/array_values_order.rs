@@ -7,7 +7,7 @@ use tombi_x_keyword::ArrayValuesOrder;
 
 use crate::node::make_comma;
 
-use super::array_comma_tailing_comment;
+use super::array_comma_trailing_comment;
 
 pub async fn array_values_order<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
@@ -65,7 +65,7 @@ pub async fn array_values_order<'a>(
     if let Some((_, comma)) = sorted_values_with_comma.last_mut() {
         if !is_last_comma {
             if let Some(last_comma) = comma {
-                if last_comma.tailing_comment().is_none()
+                if last_comma.trailing_comment().is_none()
                     && last_comma.leading_comments().collect_vec().is_empty()
                 {
                     *comma = None;
@@ -75,7 +75,7 @@ pub async fn array_values_order<'a>(
     }
 
     for (value, comma) in &sorted_values_with_comma {
-        changes.extend(array_comma_tailing_comment(
+        changes.extend(array_comma_trailing_comment(
             value,
             comma.as_ref(),
             schema_context,
@@ -99,7 +99,7 @@ pub async fn array_values_order<'a>(
     if !is_last_comma {
         if let Some(tombi_syntax::SyntaxElement::Node(node)) = new.last() {
             if let Some(comma) = tombi_ast::Comma::cast(node.clone()) {
-                if comma.tailing_comment().is_none()
+                if comma.trailing_comment().is_none()
                     && comma.leading_comments().collect_vec().is_empty()
                 {
                     changes.push(crate::Change::Remove {

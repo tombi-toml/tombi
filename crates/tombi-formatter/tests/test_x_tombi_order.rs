@@ -132,10 +132,10 @@ mod table_keys_order {
                   "tombi-formatter>=0.0.0",
                   # maturin leading comment1
                   # maturin leading comment2
-                  "maturin>=1.5,<2.0", # maturin tailing comment
+                  "maturin>=1.5,<2.0", # maturin trailing comment
                   # tombi-cli leading comment1
                   # tombi-cli leading comment2
-                  "tombi-cli>=0.0.0" # tombi-cli tailing comment
+                  "tombi-cli>=0.0.0" # tombi-cli trailing comment
                 ]
                 "#,
                 pyproject_schema_path(),
@@ -149,10 +149,10 @@ mod table_keys_order {
                 dependencies = [
                   # maturin leading comment1
                   # maturin leading comment2
-                  "maturin>=1.5,<2.0",  # maturin tailing comment
+                  "maturin>=1.5,<2.0",  # maturin trailing comment
                   # tombi-cli leading comment1
                   # tombi-cli leading comment2
-                  "tombi-cli>=0.0.0",  # tombi-cli tailing comment
+                  "tombi-cli>=0.0.0",  # tombi-cli trailing comment
                   "tombi-formatter>=0.0.0",
                   "tombi-linter>=0.0.0",
                 ]
@@ -172,7 +172,7 @@ mod table_keys_order {
 
                 [dependency-groups]
                 dev = [
-                  "pytest>=8.3.3", # pytest tailing comment
+                  "pytest>=8.3.3", # pytest trailing comment
                   "ruff>=0.7.4"
                 ]
                 "#,
@@ -187,7 +187,7 @@ mod table_keys_order {
 
                 [dependency-groups]
                 dev = [
-                  "pytest>=8.3.3",  # pytest tailing comment
+                  "pytest>=8.3.3",  # pytest trailing comment
                   "ruff>=0.7.4",
                 ]
                 "#,

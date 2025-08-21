@@ -1,11 +1,15 @@
+use itertools::Itertools;
+use tombi_ast::AstNode;
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Boolean {
     value: bool,
     node: tombi_ast::Boolean,
+    leading_comments: Vec<Comment>,
+    trailing_comment: Option<Comment>,
 }
 
 impl Boolean {
@@ -27,6 +31,16 @@ impl Boolean {
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.range()
+    }
+
+    #[inline]
+    pub fn leading_comments(&self) -> &[Comment] {
+        self.leading_comments.as_ref()
+    }
+
+    #[inline]
+    pub fn trailing_comment(&self) -> Option<&Comment> {
+        self.trailing_comment.as_ref()
     }
 }
 
@@ -59,8 +73,16 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
             _ => unreachable!(),
         };
 
+        let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
+        let trailing_comment = self.trailing_comment().map(Comment::from);
+
         DocumentTreeAndErrors {
-            tree: crate::Value::Boolean(crate::Boolean { value, node: self }),
+            tree: crate::Value::Boolean(crate::Boolean {
+                value,
+                node: self,
+                leading_comments,
+                trailing_comment,
+            }),
             errors: Vec::with_capacity(0),
         }
     }

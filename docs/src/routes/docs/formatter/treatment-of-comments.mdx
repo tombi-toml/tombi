@@ -10,17 +10,17 @@ this page offers a systematic understanding of Tombi's comment treatment.
 In TOML files, there are three types of comments:
 
 1. Leading comments
-2. Tailing comment
+2. Trailing comment
 3. Dangling comments
 
 Types 1 and 2 are associated with specific elements.
 Leading comments appear on the lines before an element and can span multiple consecutive lines.
-Tailing comment appear at the end of the line after an element and are limited to one per line.
+Trailing comment appear at the end of the line after an element and are limited to one per line.
 
 ```toml
 # leading comment1
 # leading comment2
-key = "value" # tailing comment
+key = "value" # trailing comment
 ```
 
 Type 3, Dangling comments, are comments that are not associated with any specific element.
@@ -49,7 +49,7 @@ key2 = "value2"
 
 # leading comment1
 # leading comment2
-key1 = "value1" # tailing comment
+key1 = "value1" # trailing comment
 # dangling comment3
 
 # dangling comment4
@@ -173,14 +173,14 @@ Let's examine a comprehensive example to understand how Tombi handles comments:
 
 # leading comment
 # leading comment
-key1 = 1 # tailing comment
+key1 = 1 # trailing comment
 
 # leading comment
 # leading comment
 
 # leading comment
 # leading comment
-key2 = 2 # tailing comment
+key2 = 2 # trailing comment
 
 # dangling comment
 # dangling comment
@@ -195,7 +195,7 @@ key2 = 2 # tailing comment
 
 # leading comment
 # leading comment
-key1 = 1 # tailing comment
+key1 = 1 # trailing comment
 
 # leading comment
 # leading comment
@@ -207,21 +207,21 @@ key2 = [
   
   # leading comment
   # leading comment
-  "value1", # tailing comment
+  "value1", # trailing comment
 
   # leading comment
   # leading comment
 
   # leading comment
   # leading comment
-  "value2", # tailing comment
+  "value2", # trailing comment
 
   # dangling comment
   # dangling comment
   
   # dangling comment
   # dangling comment
-] # tailing comment
+] # trailing comment
 
 # dangling comment
 # dangling comment
@@ -240,25 +240,25 @@ key1 = {
   
   # leading comment
   # leading comment
-  key1 = "value1", # tailing comment
+  key1 = "value1", # trailing comment
 
   # leading comment
   # leading comment
 
   # leading comment
   # leading comment
-  key2 = "value2" # tailing comment
+  key2 = "value2" # trailing comment
   # leading comment
 
   # leading comment
   # leading comment
-  , # tailing comment
+  , # trailing comment
   # dangling comment
   # dangling comment
 
   # dangling comment
   # dangling comment
-} # tailing comment
+} # trailing comment
 
 # dangling comment
 # dangling comment
@@ -274,12 +274,12 @@ After formatting, the comments are rearranged as follows:
 
 # leading comment
 # leading comment
-key1 = 1  # tailing comment
+key1 = 1  # trailing comment
 # leading comment
 # leading comment
 # leading comment
 # leading comment
-key2 = 2  # tailing comment
+key2 = 2  # trailing comment
 
 # dangling comment
 # dangling comment
@@ -294,7 +294,7 @@ key2 = 2  # tailing comment
 
 # leading comment
 # leading comment
-key1 = 1  # tailing comment
+key1 = 1  # trailing comment
 # leading comment
 # leading comment
 # leading comment
@@ -304,19 +304,19 @@ key2 = [
 
   # leading comment
   # leading comment
-  "value1",  # tailing comment
+  "value1",  # trailing comment
   # leading comment
   # leading comment
   # leading comment
   # leading comment
-  "value2",  # tailing comment
+  "value2",  # trailing comment
 
   # dangling comment
   # dangling comment
 
   # dangling comment
   # dangling comment
-]  # tailing comment
+]  # trailing comment
 
 # dangling comment
 # dangling comment
@@ -335,22 +335,22 @@ key1 = {
 
   # leading comment
   # leading comment
-  key1 = "value1",  # tailing comment
+  key1 = "value1",  # trailing comment
   # leading comment
   # leading comment
   # leading comment
   # leading comment
-  key2 = "value2"  # tailing comment
+  key2 = "value2"  # trailing comment
   # leading comment
   # leading comment
   # leading comment
-  ,  # tailing comment
+  ,  # trailing comment
   # dangling comment
   # dangling comment
 
   # dangling comment
   # dangling comment
-}  # tailing comment
+}  # trailing comment
 
 # dangling comment
 # dangling comment

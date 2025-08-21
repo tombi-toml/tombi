@@ -4,7 +4,7 @@ use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::rule::{array_comma_tailing_comment, array_values_order};
+use crate::rule::{array_comma_trailing_comment, array_values_order};
 
 impl crate::Edit for tombi_ast::Array {
     fn edit<'a: 'b, 'b>(
@@ -38,6 +38,7 @@ impl crate::Edit for tombi_ast::Array {
                                 schema_context.store,
                             )
                             .await
+                            .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             for value in self.values() {
                                 changes.extend(
@@ -59,7 +60,7 @@ impl crate::Edit for tombi_ast::Array {
             }
 
             for (value, comma) in self.values_with_comma() {
-                changes.extend(array_comma_tailing_comment(
+                changes.extend(array_comma_trailing_comment(
                     &value,
                     comma.as_ref(),
                     schema_context,

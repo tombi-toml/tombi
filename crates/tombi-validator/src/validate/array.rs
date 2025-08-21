@@ -115,12 +115,13 @@ impl Validate for tombi_document_tree::Array {
                             schema_context.store,
                         )
                         .await
+                        .inspect_err(|err| tracing::warn!("{err}"))
                     {
                         let new_accessors = accessors
                             .iter()
                             .cloned()
                             .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
-                            .collect::<Vec<_>>();
+                            .collect_vec();
                         if current_schema.value_schema.deprecated().await == Some(true) {
                             crate::Warning {
                                 kind: Box::new(crate::WarningKind::Deprecated(
@@ -199,7 +200,7 @@ impl Validate for tombi_document_tree::Array {
                                 .iter()
                                 .cloned()
                                 .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
-                                .collect::<Vec<_>>(),
+                                .collect_vec(),
                             None,
                             schema_context,
                         )

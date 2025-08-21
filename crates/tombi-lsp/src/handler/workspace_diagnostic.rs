@@ -38,7 +38,7 @@ pub async fn handle_workspace_diagnostic(
             }
 
             if let Some(workspace_diagnostic_targets) =
-                get_workspace_diagnostic_targets(backend, &workspace_config).await
+                get_workspace_diagnostic_targets(backend, workspace_config).await
             {
                 for WorkspaceDiagnosticTarget {
                     text_document_uri,
@@ -97,7 +97,7 @@ pub async fn push_workspace_diagnostics(backend: &Backend) {
                 continue;
             }
             if let Some(workspace_diagnostic_targets) =
-                get_workspace_diagnostic_targets(backend, &workspace_config).await
+                get_workspace_diagnostic_targets(backend, workspace_config).await
             {
                 for WorkspaceDiagnosticTarget {
                     text_document_uri,

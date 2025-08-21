@@ -1,4 +1,4 @@
-use crate::{AstToken, Comment, DocumentSchemaCommentDirective, DocumentTombiCommentDirective};
+use crate::{AstToken, Comment, SchemaDocumentCommentDirective, TombiDocumentCommentDirective};
 
 impl Comment {
     /// Returns the schema directive in the document header.
@@ -9,7 +9,7 @@ impl Comment {
     pub fn document_schema_directive(
         &self,
         source_path: Option<&std::path::Path>,
-    ) -> Option<DocumentSchemaCommentDirective> {
+    ) -> Option<SchemaDocumentCommentDirective> {
         let comment_string = self.to_string();
         if let Some(mut uri_str) = comment_string.strip_prefix("#:schema ") {
             let original_len = uri_str.len();
@@ -34,7 +34,7 @@ impl Comment {
             );
 
             if let Ok(uri) = uri_str.parse::<tombi_uri::Uri>() {
-                Some(DocumentSchemaCommentDirective {
+                Some(SchemaDocumentCommentDirective {
                     directive_range,
                     uri: Ok(uri),
                     uri_range,
@@ -48,14 +48,14 @@ impl Comment {
                     schema_file_path = canonicalized_file_path
                 }
 
-                Some(DocumentSchemaCommentDirective {
+                Some(SchemaDocumentCommentDirective {
                     directive_range,
                     uri: tombi_uri::Uri::from_file_path(&schema_file_path)
                         .map_err(|_| uri_str.to_string()),
                     uri_range,
                 })
             } else {
-                Some(DocumentSchemaCommentDirective {
+                Some(SchemaDocumentCommentDirective {
                     directive_range,
                     uri: Err(uri_str.to_string()),
                     uri_range,
@@ -71,7 +71,7 @@ impl Comment {
     /// ```toml
     /// #:tombi toml-version = "v1.0.0"
     /// ```
-    pub fn document_tombi_directive(&self) -> Option<DocumentTombiCommentDirective> {
+    pub fn tombi_document_directive(&self) -> Option<TombiDocumentCommentDirective> {
         let comment_str = self.syntax().text();
         if let Some(content) = comment_str.strip_prefix("#:tombi ") {
             let comment_range = self.syntax().range();
@@ -88,7 +88,7 @@ impl Comment {
                 comment_range.end,
             );
 
-            Some(DocumentTombiCommentDirective {
+            Some(TombiDocumentCommentDirective {
                 content: content.to_string(),
                 content_range,
                 directive_range,

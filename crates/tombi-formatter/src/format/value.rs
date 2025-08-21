@@ -6,6 +6,7 @@ mod inline_table;
 mod integer;
 mod string;
 
+use itertools::Itertools;
 use std::fmt::Write;
 
 use tombi_syntax::SyntaxToken;
@@ -44,12 +45,12 @@ where
     T: LiteralNode + tombi_ast::AstNode,
 {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        self.leading_comments().collect::<Vec<_>>().format(f)?;
+        self.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
         write!(f, "{}", self.token().unwrap())?;
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             comment.format(f)?;
         }
 

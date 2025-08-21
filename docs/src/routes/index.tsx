@@ -35,7 +35,8 @@ const FEATURES = [
   {
     emoji: "✨",
     title: "Magic Experience",
-    description: "Magic tailing comma formatting, and magic trigger completion",
+    description:
+      "Magic trailing comma formatting, and magic trigger completion",
   },
 ] as const;
 

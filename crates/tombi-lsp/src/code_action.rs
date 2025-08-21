@@ -118,6 +118,14 @@ pub fn inline_table_to_dot_keys_code_action(
         {
             let (key, value) = table.key_values().iter().next().unwrap();
 
+            if !table.key_values_begin_dangling_comments().is_empty()
+                || !table.key_values_end_dangling_comments().is_empty()
+                || !key.leading_comments().is_empty()
+                || value.trailing_comment().is_some()
+            {
+                return None;
+            }
+
             Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InlineTableToDottedKeys.to_string(),
                 kind: Some(CodeActionKind::REFACTOR_REWRITE),

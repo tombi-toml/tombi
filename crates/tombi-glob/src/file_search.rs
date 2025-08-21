@@ -93,6 +93,13 @@ impl FileSearch {
             FileSearch::Files(files) => files.len(),
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            FileSearch::Stdin => false,
+            FileSearch::Files(files) => files.is_empty(),
+        }
+    }
 }
 
 async fn search_with_patterns_async<P: AsRef<std::path::Path>>(

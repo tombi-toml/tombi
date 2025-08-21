@@ -2,7 +2,7 @@ use tombi_syntax::{SyntaxKind::*, T};
 
 use super::{
     begin_dangling_comments, end_dangling_comments, invalid_line, leading_comments,
-    peek_leading_comments, tailing_comment, Parse, TS_LINE_END,
+    peek_leading_comments, trailing_comment, Parse, TS_LINE_END,
 };
 use crate::{parser::Parser, token_set::TS_KEY_FIRST, ErrorKind::*};
 
@@ -58,7 +58,7 @@ fn unknwon_line(p: &mut Parser<'_>) {
     }
     p.error(crate::Error::new(UnknownLine, p.current_range()));
 
-    tailing_comment(p);
+    trailing_comment(p);
 
     m.complete(p, ERROR);
 }

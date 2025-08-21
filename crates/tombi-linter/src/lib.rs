@@ -128,6 +128,7 @@ macro_rules! test_lint {
         #[tokio::test]
         async fn $name() {
             use tombi_config::TomlVersion;
+            use itertools::Itertools;
 
             tombi_test_lib::init_tracing();
 
@@ -168,7 +169,7 @@ macro_rules! test_lint {
                         errors
                             .into_iter()
                             .map(|error| error.message().to_string())
-                            .collect::<Vec<_>>(),
+                            .collect_vec(),
                         [$($error.to_string()),*].into_iter().collect::<Vec<String>>()
                     );
                 }

@@ -65,14 +65,14 @@ impl FormatDefinitions {
         }
     }
 
-    /// Returns the space before the tailing comment.
+    /// Returns the space before the trailing comment.
     ///
     /// ```toml
-    /// key = "value"  # tailing comment
+    /// key = "value"  # trailing comment
     /// #            ^^  <- this
     /// ```
     #[inline]
-    pub const fn tailing_comment_space(&self) -> &'static str {
+    pub const fn trailing_comment_space(&self) -> &'static str {
         "  "
     }
 

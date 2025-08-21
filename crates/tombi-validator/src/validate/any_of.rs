@@ -25,14 +25,17 @@ where
         let mut total_diagnostics = Vec::new();
 
         for referable_schema in schemas.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
+            let current_schema = if let Ok(Some(current_schema)) = referable_schema
                 .resolve(
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
                 .await
-            else {
+                .inspect_err(|err| tracing::warn!("{err}"))
+            {
+                current_schema
+            } else {
                 continue;
             };
 

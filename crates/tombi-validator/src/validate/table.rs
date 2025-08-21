@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use itertools::Itertools;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -115,9 +116,9 @@ impl Validate for tombi_document_tree::Table {
                         .chain(std::iter::once(SchemaAccessor::Key(
                             accessor_raw_text.clone(),
                         )))
-                        .collect::<Vec<_>>();
+                        .collect_vec();
 
-                    let mut matche_key = false;
+                    let mut matched_key = false;
                     if let Some(PropertySchema {
                         property_schema, ..
                     }) = table_schema
@@ -126,35 +127,31 @@ impl Validate for tombi_document_tree::Table {
                         .await
                         .get_mut(&SchemaAccessor::from(&accessor))
                     {
-                        matche_key = true;
-                        match property_schema
+                        matched_key = true;
+
+                        if let Ok(Some(current_schema)) = property_schema
                             .resolve(
                                 current_schema.schema_uri.clone(),
                                 current_schema.definitions.clone(),
                                 schema_context.store,
                             )
                             .await
+                            .inspect_err(|err| tracing::warn!("{err}"))
                         {
-                            Ok(Some(current_schema)) => {
-                                if current_schema.value_schema.deprecated().await == Some(true) {
-                                    crate::Warning {
-                                        kind: Box::new(crate::WarningKind::Deprecated(
-                                            SchemaAccessors::new(new_accessors.clone()),
-                                        )),
-                                        range: key.range() + value.range(),
-                                    }
-                                    .set_diagnostics(&mut diagnostics);
+                            if current_schema.value_schema.deprecated().await == Some(true) {
+                                crate::Warning {
+                                    kind: Box::new(crate::WarningKind::Deprecated(
+                                        SchemaAccessors::new(new_accessors.clone()),
+                                    )),
+                                    range: key.range() + value.range(),
                                 }
-                                if let Err(schema_diagnostics) = value
-                                    .validate(&new_accessors, Some(&current_schema), schema_context)
-                                    .await
-                                {
-                                    diagnostics.extend(schema_diagnostics);
-                                }
+                                .set_diagnostics(&mut diagnostics);
                             }
-                            Ok(None) => {}
-                            Err(err) => {
-                                tracing::error!("{}", err);
+                            if let Err(schema_diagnostics) = value
+                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .await
+                            {
+                                diagnostics.extend(schema_diagnostics);
                             }
                         }
                     }
@@ -172,7 +169,7 @@ impl Validate for tombi_document_tree::Table {
                                 continue;
                             };
                             if pattern.is_match(&accessor_raw_text) {
-                                matche_key = true;
+                                matched_key = true;
                                 if let Ok(Some(current_schema)) = property_schema
                                     .resolve(
                                         current_schema.schema_uri.clone(),
@@ -180,6 +177,7 @@ impl Validate for tombi_document_tree::Table {
                                         schema_context.store,
                                     )
                                     .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
                                 {
                                     if current_schema.value_schema.deprecated().await == Some(true)
                                     {
@@ -222,7 +220,7 @@ impl Validate for tombi_document_tree::Table {
                             }
                         }
                     }
-                    if !matche_key {
+                    if !matched_key {
                         if let Some((_, referable_additional_property_schema)) =
                             &table_schema.additional_property_schema
                         {
@@ -235,6 +233,7 @@ impl Validate for tombi_document_tree::Table {
                                     schema_context.store,
                                 )
                                 .await
+                                .inspect_err(|err| tracing::warn!("{err}"))
                             {
                                 if current_schema.value_schema.deprecated().await == Some(true) {
                                     crate::Warning {
@@ -253,7 +252,6 @@ impl Validate for tombi_document_tree::Table {
                                     diagnostics.extend(schema_diagnostics);
                                 }
                             }
-                            continue;
                         }
                         if table_schema
                             .check_strict_additional_properties_violation(schema_context.strict())
@@ -286,7 +284,7 @@ impl Validate for tombi_document_tree::Table {
                     let keys = self
                         .keys()
                         .map(|key| key.to_raw_text(schema_context.toml_version))
-                        .collect::<Vec<_>>();
+                        .collect_vec();
 
                     for required_key in required {
                         if !keys.contains(required_key) {
@@ -336,7 +334,7 @@ impl Validate for tombi_document_tree::Table {
                                 .chain(std::iter::once(SchemaAccessor::Key(
                                     key.to_raw_text(schema_context.toml_version),
                                 )))
-                                .collect::<Vec<_>>(),
+                                .collect_vec(),
                             None,
                             schema_context,
                         )

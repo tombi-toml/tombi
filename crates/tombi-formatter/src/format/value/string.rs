@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::fmt::Write;
 
 use tombi_ast::AstNode;
@@ -8,7 +9,7 @@ use crate::format::Format;
 
 impl Format for tombi_ast::BasicString {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        self.leading_comments().collect::<Vec<_>>().format(f)?;
+        self.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
         let text = self.token().unwrap().text().to_owned();
@@ -25,7 +26,7 @@ impl Format for tombi_ast::BasicString {
         };
         write!(f, "{text}")?;
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             comment.format(f)?;
         }
 
@@ -35,7 +36,7 @@ impl Format for tombi_ast::BasicString {
 
 impl Format for tombi_ast::LiteralString {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        self.leading_comments().collect::<Vec<_>>().format(f)?;
+        self.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
         let text = self.token().unwrap().text().to_owned();
@@ -52,7 +53,7 @@ impl Format for tombi_ast::LiteralString {
         };
         write!(f, "{text}")?;
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             comment.format(f)?;
         }
 

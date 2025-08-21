@@ -22,7 +22,7 @@ impl AppendSemanticTokens for tombi_ast::ArrayOfTable {
             builder.add_token(TokenType::OPERATOR, token.into());
         }
 
-        if let Some(comment) = self.header_tailing_comment() {
+        if let Some(comment) = self.header_trailing_comment() {
             builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into())
         }
 

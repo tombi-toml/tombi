@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use ahash::AHashMap;
 use itertools::Either;
-use tombi_comment_directive::DocumentTombiCommentDirective;
+use tombi_comment_directive::TombiDocumentCommentDirective;
 use tombi_config::{Config, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
@@ -188,11 +188,11 @@ impl Backend {
             .ok()
             .flatten();
 
-        let document_tombi_comment_directive =
-            tombi_comment_directive::get_document_tombi_comment_directive(&root).await;
+        let tombi_document_comment_directive =
+            tombi_comment_directive::get_tombi_document_comment_directive(&root).await;
         let (toml_version, _) = self
             .source_toml_version(
-                document_tombi_comment_directive,
+                tombi_document_comment_directive,
                 source_schema.as_ref(),
                 &config,
             )
@@ -218,12 +218,12 @@ impl Backend {
 
     pub async fn source_toml_version(
         &self,
-        document_tombi_comment_directive: Option<DocumentTombiCommentDirective>,
+        tombi_document_comment_directive: Option<TombiDocumentCommentDirective>,
         source_schema: Option<&SourceSchema>,
         config: &Config,
     ) -> (TomlVersion, TomlVersionSource) {
         // Check tombi directive first (highest priority)
-        if let Some(directive) = document_tombi_comment_directive {
+        if let Some(directive) = tombi_document_comment_directive {
             if let Some(toml_version) = directive.toml_version {
                 return (toml_version, TomlVersionSource::Comment);
             }

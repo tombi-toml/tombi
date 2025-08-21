@@ -59,11 +59,11 @@ pub async fn handle_hover(
         .ok()
         .flatten();
 
-    let document_tombi_comment_directive =
-        tombi_comment_directive::get_document_tombi_comment_directive(&root).await;
+    let tombi_document_comment_directive =
+        tombi_comment_directive::get_tombi_document_comment_directive(&root).await;
     let (toml_version, _) = backend
         .source_toml_version(
-            document_tombi_comment_directive,
+            tombi_document_comment_directive,
             source_schema.as_ref(),
             &config,
         )
@@ -174,7 +174,7 @@ pub async fn get_hover_keys_with_range(
                             .leading_comments()
                             .any(|comment| comment.syntax().range().contains(position))
                         || table
-                            .tailing_comment()
+                            .trailing_comment()
                             .is_some_and(|comment| comment.syntax().range().contains(position))
                         || table
                             .key_values_begin_dangling_comments()
@@ -218,7 +218,7 @@ pub async fn get_hover_keys_with_range(
                             .leading_comments()
                             .any(|comment| comment.syntax().range().contains(position))
                         || array_of_table
-                            .tailing_comment()
+                            .trailing_comment()
                             .is_some_and(|comment| comment.syntax().range().contains(position))
                         || array_of_table
                             .key_values_begin_dangling_comments()

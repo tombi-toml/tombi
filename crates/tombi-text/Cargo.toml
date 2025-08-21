@@ -9,6 +9,7 @@ license.workspace = true
 serde = { workspace = true, optional = true }
 tower-lsp = { workspace = true, optional = true }
 tracing.workspace = true
+unicode-segmentation.workspace = true
 wasm-bindgen = { workspace = true, optional = true }
 
 [dev-dependencies]

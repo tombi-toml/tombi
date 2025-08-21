@@ -53,10 +53,10 @@ pub(crate) fn exceeds_line_width(
         first = false;
     }
 
-    if let Some(tailing_comment) = node.tailing_comment() {
-        length += f.tailing_comment_space().len();
+    if let Some(trailing_comment) = node.trailing_comment() {
+        length += f.trailing_comment_space().len();
         length += f
-            .format_to_string(&tailing_comment)?
+            .format_to_string(&trailing_comment)?
             .graphemes(true)
             .count();
     }
@@ -68,7 +68,7 @@ fn format_multiline_array(
     array: &tombi_ast::Array,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    array.leading_comments().collect::<Vec<_>>().format(f)?;
+    array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
     write!(f, "[{}", f.line_ending())?;
@@ -93,10 +93,10 @@ fn format_multiline_array(
 
             // comma format
             {
-                let (comma_leading_comments, comma_tailing_comment) = match comma {
+                let (comma_leading_comments, comma_trailing_comment) = match comma {
                     Some(comma) => (
                         comma.leading_comments().collect_vec(),
-                        comma.tailing_comment(),
+                        comma.trailing_comment(),
                     ),
                     None => (vec![], None),
                 };
@@ -106,7 +106,7 @@ fn format_multiline_array(
                     comma_leading_comments.format(f)?;
                     f.write_indent()?;
                     write!(f, ",")?;
-                } else if value.tailing_comment().is_some() {
+                } else if value.trailing_comment().is_some() {
                     write!(f, "{}", f.line_ending())?;
                     f.write_indent()?;
                     write!(f, ",")?;
@@ -114,7 +114,7 @@ fn format_multiline_array(
                     write!(f, ",")?;
                 }
 
-                if let Some(comment) = comma_tailing_comment {
+                if let Some(comment) = comma_trailing_comment {
                     comment.format(f)?;
                 }
             }
@@ -129,7 +129,7 @@ fn format_multiline_array(
     f.write_indent()?;
     write!(f, "]")?;
 
-    if let Some(comment) = array.tailing_comment() {
+    if let Some(comment) = array.trailing_comment() {
         comment.format(f)?;
     }
 
@@ -140,7 +140,7 @@ fn format_singleline_array(
     array: &tombi_ast::Array,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    array.leading_comments().collect::<Vec<_>>().format(f)?;
+    array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
     write!(f, "[{}", f.singleline_array_bracket_inner_space())?;
@@ -155,7 +155,7 @@ fn format_singleline_array(
 
     write!(f, "{}]", f.singleline_array_bracket_inner_space())?;
 
-    if let Some(comment) = array.tailing_comment() {
+    if let Some(comment) = array.trailing_comment() {
         comment.format(f)?;
     }
 
@@ -303,11 +303,11 @@ mod tests {
               # value1 leading comment1
               # value1 leading comment2
               1 # value1 trailing comment
-              , # value1 comma tailing comment
+              , # value1 comma trailing comment
               2 # value2 trailing comment
               # value2 comma leading comment1
               # value2 comma leading comment2
-              , # value2 comma tailing comment
+              , # value2 comma trailing comment
               # value3 leading comment1
               # value3 leading comment2
               3 # value3 trailing comment
@@ -316,7 +316,7 @@ mod tests {
 
               # array end dangling comment group 2-1
 
-            ] # array tailing comment
+            ] # array trailing comment
             "#
         ) -> Ok(
             r#"
@@ -331,11 +331,11 @@ mod tests {
               # value1 leading comment1
               # value1 leading comment2
               1  # value1 trailing comment
-              ,  # value1 comma tailing comment
+              ,  # value1 comma trailing comment
               2  # value2 trailing comment
               # value2 comma leading comment1
               # value2 comma leading comment2
-              ,  # value2 comma tailing comment
+              ,  # value2 comma trailing comment
               # value3 leading comment1
               # value3 leading comment2
               3,  # value3 trailing comment
@@ -343,7 +343,7 @@ mod tests {
               # array end dangling comment group 1-2
 
               # array end dangling comment group 2-1
-            ]  # array tailing comment
+            ]  # array trailing comment
             "#
         );
     }
@@ -401,12 +401,12 @@ mod tests {
     #[rstest]
     #[case("[1, 2, 3,]", true)]
     #[case("[1, 2, 3]", false)]
-    fn has_tailing_comma_after_last_value(#[case] source: &str, #[case] expected: bool) {
+    fn has_trailing_comma_after_last_value(#[case] source: &str, #[case] expected: bool) {
         let p = tombi_parser::parse_as::<tombi_ast::Array>(source, TomlVersion::default());
         pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
 
         let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
-        pretty_assertions::assert_eq!(ast.has_tailing_comma_after_last_value(), expected);
+        pretty_assertions::assert_eq!(ast.has_trailing_comma_after_last_value(), expected);
     }
 
     test_format! {

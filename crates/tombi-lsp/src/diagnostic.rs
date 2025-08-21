@@ -84,11 +84,11 @@ pub async fn get_diagnostics_result(
         .ok()
         .flatten();
 
-    let document_tombi_comment_directive =
-        tombi_comment_directive::get_document_tombi_comment_directive(&root).await;
+    let tombi_document_comment_directive =
+        tombi_comment_directive::get_tombi_document_comment_directive(&root).await;
     let (toml_version, _) = backend
         .source_toml_version(
-            document_tombi_comment_directive,
+            tombi_document_comment_directive,
             source_schema.as_ref(),
             &config,
         )
@@ -144,9 +144,8 @@ pub async fn get_workspace_configs(
             });
 
     tracing::debug!("workspace_folder_paths: {:?}", workspace_folder_paths);
-    let Some(workspace_folder_paths) = workspace_folder_paths else {
-        return None;
-    };
+
+    let workspace_folder_paths = workspace_folder_paths?;
 
     let mut configs = AHashMap::new();
 
@@ -187,9 +186,7 @@ pub async fn get_workspace_diagnostic_targets(
         config_path,
     } = workspace_config;
 
-    let Some(workspace_folder_path_str) = workspace_folder_path.to_str() else {
-        return None;
-    };
+    let workspace_folder_path_str = workspace_folder_path.to_str()?;
     if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
         &[workspace_folder_path_str],
         config,

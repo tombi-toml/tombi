@@ -32,13 +32,6 @@ impl Position {
     pub fn add_text(&self, text: &str) -> Self {
         (*self) + RelativePosition::of(text)
     }
-
-    #[inline]
-    pub fn char_at_left(&self, text: &str) -> Option<char> {
-        text.split('\n')
-            .nth(self.line as usize)
-            .and_then(|line| line.chars().nth(self.column.saturating_sub(1) as usize))
-    }
 }
 
 impl std::fmt::Display for Position {

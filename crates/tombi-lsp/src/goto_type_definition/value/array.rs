@@ -75,7 +75,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                                     .iter()
                                                     .cloned()
                                                     .chain(std::iter::once(accessor.clone()))
-                                                    .collect::<Vec<_>>(),
+                                                    .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
                                             )
@@ -91,7 +91,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                             .iter()
                                             .cloned()
                                             .chain(std::iter::once(accessor))
-                                            .collect::<Vec<_>>(),
+                                            .collect_vec(),
                                         None,
                                         schema_context,
                                     )
@@ -162,7 +162,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                 .iter()
                                 .cloned()
                                 .chain(std::iter::once(accessor))
-                                .collect::<Vec<_>>(),
+                                .collect_vec(),
                             None,
                             schema_context,
                         )

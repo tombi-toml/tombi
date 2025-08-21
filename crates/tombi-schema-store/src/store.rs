@@ -6,9 +6,9 @@ use crate::{
     SchemaUri, SourceSchema, ValueSchema,
 };
 use ahash::AHashMap;
-use itertools::Either;
+use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
-use tombi_ast::DocumentSchemaCommentDirective;
+use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
@@ -454,25 +454,22 @@ impl SchemaStore {
             None => return Ok(None),
         };
         let document_schema = DocumentSchema::new(object, schema_uri.clone());
-        if let Some(value_schema) = &document_schema.value_schema {
-            match value_schema {
-                ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                    for referable_schema in schemas.write().await.iter_mut() {
-                        if let Err(err) = referable_schema
-                            .resolve(
-                                Cow::Borrowed(schema_uri),
-                                Cow::Borrowed(&document_schema.definitions),
-                                self,
-                            )
-                            .await
-                        {
-                            return Err(err);
-                        }
-                    }
+        if let Some(
+            ValueSchema::AllOf(AllOfSchema { schemas, .. })
+            | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+            | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
+        ) = &document_schema.value_schema
+        {
+            {
+                for referable_schema in schemas.write().await.iter_mut() {
+                    referable_schema
+                        .resolve(
+                            Cow::Borrowed(schema_uri),
+                            Cow::Borrowed(&document_schema.definitions),
+                            self,
+                        )
+                        .await?;
                 }
-                _ => {}
             }
         }
 
@@ -533,8 +530,8 @@ impl SchemaStore {
             None => None,
         };
 
-        if let Some(DocumentSchemaCommentDirective { uri, uri_range, .. }) =
-            root.document_schema_comment_directive(source_path.as_deref())
+        if let Some(SchemaDocumentCommentDirective { uri, uri_range, .. }) =
+            root.schema_document_comment_directive(source_path.as_deref())
         {
             let schema_uri = match uri {
                 Ok(schema_uri) => schema_uri,
@@ -584,7 +581,7 @@ impl SchemaStore {
                         .unwrap_or(false)
                 })
             })
-            .collect::<Vec<_>>();
+            .collect_vec();
 
         let mut source_schema: Option<SourceSchema> = None;
         for matching_schema in matching_schemas {

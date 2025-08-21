@@ -13,11 +13,11 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/document-tombi-directive.json")))]
-pub struct DocumentTombiCommentDirective {
+pub struct TombiDocumentCommentDirective {
     /// # TOML version.
     ///
     /// This directive specifies the TOML version of this document, with the highest priority.
@@ -86,25 +86,27 @@ fn default_false() -> Option<bool> {
     Some(false)
 }
 
-pub async fn get_document_tombi_comment_directive(
+pub async fn get_tombi_document_comment_directive(
     root: &tombi_ast::Root,
-) -> Option<DocumentTombiCommentDirective> {
-    try_get_document_tombi_comment_directive(root)
+) -> Option<TombiDocumentCommentDirective> {
+    get_tombi_document_comment_directive_and_diagnostics(root)
         .await
-        .ok()
-        .flatten()
+        .0
 }
 
-pub async fn try_get_document_tombi_comment_directive(
+pub async fn get_tombi_document_comment_directive_and_diagnostics(
     root: &tombi_ast::Root,
-) -> Result<Option<DocumentTombiCommentDirective>, Vec<tombi_diagnostic::Diagnostic>> {
+) -> (
+    Option<TombiDocumentCommentDirective>,
+    Vec<tombi_diagnostic::Diagnostic>,
+) {
     use serde::Deserialize;
 
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
-    if let Some(tombi_directives) = root.document_tombi_comment_directives() {
+    if let Some(tombi_directives) = root.tombi_document_comment_directives() {
         let schema_store = schema_store().await;
-        for tombi_ast::DocumentTombiCommentDirective {
+        for tombi_ast::TombiDocumentCommentDirective {
             content,
             content_range,
             ..
@@ -184,17 +186,17 @@ pub async fn try_get_document_tombi_comment_directive(
         }
     }
 
-    if !total_diagnostics.is_empty() {
-        return Err(total_diagnostics);
-    }
     if let Some(total_document_tree_table) = total_document_tree_table {
-        if let Ok(directive) = DocumentTombiCommentDirective::deserialize(
-            &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-        ) {
-            return Ok(Some(directive));
-        }
+        (
+            TombiDocumentCommentDirective::deserialize(
+                &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+            )
+            .ok(),
+            total_diagnostics,
+        )
+    } else {
+        (None, total_diagnostics)
     }
-    Ok(None)
 }
 
 #[inline]
@@ -216,9 +218,8 @@ pub async fn document_comment_directive_document_schema() -> DocumentSchema {
         .unwrap()
     else {
         panic!(
-            "Failed to fetch document comment directive schema from URL '{}'. \
-             The fetched value was not an object.",
-            schema_uri
+            "Failed to fetch document comment directive schema from URL '{schema_uri}'. \
+             The fetched value was not an object."
         );
     };
     DocumentSchema::new(object, schema_uri.clone())

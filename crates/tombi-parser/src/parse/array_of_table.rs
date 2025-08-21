@@ -4,7 +4,7 @@ use super::Parse;
 use crate::{
     parse::{
         begin_dangling_comments, end_dangling_comments, invalid_line, leading_comments,
-        peek_leading_comments, tailing_comment, TS_LINE_END,
+        peek_leading_comments, trailing_comment, TS_LINE_END,
     },
     parser::Parser,
     token_set::TS_NEXT_SECTION,
@@ -27,7 +27,7 @@ impl Parse for tombi_ast::ArrayOfTable {
             invalid_line(p, ExpectedDoubleBracketEnd);
         }
 
-        tailing_comment(p);
+        trailing_comment(p);
 
         if !p.at_ts(TS_LINE_END) {
             invalid_line(p, ExpectedLineBreak);

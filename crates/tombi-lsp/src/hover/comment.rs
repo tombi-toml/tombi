@@ -2,8 +2,8 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
     comment_directive::{
-        get_document_schema_comment_directive, get_document_tombi_comment_directive,
-        DocumentTombiCommentDirective, DocumentTombiDirective, DocumentTombiDirectiveContent,
+        get_schema_document_comment_directive, get_tombi_document_comment_directive,
+        DocumentTombiDirective, DocumentTombiDirectiveContent, TombiDocumentCommentDirective,
     },
     handler::get_hover_keys_with_range,
     hover::{get_hover_content, HoverContent, HoverDirectiveContent},
@@ -17,7 +17,7 @@ pub async fn get_comment_directive_hover_info(
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
     if let Some(schema_comment_directive) =
-        get_document_schema_comment_directive(&root, position, source_path)
+        get_schema_document_comment_directive(root, position, source_path)
     {
         if schema_comment_directive.directive_range.contains(position) {
             return Some(HoverContent::Directive(HoverDirectiveContent {
@@ -41,10 +41,10 @@ pub async fn get_comment_directive_hover_info(
     if let Some(comments) = root.get_document_header_comments() {
         for comment in comments {
             if let Some(comment_directive) =
-                get_document_tombi_comment_directive(&comment, position)
+                get_tombi_document_comment_directive(&comment, position)
             {
                 match comment_directive {
-                    DocumentTombiCommentDirective::Directive(DocumentTombiDirective {
+                    TombiDocumentCommentDirective::Directive(DocumentTombiDirective {
                         directive_range,
                     }) => {
                         if directive_range.contains(position) {
@@ -56,7 +56,7 @@ pub async fn get_comment_directive_hover_info(
                         }
                         return None;
                     }
-                    DocumentTombiCommentDirective::Content(DocumentTombiDirectiveContent {
+                    TombiDocumentCommentDirective::Content(DocumentTombiDirectiveContent {
                         content,
                         position_in_content,
                         content_range,
@@ -95,7 +95,7 @@ pub async fn get_comment_directive_hover_info(
                                 toml_version,
                                 root_schema: Some(&document_schema),
                                 sub_schema_uri_map: None,
-                                store: &schema_store,
+                                store: schema_store,
                                 strict: None,
                             };
 

@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use ahash::AHashMap;
+use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION};
@@ -38,7 +39,7 @@ impl DocumentSchema {
                             }
                             _ => None,
                         })
-                        .collect::<Vec<_>>();
+                        .collect_vec();
                     Some(string_formats)
                 }
                 _ => None,

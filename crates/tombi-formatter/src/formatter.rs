@@ -47,7 +47,7 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
-        let (source_schema, document_tombi_comment_directive) = if let Some(parsed) =
+        let (source_schema, tombi_document_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
@@ -57,14 +57,14 @@ impl<'a> Formatter<'a> {
                     .await
                     .ok()
                     .flatten(),
-                tombi_comment_directive::get_document_tombi_comment_directive(&root).await,
+                tombi_comment_directive::get_tombi_document_comment_directive(&root).await,
             )
         } else {
             (None, None)
         };
 
-        if let Some(document_tombi_comment_directive) = &document_tombi_comment_directive {
-            if let Some(format) = &document_tombi_comment_directive.format {
+        if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive {
+            if let Some(format) = &tombi_document_comment_directive.format {
                 if format.disable == Some(true) {
                     match self.source_uri_or_path.map(|path| match path {
                         Either::Left(url) => url.to_string(),
@@ -84,7 +84,7 @@ impl<'a> Formatter<'a> {
             }
         }
 
-        self.toml_version = document_tombi_comment_directive
+        self.toml_version = tombi_document_comment_directive
             .as_ref()
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
@@ -127,7 +127,7 @@ impl<'a> Formatter<'a> {
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
                 store: self.schema_store,
-                strict: document_tombi_comment_directive
+                strict: tombi_document_comment_directive
                     .as_ref()
                     .and_then(|directive| {
                         directive.schema.as_ref().and_then(|schema| schema.strict)
@@ -216,8 +216,8 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) const fn tailing_comment_space(&self) -> &'static str {
-        self.definitions.tailing_comment_space()
+    pub(crate) const fn trailing_comment_space(&self) -> &'static str {
+        self.definitions.trailing_comment_space()
     }
 
     #[inline]

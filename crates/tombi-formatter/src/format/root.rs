@@ -230,7 +230,7 @@ mod test {
         #[test]
         fn empty_array_of_tables_space_on_own_subtable_with_comments(
             r#"
-            [[foo]]  # header tailing comment
+            [[foo]]  # header trailing comment
             # table dangling comment 1-1
             # table dangling comment 1-2
 
@@ -262,7 +262,7 @@ mod test {
         #[test]
         fn empty_array_of_tables_space_on_other_subtable_with_comments(
             r#"
-            [[foo]]  # header tailing comment
+            [[foo]]  # header trailing comment
             # table dangling comment 1-1
             # table dangling comment 1-2
 
@@ -292,7 +292,7 @@ mod test {
         #[test]
         fn empty_array_of_tables_space_on_same_array_of_tables_with_comment(
             r#"
-            [[foo]]  # header tailing comment
+            [[foo]]  # header trailing comment
             # table dangling comment 1-1
             # table dangling comment 1-2
 

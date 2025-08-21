@@ -5,8 +5,8 @@ use tower_lsp::lsp_types::Url;
 
 use crate::{
     comment_directive::{
-        get_document_tombi_comment_directive, DocumentTombiCommentDirective,
-        DocumentTombiDirectiveContent,
+        get_tombi_document_comment_directive, DocumentTombiDirectiveContent,
+        TombiDocumentCommentDirective,
     },
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
@@ -82,7 +82,7 @@ fn document_comment_directive_completion_contents(
 
     // Add schema directive completion if not already present
     if root
-        .document_schema_comment_directive(source_path.as_deref())
+        .schema_document_comment_directive(source_path.as_deref())
         .is_none()
     {
         completion_contents.push(CompletionContent::new_comment_directive(
@@ -106,11 +106,11 @@ async fn document_tombi_directive_completion_contents(
     comment: &tombi_ast::Comment,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
-    if let Some(DocumentTombiCommentDirective::Content(DocumentTombiDirectiveContent {
+    if let Some(TombiDocumentCommentDirective::Content(DocumentTombiDirectiveContent {
         content,
         position_in_content,
         content_range,
-    })) = get_document_tombi_comment_directive(&comment, position)
+    })) = get_tombi_document_comment_directive(comment, position)
     {
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use itertools::Itertools;
 
 use super::{DocumentSchema, SchemaUri};
 use crate::{SchemaAccessor, SchemaAccessors};
@@ -23,7 +24,7 @@ impl std::fmt::Debug for SourceSchema {
             .map(|(accessors, url)| {
                 format!("[{:?}]: {}", SchemaAccessors::new(accessors.clone()), url)
             })
-            .collect::<Vec<_>>()
+            .collect_vec()
             .join(", ");
         write!(
             f,

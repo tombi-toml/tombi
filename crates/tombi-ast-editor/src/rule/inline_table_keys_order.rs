@@ -1,4 +1,4 @@
-use crate::rule::inline_table_comma_tailing_comment;
+use crate::rule::inline_table_comma_trailing_comment;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_schema_store::{SchemaContext, TableSchema};
@@ -106,7 +106,7 @@ pub async fn inline_table_keys_order<'a>(
     if let Some((_, comma)) = sorted_key_values_with_comma.last_mut() {
         if !is_last_comma {
             if let Some(last_comma) = comma {
-                if last_comma.tailing_comment().is_none()
+                if last_comma.trailing_comment().is_none()
                     && last_comma.leading_comments().collect_vec().is_empty()
                 {
                     *comma = None;
@@ -116,7 +116,7 @@ pub async fn inline_table_keys_order<'a>(
     }
 
     for (key_value, comma) in &sorted_key_values_with_comma {
-        changes.extend(inline_table_comma_tailing_comment(
+        changes.extend(inline_table_comma_trailing_comment(
             key_value,
             comma.as_ref(),
         ));
@@ -139,7 +139,7 @@ pub async fn inline_table_keys_order<'a>(
     if !is_last_comma {
         if let Some(tombi_syntax::SyntaxElement::Node(node)) = new.last() {
             if let Some(comma) = tombi_ast::Comma::cast(node.clone()) {
-                if comma.tailing_comment().is_none()
+                if comma.trailing_comment().is_none()
                     && comma.leading_comments().collect_vec().is_empty()
                 {
                     changes.push(crate::Change::Remove {

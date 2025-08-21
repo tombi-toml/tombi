@@ -85,6 +85,7 @@ where
                                 schema_context.store,
                             )
                             .await
+                            .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             if value
                                 .validate(
@@ -188,6 +189,7 @@ where
                                             schema_context.store,
                                         )
                                         .await
+                                        .inspect_err(|err| tracing::warn!("{err}"))
                                     {
                                         results.extend(
                                             sorted_accessors(
@@ -219,6 +221,7 @@ where
                                             schema_context.store,
                                         )
                                         .await
+                                        .inspect_err(|err| tracing::warn!("{err}"))
                                     {
                                         results.extend(
                                             sorted_accessors(
@@ -263,6 +266,7 @@ where
                                     schema_context.store,
                                 )
                                 .await
+                                .inspect_err(|err| tracing::warn!("{err}"))
                             {
                                 for (value, (_, targets)) in array.iter().zip(new_targets_map) {
                                     results.extend(

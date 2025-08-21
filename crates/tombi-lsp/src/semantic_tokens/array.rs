@@ -17,7 +17,7 @@ impl AppendSemanticTokens for tombi_ast::Array {
                     builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
                 }
 
-                if let Some(comment) = comma.tailing_comment() {
+                if let Some(comment) = comma.trailing_comment() {
                     builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into())
                 }
             }

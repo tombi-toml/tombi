@@ -255,7 +255,7 @@ pub async fn lint_source_schema_from_ast(
     Option<(crate::Error, tombi_text::Range)>,
 ) {
     match schema_store
-        .resolve_source_schema_from_ast(&root, source_uri_or_path)
+        .resolve_source_schema_from_ast(root, source_uri_or_path)
         .await
     {
         Ok(Some(schema)) => (Some(schema), None),

@@ -66,6 +66,40 @@ impl Value {
             Value::Incomplete { range } => *range,
         }
     }
+
+    #[inline]
+    pub fn leading_comments(&self) -> &[crate::Comment] {
+        match self {
+            Value::Boolean(boolean) => boolean.leading_comments(),
+            Value::Integer(integer) => integer.leading_comments(),
+            Value::Float(float) => float.leading_comments(),
+            Value::String(string) => string.leading_comments(),
+            Value::OffsetDateTime(offset_date_time) => offset_date_time.leading_comments(),
+            Value::LocalDateTime(local_date_time) => local_date_time.leading_comments(),
+            Value::LocalDate(local_date) => local_date.leading_comments(),
+            Value::LocalTime(local_time) => local_time.leading_comments(),
+            Value::Array(array) => array.leading_comments(),
+            Value::Table(table) => table.leading_comments(),
+            Value::Incomplete { .. } => &[],
+        }
+    }
+
+    #[inline]
+    pub fn trailing_comment(&self) -> Option<&crate::Comment> {
+        match self {
+            Value::Boolean(boolean) => boolean.trailing_comment(),
+            Value::Integer(integer) => integer.trailing_comment(),
+            Value::Float(float) => float.trailing_comment(),
+            Value::String(string) => string.trailing_comment(),
+            Value::OffsetDateTime(offset_date_time) => offset_date_time.trailing_comment(),
+            Value::LocalDateTime(local_date_time) => local_date_time.trailing_comment(),
+            Value::LocalDate(local_date) => local_date.trailing_comment(),
+            Value::LocalTime(local_time) => local_time.trailing_comment(),
+            Value::Array(array) => array.trailing_comment(),
+            Value::Table(table) => table.trailing_comment(),
+            Value::Incomplete { .. } => None,
+        }
+    }
 }
 
 impl crate::ValueImpl for Value {
@@ -102,7 +136,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
             }
         }
 
-        if let Some(comment) = self.tailing_comment() {
+        if let Some(comment) = self.trailing_comment() {
             if let Err(error) = try_new_comment(comment.as_ref()) {
                 errors.push(error);
             }

@@ -20,9 +20,9 @@ impl crate::Edit for tombi_ast::Root {
 
             // Move document schema/tombi comment directive to the top.
             if self
-                .document_schema_comment_directive(source_path)
+                .schema_document_comment_directive(source_path)
                 .is_some()
-                || self.document_tombi_comment_directives().is_some()
+                || self.tombi_document_comment_directives().is_some()
             {
                 changes.push(crate::Change::AppendTop {
                     new: self

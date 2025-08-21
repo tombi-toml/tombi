@@ -8,8 +8,8 @@ impl crate::Table {
         support::node::leading_comments(self.syntax().children_with_tokens())
     }
 
-    pub fn header_tailing_comment(&self) -> Option<crate::TailingComment> {
-        support::node::tailing_comment(self.syntax().children_with_tokens(), T!(']'))
+    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
+        support::node::trailing_comment(self.syntax().children_with_tokens(), T!(']'))
     }
 
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
