@@ -2,7 +2,7 @@ use ahash::AHashSet;
 use itertools::Itertools;
 use std::borrow::Cow;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
-use tombi_extension::CompletionKind;
+use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUri, ValueSchema,
@@ -121,26 +121,41 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         schema_context,
                                         if self.kind() == ArrayKind::Array {
                                             if new_item_index == 0 {
-                                                Some(CompletionHint::InArray)
+                                                Some(CompletionHint::InArray {
+                                                    add_leading_comma: None,
+                                                    add_trailing_comma: None,
+                                                })
                                             } else {
-                                                if matches!(
+                                                let add_leading_comma = if matches!(
+                                                    completion_hint,
+                                                    Some(CompletionHint::LastComma { .. })
+                                                ) {
+                                                    None
+                                                } else if let Some(start_position) =
+                                                    new_item_start_position
+                                                {
+                                                    Some(AddLeadingComma { start_position })
+                                                } else {
+                                                    None
+                                                };
+
+                                                let add_trailing_comma = if matches!(
                                                     completion_hint,
                                                     Some(CompletionHint::LastComma { .. })
                                                 ) {
                                                     if new_item_index == self.len() {
-                                                        Some(CompletionHint::InArray)
+                                                        None
                                                     } else {
-                                                        Some(CompletionHint::NeedTailComma)
+                                                        Some(AddTrailingComma)
                                                     }
-                                                } else if let Some(start_position) =
-                                                    new_item_start_position
-                                                {
-                                                    Some(CompletionHint::NeedHeadComma {
-                                                        start_position,
-                                                    })
                                                 } else {
-                                                    Some(CompletionHint::InArray)
-                                                }
+                                                    None
+                                                };
+
+                                                Some(CompletionHint::InArray {
+                                                    add_leading_comma,
+                                                    add_trailing_comma,
+                                                })
                                             }
                                         } else {
                                             completion_hint
@@ -215,6 +230,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
             } else {
                 for (index, value) in self.values().iter().enumerate() {
                     if value.range().contains(position) {
+                        // Array of tables
                         if let tombi_document_tree::Value::Table(table) = value {
                             if keys.len() == 1
                                 && table.kind() == tombi_document_tree::TableKind::KeyValue
@@ -224,7 +240,10 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     &key.to_raw_text(schema_context.toml_version),
                                     key.range(),
                                     None,
-                                    Some(CompletionHint::InArray),
+                                    Some(CompletionHint::InArray {
+                                        add_leading_comma: None,
+                                        add_trailing_comma: None,
+                                    }),
                                 )];
                             }
                         }

@@ -1,5 +1,7 @@
 use tower_lsp::lsp_types::{CompletionTextEdit, InsertTextFormat, TextEdit, Url};
 
+use crate::completion::completion_hint::{AddLeadingComma, AddTrailingComma};
+
 use super::CompletionHint;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,28 +32,27 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::NeedHeadComma { start_position }) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("${{0:{label}}}"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: head_comma_text_edits(start_position, position),
-            }),
-            Some(CompletionHint::NeedTailComma) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("${{1:{label}}},$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
-            Some(
-                CompletionHint::InArray
-                | CompletionHint::InTableHeader
-                | CompletionHint::LastComma { .. },
-            )
-            | None => None,
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("${{1:{label}}},$0"),
+                    None => format!("${{0:{label}}}"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: tombi_text::Range::at(position).into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
+            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => None,
         }
     }
 
@@ -99,35 +100,36 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::NeedHeadComma { start_position }) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{quote}$1{quote}$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: head_comma_text_edits(start_position, position),
-            }),
-            Some(CompletionHint::NeedTailComma) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{quote}$1{quote},$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
-            Some(
-                CompletionHint::InArray
-                | CompletionHint::InTableHeader
-                | CompletionHint::LastComma { .. },
-            )
-            | None => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{quote}$1{quote}$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("{quote}$1{quote},$0"),
+                    None => format!("{quote}$1{quote}$0"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: tombi_text::Range::at(position).into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
+            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text: format!("{quote}$1{quote}$0"),
+                        range: tombi_text::Range::at(position).into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits: None,
+                })
+            }
         }
     }
 
@@ -164,35 +166,36 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::NeedHeadComma { start_position }) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("[$1]$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: head_comma_text_edits(start_position, position),
-            }),
-            Some(CompletionHint::NeedTailComma) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("[$1],$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
-            Some(
-                CompletionHint::InArray
-                | CompletionHint::InTableHeader
-                | CompletionHint::LastComma { .. },
-            )
-            | None => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: "[$1]$0".to_string(),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("[$1],$0"),
+                    None => format!("[$1]$0"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: tombi_text::Range::at(position).into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
+            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text: "[$1]$0".to_string(),
+                        range: tombi_text::Range::at(position).into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits: None,
+                })
+            }
         }
     }
 
@@ -214,24 +217,28 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("{{ $1 }},$0"),
+                    None => format!("{{ $1 }}$0"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: tombi_text::Range::at(position).into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
             Some(CompletionHint::InTableHeader) => None,
-            Some(CompletionHint::NeedHeadComma { start_position }) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ $1 }}$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: head_comma_text_edits(start_position, position),
-            }),
-            Some(CompletionHint::NeedTailComma) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ $1 }},$0"),
-                    range: tombi_text::Range::at(position).into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
-            Some(CompletionHint::InArray | CompletionHint::LastComma { .. }) | None => Some(Self {
+            Some(CompletionHint::LastComma { .. }) | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: "{{ $1 }}$0".to_string(),
                     range: tombi_text::Range::at(position).into(),
@@ -248,14 +255,26 @@ impl CompletionEdit {
         completion_hint: Option<CompletionHint>,
     ) -> Option<Self> {
         match completion_hint {
-            Some(CompletionHint::InArray) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ {key_name}$1 }}$0"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("{{ {key_name}$1 }},$0"),
+                    None => format!("{{ {key_name}$1 }}$0"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, key_range.start);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: key_range.into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
             Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ {key_name}$1 }}$0"),
@@ -278,22 +297,6 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::NeedHeadComma { start_position }) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ {key_name}$1 }}$0"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: head_comma_text_edits(start_position, key_range.start),
-            }),
-            Some(CompletionHint::NeedTailComma) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ {key_name}$1 }},$0"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
             Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => None,
         }
     }
@@ -304,14 +307,26 @@ impl CompletionEdit {
         completion_hint: Option<CompletionHint>,
     ) -> Option<Self> {
         match completion_hint {
-            Some(CompletionHint::InArray) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ ${{1:{key_name}}} }}$0"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
-            }),
+            Some(CompletionHint::InArray {
+                add_leading_comma,
+                add_trailing_comma,
+            }) => {
+                let new_text = match add_trailing_comma {
+                    Some(_) => format!("{{ ${{1:{key_name}}} }},$0"),
+                    None => format!("{{ ${{1:{key_name}}} }}$0"),
+                };
+                let additional_text_edits =
+                    head_comma_text_edits(add_leading_comma, add_trailing_comma, key_range.start);
+
+                Some(Self {
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        new_text,
+                        range: key_range.into(),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    additional_text_edits,
+                })
+            }
             Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ ${{1:{key_name}}} }}$0"),
@@ -333,22 +348,6 @@ impl CompletionEdit {
                     range: range.into(),
                     new_text: "".to_string(),
                 }]),
-            }),
-            Some(CompletionHint::NeedHeadComma { start_position }) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ ${{1:{key_name}}} }}$0"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: head_comma_text_edits(start_position, key_range.start),
-            }),
-            Some(CompletionHint::NeedTailComma) => Some(Self {
-                text_edit: CompletionTextEdit::Edit(TextEdit {
-                    new_text: format!("{{ ${{1:{key_name}}} }},$0"),
-                    range: key_range.into(),
-                }),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                additional_text_edits: None,
             }),
             Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
                 Some(Self {
@@ -459,26 +458,31 @@ impl CompletionEdit {
 }
 
 fn head_comma_text_edits(
-    start_position: tombi_text::Position,
-    end_position: tombi_text::Position,
+    add_leading_comma: Option<AddLeadingComma>,
+    _add_trailing_comma: Option<AddTrailingComma>,
+    cursor_position: tombi_text::Position,
 ) -> Option<Vec<TextEdit>> {
-    let new_text = if start_position.line == end_position.line {
-        ", ".to_string()
-    } else {
-        format!(
-            ",{newlines}{spaces}",
-            newlines =
-                "\n".repeat((end_position.line.saturating_sub(start_position.line)) as usize),
-            spaces = " ".repeat(end_position.column as usize)
-        )
-    };
+    if let Some(AddLeadingComma { start_position }) = add_leading_comma {
+        let new_text = if start_position.line == cursor_position.line {
+            ", ".to_string()
+        } else {
+            format!(
+                ",{newlines}{spaces}",
+                newlines = "\n"
+                    .repeat((cursor_position.line.saturating_sub(start_position.line)) as usize),
+                spaces = " ".repeat(cursor_position.column as usize)
+            )
+        };
 
-    Some(vec![TextEdit {
-        range: tombi_text::Range {
-            start: start_position,
-            end: end_position,
-        }
-        .into(),
-        new_text,
-    }])
+        Some(vec![TextEdit {
+            range: tombi_text::Range {
+                start: start_position,
+                end: cursor_position,
+            }
+            .into(),
+            new_text,
+        }])
+    } else {
+        None
+    }
 }

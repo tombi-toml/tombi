@@ -5,7 +5,7 @@ mod completion_kind;
 use std::ops::Deref;
 
 pub use completion_edit::CompletionEdit;
-pub use completion_hint::CompletionHint;
+pub use completion_hint::{AddLeadingComma, AddTrailingComma, CompletionHint};
 pub use completion_kind::CompletionKind;
 use tombi_schema_store::{get_schema_name, SchemaUri};
 
