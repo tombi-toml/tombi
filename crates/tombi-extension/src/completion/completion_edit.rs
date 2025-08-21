@@ -52,7 +52,7 @@ impl CompletionEdit {
                     additional_text_edits,
                 })
             }
-            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => None,
+            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => None,
         }
     }
 
@@ -120,7 +120,7 @@ impl CompletionEdit {
                     additional_text_edits,
                 })
             }
-            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
+            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text: format!("{quote}$1{quote}$0"),
@@ -186,7 +186,7 @@ impl CompletionEdit {
                     additional_text_edits,
                 })
             }
-            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
+            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text: "[$1]$0".to_string(),
@@ -238,7 +238,7 @@ impl CompletionEdit {
                 })
             }
             Some(CompletionHint::InTableHeader) => None,
-            Some(CompletionHint::LastComma { .. }) | None => Some(Self {
+            Some(CompletionHint::Comma { .. }) | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: "{{ $1 }}$0".to_string(),
                     range: tombi_text::Range::at(position).into(),
@@ -297,7 +297,7 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => None,
+            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => None,
         }
     }
 
@@ -349,7 +349,7 @@ impl CompletionEdit {
                     new_text: "".to_string(),
                 }]),
             }),
-            Some(CompletionHint::InTableHeader | CompletionHint::LastComma { .. }) | None => {
+            Some(CompletionHint::InTableHeader | CompletionHint::Comma { .. }) | None => {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text: format!("${{0:{key_name}}}"),
