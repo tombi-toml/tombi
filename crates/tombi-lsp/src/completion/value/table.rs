@@ -93,11 +93,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             | CompletionHint::EqualTrigger { range, .. },
                                         ) => range.end <= key.range().start,
                                         Some(
-                                            CompletionHint::InArray
+                                            CompletionHint::InArray { .. }
                                             | CompletionHint::InTableHeader
-                                            | CompletionHint::LastComma { .. }
-                                            | CompletionHint::NeedHeadComma { .. }
-                                            | CompletionHint::NeedTailComma,
+                                            | CompletionHint::LastComma { .. },
                                         ) => false,
                                         None => true,
                                     };
@@ -736,13 +734,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                         }
                     }
                 }
-                Some(
-                    CompletionHint::InArray
-                    | CompletionHint::NeedHeadComma { .. }
-                    | CompletionHint::NeedTailComma
-                    | CompletionHint::LastComma { .. },
-                )
-                | None => {
+                Some(CompletionHint::InArray { .. } | CompletionHint::LastComma { .. }) | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
                         return CompletionContent::new_magic_triggers(
                             &key.to_raw_text(schema_context.toml_version),
