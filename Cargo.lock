@@ -3508,6 +3508,7 @@ dependencies = [
  "tombi-json",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
  "tombi-uri",
