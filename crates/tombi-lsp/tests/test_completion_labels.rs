@@ -794,6 +794,27 @@ mod completion_labels {
                 Schema(pyproject_schema_path()),
             ) -> Ok(AnyValue);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_tool_maturin_include_array(
+                r#"
+                [tool.maturin]
+                bindings = "bin"
+                include = [
+                    █
+                    { path = "json.schemastore.org/**/*.json", format = "sdist" },
+                ]
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                "format",
+                "path",
+                "\"\"",
+                "''",
+                "{}",
+            ]);
+        }
     }
 
     mod cargo_schema {
