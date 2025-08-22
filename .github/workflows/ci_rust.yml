@@ -29,7 +29,6 @@ jobs:
       run: cargo nextest run --verbose --locked
 
   cargo-shear:
-    name: "cargo shear"
     runs-on: ubuntu-latest
     permissions:
       contents: read
