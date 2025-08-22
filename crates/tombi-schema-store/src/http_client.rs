@@ -26,7 +26,7 @@ impl HttpClient {
     pub fn new() -> Self {
         Self
     }
-    
+
     pub async fn get_bytes(&self, _url: &str) -> Result<bytes::Bytes, error::FetchError> {
         Err(error::FetchError::FetchFailed {
             reason: "No HTTP client feature enabled".to_string(),
