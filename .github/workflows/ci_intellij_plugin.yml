@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build
+  build-intellij-plugin:
+    name: Build IntelliJ Plugin
     runs-on: ubuntu-latest
 
     steps:
@@ -54,9 +54,9 @@ jobs:
           name: ${{ steps.artifact.outputs.filename }}
           path: ./editors/intellij/build/distributions/content/*/*
 
-  test:
-    name: Test
-    needs: [build]
+  test-intellij-plugin:
+    name: Test IntelliJ Plugin
+    needs: [build-intellij-plugin]
     runs-on: ubuntu-latest
 
     permissions:
@@ -87,8 +87,8 @@ jobs:
           name: tests-result
           path: ${{ github.workspace }}/editors/intellij/build/reports/tests
 
-  inspect:
-    name: Inspect
+  inspect-intellij-plugin:
+    name: Inspect IntelliJ Plugin
     runs-on: ubuntu-latest
 
     permissions:
@@ -118,9 +118,9 @@ jobs:
           args: --project-dir,editors/intellij
           cache-default-branch-only: true
 
-  verify:
-    name: Verify
-    needs: [build]
+  verify-intellij-plugin:
+    name: Verify IntelliJ Plugin
+    needs: [build-intellij-plugin]
     runs-on: ubuntu-latest
 
     steps:
@@ -152,10 +152,10 @@ jobs:
           name: pluginVerifier-result
           path: ${{ github.workspace }}/editors/intellij/build/reports/pluginVerifier
 
-  nightly:
+  nightly-intellij-plugin:
     name: Publish nightly version
     if: github.event_name != 'pull_request'
-    needs: [build, test, verify]
+    needs: [build-intellij-plugin, test-intellij-plugin, verify-intellij-plugin]
     runs-on: ubuntu-latest
     environment: IntelliJ
     continue-on-error: true
