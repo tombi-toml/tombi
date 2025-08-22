@@ -82,7 +82,7 @@ impl Validate for tombi_document_tree::String {
                         crate::Error {
                             kind: crate::ErrorKind::Const {
                                 expected: format!("\"{const_value}\""),
-                                actual: format!("\"{value}\""),
+                                actual: self.to_string(),
                             },
                             range: self.range(),
                         }
@@ -95,7 +95,7 @@ impl Validate for tombi_document_tree::String {
                         crate::Error {
                             kind: crate::ErrorKind::Enumerate {
                                 expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
-                                actual: format!("\"{value}\""),
+                                actual: self.to_string(),
                             },
                             range: self.range(),
                         }
@@ -136,7 +136,7 @@ impl Validate for tombi_document_tree::String {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
-                                        actual: value.to_owned(),
+                                        actual: self.to_string(),
                                     },
                                     range: self.range(),
                                 }
@@ -148,7 +148,7 @@ impl Validate for tombi_document_tree::String {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
-                                        actual: value.to_owned(),
+                                        actual: self.to_string(),
                                     },
                                     range: self.range(),
                                 }
@@ -160,7 +160,7 @@ impl Validate for tombi_document_tree::String {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
-                                        actual: value.to_owned(),
+                                        actual: self.to_string(),
                                     },
                                     range: self.range(),
                                 }
@@ -172,7 +172,7 @@ impl Validate for tombi_document_tree::String {
                                 crate::Error {
                                     kind: crate::ErrorKind::Format {
                                         format,
-                                        actual: value.to_owned(),
+                                        actual: self.to_string(),
                                     },
                                     range: self.range(),
                                 }
@@ -188,7 +188,7 @@ impl Validate for tombi_document_tree::String {
                             crate::Error {
                                 kind: crate::ErrorKind::Pattern {
                                     pattern: pattern.clone(),
-                                    actual: value.clone(),
+                                    actual: self.to_string(),
                                 },
                                 range: self.range(),
                             }
@@ -204,7 +204,7 @@ impl Validate for tombi_document_tree::String {
                         crate::Warning {
                             kind: Box::new(crate::WarningKind::DeprecatedValue(
                                 tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
-                                value,
+                                self.to_string(),
                             )),
                             range: self.range(),
                         }

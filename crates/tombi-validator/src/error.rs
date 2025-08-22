@@ -60,13 +60,13 @@ pub enum ErrorKind {
     #[error("The length must be ≥ {minimum}, but found {actual}")]
     MinimumLength { minimum: usize, actual: usize },
 
-    #[error("\"{actual}\" is not a valid \"{format}\" format")]
+    #[error("{actual} is not a valid `{format}` format")]
     Format {
         format: StringFormat,
         actual: String,
     },
 
-    #[error("\"{actual}\" does not match the pattern \"{pattern}\"")]
+    #[error("{actual} does not match the pattern `{pattern}`")]
     Pattern { pattern: String, actual: String },
 
     #[error("Array must contain at most {max_values} values, but found {actual}")]
@@ -90,7 +90,7 @@ pub enum ErrorKind {
         actual: usize,
     },
 
-    #[error("Key must match the pattern \"{patterns}\"")]
+    #[error("Key must match the pattern `{patterns}`")]
     PatternProperty { patterns: Patterns },
 }
 
