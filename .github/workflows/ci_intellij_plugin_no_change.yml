@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  success-intellij-plugin:
+  success-intellij-plugin-check:
     name: Success IntelliJ Plugin
     runs-on: ubuntu-latest
     steps:

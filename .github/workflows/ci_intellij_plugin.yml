@@ -188,7 +188,7 @@ jobs:
 
           ./gradlew publishPlugin -Pchannel=Nightly -PpluginVersion=${NIGHTLY_VERSION}
 
-  success-intellij-plugin:
+  success-intellij-plugin-check:
     name: Success IntelliJ Plugin
     needs:
       - build-intellij-plugin
