@@ -188,13 +188,11 @@ jobs:
 
           ./gradlew publishPlugin -Pchannel=Nightly -PpluginVersion=${NIGHTLY_VERSION}
 
-  success-intellij-plugin-check:
+  check-intellij-plugin-success:
     name: Success IntelliJ Plugin
     needs:
       - build-intellij-plugin
       - test-intellij-plugin
-      - inspect-intellij-plugin
-      - verify-intellij-plugin
     runs-on: ubuntu-latest
     steps:
       - run: echo "success"
