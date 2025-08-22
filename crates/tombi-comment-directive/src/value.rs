@@ -1,11 +1,14 @@
+mod array;
 mod boolean;
 mod float;
 mod integer;
+mod key;
 mod local_date;
 mod local_date_time;
 mod local_time;
 mod offset_date_time;
 mod string;
+mod table;
 
 pub use boolean::*;
 pub use float::*;
