@@ -251,11 +251,11 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::WarningKind::Deprecated(tombi_schema_store::SchemaAccessors::new(vec![
+                tombi_validator::WarningKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::new(vec![
                     tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
                     tombi_schema_store::SchemaAccessor::Index,
                     tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
-                ])),
+                ]), "\"tool.taskipy\"".to_string()),
             ]);
         }
 

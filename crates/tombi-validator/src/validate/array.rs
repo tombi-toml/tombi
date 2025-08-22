@@ -122,15 +122,6 @@ impl Validate for tombi_document_tree::Array {
                             .cloned()
                             .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
                             .collect_vec();
-                        if current_schema.value_schema.deprecated().await == Some(true) {
-                            crate::Warning {
-                                kind: Box::new(crate::WarningKind::Deprecated(
-                                    tombi_schema_store::SchemaAccessors::new(new_accessors.clone()),
-                                )),
-                                range: self.range(),
-                            }
-                            .set_diagnostics(&mut diagnostics);
-                        }
 
                         for value in self.values().iter() {
                             if let Err(schema_diagnostics) = value
@@ -190,6 +181,18 @@ impl Validate for tombi_document_tree::Array {
                                 .set_diagnostics(&mut diagnostics);
                             }
                         }
+                    }
+                }
+
+                if diagnostics.is_empty() {
+                    if array_schema.deprecated == Some(true) {
+                        crate::Warning {
+                            kind: Box::new(crate::WarningKind::Deprecated(
+                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                            )),
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
                     }
                 }
             } else {
