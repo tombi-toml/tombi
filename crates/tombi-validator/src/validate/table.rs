@@ -138,15 +138,6 @@ impl Validate for tombi_document_tree::Table {
                             .await
                             .inspect_err(|err| tracing::warn!("{err}"))
                         {
-                            if current_schema.value_schema.deprecated().await == Some(true) {
-                                crate::Warning {
-                                    kind: Box::new(crate::WarningKind::Deprecated(
-                                        SchemaAccessors::new(new_accessors.clone()),
-                                    )),
-                                    range: key.range() + value.range(),
-                                }
-                                .set_diagnostics(&mut diagnostics);
-                            }
                             if let Err(schema_diagnostics) = value
                                 .validate(&new_accessors, Some(&current_schema), schema_context)
                                 .await
@@ -319,6 +310,18 @@ impl Validate for tombi_document_tree::Table {
                                 min_properties,
                                 actual: self.keys().count(),
                             },
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
+
+                if diagnostics.is_empty() {
+                    if table_schema.deprecated == Some(true) {
+                        crate::Warning {
+                            kind: Box::new(crate::WarningKind::Deprecated(
+                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                            )),
                             range: self.range(),
                         }
                         .set_diagnostics(&mut diagnostics);

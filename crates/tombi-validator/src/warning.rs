@@ -5,6 +5,9 @@ pub enum WarningKind {
     #[error("`{0}` is deprecated")]
     Deprecated(SchemaAccessors),
 
+    #[error("`{0} = {1}` is deprecated")]
+    DeprecatedValue(SchemaAccessors, String),
+
     #[error(
         r#"In strict mode, `{accessors}` does not allow "{key}" key.
 Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_uri},
@@ -28,7 +31,7 @@ impl Warning {
     #[inline]
     pub fn code(&self) -> &'static str {
         match *self.kind {
-            WarningKind::Deprecated { .. } => "deprecated",
+            WarningKind::Deprecated { .. } | WarningKind::DeprecatedValue { .. } => "deprecated",
             WarningKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
         }
     }

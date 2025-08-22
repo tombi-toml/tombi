@@ -188,7 +188,7 @@ impl Validate for tombi_document_tree::String {
                             crate::Error {
                                 kind: crate::ErrorKind::Pattern {
                                     pattern: pattern.clone(),
-                                    actual: value,
+                                    actual: value.clone(),
                                 },
                                 range: self.range(),
                             }
@@ -196,6 +196,19 @@ impl Validate for tombi_document_tree::String {
                         }
                     } else {
                         tracing::error!("Invalid regex pattern: {:?}", pattern);
+                    }
+                }
+
+                if diagnostics.is_empty() {
+                    if string_schema.deprecated == Some(true) {
+                        crate::Warning {
+                            kind: Box::new(crate::WarningKind::DeprecatedValue(
+                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                value,
+                            )),
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
                     }
                 }
             }

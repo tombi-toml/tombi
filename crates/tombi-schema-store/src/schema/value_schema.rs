@@ -244,40 +244,37 @@ impl ValueSchema {
             Self::OffsetDateTime(offset_date_time) => offset_date_time.deprecated,
             Self::Array(array) => array.deprecated,
             Self::Table(table) => table.deprecated,
-            Self::OneOf(one_of) => {
-                if let Some(true) = one_of.deprecated {
+            Self::OneOf(OneOfSchema {
+                deprecated,
+                schemas,
+                ..
+            })
+            | Self::AnyOf(AnyOfSchema {
+                deprecated,
+                schemas,
+                ..
+            })
+            | Self::AllOf(AllOfSchema {
+                deprecated,
+                schemas,
+                ..
+            }) => {
+                if let Some(true) = deprecated {
                     Some(true)
                 } else {
-                    for schema in one_of.schemas.read().await.iter() {
-                        if let Some(true) = schema.deprecated().await {
-                            return Some(true);
+                    let mut has_deprecated = false;
+                    for schema in schemas.read().await.iter() {
+                        if schema.deprecated().await != Some(true) {
+                            return None;
+                        } else {
+                            has_deprecated = true;
                         }
                     }
-                    None
-                }
-            }
-            Self::AnyOf(any_of) => {
-                if let Some(true) = any_of.deprecated {
-                    Some(true)
-                } else {
-                    for schema in any_of.schemas.read().await.iter() {
-                        if let Some(true) = schema.deprecated().await {
-                            return Some(true);
-                        }
+                    if has_deprecated {
+                        Some(true)
+                    } else {
+                        None
                     }
-                    None
-                }
-            }
-            Self::AllOf(all_of) => {
-                if let Some(true) = all_of.deprecated {
-                    Some(true)
-                } else {
-                    for schema in all_of.schemas.read().await.iter() {
-                        if let Some(true) = schema.deprecated().await {
-                            return Some(true);
-                        }
-                    }
-                    None
                 }
             }
         }

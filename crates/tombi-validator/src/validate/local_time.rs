@@ -93,8 +93,21 @@ impl Validate for LocalTime {
                         crate::Error {
                             kind: crate::ErrorKind::Enumerate {
                                 expected: enumerate.iter().map(ToString::to_string).collect(),
-                                actual: value_string,
+                                actual: value_string.clone(),
                             },
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
+
+                if diagnostics.is_empty() {
+                    if local_time_schema.deprecated == Some(true) {
+                        crate::Warning {
+                            kind: Box::new(crate::WarningKind::DeprecatedValue(
+                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                value_string,
+                            )),
                             range: self.range(),
                         }
                         .set_diagnostics(&mut diagnostics);

@@ -162,6 +162,19 @@ impl Validate for tombi_document_tree::Float {
                         .set_diagnostics(&mut diagnostics);
                     }
                 }
+
+                if diagnostics.is_empty() {
+                    if float_schema.deprecated == Some(true) {
+                        crate::Warning {
+                            kind: Box::new(crate::WarningKind::DeprecatedValue(
+                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                value.to_string(),
+                            )),
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
             }
 
             if diagnostics.is_empty() {
