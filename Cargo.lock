@@ -3522,6 +3522,7 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror 2.0.12",
+ "tombi-severity-level",
  "tombi-toml-version",
  "tombi-uri",
  "tombi-x-keyword",
@@ -3893,6 +3894,14 @@ dependencies = [
  "tombi-uri",
  "tombi-x-keyword",
  "tracing",
+]
+
+[[package]]
+name = "tombi-severity-level"
+version = "0.0.0-dev"
+dependencies = [
+ "schemars",
+ "serde",
 ]
 
 [[package]]

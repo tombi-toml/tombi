@@ -10,6 +10,7 @@ license.workspace = true
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
+tombi-severity-level.workspace = true
 tombi-toml-version.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
@@ -19,5 +20,10 @@ pretty_assertions.workspace = true
 
 [features]
 default = ["serde"]
-jsonschema = ["dep:schemars", "serde", "tombi-toml-version/jsonschema"]
-serde = ["dep:serde"]
+jsonschema = [
+  "dep:schemars",
+  "serde",
+  "tombi-severity-level/jsonschema",
+  "tombi-toml-version/jsonschema",
+]
+serde = ["dep:serde", "tombi-severity-level/serde"]

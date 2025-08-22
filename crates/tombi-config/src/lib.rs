@@ -11,10 +11,11 @@ pub use error::Error;
 pub use files::FilesOptions;
 pub use format::FormatOptions;
 pub use level::ConfigLevel;
-pub use lint::{LintOptions, SeverityLevel};
+pub use lint::LintOptions;
 pub use schema::SchemaOptions;
 pub use schema::{RootSchema, Schema, SubSchema};
 pub use server::{LspCompletion, LspOptions};
+pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
 
