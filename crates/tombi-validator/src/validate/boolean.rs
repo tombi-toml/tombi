@@ -97,6 +97,19 @@ impl Validate for tombi_document_tree::Boolean {
                         .set_diagnostics(&mut diagnostics);
                     }
                 }
+
+                if diagnostics.is_empty() {
+                    if boolean_schema.deprecated == Some(true) {
+                        crate::Warning {
+                            kind: Box::new(crate::WarningKind::DeprecatedValue(
+                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                value.to_string(),
+                            )),
+                            range: self.range(),
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                    }
+                }
             }
 
             if diagnostics.is_empty() {

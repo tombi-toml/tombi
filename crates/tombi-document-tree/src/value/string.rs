@@ -20,6 +20,25 @@ pub struct String {
     trailing_comment: Option<Comment>,
 }
 
+impl std::fmt::Display for StringKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StringKind::BasicString(node) => write!(f, "{}", node.token().unwrap().text()),
+            StringKind::LiteralString(node) => write!(f, "{}", node.token().unwrap().text()),
+            StringKind::MultiLineBasicString(node) => write!(f, "{}", node.token().unwrap().text()),
+            StringKind::MultiLineLiteralString(node) => {
+                write!(f, "{}", node.token().unwrap().text())
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for String {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
+}
+
 impl crate::String {
     pub fn try_new(
         kind: StringKind,
