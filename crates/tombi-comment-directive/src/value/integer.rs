@@ -6,15 +6,6 @@ use tombi_severity_level::SeverityLevelDefaultError;
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/integer-tombi-directive.json")))]
 pub struct IntegerTombiCommentDirective {
-    /// Controls the severity level for type mismatch errors
-    pub type_mismatch: Option<SeverityLevelDefaultError>,
-
-    /// Controls the severity level for const value errors
-    pub const_value: Option<SeverityLevelDefaultError>,
-
-    /// Controls the severity level for enumerate value errors
-    pub enumerate: Option<SeverityLevelDefaultError>,
-
     /// Controls the severity level for maximum integer errors
     pub maximum_integer: Option<SeverityLevelDefaultError>,
 
