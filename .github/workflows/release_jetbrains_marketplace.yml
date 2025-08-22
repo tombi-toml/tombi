@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish:
-    name: Publish
+  publish-intellij-plugin:
+    name: Publish IntelliJ Plugin
     runs-on: ubuntu-latest
     environment: IntelliJ
 
