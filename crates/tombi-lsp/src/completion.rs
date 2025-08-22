@@ -10,14 +10,16 @@ use itertools::Itertools;
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_config::TomlVersion;
 use tombi_document_tree::TryIntoDocumentTree;
-use tombi_extension::{CompletionContent, CompletionEdit, CompletionHint, CompletionKind};
+use tombi_extension::{
+    CommaHint, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
+};
 use tombi_future::Boxable;
 use tombi_rg_tree::TokenAtOffset;
 use tombi_schema_store::{
     Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUri,
     ValueSchema,
 };
-use tombi_syntax::{SyntaxElement, SyntaxKind};
+use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
 pub fn extract_keys_and_hint(
     root: &tombi_ast::Root,
@@ -39,7 +41,7 @@ pub fn extract_keys_and_hint(
         _ => {}
     }
 
-    for node in ancestors_at_position(root.syntax(), position) {
+    for (index, node) in ancestors_at_position(root.syntax(), position).enumerate() {
         let ast_keys = if tombi_ast::Keys::cast(node.to_owned()).is_some() {
             if let Some(SyntaxElement::Token(last_token)) = node.last_child_or_token() {
                 if last_token.kind() == SyntaxKind::DOT {
@@ -116,6 +118,56 @@ pub fn extract_keys_and_hint(
                 array_of_table.header()
             }
         } else {
+            if index == 0 {
+                fn get_leading_comma(
+                    node: &SyntaxNode,
+                    position: tombi_text::Position,
+                ) -> Option<CommaHint> {
+                    if let Some(child) = node.last_child() {
+                        if child.kind() == SyntaxKind::COMMA {
+                            return Some(CommaHint {
+                                range: child.range(),
+                            });
+                        }
+                    }
+                    if let Some(sibling) = node
+                        .siblings_with_tokens(Direction::Prev)
+                        .skip_while(|node_or_token| node_or_token.range().contains(position))
+                        .next()
+                    {
+                        if sibling.kind() == SyntaxKind::COMMA {
+                            return Some(CommaHint {
+                                range: sibling.range(),
+                            });
+                        }
+                    }
+                    None
+                }
+
+                fn get_trailing_comma(
+                    node: &SyntaxNode,
+                    _position: tombi_text::Position,
+                ) -> Option<CommaHint> {
+                    if let Some(sibling) = node.siblings_with_tokens(Direction::Next).next() {
+                        if sibling.kind() == SyntaxKind::COMMA {
+                            return Some(CommaHint {
+                                range: sibling.range(),
+                            });
+                        }
+                    }
+                    None
+                }
+
+                let leading_comma = get_leading_comma(&node, position);
+                let trailing_comma = get_trailing_comma(&node, position);
+                if leading_comma.is_some() || trailing_comma.is_some() {
+                    completion_hint = Some(CompletionHint::Comma {
+                        leading_comma,
+                        trailing_comma,
+                    });
+                }
+            }
+
             continue;
         };
 

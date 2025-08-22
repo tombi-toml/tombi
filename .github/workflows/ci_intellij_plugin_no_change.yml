@@ -1,0 +1,20 @@
+name: CI IntelliJ Plugin (No Change)
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - editors/intellij/**
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - editors/intellij/**
+  workflow_dispatch:
+
+jobs:
+  check-intellij-plugin-success:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "success"
