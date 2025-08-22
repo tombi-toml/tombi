@@ -6,13 +6,11 @@ on:
       - main
     paths-ignore:
       - editors/intellij/**
-      - .github/workflows/ci_intellij_plugin_no_change.yml
   pull_request:
     branches:
       - main
     paths-ignore:
       - editors/intellij/**
-      - .github/workflows/ci_intellij_plugin_no_change.yml
   workflow_dispatch:
 
 jobs:
