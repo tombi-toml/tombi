@@ -21,7 +21,6 @@ concurrency:
 
 jobs:
   build-intellij-plugin:
-    name: Build IntelliJ Plugin
     runs-on: ubuntu-latest
 
     steps:
@@ -55,7 +54,6 @@ jobs:
           path: ./editors/intellij/build/distributions/content/*/*
 
   test-intellij-plugin:
-    name: Test IntelliJ Plugin
     needs: [build-intellij-plugin]
     runs-on: ubuntu-latest
 
@@ -88,7 +86,6 @@ jobs:
           path: ${{ github.workspace }}/editors/intellij/build/reports/tests
 
   inspect-intellij-plugin:
-    name: Inspect IntelliJ Plugin
     runs-on: ubuntu-latest
 
     permissions:
@@ -119,7 +116,6 @@ jobs:
           cache-default-branch-only: true
 
   verify-intellij-plugin:
-    name: Verify IntelliJ Plugin
     needs: [build-intellij-plugin]
     runs-on: ubuntu-latest
 
@@ -153,7 +149,6 @@ jobs:
           path: ${{ github.workspace }}/editors/intellij/build/reports/pluginVerifier
 
   nightly-intellij-plugin:
-    name: Publish nightly version
     if: github.event_name != 'pull_request'
     needs: [build-intellij-plugin, test-intellij-plugin, verify-intellij-plugin]
     runs-on: ubuntu-latest
@@ -189,7 +184,6 @@ jobs:
           ./gradlew publishPlugin -Pchannel=Nightly -PpluginVersion=${NIGHTLY_VERSION}
 
   check-intellij-plugin-success:
-    name: Success IntelliJ Plugin
     needs:
       - build-intellij-plugin
       - test-intellij-plugin

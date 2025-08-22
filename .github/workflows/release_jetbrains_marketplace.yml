@@ -5,7 +5,6 @@ on:
 
 jobs:
   publish-intellij-plugin:
-    name: Publish IntelliJ Plugin
     runs-on: ubuntu-latest
     environment: IntelliJ
 

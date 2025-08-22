@@ -15,7 +15,6 @@ on:
 
 jobs:
   check-intellij-plugin-success:
-    name: Success IntelliJ Plugin
     runs-on: ubuntu-latest
     steps:
       - run: echo "success"
