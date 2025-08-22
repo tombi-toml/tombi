@@ -12,6 +12,12 @@ pub struct Args {
     ///
     /// [default: if "tombi.toml" exists, lint project directory, otherwise lint current directory]
     files: Vec<String>,
+
+    /// Filename to use when reading from stdin
+    ///
+    /// This is useful for determining which JSON Schema should be applied, for more rich linting.
+    #[arg(long)]
+    stdin_filename: Option<String>,
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
@@ -101,7 +107,7 @@ where
                 if lint_file(
                     tokio::io::stdin(),
                     printer,
-                    None,
+                    args.stdin_filename.as_deref().map(std::path::Path::new),
                     toml_version,
                     &lint_options,
                     &schema_store,

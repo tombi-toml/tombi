@@ -17,6 +17,12 @@ pub struct Args {
     /// Check only and don't overwrite files.
     #[arg(long, default_value_t = false)]
     check: bool,
+
+    /// Filename to use when reading from stdin
+    ///
+    /// This is useful for determining which JSON Schema should be applied, for more rich formatting.
+    #[arg(long)]
+    stdin_filename: Option<String>,
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
@@ -123,7 +129,7 @@ where
             FileSearch::Stdin => {
                 tracing::debug!("formatting... stdin input");
                 match format_stdin(
-                    FormatFile::from_stdin(),
+                    FormatFile::from_stdin(args.stdin_filename.map(std::path::PathBuf::from)),
                     printer,
                     toml_version,
                     args.check,
@@ -230,7 +236,7 @@ where
             toml_version,
             &format_definitions,
             format_options,
-            None,
+            file.source().map(itertools::Either::Right),
             schema_store,
         )
         .format(&source)
@@ -325,7 +331,10 @@ where
 }
 
 enum FormatFile {
-    Stdin(tokio::io::Stdin),
+    Stdin {
+        stdin: tokio::io::Stdin,
+        filename: Option<std::path::PathBuf>,
+    },
     File {
         path: std::path::PathBuf,
         file: tokio::fs::File,
@@ -333,8 +342,11 @@ enum FormatFile {
 }
 
 impl FormatFile {
-    fn from_stdin() -> Self {
-        Self::Stdin(tokio::io::stdin())
+    fn from_stdin(filename: Option<std::path::PathBuf>) -> Self {
+        Self::Stdin {
+            stdin: tokio::io::stdin(),
+            filename,
+        }
     }
 
     async fn from_file(path: &std::path::Path) -> std::io::Result<Self> {
@@ -351,14 +363,14 @@ impl FormatFile {
     #[inline]
     fn source(&self) -> Option<&std::path::Path> {
         match self {
-            Self::Stdin(_) => None,
+            Self::Stdin { filename, .. } => filename.as_deref(),
             Self::File { path, .. } => Some(path.as_ref()),
         }
     }
 
     async fn reset(&mut self) -> std::io::Result<()> {
         match self {
-            Self::Stdin(_) => Ok(()),
+            Self::Stdin { .. } => Ok(()),
             Self::File { file, .. } => {
                 file.seek(std::io::SeekFrom::Start(0)).await?;
                 file.set_len(0).await
@@ -368,14 +380,14 @@ impl FormatFile {
 
     async fn read_to_string(&mut self, buf: &mut String) -> std::io::Result<usize> {
         match self {
-            Self::Stdin(stdin) => stdin.read_to_string(buf).await,
+            Self::Stdin { stdin, .. } => stdin.read_to_string(buf).await,
             Self::File { file, .. } => file.read_to_string(buf).await,
         }
     }
 
     async fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
         match self {
-            Self::Stdin(_) => tokio::io::stdout().write_all(buf).await,
+            Self::Stdin { .. } => tokio::io::stdout().write_all(buf).await,
             Self::File { file, .. } => file.write_all(buf).await,
         }
     }
