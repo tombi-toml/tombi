@@ -73,7 +73,6 @@ mod support {
                         n += 1;
                     }
                 }
-                WHITESPACE => {}
                 _ => unreachable!("unexpected token {:?}", kind),
             }
             n += 1;
