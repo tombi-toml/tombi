@@ -4,10 +4,10 @@
   "version": 1,
   "schemas": [
     {
-      "name": "Root Comment Directive",
-      "description": "Root comment directive for Tombi",
+      "name": "Document Comment Directive",
+      "description": "Document comment directive for Tombi",
       "fileMatch": [],
-      "url": "tombi://json.tombi.dev/document-comment-directive.json"
+      "url": "tombi://json.tombi.dev/document-tombi-directive.json"
     },
     {
       "name": "Boolean Value Comment Directive",
