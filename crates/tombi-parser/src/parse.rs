@@ -33,18 +33,19 @@ mod support {
     };
 
     pub fn begin_dangling_comments(p: &mut crate::parser::Parser<'_>) {
-        impl_dangling_comments(p, false);
+        dangling_comments(p);
     }
 
     pub fn end_dangling_comments(p: &mut crate::parser::Parser<'_>, last_eat: bool) {
-        impl_dangling_comments(p, last_eat);
-    }
-
-    fn impl_dangling_comments(p: &mut crate::parser::Parser<'_>, last_eat: bool) {
         if last_eat {
             while p.eat_ts(TS_DANGLING_COMMENTS_KINDS) {}
-            return;
+        } else {
+            dangling_comments(p);
         }
+    }
+
+    fn dangling_comments(p: &mut crate::parser::Parser<'_>) {
+        while p.eat(LINE_BREAK) {}
 
         let mut n = 0;
         let mut comment_count = 0;
@@ -72,7 +73,6 @@ mod support {
                         n += 1;
                     }
                 }
-                WHITESPACE => {}
                 _ => unreachable!("unexpected token {:?}", kind),
             }
             n += 1;
