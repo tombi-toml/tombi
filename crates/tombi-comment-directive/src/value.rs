@@ -19,6 +19,7 @@ pub use local_date::*;
 pub use local_date_time::*;
 pub use local_time::*;
 pub use offset_date_time::*;
+use serde::Deserialize;
 pub use string::*;
 pub use table::*;
 
@@ -79,20 +80,23 @@ pub struct CommonValueTombiCommentDirectiveRules {
 }
 
 pub async fn get_tombi_value_comment_directive<
-    T: serde::de::DeserializeOwned + ValueTombiCommentDirectiveImpl,
+    T: serde::de::DeserializeOwned + serde::Serialize + ValueTombiCommentDirectiveImpl,
 >(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
-) -> Option<T> {
+) -> Option<ValueTombiCommentDirective<T>> {
     get_tombi_value_comment_directive_and_diagnostics(comment_directives)
         .await
         .0
 }
 
 pub async fn get_tombi_value_comment_directive_and_diagnostics<
-    T: serde::de::DeserializeOwned + ValueTombiCommentDirectiveImpl,
+    T: serde::de::DeserializeOwned + serde::Serialize + ValueTombiCommentDirectiveImpl,
 >(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
-) -> (Option<T>, Vec<tombi_diagnostic::Diagnostic>) {
+) -> (
+    Option<ValueTombiCommentDirective<T>>,
+    Vec<tombi_diagnostic::Diagnostic>,
+) {
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
     let schema_store = schema_store().await;
@@ -190,7 +194,7 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<
 
     if let Some(total_document_tree_table) = total_document_tree_table {
         (
-            T::deserialize(
+            ValueTombiCommentDirective::<T>::deserialize(
                 &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             )
             .ok(),
