@@ -7,7 +7,127 @@
       "name": "Root Comment Directive",
       "description": "Root comment directive for Tombi",
       "fileMatch": [],
-      "url": "tombi://json.tombi.dev/root-comment-directive.json"
+      "url": "tombi://json.tombi.dev/document-comment-directive.json"
+    },
+    {
+      "name": "Boolean Value Comment Directive",
+      "description": "Boolean value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/boolean-value-tombi-directive.json"
+    },
+    {
+      "name": "Integer Value Comment Directive",
+      "description": "Integer value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/integer-value-tombi-directive.json"
+    },
+    {
+      "name": "Float Value Comment Directive",
+      "description": "Float value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/float-value-tombi-directive.json"
+    },
+    {
+      "name": "String Value Comment Directive",
+      "description": "String value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/string-value-tombi-directive.json"
+    },
+    {
+      "name": "Offset Date Time Value Comment Directive",
+      "description": "Offset date time value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/offset-date-time-value-tombi-directive.json"
+    },
+    {
+      "name": "Local Date Time Value Comment Directive",
+      "description": "Local date time value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/local-date-time-value-tombi-directive.json"
+    },
+    {
+      "name": "Local Date Value Comment Directive",
+      "description": "Local date value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/local-date-value-tombi-directive.json"
+    },
+    {
+      "name": "Local Time Value Comment Directive",
+      "description": "Local time value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/local-time-value-tombi-directive.json"
+    },
+    {
+      "name": "Array Value Comment Directive",
+      "description": "Array value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/array-value-tombi-directive.json"
+    },
+    {
+      "name": "Table Value Comment Directive",
+      "description": "Table value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/table-value-tombi-directive.json"
+    },
+    {
+      "name": "Boolean Key Value Comment Directive",
+      "description": "Boolean key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/boolean-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Integer Key Value Comment Directive",
+      "description": "Integer key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/integer-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Float Key Value Comment Directive",
+      "description": "Float key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/float-key-value-tombi-directive.json"
+    },
+    {
+      "name": "String Key Value Comment Directive",
+      "description": "String key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/string-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Offset Date Time Key Value Comment Directive",
+      "description": "Offset date time key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/offset-date-time-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Local Date Time Key Value Comment Directive",
+      "description": "Local date time key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/local-date-time-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Local Date Key Value Comment Directive",
+      "description": "Local date key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/local-date-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Local Time Key Value Comment Directive",
+      "description": "Local time key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/local-time-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Array Key Value Comment Directive",
+      "description": "Array key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/array-key-value-tombi-directive.json"
+    },
+    {
+      "name": "Table Key Value Comment Directive",
+      "description": "Table key value comment directive for Tombi",
+      "fileMatch": [],
+      "url": "tombi://json.tombi.dev/table-key-value-tombi-directive.json"
     }
   ]
 }
