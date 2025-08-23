@@ -46,15 +46,14 @@ pub struct ValueCommonTombiCommentDirective {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/value-tombi-directive.json")))]
 pub enum ValueTombiCommentDirective {
-    Array(ArrayTombiCommentDirective),
     Boolean(BooleanTombiCommentDirective),
     Float(FloatTombiCommentDirective),
     Integer(IntegerTombiCommentDirective),
-    Key(KeyTombiCommentDirective),
+    String(StringTombiCommentDirective),
     LocalDateTime(LocalDateTimeTombiCommentDirective),
     LocalDate(LocalDateTombiCommentDirective),
     LocalTime(LocalTimeTombiCommentDirective),
     OffsetDateTime(OffsetDateTimeTombiCommentDirective),
-    String(StringTombiCommentDirective),
+    Array(ArrayTombiCommentDirective),
     Table(TableTombiCommentDirective),
 }
