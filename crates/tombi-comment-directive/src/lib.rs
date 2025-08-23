@@ -29,9 +29,9 @@ fn into_directive_diagnostic(
 
 static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
     tokio::sync::OnceCell::const_new();
-static DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI: std::sync::OnceLock<SchemaUri> =
+static COMMENT_DIRECTIVE_SOURCE_SCHEMA: std::sync::OnceLock<SourceSchema> =
     std::sync::OnceLock::new();
-static DOCUMENT_COMMENT_DIRECTIVE_SOURCE_SCHEMA: std::sync::OnceLock<SourceSchema> =
+static DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI: std::sync::OnceLock<SchemaUri> =
     std::sync::OnceLock::new();
 
 #[inline]
@@ -48,4 +48,14 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
             schema_store
         })
         .await
+}
+
+#[inline]
+async fn source_schema(
+    document_schema: tombi_schema_store::DocumentSchema,
+) -> &'static SourceSchema {
+    COMMENT_DIRECTIVE_SOURCE_SCHEMA.get_or_init(|| tombi_schema_store::SourceSchema {
+        root_schema: Some(document_schema),
+        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+    })
 }

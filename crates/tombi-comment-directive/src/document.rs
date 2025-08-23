@@ -1,15 +1,14 @@
 use std::str::FromStr;
 
-use ahash::AHashMap;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{DocumentSchema, SchemaUri, SourceSchema};
+use tombi_schema_store::{DocumentSchema, SchemaUri};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    into_directive_diagnostic, schema_store, DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI,
-    DOCUMENT_COMMENT_DIRECTIVE_SOURCE_SCHEMA, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    into_directive_diagnostic, schema_store, source_schema, DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -156,7 +155,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
                 if let Err(diagnostics) = tombi_validator::validate(
                     document_tree.clone(),
-                    document_comment_directive_source_schema(document_schema).await,
+                    source_schema(document_schema).await,
                     &schema_context,
                 )
                 .await
@@ -223,14 +222,4 @@ pub async fn document_comment_directive_document_schema() -> DocumentSchema {
         );
     };
     DocumentSchema::new(object, schema_uri.clone())
-}
-
-#[inline]
-pub async fn document_comment_directive_source_schema(
-    document_schema: DocumentSchema,
-) -> &'static SourceSchema {
-    DOCUMENT_COMMENT_DIRECTIVE_SOURCE_SCHEMA.get_or_init(|| tombi_schema_store::SourceSchema {
-        root_schema: Some(document_schema),
-        sub_schema_uri_map: AHashMap::with_capacity(0),
-    })
 }

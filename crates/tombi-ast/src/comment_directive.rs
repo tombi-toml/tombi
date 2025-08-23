@@ -51,3 +51,30 @@ pub struct TombiDocumentCommentDirective {
     /// ```
     pub content_range: tombi_text::Range,
 }
+
+#[derive(Debug)]
+pub struct TombiValueCommentDirective {
+    /// The range of the directive.
+    ///
+    /// ```toml
+    /// # tombi: lint.rules.const-value = "error"
+    ///   ^^^^^^ <- This range
+    /// ```
+    pub directive_range: tombi_text::Range,
+
+    /// The content of the directive.
+    ///
+    /// ```toml
+    /// # tombi: lint.rules.const-value = "error"
+    ///         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This content
+    /// ```
+    pub content: String,
+
+    /// The range of the content of the directive.
+    ///
+    /// ```toml
+    /// # tombi: lint.rules.const-value = "error"
+    ///         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This range
+    /// ```
+    pub content_range: tombi_text::Range,
+}
