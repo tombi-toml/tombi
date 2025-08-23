@@ -29,16 +29,6 @@
       ]
     },
     "LocalTimeKeyValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/KeyTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/LocalTimeTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "KeyTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "key-required": {
@@ -103,10 +93,6 @@
           "const": "error"
         }
       ]
-    },
-    "LocalTimeTombiCommentDirectiveRules": {
-      "type": "object",
-      "additionalProperties": false
     }
   }
 }

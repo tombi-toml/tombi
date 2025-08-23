@@ -29,16 +29,6 @@
       ]
     },
     "ArrayKeyValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/KeyTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/ArrayTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "KeyTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "key-required": {
@@ -73,40 +63,7 @@
               "type": "null"
             }
           ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "SeverityLevelDefaultError": {
-      "default": "error",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
-        }
-      ]
-    },
-    "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
         },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
-        }
-      ]
-    },
-    "ArrayTombiCommentDirectiveRules": {
-      "type": "object",
-      "properties": {
         "type-mismatch": {
           "description": "Controls the severity level for type mismatch errors",
           "anyOf": [
@@ -175,6 +132,33 @@
         }
       },
       "additionalProperties": false
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
+    },
+    "SeverityLevel": {
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
+      ]
     }
   }
 }

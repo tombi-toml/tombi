@@ -29,16 +29,6 @@
       ]
     },
     "StringValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/StringTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -74,40 +64,7 @@
               "type": "null"
             }
           ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "SeverityLevelDefaultError": {
-      "default": "error",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
-        }
-      ]
-    },
-    "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
         },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
-        }
-      ]
-    },
-    "StringTombiCommentDirectiveRules": {
-      "type": "object",
-      "properties": {
         "maximum-length": {
           "description": "Controls the severity level for maximum length errors",
           "anyOf": [
@@ -154,6 +111,33 @@
         }
       },
       "additionalProperties": false
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
+    },
+    "SeverityLevel": {
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
+      ]
     }
   }
 }

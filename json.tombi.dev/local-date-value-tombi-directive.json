@@ -29,16 +29,6 @@
       ]
     },
     "LocalDateValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/LocalDateTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -104,10 +94,6 @@
           "const": "error"
         }
       ]
-    },
-    "LocalDateTombiCommentDirectiveRules": {
-      "type": "object",
-      "additionalProperties": false
     }
   }
 }

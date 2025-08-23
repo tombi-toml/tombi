@@ -29,16 +29,6 @@
       ]
     },
     "IntegerKeyValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/KeyTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/IntegerTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "KeyTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "key-required": {
@@ -73,40 +63,7 @@
               "type": "null"
             }
           ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "SeverityLevelDefaultError": {
-      "default": "error",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
-        }
-      ]
-    },
-    "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
         },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
-        }
-      ]
-    },
-    "IntegerTombiCommentDirectiveRules": {
-      "type": "object",
-      "properties": {
         "maximum-integer": {
           "description": "Controls the severity level for maximum integer errors",
           "anyOf": [
@@ -164,6 +121,33 @@
         }
       },
       "additionalProperties": false
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
+    },
+    "SeverityLevel": {
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
+      ]
     }
   }
 }

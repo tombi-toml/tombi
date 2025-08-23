@@ -29,16 +29,6 @@
       ]
     },
     "BooleanValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/BooleanTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -104,10 +94,6 @@
           "const": "error"
         }
       ]
-    },
-    "BooleanTombiCommentDirectiveRules": {
-      "type": "object",
-      "additionalProperties": false
     }
   }
 }

@@ -3,19 +3,25 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(untagged)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum IntegerKeyValueTombiCommentDirectiveRules {
-    Key(KeyTombiCommentDirectiveRules),
-    Value(IntegerTombiCommentDirectiveRules),
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+pub struct IntegerKeyValueTombiCommentDirectiveRules {
+    #[serde(flatten)]
+    key: KeyTombiCommentDirectiveRules,
+
+    #[serde(flatten)]
+    value: IntegerTombiCommentDirectiveRules,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(untagged)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum IntegerValueTombiCommentDirectiveRules {
-    Common(CommonValueTombiCommentDirectiveRules),
-    Integer(IntegerTombiCommentDirectiveRules),
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+pub struct IntegerValueTombiCommentDirectiveRules {
+    #[serde(flatten)]
+    common: CommonValueTombiCommentDirectiveRules,
+
+    #[serde(flatten)]
+    integer: IntegerTombiCommentDirectiveRules,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

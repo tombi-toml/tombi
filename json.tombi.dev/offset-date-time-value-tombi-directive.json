@@ -29,16 +29,6 @@
       ]
     },
     "OffsetDateTimeValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/OffsetDateTimeTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -104,10 +94,6 @@
           "const": "error"
         }
       ]
-    },
-    "OffsetDateTimeTombiCommentDirectiveRules": {
-      "type": "object",
-      "additionalProperties": false
     }
   }
 }

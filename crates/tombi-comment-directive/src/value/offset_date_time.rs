@@ -1,19 +1,25 @@
 use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(untagged)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum OffsetDateTimeKeyValueTombiCommentDirectiveRules {
-    Key(KeyTombiCommentDirectiveRules),
-    Value(OffsetDateTimeTombiCommentDirectiveRules),
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+pub struct OffsetDateTimeKeyValueTombiCommentDirectiveRules {
+    #[serde(flatten)]
+    key: KeyTombiCommentDirectiveRules,
+
+    #[serde(flatten)]
+    value: OffsetDateTimeTombiCommentDirectiveRules,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(untagged)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum OffsetDateTimeValueTombiCommentDirectiveRules {
-    Common(CommonValueTombiCommentDirectiveRules),
-    OffsetDateTime(OffsetDateTimeTombiCommentDirectiveRules),
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+pub struct OffsetDateTimeValueTombiCommentDirectiveRules {
+    #[serde(flatten)]
+    common: CommonValueTombiCommentDirectiveRules,
+
+    #[serde(flatten)]
+    offset_date_time: OffsetDateTimeTombiCommentDirectiveRules,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

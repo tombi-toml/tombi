@@ -29,16 +29,6 @@
       ]
     },
     "OffsetDateTimeKeyValueTombiCommentDirectiveRules": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/KeyTombiCommentDirectiveRules"
-        },
-        {
-          "$ref": "#/definitions/OffsetDateTimeTombiCommentDirectiveRules"
-        }
-      ]
-    },
-    "KeyTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "key-required": {
@@ -103,10 +93,6 @@
           "const": "error"
         }
       ]
-    },
-    "OffsetDateTimeTombiCommentDirectiveRules": {
-      "type": "object",
-      "additionalProperties": false
     }
   }
 }
