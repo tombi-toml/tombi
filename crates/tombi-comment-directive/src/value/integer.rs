@@ -1,11 +1,28 @@
 use tombi_severity_level::SeverityLevelDefaultError;
 
+use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum IntegerKeyValueTombiCommentDirectiveRules {
+    Key(KeyTombiCommentDirectiveRules),
+    Value(IntegerTombiCommentDirectiveRules),
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum IntegerValueTombiCommentDirectiveRules {
+    Common(CommonValueTombiCommentDirectiveRules),
+    Integer(IntegerTombiCommentDirectiveRules),
+}
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/integer-tombi-directive.json")))]
-pub struct IntegerTombiCommentDirective {
+pub struct IntegerTombiCommentDirectiveRules {
     /// Controls the severity level for maximum integer errors
     pub maximum_integer: Option<SeverityLevelDefaultError>,
 

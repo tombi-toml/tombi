@@ -1,11 +1,27 @@
+use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
 use tombi_severity_level::SeverityLevelDefaultError;
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum ArrayKeyValueTombiCommentDirectiveRules {
+    Key(KeyTombiCommentDirectiveRules),
+    Value(ArrayTombiCommentDirectiveRules),
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum ArrayValueTombiCommentDirectiveRules {
+    Common(CommonValueTombiCommentDirectiveRules),
+    Array(ArrayTombiCommentDirectiveRules),
+}
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/array-tombi-directive.json")))]
-pub struct ArrayTombiCommentDirective {
+pub struct ArrayTombiCommentDirectiveRules {
     /// Controls the severity level for type mismatch errors
     pub type_mismatch: Option<SeverityLevelDefaultError>,
 

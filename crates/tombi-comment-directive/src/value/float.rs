@@ -1,11 +1,28 @@
 use tombi_severity_level::SeverityLevelDefaultError;
 
+use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum FloatKeyValueTombiCommentDirectiveRules {
+    Key(KeyTombiCommentDirectiveRules),
+    Value(FloatTombiCommentDirectiveRules),
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum FloatValueTombiCommentDirectiveRules {
+    Common(CommonValueTombiCommentDirectiveRules),
+    Float(FloatTombiCommentDirectiveRules),
+}
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/float-tombi-directive.json")))]
-pub struct FloatTombiCommentDirective {
+pub struct FloatTombiCommentDirectiveRules {
     /// Controls the severity level for maximum float errors
     pub maximum_float: Option<SeverityLevelDefaultError>,
 
