@@ -119,61 +119,6 @@ pub fn extract_keys_and_hint(
             }
         } else {
             if index == 0 {
-                fn get_leading_comma(
-                    node: &SyntaxNode,
-                    position: tombi_text::Position,
-                ) -> Option<CommaHint> {
-                    if let Some(child) = node.last_child() {
-                        if child.kind() == SyntaxKind::COMMA {
-                            return Some(CommaHint {
-                                range: child.range(),
-                            });
-                        }
-                    }
-                    if let Some(sibling) = node
-                        .siblings_with_tokens(Direction::Prev)
-                        .skip_while(|node_or_token| node_or_token.range().contains(position))
-                        .next()
-                    {
-                        if sibling.kind() == SyntaxKind::COMMA {
-                            return Some(CommaHint {
-                                range: sibling.range(),
-                            });
-                        }
-                    }
-                    None
-                }
-
-                fn get_trailing_comma(
-                    node: &SyntaxNode,
-                    _position: tombi_text::Position,
-                ) -> Option<CommaHint> {
-                    if let Some(sibling) = node.siblings_with_tokens(Direction::Next).next() {
-                        match sibling.kind() {
-                            SyntaxKind::COMMA => {
-                                return Some(CommaHint {
-                                    range: sibling.range(),
-                                });
-                            }
-                            SyntaxKind::INVALID_TOKEN => {
-                                if let NodeOrToken::Node(node) = sibling {
-                                    if let Some(SyntaxElement::Token(token)) =
-                                        node.first_child_or_token()
-                                    {
-                                        if token.kind() == SyntaxKind::COMMA {
-                                            return Some(CommaHint {
-                                                range: token.range(),
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    None
-                }
-
                 let leading_comma = get_leading_comma(&node, position);
                 let trailing_comma = get_trailing_comma(&node, position);
                 if leading_comma.is_some() || trailing_comma.is_some() {
@@ -453,4 +398,100 @@ fn tombi_json_value_to_completion_default_item(
         schema_uri,
         None,
     ))
+}
+
+fn get_leading_comma(node: &SyntaxNode, position: tombi_text::Position) -> Option<CommaHint> {
+    if let Some(child) = node.last_child() {
+        if child.kind() == SyntaxKind::COMMA {
+            return Some(CommaHint {
+                range: child.range(),
+            });
+        }
+    }
+    if let Some(sibling) = node
+        .siblings_with_tokens(Direction::Prev)
+        .skip_while(|node_or_token| node_or_token.range().contains(position))
+        .next()
+    {
+        if sibling.kind() == SyntaxKind::COMMA {
+            return Some(CommaHint {
+                range: sibling.range(),
+            });
+        }
+    }
+    None
+}
+
+fn get_trailing_comma(node: &SyntaxNode, position: tombi_text::Position) -> Option<CommaHint> {
+    if let Some(sibling) = node.siblings_with_tokens(Direction::Next).next() {
+        match sibling.kind() {
+            SyntaxKind::COMMA => {
+                // Case like:
+                //
+                // ```toml
+                // key = ["value" █,]
+                // ```
+                return Some(CommaHint {
+                    range: sibling.range(),
+                });
+            }
+            SyntaxKind::INVALID_TOKEN => {
+                // Case like:
+                //
+                // ```toml
+                // key = [█, "value"]
+                // ```
+                if let NodeOrToken::Node(node) = sibling {
+                    if let Some(SyntaxElement::Token(token)) = node.first_child_or_token() {
+                        if token.kind() == SyntaxKind::COMMA {
+                            return Some(CommaHint {
+                                range: token.range(),
+                            });
+                        }
+                    }
+                }
+            }
+            SyntaxKind::ARRAY => {
+                // Case like:
+                //
+                // ```toml
+                // [dependency-groups]
+                // dev = [  █   , "pytest"]
+                // ```
+
+                if let NodeOrToken::Node(node) = sibling {
+                    if let Some(next_node_or_token) = node
+                        .children_with_tokens()
+                        .skip_while(|sibling| !sibling.range().contains(position))
+                        .skip(1)
+                        .next()
+                    {
+                        match next_node_or_token.kind() {
+                            SyntaxKind::COMMA => {
+                                return Some(CommaHint {
+                                    range: next_node_or_token.range(),
+                                });
+                            }
+                            SyntaxKind::INVALID_TOKEN => {
+                                if let NodeOrToken::Node(node) = next_node_or_token {
+                                    if let Some(SyntaxElement::Token(token)) =
+                                        node.first_child_or_token()
+                                    {
+                                        if token.kind() == SyntaxKind::COMMA {
+                                            return Some(CommaHint {
+                                                range: token.range(),
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
