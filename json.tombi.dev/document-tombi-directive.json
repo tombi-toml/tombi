@@ -56,7 +56,10 @@
     "TomlVersion": {
       "title": "TOML version.",
       "type": "string",
-      "enum": ["v1.0.0", "v1.1.0-preview"]
+      "enum": [
+        "v1.0.0",
+        "v1.1.0-preview"
+      ]
     },
     "FormatOptions": {
       "type": "object",
@@ -64,7 +67,10 @@
         "disable": {
           "title": "Format disable",
           "description": "Disable formatting for this document.",
-          "type": ["boolean", "null"],
+          "type": [
+            "boolean",
+            "null"
+          ],
           "default": false
         }
       },
@@ -76,7 +82,10 @@
         "disable": {
           "title": "Lint disable",
           "description": "Disable linting for this document.",
-          "type": ["boolean", "null"],
+          "type": [
+            "boolean",
+            "null"
+          ],
           "default": false
         }
       },
@@ -88,7 +97,10 @@
         "strict": {
           "title": "Enable strict schema validation.",
           "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
-          "type": ["boolean", "null"],
+          "type": [
+            "boolean",
+            "null"
+          ],
           "default": true
         }
       },

@@ -1,0 +1,133 @@
+{
+  "$id": "tombi://json.tombi.dev/string-value-tombi-directive.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StringValueTombiCommentDirective",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/CommonValueTombiCommentDirective"
+    },
+    {
+      "$ref": "#/definitions/StringTombiCommentDirective"
+    }
+  ],
+  "definitions": {
+    "CommonValueTombiCommentDirective": {
+      "description": "Common validation settings for all value types",
+      "type": "object",
+      "properties": {
+        "type-mismatch": {
+          "description": "Controls the severity level for type mismatch errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const-value": {
+          "description": "Controls the severity level for const value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
+    },
+    "SeverityLevel": {
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
+      ]
+    },
+    "StringTombiCommentDirective": {
+      "$id": "tombi://json.tombi.dev/string-tombi-directive.json",
+      "type": "object",
+      "properties": {
+        "maximum-length": {
+          "description": "Controls the severity level for maximum length errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "minimum-length": {
+          "description": "Controls the severity level for minimum length errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "format": {
+          "description": "Controls the severity level for format errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pattern": {
+          "description": "Controls the severity level for pattern errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
