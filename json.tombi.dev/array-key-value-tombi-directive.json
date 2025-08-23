@@ -1,0 +1,155 @@
+{
+  "$id": "tombi://json.tombi.dev/array-key-value-tombi-directive.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ArrayKeyValueTombiCommentDirective",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/KeyTombiCommentDirective"
+    },
+    {
+      "$ref": "#/definitions/ArrayTombiCommentDirective"
+    }
+  ],
+  "definitions": {
+    "KeyTombiCommentDirective": {
+      "$id": "tombi://json.tombi.dev/key-tombi-directive.json",
+      "type": "object",
+      "properties": {
+        "key-required": {
+          "description": "Controls the severity level for key required errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key-not-allowed": {
+          "description": "Controls the severity level for key not allowed errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pattern-property": {
+          "description": "Controls the severity level for pattern property errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
+    },
+    "SeverityLevel": {
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
+      ]
+    },
+    "ArrayTombiCommentDirective": {
+      "$id": "tombi://json.tombi.dev/array-tombi-directive.json",
+      "type": "object",
+      "properties": {
+        "type-mismatch": {
+          "description": "Controls the severity level for type mismatch errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const-value": {
+          "description": "Controls the severity level for const value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max-values": {
+          "description": "Controls the severity level for max values errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "min-values": {
+          "description": "Controls the severity level for min values errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unique-values": {
+          "description": "Controls the severity level for unique values errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
