@@ -14,7 +14,7 @@ use tombi_extension::{
     CommaHint, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
 use tombi_future::Boxable;
-use tombi_rg_tree::TokenAtOffset;
+use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
     Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUri,
     ValueSchema,
@@ -149,10 +149,26 @@ pub fn extract_keys_and_hint(
                     _position: tombi_text::Position,
                 ) -> Option<CommaHint> {
                     if let Some(sibling) = node.siblings_with_tokens(Direction::Next).next() {
-                        if sibling.kind() == SyntaxKind::COMMA {
-                            return Some(CommaHint {
-                                range: sibling.range(),
-                            });
+                        match sibling.kind() {
+                            SyntaxKind::COMMA => {
+                                return Some(CommaHint {
+                                    range: sibling.range(),
+                                });
+                            }
+                            SyntaxKind::INVALID_TOKEN => {
+                                if let NodeOrToken::Node(node) = sibling {
+                                    if let Some(SyntaxElement::Token(token)) =
+                                        node.first_child_or_token()
+                                    {
+                                        if token.kind() == SyntaxKind::COMMA {
+                                            return Some(CommaHint {
+                                                range: token.range(),
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
                         }
                     }
                     None
