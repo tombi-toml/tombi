@@ -11,6 +11,7 @@ use tombi_toml_version::TomlVersion;
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;
 
 pub use document::*;
+pub use value::*;
 
 fn into_directive_diagnostic(
     diagnostic: &tombi_diagnostic::Diagnostic,

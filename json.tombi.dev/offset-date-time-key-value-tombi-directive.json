@@ -1,0 +1,87 @@
+{
+  "$id": "tombi://json.tombi.dev/offset-date-time-key-value-tombi-directive.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OffsetDateTimeKeyValueTombiCommentDirective",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/KeyTombiCommentDirective"
+    },
+    {
+      "$ref": "#/definitions/OffsetDateTimeTombiCommentDirective"
+    }
+  ],
+  "definitions": {
+    "KeyTombiCommentDirective": {
+      "$id": "tombi://json.tombi.dev/key-tombi-directive.json",
+      "type": "object",
+      "properties": {
+        "key-required": {
+          "description": "Controls the severity level for key required errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key-not-allowed": {
+          "description": "Controls the severity level for key not allowed errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pattern-property": {
+          "description": "Controls the severity level for pattern property errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
+    },
+    "SeverityLevel": {
+      "oneOf": [
+        {
+          "title": "Disable the Rule.",
+          "type": "string",
+          "const": "off"
+        },
+        {
+          "title": "Display as Warning.",
+          "type": "string",
+          "const": "warn"
+        },
+        {
+          "title": "Display as Error.",
+          "type": "string",
+          "const": "error"
+        }
+      ]
+    },
+    "OffsetDateTimeTombiCommentDirective": {
+      "$id": "tombi://json.tombi.dev/offset-date-time-tombi-directive.json",
+      "type": "object",
+      "additionalProperties": false
+    }
+  }
+}
