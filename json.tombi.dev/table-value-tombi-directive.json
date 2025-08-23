@@ -1,17 +1,44 @@
 {
-  "$id": "tombi://json.tombi.dev/table-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TableValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/TableTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/TableValueTombiCommentDirectiveRules"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "TableValueTombiCommentDirectiveRules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
+        },
+        {
+          "$ref": "#/definitions/TableTombiCommentDirectiveRules"
+        }
+      ]
+    },
+    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -78,8 +105,7 @@
         }
       ]
     },
-    "TableTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/table-tombi-directive.json",
+    "TableTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {

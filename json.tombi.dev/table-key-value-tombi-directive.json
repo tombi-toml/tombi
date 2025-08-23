@@ -1,18 +1,44 @@
 {
-  "$id": "tombi://json.tombi.dev/table-key-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TableKeyValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/KeyTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/TableTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "KeyTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/key-tombi-directive.json",
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/TableKeyValueTombiCommentDirectiveRules"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "TableKeyValueTombiCommentDirectiveRules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/KeyTombiCommentDirectiveRules"
+        },
+        {
+          "$ref": "#/definitions/TableTombiCommentDirectiveRules"
+        }
+      ]
+    },
+    "KeyTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "key-required": {
@@ -78,8 +104,7 @@
         }
       ]
     },
-    "TableTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/table-tombi-directive.json",
+    "TableTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {

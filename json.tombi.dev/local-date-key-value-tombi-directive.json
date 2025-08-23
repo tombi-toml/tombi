@@ -1,18 +1,44 @@
 {
-  "$id": "tombi://json.tombi.dev/local-date-key-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "LocalDateKeyValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/KeyTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/LocalDateTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "KeyTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/key-tombi-directive.json",
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/LocalDateKeyValueTombiCommentDirectiveRules"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "LocalDateKeyValueTombiCommentDirectiveRules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/KeyTombiCommentDirectiveRules"
+        },
+        {
+          "$ref": "#/definitions/LocalDateTombiCommentDirectiveRules"
+        }
+      ]
+    },
+    "KeyTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
         "key-required": {
@@ -78,8 +104,7 @@
         }
       ]
     },
-    "LocalDateTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/local-date-tombi-directive.json",
+    "LocalDateTombiCommentDirectiveRules": {
       "type": "object",
       "additionalProperties": false
     }

@@ -1,17 +1,44 @@
 {
-  "$id": "tombi://json.tombi.dev/offset-date-time-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "OffsetDateTimeValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/OffsetDateTimeTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/OffsetDateTimeValueTombiCommentDirectiveRules"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "OffsetDateTimeValueTombiCommentDirectiveRules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
+        },
+        {
+          "$ref": "#/definitions/OffsetDateTimeTombiCommentDirectiveRules"
+        }
+      ]
+    },
+    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -78,8 +105,7 @@
         }
       ]
     },
-    "OffsetDateTimeTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/offset-date-time-tombi-directive.json",
+    "OffsetDateTimeTombiCommentDirectiveRules": {
       "type": "object",
       "additionalProperties": false
     }

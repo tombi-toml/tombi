@@ -32,6 +32,32 @@ use crate::{
     into_directive_diagnostic, schema_store, source_schema, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(
+    bound = "T: serde::de::DeserializeOwned + serde::Serialize + ValueTombiCommentDirectiveImpl"
+)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+pub struct ValueTombiCommentDirective<T>
+where
+    T: serde::de::DeserializeOwned + serde::Serialize,
+{
+    lint: Option<ValueLintOptions<T>>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(bound = "T: serde::de::DeserializeOwned + serde::Serialize ")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+pub struct ValueLintOptions<T>
+where
+    T: serde::de::DeserializeOwned + serde::Serialize,
+{
+    rules: T,
+}
+
 pub trait ValueTombiCommentDirectiveImpl {
     fn value_comment_directive_schema_url() -> SchemaUri;
 }

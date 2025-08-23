@@ -1,17 +1,44 @@
 {
-  "$id": "tombi://json.tombi.dev/local-time-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "LocalTimeValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/LocalTimeTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/LocalTimeValueTombiCommentDirectiveRules"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "LocalTimeValueTombiCommentDirectiveRules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
+        },
+        {
+          "$ref": "#/definitions/LocalTimeTombiCommentDirectiveRules"
+        }
+      ]
+    },
+    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -78,8 +105,7 @@
         }
       ]
     },
-    "LocalTimeTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/local-time-tombi-directive.json",
+    "LocalTimeTombiCommentDirectiveRules": {
       "type": "object",
       "additionalProperties": false
     }

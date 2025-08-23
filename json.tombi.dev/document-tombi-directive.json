@@ -1,49 +1,12 @@
 {
-  "$id": "tombi://json.tombi.dev/document-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TombiDocumentCommentDirective",
+  "title": "ValueTombiCommentDirective",
   "type": "object",
   "properties": {
-    "toml-version": {
-      "title": "TOML version.",
-      "description": "This directive specifies the TOML version of this document, with the highest priority.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/TomlVersion"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": "v1.0.0"
-    },
-    "format": {
-      "title": "Formatter options.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/FormatOptions"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "lint": {
-      "title": "Linter options.",
       "anyOf": [
         {
-          "$ref": "#/definitions/LintOptions"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "schema": {
-      "title": "Schema options.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/SchemaOptions"
+          "$ref": "#/definitions/ValueLintOptions"
         },
         {
           "type": "null"
@@ -53,10 +16,78 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/TombiDocumentCommentDirective"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "TombiDocumentCommentDirective": {
+      "$id": "tombi://json.tombi.dev/document-tombi-directive.json",
+      "type": "object",
+      "properties": {
+        "toml-version": {
+          "title": "TOML version.",
+          "description": "This directive specifies the TOML version of this document, with the highest priority.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TomlVersion"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "v1.0.0"
+        },
+        "format": {
+          "title": "Formatter options.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FormatOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lint": {
+          "title": "Linter options.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "title": "Schema options.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SchemaOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "TomlVersion": {
       "title": "TOML version.",
       "type": "string",
-      "enum": ["v1.0.0", "v1.1.0-preview"]
+      "enum": [
+        "v1.0.0",
+        "v1.1.0-preview"
+      ]
     },
     "FormatOptions": {
       "type": "object",
@@ -64,7 +95,10 @@
         "disable": {
           "title": "Format disable",
           "description": "Disable formatting for this document.",
-          "type": ["boolean", "null"],
+          "type": [
+            "boolean",
+            "null"
+          ],
           "default": false
         }
       },
@@ -76,7 +110,10 @@
         "disable": {
           "title": "Lint disable",
           "description": "Disable linting for this document.",
-          "type": ["boolean", "null"],
+          "type": [
+            "boolean",
+            "null"
+          ],
           "default": false
         }
       },
@@ -88,7 +125,10 @@
         "strict": {
           "title": "Enable strict schema validation.",
           "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
-          "type": ["boolean", "null"],
+          "type": [
+            "boolean",
+            "null"
+          ],
           "default": true
         }
       },

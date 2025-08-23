@@ -1,17 +1,44 @@
 {
-  "$id": "tombi://json.tombi.dev/local-date-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "LocalDateValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/LocalDateTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/LocalDateValueTombiCommentDirectiveRules"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rules"
+      ]
+    },
+    "LocalDateValueTombiCommentDirectiveRules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CommonValueTombiCommentDirectiveRules"
+        },
+        {
+          "$ref": "#/definitions/LocalDateTombiCommentDirectiveRules"
+        }
+      ]
+    },
+    "CommonValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -78,8 +105,7 @@
         }
       ]
     },
-    "LocalDateTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/local-date-tombi-directive.json",
+    "LocalDateTombiCommentDirectiveRules": {
       "type": "object",
       "additionalProperties": false
     }
