@@ -65,7 +65,8 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "SeverityLevelDefaultError": {
       "default": "error",

@@ -3,6 +3,7 @@ use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct LocalDateTimeKeyValueTombiCommentDirectiveRules {
     #[serde(flatten)]
     key: KeyTombiCommentDirectiveRules,

@@ -3513,6 +3513,7 @@ dependencies = [
  "tombi-toml-version",
  "tombi-uri",
  "tombi-validator",
+ "tombi-x-keyword",
 ]
 
 [[package]]
