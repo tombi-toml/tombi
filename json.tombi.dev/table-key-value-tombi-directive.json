@@ -31,6 +31,18 @@
     "TableKeyValueTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
+        "key-empty": {
+          "title": "Key empty.",
+          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-required": {
           "description": "Controls the severity level for key required errors",
           "anyOf": [
@@ -58,6 +70,30 @@
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dotted-keys-out-of-order": {
+          "title": "Dotted keys out of order.",
+          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tables-out-of-order": {
+          "title": "Tables out of order.",
+          "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
             },
             {
               "type": "null"
@@ -123,8 +159,8 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -147,6 +183,14 @@
           "title": "Display as Error.",
           "type": "string",
           "const": "error"
+        }
+      ]
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
         }
       ]
     }

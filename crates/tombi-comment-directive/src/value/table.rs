@@ -1,4 +1,4 @@
-use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
 
@@ -30,6 +30,42 @@ pub struct TableValueTombiCommentDirectiveRules {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct TableTombiCommentDirectiveRules {
+    /// # Dotted keys out of order.
+    ///
+    /// Check if dotted keys are defined out of order.
+    ///
+    /// ```toml
+    /// # VALID BUT DISCOURAGED
+    /// apple.type = "fruit"
+    /// orange.type = "fruit"
+    /// apple.skin = "thin"
+    /// orange.skin = "thick"
+    ///
+    /// # RECOMMENDED
+    /// apple.type = "fruit"
+    /// apple.skin = "thin"
+    /// orange.type = "fruit"
+    /// orange.skin = "thick"
+    /// ```
+    pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
+
+    /// # Tables out of order.
+    ///
+    /// Check if tables are defined out of order.
+    ///
+    /// ```toml
+    /// # VALID BUT DISCOURAGED
+    /// [fruit.apple]
+    /// [animal]
+    /// [fruit.orange]
+    ///
+    /// # RECOMMENDED
+    /// [fruit.apple]
+    /// [fruit.orange]
+    /// [animal]
+    /// ```
+    pub tables_out_of_order: Option<SeverityLevelDefaultWarn>,
+
     /// Controls the severity level for type mismatch errors
     pub type_mismatch: Option<SeverityLevelDefaultError>,
 

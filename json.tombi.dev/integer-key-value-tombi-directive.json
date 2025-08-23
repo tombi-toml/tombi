@@ -31,6 +31,18 @@
     "IntegerKeyValueTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
+        "key-empty": {
+          "title": "Key empty.",
+          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-required": {
           "description": "Controls the severity level for key required errors",
           "anyOf": [
@@ -123,8 +135,8 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -147,6 +159,14 @@
           "title": "Display as Error.",
           "type": "string",
           "const": "error"
+        }
+      ]
+    },
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
         }
       ]
     }
