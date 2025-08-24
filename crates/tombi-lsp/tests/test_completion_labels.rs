@@ -41,7 +41,7 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn tombi_comment_schema_directive(
+            async fn schema_comment_directive(
                 "#:█",
                 Schema(tombi_schema_path()),
             ) -> Ok(["schema", "tombi"]);
@@ -57,7 +57,7 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn tombi_comment_schema_directive_and_comment(
+            async fn schema_comment_directive_and_comment(
                 r#"
                 #:schema https://json.schemastore.org/tombi.json
                 # █
@@ -68,7 +68,28 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn tombi_comment_schema_directive_and_colon(
+            async fn tombi_comment_directive_toml_version(
+                r#"
+                #:tombi toml-version█
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([".", "="]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn space_tombi_comment_directive_toml_version(
+                r#"
+                    #:tombi   toml-version█
+                key = "value"
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([".", "="]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_comment_directive_and_colon(
                 r#"
                 #:schema https://json.schemastore.org/tombi.json
                 #:█
