@@ -1,3 +1,4 @@
+use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::{LocalDateTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
@@ -11,7 +12,7 @@ impl Validate for LocalDateTime {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
@@ -48,7 +49,7 @@ impl Validate for LocalDateTime {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -59,7 +60,7 @@ impl Validate for LocalDateTime {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -70,7 +71,7 @@ impl Validate for LocalDateTime {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }

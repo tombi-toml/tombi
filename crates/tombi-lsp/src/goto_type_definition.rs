@@ -5,6 +5,7 @@ mod value;
 
 use std::{borrow::Cow, ops::Deref};
 
+use tombi_comment_directive::CommentContext;
 use tombi_schema_store::{CurrentSchema, SchemaUri};
 
 pub async fn get_type_definition(
@@ -32,13 +33,20 @@ pub async fn get_type_definition(
                     &[],
                     current_schema.as_ref(),
                     schema_context,
-                    &[],
+                    &CommentContext::default(),
                 )
                 .await
         }
         None => {
             table
-                .get_type_definition(position, keys, &[], None, schema_context, &[])
+                .get_type_definition(
+                    position,
+                    keys,
+                    &[],
+                    None,
+                    schema_context,
+                    &CommentContext::default(),
+                )
                 .await
         }
     }
@@ -72,6 +80,6 @@ trait GetTypeDefinition {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
 }

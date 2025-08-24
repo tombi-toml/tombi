@@ -19,6 +19,7 @@ use std::borrow::Cow;
 use all_of::validate_all_of;
 use any_of::validate_any_of;
 use one_of::validate_one_of;
+use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
@@ -28,7 +29,7 @@ pub trait Validate {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>;
 }
 
@@ -51,8 +52,13 @@ pub fn validate<'a: 'b, 'b>(
             })
         });
 
-        tree.validate(&[], current_schema.as_ref(), schema_context, &[])
-            .await?;
+        tree.validate(
+            &[],
+            current_schema.as_ref(),
+            schema_context,
+            &CommentContext::default(),
+        )
+        .await?;
 
         Ok(())
     }

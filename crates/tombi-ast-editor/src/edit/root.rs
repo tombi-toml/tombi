@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_syntax::SyntaxElement;
 
@@ -12,7 +13,7 @@ impl crate::Edit for tombi_ast::Root {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
@@ -43,7 +44,7 @@ impl crate::Edit for tombi_ast::Root {
                             source_path,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await,
                 );
@@ -60,7 +61,7 @@ impl crate::Edit for tombi_ast::Root {
                                     source_path,
                                     current_schema,
                                     schema_context,
-                                    parent_comments,
+                                    comment_context,
                                 )
                                 .await,
                         );
@@ -73,7 +74,7 @@ impl crate::Edit for tombi_ast::Root {
                                     source_path,
                                     current_schema,
                                     schema_context,
-                                    parent_comments,
+                                    comment_context,
                                 )
                                 .await,
                         );

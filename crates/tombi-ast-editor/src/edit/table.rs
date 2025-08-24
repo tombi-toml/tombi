@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{GetHeaderSchemarAccessors, SchemaAccessor};
@@ -14,7 +15,7 @@ impl crate::Edit for tombi_ast::Table {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         tracing::trace!("current_schema = {:?}", current_schema);
 
@@ -38,7 +39,7 @@ impl crate::Edit for tombi_ast::Table {
                     &header_accessors,
                     current_schema,
                     schema_context,
-                    parent_comments,
+                    comment_context,
                 )
                 .await
                 .map(|value_schema| tombi_schema_store::CurrentSchema {
@@ -76,7 +77,7 @@ impl crate::Edit for tombi_ast::Table {
                             source_path,
                             current_schema.as_ref(),
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await,
                 );
@@ -88,7 +89,7 @@ impl crate::Edit for tombi_ast::Table {
                     self.key_values().collect_vec(),
                     current_schema.as_ref(),
                     schema_context,
-                    parent_comments,
+                    comment_context,
                 )
                 .await,
             );

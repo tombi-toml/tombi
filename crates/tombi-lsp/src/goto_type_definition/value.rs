@@ -9,6 +9,7 @@ mod offset_date_time;
 mod string;
 mod table;
 use super::GetTypeDefinition;
+use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 
 impl GetTypeDefinition for tombi_document_tree::Value {
@@ -19,7 +20,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
             match self {
@@ -31,7 +32,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -43,7 +44,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -55,7 +56,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -67,7 +68,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -79,7 +80,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -91,7 +92,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -103,7 +104,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -115,7 +116,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -127,7 +128,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -139,7 +140,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -153,7 +154,7 @@ impl GetTypeDefinition for tombi_document_tree::Value {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
-                                parent_comments,
+                                comment_context,
                             )
                             .await
                     }
@@ -173,7 +174,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
             match self {
@@ -185,7 +186,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -197,7 +198,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -209,7 +210,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -221,7 +222,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -233,7 +234,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -245,7 +246,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -257,7 +258,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -269,7 +270,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -281,7 +282,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -293,7 +294,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -305,7 +306,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -317,7 +318,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }
@@ -329,7 +330,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                 }

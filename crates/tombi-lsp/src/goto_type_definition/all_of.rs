@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 
 use itertools::Itertools;
@@ -15,7 +16,7 @@ pub fn get_all_of_type_definition<'a: 'b, 'b, T>(
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
-    parent_comments: &'a [(&'a str, tombi_text::Range)],
+    comment_context: &'a CommentContext<'a>,
 ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>>
 where
     T: GetTypeDefinition + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
@@ -42,7 +43,7 @@ where
                     accessors,
                     Some(&current_schema),
                     schema_context,
-                    parent_comments,
+                    comment_context,
                 )
                 .await
             {
@@ -54,7 +55,7 @@ where
                             .collect_vec(),
                         Some(&current_schema),
                         schema_context,
-                        parent_comments,
+                        comment_context,
                     )
                     .await
                     .is_err()
@@ -82,7 +83,7 @@ impl GetTypeDefinition for tombi_schema_store::AllOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _parent_comments: &'a [(&'a str, tombi_text::Range)],
+        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             let Some(current_schema) = current_schema else {

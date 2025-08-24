@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, SchemaAccessor};
@@ -14,7 +15,7 @@ impl crate::Edit for tombi_ast::KeyValue {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
@@ -42,7 +43,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                     &keys_accessors.clone(),
                     current_schema,
                     schema_context,
-                    parent_comments,
+                    comment_context,
                 )
                 .await
                 {
@@ -58,7 +59,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                                         definitions: current_schema.definitions.clone(),
                                     }),
                                     schema_context,
-                                    parent_comments,
+                                    comment_context,
                                 )
                                 .await,
                         );
@@ -70,7 +71,7 @@ impl crate::Edit for tombi_ast::KeyValue {
             if let Some(value) = self.value() {
                 changes.extend(
                     value
-                        .edit(&[], source_path, None, schema_context, parent_comments)
+                        .edit(&[], source_path, None, schema_context, comment_context)
                         .await,
                 );
             }

@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use tombi_comment_directive::CommentContext;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, OneOfSchema, ValueSchema};
@@ -13,7 +14,7 @@ pub fn validate_one_of<'a: 'b, 'b, T>(
     one_of_schema: &'a OneOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    parent_comments: &'a [(&'a str, tombi_text::Range)],
+    comment_context: &'a CommentContext<'a>,
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
@@ -60,7 +61,7 @@ where
                             accessors,
                             Some(&current_schema),
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     {
@@ -97,7 +98,7 @@ where
                         one_of_schema,
                         &current_schema,
                         schema_context,
-                        parent_comments,
+                        comment_context,
                     )
                     .await
                     {
@@ -112,7 +113,7 @@ where
                         any_of_schema,
                         &current_schema,
                         schema_context,
-                        parent_comments,
+                        comment_context,
                     )
                     .await
                     {
@@ -127,7 +128,7 @@ where
                         all_of_schema,
                         &current_schema,
                         schema_context,
-                        parent_comments,
+                        comment_context,
                     )
                     .await
                     {

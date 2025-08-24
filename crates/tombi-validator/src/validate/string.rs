@@ -1,5 +1,5 @@
 use regex::Regex;
-use tombi_comment_directive::StringValueTombiCommentDirectiveRules;
+use tombi_comment_directive::{CommentContext, StringValueTombiCommentDirectiveRules};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -18,7 +18,7 @@ impl Validate for tombi_document_tree::String {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
@@ -27,7 +27,7 @@ impl Validate for tombi_document_tree::String {
             let _comment_directive = {
                 let mut comment_directives = vec![];
 
-                for (comment_str, comment_range) in parent_comments {
+                for (comment_str, comment_range) in comment_context.parent_comments {
                     if let Some(comment_directive) =
                         tombi_ast::tombi_value_comment_directive(comment_str, *comment_range)
                     {
@@ -89,7 +89,7 @@ impl Validate for tombi_document_tree::String {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -100,7 +100,7 @@ impl Validate for tombi_document_tree::String {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -111,7 +111,7 @@ impl Validate for tombi_document_tree::String {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use tombi_ast::AstNode;
+use tombi_comment_directive::CommentContext;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 
 use crate::{change::Change, Edit};
@@ -46,7 +47,7 @@ impl<'a> Editor<'a> {
                 self.source_path,
                 current_schema.as_ref(),
                 self.schema_context,
-                &[],
+                &CommentContext::default(),
             )
             .await;
 

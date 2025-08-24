@@ -1,3 +1,4 @@
+use tombi_comment_directive::CommentContext;
 use tombi_schema_store::{Accessor, CurrentSchema, StringSchema, ValueSchema};
 
 use crate::hover::{
@@ -18,7 +19,7 @@ impl GetHoverContent for tombi_document_tree::String {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             if let Some(current_schema) = current_schema {
@@ -37,7 +38,7 @@ impl GetHoverContent for tombi_document_tree::String {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
-                                parent_comments,
+                                comment_context,
                             )
                             .await
                             .map(|mut hover_content| {
@@ -55,7 +56,7 @@ impl GetHoverContent for tombi_document_tree::String {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -69,7 +70,7 @@ impl GetHoverContent for tombi_document_tree::String {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -83,7 +84,7 @@ impl GetHoverContent for tombi_document_tree::String {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -113,7 +114,7 @@ impl GetHoverContent for StringSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _parent_comments: &'a [(&'a str, tombi_text::Range)],
+        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             Some(HoverValueContent {

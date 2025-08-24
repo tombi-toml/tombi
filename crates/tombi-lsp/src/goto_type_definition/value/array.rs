@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, DocumentSchema, ValueSchema};
 
@@ -17,7 +18,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
@@ -47,7 +48,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                         accessors,
                         current_schema.as_ref(),
                         schema_context,
-                        parent_comments,
+                        comment_context,
                     )
                     .await;
             }
@@ -80,7 +81,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
-                                                parent_comments,
+                                                comment_context,
                                             )
                                             .await;
                                     }
@@ -97,7 +98,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                             .collect_vec(),
                                         None,
                                         schema_context,
-                                        parent_comments,
+                                        comment_context,
                                     )
                                     .await;
                             }
@@ -109,7 +110,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
-                                parent_comments,
+                                comment_context,
                             )
                             .await;
                     }
@@ -123,7 +124,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -137,7 +138,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -151,7 +152,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await
                     }
@@ -173,7 +174,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                 .collect_vec(),
                             None,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await;
                 }
@@ -193,7 +194,7 @@ impl GetTypeDefinition for ArraySchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _parent_comments: &'a [(&'a str, tombi_text::Range)],
+        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {

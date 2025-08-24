@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -18,15 +19,15 @@ impl Validate for tombi_document_tree::Table {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        parent_comments: &'a [(&'a str, tombi_text::Range)],
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
-        let parent_comments = if self.kind() == tombi_document_tree::TableKind::KeyValue {
-            parent_comments
-        } else {
-            &[]
-        };
-
         async move {
+            let comment_context = if self.kind() == tombi_document_tree::TableKind::KeyValue {
+                comment_context
+            } else {
+                &CommentContext::default()
+            };
+
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
                 .and_then(|map| map.get(accessors))
@@ -51,7 +52,7 @@ impl Validate for tombi_document_tree::Table {
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
-                                parent_comments,
+                                comment_context,
                             )
                             .await;
                     }
@@ -89,7 +90,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await;
                     }
@@ -100,7 +101,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await;
                     }
@@ -111,7 +112,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            parent_comments,
+                            comment_context,
                         )
                         .await;
                     }
@@ -119,7 +120,7 @@ impl Validate for tombi_document_tree::Table {
                 };
 
                 for (key, value) in self.key_values() {
-                    let mut parent_comments = parent_comments.to_vec();
+                    let mut parent_comments = comment_context.parent_comments.to_vec();
                     for leading_comment in key.leading_comments() {
                         parent_comments.push((leading_comment.text(), leading_comment.range()))
                     }
@@ -159,7 +160,7 @@ impl Validate for tombi_document_tree::Table {
                                     &new_accessors,
                                     Some(&current_schema),
                                     schema_context,
-                                    &parent_comments,
+                                    &comment_context,
                                 )
                                 .await
                             {
@@ -206,7 +207,7 @@ impl Validate for tombi_document_tree::Table {
                                             &new_accessors,
                                             Some(&current_schema),
                                             schema_context,
-                                            &parent_comments,
+                                            &comment_context,
                                         )
                                         .await
                                     {
@@ -263,7 +264,7 @@ impl Validate for tombi_document_tree::Table {
                                         &new_accessors,
                                         Some(&current_schema),
                                         schema_context,
-                                        &parent_comments,
+                                        &comment_context,
                                     )
                                     .await
                                 {
@@ -356,7 +357,7 @@ impl Validate for tombi_document_tree::Table {
                 }
             } else {
                 for (key, value) in self.key_values() {
-                    let mut parent_comments = parent_comments.to_vec();
+                    let mut parent_comments = comment_context.parent_comments.to_vec();
                     for leading_comment in key.leading_comments() {
                         parent_comments.push((leading_comment.text(), leading_comment.range()))
                     }
@@ -372,7 +373,7 @@ impl Validate for tombi_document_tree::Table {
                                 .collect_vec(),
                             None,
                             schema_context,
-                            &parent_comments,
+                            &comment_context,
                         )
                         .await
                     {

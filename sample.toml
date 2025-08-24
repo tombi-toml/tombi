@@ -19,7 +19,7 @@ key4 = '''
 multi line literal string
 '''
 key5 = { key6 = 1 }
-# tombi: lint.rules.string-format = "off"
+# tombi: lint.rules = { string-format = "off" }
 key7.key8 = "aaaa"
 
 # key values end dangling comment1
