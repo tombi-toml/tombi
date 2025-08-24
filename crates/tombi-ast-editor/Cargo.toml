@@ -17,6 +17,7 @@ tombi-future.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-syntax.workspace = true
+tombi-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-validator.workspace = true
 tombi-version-sort.workspace = true

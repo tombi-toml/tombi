@@ -46,6 +46,7 @@ impl<'a> Editor<'a> {
                 self.source_path,
                 current_schema.as_ref(),
                 self.schema_context,
+                &[],
             )
             .await;
 

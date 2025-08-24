@@ -28,6 +28,7 @@ pub trait Validate {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>;
 }
 
@@ -48,7 +49,7 @@ pub fn validate<'a: 'b, 'b>(
                 })
         });
 
-        tree.validate(&[], current_schema.as_ref(), schema_context)
+        tree.validate(&[], current_schema.as_ref(), schema_context, &[])
             .await?;
 
         Ok(())

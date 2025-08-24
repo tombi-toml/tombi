@@ -18,7 +18,14 @@ impl Validate for tombi_document_tree::Table {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+        let parent_comments = if self.kind() == tombi_document_tree::TableKind::InlineTable {
+            parent_comments
+        } else {
+            &[]
+        };
+
         async move {
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
@@ -44,6 +51,7 @@ impl Validate for tombi_document_tree::Table {
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
+                                parent_comments,
                             )
                             .await;
                     }
@@ -81,6 +89,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                     }
@@ -91,6 +100,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                     }
@@ -101,6 +111,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                     }
@@ -139,7 +150,12 @@ impl Validate for tombi_document_tree::Table {
                             .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             if let Err(schema_diagnostics) = value
-                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .validate(
+                                    &new_accessors,
+                                    Some(&current_schema),
+                                    schema_context,
+                                    parent_comments,
+                                )
                                 .await
                             {
                                 diagnostics.extend(schema_diagnostics);
@@ -185,6 +201,7 @@ impl Validate for tombi_document_tree::Table {
                                             &new_accessors,
                                             Some(&current_schema),
                                             schema_context,
+                                            parent_comments,
                                         )
                                         .await
                                     {
@@ -237,7 +254,12 @@ impl Validate for tombi_document_tree::Table {
                                 }
 
                                 if let Err(schema_diagnostics) = value
-                                    .validate(&new_accessors, Some(&current_schema), schema_context)
+                                    .validate(
+                                        &new_accessors,
+                                        Some(&current_schema),
+                                        schema_context,
+                                        parent_comments,
+                                    )
                                     .await
                                 {
                                     diagnostics.extend(schema_diagnostics);
@@ -340,6 +362,7 @@ impl Validate for tombi_document_tree::Table {
                                 .collect_vec(),
                             None,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     {

@@ -204,6 +204,7 @@ impl tombi_validator::Validate for SchemaCompletion {
         _accessors: &'a [tombi_schema_store::SchemaAccessor],
         _current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
+        _parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move { Ok(()) }.boxed()
     }

@@ -11,6 +11,7 @@ impl Validate for tombi_document_tree::Float {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
@@ -44,6 +45,7 @@ impl Validate for tombi_document_tree::Float {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -54,6 +56,7 @@ impl Validate for tombi_document_tree::Float {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -64,6 +67,7 @@ impl Validate for tombi_document_tree::Float {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }

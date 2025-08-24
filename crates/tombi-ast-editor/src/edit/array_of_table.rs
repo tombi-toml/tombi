@@ -14,6 +14,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         tracing::trace!("current_schema = {:?}", current_schema);
 
@@ -32,13 +33,19 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
             );
 
             let current_schema = if let Some(current_schema) = current_schema {
-                get_schema(value, &header_accessors, current_schema, schema_context)
-                    .await
-                    .map(|value_schema| CurrentSchema {
-                        value_schema: Cow::Owned(value_schema),
-                        schema_uri: current_schema.schema_uri.clone(),
-                        definitions: current_schema.definitions.clone(),
-                    })
+                get_schema(
+                    value,
+                    &header_accessors,
+                    current_schema,
+                    schema_context,
+                    parent_comments,
+                )
+                .await
+                .map(|value_schema| CurrentSchema {
+                    value_schema: Cow::Owned(value_schema),
+                    schema_uri: current_schema.schema_uri.clone(),
+                    definitions: current_schema.definitions.clone(),
+                })
             } else {
                 None
             };
@@ -69,6 +76,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
                             source_path,
                             current_schema.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await,
                 );
@@ -80,6 +88,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
                     self.key_values().collect_vec(),
                     current_schema.as_ref(),
                     schema_context,
+                    parent_comments,
                 )
                 .await,
             );

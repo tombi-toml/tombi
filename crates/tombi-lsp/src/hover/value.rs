@@ -22,6 +22,7 @@ impl GetHoverContent for tombi_document_tree::Value {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             match self {
@@ -33,6 +34,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -44,6 +46,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -55,6 +58,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -66,6 +70,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -77,6 +82,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -88,6 +94,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -99,6 +106,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -110,6 +118,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -121,6 +130,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -132,6 +142,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -144,6 +155,7 @@ impl GetHoverContent for tombi_document_tree::Value {
                             accessors,
                             Some(current_schema),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                         .map(|mut hover_content| {
@@ -166,6 +178,7 @@ impl GetHoverContent for ValueSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             match self {
@@ -177,6 +190,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -188,6 +202,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -199,6 +214,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -210,6 +226,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -221,6 +238,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -232,6 +250,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -243,6 +262,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -254,6 +274,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -265,6 +286,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -276,6 +298,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -287,6 +310,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -298,6 +322,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }
@@ -309,6 +334,7 @@ impl GetHoverContent for ValueSchema {
                             accessors,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                 }

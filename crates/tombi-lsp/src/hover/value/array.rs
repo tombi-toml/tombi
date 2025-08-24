@@ -23,6 +23,7 @@ impl GetHoverContent for tombi_document_tree::Array {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
@@ -52,6 +53,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                         accessors,
                         current_schema.as_ref(),
                         schema_context,
+                        parent_comments,
                     )
                     .await;
             }
@@ -84,6 +86,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
+                                                parent_comments,
                                             )
                                             .await?;
 
@@ -127,6 +130,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                             .collect_vec(),
                                         None,
                                         schema_context,
+                                        parent_comments,
                                     )
                                     .await;
                             }
@@ -138,6 +142,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
+                                parent_comments,
                             )
                             .await
                             .map(|mut hover_content| {
@@ -155,6 +160,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -168,6 +174,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -181,8 +188,9 @@ impl GetHoverContent for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
+                            parent_comments,
                         )
-                        .await
+                        .await;
                     }
                     ValueSchema::Null => {
                         for (index, value) in self.values().iter().enumerate() {
@@ -199,6 +207,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                             .collect_vec(),
                                         Some(current_schema),
                                         schema_context,
+                                        parent_comments,
                                     )
                                     .await;
                             }
@@ -232,6 +241,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                                 .collect_vec(),
                             None,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                 }
@@ -258,6 +268,7 @@ impl GetHoverContent for ArraySchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
+        _parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             Some(HoverValueContent {

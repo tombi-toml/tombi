@@ -18,6 +18,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             if let Some(current_schema) = current_schema {
@@ -36,6 +37,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
+                                parent_comments,
                             )
                             .await
                             .map(|mut hover_content| {
@@ -53,6 +55,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -66,6 +69,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -79,6 +83,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -108,6 +113,7 @@ impl GetHoverContent for BooleanSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
+        _parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             Some(HoverValueContent {

@@ -14,6 +14,7 @@ impl crate::Edit for tombi_ast::KeyValue {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
@@ -41,6 +42,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                     &keys_accessors.clone(),
                     current_schema,
                     schema_context,
+                    parent_comments,
                 )
                 .await
                 {
@@ -56,6 +58,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                                         definitions: current_schema.definitions.clone(),
                                     }),
                                     schema_context,
+                                    parent_comments,
                                 )
                                 .await,
                         );
@@ -65,7 +68,11 @@ impl crate::Edit for tombi_ast::KeyValue {
             }
 
             if let Some(value) = self.value() {
-                changes.extend(value.edit(&[], source_path, None, schema_context).await);
+                changes.extend(
+                    value
+                        .edit(&[], source_path, None, schema_context, parent_comments)
+                        .await,
+                );
             }
 
             changes

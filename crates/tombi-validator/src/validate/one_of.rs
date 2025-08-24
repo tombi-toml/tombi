@@ -13,6 +13,7 @@ pub fn validate_one_of<'a: 'b, 'b, T>(
     one_of_schema: &'a OneOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    parent_comments: &'a [(&'a str, tombi_text::Range)],
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
@@ -55,7 +56,12 @@ where
                 | (tombi_document_tree::ValueType::Table, ValueSchema::Table(_))
                 | (tombi_document_tree::ValueType::Array, ValueSchema::Array(_)) => {
                     match value
-                        .validate(accessors, Some(&current_schema), schema_context)
+                        .validate(
+                            accessors,
+                            Some(&current_schema),
+                            schema_context,
+                            parent_comments,
+                        )
                         .await
                     {
                         Ok(()) => Vec::with_capacity(0),
@@ -91,6 +97,7 @@ where
                         one_of_schema,
                         &current_schema,
                         schema_context,
+                        parent_comments,
                     )
                     .await
                     {
@@ -105,6 +112,7 @@ where
                         any_of_schema,
                         &current_schema,
                         schema_context,
+                        parent_comments,
                     )
                     .await
                     {
@@ -119,6 +127,7 @@ where
                         all_of_schema,
                         &current_schema,
                         schema_context,
+                        parent_comments,
                     )
                     .await
                     {

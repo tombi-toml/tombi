@@ -15,6 +15,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
             if let Some(current_schema) = current_schema {
@@ -27,6 +28,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
+                                parent_comments,
                             )
                             .await
                     }
@@ -40,6 +42,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -53,6 +56,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -66,6 +70,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     }
@@ -87,6 +92,7 @@ impl GetTypeDefinition for tombi_schema_store::LocalTimeSchema {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
+        _parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {

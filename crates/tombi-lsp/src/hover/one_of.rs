@@ -19,6 +19,7 @@ pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
+    parent_comments: &'a [(&'a str, tombi_text::Range)],
 ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>
 where
     T: GetHoverContent + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
@@ -81,6 +82,7 @@ where
                     accessors,
                     Some(&current_schema),
                     schema_context,
+                    parent_comments,
                 )
                 .await
             {
@@ -112,6 +114,7 @@ where
                             .collect_vec(),
                         Some(&current_schema),
                         schema_context,
+                        parent_comments,
                     )
                     .await
                 {
@@ -214,6 +217,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        _parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
         async move {
             let Some(current_schema) = current_schema else {

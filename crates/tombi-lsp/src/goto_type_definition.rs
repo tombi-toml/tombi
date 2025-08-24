@@ -26,12 +26,19 @@ pub async fn get_type_definition(
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
-                .get_type_definition(position, keys, &[], current_schema.as_ref(), schema_context)
+                .get_type_definition(
+                    position,
+                    keys,
+                    &[],
+                    current_schema.as_ref(),
+                    schema_context,
+                    &[],
+                )
                 .await
         }
         None => {
             table
-                .get_type_definition(position, keys, &[], None, schema_context)
+                .get_type_definition(position, keys, &[], None, schema_context, &[])
                 .await
         }
     }
@@ -65,5 +72,6 @@ trait GetTypeDefinition {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
 }

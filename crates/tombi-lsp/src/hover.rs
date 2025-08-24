@@ -34,12 +34,19 @@ pub async fn get_hover_content(
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
-                .get_hover_content(position, keys, &[], current_schema.as_ref(), schema_context)
+                .get_hover_content(
+                    position,
+                    keys,
+                    &[],
+                    current_schema.as_ref(),
+                    schema_context,
+                    &[],
+                )
                 .await
         }
         None => {
             table
-                .get_hover_content(position, keys, &[], None, schema_context)
+                .get_hover_content(position, keys, &[], None, schema_context, &[])
                 .await
         }
     }
@@ -53,6 +60,7 @@ trait GetHoverContent {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>;
 }
 

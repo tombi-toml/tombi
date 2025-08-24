@@ -26,6 +26,7 @@ pub async fn root_table_keys_order<'a>(
         key_values,
         current_schema,
         schema_context,
+        &[],
     )
     .await;
 
@@ -70,6 +71,7 @@ pub async fn root_table_keys_order<'a>(
         targets,
         current_schema,
         schema_context,
+        &[],
     )
     .await
     .into_iter()

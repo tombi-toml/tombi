@@ -19,6 +19,7 @@ pub trait Edit {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Vec<crate::Change>>;
 }
 
@@ -27,6 +28,7 @@ async fn get_schema<'a: 'b, 'b>(
     accessors: &'a [tombi_schema_store::SchemaAccessor],
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    parent_comments: &'a [(&'a str, tombi_text::Range)],
 ) -> Option<ValueSchema> {
     fn inner_get_schema<'a: 'b, 'b>(
         value: &'a tombi_document_tree::Value,
@@ -34,6 +36,7 @@ async fn get_schema<'a: 'b, 'b>(
         validation_accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Option<ValueSchema>> {
         async move {
             match current_schema.value_schema.as_ref() {
@@ -57,6 +60,7 @@ async fn get_schema<'a: 'b, 'b>(
                                 validation_accessors,
                                 &current_schema,
                                 schema_context,
+                                parent_comments,
                             )
                             .await
                             {
@@ -72,7 +76,12 @@ async fn get_schema<'a: 'b, 'b>(
 
             if accessors.is_empty() {
                 return value
-                    .validate(validation_accessors, Some(current_schema), schema_context)
+                    .validate(
+                        validation_accessors,
+                        Some(current_schema),
+                        schema_context,
+                        parent_comments,
+                    )
                     .await
                     .ok()
                     .map(|_| current_schema.value_schema.as_ref().clone());
@@ -109,6 +118,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         validation_accessors,
                                         &current_schema,
                                         schema_context,
+                                        parent_comments,
                                     )
                                     .await;
                                 }
@@ -138,6 +148,7 @@ async fn get_schema<'a: 'b, 'b>(
                                                     validation_accessors,
                                                     &current_schema,
                                                     schema_context,
+                                                    parent_comments,
                                                 )
                                                 .await;
                                             }
@@ -170,6 +181,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         validation_accessors,
                                         &current_schema,
                                         schema_context,
+                                        parent_comments,
                                     )
                                     .await;
                                 }
@@ -204,6 +216,7 @@ async fn get_schema<'a: 'b, 'b>(
                                         validation_accessors,
                                         &current_schema,
                                         schema_context,
+                                        parent_comments,
                                     )
                                     .await;
                                 }
@@ -220,5 +233,13 @@ async fn get_schema<'a: 'b, 'b>(
         .boxed()
     }
 
-    inner_get_schema(value, accessors, accessors, current_schema, schema_context).await
+    inner_get_schema(
+        value,
+        accessors,
+        accessors,
+        current_schema,
+        schema_context,
+        parent_comments,
+    )
+    .await
 }

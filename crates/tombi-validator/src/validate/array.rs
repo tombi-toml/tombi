@@ -15,7 +15,14 @@ impl Validate for tombi_document_tree::Array {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+        let parent_comments = if self.kind() == tombi_document_tree::ArrayKind::Array {
+            parent_comments
+        } else {
+            &[]
+        };
+
         async move {
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
@@ -43,6 +50,7 @@ impl Validate for tombi_document_tree::Array {
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
+                                parent_comments,
                             )
                             .await;
                     }
@@ -80,6 +88,7 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                     }
@@ -90,6 +99,7 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                     }
@@ -100,6 +110,7 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            parent_comments,
                         )
                         .await;
                     }
@@ -125,7 +136,12 @@ impl Validate for tombi_document_tree::Array {
 
                         for value in self.values().iter() {
                             if let Err(schema_diagnostics) = value
-                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .validate(
+                                    &new_accessors,
+                                    Some(&current_schema),
+                                    schema_context,
+                                    parent_comments,
+                                )
                                 .await
                             {
                                 diagnostics.extend(schema_diagnostics);
@@ -206,6 +222,7 @@ impl Validate for tombi_document_tree::Array {
                                 .collect_vec(),
                             None,
                             schema_context,
+                            parent_comments,
                         )
                         .await
                     {
