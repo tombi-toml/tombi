@@ -30,11 +30,11 @@ pub struct ArrayValueTombiCommentDirectiveRules {
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ArrayTombiCommentDirectiveRules {
     /// Controls the severity level for max values errors
-    pub array_max_values: Option<SeverityLevelDefaultError>,
+    pub array_max_items: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for min values errors
-    pub array_min_values: Option<SeverityLevelDefaultError>,
+    pub array_min_items: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for unique values errors
-    pub array_unique_values: Option<SeverityLevelDefaultError>,
+    pub array_unique_items: Option<SeverityLevelDefaultError>,
 }

@@ -92,7 +92,7 @@
             }
           ]
         },
-        "array-max-values": {
+        "array-max-items": {
           "description": "Controls the severity level for max values errors",
           "anyOf": [
             {
@@ -103,7 +103,7 @@
             }
           ]
         },
-        "array-min-values": {
+        "array-min-items": {
           "description": "Controls the severity level for min values errors",
           "anyOf": [
             {
@@ -114,7 +114,7 @@
             }
           ]
         },
-        "array-unique-values": {
+        "array-unique-items": {
           "description": "Controls the severity level for unique values errors",
           "anyOf": [
             {

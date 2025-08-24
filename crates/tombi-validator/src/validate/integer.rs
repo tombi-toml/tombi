@@ -73,7 +73,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(maximum) = &integer_schema.maximum {
                             if value > *maximum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::MaximumInteger {
+                                    kind: crate::ErrorKind::IntegerMaximum {
                                         maximum: *maximum,
                                         actual: value,
                                     },
@@ -86,7 +86,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(minimum) = &integer_schema.minimum {
                             if value < *minimum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::MinimumInteger {
+                                    kind: crate::ErrorKind::IntegerMinimum {
                                         minimum: *minimum,
                                         actual: value,
                                     },
@@ -99,7 +99,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum {
                             if value >= *exclusive_maximum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::ExclusiveMaximumInteger {
+                                    kind: crate::ErrorKind::IntegerExclusiveMaximum {
                                         maximum: *exclusive_maximum - 1,
                                         actual: value,
                                     },
@@ -112,7 +112,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum {
                             if value <= *exclusive_minimum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::ExclusiveMinimumInteger {
+                                    kind: crate::ErrorKind::IntegerExclusiveMinimum {
                                         minimum: *exclusive_minimum + 1,
                                         actual: value,
                                     },
@@ -125,7 +125,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(multiple_of) = &integer_schema.multiple_of {
                             if value % *multiple_of != 0 {
                                 crate::Error {
-                                    kind: crate::ErrorKind::MultipleOfInteger {
+                                    kind: crate::ErrorKind::IntegerMultipleOf {
                                         multiple_of: *multiple_of,
                                         actual: value,
                                     },
@@ -185,7 +185,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(maximum) = &float_schema.maximum {
                             if value > *maximum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::MaximumFloat {
+                                    kind: crate::ErrorKind::FloatMaximum {
                                         maximum: *maximum,
                                         actual: value,
                                     },
@@ -198,7 +198,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(minimum) = &float_schema.minimum {
                             if value < *minimum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::MinimumFloat {
+                                    kind: crate::ErrorKind::FloatMinimum {
                                         minimum: *minimum,
                                         actual: value,
                                     },
@@ -211,7 +211,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
                             if value >= *exclusive_maximum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::ExclusiveMaximumFloat {
+                                    kind: crate::ErrorKind::FloatExclusiveMaximum {
                                         maximum: *exclusive_maximum - 1.0,
                                         actual: value,
                                     },
@@ -224,7 +224,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
                             if value <= *exclusive_minimum {
                                 crate::Error {
-                                    kind: crate::ErrorKind::ExclusiveMinimumFloat {
+                                    kind: crate::ErrorKind::FloatExclusiveMinimum {
                                         minimum: *exclusive_minimum + 1.0,
                                         actual: value,
                                     },
@@ -237,7 +237,7 @@ impl Validate for tombi_document_tree::Integer {
                         if let Some(multiple_of) = &float_schema.multiple_of {
                             if value % *multiple_of != 0.0 {
                                 crate::Error {
-                                    kind: crate::ErrorKind::MultipleOfFloat {
+                                    kind: crate::ErrorKind::FloatMultipleOf {
                                         multiple_of: *multiple_of,
                                         actual: value,
                                     },

@@ -137,7 +137,7 @@ impl Validate for tombi_document_tree::String {
                 if let Some(max_length) = &string_schema.max_length {
                     if value.len() > *max_length {
                         crate::Error {
-                            kind: crate::ErrorKind::MaximumLength {
+                            kind: crate::ErrorKind::StringMaximumLength {
                                 maximum: *max_length,
                                 actual: value.len(),
                             },
@@ -150,7 +150,7 @@ impl Validate for tombi_document_tree::String {
                 if let Some(min_length) = &string_schema.min_length {
                     if value.len() < *min_length {
                         crate::Error {
-                            kind: crate::ErrorKind::MinimumLength {
+                            kind: crate::ErrorKind::StringMinimumLength {
                                 minimum: *min_length,
                                 actual: value.len(),
                             },
@@ -165,7 +165,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Email => {
                             if !format::email::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -177,7 +177,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Hostname => {
                             if !format::hostname::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -189,7 +189,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Uri => {
                             if !format::uri::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -201,7 +201,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Uuid => {
                             if !format::uuid::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -217,7 +217,7 @@ impl Validate for tombi_document_tree::String {
                     if let Ok(regex) = Regex::new(pattern) {
                         if !regex.is_match(&value) {
                             crate::Error {
-                                kind: crate::ErrorKind::Pattern {
+                                kind: crate::ErrorKind::StringPattern {
                                     pattern: pattern.clone(),
                                     actual: self.to_string(),
                                 },

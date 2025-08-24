@@ -101,7 +101,7 @@ impl Validate for tombi_document_tree::Float {
                 if let Some(maximum) = &float_schema.maximum {
                     if value > *maximum {
                         crate::Error {
-                            kind: crate::ErrorKind::MaximumFloat {
+                            kind: crate::ErrorKind::FloatMaximum {
                                 maximum: *maximum,
                                 actual: value,
                             },
@@ -114,7 +114,7 @@ impl Validate for tombi_document_tree::Float {
                 if let Some(minimum) = &float_schema.minimum {
                     if value < *minimum {
                         crate::Error {
-                            kind: crate::ErrorKind::MinimumFloat {
+                            kind: crate::ErrorKind::FloatMinimum {
                                 minimum: *minimum,
                                 actual: value,
                             },
@@ -127,7 +127,7 @@ impl Validate for tombi_document_tree::Float {
                 if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
                     if value >= *exclusive_maximum {
                         crate::Error {
-                            kind: crate::ErrorKind::ExclusiveMaximumFloat {
+                            kind: crate::ErrorKind::FloatExclusiveMaximum {
                                 maximum: *exclusive_maximum,
                                 actual: value,
                             },
@@ -140,7 +140,7 @@ impl Validate for tombi_document_tree::Float {
                 if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
                     if value <= *exclusive_minimum {
                         crate::Error {
-                            kind: crate::ErrorKind::ExclusiveMinimumFloat {
+                            kind: crate::ErrorKind::FloatExclusiveMinimum {
                                 minimum: *exclusive_minimum,
                                 actual: value,
                             },
@@ -153,7 +153,7 @@ impl Validate for tombi_document_tree::Float {
                 if let Some(multiple_of) = &float_schema.multiple_of {
                     if (value % *multiple_of).abs() > f64::EPSILON {
                         crate::Error {
-                            kind: crate::ErrorKind::MultipleOfFloat {
+                            kind: crate::ErrorKind::FloatMultipleOf {
                                 multiple_of: *multiple_of,
                                 actual: value,
                             },
