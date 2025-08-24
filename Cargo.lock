@@ -3496,23 +3496,16 @@ dependencies = [
 name = "tombi-comment-directive"
 version = "0.0.0-dev"
 dependencies = [
- "ahash",
  "schemars",
  "serde",
  "thiserror 2.0.12",
  "tokio",
- "tombi-ast",
- "tombi-diagnostic",
- "tombi-document",
- "tombi-document-tree",
  "tombi-json",
- "tombi-parser",
  "tombi-schema-store",
  "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
- "tombi-uri",
- "tombi-validator",
+ "tombi-x-keyword",
 ]
 
 [[package]]
@@ -3677,6 +3670,7 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-uri",
+ "tombi-validator",
  "tracing",
  "unicode-segmentation",
 ]
@@ -3771,7 +3765,6 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-ast",
- "tombi-comment-directive",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree",
@@ -3968,10 +3961,16 @@ dependencies = [
  "email_address",
  "itertools 0.14.0",
  "regex",
+ "serde",
  "thiserror 2.0.12",
+ "tombi-ast",
+ "tombi-comment-directive",
  "tombi-diagnostic",
+ "tombi-document",
  "tombi-document-tree",
  "tombi-future",
+ "tombi-json",
+ "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",

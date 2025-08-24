@@ -1,17 +1,38 @@
 {
-  "$id": "tombi://json.tombi.dev/boolean-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "BooleanValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/BooleanTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BooleanValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "BooleanValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -77,11 +98,6 @@
           "const": "error"
         }
       ]
-    },
-    "BooleanTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/boolean-tombi-directive.json",
-      "type": "object",
-      "additionalProperties": false
     }
   }
 }

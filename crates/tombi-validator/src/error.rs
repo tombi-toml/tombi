@@ -25,73 +25,73 @@ pub enum ErrorKind {
     },
 
     #[error("The value must be > {maximum}, but found {actual}")]
-    MaximumInteger { maximum: i64, actual: i64 },
+    IntegerMaximum { maximum: i64, actual: i64 },
 
     #[error("The value must be < {minimum}, but found {actual}")]
-    MinimumInteger { minimum: i64, actual: i64 },
+    IntegerMinimum { minimum: i64, actual: i64 },
 
     #[error("The value must be ≥ {maximum}, but found {actual}")]
-    ExclusiveMaximumInteger { maximum: i64, actual: i64 },
+    IntegerExclusiveMaximum { maximum: i64, actual: i64 },
 
     #[error("The value must be ≤ {minimum}, but found {actual}")]
-    ExclusiveMinimumInteger { minimum: i64, actual: i64 },
+    IntegerExclusiveMinimum { minimum: i64, actual: i64 },
 
     #[error("The value {actual} is not a multiple of {multiple_of}")]
-    MultipleOfInteger { multiple_of: i64, actual: i64 },
+    IntegerMultipleOf { multiple_of: i64, actual: i64 },
 
     #[error("The value must be > {maximum}, but found {actual}")]
-    MaximumFloat { maximum: f64, actual: f64 },
+    FloatMaximum { maximum: f64, actual: f64 },
 
     #[error("The value must be < {minimum}, but found {actual}")]
-    MinimumFloat { minimum: f64, actual: f64 },
+    FloatMinimum { minimum: f64, actual: f64 },
 
     #[error("The value must be ≥ {maximum}, but found {actual}")]
-    ExclusiveMaximumFloat { maximum: f64, actual: f64 },
+    FloatExclusiveMaximum { maximum: f64, actual: f64 },
 
     #[error("The value must be ≤ {minimum}, but found {actual}")]
-    ExclusiveMinimumFloat { minimum: f64, actual: f64 },
+    FloatExclusiveMinimum { minimum: f64, actual: f64 },
 
     #[error("The value {actual} is not a multiple of {multiple_of}")]
-    MultipleOfFloat { multiple_of: f64, actual: f64 },
+    FloatMultipleOf { multiple_of: f64, actual: f64 },
 
     #[error("The length must be ≤ {maximum}, but found {actual}")]
-    MaximumLength { maximum: usize, actual: usize },
+    StringMaximumLength { maximum: usize, actual: usize },
 
     #[error("The length must be ≥ {minimum}, but found {actual}")]
-    MinimumLength { minimum: usize, actual: usize },
+    StringMinimumLength { minimum: usize, actual: usize },
 
     #[error("{actual} is not a valid `{format}` format")]
-    Format {
+    StringFormat {
         format: StringFormat,
         actual: String,
     },
 
     #[error("{actual} does not match the pattern `{pattern}`")]
-    Pattern { pattern: String, actual: String },
+    StringPattern { pattern: String, actual: String },
 
     #[error("Array must contain at most {max_values} values, but found {actual}")]
-    MaxValues { max_values: usize, actual: usize },
+    ArrayMaxItems { max_values: usize, actual: usize },
 
     #[error("Array must contain at least {min_values} values, but found {actual}")]
-    MinValues { min_values: usize, actual: usize },
+    ArrayMinItems { min_values: usize, actual: usize },
 
     #[error("Array values must be unique")]
-    UniqueValues,
+    ArrayUniqueItems,
 
     #[error("Table must contain at most {max_properties} properties, but found {actual}")]
-    MaxProperties {
+    TableMaxProperties {
         max_properties: usize,
         actual: usize,
     },
 
     #[error("Table must contain at least {min_properties} properties, but found {actual}")]
-    MinProperties {
+    TableMinProperties {
         min_properties: usize,
         actual: usize,
     },
 
     #[error("Key must match the pattern `{patterns}`")]
-    PatternProperty { patterns: Patterns },
+    KeyPattern { patterns: Patterns },
 }
 
 #[derive(Debug)]
@@ -109,26 +109,26 @@ impl Error {
             ErrorKind::TypeMismatch { .. } => "type-mismatch",
             ErrorKind::Const { .. } => "const",
             ErrorKind::Enumerate { .. } => "enumerate",
-            ErrorKind::MaximumInteger { .. } => "maximum-integer",
-            ErrorKind::MinimumInteger { .. } => "minimum-integer",
-            ErrorKind::ExclusiveMaximumInteger { .. } => "exclusive-maximum-integer",
-            ErrorKind::ExclusiveMinimumInteger { .. } => "exclusive-minimum-integer",
-            ErrorKind::MultipleOfInteger { .. } => "multiple-of-integer",
-            ErrorKind::MaximumFloat { .. } => "maximum-float",
-            ErrorKind::MinimumFloat { .. } => "minimum-float",
-            ErrorKind::ExclusiveMaximumFloat { .. } => "exclusive-maximum-float",
-            ErrorKind::ExclusiveMinimumFloat { .. } => "exclusive-minimum-float",
-            ErrorKind::MultipleOfFloat { .. } => "multiple-of-float",
-            ErrorKind::MaximumLength { .. } => "maximum-length",
-            ErrorKind::MinimumLength { .. } => "minimum-length",
-            ErrorKind::Format { .. } => "format",
-            ErrorKind::Pattern { .. } => "pattern",
-            ErrorKind::MaxValues { .. } => "max-values",
-            ErrorKind::MinValues { .. } => "min-values",
-            ErrorKind::UniqueValues => "unique-values",
-            ErrorKind::MaxProperties { .. } => "max-properties",
-            ErrorKind::MinProperties { .. } => "min-properties",
-            ErrorKind::PatternProperty { .. } => "pattern-property",
+            ErrorKind::IntegerMaximum { .. } => "integer-maximum",
+            ErrorKind::IntegerMinimum { .. } => "integer-minimum",
+            ErrorKind::IntegerExclusiveMaximum { .. } => "integer-exclusive-maximum",
+            ErrorKind::IntegerExclusiveMinimum { .. } => "integer-exclusive-minimum",
+            ErrorKind::IntegerMultipleOf { .. } => "integer-multiple-of",
+            ErrorKind::FloatMaximum { .. } => "float-maximum",
+            ErrorKind::FloatMinimum { .. } => "float-minimum",
+            ErrorKind::FloatExclusiveMaximum { .. } => "float-exclusive-maximum",
+            ErrorKind::FloatExclusiveMinimum { .. } => "float-exclusive-minimum",
+            ErrorKind::FloatMultipleOf { .. } => "float-multiple-of",
+            ErrorKind::StringMaximumLength { .. } => "string-maximum-length",
+            ErrorKind::StringMinimumLength { .. } => "string-minimum-length",
+            ErrorKind::StringFormat { .. } => "string-format",
+            ErrorKind::StringPattern { .. } => "string-pattern",
+            ErrorKind::ArrayMaxItems { .. } => "array-max-items",
+            ErrorKind::ArrayMinItems { .. } => "array-min-items",
+            ErrorKind::ArrayUniqueItems => "array-unique-items",
+            ErrorKind::TableMaxProperties { .. } => "table-max-properties",
+            ErrorKind::TableMinProperties { .. } => "table-min-properties",
+            ErrorKind::KeyPattern { .. } => "key-pattern",
         }
     }
 }

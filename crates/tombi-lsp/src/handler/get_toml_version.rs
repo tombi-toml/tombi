@@ -36,7 +36,9 @@ pub async fn handle_get_toml_version(
     };
 
     let tombi_document_comment_directive = match root_ast.as_ref() {
-        Some(root) => tombi_comment_directive::get_tombi_document_comment_directive(root).await,
+        Some(root) => {
+            tombi_validator::comment_directive::get_tombi_document_comment_directive(root).await
+        }
         None => None,
     };
 

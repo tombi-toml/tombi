@@ -6,3 +6,4 @@ mod key;
 mod root;
 mod table;
 mod value;
+pub use comment::tombi_value_comment_directive;

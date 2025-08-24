@@ -1,17 +1,38 @@
 {
-  "$id": "tombi://json.tombi.dev/table-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TableValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/TableTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TableValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TableValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -39,6 +60,40 @@
         },
         "enumerate": {
           "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tables-out-of-order": {
+          "title": "Tables out of order.",
+          "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "table-max-properties": {
+          "description": "Controls the severity level for max properties errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "table-min-properties": {
+          "description": "Controls the severity level for min properties errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -78,67 +133,13 @@
         }
       ]
     },
-    "TableTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/table-tombi-directive.json",
-      "type": "object",
-      "properties": {
-        "type-mismatch": {
-          "description": "Controls the severity level for type mismatch errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "const-value": {
-          "description": "Controls the severity level for const value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "enumerate": {
-          "description": "Controls the severity level for enumerate value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "max-properties": {
-          "description": "Controls the severity level for max properties errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "min-properties": {
-          "description": "Controls the severity level for min properties errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
         }
-      },
-      "additionalProperties": false
+      ]
     }
   }
 }

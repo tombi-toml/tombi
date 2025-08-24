@@ -1,17 +1,38 @@
 {
-  "$id": "tombi://json.tombi.dev/float-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "FloatValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/FloatTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FloatValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "FloatValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -39,6 +60,61 @@
         },
         "enumerate": {
           "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "float-maximum": {
+          "description": "Controls the severity level for maximum float errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "float-minimum": {
+          "description": "Controls the severity level for minimum float errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "float-exclusive-maximum": {
+          "description": "Controls the severity level for exclusive maximum float errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "float-exclusive-minimum": {
+          "description": "Controls the severity level for exclusive minimum float errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "float-multiple-of": {
+          "description": "Controls the severity level for multiple of float errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -77,68 +153,6 @@
           "const": "error"
         }
       ]
-    },
-    "FloatTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/float-tombi-directive.json",
-      "type": "object",
-      "properties": {
-        "maximum-float": {
-          "description": "Controls the severity level for maximum float errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "minimum-float": {
-          "description": "Controls the severity level for minimum float errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "exclusive-maximum-float": {
-          "description": "Controls the severity level for exclusive maximum float errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "exclusive-minimum-float": {
-          "description": "Controls the severity level for exclusive minimum float errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "multiple-of-float": {
-          "description": "Controls the severity level for multiple of float errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
     }
   }
 }

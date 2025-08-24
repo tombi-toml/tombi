@@ -1,17 +1,38 @@
 {
-  "$id": "tombi://json.tombi.dev/integer-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "IntegerValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/IntegerTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IntegerValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "IntegerValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -39,6 +60,61 @@
         },
         "enumerate": {
           "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "integer-maximum": {
+          "description": "Controls the severity level for maximum integer errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "integer-minimum": {
+          "description": "Controls the severity level for minimum integer errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "integer-exclusive-maximum": {
+          "description": "Controls the severity level for exclusive maximum integer errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "integer-exclusive-minimum": {
+          "description": "Controls the severity level for exclusive minimum integer errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "integer-multiple-of": {
+          "description": "Controls the severity level for multiple of integer errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -77,68 +153,6 @@
           "const": "error"
         }
       ]
-    },
-    "IntegerTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/integer-tombi-directive.json",
-      "type": "object",
-      "properties": {
-        "maximum-integer": {
-          "description": "Controls the severity level for maximum integer errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "minimum-integer": {
-          "description": "Controls the severity level for minimum integer errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "exclusive-maximum-integer": {
-          "description": "Controls the severity level for exclusive maximum integer errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "exclusive-minimum-integer": {
-          "description": "Controls the severity level for exclusive minimum integer errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "multiple-of-integer": {
-          "description": "Controls the severity level for multiple of integer errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
     }
   }
 }

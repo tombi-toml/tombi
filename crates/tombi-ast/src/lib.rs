@@ -7,8 +7,11 @@ pub mod support;
 
 use std::{fmt::Debug, marker::PhantomData};
 
-pub use comment_directive::{SchemaDocumentCommentDirective, TombiDocumentCommentDirective};
+pub use comment_directive::{
+    SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
+};
 pub use generated::*;
+pub use impls::*;
 pub use node::*;
 
 pub trait AstNode

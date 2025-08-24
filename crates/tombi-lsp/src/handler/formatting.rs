@@ -68,7 +68,7 @@ pub async fn handle_formatting(
         .flatten();
 
     let tombi_document_comment_directive =
-        tombi_comment_directive::get_tombi_document_comment_directive(&root).await;
+        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
     let (toml_version, _) = backend
         .source_toml_version(
             tombi_document_comment_directive,

@@ -1,17 +1,38 @@
 {
-  "$id": "tombi://json.tombi.dev/string-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "StringValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/StringTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "StringValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -39,6 +60,50 @@
         },
         "enumerate": {
           "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "string-maximum-length": {
+          "description": "Controls the severity level for maximum length errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "string-minimum-length": {
+          "description": "Controls the severity level for minimum length errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "string-format": {
+          "description": "Controls the severity level for format errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "string-pattern": {
+          "description": "Controls the severity level for pattern errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -77,57 +142,6 @@
           "const": "error"
         }
       ]
-    },
-    "StringTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/string-tombi-directive.json",
-      "type": "object",
-      "properties": {
-        "maximum-length": {
-          "description": "Controls the severity level for maximum length errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "minimum-length": {
-          "description": "Controls the severity level for minimum length errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "format": {
-          "description": "Controls the severity level for format errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "pattern": {
-          "description": "Controls the severity level for pattern errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
     }
   }
 }

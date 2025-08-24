@@ -1,11 +1,14 @@
 use regex::Regex;
+use tombi_comment_directive::StringValueTombiCommentDirectiveRules;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
 use tombi_x_keyword::StringFormat;
 
-use crate::validate::format;
+use crate::{
+    comment_directive::get_tombi_value_comment_directive_and_diagnostics, validate::format,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -18,6 +21,34 @@ impl Validate for tombi_document_tree::String {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
+            let mut comment_directive_diagnostics = vec![];
+
+            let _comment_directive = {
+                let mut comment_directives = vec![];
+
+                for comment in self.leading_comments() {
+                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+                if let Some(comment) = self.trailing_comment() {
+                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+
+                let (comment_directive, diagnostics) =
+                    get_tombi_value_comment_directive_and_diagnostics::<
+                        StringValueTombiCommentDirectiveRules,
+                    >(&comment_directives)
+                    .await;
+
+                if !diagnostics.is_empty() {
+                    comment_directive_diagnostics.extend(diagnostics);
+                }
+
+                comment_directive
+            };
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.value_type().await {
@@ -106,7 +137,7 @@ impl Validate for tombi_document_tree::String {
                 if let Some(max_length) = &string_schema.max_length {
                     if value.len() > *max_length {
                         crate::Error {
-                            kind: crate::ErrorKind::MaximumLength {
+                            kind: crate::ErrorKind::StringMaximumLength {
                                 maximum: *max_length,
                                 actual: value.len(),
                             },
@@ -119,7 +150,7 @@ impl Validate for tombi_document_tree::String {
                 if let Some(min_length) = &string_schema.min_length {
                     if value.len() < *min_length {
                         crate::Error {
-                            kind: crate::ErrorKind::MinimumLength {
+                            kind: crate::ErrorKind::StringMinimumLength {
                                 minimum: *min_length,
                                 actual: value.len(),
                             },
@@ -134,7 +165,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Email => {
                             if !format::email::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -146,7 +177,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Hostname => {
                             if !format::hostname::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -158,7 +189,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Uri => {
                             if !format::uri::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -170,7 +201,7 @@ impl Validate for tombi_document_tree::String {
                         StringFormat::Uuid => {
                             if !format::uuid::validate_format(&value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::Format {
+                                    kind: crate::ErrorKind::StringFormat {
                                         format,
                                         actual: self.to_string(),
                                     },
@@ -186,7 +217,7 @@ impl Validate for tombi_document_tree::String {
                     if let Ok(regex) = Regex::new(pattern) {
                         if !regex.is_match(&value) {
                             crate::Error {
-                                kind: crate::ErrorKind::Pattern {
+                                kind: crate::ErrorKind::StringPattern {
                                     pattern: pattern.clone(),
                                     actual: self.to_string(),
                                 },
@@ -211,6 +242,10 @@ impl Validate for tombi_document_tree::String {
                         .set_diagnostics(&mut diagnostics);
                     }
                 }
+            }
+
+            if !comment_directive_diagnostics.is_empty() {
+                diagnostics.extend(comment_directive_diagnostics);
             }
 
             if diagnostics.is_empty() {

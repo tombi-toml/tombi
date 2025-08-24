@@ -1,4 +1,7 @@
-use crate::{AstToken, Comment, SchemaDocumentCommentDirective, TombiDocumentCommentDirective};
+use crate::{
+    comment_directive::TombiValueCommentDirective, AstToken, Comment,
+    SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
+};
 
 impl Comment {
     /// Returns the schema directive in the document header.
@@ -76,15 +79,15 @@ impl Comment {
         if let Some(content) = comment_str.strip_prefix("#:tombi ") {
             let comment_range = self.syntax().range();
             let directive_range = tombi_text::Range::new(
-                tombi_text::Position::new(comment_range.start.line, 1),
+                tombi_text::Position::new(comment_range.start.line, comment_range.start.column + 1),
                 tombi_text::Position::new(
-                    comment_range.end.line,
-                    7, // "#:tombi" length
+                    comment_range.start.line,
+                    comment_range.start.column + 7, // "#:tombi" length
                 ),
             );
 
             let content_range = tombi_text::Range::new(
-                tombi_text::Position::new(comment_range.start.line, 8),
+                tombi_text::Position::new(comment_range.start.line, comment_range.start.column + 8),
                 comment_range.end,
             );
 
@@ -97,4 +100,41 @@ impl Comment {
             None
         }
     }
+
+    pub fn tombi_value_directive(&self) -> Option<TombiValueCommentDirective> {
+        tombi_value_comment_directive(self.syntax().text(), self.syntax().range())
+    }
+}
+
+/// Returns the tombi value directive in the document header.
+///
+/// ```toml
+/// # tombi: lint.rules.const_value = "error"
+/// ```
+pub fn tombi_value_comment_directive(
+    comment_str: &str,
+    comment_range: tombi_text::Range,
+) -> Option<TombiValueCommentDirective> {
+    let content_with_directive = comment_str[1..].trim_start();
+    if !content_with_directive.starts_with("tombi:") {
+        return None;
+    }
+    let directive_range = tombi_text::Range::new(
+        tombi_text::Position::new(comment_range.start.line, comment_range.start.column + 1),
+        tombi_text::Position::new(comment_range.start.line, comment_range.start.column + 6),
+    );
+    let content = &content_with_directive[6..];
+    let content_range = tombi_text::Range::new(
+        tombi_text::Position::new(
+            comment_range.start.line,
+            comment_range.start.column + comment_str.len() as u32 - content.len() as u32,
+        ),
+        comment_range.end,
+    );
+
+    Some(TombiValueCommentDirective {
+        content: content.to_string(),
+        content_range,
+        directive_range,
+    })
 }

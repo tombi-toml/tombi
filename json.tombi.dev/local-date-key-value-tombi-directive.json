@@ -1,20 +1,64 @@
 {
-  "$id": "tombi://json.tombi.dev/local-date-key-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "LocalDateKeyValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/KeyTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/LocalDateTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "KeyTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/key-tombi-directive.json",
+    "ValueLintOptions": {
       "type": "object",
       "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LocalDateKeyValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LocalDateKeyValueTombiCommentDirectiveRules": {
+      "type": "object",
+      "properties": {
+        "dotted-keys-out-of-order": {
+          "title": "Dotted keys out of order.",
+          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key-empty": {
+          "title": "Key empty.",
+          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-required": {
           "description": "Controls the severity level for key required errors",
           "anyOf": [
@@ -37,8 +81,8 @@
             }
           ]
         },
-        "pattern-property": {
-          "description": "Controls the severity level for pattern property errors",
+        "key-pattern": {
+          "description": "Controls the severity level for key pattern errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -49,10 +93,11 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -78,10 +123,13 @@
         }
       ]
     },
-    "LocalDateTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/local-date-tombi-directive.json",
-      "type": "object",
-      "additionalProperties": false
+    "SeverityLevelDefaultError": {
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
+        }
+      ]
     }
   }
 }

@@ -195,7 +195,7 @@ impl Validate for tombi_document_tree::Table {
                                 .allows_additional_properties(schema_context.strict())
                             {
                                 crate::Error {
-                                    kind: crate::ErrorKind::PatternProperty {
+                                    kind: crate::ErrorKind::KeyPattern {
                                         patterns: Patterns(
                                             pattern_properties
                                                 .read()
@@ -293,7 +293,7 @@ impl Validate for tombi_document_tree::Table {
                 if let Some(max_properties) = table_schema.max_properties {
                     if self.keys().count() > max_properties {
                         crate::Error {
-                            kind: crate::ErrorKind::MaxProperties {
+                            kind: crate::ErrorKind::TableMaxProperties {
                                 max_properties,
                                 actual: self.keys().count(),
                             },
@@ -306,7 +306,7 @@ impl Validate for tombi_document_tree::Table {
                 if let Some(min_properties) = table_schema.min_properties {
                     if self.keys().count() < min_properties {
                         crate::Error {
-                            kind: crate::ErrorKind::MinProperties {
+                            kind: crate::ErrorKind::TableMinProperties {
                                 min_properties,
                                 actual: self.keys().count(),
                             },

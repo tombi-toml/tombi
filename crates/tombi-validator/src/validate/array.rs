@@ -137,7 +137,7 @@ impl Validate for tombi_document_tree::Array {
                 if let Some(max_items) = array_schema.max_items {
                     if self.values().len() > max_items {
                         crate::Error {
-                            kind: crate::ErrorKind::MaxValues {
+                            kind: crate::ErrorKind::ArrayMaxItems {
                                 max_values: max_items,
                                 actual: self.values().len(),
                             },
@@ -150,7 +150,7 @@ impl Validate for tombi_document_tree::Array {
                 if let Some(min_items) = array_schema.min_items {
                     if self.values().len() < min_items {
                         crate::Error {
-                            kind: crate::ErrorKind::MinValues {
+                            kind: crate::ErrorKind::ArrayMinItems {
                                 min_values: min_items,
                                 actual: self.values().len(),
                             },
@@ -175,7 +175,7 @@ impl Validate for tombi_document_tree::Array {
                         if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
                             if duplicated_values.contains(&literal_value) {
                                 crate::Error {
-                                    kind: crate::ErrorKind::UniqueValues,
+                                    kind: crate::ErrorKind::ArrayUniqueItems,
                                     range: value.range(),
                                 }
                                 .set_diagnostics(&mut diagnostics);

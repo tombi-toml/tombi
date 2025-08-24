@@ -1,17 +1,38 @@
 {
-  "$id": "tombi://json.tombi.dev/array-value-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ArrayValueTombiCommentDirective",
-  "anyOf": [
-    {
-      "$ref": "#/definitions/CommonValueTombiCommentDirective"
-    },
-    {
-      "$ref": "#/definitions/ArrayTombiCommentDirective"
+  "title": "ValueTombiCommentDirective",
+  "type": "object",
+  "properties": {
+    "lint": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueLintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  ],
+  },
+  "additionalProperties": false,
   "definitions": {
-    "CommonValueTombiCommentDirective": {
+    "ValueLintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ArrayValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ArrayValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
@@ -39,6 +60,39 @@
         },
         "enumerate": {
           "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-max-items": {
+          "description": "Controls the severity level for max values errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-min-items": {
+          "description": "Controls the severity level for min values errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-unique-items": {
+          "description": "Controls the severity level for unique values errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -77,79 +131,6 @@
           "const": "error"
         }
       ]
-    },
-    "ArrayTombiCommentDirective": {
-      "$id": "tombi://json.tombi.dev/array-tombi-directive.json",
-      "type": "object",
-      "properties": {
-        "type-mismatch": {
-          "description": "Controls the severity level for type mismatch errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "const-value": {
-          "description": "Controls the severity level for const value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "enumerate": {
-          "description": "Controls the severity level for enumerate value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "max-values": {
-          "description": "Controls the severity level for max values errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "min-values": {
-          "description": "Controls the severity level for min values errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unique-values": {
-          "description": "Controls the severity level for unique values errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
     }
   }
 }
