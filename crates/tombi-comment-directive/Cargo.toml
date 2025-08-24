@@ -7,7 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-ahash.workspace = true
 schemars = { workspace = true, optional = true }
 serde.workspace = true
 thiserror.workspace = true
