@@ -1,11 +1,14 @@
 use regex::Regex;
+use tombi_comment_directive::StringValueTombiCommentDirectiveRules;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
 use tombi_x_keyword::StringFormat;
 
-use crate::validate::format;
+use crate::{
+    comment_directive::get_tombi_value_comment_directive_and_diagnostics, validate::format,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -18,6 +21,34 @@ impl Validate for tombi_document_tree::String {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
+            let mut comment_directive_diagnostics = vec![];
+
+            let _comment_directive = {
+                let mut comment_directives = vec![];
+
+                for comment in self.leading_comments() {
+                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+                if let Some(comment) = self.trailing_comment() {
+                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+
+                let (comment_directive, diagnostics) =
+                    get_tombi_value_comment_directive_and_diagnostics::<
+                        StringValueTombiCommentDirectiveRules,
+                    >(&comment_directives)
+                    .await;
+
+                if !diagnostics.is_empty() {
+                    comment_directive_diagnostics.extend(diagnostics);
+                }
+
+                comment_directive
+            };
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.value_type().await {
@@ -211,6 +242,10 @@ impl Validate for tombi_document_tree::String {
                         .set_diagnostics(&mut diagnostics);
                     }
                 }
+            }
+
+            if !comment_directive_diagnostics.is_empty() {
+                diagnostics.extend(comment_directive_diagnostics);
             }
 
             if diagnostics.is_empty() {

@@ -127,11 +127,11 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
             _ => None,
         },
         Some("json.tombi.dev") => match schema_uri.path() {
-            "/api/json/catalog.json" => Some(include_str!(
-                "../../../json.tombi.dev/api/json/catalog.json"
-            )),
             "/document-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/document-tombi-directive.json"
+            )),
+            "/string-value-tombi-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/string-value-tombi-directive.json"
             )),
             _ => None,
         },

@@ -3512,7 +3512,6 @@ dependencies = [
  "tombi-text",
  "tombi-toml-version",
  "tombi-uri",
- "tombi-validator",
  "tombi-x-keyword",
 ]
 
@@ -3678,6 +3677,7 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-uri",
+ "tombi-validator",
  "tracing",
  "unicode-segmentation",
 ]
@@ -3969,10 +3969,16 @@ dependencies = [
  "email_address",
  "itertools 0.14.0",
  "regex",
+ "serde",
  "thiserror 2.0.12",
+ "tombi-ast",
+ "tombi-comment-directive",
  "tombi-diagnostic",
+ "tombi-document",
  "tombi-document-tree",
  "tombi-future",
+ "tombi-json",
+ "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",

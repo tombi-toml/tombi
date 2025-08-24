@@ -11,6 +11,7 @@ pub use comment_directive::{
     SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
 };
 pub use generated::*;
+pub use impls::*;
 pub use node::*;
 
 pub trait AstNode

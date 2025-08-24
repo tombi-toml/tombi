@@ -1,6 +1,12 @@
+use std::str::FromStr;
+
+use tombi_schema_store::SchemaUri;
 use tombi_severity_level::SeverityLevelDefaultError;
 
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use crate::{
+    CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules,
+    ValueTombiCommentDirectiveImpl,
+};
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
@@ -23,6 +29,12 @@ pub struct StringValueTombiCommentDirectiveRules {
 
     #[serde(flatten)]
     string: StringTombiCommentDirectiveRules,
+}
+
+impl ValueTombiCommentDirectiveImpl for StringValueTombiCommentDirectiveRules {
+    fn value_comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/string-value-tombi-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

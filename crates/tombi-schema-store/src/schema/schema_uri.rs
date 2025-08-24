@@ -67,3 +67,11 @@ impl std::fmt::Display for SchemaUri {
         write!(f, "{}", self.0)
     }
 }
+
+impl std::str::FromStr for SchemaUri {
+    type Err = tombi_uri::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        tombi_uri::Uri::from_str(s).map(Self)
+    }
+}

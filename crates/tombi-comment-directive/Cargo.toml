@@ -23,7 +23,6 @@ tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-uri.workspace = true
-tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
 
 [features]

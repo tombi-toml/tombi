@@ -52,10 +52,7 @@ impl<'a> Linter<'a> {
             };
 
             let (tombi_document_comment_directive, diagnostics) =
-                tombi_comment_directive::get_tombi_document_comment_directive_and_diagnostics(
-                    &root,
-                )
-                .await;
+                tombi_validator::comment_directive::get_tombi_document_comment_directive_and_diagnostics(&root).await;
             self.diagnostics.extend(diagnostics);
 
             (source_schema, tombi_document_comment_directive)
