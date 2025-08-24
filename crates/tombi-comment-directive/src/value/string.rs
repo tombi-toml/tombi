@@ -43,14 +43,14 @@ impl ValueTombiCommentDirectiveImpl for StringValueTombiCommentDirectiveRules {
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct StringTombiCommentDirectiveRules {
     /// Controls the severity level for maximum length errors
-    pub maximum_length: Option<SeverityLevelDefaultError>,
+    pub string_maximum_length: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for minimum length errors
-    pub minimum_length: Option<SeverityLevelDefaultError>,
+    pub string_minimum_length: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for format errors
-    pub format: Option<SeverityLevelDefaultError>,
+    pub string_format: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for pattern errors
-    pub pattern: Option<SeverityLevelDefaultError>,
+    pub string_pattern: Option<SeverityLevelDefaultError>,
 }

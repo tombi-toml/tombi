@@ -29,21 +29,12 @@ pub struct ArrayValueTombiCommentDirectiveRules {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ArrayTombiCommentDirectiveRules {
-    /// Controls the severity level for type mismatch errors
-    pub type_mismatch: Option<SeverityLevelDefaultError>,
-
-    /// Controls the severity level for const value errors
-    pub const_value: Option<SeverityLevelDefaultError>,
-
-    /// Controls the severity level for enumerate value errors
-    pub enumerate: Option<SeverityLevelDefaultError>,
-
     /// Controls the severity level for max values errors
-    pub max_values: Option<SeverityLevelDefaultError>,
+    pub array_max_values: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for min values errors
-    pub min_values: Option<SeverityLevelDefaultError>,
+    pub array_min_values: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for unique values errors
-    pub unique_values: Option<SeverityLevelDefaultError>,
+    pub array_unique_values: Option<SeverityLevelDefaultError>,
 }

@@ -35,6 +35,18 @@
     "LocalDateKeyValueTombiCommentDirectiveRules": {
       "type": "object",
       "properties": {
+        "dotted-keys-out-of-order": {
+          "title": "Dotted keys out of order.",
+          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-empty": {
           "title": "Key empty.",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
@@ -69,8 +81,8 @@
             }
           ]
         },
-        "pattern-property": {
-          "description": "Controls the severity level for pattern property errors",
+        "key-pattern": {
+          "description": "Controls the severity level for key pattern errors",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

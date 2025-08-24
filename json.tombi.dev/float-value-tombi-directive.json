@@ -69,7 +69,7 @@
             }
           ]
         },
-        "maximum-float": {
+        "float-maximum": {
           "description": "Controls the severity level for maximum float errors",
           "anyOf": [
             {
@@ -80,7 +80,7 @@
             }
           ]
         },
-        "minimum-float": {
+        "float-minimum": {
           "description": "Controls the severity level for minimum float errors",
           "anyOf": [
             {
@@ -91,7 +91,7 @@
             }
           ]
         },
-        "exclusive-maximum-float": {
+        "float-exclusive-maximum": {
           "description": "Controls the severity level for exclusive maximum float errors",
           "anyOf": [
             {
@@ -102,7 +102,7 @@
             }
           ]
         },
-        "exclusive-minimum-float": {
+        "float-exclusive-minimum": {
           "description": "Controls the severity level for exclusive minimum float errors",
           "anyOf": [
             {
@@ -113,7 +113,7 @@
             }
           ]
         },
-        "multiple-of-float": {
+        "float-multiple-of": {
           "description": "Controls the severity level for multiple of float errors",
           "anyOf": [
             {

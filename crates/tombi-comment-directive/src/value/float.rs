@@ -31,17 +31,17 @@ pub struct FloatValueTombiCommentDirectiveRules {
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct FloatTombiCommentDirectiveRules {
     /// Controls the severity level for maximum float errors
-    pub maximum_float: Option<SeverityLevelDefaultError>,
+    pub float_maximum: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for minimum float errors
-    pub minimum_float: Option<SeverityLevelDefaultError>,
+    pub float_minimum: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for exclusive maximum float errors
-    pub exclusive_maximum_float: Option<SeverityLevelDefaultError>,
+    pub float_exclusive_maximum: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for exclusive minimum float errors
-    pub exclusive_minimum_float: Option<SeverityLevelDefaultError>,
+    pub float_exclusive_minimum: Option<SeverityLevelDefaultError>,
 
     /// Controls the severity level for multiple of float errors
-    pub multiple_of_float: Option<SeverityLevelDefaultError>,
+    pub float_multiple_of: Option<SeverityLevelDefaultError>,
 }
