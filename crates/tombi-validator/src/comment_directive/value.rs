@@ -73,6 +73,7 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<
             let tombi_json::ValueNode::Object(object) = schema_store
                 .fetch_schema_value(&schema_uri)
                 .await
+                // Value Comment Directive Schema is embedded in the crate
                 .unwrap()
                 .unwrap()
             else {
