@@ -20,13 +20,17 @@
       "type": "object",
       "properties": {
         "rules": {
-          "$ref": "#/definitions/ArrayKeyValueTombiCommentDirectiveRules"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ArrayKeyValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "rules"
-      ]
+      "additionalProperties": false
     },
     "ArrayKeyValueTombiCommentDirectiveRules": {
       "type": "object",

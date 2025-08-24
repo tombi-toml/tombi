@@ -20,13 +20,17 @@
       "type": "object",
       "properties": {
         "rules": {
-          "$ref": "#/definitions/LocalDateKeyValueTombiCommentDirectiveRules"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LocalDateKeyValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "rules"
-      ]
+      "additionalProperties": false
     },
     "LocalDateKeyValueTombiCommentDirectiveRules": {
       "type": "object",

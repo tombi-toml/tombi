@@ -20,13 +20,17 @@
       "type": "object",
       "properties": {
         "rules": {
-          "$ref": "#/definitions/OffsetDateTimeKeyValueTombiCommentDirectiveRules"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/OffsetDateTimeKeyValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "rules"
-      ]
+      "additionalProperties": false
     },
     "OffsetDateTimeKeyValueTombiCommentDirectiveRules": {
       "type": "object",

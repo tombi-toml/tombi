@@ -20,13 +20,17 @@
       "type": "object",
       "properties": {
         "rules": {
-          "$ref": "#/definitions/StringKeyValueTombiCommentDirectiveRules"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringKeyValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "rules"
-      ]
+      "additionalProperties": false
     },
     "StringKeyValueTombiCommentDirectiveRules": {
       "type": "object",

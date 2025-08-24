@@ -20,13 +20,17 @@
       "type": "object",
       "properties": {
         "rules": {
-          "$ref": "#/definitions/TombiDocumentCommentDirective"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TombiDocumentCommentDirective"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "rules"
-      ]
+      "additionalProperties": false
     },
     "TombiDocumentCommentDirective": {
       "$id": "tombi://json.tombi.dev/document-tombi-directive.json",

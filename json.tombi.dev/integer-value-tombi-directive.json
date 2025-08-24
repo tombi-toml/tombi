@@ -20,13 +20,17 @@
       "type": "object",
       "properties": {
         "rules": {
-          "$ref": "#/definitions/IntegerValueTombiCommentDirectiveRules"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IntegerValueTombiCommentDirectiveRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "rules"
-      ]
+      "additionalProperties": false
     },
     "IntegerValueTombiCommentDirectiveRules": {
       "description": "Common validation settings for all value types",

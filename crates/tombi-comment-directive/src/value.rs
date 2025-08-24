@@ -56,7 +56,7 @@ pub struct ValueLintOptions<T>
 where
     T: serde::de::DeserializeOwned + serde::Serialize,
 {
-    rules: T,
+    rules: Option<T>,
 }
 
 pub trait ValueTombiCommentDirectiveImpl {
