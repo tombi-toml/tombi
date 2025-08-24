@@ -672,6 +672,9 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         };
 
         let (mut keys, errs) = keys.into_document_tree_and_errors(toml_version).into();
+        if let Some(key) = keys.first_mut() {
+            key.leading_comments = self.leading_comments().map(Into::into).collect_vec()
+        }
         if !errs.is_empty() {
             errors.extend(errs);
             return make_keys_table(keys, table, errors);

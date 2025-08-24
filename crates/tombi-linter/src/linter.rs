@@ -109,23 +109,27 @@ impl<'a> Linter<'a> {
 
             errors.set_diagnostics(&mut self.diagnostics);
 
-            if let Some(source_schema) = source_schema {
-                let schema_context = tombi_schema_store::SchemaContext {
-                    toml_version: self.toml_version,
-                    root_schema: source_schema.root_schema.as_ref(),
-                    sub_schema_uri_map: Some(&source_schema.sub_schema_uri_map),
-                    store: self.schema_store,
-                    strict: tombi_document_comment_directive
-                        .as_ref()
-                        .and_then(|directive| {
-                            directive.schema.as_ref().and_then(|schema| schema.strict)
-                        }),
-                };
-                if let Err(schema_diagnostics) =
-                    tombi_validator::validate(document_tree, &source_schema, &schema_context).await
-                {
-                    self.diagnostics.extend(schema_diagnostics);
-                }
+            let schema_context = tombi_schema_store::SchemaContext {
+                toml_version: self.toml_version,
+                root_schema: source_schema
+                    .as_ref()
+                    .and_then(|source_schema| source_schema.root_schema.as_ref()),
+                sub_schema_uri_map: source_schema
+                    .as_ref()
+                    .map(|source_schema| &source_schema.sub_schema_uri_map),
+                store: self.schema_store,
+                strict: tombi_document_comment_directive
+                    .as_ref()
+                    .and_then(|directive| {
+                        directive.schema.as_ref().and_then(|schema| schema.strict)
+                    }),
+            };
+
+            if let Err(schema_diagnostics) =
+                tombi_validator::validate(document_tree, source_schema.as_ref(), &schema_context)
+                    .await
+            {
+                self.diagnostics.extend(schema_diagnostics);
             }
         }
 

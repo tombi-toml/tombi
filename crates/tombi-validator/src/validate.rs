@@ -34,19 +34,21 @@ pub trait Validate {
 
 pub fn validate<'a: 'b, 'b>(
     tree: tombi_document_tree::DocumentTree,
-    source_schema: &'a tombi_schema_store::SourceSchema,
+    source_schema: Option<&'a tombi_schema_store::SourceSchema>,
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
     async move {
-        let current_schema = source_schema.root_schema.as_ref().and_then(|root_schema| {
-            root_schema
-                .value_schema
-                .as_ref()
-                .map(|value_schema| CurrentSchema {
-                    value_schema: Cow::Borrowed(value_schema),
-                    schema_uri: Cow::Borrowed(&root_schema.schema_uri),
-                    definitions: Cow::Borrowed(&root_schema.definitions),
-                })
+        let current_schema = source_schema.as_ref().and_then(|source_schema| {
+            source_schema.root_schema.as_ref().and_then(|root_schema| {
+                root_schema
+                    .value_schema
+                    .as_ref()
+                    .map(|value_schema| CurrentSchema {
+                        value_schema: Cow::Borrowed(value_schema),
+                        schema_uri: Cow::Borrowed(&root_schema.schema_uri),
+                        definitions: Cow::Borrowed(&root_schema.definitions),
+                    })
+            })
         });
 
         tree.validate(&[], current_schema.as_ref(), schema_context, &[])

@@ -14,7 +14,6 @@ GitHub = "https://github.com/tombi-toml/tombi"
 
 [dependency-groups]
 dev = [
-  # tombi: lint.rules.format = "off"
   "pytest>=8.3.3",
   "ruff>=0.7.4",
 ]

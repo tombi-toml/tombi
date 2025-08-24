@@ -27,6 +27,14 @@ impl Validate for tombi_document_tree::String {
             let _comment_directive = {
                 let mut comment_directives = vec![];
 
+                for (comment_str, comment_range) in parent_comments {
+                    if let Some(comment_directive) =
+                        tombi_ast::tombi_value_comment_directive(comment_str, *comment_range)
+                    {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+
                 for comment in self.leading_comments() {
                     if let Some(comment_directive) = comment.tombi_value_directive() {
                         comment_directives.push(comment_directive);

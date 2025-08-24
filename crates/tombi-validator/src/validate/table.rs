@@ -20,7 +20,7 @@ impl Validate for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext,
         parent_comments: &'a [(&'a str, tombi_text::Range)],
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
-        let parent_comments = if self.kind() == tombi_document_tree::TableKind::InlineTable {
+        let parent_comments = if self.kind() == tombi_document_tree::TableKind::KeyValue {
             parent_comments
         } else {
             &[]
@@ -119,6 +119,11 @@ impl Validate for tombi_document_tree::Table {
                 };
 
                 for (key, value) in self.key_values() {
+                    let mut parent_comments = parent_comments.to_vec();
+                    for leading_comment in key.leading_comments() {
+                        parent_comments.push((leading_comment.text(), leading_comment.range()))
+                    }
+
                     let accessor_raw_text = key.to_raw_text(schema_context.toml_version);
                     let accessor = Accessor::Key(accessor_raw_text.clone());
                     let new_accessors = accessors
@@ -154,7 +159,7 @@ impl Validate for tombi_document_tree::Table {
                                     &new_accessors,
                                     Some(&current_schema),
                                     schema_context,
-                                    parent_comments,
+                                    &parent_comments,
                                 )
                                 .await
                             {
@@ -201,7 +206,7 @@ impl Validate for tombi_document_tree::Table {
                                             &new_accessors,
                                             Some(&current_schema),
                                             schema_context,
-                                            parent_comments,
+                                            &parent_comments,
                                         )
                                         .await
                                     {
@@ -258,7 +263,7 @@ impl Validate for tombi_document_tree::Table {
                                         &new_accessors,
                                         Some(&current_schema),
                                         schema_context,
-                                        parent_comments,
+                                        &parent_comments,
                                     )
                                     .await
                                 {
@@ -351,6 +356,11 @@ impl Validate for tombi_document_tree::Table {
                 }
             } else {
                 for (key, value) in self.key_values() {
+                    let mut parent_comments = parent_comments.to_vec();
+                    for leading_comment in key.leading_comments() {
+                        parent_comments.push((leading_comment.text(), leading_comment.range()))
+                    }
+
                     if let Err(schema_diagnostics) = value
                         .validate(
                             &accessors
@@ -362,7 +372,7 @@ impl Validate for tombi_document_tree::Table {
                                 .collect_vec(),
                             None,
                             schema_context,
-                            parent_comments,
+                            &parent_comments,
                         )
                         .await
                     {
