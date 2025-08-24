@@ -2,10 +2,8 @@ mod document;
 mod error;
 mod value;
 
-use std::str::FromStr;
-
 pub use error::Error;
-use tombi_schema_store::{CatalogUri, SchemaUri, SourceSchema};
+use tombi_schema_store::{SchemaUri, SourceSchema};
 use tombi_toml_version::TomlVersion;
 
 pub const TOMBI_COMMENT_DIRECTIVE_TOML_VERSION: TomlVersion = TomlVersion::V1_0_0;

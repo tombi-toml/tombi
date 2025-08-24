@@ -3501,17 +3501,11 @@ dependencies = [
  "serde",
  "thiserror 2.0.12",
  "tokio",
- "tombi-ast",
- "tombi-diagnostic",
- "tombi-document",
- "tombi-document-tree",
  "tombi-json",
- "tombi-parser",
  "tombi-schema-store",
  "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
- "tombi-uri",
  "tombi-x-keyword",
 ]
 
