@@ -10,7 +10,6 @@ ahash.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
-tombi-comment-directive.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-document-tree.workspace = true
