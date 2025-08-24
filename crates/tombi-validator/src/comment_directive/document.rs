@@ -1,6 +1,6 @@
 use tombi_comment_directive::{
-    document_comment_directive_document_schema, schema_store, source_schema,
-    TombiDocumentCommentDirective, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document_comment_directive_document_schema, schema_store, TombiDocumentCommentDirective,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
@@ -78,7 +78,10 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
                 if let Err(diagnostics) = crate::validate(
                     document_tree.clone(),
-                    source_schema(document_schema).await,
+                    &tombi_schema_store::SourceSchema {
+                        root_schema: Some(document_schema),
+                        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+                    },
                     &schema_context,
                 )
                 .await

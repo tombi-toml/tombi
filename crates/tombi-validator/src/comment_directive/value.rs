@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    schema_store, source_schema, ValueTombiCommentDirective, ValueTombiCommentDirectiveImpl,
+    schema_store, ValueTombiCommentDirective, ValueTombiCommentDirectiveImpl,
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
@@ -94,7 +94,10 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<
 
             if let Err(diagnostics) = crate::validate(
                 document_tree.clone(),
-                source_schema(document_schema).await,
+                &tombi_schema_store::SourceSchema {
+                    root_schema: Some(document_schema),
+                    sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+                },
                 &schema_context,
             )
             .await
