@@ -1,12 +1,49 @@
 {
+  "$id": "tombi://json.tombi.dev/document-tombi-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ValueTombiCommentDirective",
+  "title": "TombiDocumentCommentDirective",
   "type": "object",
   "properties": {
-    "lint": {
+    "toml-version": {
+      "title": "TOML version.",
+      "description": "This directive specifies the TOML version of this document, with the highest priority.",
       "anyOf": [
         {
-          "$ref": "#/definitions/ValueLintOptions"
+          "$ref": "#/definitions/TomlVersion"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "v1.0.0"
+    },
+    "format": {
+      "title": "Formatter options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lint": {
+      "title": "Linter options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/LintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schema": {
+      "title": "Schema options.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SchemaOptions"
         },
         {
           "type": "null"
@@ -16,75 +53,6 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "ValueLintOptions": {
-      "type": "object",
-      "properties": {
-        "rules": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/TombiDocumentCommentDirective"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "TombiDocumentCommentDirective": {
-      "$id": "tombi://json.tombi.dev/document-tombi-directive.json",
-      "type": "object",
-      "properties": {
-        "toml-version": {
-          "title": "TOML version.",
-          "description": "This directive specifies the TOML version of this document, with the highest priority.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/TomlVersion"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": "v1.0.0"
-        },
-        "format": {
-          "title": "Formatter options.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/FormatOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "lint": {
-          "title": "Linter options.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/LintOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "schema": {
-          "title": "Schema options.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SchemaOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
     "TomlVersion": {
       "title": "TOML version.",
       "type": "string",
