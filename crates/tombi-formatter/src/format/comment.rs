@@ -118,6 +118,7 @@ fn format_comment(
             let formatted = f.format_tombi_comment_directive_content(content)?;
             return write!(f, "#:tombi {formatted}");
         }
+
         if let Some(comment_directive) = comment.tombi_value_directive() {
             let formatted = f.format_tombi_comment_directive_content(&comment_directive.content)?;
             return write!(f, "# tombi: {formatted}");
