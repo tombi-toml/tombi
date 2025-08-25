@@ -1,3 +1,4 @@
+use tombi_ast::support::literal::boolean::try_from_boolean;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
@@ -23,10 +24,8 @@ impl Validate for tombi_ast::Boolean {
                 return Ok(());
             };
 
-            let value = match token.text() {
-                "true" => true,
-                "false" => false,
-                _ => unreachable!("Invalid boolean value"),
+            let Ok(value) = try_from_boolean(token.text()) else {
+                return Ok(());
             };
 
             let mut diagnostics = vec![];
