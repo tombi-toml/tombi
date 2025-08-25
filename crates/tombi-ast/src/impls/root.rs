@@ -10,7 +10,7 @@ impl crate::Root {
     ) -> Option<SchemaDocumentCommentDirective> {
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some(schema_directive) = comment.document_schema_directive(source_path) {
+                if let Some(schema_directive) = comment.get_document_schema_directive(source_path) {
                     return Some(schema_directive);
                 }
             }
@@ -22,7 +22,7 @@ impl crate::Root {
         let mut tombi_directives = vec![];
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
-                if let Some(tombi_directive) = comment.tombi_document_directive() {
+                if let Some(tombi_directive) = comment.get_tombi_document_directive() {
                     tombi_directives.push(tombi_directive);
                 }
             }

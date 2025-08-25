@@ -1,3 +1,4 @@
+use tombi_ast::TombiValueCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
 };
 
-pub async fn get_comment_directive_hover_info(
+pub async fn get_document_comment_directive_hover_info(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
@@ -99,7 +100,7 @@ pub async fn get_comment_directive_hover_info(
                                 strict: None,
                             };
 
-                            return get_hover_content(
+                            let mut hover_content = get_hover_content(
                                 &directive_ast
                                     .into_document_tree_and_errors(toml_version)
                                     .tree,
@@ -107,16 +108,35 @@ pub async fn get_comment_directive_hover_info(
                                 &keys,
                                 &schema_context,
                             )
-                            .await
-                            .map(|mut content| {
-                                content.range = adjusted_range;
-                                HoverContent::Value(content)
-                            });
+                            .await;
+
+                            if let Some(HoverContent::Value(hover_value_content)) =
+                                hover_content.as_mut()
+                            {
+                                hover_value_content.range = adjusted_range;
+                            }
+                            return hover_content;
                         }
                     }
                 }
             }
         }
     }
+    None
+}
+
+pub async fn get_value_comment_directive_hover_info(
+    comment: &tombi_document_tree::Comment,
+    position: tombi_text::Position,
+) -> Option<HoverContent> {
+    let Some(TombiValueCommentDirective {
+        directive_range, ..
+    }) = comment.get_tombi_value_directive()
+    else {
+        return None;
+    };
+
+    if directive_range.contains(position) {}
+
     None
 }

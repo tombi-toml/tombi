@@ -29,19 +29,19 @@ impl Validate for tombi_document_tree::String {
 
                 for (comment_str, comment_range) in comment_context.parent_comments {
                     if let Some(comment_directive) =
-                        tombi_ast::tombi_value_comment_directive(comment_str, *comment_range)
+                        tombi_ast::get_tombi_value_comment_directive(comment_str, *comment_range)
                     {
                         comment_directives.push(comment_directive);
                     }
                 }
 
                 for comment in self.leading_comments() {
-                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
                         comment_directives.push(comment_directive);
                     }
                 }
                 if let Some(comment) = self.trailing_comment() {
-                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
                         comment_directives.push(comment_directive);
                     }
                 }
