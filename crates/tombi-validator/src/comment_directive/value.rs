@@ -1,12 +1,13 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    schema_store, ValueTombiCommentDirective, ValueTombiCommentDirectiveImpl,
-    WithKeyTombiCommentDirectiveRules, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    schema_store, KeyTombiCommentDirectiveRules, ValueTombiCommentDirective,
+    ValueTombiCommentDirectiveImpl, WithKeyTombiCommentDirectiveRules,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::DocumentSchema;
+use tombi_schema_store::{DocumentSchema, SchemaUri};
 
 use crate::comment_directive::into_directive_diagnostic;
 
@@ -26,6 +27,32 @@ where
         .0
 }
 
+pub async fn get_tombi_key_comment_directive_and_diagnostics<T>(
+    comment_directives: &[tombi_ast::TombiValueCommentDirective],
+) -> (
+    Option<KeyTombiCommentDirectiveRules>,
+    Vec<tombi_diagnostic::Diagnostic>,
+) {
+    let (total_document_tree_table, total_diagnostics) =
+        get_comment_directive_document_tree_and_diagnostics(
+            comment_directives,
+            &KeyTombiCommentDirectiveRules::value_comment_directive_schema_url(),
+        )
+        .await;
+
+    if let Some(total_document_tree_table) = total_document_tree_table {
+        (
+            KeyTombiCommentDirectiveRules::deserialize(
+                &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+            )
+            .ok(),
+            total_diagnostics,
+        )
+    } else {
+        (None, total_diagnostics)
+    }
+}
+
 pub async fn get_tombi_value_comment_directive_and_diagnostics<T>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
     has_key: bool,
@@ -40,6 +67,42 @@ where
         + From<WithKeyTombiCommentDirectiveRules<T>>,
     WithKeyTombiCommentDirectiveRules<T>: ValueTombiCommentDirectiveImpl,
 {
+    let schema_uri = if has_key {
+        WithKeyTombiCommentDirectiveRules::<T>::value_comment_directive_schema_url()
+    } else {
+        T::value_comment_directive_schema_url()
+    };
+
+    let (total_document_tree_table, total_diagnostics) =
+        get_comment_directive_document_tree_and_diagnostics(comment_directives, &schema_uri).await;
+
+    if let Some(total_document_tree_table) = total_document_tree_table {
+        (
+            if !has_key {
+                ValueTombiCommentDirective::<T>::deserialize(
+                    &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+                )
+            } else {
+                ValueTombiCommentDirective::<WithKeyTombiCommentDirectiveRules<T>>::deserialize(
+                    &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+                )
+                .map(|v| v.into())
+            }
+            .ok(),
+            total_diagnostics,
+        )
+    } else {
+        (None, total_diagnostics)
+    }
+}
+
+pub async fn get_comment_directive_document_tree_and_diagnostics(
+    comment_directives: &[tombi_ast::TombiValueCommentDirective],
+    schema_uri: &SchemaUri,
+) -> (
+    Option<tombi_document_tree::Table>,
+    Vec<tombi_diagnostic::Diagnostic>,
+) {
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
     let schema_store = schema_store().await;
@@ -81,11 +144,6 @@ where
                     .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_range)),
             );
         } else {
-            let schema_uri = if has_key {
-                WithKeyTombiCommentDirectiveRules::<T>::value_comment_directive_schema_url()
-            } else {
-                T::value_comment_directive_schema_url()
-            };
             let tombi_json::ValueNode::Object(object) = schema_store
                 .fetch_schema_value(&schema_uri)
                 .await
@@ -143,22 +201,5 @@ where
         }
     }
 
-    if let Some(total_document_tree_table) = total_document_tree_table {
-        (
-            if !has_key {
-                ValueTombiCommentDirective::<T>::deserialize(
-                    &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-                )
-            } else {
-                ValueTombiCommentDirective::<WithKeyTombiCommentDirectiveRules<T>>::deserialize(
-                    &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-                )
-                .map(|v| v.into())
-            }
-            .ok(),
-            total_diagnostics,
-        )
-    } else {
-        (None, total_diagnostics)
-    }
+    (total_document_tree_table, total_diagnostics)
 }
