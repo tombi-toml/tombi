@@ -54,5 +54,5 @@ pub fn validate_ast<'a: 'b, 'b>(
 trait ValueImpl {
     fn value_type(&self) -> ValueType;
 
-    fn get_range(&self) -> Option<tombi_text::Range>;
+    fn range(&self) -> tombi_text::Range;
 }

@@ -3428,6 +3428,8 @@ name = "tombi-ast"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "thiserror 2.0.12",
+ "tombi-date-time",
  "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",

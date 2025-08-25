@@ -2,17 +2,18 @@ pub mod algo;
 mod comment_directive;
 mod generated;
 mod impls;
+mod literal_value;
 mod node;
 pub mod support;
-
-use std::{fmt::Debug, marker::PhantomData};
 
 pub use comment_directive::{
     SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
 };
 pub use generated::*;
 pub use impls::*;
+pub use literal_value::LiteralValue;
 pub use node::*;
+use std::{fmt::Debug, marker::PhantomData};
 
 pub trait AstNode
 where

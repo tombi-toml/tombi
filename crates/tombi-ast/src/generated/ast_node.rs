@@ -11,7 +11,7 @@ pub struct Array {
 }
 impl Array {
     #[inline]
-    pub fn values(&self) -> AstChildren<Value> {
+    pub fn items(&self) -> AstChildren<Value> {
         support::node::children(&self.syntax)
     }
     #[inline]

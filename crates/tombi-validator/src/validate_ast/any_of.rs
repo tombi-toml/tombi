@@ -24,10 +24,6 @@ where
     tracing::trace!("any_of_schema = {:?}", any_of_schema);
 
     async move {
-        let Some(range) = value.get_range() else {
-            return Ok(());
-        };
-
         let mut schemas = any_of_schema.schemas.write().await;
         let mut total_diagnostics = Vec::new();
 
@@ -90,7 +86,7 @@ where
                             expected: current_schema.value_schema.value_type().await,
                             actual: value.value_type(),
                         },
-                        range,
+                        range: value.range(),
                     }
                     .into()]
                 }

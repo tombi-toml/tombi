@@ -29,10 +29,6 @@ impl Validate for tombi_ast::Boolean {
                 _ => unreachable!("Invalid boolean value"),
             };
 
-            let Some(range) = self.get_range() else {
-                return Ok(());
-            };
-
             let mut diagnostics = vec![];
 
             if let Some(current_schema) = current_schema {
@@ -41,7 +37,7 @@ impl Validate for tombi_ast::Boolean {
                         validate_boolean_schema(
                             value,
                             boolean_schema,
-                            range,
+                            self.range(),
                             accessors,
                             &mut diagnostics,
                         );
@@ -86,7 +82,7 @@ impl Validate for tombi_ast::Boolean {
                                 expected: schema.value_type().await,
                                 actual: ValueType::Boolean,
                             },
-                            range,
+                            range: self.range(),
                         }
                         .set_diagnostics(&mut diagnostics);
 
@@ -110,8 +106,8 @@ impl ValueImpl for tombi_ast::Boolean {
         ValueType::Boolean
     }
 
-    fn get_range(&self) -> Option<tombi_text::Range> {
-        self.token().map(|token| token.range())
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
 

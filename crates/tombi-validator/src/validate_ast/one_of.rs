@@ -19,10 +19,6 @@ where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
     async move {
-        let Some(range) = value.get_range() else {
-            return Ok(());
-        };
-
         let mut valid_count = 0;
 
         let mut schemas = one_of_schema.schemas.write().await;
@@ -84,7 +80,7 @@ where
                             expected: current_schema.value_schema.value_type().await,
                             actual: value.value_type(),
                         },
-                        range,
+                        range: value.range(),
                     }
                     .into()]
                 }

@@ -137,8 +137,8 @@ impl ValueImpl for tombi_ast::IntegerBin {
         ValueType::Integer
     }
 
-    fn get_range(&self) -> Option<tombi_text::Range> {
-        self.token().map(|token| token.range())
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
 
@@ -147,8 +147,8 @@ impl ValueImpl for tombi_ast::IntegerDec {
         ValueType::Integer
     }
 
-    fn get_range(&self) -> Option<tombi_text::Range> {
-        self.token().map(|token| token.range())
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
 
@@ -157,8 +157,8 @@ impl ValueImpl for tombi_ast::IntegerHex {
         ValueType::Integer
     }
 
-    fn get_range(&self) -> Option<tombi_text::Range> {
-        self.token().map(|token| token.range())
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
 
@@ -167,8 +167,8 @@ impl ValueImpl for tombi_ast::IntegerOct {
         ValueType::Integer
     }
 
-    fn get_range(&self) -> Option<tombi_text::Range> {
-        self.token().map(|token| token.range())
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
 
@@ -184,10 +184,6 @@ where
     T: Validate + ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
-        let Some(range) = value.get_range() else {
-            return Ok(());
-        };
-
         let mut diagnostics = vec![];
 
         if let Some(current_schema) = current_schema {
@@ -196,7 +192,7 @@ where
                     validate_integer_schema(
                         integer_value,
                         integer_schema,
-                        range,
+                        value.range(),
                         accessors,
                         &mut diagnostics,
                     );
@@ -205,7 +201,7 @@ where
                     validate_float_schema(
                         integer_value as f64,
                         float_schema,
-                        range,
+                        value.range(),
                         accessors,
                         &mut diagnostics,
                     );
@@ -250,7 +246,7 @@ where
                             expected: schema.value_type().await,
                             actual: ValueType::Integer,
                         },
-                        range,
+                        range: value.range(),
                     }
                     .set_diagnostics(&mut diagnostics);
                     return Err(diagnostics);

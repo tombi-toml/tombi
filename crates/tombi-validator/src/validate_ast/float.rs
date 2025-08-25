@@ -28,10 +28,6 @@ impl Validate for tombi_ast::Float {
                 return Ok(());
             };
 
-            let Some(range) = self.get_range() else {
-                return Ok(());
-            };
-
             let mut diagnostics = vec![];
 
             if let Some(current_schema) = current_schema {
@@ -40,7 +36,7 @@ impl Validate for tombi_ast::Float {
                         validate_float_schema(
                             value,
                             float_schema,
-                            range,
+                            self.range(),
                             accessors,
                             &mut diagnostics,
                         );
@@ -85,7 +81,7 @@ impl Validate for tombi_ast::Float {
                                 expected: schema.value_type().await,
                                 actual: ValueType::Float,
                             },
-                            range,
+                            range: self.range(),
                         }
                         .set_diagnostics(&mut diagnostics);
                         return Err(diagnostics);
@@ -108,8 +104,8 @@ impl ValueImpl for tombi_ast::Float {
         ValueType::Float
     }
 
-    fn get_range(&self) -> Option<tombi_text::Range> {
-        self.token().map(|token| token.range())
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
 
