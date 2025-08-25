@@ -359,7 +359,7 @@ fn validate_string_schema(
 
     // Validate enum
     if let Some(enumerate) = &string_schema.enumerate {
-        if !enumerate.contains(&value.to_string()) {
+        if enumerate.iter().any(|s| s == value) {
             crate::Error {
                 kind: crate::ErrorKind::Enumerate {
                     expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
