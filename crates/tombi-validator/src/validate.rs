@@ -16,9 +16,9 @@ mod value;
 
 use std::borrow::Cow;
 
-use all_of::validate_all_of;
-use any_of::validate_any_of;
-use one_of::validate_one_of;
+pub use all_of::validate_all_of;
+pub use any_of::validate_any_of;
+pub use one_of::validate_one_of;
 use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;

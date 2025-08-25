@@ -37,7 +37,7 @@ impl crate::Array {
 
     #[inline]
     pub fn values_with_comma(&self) -> impl Iterator<Item = (crate::Value, Option<crate::Comma>)> {
-        self.values()
+        self.items()
             .zip_longest(support::node::children::<crate::Comma>(self.syntax()))
             .filter_map(|value_with_comma| match value_with_comma {
                 itertools::EitherOrBoth::Both(value, comma) => Some((value, Some(comma))),
@@ -86,7 +86,7 @@ impl crate::Array {
     }
 
     pub fn has_multiline_values(&self, toml_version: TomlVersion) -> bool {
-        self.values().any(|value| match value {
+        self.items().any(|value| match value {
             crate::Value::Array(array) => array.should_be_multiline(toml_version),
             crate::Value::InlineTable(inline_table) => {
                 inline_table.should_be_multiline(toml_version)

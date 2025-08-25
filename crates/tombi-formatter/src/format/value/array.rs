@@ -27,7 +27,7 @@ pub(crate) fn exceeds_line_width(
     length += f.singleline_array_bracket_inner_space().len() * 2; // Space after '[' and before ']'
     let mut first = true;
 
-    for value in node.values() {
+    for value in node.items() {
         // Check if nested value should be multiline
         let should_be_multiline = match &value {
             tombi_ast::Value::Array(array) => {
@@ -145,7 +145,7 @@ fn format_singleline_array(
     f.write_indent()?;
     write!(f, "[{}", f.singleline_array_bracket_inner_space())?;
 
-    for (i, value) in array.values().enumerate() {
+    for (i, value) in array.items().enumerate() {
         if i > 0 {
             write!(f, ",{}", f.singleline_array_space_after_comma())?;
         }

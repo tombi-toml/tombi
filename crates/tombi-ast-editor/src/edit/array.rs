@@ -42,7 +42,7 @@ impl crate::Edit for tombi_ast::Array {
                             .await
                             .inspect_err(|err| tracing::warn!("{err}"))
                         {
-                            for value in self.values() {
+                            for value in self.items() {
                                 changes.extend(
                                     value
                                         .edit(
