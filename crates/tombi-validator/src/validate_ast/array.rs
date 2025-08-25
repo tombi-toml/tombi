@@ -111,7 +111,7 @@ impl Validate for tombi_ast::Array {
                         crate::Error {
                             kind: crate::ErrorKind::TypeMismatch2 {
                                 expected: schema.value_type().await,
-                                actual: ValueType::Boolean,
+                                actual: ValueType::Array,
                             },
                             range: self.range(),
                         }
