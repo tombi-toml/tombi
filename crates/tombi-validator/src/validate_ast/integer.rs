@@ -9,7 +9,7 @@ use tombi_schema_store::ValueType;
 use crate::validate_ast::all_of::validate_all_of;
 use crate::validate_ast::any_of::validate_any_of;
 use crate::validate_ast::one_of::validate_one_of;
-use crate::validate_ast::ValueImpl;
+use crate::validate_ast::{validate_float_schema, ValueImpl};
 use crate::Validate;
 
 impl Validate for tombi_ast::IntegerBin {
@@ -191,26 +191,6 @@ where
         let mut diagnostics = vec![];
 
         if let Some(current_schema) = current_schema {
-            match current_schema.value_schema.value_type().await {
-                ValueType::Integer
-                | ValueType::Float
-                | ValueType::OneOf(_)
-                | ValueType::AnyOf(_)
-                | ValueType::AllOf(_) => {}
-                ValueType::Null => return Ok(()),
-                value_type => {
-                    crate::Error {
-                        kind: crate::ErrorKind::TypeMismatch2 {
-                            expected: value_type,
-                            actual: ValueType::Integer,
-                        },
-                        range,
-                    }
-                    .set_diagnostics(&mut diagnostics);
-                    return Err(diagnostics);
-                }
-            }
-
             match current_schema.value_schema.as_ref() {
                 tombi_schema_store::ValueSchema::Integer(integer_schema) => {
                     validate_integer_schema(
@@ -222,7 +202,7 @@ where
                     );
                 }
                 tombi_schema_store::ValueSchema::Float(float_schema) => {
-                    validate_integer_as_float(
+                    validate_float_schema(
                         integer_value as f64,
                         float_schema,
                         range,
@@ -263,7 +243,18 @@ where
                     )
                     .await
                 }
-                _ => unreachable!("Expected an Integer schema"),
+                tombi_schema_store::ValueSchema::Null => return Ok(()),
+                schema => {
+                    crate::Error {
+                        kind: crate::ErrorKind::TypeMismatch2 {
+                            expected: schema.value_type().await,
+                            actual: ValueType::Integer,
+                        },
+                        range,
+                    }
+                    .set_diagnostics(&mut diagnostics);
+                    return Err(diagnostics);
+                }
             }
         }
 
@@ -274,125 +265,6 @@ where
         }
     }
     .boxed()
-}
-
-// Helper function to validate integer as float against float schema
-fn validate_integer_as_float(
-    value: f64,
-    float_schema: &tombi_schema_store::FloatSchema,
-    range: tombi_text::Range,
-    accessors: &[tombi_schema_store::SchemaAccessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
-    // Validate const value
-    if let Some(const_value) = &float_schema.const_value {
-        if (value - *const_value).abs() > f64::EPSILON {
-            crate::Error {
-                kind: crate::ErrorKind::Const {
-                    expected: const_value.to_string(),
-                    actual: value.to_string(),
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Validate enum
-    if let Some(enumerate) = &float_schema.enumerate {
-        if !enumerate.contains(&value) {
-            crate::Error {
-                kind: crate::ErrorKind::Enumerate {
-                    expected: enumerate.iter().map(ToString::to_string).collect(),
-                    actual: value.to_string(),
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Validate maximum
-    if let Some(maximum) = &float_schema.maximum {
-        if value > *maximum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatMaximum {
-                    maximum: *maximum,
-                    actual: value,
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Validate minimum
-    if let Some(minimum) = &float_schema.minimum {
-        if value < *minimum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatMinimum {
-                    minimum: *minimum,
-                    actual: value,
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Validate exclusive maximum
-    if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
-        if value >= *exclusive_maximum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatExclusiveMaximum {
-                    maximum: *exclusive_maximum - 1.0,
-                    actual: value,
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Validate exclusive minimum
-    if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
-        if value <= *exclusive_minimum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatExclusiveMinimum {
-                    minimum: *exclusive_minimum + 1.0,
-                    actual: value,
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Validate multiple of
-    if let Some(multiple_of) = &float_schema.multiple_of {
-        if value % *multiple_of != 0.0 {
-            crate::Error {
-                kind: crate::ErrorKind::FloatMultipleOf {
-                    multiple_of: *multiple_of,
-                    actual: value,
-                },
-                range,
-            }
-            .set_diagnostics(diagnostics);
-        }
-    }
-
-    // Check deprecated
-    if diagnostics.is_empty() && float_schema.deprecated == Some(true) {
-        crate::Warning {
-            kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
-                value.to_string(),
-            )),
-            range,
-        }
-        .set_diagnostics(diagnostics);
-    }
 }
 
 // Helper function to validate integer against integer schema

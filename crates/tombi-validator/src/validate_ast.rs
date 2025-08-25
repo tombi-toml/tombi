@@ -15,6 +15,7 @@ mod table;
 mod value;
 
 use crate::Validate;
+use float::validate_float_schema;
 use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;

@@ -35,26 +35,6 @@ impl Validate for tombi_ast::Float {
             let mut diagnostics = vec![];
 
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.value_type().await {
-                    ValueType::Integer
-                    | ValueType::Float
-                    | ValueType::OneOf(_)
-                    | ValueType::AnyOf(_)
-                    | ValueType::AllOf(_) => {}
-                    ValueType::Null => return Ok(()),
-                    value_type => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch2 {
-                                expected: value_type,
-                                actual: ValueType::Integer,
-                            },
-                            range,
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                        return Err(diagnostics);
-                    }
-                }
-
                 match current_schema.value_schema.as_ref() {
                     tombi_schema_store::ValueSchema::Float(float_schema) => {
                         validate_float_schema(
@@ -98,7 +78,18 @@ impl Validate for tombi_ast::Float {
                         )
                         .await
                     }
-                    _ => unreachable!("Expected an Integer schema"),
+                    tombi_schema_store::ValueSchema::Null => return Ok(()),
+                    schema => {
+                        crate::Error {
+                            kind: crate::ErrorKind::TypeMismatch2 {
+                                expected: schema.value_type().await,
+                                actual: ValueType::Float,
+                            },
+                            range,
+                        }
+                        .set_diagnostics(&mut diagnostics);
+                        return Err(diagnostics);
+                    }
                 }
             }
 
@@ -123,7 +114,7 @@ impl ValueImpl for tombi_ast::Float {
 }
 
 // Helper function to validate float against float schema
-fn validate_float_schema(
+pub(crate) fn validate_float_schema(
     value: f64,
     float_schema: &tombi_schema_store::FloatSchema,
     range: tombi_text::Range,
