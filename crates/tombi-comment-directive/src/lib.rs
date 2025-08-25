@@ -27,3 +27,7 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
         })
         .await
 }
+
+pub trait TombiCommentDirectiveImpl {
+    fn comment_directive_schema_url() -> SchemaUri;
+}

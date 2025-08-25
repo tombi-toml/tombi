@@ -3,7 +3,7 @@ use std::str::FromStr;
 use tombi_schema_store::SchemaUri;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
-use crate::ValueTombiCommentDirectiveImpl;
+use crate::TombiCommentDirectiveImpl;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -49,8 +49,8 @@ pub struct KeyTombiCommentDirectiveRules {
     pub key_pattern: Option<SeverityLevelDefaultError>,
 }
 
-impl ValueTombiCommentDirectiveImpl for KeyTombiCommentDirectiveRules {
-    fn value_comment_directive_schema_url() -> SchemaUri {
+impl TombiCommentDirectiveImpl for KeyTombiCommentDirectiveRules {
+    fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/key-tombi-directive.json").unwrap()
     }
 }

@@ -4,14 +4,14 @@ use tombi_schema_store::SchemaUri;
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    CommonValueTombiCommentDirectiveRules, ValueTombiCommentDirectiveImpl,
+    CommonValueTombiCommentDirectiveRules, TombiCommentDirectiveImpl,
     WithKeyTombiCommentDirectiveRules,
 };
 
-impl ValueTombiCommentDirectiveImpl
+impl TombiCommentDirectiveImpl
     for WithKeyTombiCommentDirectiveRules<StringValueTombiCommentDirectiveRules>
 {
-    fn value_comment_directive_schema_url() -> SchemaUri {
+    fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/string-key-value-tombi-directive.json").unwrap()
     }
 }
@@ -37,8 +37,8 @@ pub struct StringValueTombiCommentDirectiveRules {
     string: StringTombiCommentDirectiveRules,
 }
 
-impl ValueTombiCommentDirectiveImpl for StringValueTombiCommentDirectiveRules {
-    fn value_comment_directive_schema_url() -> SchemaUri {
+impl TombiCommentDirectiveImpl for StringValueTombiCommentDirectiveRules {
+    fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/string-value-tombi-directive.json").unwrap()
     }
 }

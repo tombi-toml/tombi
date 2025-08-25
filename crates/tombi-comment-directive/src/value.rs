@@ -10,6 +10,7 @@ mod offset_date_time;
 mod string;
 mod table;
 
+use crate::TombiCommentDirectiveImpl;
 pub use array::*;
 pub use boolean::*;
 pub use float::*;
@@ -21,15 +22,11 @@ pub use local_time::*;
 pub use offset_date_time::*;
 pub use string::*;
 pub use table::*;
-
-use tombi_schema_store::SchemaUri;
 use tombi_severity_level::SeverityLevelDefaultError;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
-#[serde(
-    bound = "T: serde::de::DeserializeOwned + serde::Serialize + ValueTombiCommentDirectiveImpl"
-)]
+#[serde(bound = "T: serde::de::DeserializeOwned + serde::Serialize + TombiCommentDirectiveImpl")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ValueTombiCommentDirective<T> {
@@ -78,10 +75,6 @@ pub struct WithKeyTombiCommentDirectiveRules<T> {
 
     #[serde(flatten)]
     value: T,
-}
-
-pub trait ValueTombiCommentDirectiveImpl {
-    fn value_comment_directive_schema_url() -> SchemaUri;
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

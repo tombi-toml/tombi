@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    schema_store, KeyTombiCommentDirectiveRules, ValueTombiCommentDirective,
-    ValueTombiCommentDirectiveImpl, WithKeyTombiCommentDirectiveRules,
+    schema_store, KeyTombiCommentDirectiveRules, TombiCommentDirectiveImpl,
+    ValueTombiCommentDirective, WithKeyTombiCommentDirectiveRules,
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
@@ -16,11 +16,11 @@ pub async fn get_tombi_value_comment_directive<T>(
     has_key: bool,
 ) -> Option<ValueTombiCommentDirective<T>>
 where
-    T: ValueTombiCommentDirectiveImpl
+    T: TombiCommentDirectiveImpl
         + serde::de::DeserializeOwned
         + serde::Serialize
         + From<WithKeyTombiCommentDirectiveRules<T>>,
-    WithKeyTombiCommentDirectiveRules<T>: ValueTombiCommentDirectiveImpl,
+    WithKeyTombiCommentDirectiveRules<T>: TombiCommentDirectiveImpl,
 {
     get_tombi_value_comment_directive_and_diagnostics(comment_directives, has_key)
         .await
@@ -36,7 +36,7 @@ pub async fn get_tombi_key_comment_directive_and_diagnostics<T>(
     let (total_document_tree_table, total_diagnostics) =
         get_comment_directive_document_tree_and_diagnostics(
             comment_directives,
-            &KeyTombiCommentDirectiveRules::value_comment_directive_schema_url(),
+            &KeyTombiCommentDirectiveRules::comment_directive_schema_url(),
         )
         .await;
 
@@ -61,16 +61,16 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<T>(
     Vec<tombi_diagnostic::Diagnostic>,
 )
 where
-    T: ValueTombiCommentDirectiveImpl
+    T: TombiCommentDirectiveImpl
         + serde::de::DeserializeOwned
         + serde::Serialize
         + From<WithKeyTombiCommentDirectiveRules<T>>,
-    WithKeyTombiCommentDirectiveRules<T>: ValueTombiCommentDirectiveImpl,
+    WithKeyTombiCommentDirectiveRules<T>: TombiCommentDirectiveImpl,
 {
     let schema_uri = if has_key {
-        WithKeyTombiCommentDirectiveRules::<T>::value_comment_directive_schema_url()
+        WithKeyTombiCommentDirectiveRules::<T>::comment_directive_schema_url()
     } else {
-        T::value_comment_directive_schema_url()
+        T::comment_directive_schema_url()
     };
 
     let (total_document_tree_table, total_diagnostics) =
