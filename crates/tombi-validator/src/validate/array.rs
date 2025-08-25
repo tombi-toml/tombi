@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use ahash::AHashSet;
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
@@ -15,8 +16,15 @@ impl Validate for tombi_document_tree::Array {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let comment_context = if self.kind() == tombi_document_tree::ArrayKind::Array {
+                comment_context
+            } else {
+                &CommentContext::default()
+            };
+
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
                 .and_then(|map| map.get(accessors))
@@ -43,6 +51,7 @@ impl Validate for tombi_document_tree::Array {
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
+                                comment_context,
                             )
                             .await;
                     }
@@ -80,6 +89,7 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await;
                     }
@@ -90,6 +100,7 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await;
                     }
@@ -100,6 +111,7 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await;
                     }
@@ -125,7 +137,12 @@ impl Validate for tombi_document_tree::Array {
 
                         for value in self.values().iter() {
                             if let Err(schema_diagnostics) = value
-                                .validate(&new_accessors, Some(&current_schema), schema_context)
+                                .validate(
+                                    &new_accessors,
+                                    Some(&current_schema),
+                                    schema_context,
+                                    comment_context,
+                                )
                                 .await
                             {
                                 diagnostics.extend(schema_diagnostics);
@@ -206,6 +223,7 @@ impl Validate for tombi_document_tree::Array {
                                 .collect_vec(),
                             None,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     {

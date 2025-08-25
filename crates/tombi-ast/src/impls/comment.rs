@@ -9,7 +9,7 @@ impl Comment {
     /// ```toml
     /// #:schema "https://example.com/schema.json"
     /// ```
-    pub fn document_schema_directive(
+    pub fn get_document_schema_directive(
         &self,
         source_path: Option<&std::path::Path>,
     ) -> Option<SchemaDocumentCommentDirective> {
@@ -74,7 +74,7 @@ impl Comment {
     /// ```toml
     /// #:tombi toml-version = "v1.0.0"
     /// ```
-    pub fn tombi_document_directive(&self) -> Option<TombiDocumentCommentDirective> {
+    pub fn get_tombi_document_directive(&self) -> Option<TombiDocumentCommentDirective> {
         let comment_str = self.syntax().text();
         if let Some(content) = comment_str.strip_prefix("#:tombi ") {
             let comment_range = self.syntax().range();
@@ -101,8 +101,8 @@ impl Comment {
         }
     }
 
-    pub fn tombi_value_directive(&self) -> Option<TombiValueCommentDirective> {
-        tombi_value_comment_directive(self.syntax().text(), self.syntax().range())
+    pub fn get_tombi_value_directive(&self) -> Option<TombiValueCommentDirective> {
+        get_tombi_value_comment_directive(self.syntax().text(), self.syntax().range())
     }
 }
 
@@ -111,7 +111,7 @@ impl Comment {
 /// ```toml
 /// # tombi: lint.rules.const_value = "error"
 /// ```
-pub fn tombi_value_comment_directive(
+pub fn get_tombi_value_comment_directive(
     comment_str: &str,
     comment_range: tombi_text::Range,
 ) -> Option<TombiValueCommentDirective> {

@@ -1,4 +1,9 @@
+use std::str::FromStr;
+
+use tombi_schema_store::SchemaUri;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+
+use crate::TombiCommentDirectiveImpl;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -42,4 +47,10 @@ pub struct KeyTombiCommentDirectiveRules {
 
     /// Controls the severity level for key pattern errors
     pub key_pattern: Option<SeverityLevelDefaultError>,
+}
+
+impl TombiCommentDirectiveImpl for KeyTombiCommentDirectiveRules {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/key-tombi-directive.json").unwrap()
+    }
 }

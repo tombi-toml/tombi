@@ -14,8 +14,16 @@ impl Comment {
         }
     }
 
-    pub fn tombi_value_directive(&self) -> Option<tombi_ast::TombiValueCommentDirective> {
-        tombi_ast::tombi_value_comment_directive(&self.text, self.range)
+    pub fn get_tombi_value_directive(&self) -> Option<tombi_ast::TombiValueCommentDirective> {
+        tombi_ast::get_tombi_value_comment_directive(&self.text, self.range)
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn range(&self) -> tombi_text::Range {
+        self.range
     }
 }
 

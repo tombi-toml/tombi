@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{GetHeaderSchemarAccessors, SchemaAccessor};
@@ -14,6 +15,7 @@ impl crate::Edit for tombi_ast::Table {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         tracing::trace!("current_schema = {:?}", current_schema);
 
@@ -32,13 +34,19 @@ impl crate::Edit for tombi_ast::Table {
             );
 
             let current_schema = if let Some(current_schema) = current_schema {
-                get_schema(value, &header_accessors, current_schema, schema_context)
-                    .await
-                    .map(|value_schema| tombi_schema_store::CurrentSchema {
-                        value_schema: Cow::Owned(value_schema),
-                        schema_uri: current_schema.schema_uri.clone(),
-                        definitions: current_schema.definitions.clone(),
-                    })
+                get_schema(
+                    value,
+                    &header_accessors,
+                    current_schema,
+                    schema_context,
+                    comment_context,
+                )
+                .await
+                .map(|value_schema| tombi_schema_store::CurrentSchema {
+                    value_schema: Cow::Owned(value_schema),
+                    schema_uri: current_schema.schema_uri.clone(),
+                    definitions: current_schema.definitions.clone(),
+                })
             } else {
                 None
             };
@@ -69,6 +77,7 @@ impl crate::Edit for tombi_ast::Table {
                             source_path,
                             current_schema.as_ref(),
                             schema_context,
+                            comment_context,
                         )
                         .await,
                 );
@@ -80,6 +89,7 @@ impl crate::Edit for tombi_ast::Table {
                     self.key_values().collect_vec(),
                     current_schema.as_ref(),
                     schema_context,
+                    comment_context,
                 )
                 .await,
             );

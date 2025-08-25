@@ -8,8 +8,9 @@ mod value;
 
 use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
-pub use comment::get_comment_directive_hover_info;
+pub use comment::get_document_comment_directive_hover_info;
 use constraints::ValueConstraints;
+use tombi_comment_directive::CommentContext;
 use tombi_extension::get_tombi_github_uri;
 use tombi_schema_store::{
     get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUri, ValueType,
@@ -20,7 +21,7 @@ pub async fn get_hover_content(
     position: tombi_text::Position,
     keys: &[tombi_document_tree::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Option<HoverValueContent> {
+) -> Option<HoverContent> {
     let table = tree.deref();
     match schema_context.root_schema {
         Some(document_schema) => {
@@ -34,12 +35,26 @@ pub async fn get_hover_content(
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
-                .get_hover_content(position, keys, &[], current_schema.as_ref(), schema_context)
+                .get_hover_content(
+                    position,
+                    keys,
+                    &[],
+                    current_schema.as_ref(),
+                    schema_context,
+                    &CommentContext::default(),
+                )
                 .await
         }
         None => {
             table
-                .get_hover_content(position, keys, &[], None, schema_context)
+                .get_hover_content(
+                    position,
+                    keys,
+                    &[],
+                    None,
+                    schema_context,
+                    &CommentContext::default(),
+                )
                 .await
         }
     }
@@ -53,7 +68,8 @@ trait GetHoverContent {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>;
+        comment_context: &'a CommentContext<'a>,
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +84,18 @@ impl From<HoverContent> for tower_lsp::lsp_types::Hover {
             HoverContent::Directive(content) => content.into(),
             HoverContent::Value(content) => content.into(),
         }
+    }
+}
+
+impl From<HoverValueContent> for HoverContent {
+    fn from(value: HoverValueContent) -> Self {
+        HoverContent::Value(value)
+    }
+}
+
+impl From<HoverDirectiveContent> for HoverContent {
+    fn from(value: HoverDirectiveContent) -> Self {
+        HoverContent::Directive(value)
     }
 }
 
@@ -101,13 +129,6 @@ pub struct HoverValueContent {
     pub constraints: Option<ValueConstraints>,
     pub schema_uri: Option<SchemaUri>,
     pub range: Option<tombi_text::Range>,
-}
-
-impl HoverValueContent {
-    pub fn into_nullable(mut self) -> HoverValueContent {
-        self.value_type = self.value_type.into_nullable();
-        self
-    }
 }
 
 impl PartialEq for HoverValueContent {

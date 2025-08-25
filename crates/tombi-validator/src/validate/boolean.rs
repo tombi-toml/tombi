@@ -1,3 +1,4 @@
+use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -11,6 +12,7 @@ impl Validate for tombi_document_tree::Boolean {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
@@ -44,6 +46,7 @@ impl Validate for tombi_document_tree::Boolean {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -54,6 +57,7 @@ impl Validate for tombi_document_tree::Boolean {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -64,6 +68,7 @@ impl Validate for tombi_document_tree::Boolean {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }

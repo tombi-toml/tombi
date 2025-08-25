@@ -16,7 +16,7 @@ pub struct Key {
     kind: KeyKind,
     value: String,
     range: tombi_text::Range,
-    leading_comments: Vec<Comment>,
+    pub(crate) leading_comments: Vec<Comment>,
 }
 
 impl std::borrow::Borrow<String> for Key {

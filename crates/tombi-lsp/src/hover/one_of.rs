@@ -1,8 +1,11 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
+
+use crate::HoverContent;
 
 use super::{
     constraints::ValueConstraints,
@@ -19,13 +22,14 @@ pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
-) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>>
+    comment_context: &'a CommentContext<'a>,
+) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
     T: GetHoverContent + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
 {
     async move {
-        let mut one_hover_contents = ahash::AHashSet::new();
-        let mut valid_hover_contents = ahash::AHashSet::new();
+        let mut one_hover_value_contents = ahash::AHashSet::new();
+        let mut valid_hover_value_contents = ahash::AHashSet::new();
         let mut value_type_set = indexmap::IndexSet::new();
         let mut enumerate_values = Vec::new();
         let default = one_of_schema
@@ -74,66 +78,78 @@ where
                 continue;
             };
 
-            if let Some(mut hover_content) = value
+            match value
                 .get_hover_content(
                     position,
                     keys,
                     accessors,
                     Some(&current_schema),
                     schema_context,
+                    comment_context,
                 )
                 .await
             {
-                if hover_content.title.is_none() && hover_content.description.is_none() {
-                    if let Some(title) = &one_of_schema.title {
-                        hover_content.title = Some(title.clone());
-                    }
-                    if let Some(description) = &one_of_schema.description {
-                        hover_content.description = Some(description.clone());
-                    }
-                }
-
-                if keys.is_empty() && accessors == hover_content.accessors.as_ref() {
-                    hover_content.value_type = value_type.clone();
-                }
-
-                if current_schema.value_schema.value_type().await
-                    == tombi_schema_store::ValueType::Array
-                    && hover_content.value_type != tombi_schema_store::ValueType::Array
-                {
-                    return Some(hover_content);
-                }
-
-                match value
-                    .validate(
-                        &accessors
-                            .iter()
-                            .map(|accessor| accessor.into())
-                            .collect_vec(),
-                        Some(&current_schema),
-                        schema_context,
-                    )
-                    .await
-                {
-                    Ok(()) => {
-                        valid_hover_contents.insert(hover_content.clone());
-                    }
-                    Err(errors)
-                        if errors
-                            .iter()
-                            .all(|error| error.level() == tombi_diagnostic::Level::WARNING) =>
+                Some(HoverContent::Value(mut hover_value_content)) => {
+                    if hover_value_content.title.is_none()
+                        && hover_value_content.description.is_none()
                     {
-                        valid_hover_contents.insert(hover_content.clone());
+                        if let Some(title) = &one_of_schema.title {
+                            hover_value_content.title = Some(title.clone());
+                        }
+                        if let Some(description) = &one_of_schema.description {
+                            hover_value_content.description = Some(description.clone());
+                        }
                     }
-                    _ => {}
-                }
 
-                one_hover_contents.insert(hover_content);
+                    if keys.is_empty() && accessors == hover_value_content.accessors.as_ref() {
+                        hover_value_content.value_type = value_type.clone();
+                    }
+
+                    if current_schema.value_schema.value_type().await
+                        == tombi_schema_store::ValueType::Array
+                        && hover_value_content.value_type != tombi_schema_store::ValueType::Array
+                    {
+                        return Some(hover_value_content.into());
+                    }
+
+                    match value
+                        .validate(
+                            &accessors
+                                .iter()
+                                .map(|accessor| accessor.into())
+                                .collect_vec(),
+                            Some(&current_schema),
+                            schema_context,
+                            comment_context,
+                        )
+                        .await
+                    {
+                        Ok(()) => {
+                            valid_hover_value_contents.insert(hover_value_content.clone());
+                        }
+                        Err(errors)
+                            if errors
+                                .iter()
+                                .all(|error| error.level() == tombi_diagnostic::Level::WARNING) =>
+                        {
+                            valid_hover_value_contents.insert(hover_value_content.clone());
+                        }
+                        _ => {}
+                    }
+
+                    one_hover_value_contents.insert(hover_value_content);
+                }
+                Some(HoverContent::Directive(hover_directive_content)) => {
+                    return Some(hover_directive_content.into());
+                }
+                None => {
+                    continue;
+                }
             }
         }
 
-        if one_hover_contents.len() == 1 {
-            one_hover_contents
+        let mut hover_value_content = if one_hover_value_contents.len() == 1 {
+            one_hover_value_contents
                 .into_iter()
                 .next()
                 .map(|mut hover_content| {
@@ -148,8 +164,8 @@ where
 
                     hover_content
                 })
-        } else if valid_hover_contents.len() == 1 {
-            valid_hover_contents
+        } else if valid_hover_value_contents.len() == 1 {
+            valid_hover_value_contents
                 .into_iter()
                 .next()
                 .map(|mut hover_content| {
@@ -174,15 +190,16 @@ where
                 schema_uri: Some(schema_uri.to_owned()),
                 range: None,
             })
-        }
-        .map(|mut hover_content| {
+        };
+
+        if let Some(hover_value_content) = hover_value_content.as_mut() {
             if let Some(default) = default {
-                if let Some(constraints) = hover_content.constraints.as_mut() {
+                if let Some(constraints) = hover_value_content.constraints.as_mut() {
                     if constraints.default.is_none() {
                         constraints.default = Some(default);
                     }
                 } else {
-                    hover_content.constraints = Some(ValueConstraints {
+                    hover_value_content.constraints = Some(ValueConstraints {
                         default: Some(default),
                         ..Default::default()
                     });
@@ -190,18 +207,18 @@ where
             }
 
             if !enumerate_values.is_empty() {
-                if let Some(constraints) = hover_content.constraints.as_mut() {
+                if let Some(constraints) = hover_value_content.constraints.as_mut() {
                     constraints.enumerate = Some(enumerate_values);
                 } else {
-                    hover_content.constraints = Some(ValueConstraints {
+                    hover_value_content.constraints = Some(ValueConstraints {
                         enumerate: Some(enumerate_values),
                         ..Default::default()
                     });
                 }
             }
+        }
 
-            hover_content
-        })
+        hover_value_content.map(Into::into)
     }
     .boxed()
 }
@@ -214,7 +231,8 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<HoverValueContent>> {
+        _comment_context: &'a CommentContext<'a>,
+    ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             let Some(current_schema) = current_schema else {
                 unreachable!("schema must be provided");
@@ -264,15 +282,18 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 tombi_schema_store::ValueType::OneOf(value_type_set.into_iter().collect())
             };
 
-            Some(HoverValueContent {
-                title,
-                description,
-                accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
-                value_type,
-                constraints: None,
-                schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
-                range: None,
-            })
+            Some(
+                HoverValueContent {
+                    title,
+                    description,
+                    accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                    value_type,
+                    constraints: None,
+                    schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
+                    range: None,
+                }
+                .into(),
+            )
         }
         .boxed()
     }

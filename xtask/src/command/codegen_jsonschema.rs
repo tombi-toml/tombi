@@ -177,7 +177,9 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::StringKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::WithKeyTombiCommentDirectiveRules<
+                        tombi_comment_directive::StringValueTombiCommentDirectiveRules,
+                    >,
                 >>(),
         )? + "\n",
     )?;

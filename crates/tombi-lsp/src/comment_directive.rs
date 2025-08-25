@@ -75,7 +75,7 @@ pub fn get_tombi_document_comment_directive(
         directive_range,
         content,
         content_range,
-    }) = comment.tombi_document_directive()
+    }) = comment.get_tombi_document_directive()
     {
         if directive_range.contains(position) {
             return Some(TombiDocumentCommentDirective::Directive(

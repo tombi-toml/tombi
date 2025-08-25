@@ -78,10 +78,10 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
                 if let Err(diagnostics) = crate::validate(
                     document_tree.clone(),
-                    &tombi_schema_store::SourceSchema {
+                    Some(&tombi_schema_store::SourceSchema {
                         root_schema: Some(document_schema),
                         sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-                    },
+                    }),
                     &schema_context,
                 )
                 .await

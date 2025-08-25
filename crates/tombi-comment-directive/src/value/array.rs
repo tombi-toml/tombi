@@ -10,7 +10,7 @@ pub struct ArrayKeyValueTombiCommentDirectiveRules {
     key: KeyTombiCommentDirectiveRules,
 
     #[serde(flatten)]
-    value: ArrayTombiCommentDirectiveRules,
+    value: ArrayValueTombiCommentDirectiveRules,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

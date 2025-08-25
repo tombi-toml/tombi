@@ -9,7 +9,7 @@ pub struct BooleanKeyValueTombiCommentDirectiveRules {
     key: KeyTombiCommentDirectiveRules,
 
     #[serde(flatten)]
-    value: BooleanTombiCommentDirectiveRules,
+    value: BooleanValueTombiCommentDirectiveRules,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

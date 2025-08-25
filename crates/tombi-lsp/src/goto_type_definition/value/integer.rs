@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
@@ -15,6 +16,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
             if let Some(current_schema) = current_schema {
@@ -33,6 +35,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
+                                comment_context,
                             )
                             .await
                     }
@@ -46,6 +49,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -59,6 +63,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -72,6 +77,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                             current_schema.schema_uri.as_ref(),
                             current_schema.definitions.as_ref(),
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -93,6 +99,7 @@ impl GetTypeDefinition for tombi_schema_store::IntegerSchema {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
+        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {

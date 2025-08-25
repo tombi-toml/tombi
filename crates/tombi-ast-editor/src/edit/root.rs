@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_syntax::SyntaxElement;
 
@@ -12,6 +13,7 @@ impl crate::Edit for tombi_ast::Root {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
@@ -37,7 +39,13 @@ impl crate::Edit for tombi_ast::Root {
             for key_value in self.key_values() {
                 changes.extend(
                     key_value
-                        .edit(&[], source_path, current_schema, schema_context)
+                        .edit(
+                            &[],
+                            source_path,
+                            current_schema,
+                            schema_context,
+                            comment_context,
+                        )
                         .await,
                 );
                 key_values.push(key_value);
@@ -48,14 +56,26 @@ impl crate::Edit for tombi_ast::Root {
                     tombi_ast::TableOrArrayOfTable::Table(table) => {
                         changes.extend(
                             table
-                                .edit(&[], source_path, current_schema, schema_context)
+                                .edit(
+                                    &[],
+                                    source_path,
+                                    current_schema,
+                                    schema_context,
+                                    comment_context,
+                                )
                                 .await,
                         );
                     }
                     tombi_ast::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
                         changes.extend(
                             array_of_table
-                                .edit(&[], source_path, current_schema, schema_context)
+                                .edit(
+                                    &[],
+                                    source_path,
+                                    current_schema,
+                                    schema_context,
+                                    comment_context,
+                                )
                                 .await,
                         );
                     }

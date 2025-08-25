@@ -1,7 +1,9 @@
+mod context;
 mod document;
 mod error;
 mod value;
 
+pub use context::CommentContext;
 pub use error::Error;
 use tombi_schema_store::SchemaUri;
 use tombi_toml_version::TomlVersion;
@@ -24,4 +26,8 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
             schema_store
         })
         .await
+}
+
+pub trait TombiCommentDirectiveImpl {
+    fn comment_directive_schema_url() -> SchemaUri;
 }

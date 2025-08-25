@@ -1,31 +1,106 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    schema_store, ValueTombiCommentDirective, ValueTombiCommentDirectiveImpl,
+    schema_store, KeyTombiCommentDirectiveRules, TombiCommentDirectiveImpl,
+    ValueTombiCommentDirective, WithKeyTombiCommentDirectiveRules,
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::DocumentSchema;
+use tombi_schema_store::{DocumentSchema, SchemaUri};
 
 use crate::comment_directive::into_directive_diagnostic;
 
-pub async fn get_tombi_value_comment_directive<
-    T: serde::de::DeserializeOwned + serde::Serialize + ValueTombiCommentDirectiveImpl,
->(
+pub async fn get_tombi_value_comment_directive<T>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
-) -> Option<ValueTombiCommentDirective<T>> {
-    get_tombi_value_comment_directive_and_diagnostics(comment_directives)
+    has_key: bool,
+) -> Option<ValueTombiCommentDirective<T>>
+where
+    T: TombiCommentDirectiveImpl
+        + serde::de::DeserializeOwned
+        + serde::Serialize
+        + From<WithKeyTombiCommentDirectiveRules<T>>,
+    WithKeyTombiCommentDirectiveRules<T>: TombiCommentDirectiveImpl,
+{
+    get_tombi_value_comment_directive_and_diagnostics(comment_directives, has_key)
         .await
         .0
 }
 
-pub async fn get_tombi_value_comment_directive_and_diagnostics<
-    T: serde::de::DeserializeOwned + serde::Serialize + ValueTombiCommentDirectiveImpl,
->(
+pub async fn get_tombi_key_comment_directive_and_diagnostics<T>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
 ) -> (
+    Option<KeyTombiCommentDirectiveRules>,
+    Vec<tombi_diagnostic::Diagnostic>,
+) {
+    let (total_document_tree_table, total_diagnostics) =
+        get_comment_directive_document_tree_and_diagnostics(
+            comment_directives,
+            &KeyTombiCommentDirectiveRules::comment_directive_schema_url(),
+        )
+        .await;
+
+    if let Some(total_document_tree_table) = total_document_tree_table {
+        (
+            KeyTombiCommentDirectiveRules::deserialize(
+                &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+            )
+            .ok(),
+            total_diagnostics,
+        )
+    } else {
+        (None, total_diagnostics)
+    }
+}
+
+pub async fn get_tombi_value_comment_directive_and_diagnostics<T>(
+    comment_directives: &[tombi_ast::TombiValueCommentDirective],
+    has_key: bool,
+) -> (
     Option<ValueTombiCommentDirective<T>>,
+    Vec<tombi_diagnostic::Diagnostic>,
+)
+where
+    T: TombiCommentDirectiveImpl
+        + serde::de::DeserializeOwned
+        + serde::Serialize
+        + From<WithKeyTombiCommentDirectiveRules<T>>,
+    WithKeyTombiCommentDirectiveRules<T>: TombiCommentDirectiveImpl,
+{
+    let schema_uri = if has_key {
+        WithKeyTombiCommentDirectiveRules::<T>::comment_directive_schema_url()
+    } else {
+        T::comment_directive_schema_url()
+    };
+
+    let (total_document_tree_table, total_diagnostics) =
+        get_comment_directive_document_tree_and_diagnostics(comment_directives, &schema_uri).await;
+
+    if let Some(total_document_tree_table) = total_document_tree_table {
+        (
+            if !has_key {
+                ValueTombiCommentDirective::<T>::deserialize(
+                    &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+                )
+            } else {
+                ValueTombiCommentDirective::<WithKeyTombiCommentDirectiveRules<T>>::deserialize(
+                    &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
+                )
+                .map(|v| v.into())
+            }
+            .ok(),
+            total_diagnostics,
+        )
+    } else {
+        (None, total_diagnostics)
+    }
+}
+
+pub async fn get_comment_directive_document_tree_and_diagnostics(
+    comment_directives: &[tombi_ast::TombiValueCommentDirective],
+    schema_uri: &SchemaUri,
+) -> (
+    Option<tombi_document_tree::Table>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
@@ -69,7 +144,6 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<
                     .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_range)),
             );
         } else {
-            let schema_uri = T::value_comment_directive_schema_url();
             let tombi_json::ValueNode::Object(object) = schema_store
                 .fetch_schema_value(&schema_uri)
                 .await
@@ -94,10 +168,10 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<
 
             if let Err(diagnostics) = crate::validate(
                 document_tree.clone(),
-                &tombi_schema_store::SourceSchema {
+                Some(&tombi_schema_store::SourceSchema {
                     root_schema: Some(document_schema),
                     sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-                },
+                }),
                 &schema_context,
             )
             .await
@@ -127,15 +201,5 @@ pub async fn get_tombi_value_comment_directive_and_diagnostics<
         }
     }
 
-    if let Some(total_document_tree_table) = total_document_tree_table {
-        (
-            ValueTombiCommentDirective::<T>::deserialize(
-                &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
-            )
-            .ok(),
-            total_diagnostics,
-        )
-    } else {
-        (None, total_diagnostics)
-    }
+    (total_document_tree_table, total_diagnostics)
 }

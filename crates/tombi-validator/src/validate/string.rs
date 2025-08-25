@@ -1,5 +1,5 @@
 use regex::Regex;
-use tombi_comment_directive::StringValueTombiCommentDirectiveRules;
+use tombi_comment_directive::{CommentContext, StringValueTombiCommentDirectiveRules};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -18,6 +18,7 @@ impl Validate for tombi_document_tree::String {
         accessors: &'a [tombi_schema_store::SchemaAccessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
+        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut diagnostics = vec![];
@@ -26,13 +27,21 @@ impl Validate for tombi_document_tree::String {
             let _comment_directive = {
                 let mut comment_directives = vec![];
 
+                for (comment_str, comment_range) in comment_context.parent_comments {
+                    if let Some(comment_directive) =
+                        tombi_ast::get_tombi_value_comment_directive(comment_str, *comment_range)
+                    {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+
                 for comment in self.leading_comments() {
-                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
                         comment_directives.push(comment_directive);
                     }
                 }
                 if let Some(comment) = self.trailing_comment() {
-                    if let Some(comment_directive) = comment.tombi_value_directive() {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
                         comment_directives.push(comment_directive);
                     }
                 }
@@ -40,7 +49,7 @@ impl Validate for tombi_document_tree::String {
                 let (comment_directive, diagnostics) =
                     get_tombi_value_comment_directive_and_diagnostics::<
                         StringValueTombiCommentDirectiveRules,
-                    >(&comment_directives)
+                    >(&comment_directives, comment_context.has_key)
                     .await;
 
                 if !diagnostics.is_empty() {
@@ -80,6 +89,7 @@ impl Validate for tombi_document_tree::String {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -90,6 +100,7 @@ impl Validate for tombi_document_tree::String {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }
@@ -100,6 +111,7 @@ impl Validate for tombi_document_tree::String {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            comment_context,
                         )
                         .await
                     }

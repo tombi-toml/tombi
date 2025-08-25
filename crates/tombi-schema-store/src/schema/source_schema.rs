@@ -6,7 +6,7 @@ use crate::{SchemaAccessor, SchemaAccessors};
 
 pub type SubSchemaUriMap = AHashMap<Vec<SchemaAccessor>, SchemaUri>;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct SourceSchema {
     pub root_schema: Option<DocumentSchema>,
     pub sub_schema_uri_map: SubSchemaUriMap,

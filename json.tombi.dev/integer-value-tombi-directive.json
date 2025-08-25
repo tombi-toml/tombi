@@ -33,7 +33,6 @@
       "additionalProperties": false
     },
     "IntegerValueTombiCommentDirectiveRules": {
-      "description": "Common validation settings for all value types",
       "type": "object",
       "properties": {
         "type-mismatch": {

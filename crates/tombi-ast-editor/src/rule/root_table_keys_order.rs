@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::CommentContext;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{CurrentSchema, SchemaAccessor, SchemaContext};
 use tombi_syntax::SyntaxElement;
@@ -26,6 +27,7 @@ pub async fn root_table_keys_order<'a>(
         key_values,
         current_schema,
         schema_context,
+        &CommentContext::default(),
     )
     .await;
 
@@ -70,6 +72,7 @@ pub async fn root_table_keys_order<'a>(
         targets,
         current_schema,
         schema_context,
+        &CommentContext::default(),
     )
     .await
     .into_iter()
