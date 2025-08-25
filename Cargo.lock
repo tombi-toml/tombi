@@ -3451,7 +3451,6 @@ dependencies = [
  "tombi-parser",
  "tombi-schema-store",
  "tombi-syntax",
- "tombi-text",
  "tombi-toml-version",
  "tombi-validator",
  "tombi-version-sort",
