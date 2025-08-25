@@ -23,6 +23,7 @@ tombi-future.workspace = true
 tombi-json.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
+tombi-syntax.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true

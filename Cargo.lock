@@ -3973,6 +3973,7 @@ dependencies = [
  "tombi-json",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-syntax",
  "tombi-text",
  "tombi-uri",
  "tombi-x-keyword",
