@@ -49,7 +49,7 @@ impl Validate for tombi_document_tree::String {
                 let (comment_directive, diagnostics) =
                     get_tombi_value_comment_directive_and_diagnostics::<
                         StringValueTombiCommentDirectiveRules,
-                    >(&comment_directives)
+                    >(&comment_directives, comment_context.has_key)
                     .await;
 
                 if !diagnostics.is_empty() {

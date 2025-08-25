@@ -130,6 +130,9 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
             "/document-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/document-tombi-directive.json"
             )),
+            "/string-key-value-tombi-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/string-key-value-tombi-directive.json"
+            )),
             "/string-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/string-value-tombi-directive.json"
             )),

@@ -32,11 +32,20 @@ use tombi_severity_level::SeverityLevelDefaultError;
 )]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct ValueTombiCommentDirective<T>
-where
-    T: serde::de::DeserializeOwned + serde::Serialize,
-{
+pub struct ValueTombiCommentDirective<T> {
     lint: Option<ValueLintOptions<T>>,
+}
+
+impl<T> From<ValueTombiCommentDirective<WithKeyTombiCommentDirectiveRules<T>>>
+    for ValueTombiCommentDirective<T>
+where
+    T: From<WithKeyTombiCommentDirectiveRules<T>> + serde::de::DeserializeOwned + serde::Serialize,
+{
+    fn from(value: ValueTombiCommentDirective<WithKeyTombiCommentDirectiveRules<T>>) -> Self {
+        Self {
+            lint: value.lint.map(|lint| lint.into()),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -44,18 +53,37 @@ where
 #[serde(bound = "T: serde::de::DeserializeOwned + serde::Serialize ")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct ValueLintOptions<T>
-where
-    T: serde::de::DeserializeOwned + serde::Serialize,
-{
+pub struct ValueLintOptions<T> {
     rules: Option<T>,
+}
+
+impl<T> From<ValueLintOptions<WithKeyTombiCommentDirectiveRules<T>>> for ValueLintOptions<T>
+where
+    T: serde::de::DeserializeOwned + serde::Serialize + From<WithKeyTombiCommentDirectiveRules<T>>,
+{
+    fn from(value: ValueLintOptions<WithKeyTombiCommentDirectiveRules<T>>) -> Self {
+        Self {
+            rules: value.rules.map(|rules| rules.into()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct WithKeyTombiCommentDirectiveRules<T> {
+    #[serde(flatten)]
+    key: KeyTombiCommentDirectiveRules,
+
+    #[serde(flatten)]
+    value: T,
 }
 
 pub trait ValueTombiCommentDirectiveImpl {
     fn value_comment_directive_schema_url() -> SchemaUri;
 }
 
-/// Common validation settings for all value types
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]

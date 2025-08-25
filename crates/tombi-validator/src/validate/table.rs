@@ -160,7 +160,10 @@ impl Validate for tombi_document_tree::Table {
                                     &new_accessors,
                                     Some(&current_schema),
                                     schema_context,
-                                    &comment_context,
+                                    &CommentContext {
+                                        parent_comments: &parent_comments,
+                                        has_key: true,
+                                    },
                                 )
                                 .await
                             {
@@ -373,7 +376,10 @@ impl Validate for tombi_document_tree::Table {
                                 .collect_vec(),
                             None,
                             schema_context,
-                            &comment_context,
+                            &CommentContext {
+                                parent_comments: &parent_comments,
+                                has_key: true,
+                            },
                         )
                         .await
                     {

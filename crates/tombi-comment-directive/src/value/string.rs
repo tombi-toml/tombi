@@ -4,20 +4,26 @@ use tombi_schema_store::SchemaUri;
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules,
-    ValueTombiCommentDirectiveImpl,
+    CommonValueTombiCommentDirectiveRules, ValueTombiCommentDirectiveImpl,
+    WithKeyTombiCommentDirectiveRules,
 };
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct StringKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+impl ValueTombiCommentDirectiveImpl
+    for WithKeyTombiCommentDirectiveRules<StringValueTombiCommentDirectiveRules>
+{
+    fn value_comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/string-key-value-tombi-directive.json").unwrap()
+    }
+}
 
-    #[serde(flatten)]
-    value: StringTombiCommentDirectiveRules,
+impl From<WithKeyTombiCommentDirectiveRules<StringValueTombiCommentDirectiveRules>>
+    for StringValueTombiCommentDirectiveRules
+{
+    fn from(
+        rules: WithKeyTombiCommentDirectiveRules<StringValueTombiCommentDirectiveRules>,
+    ) -> Self {
+        rules.value
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
