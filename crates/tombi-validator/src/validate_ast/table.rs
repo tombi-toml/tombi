@@ -84,7 +84,7 @@ where
                         .try_get_document_schema(sub_schema_uri)
                         .await
                     {
-                        return value
+                        return self
                             .validate(
                                 accessors,
                                 Some(&CurrentSchema {
@@ -116,7 +116,7 @@ where
                     }
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
-                            value,
+                            self,
                             accessors,
                             one_of_schema,
                             current_schema,
@@ -127,7 +127,7 @@ where
                     }
                     tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
                         validate_any_of(
-                            value,
+                            self,
                             accessors,
                             any_of_schema,
                             current_schema,
@@ -138,7 +138,7 @@ where
                     }
                     tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
                         validate_all_of(
-                            value,
+                            self,
                             accessors,
                             all_of_schema,
                             current_schema,
@@ -149,7 +149,7 @@ where
                     }
                     tombi_schema_store::ValueSchema::Null => return Ok(()),
                     value_schema => {
-                        type_mismatch(ValueType::Float, value.range(), value_schema).await
+                        type_mismatch(ValueType::Table, value.range(), value_schema).await
                     }
                 }
             } else {
@@ -164,6 +164,24 @@ where
             }
         }
         .boxed()
+    }
+}
+
+impl<T> ValueImpl for (&[tombi_ast::Key], &T)
+where
+    T: ValueImpl,
+{
+    fn value_type(&self) -> ValueType {
+        ValueType::Table
+    }
+
+    fn range(&self) -> tombi_text::Range {
+        let (keys, value) = *self;
+        if let Some(key) = keys.first() {
+            key.range() + value.range()
+        } else {
+            value.range()
+        }
     }
 }
 
