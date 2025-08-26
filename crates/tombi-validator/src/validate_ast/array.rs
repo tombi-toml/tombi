@@ -107,7 +107,8 @@ impl Validate for tombi_ast::Array {
                     }
                 }
             } else {
-                validate_array(self, accessors, schema_context, comment_context).await
+                validate_array_without_schema(self, accessors, schema_context, comment_context)
+                    .await
             }
         }
         .boxed()
@@ -225,7 +226,7 @@ async fn validate_array_schema<'a>(
     }
 }
 
-fn validate_array<'a: 'b, 'b>(
+fn validate_array_without_schema<'a: 'b, 'b>(
     value: &'a tombi_ast::Array,
     accessors: &'a [tombi_schema_store::Accessor],
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,

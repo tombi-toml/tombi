@@ -28,6 +28,14 @@ impl crate::Key {
             }
         }
     }
+
+    pub fn range(&self) -> tombi_text::Range {
+        match self {
+            Self::BareKey(key) => key.range(),
+            Self::BasicString(key) => key.range(),
+            Self::LiteralString(key) => key.range(),
+        }
+    }
 }
 
 impl PartialOrd for crate::Key {
@@ -64,11 +72,11 @@ impl AstChildren<crate::Key> {
     }
 
     #[inline]
-    pub fn into_vec(self) -> Vec<crate::Key> {
+    pub fn collect_vec(self) -> Vec<crate::Key> {
         self.collect()
     }
 
     pub fn rev(self) -> impl Iterator<Item = crate::Key> {
-        self.into_vec().into_iter().rev()
+        self.collect_vec().into_iter().rev()
     }
 }
