@@ -10,7 +10,7 @@ use crate::validate_ast::all_of::validate_all_of;
 use crate::validate_ast::any_of::validate_any_of;
 use crate::validate_ast::float::validate_float_schema;
 use crate::validate_ast::one_of::validate_one_of;
-use crate::validate_ast::{Validate, ValueImpl};
+use crate::validate_ast::{type_mismatch, Validate, ValueImpl};
 
 impl Validate for tombi_ast::IntegerBin {
     fn validate<'a: 'b, 'b>(
@@ -184,8 +184,6 @@ where
     T: Validate + ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
-        let mut diagnostics = vec![];
-
         if let Some(current_schema) = current_schema {
             match current_schema.value_schema.as_ref() {
                 tombi_schema_store::ValueSchema::Integer(integer_schema) => {
@@ -231,17 +229,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::Null => return Ok(()),
-                schema => {
-                    crate::Error {
-                        kind: crate::ErrorKind::TypeMismatch2 {
-                            expected: schema.value_type().await,
-                            actual: ValueType::Integer,
-                        },
-                        range: value.range(),
-                    }
-                    .set_diagnostics(&mut diagnostics);
-                    Err(diagnostics)
-                }
+                value_schema => type_mismatch(ValueType::Float, value.range(), value_schema).await,
             }
         } else {
             Ok(())

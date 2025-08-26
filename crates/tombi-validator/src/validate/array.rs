@@ -129,11 +129,11 @@ impl Validate for tombi_document_tree::Array {
                         .await
                         .inspect_err(|err| tracing::warn!("{err}"))
                     {
-                        for (i, value) in self.values().iter().enumerate() {
+                        for (index, value) in self.values().iter().enumerate() {
                             let new_accessors = accessors
                                 .iter()
                                 .cloned()
-                                .chain(std::iter::once(tombi_schema_store::Accessor::Index(i)))
+                                .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                                 .collect_vec();
 
                             if let Err(schema_diagnostics) = value
@@ -213,13 +213,13 @@ impl Validate for tombi_document_tree::Array {
                     }
                 }
             } else {
-                for (i, value) in self.values().iter().enumerate() {
+                for (index, value) in self.values().iter().enumerate() {
                     if let Err(value_diagnostics) = value
                         .validate(
                             &accessors
                                 .iter()
                                 .cloned()
-                                .chain(std::iter::once(tombi_schema_store::Accessor::Index(i)))
+                                .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                                 .collect_vec(),
                             None,
                             schema_context,

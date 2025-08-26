@@ -107,7 +107,7 @@ impl Validate for tombi_ast::Array {
                     }
                 }
             } else {
-                Ok(())
+                validate_array(self, accessors, schema_context, comment_context).await
             }
         }
         .boxed()
@@ -144,11 +144,11 @@ async fn validate_array_schema<'a>(
             .await
             .inspect_err(|err| tracing::warn!("{err}"))
         {
-            for (i, item) in value.items().enumerate() {
+            for (index, item) in value.items().enumerate() {
                 let new_accessors = accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(i)))
+                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                     .collect_vec();
 
                 if let Err(schema_diagnostics) = item
@@ -223,4 +223,39 @@ async fn validate_array_schema<'a>(
     } else {
         Err(diagnostics)
     }
+}
+
+fn validate_array<'a: 'b, 'b>(
+    value: &'a tombi_ast::Array,
+    accessors: &'a [tombi_schema_store::Accessor],
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    comment_context: &'a CommentContext<'a>,
+) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+    async move {
+        let mut diagnostics = vec![];
+        for (index, value) in value.items().enumerate() {
+            if let Err(value_diagnostics) = value
+                .validate(
+                    &accessors
+                        .iter()
+                        .cloned()
+                        .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
+                        .collect_vec(),
+                    None,
+                    schema_context,
+                    comment_context,
+                )
+                .await
+            {
+                diagnostics.extend(value_diagnostics);
+            }
+        }
+
+        if diagnostics.is_empty() {
+            Ok(())
+        } else {
+            Err(diagnostics)
+        }
+    }
+    .boxed()
 }
