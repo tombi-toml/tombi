@@ -189,25 +189,16 @@ where
         if let Some(current_schema) = current_schema {
             match current_schema.value_schema.as_ref() {
                 tombi_schema_store::ValueSchema::Integer(integer_schema) => {
-                    validate_integer_schema(
-                        integer_value,
-                        integer_schema,
-                        value.range(),
-                        accessors,
-                        &mut diagnostics,
-                    );
+                    validate_integer_schema(integer_value, value.range(), integer_schema, accessors)
                 }
-                tombi_schema_store::ValueSchema::Float(float_schema) => {
-                    validate_float_schema(
-                        integer_value as f64,
-                        float_schema,
-                        value.range(),
-                        accessors,
-                        &mut diagnostics,
-                    );
-                }
+                tombi_schema_store::ValueSchema::Float(float_schema) => validate_float_schema(
+                    integer_value as f64,
+                    float_schema,
+                    value.range(),
+                    accessors,
+                ),
                 tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                    return validate_one_of(
+                    validate_one_of(
                         value,
                         accessors,
                         one_of_schema,
@@ -218,7 +209,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                    return validate_any_of(
+                    validate_any_of(
                         value,
                         accessors,
                         any_of_schema,
@@ -229,7 +220,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                    return validate_all_of(
+                    validate_all_of(
                         value,
                         accessors,
                         all_of_schema,
@@ -249,15 +240,11 @@ where
                         range: value.range(),
                     }
                     .set_diagnostics(&mut diagnostics);
-                    return Err(diagnostics);
+                    Err(diagnostics)
                 }
             }
-        }
-
-        if diagnostics.is_empty() {
-            Ok(())
         } else {
-            Err(diagnostics)
+            Ok(())
         }
     }
     .boxed()
@@ -266,11 +253,12 @@ where
 // Helper function to validate integer against integer schema
 fn validate_integer_schema(
     value: i64,
-    integer_schema: &tombi_schema_store::IntegerSchema,
     range: tombi_text::Range,
+    integer_schema: &tombi_schema_store::IntegerSchema,
     accessors: &[tombi_schema_store::SchemaAccessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
+
     // Validate const value
     if let Some(const_value) = &integer_schema.const_value {
         if value != *const_value {
@@ -281,7 +269,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -295,7 +283,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -309,7 +297,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -323,7 +311,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -337,7 +325,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -351,7 +339,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -365,7 +353,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -378,6 +366,12 @@ fn validate_integer_schema(
             )),
             range,
         }
-        .set_diagnostics(diagnostics);
+        .set_diagnostics(&mut diagnostics);
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }

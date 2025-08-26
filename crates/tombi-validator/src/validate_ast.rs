@@ -20,6 +20,7 @@ mod value;
 use crate::Validate;
 use float::validate_float_schema;
 use tombi_comment_directive::CommentContext;
+use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
 
@@ -52,6 +53,24 @@ pub fn validate_ast<'a: 'b, 'b>(
         Ok(())
     }
     .boxed()
+}
+
+async fn type_mismatch(
+    actual: ValueType,
+    range: tombi_text::Range,
+    value_schema: &tombi_schema_store::ValueSchema,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
+    crate::Error {
+        kind: crate::ErrorKind::TypeMismatch2 {
+            expected: value_schema.value_type().await,
+            actual,
+        },
+        range,
+    }
+    .set_diagnostics(&mut diagnostics);
+
+    Err(diagnostics)
 }
 
 trait ValueImpl {

@@ -6,7 +6,8 @@ use tombi_schema_store::ValueType;
 
 use crate::{
     validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, ValueImpl,
+        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+        ValueImpl,
     },
     Validate,
 };
@@ -28,21 +29,13 @@ impl Validate for tombi_ast::Boolean {
                 return Ok(());
             };
 
-            let mut diagnostics = vec![];
-
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     tombi_schema_store::ValueSchema::Boolean(boolean_schema) => {
-                        validate_boolean_schema(
-                            value,
-                            boolean_schema,
-                            self.range(),
-                            accessors,
-                            &mut diagnostics,
-                        );
+                        validate_boolean_schema(value, self.range(), boolean_schema, accessors)
                     }
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                        return validate_one_of(
+                        validate_one_of(
                             self,
                             accessors,
                             one_of_schema,
@@ -53,7 +46,7 @@ impl Validate for tombi_ast::Boolean {
                         .await
                     }
                     tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                        return validate_any_of(
+                        validate_any_of(
                             self,
                             accessors,
                             any_of_schema,
@@ -64,7 +57,7 @@ impl Validate for tombi_ast::Boolean {
                         .await
                     }
                     tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                        return validate_all_of(
+                        validate_all_of(
                             self,
                             accessors,
                             all_of_schema,
@@ -74,26 +67,13 @@ impl Validate for tombi_ast::Boolean {
                         )
                         .await
                     }
-                    tombi_schema_store::ValueSchema::Null => return Ok(()),
-                    schema => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch2 {
-                                expected: schema.value_type().await,
-                                actual: ValueType::Boolean,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-
-                        return Err(diagnostics);
+                    tombi_schema_store::ValueSchema::Null => Ok(()),
+                    value_schema => {
+                        type_mismatch(ValueType::Float, self.range(), value_schema).await
                     }
                 }
-            }
-
-            if diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(diagnostics)
+                Ok(())
             }
         }
         .boxed()
@@ -112,11 +92,11 @@ impl ValueImpl for tombi_ast::Boolean {
 
 fn validate_boolean_schema(
     value: bool,
-    boolean_schema: &tombi_schema_store::BooleanSchema,
     range: tombi_text::Range,
+    boolean_schema: &tombi_schema_store::BooleanSchema,
     accessors: &[tombi_schema_store::SchemaAccessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
     if let Some(const_value) = &boolean_schema.const_value {
         if value != *const_value {
             crate::Error {
@@ -126,7 +106,7 @@ fn validate_boolean_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -139,7 +119,7 @@ fn validate_boolean_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -152,7 +132,13 @@ fn validate_boolean_schema(
                 )),
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }

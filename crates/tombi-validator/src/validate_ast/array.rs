@@ -10,7 +10,8 @@ use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema, ValueType};
 
 use crate::{
     validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, ValueImpl,
+        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+        ValueImpl,
     },
     Validate,
 };
@@ -57,8 +58,6 @@ impl Validate for tombi_ast::Array {
                 }
             }
 
-            let mut diagnostics = Vec::new();
-
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Array(array_schema) => {
@@ -69,12 +68,11 @@ impl Validate for tombi_ast::Array {
                             current_schema,
                             schema_context,
                             comment_context,
-                            &mut diagnostics,
                         )
                         .await
                     }
                     ValueSchema::OneOf(one_of_schema) => {
-                        return validate_one_of(
+                        validate_one_of(
                             self,
                             accessors,
                             one_of_schema,
@@ -82,10 +80,10 @@ impl Validate for tombi_ast::Array {
                             schema_context,
                             comment_context,
                         )
-                        .await;
+                        .await
                     }
                     ValueSchema::AnyOf(any_of_schema) => {
-                        return validate_any_of(
+                        validate_any_of(
                             self,
                             accessors,
                             any_of_schema,
@@ -93,10 +91,10 @@ impl Validate for tombi_ast::Array {
                             schema_context,
                             comment_context,
                         )
-                        .await;
+                        .await
                     }
                     ValueSchema::AllOf(all_of_schema) => {
-                        return validate_all_of(
+                        validate_all_of(
                             self,
                             accessors,
                             all_of_schema,
@@ -104,28 +102,15 @@ impl Validate for tombi_ast::Array {
                             schema_context,
                             comment_context,
                         )
-                        .await;
+                        .await
                     }
-                    ValueSchema::Null => return Ok(()),
-                    schema => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch2 {
-                                expected: schema.value_type().await,
-                                actual: ValueType::Array,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-
-                        return Err(diagnostics);
+                    ValueSchema::Null => Ok(()),
+                    value_schema => {
+                        type_mismatch(ValueType::Array, self.range(), value_schema).await
                     }
-                };
-            }
-
-            if diagnostics.is_empty() {
-                Ok(())
+                }
             } else {
-                Err(diagnostics)
+                Ok(())
             }
         }
         .boxed()
@@ -149,8 +134,8 @@ async fn validate_array_schema<'a>(
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_context: &'a CommentContext<'a>,
-    diagnostics: &'a mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
     if let Some(items) = &array_schema.items {
         let mut referable_schema = items.write().await;
         if let Ok(Some(current_schema)) = referable_schema
@@ -195,7 +180,7 @@ async fn validate_array_schema<'a>(
                 },
                 range: value.range(),
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -208,7 +193,7 @@ async fn validate_array_schema<'a>(
                 },
                 range: value.range(),
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
     if array_schema.unique_items == Some(true) {
@@ -230,9 +215,15 @@ async fn validate_array_schema<'a>(
                         kind: crate::ErrorKind::ArrayUniqueItems,
                         range,
                     }
-                    .set_diagnostics(diagnostics);
+                    .set_diagnostics(&mut diagnostics);
                 }
             }
         }
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }
