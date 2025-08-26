@@ -58,8 +58,8 @@ impl crate::Edit for tombi_ast::Table {
                         };
                         value = v;
                     }
-                    (tombi_document_tree::Value::Array(array), Accessor::Index(i)) => {
-                        let Some(v) = array.get(*i) else {
+                    (tombi_document_tree::Value::Array(array), Accessor::Index(_)) => {
+                        let Some(v) = array.get(0) else {
                             return changes;
                         };
                         value = v;

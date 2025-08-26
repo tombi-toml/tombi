@@ -151,3 +151,30 @@ pub enum AccessorContext {
     Key(KeyContext),
     Index,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_accessors_display() {
+        let accessors = Accessors::from(vec![
+            Accessor::Key("root".to_string()),
+            Accessor::Key("child".to_string()),
+            Accessor::Index(1),
+            Accessor::Key("item".to_string()),
+        ]);
+        assert_eq!(format!("{}", accessors), "root.child[0].item");
+    }
+
+    #[test]
+    fn test_accessors_display_consecutive_indices() {
+        let accessors = Accessors::from(vec![
+            Accessor::Key("array".to_string()),
+            Accessor::Index(0),
+            Accessor::Index(1),
+            Accessor::Index(2),
+        ]);
+        assert_eq!(format!("{}", accessors), "array[0][1][2]");
+    }
+}
