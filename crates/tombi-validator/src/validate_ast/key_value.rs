@@ -1,7 +1,7 @@
 use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 
-use crate::validate_ast::Validate;
+use crate::validate_ast::{Validate, ValueImpl};
 
 impl Validate for tombi_ast::KeyValue {
     fn validate<'a: 'b, 'b>(
@@ -26,5 +26,15 @@ impl Validate for tombi_ast::KeyValue {
                 .await
         }
         .boxed()
+    }
+}
+
+impl ValueImpl for tombi_ast::KeyValue {
+    fn value_type(&self) -> tombi_schema_store::ValueType {
+        tombi_schema_store::ValueType::Table
+    }
+
+    fn range(&self) -> tombi_text::Range {
+        self.range()
     }
 }
