@@ -192,8 +192,9 @@ where
             let new_accessors = accessors
                 .iter()
                 .cloned()
-                .chain(std::iter::once(Accessor::Key(key_raw_text.clone())))
+                .chain(std::iter::once(accessor.clone()))
                 .collect_vec();
+
             let mut matched_key = false;
             if let Some(PropertySchema {
                 property_schema, ..
