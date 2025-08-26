@@ -196,7 +196,7 @@ impl GetHeaderSchemarAccessors for tombi_ast::Table {
         let array_of_tables_keys = self
             .array_of_tables_keys()
             .map(|keys| keys.into_iter().collect_vec())
-            .collect_vec();
+            .counts();
 
         let mut accessors = vec![];
         let mut header_keys = vec![];
@@ -204,8 +204,8 @@ impl GetHeaderSchemarAccessors for tombi_ast::Table {
             accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
             header_keys.push(key);
 
-            if array_of_tables_keys.contains(&header_keys) {
-                accessors.push(Accessor::Index(0));
+            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
+                accessors.push(Accessor::Index(*new_index));
             }
         }
 
@@ -218,7 +218,7 @@ impl GetHeaderSchemarAccessors for tombi_ast::ArrayOfTable {
         let array_of_tables_keys = self
             .array_of_tables_keys()
             .map(|keys| keys.into_iter().collect_vec())
-            .collect_vec();
+            .counts();
 
         let mut accessors = vec![];
         let mut header_keys = vec![];
@@ -226,12 +226,16 @@ impl GetHeaderSchemarAccessors for tombi_ast::ArrayOfTable {
             accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
             header_keys.push(key);
 
-            if array_of_tables_keys.contains(&header_keys) {
-                accessors.push(Accessor::Index(0));
+            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
+                accessors.push(Accessor::Index(*new_index));
             }
         }
 
-        accessors.push(Accessor::Index(0));
+        if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
+            accessors.push(Accessor::Index(*new_index));
+        } else {
+            accessors.push(Accessor::Index(0));
+        }
 
         Some(accessors)
     }
