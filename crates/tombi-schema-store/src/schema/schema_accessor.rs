@@ -231,11 +231,9 @@ impl GetHeaderSchemarAccessors for tombi_ast::ArrayOfTable {
             }
         }
 
-        if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-            accessors.push(Accessor::Index(*new_index));
-        } else {
-            accessors.push(Accessor::Index(0));
-        }
+        accessors.push(Accessor::Index(
+            *array_of_tables_keys.get(&header_keys).unwrap_or(&0),
+        ));
 
         Some(accessors)
     }
