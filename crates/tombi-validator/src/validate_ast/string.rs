@@ -12,8 +12,8 @@ use tombi_x_keyword::StringFormat;
 use crate::{
     validate::format,
     validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, Validate,
-        ValueImpl,
+        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+        Validate, ValueImpl,
     },
 };
 
@@ -188,19 +188,13 @@ where
     T: Validate + ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
-        let mut diagnostics = vec![];
-
         if let Some(current_schema) = current_schema {
             match current_schema.value_schema.as_ref() {
-                tombi_schema_store::ValueSchema::String(string_schema) => validate_string_schema(
-                    string_value,
-                    string_schema,
-                    value.range(),
-                    accessors,
-                    &mut diagnostics,
-                ),
+                tombi_schema_store::ValueSchema::String(string_schema) => {
+                    validate_string_schema(string_value, string_schema, value.range(), accessors)
+                }
                 tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                    return validate_one_of(
+                    validate_one_of(
                         value,
                         accessors,
                         one_of_schema,
@@ -211,7 +205,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                    return validate_any_of(
+                    validate_any_of(
                         value,
                         accessors,
                         any_of_schema,
@@ -222,7 +216,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                    return validate_all_of(
+                    validate_all_of(
                         value,
                         accessors,
                         all_of_schema,
@@ -232,25 +226,15 @@ where
                     )
                     .await
                 }
-                tombi_schema_store::ValueSchema::Null => return Ok(()),
-                schema => {
-                    crate::Error {
-                        kind: crate::ErrorKind::TypeMismatch2 {
-                            expected: schema.value_type().await,
-                            actual: ValueType::String,
-                        },
-                        range: value.range(),
-                    }
-                    .set_diagnostics(&mut diagnostics);
-                    return Err(diagnostics);
-                }
+                tombi_schema_store::ValueSchema::Null => Ok(()),
+                value_schema => type_mismatch(
+                    value_schema.value_type().await,
+                    ValueType::String,
+                    value.range(),
+                ),
             }
-        }
-
-        if diagnostics.is_empty() {
-            Ok(())
         } else {
-            Err(diagnostics)
+            Ok(())
         }
     }
     .boxed()
@@ -262,8 +246,9 @@ fn validate_string_schema(
     string_schema: &tombi_schema_store::StringSchema,
     range: tombi_text::Range,
     accessors: &[tombi_schema_store::Accessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
+
     // Validate const value
     if let Some(const_value) = &string_schema.const_value {
         if value != const_value {
@@ -274,7 +259,7 @@ fn validate_string_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -288,7 +273,7 @@ fn validate_string_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -302,7 +287,7 @@ fn validate_string_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -316,7 +301,7 @@ fn validate_string_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -337,7 +322,7 @@ fn validate_string_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -352,7 +337,7 @@ fn validate_string_schema(
                     },
                     range,
                 }
-                .set_diagnostics(diagnostics);
+                .set_diagnostics(&mut diagnostics);
             }
         }
     }
@@ -366,6 +351,12 @@ fn validate_string_schema(
             )),
             range,
         }
-        .set_diagnostics(diagnostics);
+        .set_diagnostics(&mut diagnostics);
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }

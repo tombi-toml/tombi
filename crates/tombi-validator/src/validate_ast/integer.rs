@@ -228,7 +228,7 @@ where
                     )
                     .await
                 }
-                tombi_schema_store::ValueSchema::Null => return Ok(()),
+                tombi_schema_store::ValueSchema::Null => Ok(()),
                 value_schema => type_mismatch(
                     value_schema.value_type().await,
                     ValueType::Integer,
