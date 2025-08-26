@@ -131,11 +131,6 @@ pub struct SchemaAccessors(Vec<SchemaAccessor>);
 
 impl SchemaAccessors {
     #[inline]
-    pub fn new(accessors: Vec<SchemaAccessor>) -> Self {
-        Self(accessors)
-    }
-
-    #[inline]
     pub fn first(&self) -> Option<&SchemaAccessor> {
         self.0.first()
     }
@@ -149,6 +144,30 @@ impl SchemaAccessors {
 impl AsRef<[SchemaAccessor]> for SchemaAccessors {
     fn as_ref(&self) -> &[SchemaAccessor] {
         &self.0
+    }
+}
+
+impl From<&[Accessor]> for SchemaAccessors {
+    fn from(accessors: &[Accessor]) -> Self {
+        Self(accessors.into_iter().map(Into::into).collect_vec())
+    }
+}
+
+impl From<&Vec<Accessor>> for SchemaAccessors {
+    fn from(accessors: &Vec<Accessor>) -> Self {
+        Self(accessors.into_iter().map(Into::into).collect_vec())
+    }
+}
+
+impl From<&[SchemaAccessor]> for SchemaAccessors {
+    fn from(accessors: &[SchemaAccessor]) -> Self {
+        Self(accessors.to_vec())
+    }
+}
+
+impl From<Vec<SchemaAccessor>> for SchemaAccessors {
+    fn from(accessors: Vec<SchemaAccessor>) -> Self {
+        Self(accessors)
     }
 }
 
@@ -169,11 +188,11 @@ impl std::fmt::Display for SchemaAccessors {
 }
 
 pub trait GetHeaderSchemarAccessors {
-    fn get_header_schema_accessor(&self, toml_version: TomlVersion) -> Option<Vec<SchemaAccessor>>;
+    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>>;
 }
 
 impl GetHeaderSchemarAccessors for tombi_ast::Table {
-    fn get_header_schema_accessor(&self, toml_version: TomlVersion) -> Option<Vec<SchemaAccessor>> {
+    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
             .array_of_tables_keys()
             .map(|keys| keys.into_iter().collect_vec())
@@ -182,11 +201,11 @@ impl GetHeaderSchemarAccessors for tombi_ast::Table {
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(SchemaAccessor::Key(key.try_to_raw_text(toml_version).ok()?));
+            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
             header_keys.push(key);
 
             if array_of_tables_keys.contains(&header_keys) {
-                accessors.push(SchemaAccessor::Index);
+                accessors.push(Accessor::Index(0));
             }
         }
 
@@ -195,7 +214,7 @@ impl GetHeaderSchemarAccessors for tombi_ast::Table {
 }
 
 impl GetHeaderSchemarAccessors for tombi_ast::ArrayOfTable {
-    fn get_header_schema_accessor(&self, toml_version: TomlVersion) -> Option<Vec<SchemaAccessor>> {
+    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
             .array_of_tables_keys()
             .map(|keys| keys.into_iter().collect_vec())
@@ -204,15 +223,15 @@ impl GetHeaderSchemarAccessors for tombi_ast::ArrayOfTable {
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(SchemaAccessor::Key(key.try_to_raw_text(toml_version).ok()?));
+            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
             header_keys.push(key);
 
             if array_of_tables_keys.contains(&header_keys) {
-                accessors.push(SchemaAccessor::Index);
+                accessors.push(Accessor::Index(0));
             }
         }
 
-        accessors.push(SchemaAccessor::Index);
+        accessors.push(Accessor::Index(0));
 
         Some(accessors)
     }

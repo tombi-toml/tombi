@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use itertools::Itertools;
 use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
@@ -104,10 +103,7 @@ where
 
                     match value
                         .validate(
-                            &accessors
-                                .iter()
-                                .map(|accessor| accessor.into())
-                                .collect_vec(),
+                            &accessors,
                             Some(&current_schema),
                             schema_context,
                             comment_context,
@@ -145,7 +141,7 @@ where
                 HoverValueContent {
                     title: None,
                     description: None,
-                    accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                     value_type: value.value_type().into(),
                     constraints: None,
                     schema_uri: Some(schema_uri.to_owned()),
@@ -245,7 +241,7 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 HoverValueContent {
                     title,
                     description,
-                    accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                     value_type,
                     constraints: None,
                     schema_uri: Some(current_schema.schema_uri.as_ref().clone()),

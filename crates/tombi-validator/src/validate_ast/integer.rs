@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::support::integer::{
@@ -362,9 +361,7 @@ fn validate_integer_schema(
     if diagnostics.is_empty() && integer_schema.deprecated == Some(true) {
         crate::Warning {
             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(
-                    accessors.into_iter().map(Into::into).collect_vec(),
-                ),
+                tombi_schema_store::SchemaAccessors::from(accessors),
                 value.to_string(),
             )),
             range,

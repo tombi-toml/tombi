@@ -6,8 +6,8 @@ use tombi_ast::AstNode;
 use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaAccessor,
-    SchemaContext, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaContext,
+    ValueSchema,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
@@ -37,7 +37,7 @@ pub async fn table_keys_order<'a>(
                     .map(|key| {
                         key.keys()
                             .map(|key| {
-                                SchemaAccessor::Key(
+                                Accessor::Key(
                                     key.try_to_raw_text(schema_context.toml_version).unwrap(),
                                 )
                             })
@@ -67,8 +67,8 @@ pub async fn table_keys_order<'a>(
 
 pub fn sorted_accessors<'a: 'b, 'b, T>(
     value: &'a tombi_document_tree::Value,
-    validation_accessors: &'a [tombi_schema_store::SchemaAccessor],
-    targets: Vec<(Vec<tombi_schema_store::SchemaAccessor>, T)>,
+    accessors: &'a [tombi_schema_store::Accessor],
+    targets: Vec<(Vec<tombi_schema_store::Accessor>, T)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_context: &'a CommentContext<'a>,
@@ -99,7 +99,7 @@ where
                         {
                             if value
                                 .validate(
-                                    validation_accessors,
+                                    accessors,
                                     Some(&current_schema),
                                     schema_context,
                                     comment_context,
@@ -109,7 +109,7 @@ where
                             {
                                 return sorted_accessors(
                                     value,
-                                    validation_accessors,
+                                    accessors,
                                     targets.clone(),
                                     Some(&current_schema),
                                     schema_context,
@@ -127,12 +127,12 @@ where
 
         let mut results = Vec::with_capacity(targets.len());
         let mut new_targets_map = IndexMap::new();
-        for (accessors, target) in targets {
-            if let Some(accessor) = accessors.first() {
+        for (schema_accessors, target) in targets {
+            if let Some(accessor) = schema_accessors.first() {
                 new_targets_map
                     .entry(accessor.clone())
                     .or_insert_with(Vec::new)
-                    .push((accessors[1..].to_vec(), target));
+                    .push((schema_accessors[1..].to_vec(), target));
             } else {
                 results.push(target);
             }
@@ -143,7 +143,7 @@ where
                 (tombi_document_tree::Value::Table(table), ValueSchema::Table(table_schema)) => {
                     if new_targets_map
                         .iter()
-                        .all(|(accessor, _)| matches!(accessor, SchemaAccessor::Key(_)))
+                        .all(|(accessor, _)| matches!(accessor, Accessor::Key(_)))
                     {
                         let sorted_targets = match table_schema.keys_order {
                             Some(TableKeysOrder::Ascending) => new_targets_map
@@ -151,6 +151,7 @@ where
                                 .sorted_by(|(a_accessor, _), (b_accessor, _)| {
                                     a_accessor.partial_cmp(b_accessor).unwrap()
                                 })
+                                .map(|(accessor, targets)| (accessor.into(), targets))
                                 .collect_vec(),
                             Some(TableKeysOrder::Descending) => new_targets_map
                                 .into_iter()
@@ -162,9 +163,9 @@ where
                             Some(TableKeysOrder::Schema) => {
                                 let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
 
-                                for accessor in table_schema.properties.read().await.keys() {
-                                    if let Some(targets) = new_targets_map.shift_remove(accessor) {
-                                        sorted_targets.push((accessor.to_owned(), targets));
+                                for accessor in table_schema.accessors().await {
+                                    if let Some(targets) = new_targets_map.shift_remove(&accessor) {
+                                        sorted_targets.push((accessor, targets));
                                     }
                                 }
                                 sorted_targets.extend(new_targets_map);
@@ -174,10 +175,9 @@ where
                                 let mut sorted_targets = new_targets_map.into_iter().collect_vec();
                                 sorted_targets.sort_by(|(a_accessor, _), (b_accessor, _)| {
                                     match (a_accessor, b_accessor) {
-                                        (
-                                            SchemaAccessor::Key(a_key),
-                                            SchemaAccessor::Key(b_key),
-                                        ) => tombi_version_sort::version_sort(a_key, b_key),
+                                        (Accessor::Key(a_key), Accessor::Key(b_key)) => {
+                                            tombi_version_sort::version_sort(a_key, b_key)
+                                        }
                                         _ => unreachable!(
                                             "Unexpected accessor type in table keys order sorting"
                                         ),
@@ -206,7 +206,7 @@ where
                                         results.extend(
                                             sorted_accessors(
                                                 value,
-                                                &validation_accessors
+                                                &accessors
                                                     .iter()
                                                     .cloned()
                                                     .chain(std::iter::once(accessor))
@@ -239,7 +239,7 @@ where
                                         results.extend(
                                             sorted_accessors(
                                                 value,
-                                                &validation_accessors
+                                                &accessors
                                                     .iter()
                                                     .cloned()
                                                     .chain(std::iter::once(accessor))
@@ -268,7 +268,7 @@ where
                 (tombi_document_tree::Value::Array(array), ValueSchema::Array(array_schema)) => {
                     if new_targets_map
                         .iter()
-                        .all(|(accessor, _)| matches!(accessor, SchemaAccessor::Index))
+                        .all(|(accessor, _)| matches!(accessor, Accessor::Index(_)))
                     {
                         if let Some(referable_schema) = &array_schema.items {
                             if let Ok(Some(current_schema)) = referable_schema
@@ -286,7 +286,7 @@ where
                                     results.extend(
                                         sorted_accessors(
                                             value,
-                                            validation_accessors,
+                                            accessors,
                                             targets,
                                             Some(&current_schema),
                                             schema_context,

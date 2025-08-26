@@ -13,7 +13,7 @@ use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 impl Validate for tombi_document_tree::Array {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -27,7 +27,7 @@ impl Validate for tombi_document_tree::Array {
 
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
-                .and_then(|map| map.get(accessors))
+                .and_then(|map| map.get(&accessors.into_iter().map(Into::into).collect_vec()))
             {
                 if current_schema
                     .is_some_and(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
@@ -129,13 +129,13 @@ impl Validate for tombi_document_tree::Array {
                         .await
                         .inspect_err(|err| tracing::warn!("{err}"))
                     {
-                        let new_accessors = accessors
-                            .iter()
-                            .cloned()
-                            .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
-                            .collect_vec();
+                        for (i, value) in self.values().iter().enumerate() {
+                            let new_accessors = accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(tombi_schema_store::Accessor::Index(i)))
+                                .collect_vec();
 
-                        for value in self.values().iter() {
                             if let Err(schema_diagnostics) = value
                                 .validate(
                                     &new_accessors,
@@ -205,7 +205,7 @@ impl Validate for tombi_document_tree::Array {
                     if array_schema.deprecated == Some(true) {
                         crate::Warning {
                             kind: Box::new(crate::WarningKind::Deprecated(
-                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                tombi_schema_store::SchemaAccessors::from(accessors),
                             )),
                             range: self.range(),
                         }
@@ -213,13 +213,13 @@ impl Validate for tombi_document_tree::Array {
                     }
                 }
             } else {
-                for value in self.values().iter() {
+                for (i, value) in self.values().iter().enumerate() {
                     if let Err(value_diagnostics) = value
                         .validate(
                             &accessors
                                 .iter()
                                 .cloned()
-                                .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
+                                .chain(std::iter::once(tombi_schema_store::Accessor::Index(i)))
                                 .collect_vec(),
                             None,
                             schema_context,

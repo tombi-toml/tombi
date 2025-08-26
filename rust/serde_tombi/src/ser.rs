@@ -409,7 +409,7 @@ impl serde::ser::SerializeSeq for SerializeArray<'_> {
             accessors.push(tombi_schema_store::Accessor::Index(self.values.len()));
 
             return Err(crate::ser::Error::ArrayValueRequired(
-                tombi_schema_store::Accessors::new(accessors),
+                tombi_schema_store::Accessors::from(accessors),
             ));
         };
         match &mut value {
@@ -526,14 +526,14 @@ impl serde::ser::SerializeMap for SerializeTable<'_> {
             Ok(Some(value)) => {
                 self.key = None;
                 Err(crate::ser::Error::KeyMustBeString(
-                    tombi_schema_store::Accessors::new(self.accessors.to_vec()),
+                    tombi_schema_store::Accessors::from(self.accessors.to_vec()),
                     value.kind(),
                 ))
             }
             Ok(None) => {
                 self.key = None;
                 Err(crate::ser::Error::KeyRequired(
-                    tombi_schema_store::Accessors::new(self.accessors.to_vec()),
+                    tombi_schema_store::Accessors::from(self.accessors.to_vec()),
                 ))
             }
             Err(error) => {
@@ -549,7 +549,7 @@ impl serde::ser::SerializeMap for SerializeTable<'_> {
     {
         let Some(key) = self.key.take() else {
             return Err(crate::ser::Error::KeyRequired(
-                tombi_schema_store::Accessors::new(self.accessors.to_vec()),
+                tombi_schema_store::Accessors::from(self.accessors.to_vec()),
             ));
         };
         let Some(value) = value.serialize(&mut ValueSerializer {
@@ -642,7 +642,7 @@ where
         match s.parse::<T>() {
             Ok(value) => Ok(value),
             Err(err) => Err(crate::ser::Error::DateTimeParseFailed {
-                accessors: tombi_schema_store::Accessors::new(self.accessors.to_vec()),
+                accessors: tombi_schema_store::Accessors::from(self.accessors.to_vec()),
                 error: err.into(),
             }),
         }

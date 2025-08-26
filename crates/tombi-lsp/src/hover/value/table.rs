@@ -500,7 +500,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                     HoverValueContent {
                         title: None,
                         description: None,
-                        accessors: Accessors::new(accessors.to_vec()),
+                        accessors: Accessors::from(accessors.to_vec()),
                         value_type: ValueType::Table,
                         constraints: None,
                         schema_uri: None,
@@ -529,7 +529,7 @@ impl GetHoverContent for TableSchema {
                 HoverValueContent {
                     title: self.title.clone(),
                     description: self.description.clone(),
-                    accessors: Accessors::new(accessors.to_vec()),
+                    accessors: Accessors::from(accessors.to_vec()),
                     value_type: ValueType::Table,
                     constraints: Some(ValueConstraints {
                         enumerate: build_enumerate_values(

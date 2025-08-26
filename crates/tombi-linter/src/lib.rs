@@ -208,7 +208,7 @@ mod tests {
                 "#,
                 cargo_schema_path(),
             ) -> Err([tombi_validator::WarningKind::StrictAdditionalProperties {
-                accessors: tombi_schema_store::SchemaAccessors::new(vec![
+                accessors: tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
                 schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
@@ -251,7 +251,7 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::WarningKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::new(vec![
+                tombi_validator::WarningKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
                     tombi_schema_store::SchemaAccessor::Index,
                     tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),

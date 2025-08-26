@@ -8,7 +8,7 @@ use crate::rule::{inline_table_comma_trailing_comment, inline_table_keys_order};
 impl crate::Edit for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,

@@ -685,7 +685,7 @@ impl SchemaStore {
                 for (accessors, schema_uri) in &source_schema.sub_schema_uri_map {
                     tracing::trace!(
                         "find sub schema {:?} from {}",
-                        SchemaAccessors::new(accessors.clone()),
+                        SchemaAccessors::from(accessors.clone()),
                         schema_uri
                     );
                 }

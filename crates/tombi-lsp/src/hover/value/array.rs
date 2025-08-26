@@ -234,7 +234,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                             HoverValueContent {
                                 title: None,
                                 description: None,
-                                accessors: Accessors::new(accessors.to_vec()),
+                                accessors: Accessors::from(accessors.to_vec()),
                                 value_type: ValueType::Array,
                                 constraints: None,
                                 schema_uri: None,
@@ -271,7 +271,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                 HoverValueContent {
                     title: None,
                     description: None,
-                    accessors: Accessors::new(accessors.to_vec()),
+                    accessors: Accessors::from(accessors.to_vec()),
                     value_type: ValueType::Array,
                     constraints: None,
                     schema_uri: None,
@@ -299,7 +299,7 @@ impl GetHoverContent for ArraySchema {
                 HoverValueContent {
                     title: self.title.clone(),
                     description: self.description.clone(),
-                    accessors: Accessors::new(accessors.to_vec()),
+                    accessors: Accessors::from(accessors.to_vec()),
                     value_type: ValueType::Array,
                     constraints: Some(ValueConstraints {
                         enumerate: build_enumerate_values(

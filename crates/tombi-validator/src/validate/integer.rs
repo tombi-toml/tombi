@@ -9,7 +9,7 @@ use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 impl Validate for tombi_document_tree::Integer {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -141,9 +141,7 @@ impl Validate for tombi_document_tree::Integer {
                             if integer_schema.deprecated == Some(true) {
                                 crate::Warning {
                                     kind: Box::new(crate::WarningKind::DeprecatedValue(
-                                        tombi_schema_store::SchemaAccessors::new(
-                                            accessors.to_vec(),
-                                        ),
+                                        tombi_schema_store::SchemaAccessors::from(accessors),
                                         value.to_string(),
                                     )),
                                     range: self.range(),
@@ -253,9 +251,7 @@ impl Validate for tombi_document_tree::Integer {
                             if float_schema.deprecated == Some(true) {
                                 crate::Warning {
                                     kind: Box::new(crate::WarningKind::DeprecatedValue(
-                                        tombi_schema_store::SchemaAccessors::new(
-                                            accessors.to_vec(),
-                                        ),
+                                        tombi_schema_store::SchemaAccessors::from(accessors),
                                         value.to_string(),
                                     )),
                                     range: self.range(),

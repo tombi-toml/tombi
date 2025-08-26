@@ -9,7 +9,7 @@ use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 impl Validate for LocalDateTime {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -110,7 +110,7 @@ impl Validate for LocalDateTime {
                     if local_date_time_schema.deprecated == Some(true) {
                         crate::Warning {
                             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                tombi_schema_store::SchemaAccessors::from(accessors),
                                 value_string,
                             )),
                             range: self.range(),

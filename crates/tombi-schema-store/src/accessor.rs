@@ -64,16 +64,31 @@ impl PartialEq<&str> for Accessor {
     }
 }
 
+impl PartialOrd<Accessor> for Accessor {
+    fn partial_cmp(&self, other: &Accessor) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (Accessor::Key(key1), Accessor::Key(key2)) => key1.partial_cmp(key2),
+            (Accessor::Index(index1), Accessor::Index(index2)) => index1.partial_cmp(index2),
+            _ => None,
+        }
+    }
+}
+
+impl indexmap::Equivalent<SchemaAccessor> for Accessor {
+    fn equivalent(&self, other: &SchemaAccessor) -> bool {
+        match (self, other) {
+            (Accessor::Key(key1), SchemaAccessor::Key(key2)) => key1 == key2,
+            (Accessor::Index(_), SchemaAccessor::Index) => true,
+            _ => false,
+        }
+    }
+}
+
 /// A collection of `Accessor`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Accessors(Vec<Accessor>);
 
 impl Accessors {
-    #[inline]
-    pub fn new(accessors: Vec<Accessor>) -> Self {
-        Self(accessors)
-    }
-
     #[inline]
     pub fn first(&self) -> Option<&Accessor> {
         self.0.first()
@@ -87,6 +102,12 @@ impl Accessors {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+}
+
+impl From<Vec<Accessor>> for Accessors {
+    fn from(accessors: Vec<Accessor>) -> Self {
+        Self(accessors)
     }
 }
 

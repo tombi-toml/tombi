@@ -16,7 +16,7 @@ use crate::error::Patterns;
 impl Validate for tombi_document_tree::Table {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -30,7 +30,7 @@ impl Validate for tombi_document_tree::Table {
 
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
-                .and_then(|map| map.get(accessors))
+                .and_then(|map| map.get(&accessors.into_iter().map(Into::into).collect_vec()))
             {
                 if current_schema.map(|schema| schema.schema_uri.as_ref()) != Some(sub_schema_uri) {
                     if let Ok(Some(DocumentSchema {
@@ -130,9 +130,7 @@ impl Validate for tombi_document_tree::Table {
                     let new_accessors = accessors
                         .iter()
                         .cloned()
-                        .chain(std::iter::once(SchemaAccessor::Key(
-                            accessor_raw_text.clone(),
-                        )))
+                        .chain(std::iter::once(Accessor::Key(accessor_raw_text.clone())))
                         .collect_vec();
 
                     let mut matched_key = false;
@@ -199,7 +197,7 @@ impl Validate for tombi_document_tree::Table {
                                     {
                                         crate::Warning {
                                             kind: Box::new(crate::WarningKind::Deprecated(
-                                                SchemaAccessors::new(new_accessors.clone()),
+                                                SchemaAccessors::from(&new_accessors),
                                             )),
                                             range: key.range() + value.range(),
                                         }
@@ -255,7 +253,7 @@ impl Validate for tombi_document_tree::Table {
                                 if current_schema.value_schema.deprecated().await == Some(true) {
                                     crate::Warning {
                                         kind: Box::new(crate::WarningKind::Deprecated(
-                                            SchemaAccessors::new(new_accessors.clone()),
+                                            SchemaAccessors::from(&new_accessors),
                                         )),
                                         range: key.range() + value.range(),
                                     }
@@ -280,7 +278,7 @@ impl Validate for tombi_document_tree::Table {
                         {
                             crate::Warning {
                                 kind: Box::new(crate::WarningKind::StrictAdditionalProperties {
-                                    accessors: SchemaAccessors::new(accessors.to_vec()),
+                                    accessors: SchemaAccessors::from(accessors),
                                     schema_uri: current_schema.schema_uri.as_ref().clone(),
                                     key: key.to_string(),
                                 }),
@@ -351,7 +349,7 @@ impl Validate for tombi_document_tree::Table {
                     if table_schema.deprecated == Some(true) {
                         crate::Warning {
                             kind: Box::new(crate::WarningKind::Deprecated(
-                                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                                tombi_schema_store::SchemaAccessors::from(accessors),
                             )),
                             range: self.range(),
                         }
@@ -370,7 +368,7 @@ impl Validate for tombi_document_tree::Table {
                             &accessors
                                 .iter()
                                 .cloned()
-                                .chain(std::iter::once(SchemaAccessor::Key(
+                                .chain(std::iter::once(Accessor::Key(
                                     key.to_raw_text(schema_context.toml_version),
                                 )))
                                 .collect_vec(),
