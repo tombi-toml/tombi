@@ -3,6 +3,10 @@ use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
+use tombi_toml_text::{
+    try_from_basic_string, try_from_literal_string, try_from_multi_line_basic_string,
+    try_from_multi_line_literal_string,
+};
 use tombi_x_keyword::StringFormat;
 
 use crate::{
@@ -13,24 +17,6 @@ use crate::{
     Validate,
 };
 
-fn get_string_value(token: Option<tombi_syntax::SyntaxToken>) -> String {
-    token
-        .map(|t| {
-            let text = t.text();
-            // Remove quotes and process escape sequences
-            if text.starts_with("\"\"\"") || text.starts_with("'''") {
-                // Multi-line string
-                text[3..text.len() - 3].to_string()
-            } else if text.starts_with('"') || text.starts_with('\'') {
-                // Single-line string
-                text[1..text.len() - 1].to_string()
-            } else {
-                text.to_string()
-            }
-        })
-        .unwrap_or_default()
-}
-
 impl Validate for tombi_ast::BasicString {
     fn validate<'a: 'b, 'b>(
         &'a self,
@@ -40,8 +26,14 @@ impl Validate for tombi_ast::BasicString {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let Some(string_value) = self.token().and_then(|token| {
+                try_from_basic_string(token.text(), schema_context.toml_version).ok()
+            }) else {
+                return Ok(());
+            };
+
             validate_string(
-                &get_string_value(self.token()),
+                &string_value,
                 self,
                 accessors,
                 current_schema,
@@ -74,8 +66,15 @@ impl Validate for tombi_ast::LiteralString {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         // Use the same validation logic as BasicString
         async move {
+            let Some(string_value) = self
+                .token()
+                .and_then(|token| try_from_literal_string(token.text()).ok())
+            else {
+                return Ok(());
+            };
+
             validate_string(
-                &get_string_value(self.token()),
+                &string_value,
                 self,
                 accessors,
                 current_schema,
@@ -107,8 +106,14 @@ impl Validate for tombi_ast::MultiLineBasicString {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let Some(string_value) = self.token().and_then(|token| {
+                try_from_multi_line_basic_string(token.text(), schema_context.toml_version).ok()
+            }) else {
+                return Ok(());
+            };
+
             validate_string(
-                &get_string_value(self.token()),
+                &string_value,
                 self,
                 accessors,
                 current_schema,
@@ -140,8 +145,15 @@ impl Validate for tombi_ast::MultiLineLiteralString {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let Some(string_value) = self
+                .token()
+                .and_then(|token| try_from_multi_line_literal_string(token.text()).ok())
+            else {
+                return Ok(());
+            };
+
             validate_string(
-                &get_string_value(self.token()),
+                &string_value,
                 self,
                 accessors,
                 current_schema,

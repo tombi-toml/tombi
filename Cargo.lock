@@ -3976,6 +3976,7 @@ dependencies = [
  "tombi-schema-store",
  "tombi-syntax",
  "tombi-text",
+ "tombi-toml-text",
  "tombi-uri",
  "tombi-x-keyword",
  "tracing",
