@@ -6,8 +6,7 @@ use tombi_schema_store::{CurrentSchema, ValueSchema, ValueType};
 
 use crate::validate_ast::all_of::validate_all_of;
 use crate::validate_ast::one_of::validate_one_of;
-use crate::validate_ast::ValueImpl;
-use crate::Validate;
+use crate::validate_ast::{Validate, ValueImpl};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
     value: &'a T,

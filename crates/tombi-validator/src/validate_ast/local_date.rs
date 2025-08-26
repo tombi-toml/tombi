@@ -3,12 +3,9 @@ use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
 
-use crate::{
-    validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
-        ValueImpl,
-    },
-    Validate,
+use crate::validate_ast::{
+    all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+    Validate, ValueImpl,
 };
 
 impl Validate for tombi_ast::LocalDate {

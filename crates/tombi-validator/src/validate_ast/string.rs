@@ -12,9 +12,9 @@ use tombi_x_keyword::StringFormat;
 use crate::{
     validate::format,
     validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, ValueImpl,
+        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, Validate,
+        ValueImpl,
     },
-    Validate,
 };
 
 impl Validate for tombi_ast::BasicString {

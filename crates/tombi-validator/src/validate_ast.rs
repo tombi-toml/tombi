@@ -17,8 +17,6 @@ mod string;
 mod table;
 mod value;
 
-use crate::Validate;
-use float::validate_float_schema;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
@@ -53,6 +51,16 @@ pub fn validate_ast<'a: 'b, 'b>(
         Ok(())
     }
     .boxed()
+}
+
+pub trait Validate {
+    fn validate<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext,
+        comment_context: &'a CommentContext<'a>,
+    ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>;
 }
 
 async fn type_mismatch(

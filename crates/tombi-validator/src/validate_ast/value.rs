@@ -1,7 +1,7 @@
 use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 
-use crate::Validate;
+use crate::validate_ast::Validate;
 
 impl Validate for tombi_ast::Value {
     fn validate<'a: 'b, 'b>(

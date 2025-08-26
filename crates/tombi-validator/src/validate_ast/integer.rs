@@ -8,9 +8,9 @@ use tombi_schema_store::ValueType;
 
 use crate::validate_ast::all_of::validate_all_of;
 use crate::validate_ast::any_of::validate_any_of;
+use crate::validate_ast::float::validate_float_schema;
 use crate::validate_ast::one_of::validate_one_of;
-use crate::validate_ast::{validate_float_schema, ValueImpl};
-use crate::Validate;
+use crate::validate_ast::{Validate, ValueImpl};
 
 impl Validate for tombi_ast::IntegerBin {
     fn validate<'a: 'b, 'b>(

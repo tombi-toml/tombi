@@ -4,7 +4,7 @@ use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
-use crate::{validate_ast::ValueImpl, Validate};
+use crate::validate_ast::{Validate, ValueImpl};
 
 pub fn validate_all_of<'a: 'b, 'b, T>(
     value: &'a T,

@@ -76,7 +76,7 @@ impl Key {
         toml_version: TomlVersion,
     ) -> Result<std::string::String, crate::Error> {
         match self.kind {
-            KeyKind::BareKey => tombi_toml_text::try_from_bare_key(&self.value, toml_version),
+            KeyKind::BareKey => tombi_toml_text::try_from_bare_key(&self.value),
             KeyKind::BasicString => {
                 tombi_toml_text::try_from_basic_string(&self.value, toml_version)
             }

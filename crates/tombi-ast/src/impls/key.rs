@@ -19,7 +19,7 @@ impl crate::Key {
         toml_version: TomlVersion,
     ) -> Result<String, tombi_toml_text::ParseError> {
         match self {
-            Self::BareKey(key) => Ok(key.token().unwrap().text().to_string()),
+            Self::BareKey(key) => tombi_toml_text::try_from_bare_key(key.token().unwrap().text()),
             Self::BasicString(key) => {
                 tombi_toml_text::try_from_basic_string(key.token().unwrap().text(), toml_version)
             }
