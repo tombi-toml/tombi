@@ -71,11 +71,6 @@ impl AstChildren<crate::Key> {
         (self.clone().count() == other.clone().count()) && self.starts_with(other)
     }
 
-    #[inline]
-    pub fn collect_vec(self) -> Vec<crate::Key> {
-        self.collect()
-    }
-
     pub fn rev(self) -> impl Iterator<Item = crate::Key> {
         self.collect_vec().into_iter().rev()
     }
