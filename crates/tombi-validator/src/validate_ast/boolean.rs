@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_ast::support::literal::boolean::try_from_boolean;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
@@ -12,7 +13,7 @@ use crate::validate_ast::{
 impl Validate for tombi_ast::Boolean {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -91,7 +92,7 @@ fn validate_boolean_schema(
     value: bool,
     range: tombi_text::Range,
     boolean_schema: &tombi_schema_store::BooleanSchema,
-    accessors: &[tombi_schema_store::SchemaAccessor],
+    accessors: &[tombi_schema_store::Accessor],
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     if let Some(const_value) = &boolean_schema.const_value {
@@ -124,7 +125,9 @@ fn validate_boolean_schema(
         if boolean_schema.deprecated == Some(true) {
             crate::Warning {
                 kind: Box::new(crate::WarningKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                    tombi_schema_store::SchemaAccessors::new(
+                        accessors.into_iter().map(Into::into).collect_vec(),
+                    ),
                     value.to_string(),
                 )),
                 range,

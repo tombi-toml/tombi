@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::support::float::try_from_float;
@@ -12,7 +13,7 @@ use crate::validate_ast::{
 impl Validate for tombi_ast::Float {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -92,7 +93,7 @@ pub(crate) fn validate_float_schema(
     value: f64,
     float_schema: &tombi_schema_store::FloatSchema,
     range: tombi_text::Range,
-    accessors: &[tombi_schema_store::SchemaAccessor],
+    accessors: &[tombi_schema_store::Accessor],
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     // Validate const value
@@ -155,7 +156,9 @@ pub(crate) fn validate_float_schema(
     if diagnostics.is_empty() && float_schema.deprecated == Some(true) {
         crate::Warning {
             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                tombi_schema_store::SchemaAccessors::new(
+                    accessors.into_iter().map(Into::into).collect_vec(),
+                ),
                 value.to_string(),
             )),
             range,

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::support::integer::{
@@ -15,7 +16,7 @@ use crate::validate_ast::{Validate, ValueImpl};
 impl Validate for tombi_ast::IntegerBin {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -45,7 +46,7 @@ impl Validate for tombi_ast::IntegerBin {
 impl Validate for tombi_ast::IntegerDec {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -75,7 +76,7 @@ impl Validate for tombi_ast::IntegerDec {
 impl Validate for tombi_ast::IntegerHex {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -105,7 +106,7 @@ impl Validate for tombi_ast::IntegerHex {
 impl Validate for tombi_ast::IntegerOct {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -175,7 +176,7 @@ impl ValueImpl for tombi_ast::IntegerOct {
 fn validate_integer<'a: 'b, 'b, T>(
     integer_value: i64,
     value: &'a T,
-    accessors: &'a [tombi_schema_store::SchemaAccessor],
+    accessors: &'a [tombi_schema_store::Accessor],
     current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext,
     comment_context: &'a CommentContext<'a>,
@@ -255,7 +256,7 @@ fn validate_integer_schema(
     value: i64,
     range: tombi_text::Range,
     integer_schema: &tombi_schema_store::IntegerSchema,
-    accessors: &[tombi_schema_store::SchemaAccessor],
+    accessors: &[tombi_schema_store::Accessor],
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
@@ -361,7 +362,9 @@ fn validate_integer_schema(
     if diagnostics.is_empty() && integer_schema.deprecated == Some(true) {
         crate::Warning {
             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                tombi_schema_store::SchemaAccessors::new(
+                    accessors.into_iter().map(Into::into).collect_vec(),
+                ),
                 value.to_string(),
             )),
             range,

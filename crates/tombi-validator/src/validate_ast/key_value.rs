@@ -9,7 +9,7 @@ use crate::validate_ast::Validate;
 impl Validate for tombi_ast::KeyValue {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -63,35 +63,27 @@ impl Validate for tombi_ast::KeyValue {
 /// Navigate through keys and get the schema for the value
 async fn navigate_keys_and_get_schema<'a>(
     keys: &'a tombi_ast::Keys,
-    accessors: &'a [SchemaAccessor],
+    accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 ) -> (
-    Vec<SchemaAccessor>,
+    Vec<Accessor>,
     Option<CurrentSchema<'a>>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let mut diagnostics = Vec::new();
     let mut updated_schema_accessors = accessors.to_vec();
-    let mut updated_accessor_list: Vec<Accessor> = accessors
-        .iter()
-        .map(|accessor| match accessor {
-            SchemaAccessor::Key(key) => Accessor::Key(key.clone()),
-            SchemaAccessor::Index => unreachable!("Index accessor should not be used in key value"),
-        })
-        .collect();
 
     // Build accessor lists with keys
     for key in keys.keys() {
         if let Ok(key_text) = key.try_to_raw_text(schema_context.toml_version) {
-            updated_schema_accessors.push(SchemaAccessor::Key(key_text.clone()));
-            updated_accessor_list.push(Accessor::Key(key_text));
+            updated_schema_accessors.push(Accessor::Key(key_text));
         }
     }
 
     // Try to get sub-schema if configured
     if let Some(sub_schema_result) = schema_context
-        .get_subschema(&updated_accessor_list, current_schema)
+        .get_subschema(&updated_schema_accessors, current_schema)
         .await
     {
         match sub_schema_result {

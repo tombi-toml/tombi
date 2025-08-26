@@ -16,7 +16,7 @@ use crate::validate_ast::{
 impl Validate for tombi_ast::Array {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -24,7 +24,7 @@ impl Validate for tombi_ast::Array {
         async move {
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
-                .and_then(|map| map.get(accessors))
+                .and_then(|map| map.get(&accessors.into_iter().map(Into::into).collect_vec()))
             {
                 if current_schema
                     .is_some_and(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
@@ -127,7 +127,7 @@ impl ValueImpl for tombi_ast::Array {
 async fn validate_array_schema<'a>(
     value: &'a tombi_ast::Array,
     array_schema: &tombi_schema_store::ArraySchema,
-    accessors: &[tombi_schema_store::SchemaAccessor],
+    accessors: &[tombi_schema_store::Accessor],
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_context: &'a CommentContext<'a>,
@@ -144,13 +144,13 @@ async fn validate_array_schema<'a>(
             .await
             .inspect_err(|err| tracing::warn!("{err}"))
         {
-            let new_accessors = accessors
-                .iter()
-                .cloned()
-                .chain(std::iter::once(tombi_schema_store::SchemaAccessor::Index))
-                .collect_vec();
+            for (i, item) in value.items().enumerate() {
+                let new_accessors = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(i)))
+                    .collect_vec();
 
-            for item in value.items() {
                 if let Err(schema_diagnostics) = item
                     .validate(
                         &new_accessors,

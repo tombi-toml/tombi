@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
@@ -11,7 +12,7 @@ use crate::validate_ast::{
 impl Validate for tombi_ast::LocalTime {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -91,7 +92,7 @@ fn validate_local_time<'a: 'b, 'b>(
     string_value: &'a str,
     range: tombi_text::Range,
     local_time_schema: &tombi_schema_store::LocalTimeSchema,
-    accessors: &[tombi_schema_store::SchemaAccessor],
+    accessors: &[tombi_schema_store::Accessor],
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
@@ -126,7 +127,9 @@ fn validate_local_time<'a: 'b, 'b>(
         if local_time_schema.deprecated == Some(true) {
             crate::Warning {
                 kind: Box::new(crate::WarningKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                    tombi_schema_store::SchemaAccessors::new(
+                        accessors.into_iter().map(Into::into).collect_vec(),
+                    ),
                     string_value.to_string(),
                 )),
                 range,

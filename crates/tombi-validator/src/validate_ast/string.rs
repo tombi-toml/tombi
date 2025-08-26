@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use regex::Regex;
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
@@ -20,7 +21,7 @@ use crate::{
 impl Validate for tombi_ast::BasicString {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -59,7 +60,7 @@ impl ValueImpl for tombi_ast::BasicString {
 impl Validate for tombi_ast::LiteralString {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -100,7 +101,7 @@ impl ValueImpl for tombi_ast::LiteralString {
 impl Validate for tombi_ast::MultiLineBasicString {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -139,7 +140,7 @@ impl ValueImpl for tombi_ast::MultiLineBasicString {
 impl Validate for tombi_ast::MultiLineLiteralString {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -179,7 +180,7 @@ impl ValueImpl for tombi_ast::MultiLineLiteralString {
 fn validate_string<'a: 'b, 'b, T>(
     string_value: &'a str,
     value: &'a T,
-    accessors: &'a [tombi_schema_store::SchemaAccessor],
+    accessors: &'a [tombi_schema_store::Accessor],
     current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext,
     comment_context: &'a CommentContext<'a>,
@@ -261,7 +262,7 @@ fn validate_string_schema(
     value: &str,
     string_schema: &tombi_schema_store::StringSchema,
     range: tombi_text::Range,
-    accessors: &[tombi_schema_store::SchemaAccessor],
+    accessors: &[tombi_schema_store::Accessor],
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
 ) {
     // Validate const value
@@ -361,7 +362,9 @@ fn validate_string_schema(
     if diagnostics.is_empty() && string_schema.deprecated == Some(true) {
         crate::Warning {
             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                tombi_schema_store::SchemaAccessors::new(
+                    accessors.into_iter().map(Into::into).collect_vec(),
+                ),
                 format!("\"{}\"", value),
             )),
             range,
