@@ -229,7 +229,11 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::Null => return Ok(()),
-                value_schema => type_mismatch(ValueType::Float, value.range(), value_schema).await,
+                value_schema => type_mismatch(
+                    value_schema.value_type().await,
+                    ValueType::Integer,
+                    value.range(),
+                ),
             }
         } else {
             Ok(())

@@ -10,8 +10,9 @@ use crate::{
     validate_ast::{
         all_of::validate_all_of,
         any_of::validate_any_of,
+        array::validate_array_schema,
         one_of::validate_one_of,
-        table::{validate_table_schema, validate_table_without_schema},
+        table::{validate_accessor_without_schema, validate_table_schema},
         type_mismatch, Validate, ValueImpl,
     },
 };
@@ -70,101 +71,9 @@ where
                 .map(|key| HeaderAccessor::Key(key.clone()))
                 .collect_vec();
 
-            if let Some(sub_schema_uri) = schema_context
-                .sub_schema_uri_map
-                .and_then(|map| map.get(&accessors.into_iter().map(Into::into).collect_vec()))
-            {
-                if current_schema
-                    .is_some_and(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
-                {
-                    if let Ok(Some(DocumentSchema {
-                        value_schema: Some(value_schema),
-                        schema_uri,
-                        definitions,
-                        ..
-                    })) = schema_context
-                        .store
-                        .try_get_document_schema(sub_schema_uri)
-                        .await
-                    {
-                        return self
-                            .validate(
-                                accessors,
-                                Some(&CurrentSchema {
-                                    value_schema: Cow::Borrowed(&value_schema),
-                                    schema_uri: Cow::Borrowed(&schema_uri),
-                                    definitions: Cow::Borrowed(&definitions),
-                                }),
-                                schema_context,
-                                comment_context,
-                            )
-                            .await;
-                    }
-                }
-            }
-
-            if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    tombi_schema_store::ValueSchema::Table(table_schema) => {
-                        validate_table_schema(
-                            &header_accessors,
-                            value,
-                            accessors,
-                            table_schema,
-                            current_schema,
-                            schema_context,
-                            comment_context,
-                        )
-                        .await
-                    }
-                    tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                        validate_one_of(
-                            self,
-                            accessors,
-                            one_of_schema,
-                            current_schema,
-                            schema_context,
-                            comment_context,
-                        )
-                        .await
-                    }
-                    tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                        validate_any_of(
-                            self,
-                            accessors,
-                            any_of_schema,
-                            current_schema,
-                            schema_context,
-                            comment_context,
-                        )
-                        .await
-                    }
-                    tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                        validate_all_of(
-                            self,
-                            accessors,
-                            all_of_schema,
-                            current_schema,
-                            schema_context,
-                            comment_context,
-                        )
-                        .await
-                    }
-                    tombi_schema_store::ValueSchema::Null => return Ok(()),
-                    value_schema => {
-                        type_mismatch(ValueType::Table, value.range(), value_schema).await
-                    }
-                }
-            } else {
-                validate_table_without_schema(
-                    &header_accessors,
-                    value,
-                    accessors,
-                    schema_context,
-                    comment_context,
-                )
+            (header_accessors.as_slice(), value)
+                .validate(accessors, current_schema, schema_context, comment_context)
                 .await
-            }
         }
         .boxed()
     }
@@ -249,6 +158,18 @@ where
                         )
                         .await
                     }
+                    tombi_schema_store::ValueSchema::Array(array_schema) => {
+                        validate_array_schema(
+                            header_accessors,
+                            value,
+                            accessors,
+                            array_schema,
+                            current_schema,
+                            schema_context,
+                            comment_context,
+                        )
+                        .await
+                    }
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
@@ -289,11 +210,11 @@ where
                             Some(HeaderAccessor::Index { range, .. }) => (ValueType::Array, *range),
                             None => (value.value_type(), value.range()),
                         };
-                        type_mismatch(actual, range, value_schema).await
+                        type_mismatch(value_schema.value_type().await, actual, range)
                     }
                 }
             } else {
-                validate_table_without_schema(
+                validate_accessor_without_schema(
                     header_accessors,
                     value,
                     accessors,

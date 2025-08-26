@@ -65,9 +65,11 @@ impl Validate for tombi_ast::LocalDate {
                         .await
                     }
                     tombi_schema_store::ValueSchema::Null => return Ok(()),
-                    value_schema => {
-                        type_mismatch(ValueType::LocalDate, self.range(), value_schema).await
-                    }
+                    value_schema => type_mismatch(
+                        value_schema.value_type().await,
+                        ValueType::LocalDate,
+                        self.range(),
+                    ),
                 }
             } else {
                 Ok(())

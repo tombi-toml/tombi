@@ -63,17 +63,14 @@ pub trait Validate {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>;
 }
 
-async fn type_mismatch(
+fn type_mismatch(
+    expected: ValueType,
     actual: ValueType,
     range: tombi_text::Range,
-    value_schema: &tombi_schema_store::ValueSchema,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     crate::Error {
-        kind: crate::ErrorKind::TypeMismatch2 {
-            expected: value_schema.value_type().await,
-            actual,
-        },
+        kind: crate::ErrorKind::TypeMismatch2 { expected, actual },
         range,
     }
     .set_diagnostics(&mut diagnostics);

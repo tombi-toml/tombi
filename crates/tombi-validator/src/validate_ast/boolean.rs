@@ -65,9 +65,11 @@ impl Validate for tombi_ast::Boolean {
                         .await
                     }
                     tombi_schema_store::ValueSchema::Null => Ok(()),
-                    value_schema => {
-                        type_mismatch(ValueType::Float, self.range(), value_schema).await
-                    }
+                    value_schema => type_mismatch(
+                        value_schema.value_type().await,
+                        ValueType::Boolean,
+                        self.range(),
+                    ),
                 }
             } else {
                 Ok(())
