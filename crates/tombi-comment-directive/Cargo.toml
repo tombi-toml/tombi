@@ -10,8 +10,6 @@ license.workspace = true
 schemars = { workspace = true, optional = true }
 serde.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
-tombi-json.workspace = true
 tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-toml-version.workspace = true

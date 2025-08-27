@@ -3501,8 +3501,6 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror 2.0.12",
- "tokio",
- "tombi-json",
  "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
