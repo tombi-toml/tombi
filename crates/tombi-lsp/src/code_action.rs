@@ -111,8 +111,6 @@ pub fn inline_table_to_dot_keys_code_action(
     let (_, value) =
         tombi_extension::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
-    tracing::error!("value = {:?}", value);
-
     match value {
         tombi_document_tree::Value::Table(table)
             if table.len() == 1
