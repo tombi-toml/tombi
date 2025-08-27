@@ -128,11 +128,6 @@ async fn validate_table(
     let mut diagnostics = vec![];
 
     for (key, value) in table_value.key_values() {
-        let mut parent_comments = comment_context.parent_comments.to_vec();
-        for leading_comment in key.leading_comments() {
-            parent_comments.push((leading_comment.text(), leading_comment.range()))
-        }
-
         let accessor_raw_text = key.to_raw_text(schema_context.toml_version);
         let accessor = Accessor::Key(accessor_raw_text.clone());
         let new_accessors = accessors
@@ -166,10 +161,7 @@ async fn validate_table(
                         &new_accessors,
                         Some(&current_schema),
                         schema_context,
-                        &CommentContext {
-                            parent_comments: &parent_comments,
-                            has_key: true,
-                        },
+                        comment_context,
                     )
                     .await
                 {
@@ -376,11 +368,6 @@ async fn validate_table_without_schema(
 
     // Validate without schema
     for (key, value) in table_value.key_values() {
-        let mut parent_comments = comment_context.parent_comments.to_vec();
-        for leading_comment in key.leading_comments() {
-            parent_comments.push((leading_comment.text(), leading_comment.range()))
-        }
-
         if let Err(schema_diagnostics) = value
             .validate(
                 &accessors
@@ -392,10 +379,7 @@ async fn validate_table_without_schema(
                     .collect_vec(),
                 None,
                 schema_context,
-                &CommentContext {
-                    parent_comments: &parent_comments,
-                    has_key: true,
-                },
+                comment_context,
             )
             .await
         {

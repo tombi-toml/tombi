@@ -8,22 +8,26 @@ pub enum IntegerKind {
 
 impl From<tombi_document_tree::IntegerKind> for IntegerKind {
     fn from(kind: tombi_document_tree::IntegerKind) -> Self {
+        use tombi_document_tree::IntegerKind;
+
         match kind {
-            tombi_document_tree::IntegerKind::Binary(_) => Self::Binary,
-            tombi_document_tree::IntegerKind::Decimal(_) => Self::Decimal,
-            tombi_document_tree::IntegerKind::Octal(_) => Self::Octal,
-            tombi_document_tree::IntegerKind::Hexadecimal(_) => Self::Hexadecimal,
+            IntegerKind::Binary => Self::Binary,
+            IntegerKind::Decimal => Self::Decimal,
+            IntegerKind::Octal => Self::Octal,
+            IntegerKind::Hexadecimal => Self::Hexadecimal,
         }
     }
 }
 
 impl From<&tombi_document_tree::IntegerKind> for IntegerKind {
     fn from(kind: &tombi_document_tree::IntegerKind) -> Self {
+        use tombi_document_tree::IntegerKind;
+
         match kind {
-            tombi_document_tree::IntegerKind::Binary(_) => Self::Binary,
-            tombi_document_tree::IntegerKind::Decimal(_) => Self::Decimal,
-            tombi_document_tree::IntegerKind::Octal(_) => Self::Octal,
-            tombi_document_tree::IntegerKind::Hexadecimal(_) => Self::Hexadecimal,
+            IntegerKind::Binary => Self::Binary,
+            IntegerKind::Decimal => Self::Decimal,
+            IntegerKind::Octal => Self::Octal,
+            IntegerKind::Hexadecimal => Self::Hexadecimal,
         }
     }
 }

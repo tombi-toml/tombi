@@ -24,6 +24,8 @@ pub use string::*;
 pub use table::*;
 use tombi_severity_level::SeverityLevelDefaultError;
 
+pub type KeyTombiCommentDirective = ValueTombiCommentDirective<KeyTombiCommentDirectiveRules>;
+
 pub type BooleanTombiCommentDirective =
     ValueTombiCommentDirective<BooleanValueTombiCommentDirectiveRules>;
 

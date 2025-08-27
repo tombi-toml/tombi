@@ -1,4 +1,3 @@
-mod comment;
 mod error;
 mod key;
 mod literal_value;
@@ -7,7 +6,6 @@ pub mod support;
 mod value;
 mod value_type;
 
-pub use comment::Comment;
 pub use error::Error;
 pub use key::{Key, KeyKind};
 pub use literal_value::LiteralValueRef;

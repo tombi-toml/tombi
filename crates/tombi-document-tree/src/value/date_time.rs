@@ -1,19 +1,20 @@
-use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_comment_directive::{
+    LocalDateTimeTombiCommentDirective, LocalDateTombiCommentDirective,
+    LocalTimeTombiCommentDirective, OffsetDateTimeTombiCommentDirective,
+};
 
 use crate::{
     support::chrono::{
         try_new_local_date, try_new_local_date_time, try_new_local_time, try_new_offset_date_time,
     },
-    Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
+    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct OffsetDateTime {
     value: tombi_date_time::OffsetDateTime,
-    node: tombi_ast::OffsetDateTime,
-    leading_comments: Vec<Comment>,
-    trailing_comment: Option<Comment>,
+    range: tombi_text::Range,
+    comment_directive: Option<Box<OffsetDateTimeTombiCommentDirective>>,
 }
 
 impl OffsetDateTime {
@@ -23,13 +24,8 @@ impl OffsetDateTime {
     }
 
     #[inline]
-    pub fn node(&self) -> &tombi_ast::OffsetDateTime {
-        &self.node
-    }
-
-    #[inline]
     pub fn range(&self) -> tombi_text::Range {
-        self.node.token().unwrap().range()
+        self.range
     }
 
     #[inline]
@@ -38,22 +34,17 @@ impl OffsetDateTime {
     }
 
     #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        self.leading_comments.as_ref()
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
+    pub fn comment_directive(&self) -> Option<&OffsetDateTimeTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LocalDateTime {
     value: tombi_date_time::LocalDateTime,
-    node: tombi_ast::LocalDateTime,
-    leading_comments: Vec<Comment>,
-    trailing_comment: Option<Comment>,
+    range: tombi_text::Range,
+    symbol_range: tombi_text::Range,
+    comment_directive: Option<Box<LocalDateTimeTombiCommentDirective>>,
 }
 
 impl LocalDateTime {
@@ -63,13 +54,8 @@ impl LocalDateTime {
     }
 
     #[inline]
-    pub fn node(&self) -> &tombi_ast::LocalDateTime {
-        &self.node
-    }
-
-    #[inline]
     pub fn range(&self) -> tombi_text::Range {
-        self.node.token().unwrap().range()
+        self.range
     }
 
     #[inline]
@@ -78,22 +64,17 @@ impl LocalDateTime {
     }
 
     #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        self.leading_comments.as_ref()
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
+    pub fn comment_directive(&self) -> Option<&LocalDateTimeTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LocalDate {
     value: tombi_date_time::LocalDate,
-    node: tombi_ast::LocalDate,
-    leading_comments: Vec<Comment>,
-    trailing_comment: Option<Comment>,
+    range: tombi_text::Range,
+    symbol_range: tombi_text::Range,
+    comment_directive: Option<Box<LocalDateTombiCommentDirective>>,
 }
 
 impl LocalDate {
@@ -103,13 +84,8 @@ impl LocalDate {
     }
 
     #[inline]
-    pub fn node(&self) -> &tombi_ast::LocalDate {
-        &self.node
-    }
-
-    #[inline]
     pub fn range(&self) -> tombi_text::Range {
-        self.node.token().unwrap().range()
+        self.range
     }
 
     #[inline]
@@ -118,22 +94,17 @@ impl LocalDate {
     }
 
     #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        self.leading_comments.as_ref()
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
+    pub fn comment_directive(&self) -> Option<&LocalDateTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LocalTime {
     value: tombi_date_time::LocalTime,
-    node: tombi_ast::LocalTime,
-    leading_comments: Vec<Comment>,
-    trailing_comment: Option<Comment>,
+    range: tombi_text::Range,
+    symbol_range: tombi_text::Range,
+    comment_directive: Option<Box<LocalTimeTombiCommentDirective>>,
 }
 
 impl LocalTime {
@@ -143,13 +114,8 @@ impl LocalTime {
     }
 
     #[inline]
-    pub fn node(&self) -> &tombi_ast::LocalTime {
-        &self.node
-    }
-
-    #[inline]
     pub fn range(&self) -> tombi_text::Range {
-        self.node.token().unwrap().range()
+        self.range
     }
 
     #[inline]
@@ -158,13 +124,8 @@ impl LocalTime {
     }
 
     #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        self.leading_comments.as_ref()
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
+    pub fn comment_directive(&self) -> Option<&LocalTimeTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 }
 
@@ -246,20 +207,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
         };
 
         match try_new_offset_date_time(&self, toml_version) {
-            Ok(value) => {
-                let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-                let trailing_comment = self.trailing_comment().map(Comment::from);
-
-                DocumentTreeAndErrors {
-                    tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
-                        value,
-                        node: self,
-                        leading_comments,
-                        trailing_comment,
-                    }),
-                    errors: Vec::with_capacity(0),
-                }
-            }
+            Ok(value) => DocumentTreeAndErrors {
+                tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
+                    value,
+                    range,
+                    comment_directive: None,
+                }),
+                errors: Vec::with_capacity(0),
+            },
             Err(error) => DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![error],
@@ -282,20 +237,15 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
         };
 
         match try_new_local_date_time(&self, toml_version) {
-            Ok(value) => {
-                let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-                let trailing_comment = self.trailing_comment().map(Comment::from);
-
-                DocumentTreeAndErrors {
-                    tree: crate::Value::LocalDateTime(crate::LocalDateTime {
-                        value,
-                        node: self,
-                        leading_comments,
-                        trailing_comment,
-                    }),
-                    errors: Vec::with_capacity(0),
-                }
-            }
+            Ok(value) => DocumentTreeAndErrors {
+                tree: crate::Value::LocalDateTime(crate::LocalDateTime {
+                    value,
+                    range,
+                    symbol_range: range,
+                    comment_directive: None,
+                }),
+                errors: Vec::with_capacity(0),
+            },
             Err(error) => DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![error],
@@ -318,20 +268,15 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDate {
         };
 
         match try_new_local_date(&self, toml_version) {
-            Ok(value) => {
-                let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-                let trailing_comment = self.trailing_comment().map(Comment::from);
-
-                DocumentTreeAndErrors {
-                    tree: crate::Value::LocalDate(crate::LocalDate {
-                        value,
-                        node: self,
-                        leading_comments,
-                        trailing_comment,
-                    }),
-                    errors: Vec::with_capacity(0),
-                }
-            }
+            Ok(value) => DocumentTreeAndErrors {
+                tree: crate::Value::LocalDate(crate::LocalDate {
+                    value,
+                    range,
+                    symbol_range: range,
+                    comment_directive: None,
+                }),
+                errors: Vec::with_capacity(0),
+            },
             Err(error) => DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![error],
@@ -354,20 +299,15 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalTime {
         };
 
         match try_new_local_time(&self, toml_version) {
-            Ok(value) => {
-                let leading_comments = self.leading_comments().map(Comment::from).collect_vec();
-                let trailing_comment = self.trailing_comment().map(Comment::from);
-
-                DocumentTreeAndErrors {
-                    tree: crate::Value::LocalTime(crate::LocalTime {
-                        value,
-                        node: self,
-                        leading_comments,
-                        trailing_comment,
-                    }),
-                    errors: Vec::with_capacity(0),
-                }
-            }
+            Ok(value) => DocumentTreeAndErrors {
+                tree: crate::Value::LocalTime(crate::LocalTime {
+                    value,
+                    range,
+                    symbol_range: range,
+                    comment_directive: None,
+                }),
+                errors: Vec::with_capacity(0),
+            },
             Err(error) => DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![error],

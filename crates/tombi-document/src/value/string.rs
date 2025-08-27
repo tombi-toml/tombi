@@ -9,26 +9,25 @@ pub enum StringKind {
 
 impl From<tombi_document_tree::StringKind> for StringKind {
     fn from(kind: tombi_document_tree::StringKind) -> Self {
+        use tombi_document_tree::StringKind;
         match kind {
-            tombi_document_tree::StringKind::BasicString(_) => Self::BasicString,
-            tombi_document_tree::StringKind::LiteralString(_) => Self::LiteralString,
-            tombi_document_tree::StringKind::MultiLineBasicString(_) => Self::MultiLineBasicString,
-            tombi_document_tree::StringKind::MultiLineLiteralString(_) => {
-                Self::MultiLineLiteralString
-            }
+            StringKind::BasicString => Self::BasicString,
+            StringKind::LiteralString => Self::LiteralString,
+            StringKind::MultiLineBasicString => Self::MultiLineBasicString,
+            StringKind::MultiLineLiteralString => Self::MultiLineLiteralString,
         }
     }
 }
 
 impl From<&tombi_document_tree::StringKind> for StringKind {
     fn from(kind: &tombi_document_tree::StringKind) -> Self {
+        use tombi_document_tree::StringKind;
+
         match kind {
-            tombi_document_tree::StringKind::BasicString(_) => Self::BasicString,
-            tombi_document_tree::StringKind::LiteralString(_) => Self::LiteralString,
-            tombi_document_tree::StringKind::MultiLineBasicString(_) => Self::MultiLineBasicString,
-            tombi_document_tree::StringKind::MultiLineLiteralString(_) => {
-                Self::MultiLineLiteralString
-            }
+            StringKind::BasicString => Self::BasicString,
+            StringKind::LiteralString => Self::LiteralString,
+            StringKind::MultiLineBasicString => Self::MultiLineBasicString,
+            StringKind::MultiLineLiteralString => Self::MultiLineLiteralString,
         }
     }
 }

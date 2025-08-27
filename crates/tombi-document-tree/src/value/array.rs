@@ -1,4 +1,5 @@
 use tombi_ast::AstNode;
+use tombi_comment_directive::ArrayTombiCommentDirective;
 
 use crate::{
     support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Value,
@@ -45,7 +46,7 @@ pub struct Array {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
-    comment_directive: Option<Box<tombi_comment_directive::ArrayTombiCommentDirective>>,
+    comment_directive: Option<Box<ArrayTombiCommentDirective>>,
 }
 
 impl Array {
@@ -169,10 +170,8 @@ impl Array {
         self.symbol_range
     }
 
-    pub fn comment_directive(
-        &self,
-    ) -> Option<&tombi_comment_directive::ArrayTombiCommentDirective> {
-        self.comment_directive.as_ref().map(|c| c.as_ref())
+    pub fn comment_directive(&self) -> Option<&ArrayTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {

@@ -1,41 +1,40 @@
-use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_comment_directive::StringTombiCommentDirective;
+use tombi_toml_text::{
+    to_basic_string, to_literal_string, to_multi_line_basic_string, to_multi_line_literal_string,
+};
 use tombi_toml_version::TomlVersion;
 
-use crate::{Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StringKind {
-    BasicString(tombi_ast::BasicString),
-    LiteralString(tombi_ast::LiteralString),
-    MultiLineBasicString(tombi_ast::MultiLineBasicString),
-    MultiLineLiteralString(tombi_ast::MultiLineLiteralString),
+    BasicString,
+    LiteralString,
+    MultiLineBasicString,
+    MultiLineLiteralString,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct String {
     kind: StringKind,
     value: std::string::String,
-    leading_comments: Vec<Comment>,
-    trailing_comment: Option<Comment>,
-}
-
-impl std::fmt::Display for StringKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            StringKind::BasicString(node) => write!(f, "{}", node.token().unwrap().text()),
-            StringKind::LiteralString(node) => write!(f, "{}", node.token().unwrap().text()),
-            StringKind::MultiLineBasicString(node) => write!(f, "{}", node.token().unwrap().text()),
-            StringKind::MultiLineLiteralString(node) => {
-                write!(f, "{}", node.token().unwrap().text())
-            }
-        }
-    }
+    range: tombi_text::Range,
+    symbol_range: tombi_text::Range,
+    comment_directive: Option<Box<StringTombiCommentDirective>>,
 }
 
 impl std::fmt::Display for String {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.kind)
+        match self.kind {
+            StringKind::BasicString => write!(f, "{}", to_basic_string(&self.value)),
+            StringKind::LiteralString => write!(f, "{}", to_literal_string(&self.value)),
+            StringKind::MultiLineBasicString => {
+                write!(f, "{}", to_multi_line_basic_string(&self.value))
+            }
+            StringKind::MultiLineLiteralString => {
+                write!(f, "{}", to_multi_line_literal_string(&self.value))
+            }
+        }
     }
 }
 
@@ -43,38 +42,30 @@ impl crate::String {
     pub fn try_new(
         kind: StringKind,
         quoted_string: impl Into<std::string::String>,
+        range: tombi_text::Range,
         toml_version: TomlVersion,
     ) -> Result<Self, tombi_toml_text::ParseError> {
         let quoted_string = quoted_string.into();
 
-        let (value, leading_comments, trailing_comment) = match &kind {
-            StringKind::BasicString(node) => (
-                tombi_toml_text::try_from_basic_string(&quoted_string, toml_version)?,
-                node.leading_comments().map(Comment::from).collect_vec(),
-                node.trailing_comment().map(Comment::from),
-            ),
-            StringKind::LiteralString(node) => (
-                tombi_toml_text::try_from_literal_string(&quoted_string)?,
-                node.leading_comments().map(Comment::from).collect_vec(),
-                node.trailing_comment().map(Comment::from),
-            ),
-            StringKind::MultiLineBasicString(node) => (
-                tombi_toml_text::try_from_multi_line_basic_string(&quoted_string, toml_version)?,
-                node.leading_comments().map(Comment::from).collect_vec(),
-                node.trailing_comment().map(Comment::from),
-            ),
-            StringKind::MultiLineLiteralString(node) => (
-                tombi_toml_text::try_from_multi_line_literal_string(&quoted_string)?,
-                node.leading_comments().map(Comment::from).collect_vec(),
-                node.trailing_comment().map(Comment::from),
-            ),
+        let value = match &kind {
+            StringKind::BasicString => {
+                tombi_toml_text::try_from_basic_string(&quoted_string, toml_version)?
+            }
+            StringKind::LiteralString => tombi_toml_text::try_from_literal_string(&quoted_string)?,
+            StringKind::MultiLineBasicString => {
+                tombi_toml_text::try_from_multi_line_basic_string(&quoted_string, toml_version)?
+            }
+            StringKind::MultiLineLiteralString => {
+                tombi_toml_text::try_from_multi_line_literal_string(&quoted_string)?
+            }
         };
 
         Ok(Self {
             kind,
             value,
-            leading_comments,
-            trailing_comment,
+            range,
+            symbol_range: range,
+            comment_directive: None,
         })
     }
 
@@ -95,39 +86,20 @@ impl crate::String {
 
     #[inline]
     pub fn range(&self) -> tombi_text::Range {
-        match self.kind() {
-            StringKind::BasicString(node) => node.token(),
-            StringKind::LiteralString(node) => node.token(),
-            StringKind::MultiLineBasicString(node) => node.token(),
-            StringKind::MultiLineLiteralString(node) => node.token(),
-        }
-        .unwrap()
-        .range()
+        self.range
     }
 
     #[inline]
     pub fn unquoted_range(&self) -> tombi_text::Range {
         match self.kind() {
-            StringKind::BasicString(node) => {
-                let mut range = node.token().unwrap().range();
+            StringKind::BasicString | StringKind::LiteralString => {
+                let mut range = self.range;
                 range.start.column += 1;
                 range.end.column -= 1;
                 range
             }
-            StringKind::LiteralString(node) => {
-                let mut range = node.token().unwrap().range();
-                range.start.column += 1;
-                range.end.column -= 1;
-                range
-            }
-            StringKind::MultiLineBasicString(node) => {
-                let mut range = node.token().unwrap().range();
-                range.start.column += 3;
-                range.end.column -= 3;
-                range
-            }
-            StringKind::MultiLineLiteralString(node) => {
-                let mut range = node.token().unwrap().range();
+            StringKind::MultiLineBasicString | StringKind::MultiLineLiteralString => {
+                let mut range = self.range;
                 range.start.column += 3;
                 range.end.column -= 3;
                 range
@@ -141,13 +113,8 @@ impl crate::String {
     }
 
     #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        self.leading_comments.as_ref()
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
+    pub fn comment_directive(&self) -> Option<&StringTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 }
 
@@ -175,8 +142,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::BasicString {
         };
 
         match crate::String::try_new(
-            StringKind::BasicString(self),
+            StringKind::BasicString,
             token.text().to_string(),
+            token.range(),
             toml_version,
         ) {
             Ok(string) => DocumentTreeAndErrors {
@@ -205,8 +173,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LiteralString {
         };
 
         match crate::String::try_new(
-            StringKind::LiteralString(self),
+            StringKind::LiteralString,
             token.text().to_string(),
+            token.range(),
             toml_version,
         ) {
             Ok(string) => DocumentTreeAndErrors {
@@ -235,8 +204,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::MultiLineBasicString
         };
 
         match crate::String::try_new(
-            StringKind::MultiLineBasicString(self),
+            StringKind::MultiLineBasicString,
             token.text().to_string(),
+            token.range(),
             toml_version,
         ) {
             Ok(string) => DocumentTreeAndErrors {
@@ -265,8 +235,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::MultiLineLiteralStri
         };
 
         match crate::String::try_new(
-            StringKind::MultiLineLiteralString(self),
+            StringKind::MultiLineLiteralString,
             token.text().to_string(),
+            token.range(),
             toml_version,
         ) {
             Ok(string) => DocumentTreeAndErrors {

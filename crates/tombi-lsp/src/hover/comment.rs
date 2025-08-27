@@ -1,4 +1,3 @@
-use tombi_ast::TombiValueCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
@@ -122,21 +121,5 @@ pub async fn get_document_comment_directive_hover_info(
             }
         }
     }
-    None
-}
-
-pub async fn get_value_comment_directive_hover_info(
-    comment: &tombi_document_tree::Comment,
-    position: tombi_text::Position,
-) -> Option<HoverContent> {
-    let Some(TombiValueCommentDirective {
-        directive_range, ..
-    }) = comment.get_tombi_value_directive()
-    else {
-        return None;
-    };
-
-    if directive_range.contains(position) {}
-
     None
 }
