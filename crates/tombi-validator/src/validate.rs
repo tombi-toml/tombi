@@ -64,3 +64,15 @@ pub fn validate<'a: 'b, 'b>(
     }
     .boxed()
 }
+
+fn type_mismatch(
+    expected: tombi_schema_store::ValueType,
+    actual: tombi_document_tree::ValueType,
+    range: tombi_text::Range,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    Err(vec![crate::Error {
+        kind: crate::ErrorKind::TypeMismatch { expected, actual },
+        range,
+    }
+    .into()])
+}

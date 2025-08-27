@@ -2,7 +2,9 @@ use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::ValueType;
+use tombi_schema_store::ValueSchema;
+
+use crate::validate::type_mismatch;
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -15,32 +17,13 @@ impl Validate for tombi_document_tree::Float {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
-            let mut diagnostics = vec![];
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.value_type().await {
-                    ValueType::Float
-                    | ValueType::OneOf(_)
-                    | ValueType::AnyOf(_)
-                    | ValueType::AllOf(_) => {}
-                    ValueType::Null => return Ok(()),
-                    value_schema => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch {
-                                expected: value_schema,
-                                actual: self.value_type(),
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-
-                        return Err(diagnostics);
+                match current_schema.value_schema.as_ref() {
+                    ValueSchema::Float(float_schema) => {
+                        validate_float(self, accessors, float_schema).await
                     }
-                }
-
-                let float_schema = match current_schema.value_schema.as_ref() {
-                    tombi_schema_store::ValueSchema::Float(float_schema) => float_schema,
-                    tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                        return validate_one_of(
+                    ValueSchema::OneOf(one_of_schema) => {
+                        validate_one_of(
                             self,
                             accessors,
                             one_of_schema,
@@ -50,8 +33,8 @@ impl Validate for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                        return validate_any_of(
+                    ValueSchema::AnyOf(any_of_schema) => {
+                        validate_any_of(
                             self,
                             accessors,
                             any_of_schema,
@@ -61,8 +44,8 @@ impl Validate for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                        return validate_all_of(
+                    ValueSchema::AllOf(all_of_schema) => {
+                        validate_all_of(
                             self,
                             accessors,
                             all_of_schema,
@@ -72,122 +55,137 @@ impl Validate for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    _ => unreachable!("Expected a Float schema"),
-                };
-
-                let value = self.value();
-
-                if let Some(const_value) = &float_schema.const_value {
-                    if (value - *const_value).abs() > f64::EPSILON {
-                        crate::Error {
-                            kind: crate::ErrorKind::Const {
-                                expected: const_value.to_string(),
-                                actual: value.to_string(),
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
+                    ValueSchema::Null => return Ok(()),
+                    value_schema => type_mismatch(
+                        value_schema.value_type().await,
+                        self.value_type(),
+                        self.range(),
+                    ),
                 }
-
-                if let Some(enumerate) = &float_schema.enumerate {
-                    if !enumerate.contains(&value) {
-                        crate::Error {
-                            kind: crate::ErrorKind::Enumerate {
-                                expected: enumerate.iter().map(ToString::to_string).collect(),
-                                actual: value.to_string(),
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if let Some(maximum) = &float_schema.maximum {
-                    if value > *maximum {
-                        crate::Error {
-                            kind: crate::ErrorKind::FloatMaximum {
-                                maximum: *maximum,
-                                actual: value,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if let Some(minimum) = &float_schema.minimum {
-                    if value < *minimum {
-                        crate::Error {
-                            kind: crate::ErrorKind::FloatMinimum {
-                                minimum: *minimum,
-                                actual: value,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
-                    if value >= *exclusive_maximum {
-                        crate::Error {
-                            kind: crate::ErrorKind::FloatExclusiveMaximum {
-                                maximum: *exclusive_maximum,
-                                actual: value,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
-                    if value <= *exclusive_minimum {
-                        crate::Error {
-                            kind: crate::ErrorKind::FloatExclusiveMinimum {
-                                minimum: *exclusive_minimum,
-                                actual: value,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if let Some(multiple_of) = &float_schema.multiple_of {
-                    if (value % *multiple_of).abs() > f64::EPSILON {
-                        crate::Error {
-                            kind: crate::ErrorKind::FloatMultipleOf {
-                                multiple_of: *multiple_of,
-                                actual: value,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if diagnostics.is_empty() {
-                    if float_schema.deprecated == Some(true) {
-                        crate::Warning {
-                            kind: Box::new(crate::WarningKind::DeprecatedValue(
-                                tombi_schema_store::SchemaAccessors::from(accessors),
-                                value.to_string(),
-                            )),
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-            }
-
-            if diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(diagnostics)
+                Ok(())
             }
         }
         .boxed()
+    }
+}
+
+async fn validate_float(
+    float_value: &tombi_document_tree::Float,
+    accessors: &[tombi_schema_store::Accessor],
+    float_schema: &tombi_schema_store::FloatSchema,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
+    let value = float_value.value();
+    let range = float_value.range();
+
+    if let Some(const_value) = &float_schema.const_value {
+        if (value - *const_value).abs() > f64::EPSILON {
+            crate::Error {
+                kind: crate::ErrorKind::Const {
+                    expected: const_value.to_string(),
+                    actual: value.to_string(),
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(enumerate) = &float_schema.enumerate {
+        if !enumerate.contains(&value) {
+            crate::Error {
+                kind: crate::ErrorKind::Enumerate {
+                    expected: enumerate.iter().map(ToString::to_string).collect(),
+                    actual: value.to_string(),
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(maximum) = &float_schema.maximum {
+        if value > *maximum {
+            crate::Error {
+                kind: crate::ErrorKind::FloatMaximum {
+                    maximum: *maximum,
+                    actual: value,
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(minimum) = &float_schema.minimum {
+        if value < *minimum {
+            crate::Error {
+                kind: crate::ErrorKind::FloatMinimum {
+                    minimum: *minimum,
+                    actual: value,
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
+        if value >= *exclusive_maximum {
+            crate::Error {
+                kind: crate::ErrorKind::FloatExclusiveMaximum {
+                    maximum: *exclusive_maximum,
+                    actual: value,
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
+        if value <= *exclusive_minimum {
+            crate::Error {
+                kind: crate::ErrorKind::FloatExclusiveMinimum {
+                    minimum: *exclusive_minimum,
+                    actual: value,
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(multiple_of) = &float_schema.multiple_of {
+        if (value % *multiple_of).abs() > f64::EPSILON {
+            crate::Error {
+                kind: crate::ErrorKind::FloatMultipleOf {
+                    multiple_of: *multiple_of,
+                    actual: value,
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if diagnostics.is_empty() {
+        if float_schema.deprecated == Some(true) {
+            crate::Warning {
+                kind: Box::new(crate::WarningKind::DeprecatedValue(
+                    tombi_schema_store::SchemaAccessors::from(accessors),
+                    value.to_string(),
+                )),
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }

@@ -2,7 +2,9 @@ use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document_tree::{OffsetDateTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::ValueType;
+use tombi_schema_store::ValueSchema;
+
+use crate::validate::type_mismatch;
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -15,35 +17,13 @@ impl Validate for OffsetDateTime {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
-            let mut diagnostics = vec![];
-
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.value_type().await {
-                    ValueType::OffsetDateTime
-                    | ValueType::OneOf(_)
-                    | ValueType::AnyOf(_)
-                    | ValueType::AllOf(_) => {}
-                    ValueType::Null => return Ok(()),
-                    value_schema => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch {
-                                expected: value_schema,
-                                actual: self.value_type(),
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-
-                        return Err(diagnostics);
+                match current_schema.value_schema.as_ref() {
+                    ValueSchema::OffsetDateTime(offset_date_time_schema) => {
+                        validate_offset_date_time(self, accessors, offset_date_time_schema).await
                     }
-                }
-
-                let offset_date_time_schema = match current_schema.value_schema.as_ref() {
-                    tombi_schema_store::ValueSchema::OffsetDateTime(offset_date_time_schema) => {
-                        offset_date_time_schema
-                    }
-                    tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                        return validate_one_of(
+                    ValueSchema::OneOf(one_of_schema) => {
+                        validate_one_of(
                             self,
                             accessors,
                             one_of_schema,
@@ -53,8 +33,8 @@ impl Validate for OffsetDateTime {
                         )
                         .await
                     }
-                    tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                        return validate_any_of(
+                    ValueSchema::AnyOf(any_of_schema) => {
+                        validate_any_of(
                             self,
                             accessors,
                             any_of_schema,
@@ -64,8 +44,8 @@ impl Validate for OffsetDateTime {
                         )
                         .await
                     }
-                    tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                        return validate_all_of(
+                    ValueSchema::AllOf(all_of_schema) => {
+                        validate_all_of(
                             self,
                             accessors,
                             all_of_schema,
@@ -75,57 +55,72 @@ impl Validate for OffsetDateTime {
                         )
                         .await
                     }
-                    _ => unreachable!("Expected an OffsetDateTime schema"),
-                };
-
-                let value_string = self.node().to_string();
-
-                if let Some(const_value) = &offset_date_time_schema.const_value {
-                    if value_string != *const_value {
-                        crate::Error {
-                            kind: crate::ErrorKind::Const {
-                                expected: const_value.clone(),
-                                actual: value_string.clone(),
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
+                    ValueSchema::Null => return Ok(()),
+                    value_schema => type_mismatch(
+                        value_schema.value_type().await,
+                        self.value_type(),
+                        self.range(),
+                    ),
                 }
-
-                if let Some(enumerate) = &offset_date_time_schema.enumerate {
-                    if !enumerate.contains(&value_string) {
-                        crate::Error {
-                            kind: crate::ErrorKind::Enumerate {
-                                expected: enumerate.iter().map(ToString::to_string).collect(),
-                                actual: value_string.clone(),
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-
-                if diagnostics.is_empty() {
-                    if offset_date_time_schema.deprecated == Some(true) {
-                        crate::Warning {
-                            kind: Box::new(crate::WarningKind::DeprecatedValue(
-                                tombi_schema_store::SchemaAccessors::from(accessors),
-                                value_string,
-                            )),
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                    }
-                }
-            }
-
-            if diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(diagnostics)
+                Ok(())
             }
         }
         .boxed()
+    }
+}
+
+async fn validate_offset_date_time(
+    offset_date_time_value: &OffsetDateTime,
+    accessors: &[tombi_schema_store::Accessor],
+    offset_date_time_schema: &tombi_schema_store::OffsetDateTimeSchema,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
+    let value_string = offset_date_time_value.node().to_string();
+    let range = offset_date_time_value.range();
+
+    if let Some(const_value) = &offset_date_time_schema.const_value {
+        if value_string != *const_value {
+            crate::Error {
+                kind: crate::ErrorKind::Const {
+                    expected: const_value.clone(),
+                    actual: value_string.clone(),
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if let Some(enumerate) = &offset_date_time_schema.enumerate {
+        if !enumerate.contains(&value_string) {
+            crate::Error {
+                kind: crate::ErrorKind::Enumerate {
+                    expected: enumerate.iter().map(ToString::to_string).collect(),
+                    actual: value_string.clone(),
+                },
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if diagnostics.is_empty() {
+        if offset_date_time_schema.deprecated == Some(true) {
+            crate::Warning {
+                kind: Box::new(crate::WarningKind::DeprecatedValue(
+                    tombi_schema_store::SchemaAccessors::from(accessors),
+                    value_string,
+                )),
+                range,
+            }
+            .set_diagnostics(&mut diagnostics);
+        }
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }
