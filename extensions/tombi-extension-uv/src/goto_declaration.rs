@@ -3,7 +3,7 @@ use std::str::FromStr;
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_keys, Value};
-use tombi_schema_store::{dig_accessors, matches_accessors};
+use tombi_schema_store::matches_accessors;
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml,
@@ -66,7 +66,9 @@ fn goto_declaration_for_dependency_package(
     toml_version: TomlVersion,
 ) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
     // Get the dependency string from the current position
-    let Some((_, Value::String(dependency))) = dig_accessors(document_tree, accessors) else {
+    let Some((_, Value::String(dependency))) =
+        tombi_extension::dig_accessors(document_tree, accessors)
+    else {
         return Ok(None);
     };
 

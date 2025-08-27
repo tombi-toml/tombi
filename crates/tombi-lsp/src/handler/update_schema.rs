@@ -17,7 +17,7 @@ pub async fn handle_update_schema(
 
     match backend
         .config_manager
-        .update_schema(&SchemaUri::new(uri.into()))
+        .update_schema(&SchemaUri::from(uri))
         .await
     {
         Ok(is_updated) => Ok(is_updated),

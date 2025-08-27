@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::Backend;
 
 #[derive(Debug, serde::Deserialize)]
@@ -31,8 +33,8 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
     tracing::info!("handle_associate_schema");
     tracing::trace!(?params);
 
-    let Ok(schema_uri) = tombi_schema_store::SchemaUri::parse(&params.uri) else {
-        tracing::error!("Invalid schema URL");
+    let Ok(schema_uri) = tombi_schema_store::SchemaUri::from_str(&params.uri) else {
+        tracing::error!("Invalid schema URL: {}", params.uri);
         return;
     };
 

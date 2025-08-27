@@ -1,7 +1,6 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::CompletionContent;
-use tombi_schema_store::get_accessors;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionParams, CompletionTriggerKind, TextDocumentPositionParams,
 };
@@ -149,7 +148,7 @@ pub async fn handle_completion(
         .await,
     );
 
-    let accessors = get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_extension::get_accessors(&document_tree, &keys, position);
     if let Some(items) = tombi_extension_cargo::completion(
         &text_document_uri,
         &document_tree,

@@ -1,13 +1,13 @@
 use crate::{
     code_action::{dot_keys_to_inline_table_code_action, inline_table_to_dot_keys_code_action},
+    completion::get_completion_keys_with_context,
     config_manager::ConfigSchemaStore,
     Backend,
 };
 use itertools::Either;
 use tombi_document_tree::TryIntoDocumentTree;
-use tombi_schema_store::{
-    build_accessor_contexts, get_accessors, get_completion_keys_with_context,
-};
+use tombi_extension::get_accessors;
+use tombi_schema_store::build_accessor_contexts;
 use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
 
 pub async fn handle_code_action(

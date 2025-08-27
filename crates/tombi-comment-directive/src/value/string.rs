@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use tombi_schema_store::SchemaUri;
 use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_uri::SchemaUri;
 
 use crate::{
     CommonValueTombiCommentDirectiveRules, TombiCommentDirectiveImpl,

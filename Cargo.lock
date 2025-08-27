@@ -3503,11 +3503,21 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-json",
- "tombi-schema-store",
  "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
+ "tombi-uri",
  "tombi-x-keyword",
+]
+
+[[package]]
+name = "tombi-comment-directive-store"
+version = "0.0.0-dev"
+dependencies = [
+ "tokio",
+ "tombi-json",
+ "tombi-schema-store",
+ "tombi-uri",
 ]
 
 [[package]]
@@ -3579,6 +3589,7 @@ dependencies = [
  "itertools 0.14.0",
  "thiserror 2.0.12",
  "tombi-ast",
+ "tombi-comment-directive",
  "tombi-date-time",
  "tombi-diagnostic",
  "tombi-text",
@@ -3590,6 +3601,7 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-document-tree",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3802,6 +3814,7 @@ dependencies = [
  "tombi-ast",
  "tombi-cache",
  "tombi-comment-directive",
+ "tombi-comment-directive-store",
  "tombi-config",
  "tombi-date-time",
  "tombi-diagnostic",
@@ -3967,6 +3980,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tombi-ast",
  "tombi-comment-directive",
+ "tombi-comment-directive-store",
  "tombi-diagnostic",
  "tombi-document",
  "tombi-document-tree",

@@ -33,7 +33,12 @@ impl FindCompletionContents for tombi_document_tree::Table {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if keys.is_empty() && self.kind() != tombi_document_tree::TableKind::InlineTable {
+            if keys.is_empty()
+                && !matches!(
+                    self.kind(),
+                    tombi_document_tree::TableKind::InlineTable { .. }
+                )
+            {
                 // Skip if the cursor is the end space of key value like:
                 //
                 // ```toml
@@ -786,10 +791,12 @@ fn check_used_table_value(
             }
         }
         tombi_document_tree::Value::Table(table) => {
-            if table.kind() == tombi_document_tree::TableKind::InlineTable
-                || (is_root
-                    && completion_hint.is_none()
-                    && table.kind() == tombi_document_tree::TableKind::Table)
+            if matches!(
+                table.kind(),
+                tombi_document_tree::TableKind::InlineTable { .. }
+            ) || (is_root
+                && completion_hint.is_none()
+                && table.kind() == tombi_document_tree::TableKind::Table)
             {
                 return true;
             }

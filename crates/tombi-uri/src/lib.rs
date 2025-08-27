@@ -1,3 +1,8 @@
+mod catalog_uri;
+mod schema_uri;
+
+pub use catalog_uri::CatalogUri;
+pub use schema_uri::SchemaUri;
 pub use url::ParseError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

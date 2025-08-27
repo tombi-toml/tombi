@@ -12,10 +12,10 @@ serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tombi-json.workspace = true
-tombi-schema-store.workspace = true
 tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-toml-version.workspace = true
+tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
 
 [features]

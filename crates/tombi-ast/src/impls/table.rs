@@ -4,19 +4,37 @@ use tombi_toml_version::TomlVersion;
 use crate::{support, ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable};
 
 impl crate::Table {
-    pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
-        support::node::leading_comments(self.syntax().children_with_tokens())
-    }
-
-    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
-        support::node::trailing_comment(self.syntax().children_with_tokens(), T!(']'))
-    }
-
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
         self.bracket_start().unwrap().range().end <= position
             && position <= self.bracket_end().unwrap().range().start
     }
 
+    /// The leading comments of the table header.
+    ///
+    /// ```toml
+    /// # This comment
+    /// [table]
+    /// ```
+    pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
+        support::node::leading_comments(self.syntax().children_with_tokens())
+    }
+
+    /// The trailing comment of the table header.
+    ///
+    /// ```toml
+    /// [table]  # This comment
+    /// ```
+    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
+        support::node::trailing_comment(self.syntax().children_with_tokens(), T!(']'))
+    }
+
+    /// The dangling comments of the table (without key-value pairs).
+    ///
+    /// ```toml
+    /// [table]
+    /// # This comments
+    /// # This comments
+    /// ```
     pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
         support::node::dangling_comments(
             self.syntax()
@@ -27,6 +45,14 @@ impl crate::Table {
         )
     }
 
+    /// The begin dangling comments of the table.
+    ///
+    /// ```toml
+    /// [table]
+    /// # This comments
+    /// # This comments
+    /// key = "value"
+    /// ```
     pub fn key_values_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
         support::node::begin_dangling_comments(
             self.syntax()
@@ -37,6 +63,14 @@ impl crate::Table {
         )
     }
 
+    /// The end dangling comments of the table.
+    ///
+    /// ```toml
+    /// [table]
+    /// key = "value"
+    /// # This comments
+    /// # This comments
+    /// ```
     pub fn key_values_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
         support::node::end_dangling_comments(self.syntax().children_with_tokens())
     }

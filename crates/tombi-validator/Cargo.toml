@@ -16,6 +16,7 @@ serde.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
 tombi-comment-directive.workspace = true
+tombi-comment-directive-store.workspace = true
 tombi-diagnostic.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true

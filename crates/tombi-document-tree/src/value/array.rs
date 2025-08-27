@@ -1,9 +1,8 @@
-use itertools::Itertools;
 use tombi_ast::AstNode;
 
 use crate::{
-    support::comment::try_new_comment, Comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
-    Value, ValueImpl, ValueType,
+    support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Value,
+    ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -46,10 +45,7 @@ pub struct Array {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
-    leading_comments: Vec<Comment>,
-    trailing_comment: Option<Comment>,
-    inner_begin_dangling_comments: Vec<Vec<Comment>>,
-    inner_end_dangling_comments: Vec<Vec<Comment>>,
+    comment_directive: Option<Box<tombi_comment_directive::ArrayTombiCommentDirective>>,
 }
 
 impl Array {
@@ -64,21 +60,7 @@ impl Array {
                 }
                 _ => node.range(),
             },
-            leading_comments: node
-                .leading_comments()
-                .map(crate::Comment::from)
-                .collect_vec(),
-            trailing_comment: node.trailing_comment().map(crate::Comment::from),
-            inner_begin_dangling_comments: node
-                .inner_begin_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
-            inner_end_dangling_comments: node
-                .inner_end_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
+            comment_directive: None,
         }
     }
 
@@ -88,10 +70,7 @@ impl Array {
             values: vec![],
             range: table.range(),
             symbol_range: table.symbol_range(),
-            leading_comments: table.leading_comments().to_vec(),
-            trailing_comment: table.trailing_comment().cloned(),
-            inner_begin_dangling_comments: table.key_values_begin_dangling_comments().to_vec(),
-            inner_end_dangling_comments: table.key_values_end_dangling_comments().to_vec(),
+            comment_directive: None,
         }
     }
 
@@ -101,10 +80,7 @@ impl Array {
             values: vec![],
             range: table.range(),
             symbol_range: table.symbol_range(),
-            leading_comments: table.leading_comments().to_vec(),
-            trailing_comment: table.trailing_comment().cloned(),
-            inner_begin_dangling_comments: table.key_values_begin_dangling_comments().to_vec(),
-            inner_end_dangling_comments: table.key_values_end_dangling_comments().to_vec(),
+            comment_directive: None,
         }
     }
 
@@ -193,14 +169,10 @@ impl Array {
         self.symbol_range
     }
 
-    #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        self.leading_comments.as_ref()
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
+    pub fn comment_directive(
+        &self,
+    ) -> Option<&tombi_comment_directive::ArrayTombiCommentDirective> {
+        self.comment_directive.as_ref().map(|c| c.as_ref())
     }
 
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {

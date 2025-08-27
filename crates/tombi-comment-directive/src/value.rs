@@ -24,6 +24,36 @@ pub use string::*;
 pub use table::*;
 use tombi_severity_level::SeverityLevelDefaultError;
 
+pub type BooleanTombiCommentDirective =
+    ValueTombiCommentDirective<BooleanValueTombiCommentDirectiveRules>;
+
+pub type IntegerTombiCommentDirective =
+    ValueTombiCommentDirective<IntegerValueTombiCommentDirectiveRules>;
+
+pub type FloatTombiCommentDirective =
+    ValueTombiCommentDirective<FloatValueTombiCommentDirectiveRules>;
+
+pub type StringTombiCommentDirective =
+    ValueTombiCommentDirective<StringValueTombiCommentDirectiveRules>;
+
+pub type OffsetDateTimeTombiCommentDirective =
+    ValueTombiCommentDirective<OffsetDateTimeValueTombiCommentDirectiveRules>;
+
+pub type LocalDateTimeTombiCommentDirective =
+    ValueTombiCommentDirective<LocalDateTimeValueTombiCommentDirectiveRules>;
+
+pub type LocalDateTombiCommentDirective =
+    ValueTombiCommentDirective<LocalDateValueTombiCommentDirectiveRules>;
+
+pub type LocalTimeTombiCommentDirective =
+    ValueTombiCommentDirective<LocalTimeValueTombiCommentDirectiveRules>;
+
+pub type ArrayTombiCommentDirective =
+    ValueTombiCommentDirective<ArrayValueTombiCommentDirectiveRules>;
+
+pub type TableTombiCommentDirective =
+    ValueTombiCommentDirective<TableValueTombiCommentDirectiveRules>;
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(bound = "T: serde::de::DeserializeOwned + serde::Serialize + TombiCommentDirectiveImpl")]

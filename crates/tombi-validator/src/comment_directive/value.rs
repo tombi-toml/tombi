@@ -1,8 +1,7 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    schema_store, KeyTombiCommentDirectiveRules, TombiCommentDirectiveImpl,
-    ValueTombiCommentDirective, WithKeyTombiCommentDirectiveRules,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    KeyTombiCommentDirectiveRules, TombiCommentDirectiveImpl, ValueTombiCommentDirective,
+    WithKeyTombiCommentDirectiveRules, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
@@ -105,7 +104,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
 ) {
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
-    let schema_store = schema_store().await;
+    let schema_store = tombi_comment_directive_store::schema_store().await;
 
     for tombi_ast::TombiValueCommentDirective {
         content,

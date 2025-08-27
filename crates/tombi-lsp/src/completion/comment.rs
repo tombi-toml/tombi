@@ -124,12 +124,12 @@ async fn document_tombi_directive_completion_contents(
         let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
         let document_schema =
-            tombi_comment_directive::document_comment_directive_document_schema().await;
+            tombi_comment_directive_store::document_comment_directive_document_schema().await;
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version,
             root_schema: Some(&document_schema),
             sub_schema_uri_map: None,
-            store: tombi_comment_directive::schema_store().await,
+            store: tombi_comment_directive_store::schema_store().await,
             strict: None,
         };
 

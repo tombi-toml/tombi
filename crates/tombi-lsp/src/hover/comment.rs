@@ -87,10 +87,10 @@ pub async fn get_document_comment_directive_hover_info(
                             };
 
                             let document_schema =
-                                tombi_comment_directive::document_comment_directive_document_schema()
+                                tombi_comment_directive_store::document_comment_directive_document_schema()
                                     .await;
 
-                            let schema_store = tombi_comment_directive::schema_store().await;
+                            let schema_store = tombi_comment_directive_store::schema_store().await;
                             // Try to use the source schema if available, otherwise fall back to tombi schema
                             let schema_context = tombi_schema_store::SchemaContext {
                                 toml_version,

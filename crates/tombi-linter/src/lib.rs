@@ -323,6 +323,7 @@ mod tests {
     }
 
     mod non_schema {
+        use std::str::FromStr;
         use tombi_schema_store::SchemaUri;
 
         use super::*;
@@ -387,7 +388,7 @@ mod tests {
                 "#,
             ) -> Err([
                 tombi_schema_store::Error::SchemaFetchFailed{
-                    schema_uri: SchemaUri::parse("https://does-not-exist.co.jp").unwrap(),
+                    schema_uri: SchemaUri::from_str("https://does-not-exist.co.jp").unwrap(),
                     reason: "error sending request for url (https://does-not-exist.co.jp/)".to_string(),
                 }
             ]);
