@@ -250,7 +250,7 @@ impl SchemaStore {
                 };
 
                 if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await {
-                    tracing::error!("{err}");
+                    tracing::warn!("{err}");
                 }
 
                 match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
@@ -407,7 +407,7 @@ impl SchemaStore {
                 };
 
                 if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
-                    tracing::error!("{err}");
+                    tracing::warn!("{err}");
                 }
 
                 Ok(Some(
@@ -636,10 +636,10 @@ impl SchemaStore {
                     },
                 },
                 Ok(None) => {
-                    tracing::error!("failed to find document schema: {}", matching_schema.url);
+                    tracing::warn!("failed to find document schema: {}", matching_schema.url);
                 }
                 Err(err) => {
-                    tracing::error!(
+                    tracing::warn!(
                         "failed to get document schema for {url}: {err}",
                         url = matching_schema.url,
                     );

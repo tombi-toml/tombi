@@ -151,7 +151,7 @@ async fn get_schema<'a: 'b, 'b>(
                                             }
                                         }
                                     } else {
-                                        tracing::error!(
+                                        tracing::warn!(
                                             "Invalid regex pattern property: {}",
                                             property_key
                                         );

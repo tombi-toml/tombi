@@ -213,7 +213,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     ) in pattern_properties.write().await.iter_mut()
                                     {
                                         let Ok(pattern) = regex::Regex::new(property_key) else {
-                                            tracing::error!(
+                                            tracing::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
                                             );
@@ -579,7 +579,7 @@ impl FindCompletionContents for TableSchema {
                         .await;
 
                     for error in errors {
-                        tracing::error!("{}", error);
+                        tracing::warn!("{}", error);
                     }
 
                     for schema_candidate in schema_candidates {
@@ -830,7 +830,7 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
             .await;
 
         for error in errors {
-            tracing::error!("{}", error);
+            tracing::warn!("{}", error);
         }
 
         for schema_candidate in schema_candidates {

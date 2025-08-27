@@ -81,12 +81,9 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
         Some(TOMBI_TOML_FILENAME | CONFIG_TOML_FILENAME) => {
             match crate::config::from_str(&config_text, config_path) {
                 Ok(tombi_config) => Ok(Some(tombi_config)),
-                Err(error) => {
-                    tracing::error!(?error);
-                    Err(tombi_config::Error::ConfigFileParseFailed {
-                        config_path: config_path.to_owned(),
-                    })
-                }
+                Err(_) => Err(tombi_config::Error::ConfigFileParseFailed {
+                    config_path: config_path.to_owned(),
+                }),
             }
         }
         Some(PYPROJECT_TOML_FILENAME) => {

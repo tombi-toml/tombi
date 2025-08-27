@@ -318,7 +318,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 return hover_content;
                                             }
                                         } else {
-                                            tracing::error!(
+                                            tracing::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
                                             );
