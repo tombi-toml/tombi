@@ -79,25 +79,27 @@ impl Table {
     }
 
     pub(crate) fn new_inline_table(node: &tombi_ast::InlineTable) -> Self {
+        let has_comment = !node.inner_begin_dangling_comments().is_empty()
+            || !node
+                .inner_end_dangling_comments()
+                .into_iter()
+                .flatten()
+                .collect_vec()
+                .is_empty()
+            || node.has_inner_comments();
+
+        let symbol_range = tombi_text::Range::new(
+            node.brace_start()
+                .map_or_else(|| node.range().start, |brace| brace.range().start),
+            node.brace_end()
+                .map_or_else(|| node.range().end, |brace| brace.range().end),
+        );
+
         Self {
-            kind: TableKind::InlineTable {
-                has_comment: !node.inner_begin_dangling_comments().is_empty()
-                    || !node
-                        .inner_end_dangling_comments()
-                        .into_iter()
-                        .flatten()
-                        .collect_vec()
-                        .is_empty()
-                    || node.has_inner_comments(),
-            },
+            kind: TableKind::InlineTable { has_comment },
             key_values: Default::default(),
             range: node.syntax().range(),
-            symbol_range: tombi_text::Range::new(
-                node.brace_start()
-                    .map_or_else(|| node.range().start, |brace| brace.range().start),
-                node.brace_end()
-                    .map_or_else(|| node.range().end, |brace| brace.range().end),
-            ),
+            symbol_range,
             comment_directive: None,
         }
     }
