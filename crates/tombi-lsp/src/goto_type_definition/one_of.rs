@@ -47,10 +47,7 @@ where
             {
                 if value
                     .validate(
-                        &accessors
-                            .iter()
-                            .map(|accessor| accessor.into())
-                            .collect_vec(),
+                        &accessors,
                         Some(&current_schema),
                         schema_context,
                         comment_context,

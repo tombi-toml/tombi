@@ -26,7 +26,7 @@ use tombi_schema_store::CurrentSchema;
 pub trait Validate {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -63,4 +63,16 @@ pub fn validate<'a: 'b, 'b>(
         Ok(())
     }
     .boxed()
+}
+
+fn type_mismatch(
+    expected: tombi_schema_store::ValueType,
+    actual: tombi_document_tree::ValueType,
+    range: tombi_text::Range,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    Err(vec![crate::Error {
+        kind: crate::ErrorKind::TypeMismatch { expected, actual },
+        range,
+    }
+    .into()])
 }

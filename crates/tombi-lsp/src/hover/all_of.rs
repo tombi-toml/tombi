@@ -138,7 +138,7 @@ where
             HoverValueContent {
                 title,
                 description,
-                accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                 value_type,
                 constraints,
                 schema_uri: Some(schema_uri.to_owned()),
@@ -214,7 +214,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 HoverValueContent {
                     title,
                     description,
-                    accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                     value_type,
                     constraints: None,
                     schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),

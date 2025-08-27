@@ -4,14 +4,14 @@ use itertools::Itertools;
 use tombi_comment_directive::CommentContext;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, SchemaAccessor};
+use tombi_schema_store::{Accessor, CurrentSchema};
 
 use super::get_schema;
 
 impl crate::Edit for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::SchemaAccessor],
+        _accessors: &'a [tombi_schema_store::Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -29,7 +29,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                 .filter_map(|key| {
                     key.try_to_raw_text(schema_context.toml_version)
                         .ok()
-                        .map(SchemaAccessor::Key)
+                        .map(Accessor::Key)
                 })
                 .collect_vec();
 

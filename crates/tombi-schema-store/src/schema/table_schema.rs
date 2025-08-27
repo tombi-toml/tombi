@@ -2,6 +2,7 @@ use std::{borrow::Cow, sync::Arc};
 
 use ahash::AHashMap;
 use indexmap::IndexMap;
+use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_json::StringNode;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
@@ -196,6 +197,18 @@ impl TableSchema {
     #[inline]
     pub fn check_strict_additional_properties_violation(&self, strict: bool) -> bool {
         strict && self.additional_properties.is_none() && self.pattern_properties.is_none()
+    }
+
+    pub async fn accessors(&self) -> Vec<Accessor> {
+        self.properties
+            .read()
+            .await
+            .keys()
+            .map(|accessor| match accessor {
+                SchemaAccessor::Key(key) => Accessor::Key(key.clone()),
+                SchemaAccessor::Index => unreachable!("Table keys should not be index"),
+            })
+            .collect_vec()
     }
 }
 

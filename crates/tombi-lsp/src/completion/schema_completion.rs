@@ -202,7 +202,7 @@ impl FindCompletionContents for SchemaCompletion {
 impl tombi_validator::Validate for SchemaCompletion {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::SchemaAccessor],
+        _accessors: &'a [tombi_schema_store::Accessor],
         _current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
         _comment_context: &'a CommentContext<'a>,

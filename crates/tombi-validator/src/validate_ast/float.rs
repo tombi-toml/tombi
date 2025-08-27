@@ -4,17 +4,15 @@ use tombi_document_tree::support::float::try_from_float;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
 
-use crate::{
-    validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, ValueImpl,
-    },
-    Validate,
+use crate::validate_ast::{
+    all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+    Validate, ValueImpl,
 };
 
 impl Validate for tombi_ast::Float {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -28,18 +26,10 @@ impl Validate for tombi_ast::Float {
                 return Ok(());
             };
 
-            let mut diagnostics = vec![];
-
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     tombi_schema_store::ValueSchema::Float(float_schema) => {
-                        validate_float_schema(
-                            value,
-                            float_schema,
-                            self.range(),
-                            accessors,
-                            &mut diagnostics,
-                        );
+                        validate_float_schema(value, float_schema, self.range(), accessors)
                     }
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
                         return validate_one_of(
@@ -75,24 +65,14 @@ impl Validate for tombi_ast::Float {
                         .await
                     }
                     tombi_schema_store::ValueSchema::Null => return Ok(()),
-                    schema => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch2 {
-                                expected: schema.value_type().await,
-                                actual: ValueType::Float,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-                        return Err(diagnostics);
-                    }
+                    value_schema => type_mismatch(
+                        value_schema.value_type().await,
+                        ValueType::Float,
+                        self.range(),
+                    ),
                 }
-            }
-
-            if diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(diagnostics)
+                Ok(())
             }
         }
         .boxed()
@@ -114,9 +94,9 @@ pub(crate) fn validate_float_schema(
     value: f64,
     float_schema: &tombi_schema_store::FloatSchema,
     range: tombi_text::Range,
-    accessors: &[tombi_schema_store::SchemaAccessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+    accessors: &[tombi_schema_store::Accessor],
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
     // Validate const value
     if let Some(const_value) = &float_schema.const_value {
         if (value - *const_value).abs() > f64::EPSILON {
@@ -127,7 +107,7 @@ pub(crate) fn validate_float_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -141,7 +121,7 @@ pub(crate) fn validate_float_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -155,7 +135,7 @@ pub(crate) fn validate_float_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -169,7 +149,7 @@ pub(crate) fn validate_float_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -177,11 +157,17 @@ pub(crate) fn validate_float_schema(
     if diagnostics.is_empty() && float_schema.deprecated == Some(true) {
         crate::Warning {
             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                tombi_schema_store::SchemaAccessors::from(accessors),
                 value.to_string(),
             )),
             range,
         }
-        .set_diagnostics(diagnostics);
+        .set_diagnostics(&mut diagnostics);
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }

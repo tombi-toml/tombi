@@ -4,11 +4,11 @@ use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
-use crate::{validate_ast::ValueImpl, Validate};
+use crate::validate_ast::{Validate, ValueImpl};
 
 pub fn validate_all_of<'a: 'b, 'b, T>(
     value: &'a T,
-    accessors: &'a [tombi_schema_store::SchemaAccessor],
+    accessors: &'a [tombi_schema_store::Accessor],
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,

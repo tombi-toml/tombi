@@ -1,14 +1,14 @@
 use tombi_comment_directive::CommentContext;
 use tombi_diagnostic::SetDiagnostics;
-use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::ValueSchema;
+use tombi_schema_store::ValueType;
 
-use crate::validate::type_mismatch;
+use crate::validate_ast::{
+    all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+    Validate, ValueImpl,
+};
 
-use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
-
-impl Validate for tombi_document_tree::Boolean {
+impl Validate for tombi_ast::LocalDateTime {
     fn validate<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [tombi_schema_store::Accessor],
@@ -17,12 +17,21 @@ impl Validate for tombi_document_tree::Boolean {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let Some(token) = self.token() else {
+                return Ok(());
+            };
+
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::Boolean(boolean_schema) => {
-                        validate_boolean(self, accessors, boolean_schema).await
+                    tombi_schema_store::ValueSchema::LocalDateTime(local_date_time_schema) => {
+                        validate_local_date_time(
+                            token.text(),
+                            self.range(),
+                            local_date_time_schema,
+                            accessors,
+                        )
                     }
-                    ValueSchema::OneOf(one_of_schema) => {
+                    tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
                             accessors,
@@ -33,7 +42,7 @@ impl Validate for tombi_document_tree::Boolean {
                         )
                         .await
                     }
-                    ValueSchema::AnyOf(any_of_schema) => {
+                    tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
                         validate_any_of(
                             self,
                             accessors,
@@ -44,7 +53,7 @@ impl Validate for tombi_document_tree::Boolean {
                         )
                         .await
                     }
-                    ValueSchema::AllOf(all_of_schema) => {
+                    tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
                         validate_all_of(
                             self,
                             accessors,
@@ -55,10 +64,10 @@ impl Validate for tombi_document_tree::Boolean {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(()),
+                    tombi_schema_store::ValueSchema::Null => return Ok(()),
                     value_schema => type_mismatch(
                         value_schema.value_type().await,
-                        self.value_type(),
+                        ValueType::LocalDateTime,
                         self.range(),
                     ),
                 }
@@ -70,22 +79,31 @@ impl Validate for tombi_document_tree::Boolean {
     }
 }
 
-async fn validate_boolean(
-    boolean_value: &tombi_document_tree::Boolean,
+impl ValueImpl for tombi_ast::LocalDateTime {
+    fn value_type(&self) -> ValueType {
+        ValueType::LocalDateTime
+    }
+
+    fn range(&self) -> tombi_text::Range {
+        self.range()
+    }
+}
+
+fn validate_local_date_time<'a: 'b, 'b>(
+    string_value: &'a str,
+    range: tombi_text::Range,
+    local_date_time_schema: &tombi_schema_store::LocalDateTimeSchema,
     accessors: &[tombi_schema_store::Accessor],
-    boolean_schema: &tombi_schema_store::BooleanSchema,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
-    let value = boolean_value.value();
-    let range = boolean_value.range();
-
-    if let Some(const_value) = &boolean_schema.const_value {
-        if value != *const_value {
+    // Validate const value
+    if let Some(const_value) = &local_date_time_schema.const_value {
+        if string_value != *const_value {
             crate::Error {
                 kind: crate::ErrorKind::Const {
-                    expected: const_value.to_string(),
-                    actual: value.to_string(),
+                    expected: const_value.clone(),
+                    actual: string_value.to_string(),
                 },
                 range,
             }
@@ -93,12 +111,12 @@ async fn validate_boolean(
         }
     }
 
-    if let Some(enumerate) = &boolean_schema.enumerate {
-        if !enumerate.contains(&value) {
+    if let Some(enumerate) = &local_date_time_schema.enumerate {
+        if enumerate.iter().any(|s| s != string_value) {
             crate::Error {
                 kind: crate::ErrorKind::Enumerate {
                     expected: enumerate.iter().map(ToString::to_string).collect(),
-                    actual: value.to_string(),
+                    actual: string_value.to_string(),
                 },
                 range,
             }
@@ -107,11 +125,11 @@ async fn validate_boolean(
     }
 
     if diagnostics.is_empty() {
-        if boolean_schema.deprecated == Some(true) {
+        if local_date_time_schema.deprecated == Some(true) {
             crate::Warning {
                 kind: Box::new(crate::WarningKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(accessors),
-                    value.to_string(),
+                    string_value.to_string(),
                 )),
                 range,
             }

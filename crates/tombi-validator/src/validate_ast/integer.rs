@@ -8,14 +8,14 @@ use tombi_schema_store::ValueType;
 
 use crate::validate_ast::all_of::validate_all_of;
 use crate::validate_ast::any_of::validate_any_of;
+use crate::validate_ast::float::validate_float_schema;
 use crate::validate_ast::one_of::validate_one_of;
-use crate::validate_ast::{validate_float_schema, ValueImpl};
-use crate::Validate;
+use crate::validate_ast::{type_mismatch, Validate, ValueImpl};
 
 impl Validate for tombi_ast::IntegerBin {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -45,7 +45,7 @@ impl Validate for tombi_ast::IntegerBin {
 impl Validate for tombi_ast::IntegerDec {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -75,7 +75,7 @@ impl Validate for tombi_ast::IntegerDec {
 impl Validate for tombi_ast::IntegerHex {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -105,7 +105,7 @@ impl Validate for tombi_ast::IntegerHex {
 impl Validate for tombi_ast::IntegerOct {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -175,7 +175,7 @@ impl ValueImpl for tombi_ast::IntegerOct {
 fn validate_integer<'a: 'b, 'b, T>(
     integer_value: i64,
     value: &'a T,
-    accessors: &'a [tombi_schema_store::SchemaAccessor],
+    accessors: &'a [tombi_schema_store::Accessor],
     current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext,
     comment_context: &'a CommentContext<'a>,
@@ -184,30 +184,19 @@ where
     T: Validate + ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
-        let mut diagnostics = vec![];
-
         if let Some(current_schema) = current_schema {
             match current_schema.value_schema.as_ref() {
                 tombi_schema_store::ValueSchema::Integer(integer_schema) => {
-                    validate_integer_schema(
-                        integer_value,
-                        integer_schema,
-                        value.range(),
-                        accessors,
-                        &mut diagnostics,
-                    );
+                    validate_integer_schema(integer_value, value.range(), integer_schema, accessors)
                 }
-                tombi_schema_store::ValueSchema::Float(float_schema) => {
-                    validate_float_schema(
-                        integer_value as f64,
-                        float_schema,
-                        value.range(),
-                        accessors,
-                        &mut diagnostics,
-                    );
-                }
+                tombi_schema_store::ValueSchema::Float(float_schema) => validate_float_schema(
+                    integer_value as f64,
+                    float_schema,
+                    value.range(),
+                    accessors,
+                ),
                 tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                    return validate_one_of(
+                    validate_one_of(
                         value,
                         accessors,
                         one_of_schema,
@@ -218,7 +207,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                    return validate_any_of(
+                    validate_any_of(
                         value,
                         accessors,
                         any_of_schema,
@@ -229,7 +218,7 @@ where
                     .await
                 }
                 tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                    return validate_all_of(
+                    validate_all_of(
                         value,
                         accessors,
                         all_of_schema,
@@ -239,25 +228,15 @@ where
                     )
                     .await
                 }
-                tombi_schema_store::ValueSchema::Null => return Ok(()),
-                schema => {
-                    crate::Error {
-                        kind: crate::ErrorKind::TypeMismatch2 {
-                            expected: schema.value_type().await,
-                            actual: ValueType::Integer,
-                        },
-                        range: value.range(),
-                    }
-                    .set_diagnostics(&mut diagnostics);
-                    return Err(diagnostics);
-                }
+                tombi_schema_store::ValueSchema::Null => Ok(()),
+                value_schema => type_mismatch(
+                    value_schema.value_type().await,
+                    ValueType::Integer,
+                    value.range(),
+                ),
             }
-        }
-
-        if diagnostics.is_empty() {
-            Ok(())
         } else {
-            Err(diagnostics)
+            Ok(())
         }
     }
     .boxed()
@@ -266,11 +245,12 @@ where
 // Helper function to validate integer against integer schema
 fn validate_integer_schema(
     value: i64,
-    integer_schema: &tombi_schema_store::IntegerSchema,
     range: tombi_text::Range,
-    accessors: &[tombi_schema_store::SchemaAccessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+    integer_schema: &tombi_schema_store::IntegerSchema,
+    accessors: &[tombi_schema_store::Accessor],
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
+
     // Validate const value
     if let Some(const_value) = &integer_schema.const_value {
         if value != *const_value {
@@ -281,7 +261,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -295,7 +275,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -309,7 +289,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -323,7 +303,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -337,7 +317,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -351,7 +331,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -365,7 +345,7 @@ fn validate_integer_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -373,11 +353,17 @@ fn validate_integer_schema(
     if diagnostics.is_empty() && integer_schema.deprecated == Some(true) {
         crate::Warning {
             kind: Box::new(crate::WarningKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                tombi_schema_store::SchemaAccessors::from(accessors),
                 value.to_string(),
             )),
             range,
         }
-        .set_diagnostics(diagnostics);
+        .set_diagnostics(&mut diagnostics);
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }

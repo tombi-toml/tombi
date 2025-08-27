@@ -22,7 +22,7 @@ impl std::fmt::Debug for SourceSchema {
             .sub_schema_uri_map
             .iter()
             .map(|(accessors, url)| {
-                format!("[{:?}]: {}", SchemaAccessors::new(accessors.clone()), url)
+                format!("[{:?}]: {}", SchemaAccessors::from(accessors.clone()), url)
             })
             .collect_vec()
             .join(", ");

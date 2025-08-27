@@ -10,7 +10,7 @@ use crate::validate::{all_of::validate_all_of, one_of::validate_one_of};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
     value: &'a T,
-    accessors: &'a [tombi_schema_store::SchemaAccessor],
+    accessors: &'a [tombi_schema_store::Accessor],
     any_of_schema: &'a tombi_schema_store::AnyOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,

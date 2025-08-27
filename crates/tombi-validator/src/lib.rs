@@ -1,5 +1,6 @@
 pub mod comment_directive;
 mod error;
+mod header_accessor;
 mod validate;
 mod validate_ast;
 mod warning;

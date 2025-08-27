@@ -96,7 +96,7 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
                     HoverValueContent {
                         title: None,
                         description: None,
-                        accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                         value_type: tombi_schema_store::ValueType::LocalDateTime,
                         constraints: None,
                         schema_uri: None,
@@ -125,7 +125,7 @@ impl GetHoverContent for LocalDateTimeSchema {
                 HoverValueContent {
                     title: self.title.clone(),
                     description: self.description.clone(),
-                    accessors: tombi_schema_store::Accessors::new(accessors.to_vec()),
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                     value_type: tombi_schema_store::ValueType::LocalDateTime,
                     constraints: Some(ValueConstraints {
                         enumerate: build_enumerate_values(

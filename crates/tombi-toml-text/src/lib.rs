@@ -39,7 +39,7 @@ pub enum ParseError {
     UnicodeKey,
 }
 
-pub fn try_from_bare_key(value: &str, _toml_version: TomlVersion) -> Result<String, ParseError> {
+pub fn try_from_bare_key(value: &str) -> Result<String, ParseError> {
     if value.chars().any(|c| matches!(c, '+')) {
         return Err(ParseError::PlusCharacter);
     }

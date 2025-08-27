@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::CommentContext;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{CurrentSchema, SchemaAccessor, SchemaContext};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
 
 use crate::rule::table_keys_order::{sorted_accessors, table_keys_order};
@@ -50,7 +50,7 @@ pub async fn root_table_keys_order<'a>(
                     .map(|key| {
                         key.keys()
                             .map(|key| {
-                                SchemaAccessor::Key(
+                                Accessor::Key(
                                     key.try_to_raw_text(schema_context.toml_version).unwrap(),
                                 )
                             })

@@ -4,17 +4,15 @@ use tombi_diagnostic::SetDiagnostics;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueType;
 
-use crate::{
-    validate_ast::{
-        all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, ValueImpl,
-    },
-    Validate,
+use crate::validate_ast::{
+    all_of::validate_all_of, any_of::validate_any_of, one_of::validate_one_of, type_mismatch,
+    Validate, ValueImpl,
 };
 
 impl Validate for tombi_ast::Boolean {
     fn validate<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::SchemaAccessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
         comment_context: &'a CommentContext<'a>,
@@ -28,21 +26,13 @@ impl Validate for tombi_ast::Boolean {
                 return Ok(());
             };
 
-            let mut diagnostics = vec![];
-
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     tombi_schema_store::ValueSchema::Boolean(boolean_schema) => {
-                        validate_boolean_schema(
-                            value,
-                            boolean_schema,
-                            self.range(),
-                            accessors,
-                            &mut diagnostics,
-                        );
+                        validate_boolean_schema(value, self.range(), boolean_schema, accessors)
                     }
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                        return validate_one_of(
+                        validate_one_of(
                             self,
                             accessors,
                             one_of_schema,
@@ -53,7 +43,7 @@ impl Validate for tombi_ast::Boolean {
                         .await
                     }
                     tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                        return validate_any_of(
+                        validate_any_of(
                             self,
                             accessors,
                             any_of_schema,
@@ -64,7 +54,7 @@ impl Validate for tombi_ast::Boolean {
                         .await
                     }
                     tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                        return validate_all_of(
+                        validate_all_of(
                             self,
                             accessors,
                             all_of_schema,
@@ -74,26 +64,15 @@ impl Validate for tombi_ast::Boolean {
                         )
                         .await
                     }
-                    tombi_schema_store::ValueSchema::Null => return Ok(()),
-                    schema => {
-                        crate::Error {
-                            kind: crate::ErrorKind::TypeMismatch2 {
-                                expected: schema.value_type().await,
-                                actual: ValueType::Boolean,
-                            },
-                            range: self.range(),
-                        }
-                        .set_diagnostics(&mut diagnostics);
-
-                        return Err(diagnostics);
-                    }
+                    tombi_schema_store::ValueSchema::Null => Ok(()),
+                    value_schema => type_mismatch(
+                        value_schema.value_type().await,
+                        ValueType::Boolean,
+                        self.range(),
+                    ),
                 }
-            }
-
-            if diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(diagnostics)
+                Ok(())
             }
         }
         .boxed()
@@ -112,11 +91,11 @@ impl ValueImpl for tombi_ast::Boolean {
 
 fn validate_boolean_schema(
     value: bool,
-    boolean_schema: &tombi_schema_store::BooleanSchema,
     range: tombi_text::Range,
-    accessors: &[tombi_schema_store::SchemaAccessor],
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
+    boolean_schema: &tombi_schema_store::BooleanSchema,
+    accessors: &[tombi_schema_store::Accessor],
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    let mut diagnostics = vec![];
     if let Some(const_value) = &boolean_schema.const_value {
         if value != *const_value {
             crate::Error {
@@ -126,7 +105,7 @@ fn validate_boolean_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -139,7 +118,7 @@ fn validate_boolean_schema(
                 },
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
     }
 
@@ -147,12 +126,18 @@ fn validate_boolean_schema(
         if boolean_schema.deprecated == Some(true) {
             crate::Warning {
                 kind: Box::new(crate::WarningKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::new(accessors.to_vec()),
+                    tombi_schema_store::SchemaAccessors::from(accessors),
                     value.to_string(),
                 )),
                 range,
             }
-            .set_diagnostics(diagnostics);
+            .set_diagnostics(&mut diagnostics);
         }
+    }
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
     }
 }
