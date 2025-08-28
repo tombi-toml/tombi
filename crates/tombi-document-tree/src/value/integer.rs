@@ -66,10 +66,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerBin {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -79,14 +83,18 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerBin {
                     kind: IntegerKind::Binary,
                     value,
                     range: token.range(),
-                    comment_directives: None,
+                    comment_directives,
                 }),
-                errors: Vec::with_capacity(0),
+                errors,
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseIntError { error, range }],
-            },
+            Err(error) => {
+                errors.push(crate::Error::ParseIntError { error, range });
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }
@@ -97,10 +105,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerOct {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -110,14 +122,18 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerOct {
                     kind: IntegerKind::Octal,
                     value,
                     range: token.range(),
-                    comment_directives: None,
+                    comment_directives,
                 }),
-                errors: Vec::with_capacity(0),
+                errors,
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseIntError { error, range }],
-            },
+            Err(error) => {
+                errors.push(crate::Error::ParseIntError { error, range });
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }
@@ -128,10 +144,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerDec {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -141,14 +161,18 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerDec {
                     kind: IntegerKind::Decimal,
                     value,
                     range: token.range(),
-                    comment_directives: None,
+                    comment_directives,
                 }),
-                errors: Vec::with_capacity(0),
+                errors,
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseIntError { error, range }],
-            },
+            Err(error) => {
+                errors.push(crate::Error::ParseIntError { error, range });
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }

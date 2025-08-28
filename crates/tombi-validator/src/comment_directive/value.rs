@@ -36,19 +36,19 @@ where
 {
     let schema_uri = ValueTombiCommentDirective::<T>::comment_directive_schema_url();
 
-    let (total_document_tree_table, total_diagnostics) =
+    let (document_tree_table, diagnostics) =
         get_comment_directive_document_tree_and_diagnostics(comment_directives, &schema_uri).await;
 
-    if let Some(total_document_tree_table) = total_document_tree_table {
+    if let Some(total_document_tree_table) = document_tree_table {
         (
             ValueTombiCommentDirective::<T>::deserialize(
                 &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             )
             .ok(),
-            total_diagnostics,
+            diagnostics,
         )
     } else {
-        (None, total_diagnostics)
+        (None, diagnostics)
     }
 }
 
@@ -59,7 +59,7 @@ where
     T: serde::de::DeserializeOwned + serde::Serialize,
     ValueTombiCommentDirective<T>: TombiCommentDirectiveImpl,
 {
-    let (comment_directive, total_diagnostics) =
+    let (comment_directive, diagnostics) =
         get_tombi_value_comment_directive_and_diagnostics(comment_directives).await;
 
     if let Some(ValueTombiCommentDirective {
@@ -67,9 +67,9 @@ where
         ..
     }) = comment_directive
     {
-        (rules, total_diagnostics)
+        (rules, diagnostics)
     } else {
-        (None, total_diagnostics)
+        (None, diagnostics)
     }
 }
 
@@ -135,23 +135,21 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
             };
             let document_schema = DocumentSchema::new(object, schema_uri.clone());
 
+            let source_schema = tombi_schema_store::SourceSchema {
+                root_schema: Some(document_schema),
+                sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+            };
+
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-                root_schema: None,
+                root_schema: source_schema.root_schema.as_ref(),
                 sub_schema_uri_map: None,
                 store: schema_store,
                 strict: None,
             };
 
-            if let Err(diagnostics) = crate::validate(
-                document_tree.clone(),
-                Some(&tombi_schema_store::SourceSchema {
-                    root_schema: Some(document_schema),
-                    sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-                }),
-                &schema_context,
-            )
-            .await
+            if let Err(diagnostics) =
+                crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
             {
                 total_diagnostics.extend(
                     diagnostics

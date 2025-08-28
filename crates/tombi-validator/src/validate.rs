@@ -77,14 +77,6 @@ fn type_mismatch(
         .and_then(|common_rules| common_rules.type_mismatch)
         .unwrap_or_default();
 
-    tracing::error!(
-        "type_mismatch: expected = {:?}, actual = {:?}, range = {:?}, level = {:?}",
-        expected,
-        actual,
-        range,
-        level
-    );
-
     crate::Error {
         kind: crate::ErrorKind::TypeMismatch { expected, actual },
         range,
