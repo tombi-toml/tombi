@@ -30,7 +30,7 @@ impl OffsetDateTime {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]
@@ -43,7 +43,6 @@ impl OffsetDateTime {
 pub struct LocalDateTime {
     value: tombi_date_time::LocalDateTime,
     range: tombi_text::Range,
-    symbol_range: tombi_text::Range,
     comment_directive: Option<Box<LocalDateTimeTombiCommentDirective>>,
 }
 
@@ -60,7 +59,7 @@ impl LocalDateTime {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]
@@ -73,7 +72,6 @@ impl LocalDateTime {
 pub struct LocalDate {
     value: tombi_date_time::LocalDate,
     range: tombi_text::Range,
-    symbol_range: tombi_text::Range,
     comment_directive: Option<Box<LocalDateTombiCommentDirective>>,
 }
 
@@ -90,7 +88,7 @@ impl LocalDate {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]
@@ -103,7 +101,6 @@ impl LocalDate {
 pub struct LocalTime {
     value: tombi_date_time::LocalTime,
     range: tombi_text::Range,
-    symbol_range: tombi_text::Range,
     comment_directive: Option<Box<LocalTimeTombiCommentDirective>>,
 }
 
@@ -120,7 +117,7 @@ impl LocalTime {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]
@@ -241,7 +238,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
                 tree: crate::Value::LocalDateTime(crate::LocalDateTime {
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -272,7 +268,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDate {
                 tree: crate::Value::LocalDate(crate::LocalDate {
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -303,7 +298,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalTime {
                 tree: crate::Value::LocalTime(crate::LocalTime {
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
