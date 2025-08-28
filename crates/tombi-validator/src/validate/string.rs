@@ -116,11 +116,11 @@ async fn validate_string(
             .unwrap_or_default();
 
         if value != *const_value {
-            crate::Error {
-                kind: crate::ErrorKind::Const {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
                     expected: format!("\"{const_value}\""),
                     actual: string_value.to_string(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -134,11 +134,11 @@ async fn validate_string(
             .unwrap_or_default();
 
         if !enumerate.contains(&value) {
-            crate::Error {
-                kind: crate::ErrorKind::Enumerate {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enumerate {
                     expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
                     actual: string_value.to_string(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -152,11 +152,11 @@ async fn validate_string(
             .unwrap_or_default();
 
         if value.len() > *max_length {
-            crate::Error {
-                kind: crate::ErrorKind::StringMaximumLength {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::StringMaximumLength {
                     maximum: *max_length,
                     actual: value.len(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -170,11 +170,11 @@ async fn validate_string(
             .unwrap_or_default();
 
         if value.len() < *min_length {
-            crate::Error {
-                kind: crate::ErrorKind::StringMinimumLength {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::StringMinimumLength {
                     minimum: *min_length,
                     actual: value.len(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -190,11 +190,11 @@ async fn validate_string(
         match format {
             StringFormat::Email => {
                 if !format::email::validate_format(&value) {
-                    crate::Error {
-                        kind: crate::ErrorKind::StringFormat {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
                             actual: string_value.to_string(),
-                        },
+                        }),
                         range,
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -202,11 +202,11 @@ async fn validate_string(
             }
             StringFormat::Hostname => {
                 if !format::hostname::validate_format(&value) {
-                    crate::Error {
-                        kind: crate::ErrorKind::StringFormat {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
                             actual: string_value.to_string(),
-                        },
+                        }),
                         range,
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -214,11 +214,11 @@ async fn validate_string(
             }
             StringFormat::Uri => {
                 if !format::uri::validate_format(&value) {
-                    crate::Error {
-                        kind: crate::ErrorKind::StringFormat {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
                             actual: string_value.to_string(),
-                        },
+                        }),
                         range,
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -226,11 +226,11 @@ async fn validate_string(
             }
             StringFormat::Uuid => {
                 if !format::uuid::validate_format(&value) {
-                    crate::Error {
-                        kind: crate::ErrorKind::StringFormat {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
                             actual: string_value.to_string(),
-                        },
+                        }),
                         range,
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -247,11 +247,11 @@ async fn validate_string(
 
         if let Ok(regex) = Regex::new(pattern) {
             if !regex.is_match(&value) {
-                crate::Error {
-                    kind: crate::ErrorKind::StringPattern {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::StringPattern {
                         pattern: pattern.clone(),
                         actual: string_value.to_string(),
-                    },
+                    }),
                     range,
                 }
                 .push_diagnostic_with_level(level, &mut diagnostics);
@@ -268,8 +268,8 @@ async fn validate_string(
             .unwrap_or_default();
 
         if string_schema.deprecated == Some(true) {
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::DeprecatedValue(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                     string_value.to_string(),
                 )),

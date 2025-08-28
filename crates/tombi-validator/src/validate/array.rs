@@ -198,11 +198,11 @@ async fn validate_array(
                 .and_then(|rules| rules.array_max_items)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::ArrayMaxItems {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::ArrayMaxItems {
                     max_values: max_items,
                     actual: array_value.values().len(),
-                },
+                }),
                 range: array_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -216,11 +216,11 @@ async fn validate_array(
                 .and_then(|rules| rules.array_min_items)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::ArrayMinItems {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::ArrayMinItems {
                     min_values: min_items,
                     actual: array_value.values().len(),
-                },
+                }),
                 range: array_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -247,8 +247,8 @@ async fn validate_array(
         for value in array_value.values() {
             if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
                 if duplicated_values.contains(&literal_value) {
-                    crate::Error {
-                        kind: crate::ErrorKind::ArrayUniqueItems,
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueItems),
                         range: value.range(),
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -264,8 +264,8 @@ async fn validate_array(
                 .and_then(|rules| rules.deprecated)
                 .unwrap_or_default();
 
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::Deprecated(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Deprecated(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                 )),
                 range: array_value.range(),

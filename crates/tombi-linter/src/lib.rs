@@ -206,7 +206,7 @@ mod tests {
                 aaa = 1
                 "#,
                 cargo_schema_path(),
-            ) -> Err([tombi_validator::WarningKind::StrictAdditionalProperties {
+            ) -> Err([tombi_validator::DiagnosticKind::StrictAdditionalProperties {
                 accessors: tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
@@ -223,7 +223,7 @@ mod tests {
                 bbb = 1
                 "#,
                 cargo_schema_path(),
-            ) -> Err([tombi_validator::ErrorKind::KeyNotAllowed { key: "aaa".to_string() }]);
+            ) -> Err([tombi_validator::DiagnosticKind::KeyNotAllowed { key: "aaa".to_string() }]);
         }
 
         test_lint! {
@@ -234,7 +234,7 @@ mod tests {
                 name = 1
                 "#,
                 cargo_schema_path(),
-            ) -> Err([tombi_validator::ErrorKind::TypeMismatch {
+            ) -> Err([tombi_validator::DiagnosticKind::TypeMismatch {
                 expected: tombi_schema_store::ValueType::String,
                 actual: tombi_document_tree::ValueType::Integer,
             }]);
@@ -275,7 +275,7 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::WarningKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::from(vec![
+                tombi_validator::DiagnosticKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
                     tombi_schema_store::SchemaAccessor::Index,
                     tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
@@ -292,15 +292,15 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::ErrorKind::Const {
+                tombi_validator::DiagnosticKind::Const {
                     expected: "\"off\"".to_string(),
                     actual: "\"undefined\"".to_string()
                 },
-                tombi_validator::ErrorKind::Const {
+                tombi_validator::DiagnosticKind::Const {
                     expected: "\"warn\"".to_string(),
                     actual: "\"undefined\"".to_string()
                 },
-                tombi_validator::ErrorKind::Const {
+                tombi_validator::DiagnosticKind::Const {
                     expected: "\"error\"".to_string(),
                     actual: "\"undefined\"".to_string()
                 }

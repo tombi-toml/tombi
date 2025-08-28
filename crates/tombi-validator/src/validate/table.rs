@@ -12,7 +12,7 @@ use tombi_schema_store::{
 use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
-use crate::error::Patterns;
+use crate::diagnostic::Patterns;
 
 impl Validate for tombi_document_tree::Table {
     fn validate<'a: 'b, 'b>(
@@ -231,8 +231,8 @@ async fn validate_table(
                                 .and_then(|rules| rules.deprecated)
                                 .unwrap_or_default();
 
-                            crate::Warning {
-                                kind: Box::new(crate::WarningKind::Deprecated(
+                            crate::Diagnostic {
+                                kind: Box::new(crate::DiagnosticKind::Deprecated(
                                     SchemaAccessors::from(&new_accessors),
                                 )),
                                 range: key.range() + value.range(),
@@ -258,8 +258,8 @@ async fn validate_table(
                         .and_then(|rules| rules.key_pattern)
                         .unwrap_or_default();
 
-                    crate::Error {
-                        kind: crate::ErrorKind::KeyPattern {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::KeyPattern {
                             patterns: Patterns(
                                 pattern_properties
                                     .read()
@@ -268,7 +268,7 @@ async fn validate_table(
                                     .map(ToString::to_string)
                                     .collect(),
                             ),
-                        },
+                        }),
                         range: key.range(),
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -295,10 +295,10 @@ async fn validate_table(
                             .and_then(|rules| rules.deprecated)
                             .unwrap_or_default();
 
-                        crate::Warning {
-                            kind: Box::new(crate::WarningKind::Deprecated(SchemaAccessors::from(
-                                &new_accessors,
-                            ))),
+                        crate::Diagnostic {
+                            kind: Box::new(crate::DiagnosticKind::Deprecated(
+                                SchemaAccessors::from(&new_accessors),
+                            )),
                             range: key.range() + value.range(),
                         }
                         .push_diagnostic_with_level(level, &mut diagnostics);
@@ -324,8 +324,8 @@ async fn validate_table(
                     .and_then(|rules| rules.tables_out_of_order)
                     .unwrap_or_default();
 
-                crate::Warning {
-                    kind: Box::new(crate::WarningKind::StrictAdditionalProperties {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::StrictAdditionalProperties {
                         accessors: SchemaAccessors::from(accessors),
                         schema_uri: current_schema.schema_uri.as_ref().clone(),
                         key: key.to_string(),
@@ -343,10 +343,10 @@ async fn validate_table(
                     .and_then(|rules| rules.key_not_allowed)
                     .unwrap_or_default();
 
-                crate::Error {
-                    kind: crate::ErrorKind::KeyNotAllowed {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::KeyNotAllowed {
                         key: key.to_string(),
-                    },
+                    }),
                     range: key.range() + value.range(),
                 }
                 .push_diagnostic_with_level(level, &mut diagnostics);
@@ -369,10 +369,10 @@ async fn validate_table(
                     .and_then(|rules| rules.key_required)
                     .unwrap_or_default();
 
-                crate::Error {
-                    kind: crate::ErrorKind::KeyRequired {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::KeyRequired {
                         key: required_key.to_string(),
-                    },
+                    }),
                     range: table_value.range(),
                 }
                 .push_diagnostic_with_level(level, &mut diagnostics);
@@ -388,11 +388,11 @@ async fn validate_table(
                 .and_then(|rules| rules.table_max_properties)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::TableMaxProperties {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::TableMaxProperties {
                     max_properties,
                     actual: table_value.keys().count(),
-                },
+                }),
                 range: table_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -407,11 +407,11 @@ async fn validate_table(
                 .and_then(|rules| rules.table_min_properties)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::TableMinProperties {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::TableMinProperties {
                     min_properties,
                     actual: table_value.keys().count(),
-                },
+                }),
                 range: table_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -425,8 +425,8 @@ async fn validate_table(
                 .and_then(|rules| rules.deprecated)
                 .unwrap_or_default();
 
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::Deprecated(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Deprecated(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                 )),
                 range: table_value.range(),

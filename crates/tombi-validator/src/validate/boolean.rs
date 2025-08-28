@@ -113,11 +113,11 @@ async fn validate_boolean(
                 .and_then(|rules| rules.const_value)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::Const {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
                     expected: const_value.to_string(),
                     actual: value.to_string(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -131,11 +131,11 @@ async fn validate_boolean(
                 .and_then(|rules| rules.enumerate)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::Enumerate {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enumerate {
                     expected: enumerate.iter().map(ToString::to_string).collect(),
                     actual: value.to_string(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -149,8 +149,8 @@ async fn validate_boolean(
                 .and_then(|rules| rules.deprecated)
                 .unwrap_or_default();
 
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::DeprecatedValue(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                     value.to_string(),
                 )),

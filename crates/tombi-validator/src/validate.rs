@@ -77,8 +77,8 @@ fn type_mismatch(
         .and_then(|common_rules| common_rules.type_mismatch)
         .unwrap_or_default();
 
-    crate::Error {
-        kind: crate::ErrorKind::TypeMismatch { expected, actual },
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::TypeMismatch { expected, actual }),
         range,
     }
     .push_diagnostic_with_level(level, &mut diagnostics);
