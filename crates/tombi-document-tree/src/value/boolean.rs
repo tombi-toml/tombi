@@ -2,8 +2,8 @@ use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    value::collect_comment_directives, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
-    ValueType,
+    value::collect_comment_directives_and_errors, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
+    ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,10 +51,13 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -68,9 +71,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
                 range: token.range(),
-                comment_directives: collect_comment_directives(self),
+                comment_directives,
             }),
-            errors: Vec::with_capacity(0),
+            errors,
         }
     }
 }

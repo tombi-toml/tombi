@@ -5,8 +5,8 @@ use tombi_toml_text::{
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    value::collect_comment_directives, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
-    ValueType,
+    value::collect_comment_directives_and_errors, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
+    ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -192,7 +192,7 @@ fn into_string_and_errors<T: AstNode>(
     range: tombi_text::Range,
     toml_version: TomlVersion,
 ) -> DocumentTreeAndErrors<crate::Value> {
-    let mut errors = vec![];
+    let (comment_directives, mut errors) = collect_comment_directives_and_errors(&node);
 
     let Some(token) = token else {
         errors.push(crate::Error::IncompleteNode { range });
@@ -208,7 +208,7 @@ fn into_string_and_errors<T: AstNode>(
         token.text().to_string(),
         token.range(),
         toml_version,
-        collect_comment_directives(node),
+        comment_directives,
     ) {
         Ok(string) => crate::Value::String(string),
         Err(error) => {

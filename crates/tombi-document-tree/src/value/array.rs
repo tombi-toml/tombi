@@ -224,6 +224,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
 
             // Collect comment directives from the array.
             for comment in self.leading_comments() {
+                if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                    errors.push(error);
+                }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
                     comment_directives.push(comment_directive);
                 }
@@ -232,6 +235,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
             // Collect comment directives from the array.
             for comments in self.inner_begin_dangling_comments() {
                 for comment in comments {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
+                    }
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {
                         comment_directives.push(comment_directive);
                     }
@@ -240,14 +246,20 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
 
             for comments in self.inner_end_dangling_comments() {
                 for comment in comments {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
+                    }
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {
                         comment_directives.push(comment_directive);
                     }
                 }
             }
 
-            if let Some(tailing_comment) = self.trailing_comment() {
-                if let Some(comment_directive) = tailing_comment.get_tombi_value_directive() {
+            if let Some(comment) = self.trailing_comment() {
+                if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                    errors.push(error);
+                }
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
                     comment_directives.push(comment_directive);
                 }
             }
@@ -271,11 +283,19 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     if let Some(comma) = comma {
                         let mut comma_comment_directives = vec![];
                         for comment in comma.leading_comments() {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+
                             if let Some(comment_directive) = comment.get_tombi_value_directive() {
                                 comma_comment_directives.push(comment_directive);
                             }
                         }
                         if let Some(comment) = comma.trailing_comment() {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+
                             if let Some(comment_directive) = comment.get_tombi_value_directive() {
                                 comma_comment_directives.push(comment_directive);
                             }
@@ -297,11 +317,19 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     if let Some(comma) = comma {
                         let mut comma_comment_directives = vec![];
                         for comment in comma.leading_comments() {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+
                             if let Some(comment_directive) = comment.get_tombi_value_directive() {
                                 comma_comment_directives.push(comment_directive);
                             }
                         }
                         if let Some(comment) = comma.trailing_comment() {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+
                             if let Some(comment_directive) = comment.get_tombi_value_directive() {
                                 comma_comment_directives.push(comment_directive);
                             }

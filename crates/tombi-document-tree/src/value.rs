@@ -204,24 +204,38 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
     }
 }
 
-fn collect_comment_directives(node: impl AstNode) -> Option<Box<Vec<TombiValueCommentDirective>>> {
+fn collect_comment_directives_and_errors(
+    node: &impl AstNode,
+) -> (
+    Option<Box<Vec<TombiValueCommentDirective>>>,
+    Vec<crate::Error>,
+) {
     let mut comment_directives = vec![];
+    let mut errors = vec![];
 
     for comment in node.leading_comments() {
+        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+            errors.push(error);
+        }
+
         if let Some(comment_directive) = comment.get_tombi_value_directive() {
             comment_directives.push(comment_directive);
         }
     }
 
     if let Some(comment) = node.trailing_comment() {
+        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+            errors.push(error);
+        }
+
         if let Some(comment_directive) = comment.get_tombi_value_directive() {
             comment_directives.push(comment_directive);
         }
     }
 
     if !comment_directives.is_empty() {
-        Some(Box::new(comment_directives))
+        (Some(Box::new(comment_directives)), errors)
     } else {
-        None
+        (None, errors)
     }
 }

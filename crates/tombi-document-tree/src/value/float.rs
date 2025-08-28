@@ -2,8 +2,8 @@ use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::float::try_from_float, value::collect_comment_directives, DocumentTreeAndErrors,
-    IntoDocumentTreeAndErrors, ValueImpl, ValueType,
+    support::float::try_from_float, value::collect_comment_directives_and_errors,
+    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,10 +51,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -63,14 +67,18 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
                 tree: crate::Value::Float(crate::Float {
                     value,
                     range: token.range(),
-                    comment_directives: collect_comment_directives(self),
+                    comment_directives,
                 }),
-                errors: Vec::with_capacity(0),
+                errors,
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseFloatError { error, range }],
-            },
+            Err(error) => {
+                errors.push(crate::Error::ParseFloatError { error, range });
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }

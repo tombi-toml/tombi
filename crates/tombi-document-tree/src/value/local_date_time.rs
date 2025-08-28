@@ -1,7 +1,7 @@
 use tombi_ast::TombiValueCommentDirective;
 
 use crate::{
-    support::chrono::try_new_local_date_time, value::collect_comment_directives,
+    support::chrono::try_new_local_date_time, value::collect_comment_directives_and_errors,
     DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
@@ -56,10 +56,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -68,14 +72,18 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
                 tree: crate::Value::LocalDateTime(crate::LocalDateTime {
                     value,
                     range: token.range(),
-                    comment_directives: collect_comment_directives(self),
+                    comment_directives,
                 }),
-                errors: Vec::with_capacity(0),
+                errors,
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![error],
-            },
+            Err(error) => {
+                errors.push(error);
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }
