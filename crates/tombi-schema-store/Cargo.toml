@@ -20,6 +20,7 @@ serde_json.workspace = true
 surf = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
+tombi-accessor.workspace = true
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true

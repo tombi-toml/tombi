@@ -3424,11 +3424,24 @@ name = "tombi"
 version = "0.0.0-dev"
 
 [[package]]
+name = "tombi-accessor"
+version = "0.0.0-dev"
+dependencies = [
+ "indexmap",
+ "itertools 0.14.0",
+ "pretty_assertions",
+ "rstest",
+ "tombi-text",
+ "tracing",
+]
+
+[[package]]
 name = "tombi-ast"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "thiserror 2.0.12",
+ "tombi-accessor",
  "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",
@@ -3891,6 +3904,7 @@ dependencies = [
  "surf",
  "thiserror 2.0.12",
  "tokio",
+ "tombi-accessor",
  "tombi-ast",
  "tombi-cache",
  "tombi-config",

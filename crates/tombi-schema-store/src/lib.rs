@@ -1,4 +1,3 @@
-mod accessor;
 mod error;
 mod http_client;
 pub mod json;
@@ -9,16 +8,14 @@ mod store;
 mod value_type;
 mod x_taplo;
 
-pub use accessor::{Accessor, Accessors};
 pub use error::Error;
 pub use http_client::*;
 use itertools::{Either, Itertools};
 pub use options::Options;
 pub use schema::*;
 pub use store::SchemaStore;
+pub use tombi_accessor::{Accessor, AccessorContext, AccessorKeyKind, Accessors, KeyContext};
 pub use value_type::ValueType;
-
-pub use crate::accessor::{AccessorContext, AccessorKeyKind, KeyContext};
 
 pub fn get_schema_name(schema_uri: &tombi_uri::Uri) -> Option<&str> {
     if let Some(path) = schema_uri.path().split('/').next_back() {

@@ -25,7 +25,7 @@ impl IntoValue for tombi_document_tree::Value {
             tombi_document_tree::Value::Boolean(value) => Value::Bool(value.value()),
             tombi_document_tree::Value::Integer(value) => Value::Integer(value.value()),
             tombi_document_tree::Value::Float(value) => Value::Float(value.value()),
-            tombi_document_tree::Value::String(value) => Value::String(value.into_value()),
+            tombi_document_tree::Value::String(value) => Value::String(value.value().to_owned()),
             tombi_document_tree::Value::OffsetDateTime(value) => {
                 Value::OffsetDatetime(value.value().to_string())
             }

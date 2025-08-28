@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use tombi_config::TomlVersion;
 
 use crate::Accessor;
 
@@ -184,58 +183,6 @@ impl std::fmt::Display for SchemaAccessors {
             }
         }
         Ok(())
-    }
-}
-
-pub trait GetHeaderSchemarAccessors {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>>;
-}
-
-impl GetHeaderSchemarAccessors for tombi_ast::Table {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
-        let array_of_tables_keys = self
-            .array_of_tables_keys()
-            .map(|keys| keys.into_iter().collect_vec())
-            .counts();
-
-        let mut accessors = vec![];
-        let mut header_keys = vec![];
-        for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
-            header_keys.push(key);
-
-            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-                accessors.push(Accessor::Index(*new_index));
-            }
-        }
-
-        Some(accessors)
-    }
-}
-
-impl GetHeaderSchemarAccessors for tombi_ast::ArrayOfTable {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
-        let array_of_tables_keys = self
-            .array_of_tables_keys()
-            .map(|keys| keys.into_iter().collect_vec())
-            .counts();
-
-        let mut accessors = vec![];
-        let mut header_keys = vec![];
-        for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
-            header_keys.push(key);
-
-            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-                accessors.push(Accessor::Index(*new_index));
-            }
-        }
-
-        accessors.push(Accessor::Index(
-            *array_of_tables_keys.get(&header_keys).unwrap_or(&0),
-        ));
-
-        Some(accessors)
     }
 }
 

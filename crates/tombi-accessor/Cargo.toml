@@ -1,17 +1,17 @@
 [package]
-name = "tombi-ast"
+name = "tombi-accessor"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+repository.workspace = true
 license.workspace = true
 
 [dependencies]
+indexmap.workspace = true
 itertools.workspace = true
-thiserror.workspace = true
-tombi-accessor.workspace = true
-tombi-syntax.workspace = true
 tombi-text.workspace = true
-tombi-toml-text.workspace = true
-tombi-toml-version.workspace = true
-tombi-uri.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+rstest.workspace = true
