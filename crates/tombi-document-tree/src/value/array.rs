@@ -1,5 +1,4 @@
-use tombi_ast::AstNode;
-use tombi_comment_directive::ArrayTombiCommentDirective;
+use tombi_ast::{AstNode, TombiValueCommentDirective};
 
 use crate::{
     support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Value,
@@ -46,10 +45,11 @@ pub struct Array {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
-    comment_directive: Option<Box<ArrayTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Array {
+    #[inline]
     pub(crate) fn new_array(node: &tombi_ast::Array) -> Self {
         Self {
             kind: ArrayKind::Array,
@@ -65,6 +65,7 @@ impl Array {
         }
     }
 
+    #[inline]
     pub(crate) fn new_array_of_tables(table: &crate::Table) -> Self {
         Self {
             kind: ArrayKind::ArrayOfTable,
@@ -75,6 +76,7 @@ impl Array {
         }
     }
 
+    #[inline]
     pub(crate) fn new_parent_array_of_tables(table: &crate::Table) -> Self {
         Self {
             kind: ArrayKind::ParentArrayOfTable,
@@ -85,22 +87,27 @@ impl Array {
         }
     }
 
+    #[inline]
     pub fn get(&self, index: usize) -> Option<&Value> {
         self.values.get(index)
     }
 
+    #[inline]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Value> {
         self.values.get_mut(index)
     }
 
+    #[inline]
     pub fn first(&self) -> Option<&Value> {
         self.values.first()
     }
 
+    #[inline]
     pub fn last(&self) -> Option<&Value> {
         self.values.last()
     }
 
+    #[inline]
     pub fn push(&mut self, value: Value) {
         self.range += value.range();
         self.symbol_range += value.symbol_range();
@@ -108,6 +115,7 @@ impl Array {
         self.values.push(value);
     }
 
+    #[inline]
     pub fn extend(&mut self, values: Vec<Value>) {
         for value in values {
             self.push(value);
@@ -150,38 +158,47 @@ impl Array {
         }
     }
 
+    #[inline]
     pub fn kind(&self) -> ArrayKind {
         self.kind
     }
 
+    #[inline]
     pub fn values(&self) -> &[Value] {
         &self.values
     }
 
+    #[inline]
     pub fn values_mut(&mut self) -> &mut Vec<Value> {
         &mut self.values
     }
 
+    #[inline]
     pub fn range(&self) -> tombi_text::Range {
         self.range
     }
 
+    #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.symbol_range
     }
 
-    pub fn comment_directive(&self) -> Option<&ArrayTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    #[inline]
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 
+    #[inline]
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
         self.values.iter()
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.values.len()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
     }

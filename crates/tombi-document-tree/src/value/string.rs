@@ -1,4 +1,4 @@
-use tombi_comment_directive::StringTombiCommentDirective;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_text::{
     to_basic_string, to_literal_string, to_multi_line_basic_string, to_multi_line_literal_string,
 };
@@ -19,7 +19,7 @@ pub struct String {
     kind: StringKind,
     value: std::string::String,
     range: tombi_text::Range,
-    comment_directive: Option<Box<StringTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl std::fmt::Display for String {
@@ -106,8 +106,8 @@ impl crate::String {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&StringTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 

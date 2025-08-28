@@ -1,7 +1,4 @@
-use tombi_comment_directive::{
-    LocalDateTimeTombiCommentDirective, LocalDateTombiCommentDirective,
-    LocalTimeTombiCommentDirective, OffsetDateTimeTombiCommentDirective,
-};
+use tombi_ast::TombiValueCommentDirective;
 
 use crate::{
     support::chrono::{
@@ -14,7 +11,7 @@ use crate::{
 pub struct OffsetDateTime {
     value: tombi_date_time::OffsetDateTime,
     range: tombi_text::Range,
-    comment_directive: Option<Box<OffsetDateTimeTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl OffsetDateTime {
@@ -34,8 +31,8 @@ impl OffsetDateTime {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&OffsetDateTimeTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 
@@ -43,7 +40,7 @@ impl OffsetDateTime {
 pub struct LocalDateTime {
     value: tombi_date_time::LocalDateTime,
     range: tombi_text::Range,
-    comment_directive: Option<Box<LocalDateTimeTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalDateTime {
@@ -63,8 +60,8 @@ impl LocalDateTime {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&LocalDateTimeTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 
@@ -72,7 +69,7 @@ impl LocalDateTime {
 pub struct LocalDate {
     value: tombi_date_time::LocalDate,
     range: tombi_text::Range,
-    comment_directive: Option<Box<LocalDateTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalDate {
@@ -92,8 +89,8 @@ impl LocalDate {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&LocalDateTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 
@@ -101,7 +98,7 @@ impl LocalDate {
 pub struct LocalTime {
     value: tombi_date_time::LocalTime,
     range: tombi_text::Range,
-    comment_directive: Option<Box<LocalTimeTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalTime {
@@ -121,8 +118,8 @@ impl LocalTime {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&LocalTimeTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 

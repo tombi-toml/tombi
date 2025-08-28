@@ -1,4 +1,4 @@
-use tombi_comment_directive::BooleanTombiCommentDirective;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
@@ -7,7 +7,7 @@ use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueTy
 pub struct Boolean {
     value: bool,
     range: tombi_text::Range,
-    comment_directive: Option<Box<BooleanTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Boolean {
@@ -27,8 +27,8 @@ impl Boolean {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&BooleanTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 

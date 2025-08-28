@@ -1,4 +1,4 @@
-use tombi_comment_directive::FloatTombiCommentDirective;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 pub struct Float {
     value: f64,
     range: tombi_text::Range,
-    comment_directive: Option<Box<FloatTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Float {
@@ -30,8 +30,8 @@ impl Float {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&FloatTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 

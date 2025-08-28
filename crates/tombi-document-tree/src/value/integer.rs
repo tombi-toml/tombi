@@ -1,4 +1,4 @@
-use tombi_comment_directive::IntegerTombiCommentDirective;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
@@ -19,7 +19,7 @@ pub struct Integer {
     kind: IntegerKind,
     value: i64,
     range: tombi_text::Range,
-    comment_directive: Option<Box<IntegerTombiCommentDirective>>,
+    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Integer {
@@ -44,8 +44,8 @@ impl Integer {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&IntegerTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directive.as_deref().map(|v| &**v)
     }
 }
 

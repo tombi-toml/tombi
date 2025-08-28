@@ -52,7 +52,7 @@ pub struct TombiDocumentCommentDirective {
     pub content_range: tombi_text::Range,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TombiValueCommentDirective {
     /// The range of the directive.
     ///
