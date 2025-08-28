@@ -1,4 +1,4 @@
-use tombi_document_tree::TableKind;
+use tombi_document_tree::{dig_accessors, TableKind};
 use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
@@ -37,8 +37,7 @@ pub fn dot_keys_to_inline_table_code_action(
         return None;
     };
 
-    let (accessor, value) =
-        tombi_document_tree::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
+    let (accessor, value) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match (accessor, value) {
         (Accessor::Key(parent_key), tombi_document_tree::Value::Table(table))
@@ -108,8 +107,7 @@ pub fn inline_table_to_dot_keys_code_action(
         return None;
     };
 
-    let (_, value) =
-        tombi_document_tree::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
+    let (_, value) = dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match value {
         tombi_document_tree::Value::Table(table)

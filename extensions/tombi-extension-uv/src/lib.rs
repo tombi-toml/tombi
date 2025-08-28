@@ -8,7 +8,7 @@ pub use goto_definition::goto_definition;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree::{dig_accessors, TryIntoDocumentTree};
 use tombi_schema_store::matches_accessors;
 
 #[derive(Debug, Clone)]
@@ -84,7 +84,7 @@ fn extract_member_patterns<'a>(
 ) -> Vec<&'a tombi_document_tree::String> {
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _]) {
         let Some((_, tombi_document_tree::Value::String(member))) =
-            tombi_document_tree::dig_accessors(workspace_document_tree, accessors)
+            dig_accessors(workspace_document_tree, accessors)
         else {
             return vec![];
         };
@@ -277,7 +277,7 @@ fn goto_workspace_member(
     };
     if accessors.len() == 3 {
         if let Some((_, tombi_document_tree::Value::Table(table))) =
-            tombi_document_tree::dig_accessors(document_tree, accessors)
+            dig_accessors(document_tree, accessors)
         {
             if !table.contains_key("workspace") {
                 return Ok(None);
