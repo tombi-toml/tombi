@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tombi_ast::AstNode;
 use tombi_comment_directive::KeyTombiCommentDirective;
 use tombi_toml_version::TomlVersion;
@@ -16,7 +18,7 @@ pub struct Key {
     kind: KeyKind,
     value: String,
     range: tombi_text::Range,
-    comment_directive: Option<Box<KeyTombiCommentDirective>>,
+    comment_directive: Option<Arc<KeyTombiCommentDirective>>,
 }
 
 impl std::borrow::Borrow<String> for Key {
