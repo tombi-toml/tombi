@@ -4,10 +4,7 @@ use tombi_toml_text::{
 };
 use tombi_toml_version::TomlVersion;
 
-use crate::{
-    support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
-    ValueType,
-};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StringKind {
@@ -195,20 +192,12 @@ fn into_string_and_errors<T: AstNode>(
     let mut errors = vec![];
 
     for comment in node.leading_comments() {
-        if let Err(error) = try_new_comment(comment.as_ref()) {
-            errors.push(error);
-        }
-
         if let Some(comment_directive) = comment.get_tombi_value_directive() {
             comment_directives.push(comment_directive);
         }
     }
 
     if let Some(comment) = node.trailing_comment() {
-        if let Err(error) = try_new_comment(comment.as_ref()) {
-            errors.push(error);
-        }
-
         if let Some(comment_directive) = comment.get_tombi_value_directive() {
             comment_directives.push(comment_directive);
         }
@@ -229,7 +218,12 @@ fn into_string_and_errors<T: AstNode>(
         token.range(),
         toml_version,
     ) {
-        Ok(string) => crate::Value::String(string),
+        Ok(mut string) => {
+            if !comment_directives.is_empty() {
+                string.comment_directives = Some(Box::new(comment_directives));
+            }
+            crate::Value::String(string)
+        }
         Err(error) => {
             errors.push(crate::Error::ParseStringError { error, range });
 

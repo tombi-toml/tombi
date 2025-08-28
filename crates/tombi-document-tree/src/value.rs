@@ -15,7 +15,7 @@ pub use string::{String, StringKind};
 pub use table::{Table, TableKind};
 use tombi_ast::{AstNode, TombiValueCommentDirective};
 
-use crate::{support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -113,15 +113,17 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let mut errors = Vec::new();
+        let mut comment_directives = vec![];
+
         for comment in self.leading_comments() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
             }
         }
 
         if let Some(comment) = self.trailing_comment() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
             }
         }
 

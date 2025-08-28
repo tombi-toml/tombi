@@ -1,9 +1,6 @@
 use tombi_ast::{AstNode, TombiValueCommentDirective};
 
-use crate::{
-    support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Value,
-    ValueImpl, ValueType,
-};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Value, ValueImpl, ValueType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ArrayKind {
@@ -226,9 +223,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
 
         // Collect comment directives from the array.
         for comment in self.leading_comments() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
-            }
             if let Some(comment_directive) = comment.get_tombi_value_directive() {
                 array_comment_directives.push(comment_directive);
             }
@@ -237,9 +231,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         // Collect comment directives from the array.
         for comments in self.inner_begin_dangling_comments() {
             for comment in comments {
-                if let Err(error) = try_new_comment(comment.as_ref()) {
-                    errors.push(error);
-                }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
                     array_comment_directives.push(comment_directive);
                 }
@@ -248,9 +239,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
 
         for comments in self.inner_end_dangling_comments() {
             for comment in comments {
-                if let Err(error) = try_new_comment(comment.as_ref()) {
-                    errors.push(error);
-                }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
                     array_comment_directives.push(comment_directive);
                 }
@@ -258,9 +246,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         }
 
         if let Some(tailing_comment) = self.trailing_comment() {
-            if let Err(error) = try_new_comment(tailing_comment.as_ref()) {
-                errors.push(error);
-            }
             if let Some(comment_directive) = tailing_comment.get_tombi_value_directive() {
                 array_comment_directives.push(comment_directive);
             }
@@ -289,13 +274,13 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
 
             if let Some(comma) = comma {
                 for comment in comma.leading_comments() {
-                    if let Err(error) = try_new_comment(comment.as_ref()) {
-                        errors.push(error);
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        array_comment_directives.push(comment_directive);
                     }
                 }
                 if let Some(comment) = comma.trailing_comment() {
-                    if let Err(error) = try_new_comment(comment.as_ref()) {
-                        errors.push(error);
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        array_comment_directives.push(comment_directive);
                     }
                 }
             }

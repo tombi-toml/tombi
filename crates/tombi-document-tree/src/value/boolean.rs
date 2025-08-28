@@ -1,4 +1,4 @@
-use tombi_ast::TombiValueCommentDirective;
+use tombi_ast::{AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
 
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
@@ -47,6 +47,20 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
         self,
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
+        let mut comment_directives = vec![];
+
+        for comment in self.leading_comments() {
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
+            }
+        }
+
+        if let Some(comment) = self.trailing_comment() {
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
+            }
+        }
+
         let range = self.range();
         let Some(token) = self.token() else {
             return DocumentTreeAndErrors {
