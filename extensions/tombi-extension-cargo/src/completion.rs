@@ -2,7 +2,7 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
-use tombi_extension::dig_accessors;
+use tombi_document_tree::dig_accessors;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;

@@ -70,7 +70,7 @@ where
 
 /// Follows the given keys in order and retrieves the value if it exists.
 ///
-/// NOTE: You cannot follow indices. Use `tombi_schema_store::dig_accessors` for that.
+/// NOTE: You cannot follow indices. Use `tombi_accessor::dig_accessors` for that.
 pub fn dig_keys<'a, K>(
     document_tree: &'a crate::DocumentTree,
     keys: &[&K],
@@ -94,4 +94,84 @@ where
     }
 
     Some((key, value))
+}
+
+pub fn dig_accessors<'a>(
+    document_tree: &'a crate::DocumentTree,
+    accessors: &'a [tombi_accessor::Accessor],
+) -> Option<(&'a tombi_accessor::Accessor, &'a crate::Value)> {
+    if accessors.is_empty() {
+        return None;
+    }
+    let first_key = accessors[0].as_key()?;
+    let mut value = document_tree.get(first_key)?;
+    let mut current_accessor = &accessors[0];
+    for accessor in accessors[1..].iter() {
+        match (accessor, value) {
+            (tombi_accessor::Accessor::Key(key), crate::Value::Table(table)) => {
+                let next_value = table.get(key)?;
+                current_accessor = accessor;
+                value = next_value;
+            }
+            (tombi_accessor::Accessor::Index(index), crate::Value::Array(array)) => {
+                let next_value = array.get(*index)?;
+                current_accessor = accessor;
+                value = next_value;
+            }
+            _ => return None,
+        }
+    }
+
+    Some((current_accessor, value))
+}
+
+pub fn get_accessors(
+    document_tree: &crate::DocumentTree,
+    keys: &[crate::Key],
+    position: tombi_text::Position,
+) -> Vec<tombi_accessor::Accessor> {
+    let mut accessors = Vec::new();
+    let mut current_value: &crate::Value = document_tree.into();
+
+    for key in keys {
+        current_value = find_value_in_current(current_value, key, &mut accessors, position);
+        accessors.push(tombi_accessor::Accessor::Key(key.value().to_string()));
+    }
+
+    if let crate::Value::Array(array) = current_value {
+        for (index, value) in array.values().iter().enumerate() {
+            if value.range().contains(position) {
+                accessors.push(tombi_accessor::Accessor::Index(index));
+                break;
+            }
+        }
+    }
+
+    accessors
+}
+
+fn find_value_in_current<'a>(
+    current_value: &'a crate::Value,
+    key: &crate::Key,
+    accessors: &mut Vec<tombi_accessor::Accessor>,
+    position: tombi_text::Position,
+) -> &'a crate::Value {
+    match current_value {
+        crate::Value::Array(array) => {
+            for (index, value) in array.values().iter().enumerate() {
+                if value.range().contains(position) {
+                    accessors.push(tombi_accessor::Accessor::Index(index));
+                    return find_value_in_current(value, key, accessors, position);
+                }
+            }
+        }
+        crate::Value::Table(table) => {
+            if let Some(value) = table.get(key) {
+                return value;
+            }
+        }
+        _ => {}
+    }
+
+    current_value
 }

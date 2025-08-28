@@ -70,7 +70,7 @@ pub async fn handle_goto_definition(
     };
 
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;
-    let accessors = tombi_extension::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
 
     if let Some(locations) = tombi_extension_cargo::goto_definition(
         &text_document_uri,

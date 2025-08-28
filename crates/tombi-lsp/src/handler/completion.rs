@@ -148,7 +148,7 @@ pub async fn handle_completion(
         .await,
     );
 
-    let accessors = tombi_extension::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
     if let Some(items) = tombi_extension_cargo::completion(
         &text_document_uri,
         &document_tree,

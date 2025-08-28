@@ -1,5 +1,4 @@
-use tombi_document_tree::{dig_keys, TableKind};
-use tombi_extension::dig_accessors;
+use tombi_document_tree::{dig_accessors, dig_keys, TableKind};
 use tombi_schema_store::{matches_accessors, Accessor, AccessorContext};
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionOrCommand, DocumentChanges, OneOf,

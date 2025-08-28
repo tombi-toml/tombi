@@ -38,7 +38,7 @@ pub fn dot_keys_to_inline_table_code_action(
     };
 
     let (accessor, value) =
-        tombi_extension::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
+        tombi_document_tree::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match (accessor, value) {
         (Accessor::Key(parent_key), tombi_document_tree::Value::Table(table))
@@ -109,7 +109,7 @@ pub fn inline_table_to_dot_keys_code_action(
     };
 
     let (_, value) =
-        tombi_extension::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
+        tombi_document_tree::dig_accessors(document_tree, &accessors[..accessors.len() - 1])?;
 
     match value {
         tombi_document_tree::Value::Table(table)

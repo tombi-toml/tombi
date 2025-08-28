@@ -11,6 +11,7 @@ chrono.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
+tombi-accessor.workspace = true
 tombi-ast.workspace = true
 tombi-comment-directive.workspace = true
 tombi-date-time.workspace = true

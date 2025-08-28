@@ -231,7 +231,7 @@ fn goto_dependency_crates(
     );
 
     let Some((tombi_schema_store::Accessor::Key(crate_name), crate_value)) =
-        tombi_extension::dig_accessors(workspace_document_tree, accessors)
+        tombi_document_tree::dig_accessors(workspace_document_tree, accessors)
     else {
         return Ok(Vec::with_capacity(0));
     };
@@ -335,7 +335,7 @@ fn goto_crate_package(
             || matches_accessors!(accessors, ["build-dependencies", _, "path"])
     );
 
-    let Some((_, value)) = tombi_extension::dig_accessors(workspace_document_tree, accessors)
+    let Some((_, value)) = tombi_document_tree::dig_accessors(workspace_document_tree, accessors)
     else {
         return Ok(None);
     };
@@ -539,7 +539,7 @@ fn goto_workspace_member_crates(
 ) -> Result<Vec<CrateLocation>, tower_lsp::jsonrpc::Error> {
     let member_patterns = if matches_accessors!(accessors, ["workspace", members_key, _]) {
         let Some((_, tombi_document_tree::Value::String(member))) =
-            tombi_extension::dig_accessors(workspace_document_tree, accessors)
+            tombi_document_tree::dig_accessors(workspace_document_tree, accessors)
         else {
             return Ok(Vec::with_capacity(0));
         };

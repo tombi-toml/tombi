@@ -5,8 +5,8 @@ use crate::{
     Backend,
 };
 use itertools::Either;
+use tombi_document_tree::get_accessors;
 use tombi_document_tree::TryIntoDocumentTree;
-use tombi_extension::get_accessors;
 use tombi_schema_store::build_accessor_contexts;
 use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
 

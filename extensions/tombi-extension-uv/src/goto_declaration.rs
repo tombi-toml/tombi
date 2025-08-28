@@ -67,7 +67,7 @@ fn goto_declaration_for_dependency_package(
 ) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
     // Get the dependency string from the current position
     let Some((_, Value::String(dependency))) =
-        tombi_extension::dig_accessors(document_tree, accessors)
+        tombi_document_tree::dig_accessors(document_tree, accessors)
     else {
         return Ok(None);
     };
