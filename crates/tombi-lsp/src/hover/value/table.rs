@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::CommentContext;
+
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
@@ -27,7 +27,6 @@ impl GetHoverContent for tombi_document_tree::Table {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
@@ -57,7 +56,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                         accessors,
                         current_schema.as_ref(),
                         schema_context,
-                        comment_context,
                     )
                     .await;
             }
@@ -115,7 +113,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await;
                                         if let Some(HoverContent::Value(hover_value_content)) =
@@ -170,7 +167,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 .collect_vec(),
                                             None,
                                             schema_context,
-                                            comment_context,
                                         )
                                         .await;
 
@@ -225,7 +221,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                                 .collect_vec(),
                                                             Some(&current_schema),
                                                             schema_context,
-                                                            comment_context,
                                                         )
                                                         .await;
 
@@ -290,7 +285,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                             .collect_vec(),
                                                         None,
                                                         schema_context,
-                                                        comment_context,
                                                     )
                                                     .await;
 
@@ -350,7 +344,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await;
 
@@ -404,7 +397,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             .collect_vec(),
                                         None,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await
                             } else {
@@ -418,7 +410,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     accessors,
                                     Some(current_schema),
                                     schema_context,
-                                    comment_context,
                                 )
                                 .await;
 
@@ -441,7 +432,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -455,7 +445,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -469,7 +458,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -491,7 +479,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     .collect_vec(),
                                 None,
                                 schema_context,
-                                comment_context,
                             )
                             .await;
                     }
@@ -522,7 +509,6 @@ impl GetHoverContent for TableSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             Some(

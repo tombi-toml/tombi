@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::CommentContext;
+
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, TableSchema,
@@ -21,7 +21,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
@@ -51,7 +50,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                         accessors,
                         current_schema.as_ref(),
                         schema_context,
-                        comment_context,
                     )
                     .await;
             }
@@ -97,7 +95,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                 &accessors,
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await
                                             .map(|type_definition| {
@@ -112,7 +109,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             &accessors,
                                             None,
                                             schema_context,
-                                            comment_context,
                                         )
                                         .await;
                                 }
@@ -143,7 +139,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                             &accessors,
                                                             Some(&current_schema),
                                                             schema_context,
-                                                            comment_context,
                                                         )
                                                         .await
                                                         .map(|type_definition| {
@@ -159,7 +154,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                         &accessors,
                                                         None,
                                                         schema_context,
-                                                        comment_context,
                                                     )
                                                     .await;
                                             }
@@ -194,7 +188,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                 &accessors,
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await
                                             .map(|type_definition| {
@@ -211,7 +204,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         &accessors,
                                         None,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await
                             } else {
@@ -238,7 +230,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     accessors,
                                     Some(current_schema),
                                     schema_context,
-                                    comment_context,
                                 )
                                 .await
                         }
@@ -253,7 +244,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -267,7 +257,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -281,7 +270,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -307,7 +295,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     .collect_vec(),
                                 None,
                                 schema_context,
-                                comment_context,
                             )
                             .await;
                     }
@@ -327,7 +314,6 @@ impl GetTypeDefinition for TableSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
         async move {
             current_schema.map(|schema| {

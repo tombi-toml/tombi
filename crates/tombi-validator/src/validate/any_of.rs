@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use tombi_comment_directive::{CommentContext, CommonValueTombiCommentDirectiveRules};
+use tombi_comment_directive::CommonValueTombiCommentDirectiveRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, ValueSchema};
@@ -15,7 +15,7 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
     any_of_schema: &'a tombi_schema_store::AnyOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_context: &'a CommentContext<'a>,
+
     common_rules: Option<&'a CommonValueTombiCommentDirectiveRules>,
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>
 where
@@ -61,12 +61,7 @@ where
                 | (tombi_document_tree::ValueType::Table, ValueSchema::Table(_))
                 | (tombi_document_tree::ValueType::Array, ValueSchema::Array(_)) => {
                     match value
-                        .validate(
-                            accessors,
-                            Some(&current_schema),
-                            schema_context,
-                            comment_context,
-                        )
+                        .validate(accessors, Some(&current_schema), schema_context)
                         .await
                     {
                         Ok(()) => {
@@ -103,7 +98,6 @@ where
                         one_of_schema,
                         &current_schema,
                         schema_context,
-                        comment_context,
                         common_rules,
                     )
                     .await
@@ -121,7 +115,6 @@ where
                         any_of_schema,
                         &current_schema,
                         schema_context,
-                        comment_context,
                         common_rules,
                     )
                     .await
@@ -139,7 +132,6 @@ where
                         all_of_schema,
                         &current_schema,
                         schema_context,
-                        comment_context,
                         common_rules,
                     )
                     .await

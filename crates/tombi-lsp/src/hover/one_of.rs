@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 
@@ -21,7 +20,6 @@ pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a tombi_schema_store::SchemaContext,
-    comment_context: &'a CommentContext<'a>,
 ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
     T: GetHoverContent + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
@@ -84,7 +82,6 @@ where
                     accessors,
                     Some(&current_schema),
                     schema_context,
-                    comment_context,
                 )
                 .await
             {
@@ -112,12 +109,7 @@ where
                     }
 
                     match value
-                        .validate(
-                            &accessors,
-                            Some(&current_schema),
-                            schema_context,
-                            comment_context,
-                        )
+                        .validate(&accessors, Some(&current_schema), schema_context)
                         .await
                     {
                         Ok(()) => {
@@ -227,7 +219,6 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             let Some(current_schema) = current_schema else {

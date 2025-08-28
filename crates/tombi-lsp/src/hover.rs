@@ -10,7 +10,7 @@ use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
 pub use comment::get_document_comment_directive_hover_info;
 use constraints::ValueConstraints;
-use tombi_comment_directive::CommentContext;
+
 use tombi_extension::get_tombi_github_uri;
 use tombi_schema_store::{
     get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUri, ValueType,
@@ -35,26 +35,12 @@ pub async fn get_hover_content(
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
-                .get_hover_content(
-                    position,
-                    keys,
-                    &[],
-                    current_schema.as_ref(),
-                    schema_context,
-                    &CommentContext::default(),
-                )
+                .get_hover_content(position, keys, &[], current_schema.as_ref(), schema_context)
                 .await
         }
         None => {
             table
-                .get_hover_content(
-                    position,
-                    keys,
-                    &[],
-                    None,
-                    schema_context,
-                    &CommentContext::default(),
-                )
+                .get_hover_content(position, keys, &[], None, schema_context)
                 .await
         }
     }
@@ -68,7 +54,6 @@ trait GetHoverContent {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>;
 }
 

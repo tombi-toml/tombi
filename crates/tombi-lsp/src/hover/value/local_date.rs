@@ -1,4 +1,3 @@
-use tombi_comment_directive::CommentContext;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateSchema, ValueSchema};
 
 use crate::{
@@ -22,7 +21,6 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some(current_schema) = current_schema {
@@ -35,7 +33,6 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
-                                comment_context,
                             )
                             .await;
 
@@ -57,7 +54,6 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -71,7 +67,6 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -85,7 +80,6 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -118,7 +112,6 @@ impl GetHoverContent for LocalDateSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             Some(

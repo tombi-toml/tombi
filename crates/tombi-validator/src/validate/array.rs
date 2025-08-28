@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use ahash::AHashSet;
 use itertools::Itertools;
-use tombi_comment_directive::{ArrayValueRules, CommentContext};
+use tombi_comment_directive::ArrayValueRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
@@ -17,7 +17,6 @@ impl Validate for tombi_document_tree::Array {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
@@ -59,7 +58,6 @@ impl Validate for tombi_document_tree::Array {
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
-                                comment_context,
                             )
                             .await;
                     }
@@ -75,7 +73,6 @@ impl Validate for tombi_document_tree::Array {
                             array_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref(),
                         )
                         .await
@@ -87,7 +84,6 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -99,7 +95,6 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -111,7 +106,6 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -130,8 +124,7 @@ impl Validate for tombi_document_tree::Array {
                 }
             } else {
                 if let Err(diagnostics) =
-                    validate_array_without_schema(self, accessors, schema_context, comment_context)
-                        .await
+                    validate_array_without_schema(self, accessors, schema_context).await
                 {
                     total_diagnostics.extend(diagnostics);
                 }
@@ -153,7 +146,6 @@ async fn validate_array(
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_context: &CommentContext<'_>,
     value_rules: Option<&ArrayValueRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
@@ -177,12 +169,7 @@ async fn validate_array(
                     .collect_vec();
 
                 if let Err(schema_diagnostics) = value
-                    .validate(
-                        &new_accessors,
-                        Some(&current_schema),
-                        schema_context,
-                        comment_context,
-                    )
+                    .validate(&new_accessors, Some(&current_schema), schema_context)
                     .await
                 {
                     diagnostics.extend(schema_diagnostics);
@@ -285,7 +272,6 @@ async fn validate_array_without_schema(
     array_value: &tombi_document_tree::Array,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_context: &CommentContext<'_>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
@@ -300,7 +286,6 @@ async fn validate_array_without_schema(
                     .collect_vec(),
                 None,
                 schema_context,
-                comment_context,
             )
             .await
         {

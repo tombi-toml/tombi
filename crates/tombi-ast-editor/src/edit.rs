@@ -1,4 +1,3 @@
-use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, PropertySchema, SchemaAccessor, ValueSchema,
@@ -20,7 +19,6 @@ pub trait Edit {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>>;
 }
 
@@ -29,14 +27,12 @@ async fn get_schema<'a: 'b, 'b>(
     accessors: &'a [tombi_schema_store::Accessor],
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_context: &'a CommentContext<'a>,
 ) -> Option<ValueSchema> {
     fn inner_get_schema<'a: 'b, 'b>(
         value: &'a tombi_document_tree::Value,
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Option<ValueSchema>> {
         async move {
             match current_schema.value_schema.as_ref() {
@@ -54,14 +50,9 @@ async fn get_schema<'a: 'b, 'b>(
                             .await
                             .inspect_err(|err| tracing::warn!("{err}"))
                         {
-                            if let Some(value_schema) = inner_get_schema(
-                                value,
-                                accessors,
-                                &current_schema,
-                                schema_context,
-                                comment_context,
-                            )
-                            .await
+                            if let Some(value_schema) =
+                                inner_get_schema(value, accessors, &current_schema, schema_context)
+                                    .await
                             {
                                 return Some(value_schema);
                             }
@@ -75,12 +66,7 @@ async fn get_schema<'a: 'b, 'b>(
 
             if accessors.is_empty() {
                 return value
-                    .validate(
-                        accessors,
-                        Some(current_schema),
-                        schema_context,
-                        comment_context,
-                    )
+                    .validate(accessors, Some(current_schema), schema_context)
                     .await
                     .ok()
                     .map(|_| current_schema.value_schema.as_ref().clone());
@@ -116,7 +102,6 @@ async fn get_schema<'a: 'b, 'b>(
                                         &accessors[1..],
                                         &current_schema,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await;
                                 }
@@ -145,7 +130,6 @@ async fn get_schema<'a: 'b, 'b>(
                                                     &accessors[1..],
                                                     &current_schema,
                                                     schema_context,
-                                                    comment_context,
                                                 )
                                                 .await;
                                             }
@@ -177,7 +161,6 @@ async fn get_schema<'a: 'b, 'b>(
                                         &accessors[1..],
                                         &current_schema,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await;
                                 }
@@ -211,7 +194,6 @@ async fn get_schema<'a: 'b, 'b>(
                                         &accessors[1..],
                                         &current_schema,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await;
                                 }
@@ -228,12 +210,5 @@ async fn get_schema<'a: 'b, 'b>(
         .boxed()
     }
 
-    inner_get_schema(
-        value,
-        accessors,
-        current_schema,
-        schema_context,
-        comment_context,
-    )
-    .await
+    inner_get_schema(value, accessors, current_schema, schema_context).await
 }
