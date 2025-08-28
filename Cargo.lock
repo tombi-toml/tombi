@@ -3613,7 +3613,6 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
- "tombi-document-tree",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3899,7 +3898,6 @@ dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
  "reqwest",
- "rstest",
  "serde",
  "serde_json",
  "surf",
