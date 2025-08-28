@@ -3604,6 +3604,7 @@ dependencies = [
  "tombi-comment-directive",
  "tombi-date-time",
  "tombi-diagnostic",
+ "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",

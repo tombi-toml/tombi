@@ -129,29 +129,10 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::BasicString {
         self,
         toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
+        let token = self.token();
         let range = self.range();
-        let Some(token) = self.token() else {
-            return DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
-            };
-        };
 
-        match crate::String::try_new(
-            StringKind::BasicString,
-            token.text().to_string(),
-            token.range(),
-            toml_version,
-        ) {
-            Ok(string) => DocumentTreeAndErrors {
-                tree: crate::Value::String(string),
-                errors: Vec::with_capacity(0),
-            },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseStringError { error, range }],
-            },
-        }
+        into_string_and_errors(self, StringKind::BasicString, token, range, toml_version)
     }
 }
 
@@ -160,29 +141,10 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LiteralString {
         self,
         toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
+        let token = self.token();
         let range = self.range();
-        let Some(token) = self.token() else {
-            return DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
-            };
-        };
 
-        match crate::String::try_new(
-            StringKind::LiteralString,
-            token.text().to_string(),
-            token.range(),
-            toml_version,
-        ) {
-            Ok(string) => DocumentTreeAndErrors {
-                tree: crate::Value::String(string),
-                errors: Vec::with_capacity(0),
-            },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseStringError { error, range }],
-            },
-        }
+        into_string_and_errors(self, StringKind::LiteralString, token, range, toml_version)
     }
 }
 
@@ -191,29 +153,16 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::MultiLineBasicString
         self,
         toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
+        let token = self.token();
         let range = self.range();
-        let Some(token) = self.token() else {
-            return DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
-            };
-        };
 
-        match crate::String::try_new(
+        into_string_and_errors(
+            self,
             StringKind::MultiLineBasicString,
-            token.text().to_string(),
-            token.range(),
+            token,
+            range,
             toml_version,
-        ) {
-            Ok(string) => DocumentTreeAndErrors {
-                tree: crate::Value::String(string),
-                errors: Vec::with_capacity(0),
-            },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseStringError { error, range }],
-            },
-        }
+        )
     }
 }
 
@@ -222,53 +171,74 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::MultiLineLiteralStri
         self,
         toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
+        let token = self.token();
         let range = self.range();
-        let mut errors = vec![];
-        let mut comment_directives = vec![];
 
-        for comment in self.leading_comments() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
-            }
-
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                comment_directives.push(comment_directive);
-            }
-        }
-
-        if let Some(comment) = self.trailing_comment() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
-            }
-        }
-
-        let Some(token) = self.token() else {
-            errors.push(crate::Error::IncompleteNode { range });
-
-            return DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors,
-            };
-        };
-
-        match crate::String::try_new(
+        into_string_and_errors(
+            self,
             StringKind::MultiLineLiteralString,
-            token.text().to_string(),
-            token.range(),
+            token,
+            range,
             toml_version,
-        ) {
-            Ok(string) => DocumentTreeAndErrors {
-                tree: crate::Value::String(string),
-                errors: Vec::with_capacity(0),
-            },
-            Err(error) => {
-                errors.push(crate::Error::ParseStringError { error, range });
+        )
+    }
+}
 
-                DocumentTreeAndErrors {
-                    tree: crate::Value::Incomplete { range },
-                    errors,
-                }
-            }
+fn into_string_and_errors<T: AstNode>(
+    node: T,
+    string_kind: StringKind,
+    token: Option<tombi_syntax::SyntaxToken>,
+    range: tombi_text::Range,
+    toml_version: TomlVersion,
+) -> DocumentTreeAndErrors<crate::Value> {
+    let mut comment_directives = vec![];
+    let mut errors = vec![];
+
+    for comment in node.leading_comments() {
+        if let Err(error) = try_new_comment(comment.as_ref()) {
+            errors.push(error);
         }
+
+        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+            comment_directives.push(comment_directive);
+        }
+    }
+
+    if let Some(comment) = node.trailing_comment() {
+        if let Err(error) = try_new_comment(comment.as_ref()) {
+            errors.push(error);
+        }
+
+        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+            comment_directives.push(comment_directive);
+        }
+    }
+
+    let Some(token) = token else {
+        errors.push(crate::Error::IncompleteNode { range });
+
+        return DocumentTreeAndErrors {
+            tree: crate::Value::Incomplete { range },
+            errors,
+        };
+    };
+
+    let value = match crate::String::try_new(
+        string_kind,
+        token.text().to_string(),
+        token.range(),
+        toml_version,
+    ) {
+        Ok(string) => crate::Value::String(string),
+        Err(error) => {
+            errors.push(crate::Error::ParseStringError { error, range });
+
+            crate::Value::Incomplete { range }
+        }
+    };
+
+    DocumentTreeAndErrors {
+        tree: value,
+        errors,
     }
 }
