@@ -205,14 +205,51 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         let mut array = Array::new_array(&self);
 
         let mut errors = Vec::new();
+        let mut array_comment_directives = Vec::new();
 
+        // Collect comment directives from the array.
+        for comment in self.leading_comments() {
+            if let Err(error) = try_new_comment(comment.as_ref()) {
+                errors.push(error);
+            }
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                array_comment_directives.push(comment_directive);
+            }
+        }
+
+        // Collect comment directives from the array.
         for comments in self.inner_begin_dangling_comments() {
             for comment in comments {
                 if let Err(error) = try_new_comment(comment.as_ref()) {
                     errors.push(error);
                 }
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                    array_comment_directives.push(comment_directive);
+                }
             }
         }
+
+        for comments in self.inner_end_dangling_comments() {
+            for comment in comments {
+                if let Err(error) = try_new_comment(comment.as_ref()) {
+                    errors.push(error);
+                }
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                    array_comment_directives.push(comment_directive);
+                }
+            }
+        }
+
+        if let Some(tailing_comment) = self.trailing_comment() {
+            if let Err(error) = try_new_comment(tailing_comment.as_ref()) {
+                errors.push(error);
+            }
+            if let Some(comment_directive) = tailing_comment.get_tombi_value_directive() {
+                array_comment_directives.push(comment_directive);
+            }
+        }
+
+        if !array_comment_directives.is_empty() {}
 
         for (value_or_key, comma) in self.value_or_key_values_with_commata() {
             match value_or_key {
@@ -243,14 +280,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     if let Err(error) = try_new_comment(comment.as_ref()) {
                         errors.push(error);
                     }
-                }
-            }
-        }
-
-        for comments in self.inner_end_dangling_comments() {
-            for comment in comments {
-                if let Err(error) = try_new_comment(comment.as_ref()) {
-                    errors.push(error);
                 }
             }
         }

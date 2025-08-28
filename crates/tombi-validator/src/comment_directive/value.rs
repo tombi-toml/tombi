@@ -1,7 +1,8 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    KeyTombiCommentDirectiveRules, TombiCommentDirectiveImpl, ValueTombiCommentDirective,
-    WithKeyTombiCommentDirectiveRules, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    KeyTombiCommentDirective, KeyTombiCommentDirectiveRules, TombiCommentDirectiveImpl,
+    ValueTombiCommentDirective, WithKeyTombiCommentDirectiveRules,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
@@ -9,6 +10,14 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{DocumentSchema, SchemaUri};
 
 use crate::comment_directive::into_directive_diagnostic;
+
+pub async fn get_tombi_key_comment_directive(
+    comment_directives: &[tombi_ast::TombiValueCommentDirective],
+) -> Option<KeyTombiCommentDirective> {
+    get_tombi_key_comment_directive_and_diagnostics::<KeyTombiCommentDirective>(comment_directives)
+        .await
+        .0
+}
 
 pub async fn get_tombi_value_comment_directive<T>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
@@ -29,7 +38,7 @@ where
 pub async fn get_tombi_key_comment_directive_and_diagnostics<T>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
 ) -> (
-    Option<KeyTombiCommentDirectiveRules>,
+    Option<KeyTombiCommentDirective>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     let (total_document_tree_table, total_diagnostics) =
@@ -41,7 +50,7 @@ pub async fn get_tombi_key_comment_directive_and_diagnostics<T>(
 
     if let Some(total_document_tree_table) = total_document_tree_table {
         (
-            KeyTombiCommentDirectiveRules::deserialize(
+            KeyTombiCommentDirective::deserialize(
                 &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             )
             .ok(),
