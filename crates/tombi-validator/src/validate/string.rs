@@ -1,12 +1,14 @@
 use regex::Regex;
-use tombi_comment_directive::CommentContext;
-use tombi_diagnostic::SetDiagnostics;
+use tombi_comment_directive::{CommentContext, StringValueRules};
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 use tombi_x_keyword::StringFormat;
 
-use crate::{validate::format, validate::type_mismatch};
+use crate::{
+    comment_directive::get_tombi_value_rules_and_diagnostics,
+    validate::{format, type_mismatch},
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -19,10 +21,23 @@ impl Validate for tombi_document_tree::String {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let mut total_diagnostics = vec![];
+            let value_rules = if let Some(comment_directives) = self.comment_directives() {
+                let (value_rules, diagnostics) =
+                    get_tombi_value_rules_and_diagnostics::<StringValueRules>(comment_directives)
+                        .await;
+
+                total_diagnostics.extend(diagnostics);
+
+                value_rules
+            } else {
+                None
+            };
+
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
+                let result = match current_schema.value_schema.as_ref() {
                     ValueSchema::String(string_schema) => {
-                        validate_string(self, accessors, string_schema).await
+                        validate_string(self, accessors, string_schema, value_rules.as_ref()).await
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
@@ -32,6 +47,7 @@ impl Validate for tombi_document_tree::String {
                             current_schema,
                             schema_context,
                             comment_context,
+                            value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -43,6 +59,7 @@ impl Validate for tombi_document_tree::String {
                             current_schema,
                             schema_context,
                             comment_context,
+                            value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -54,6 +71,7 @@ impl Validate for tombi_document_tree::String {
                             current_schema,
                             schema_context,
                             comment_context,
+                            value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -62,10 +80,19 @@ impl Validate for tombi_document_tree::String {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
+                        value_rules.as_ref().map(|rules| &rules.common),
                     ),
+                };
+
+                if let Err(diagnostics) = result {
+                    total_diagnostics.extend(diagnostics);
                 }
-            } else {
+            }
+
+            if total_diagnostics.is_empty() {
                 Ok(())
+            } else {
+                Err(total_diagnostics)
             }
         }
         .boxed()
@@ -76,12 +103,18 @@ async fn validate_string(
     string_value: &tombi_document_tree::String,
     accessors: &[tombi_schema_store::Accessor],
     string_schema: &tombi_schema_store::StringSchema,
+    value_rules: Option<&StringValueRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value = string_value.value().to_string();
     let range = string_value.range();
 
     if let Some(const_value) = &string_schema.const_value {
+        let level = value_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| rules.const_value)
+            .unwrap_or_default();
+
         if value != *const_value {
             crate::Error {
                 kind: crate::ErrorKind::Const {
@@ -90,11 +123,16 @@ async fn validate_string(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(enumerate) = &string_schema.enumerate {
+        let level = value_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| rules.enumerate)
+            .unwrap_or_default();
+
         if !enumerate.contains(&value) {
             crate::Error {
                 kind: crate::ErrorKind::Enumerate {
@@ -103,11 +141,16 @@ async fn validate_string(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(max_length) = &string_schema.max_length {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.string_max_length)
+            .unwrap_or_default();
+
         if value.len() > *max_length {
             crate::Error {
                 kind: crate::ErrorKind::StringMaximumLength {
@@ -116,11 +159,16 @@ async fn validate_string(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(min_length) = &string_schema.min_length {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.string_min_length)
+            .unwrap_or_default();
+
         if value.len() < *min_length {
             crate::Error {
                 kind: crate::ErrorKind::StringMinimumLength {
@@ -129,11 +177,16 @@ async fn validate_string(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(format) = string_schema.format {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.string_format)
+            .unwrap_or_default();
+
         match format {
             StringFormat::Email => {
                 if !format::email::validate_format(&value) {
@@ -144,7 +197,7 @@ async fn validate_string(
                         },
                         range,
                     }
-                    .set_diagnostics(&mut diagnostics);
+                    .push_diagnostic_with_level(level, &mut diagnostics);
                 }
             }
             StringFormat::Hostname => {
@@ -156,7 +209,7 @@ async fn validate_string(
                         },
                         range,
                     }
-                    .set_diagnostics(&mut diagnostics);
+                    .push_diagnostic_with_level(level, &mut diagnostics);
                 }
             }
             StringFormat::Uri => {
@@ -168,7 +221,7 @@ async fn validate_string(
                         },
                         range,
                     }
-                    .set_diagnostics(&mut diagnostics);
+                    .push_diagnostic_with_level(level, &mut diagnostics);
                 }
             }
             StringFormat::Uuid => {
@@ -180,13 +233,18 @@ async fn validate_string(
                         },
                         range,
                     }
-                    .set_diagnostics(&mut diagnostics);
+                    .push_diagnostic_with_level(level, &mut diagnostics);
                 }
             }
-        }
+        };
     }
 
     if let Some(pattern) = &string_schema.pattern {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.string_pattern)
+            .unwrap_or_default();
+
         if let Ok(regex) = Regex::new(pattern) {
             if !regex.is_match(&value) {
                 crate::Error {
@@ -196,7 +254,7 @@ async fn validate_string(
                     },
                     range,
                 }
-                .set_diagnostics(&mut diagnostics);
+                .push_diagnostic_with_level(level, &mut diagnostics);
             }
         } else {
             tracing::warn!("Invalid regex pattern: {:?}", pattern);
@@ -204,6 +262,11 @@ async fn validate_string(
     }
 
     if diagnostics.is_empty() {
+        let level = value_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| rules.deprecated)
+            .unwrap_or_default();
+
         if string_schema.deprecated == Some(true) {
             crate::Warning {
                 kind: Box::new(crate::WarningKind::DeprecatedValue(
@@ -212,7 +275,7 @@ async fn validate_string(
                 )),
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 

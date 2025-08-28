@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_severity_level::SeverityLevel;
 use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
@@ -137,17 +138,25 @@ impl Error {
             ErrorKind::KeyPattern { .. } => "key-pattern",
         }
     }
-}
 
-impl From<Error> for tombi_diagnostic::Diagnostic {
-    fn from(error: Error) -> Self {
-        tombi_diagnostic::Diagnostic::new_error(error.kind.to_string(), error.code(), error.range)
-    }
-}
-
-impl tombi_diagnostic::SetDiagnostics for Error {
-    fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
-        diagnostics.push(self.into())
+    pub fn push_diagnostic_with_level(
+        self,
+        level: impl Into<SeverityLevel>,
+        diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    ) {
+        match level.into() {
+            SeverityLevel::Error => diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                self.kind.to_string(),
+                self.code(),
+                self.range,
+            )),
+            SeverityLevel::Warn => diagnostics.push(tombi_diagnostic::Diagnostic::new_warning(
+                self.kind.to_string(),
+                self.code(),
+                self.range,
+            )),
+            SeverityLevel::Off => {}
+        }
     }
 }
 

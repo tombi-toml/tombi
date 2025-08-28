@@ -1,32 +1,35 @@
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct LocalDateKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+use tombi_uri::SchemaUri;
 
-    #[serde(flatten)]
-    value: LocalDateTombiCommentDirectiveRules,
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+
+pub type LocalDateKeyValueTombiCommentDirective =
+    ValueTombiCommentDirective<LocalDateKeyValueRules>;
+
+pub type LocalDateValueTombiCommentDirective = ValueTombiCommentDirective<LocalDateValueRules>;
+
+pub type LocalDateKeyValueRules = WithKeyRules<LocalDateRules>;
+
+pub type LocalDateValueRules = WithCommonRules<LocalDateRules>;
+
+impl TombiCommentDirectiveImpl for LocalDateKeyValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/local-date-key-value-tombi-directive.json")
+            .unwrap()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct LocalDateValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    common: CommonValueTombiCommentDirectiveRules,
-
-    #[serde(flatten)]
-    local_date: LocalDateTombiCommentDirectiveRules,
+impl TombiCommentDirectiveImpl for LocalDateValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/local-date-value-tombi-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct LocalDateTombiCommentDirectiveRules {
+pub struct LocalDateRules {
     // No specific fields for local date type
 }

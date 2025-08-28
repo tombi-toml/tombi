@@ -40,7 +40,7 @@ impl ValueImpl for LocalDate {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 

@@ -4,7 +4,6 @@ mod validate;
 mod warning;
 
 pub use comment_directive::{
-    get_tombi_key_comment_directive, get_tombi_key_comment_directive_and_diagnostics,
     get_tombi_value_comment_directive, get_tombi_value_comment_directive_and_diagnostics,
 };
 pub use error::{Error, ErrorKind};

@@ -1,10 +1,9 @@
-use tombi_comment_directive::CommentContext;
-use tombi_diagnostic::SetDiagnostics;
+use tombi_comment_directive::{CommentContext, FloatValueRules};
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::validate::type_mismatch;
+use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -17,10 +16,23 @@ impl Validate for tombi_document_tree::Float {
         comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
+            let mut total_diagnostics = vec![];
+            let value_rules = if let Some(comment_directives) = self.comment_directives() {
+                let (value_rules, diagnostics) =
+                    get_tombi_value_rules_and_diagnostics::<FloatValueRules>(comment_directives)
+                        .await;
+
+                total_diagnostics.extend(diagnostics);
+
+                value_rules
+            } else {
+                None
+            };
+
             if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
+                let result = match current_schema.value_schema.as_ref() {
                     ValueSchema::Float(float_schema) => {
-                        validate_float(self, accessors, float_schema).await
+                        validate_float(self, accessors, float_schema, value_rules.as_ref()).await
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
@@ -30,6 +42,7 @@ impl Validate for tombi_document_tree::Float {
                             current_schema,
                             schema_context,
                             comment_context,
+                            value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -41,6 +54,7 @@ impl Validate for tombi_document_tree::Float {
                             current_schema,
                             schema_context,
                             comment_context,
+                            value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -52,6 +66,7 @@ impl Validate for tombi_document_tree::Float {
                             current_schema,
                             schema_context,
                             comment_context,
+                            value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -60,10 +75,19 @@ impl Validate for tombi_document_tree::Float {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
+                        value_rules.as_ref().map(|rules| &rules.common),
                     ),
+                };
+
+                if let Err(diagnostics) = result {
+                    total_diagnostics.extend(diagnostics);
                 }
-            } else {
+            };
+
+            if total_diagnostics.is_empty() {
                 Ok(())
+            } else {
+                Err(total_diagnostics)
             }
         }
         .boxed()
@@ -74,12 +98,19 @@ async fn validate_float(
     float_value: &tombi_document_tree::Float,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
+    value_rules: Option<&FloatValueRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
+
     let value = float_value.value();
     let range = float_value.range();
 
     if let Some(const_value) = &float_schema.const_value {
+        let level = value_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| rules.const_value)
+            .unwrap_or_default();
+
         if (value - *const_value).abs() > f64::EPSILON {
             crate::Error {
                 kind: crate::ErrorKind::Const {
@@ -88,11 +119,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(enumerate) = &float_schema.enumerate {
+        let level = value_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| rules.enumerate)
+            .unwrap_or_default();
+
         if !enumerate.contains(&value) {
             crate::Error {
                 kind: crate::ErrorKind::Enumerate {
@@ -101,11 +137,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(maximum) = &float_schema.maximum {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.float_maximum)
+            .unwrap_or_default();
+
         if value > *maximum {
             crate::Error {
                 kind: crate::ErrorKind::FloatMaximum {
@@ -114,11 +155,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(minimum) = &float_schema.minimum {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.float_minimum)
+            .unwrap_or_default();
+
         if value < *minimum {
             crate::Error {
                 kind: crate::ErrorKind::FloatMinimum {
@@ -127,11 +173,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.float_exclusive_maximum)
+            .unwrap_or_default();
+
         if value >= *exclusive_maximum {
             crate::Error {
                 kind: crate::ErrorKind::FloatExclusiveMaximum {
@@ -140,11 +191,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.float_exclusive_minimum)
+            .unwrap_or_default();
+
         if value <= *exclusive_minimum {
             crate::Error {
                 kind: crate::ErrorKind::FloatExclusiveMinimum {
@@ -153,11 +209,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if let Some(multiple_of) = &float_schema.multiple_of {
+        let level = value_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.float_multiple_of)
+            .unwrap_or_default();
+
         if (value % *multiple_of).abs() > f64::EPSILON {
             crate::Error {
                 kind: crate::ErrorKind::FloatMultipleOf {
@@ -166,11 +227,16 @@ async fn validate_float(
                 },
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 
     if diagnostics.is_empty() {
+        let level = value_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| rules.deprecated)
+            .unwrap_or_default();
+
         if float_schema.deprecated == Some(true) {
             crate::Warning {
                 kind: Box::new(crate::WarningKind::DeprecatedValue(
@@ -179,7 +245,7 @@ async fn validate_float(
                 )),
                 range,
             }
-            .set_diagnostics(&mut diagnostics);
+            .push_diagnostic_with_level(level, &mut diagnostics);
         }
     }
 

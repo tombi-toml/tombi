@@ -1,15 +1,10 @@
-use std::str::FromStr;
-
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
-use tombi_uri::SchemaUri;
-
-use crate::TombiCommentDirectiveImpl;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct KeyTombiCommentDirectiveRules {
+pub struct KeyRules {
     /// # Dotted keys out of order.
     ///
     /// Check if dotted keys are defined out of order.
@@ -47,10 +42,4 @@ pub struct KeyTombiCommentDirectiveRules {
 
     /// Controls the severity level for key pattern errors
     pub key_pattern: Option<SeverityLevelDefaultError>,
-}
-
-impl TombiCommentDirectiveImpl for KeyTombiCommentDirectiveRules {
-    fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/key-tombi-directive.json").unwrap()
-    }
 }

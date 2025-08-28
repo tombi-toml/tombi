@@ -1,35 +1,35 @@
+use std::str::FromStr;
+
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_uri::SchemaUri;
 
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct TableKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+pub type TableKeyValueTombiCommentDirective = ValueTombiCommentDirective<TableKeyValueRules>;
 
-    #[serde(flatten)]
-    value: TableTombiCommentDirectiveRules,
+pub type TableValueTombiCommentDirective = ValueTombiCommentDirective<TableValueRules>;
+
+pub type TableKeyValueRules = WithCommonRules<WithKeyRules<TableRules>>;
+
+pub type TableValueRules = WithCommonRules<TableRules>;
+
+impl TombiCommentDirectiveImpl for TableKeyValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/table-key-value-tombi-directive.json").unwrap()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct TableValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    common: CommonValueTombiCommentDirectiveRules,
-
-    #[serde(flatten)]
-    table: TableTombiCommentDirectiveRules,
+impl TombiCommentDirectiveImpl for TableValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/table-value-tombi-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct TableTombiCommentDirectiveRules {
+pub struct TableRules {
     /// # Tables out of order.
     ///
     /// Check if tables are defined out of order.

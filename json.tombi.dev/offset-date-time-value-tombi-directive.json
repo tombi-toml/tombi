@@ -22,7 +22,7 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/OffsetDateTimeValueTombiCommentDirectiveRules"
+              "$ref": "#/definitions/WithCommonRules"
             },
             {
               "type": "null"
@@ -32,7 +32,7 @@
       },
       "additionalProperties": false
     },
-    "OffsetDateTimeValueTombiCommentDirectiveRules": {
+    "WithCommonRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {
@@ -67,9 +67,21 @@
               "type": "null"
             }
           ]
+        },
+        "deprecated": {
+          "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "SeverityLevelDefaultError": {
       "default": "error",
@@ -95,6 +107,14 @@
           "title": "Display as Error.",
           "type": "string",
           "const": "error"
+        }
+      ]
+    },
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
         }
       ]
     }

@@ -1,4 +1,5 @@
 use tombi_schema_store::{SchemaAccessors, SchemaUri};
+use tombi_severity_level::SeverityLevel;
 
 #[derive(thiserror::Error, Debug)]
 pub enum WarningKind {
@@ -35,14 +36,24 @@ impl Warning {
             WarningKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
         }
     }
-}
 
-impl tombi_diagnostic::SetDiagnostics for Warning {
-    fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
-        diagnostics.push(tombi_diagnostic::Diagnostic::new_warning(
-            self.kind.to_string(),
-            self.code(),
-            self.range,
-        ))
+    pub fn push_diagnostic_with_level(
+        self,
+        level: impl Into<SeverityLevel>,
+        diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    ) {
+        match level.into() {
+            SeverityLevel::Error => diagnostics.push(tombi_diagnostic::Diagnostic::new_error(
+                self.kind.to_string(),
+                self.code(),
+                self.range,
+            )),
+            SeverityLevel::Warn => diagnostics.push(tombi_diagnostic::Diagnostic::new_warning(
+                self.kind.to_string(),
+                self.code(),
+                self.range,
+            )),
+            SeverityLevel::Off => {}
+        }
     }
 }

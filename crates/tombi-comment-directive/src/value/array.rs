@@ -1,34 +1,34 @@
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use std::str::FromStr;
+
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
 use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_uri::SchemaUri;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct ArrayKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+pub type ArrayKeyValueTombiCommentDirective = ValueTombiCommentDirective<ArrayKeyValueRules>;
 
-    #[serde(flatten)]
-    value: ArrayValueTombiCommentDirectiveRules,
+pub type ArrayValueTombiCommentDirective = ValueTombiCommentDirective<ArrayValueRules>;
+
+pub type ArrayKeyValueRules = WithKeyRules<ArrayRules>;
+
+pub type ArrayValueRules = WithCommonRules<ArrayRules>;
+
+impl TombiCommentDirectiveImpl for ArrayKeyValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/array-key-value-tombi-directive.json").unwrap()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct ArrayValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    common: CommonValueTombiCommentDirectiveRules,
-
-    #[serde(flatten)]
-    array: ArrayTombiCommentDirectiveRules,
+impl TombiCommentDirectiveImpl for ArrayValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/array-value-tombi-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct ArrayTombiCommentDirectiveRules {
+pub struct ArrayRules {
     /// Controls the severity level for max values errors
     pub array_max_items: Option<SeverityLevelDefaultError>,
 

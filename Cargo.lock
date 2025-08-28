@@ -4000,6 +4000,7 @@ dependencies = [
  "tombi-json",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-severity-level",
  "tombi-text",
  "tombi-toml-text",
  "tombi-uri",

@@ -1,35 +1,36 @@
+use std::str::FromStr;
+
 use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_uri::SchemaUri;
 
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct IntegerKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+pub type IntegerKeyValueTombiCommentDirective = ValueTombiCommentDirective<IntegerKeyValueRules>;
 
-    #[serde(flatten)]
-    value: IntegerTombiCommentDirectiveRules,
+pub type IntegerValueTombiCommentDirective = ValueTombiCommentDirective<IntegerValueRules>;
+
+pub type IntegerKeyValueRules = WithKeyRules<IntegerValueRules>;
+
+pub type IntegerValueRules = WithCommonRules<IntegerRules>;
+
+impl TombiCommentDirectiveImpl for IntegerKeyValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/integer-key-value-tombi-directive.json")
+            .unwrap()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct IntegerValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    common: CommonValueTombiCommentDirectiveRules,
-
-    #[serde(flatten)]
-    integer: IntegerTombiCommentDirectiveRules,
+impl TombiCommentDirectiveImpl for IntegerValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/integer-value-tombi-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct IntegerTombiCommentDirectiveRules {
+pub struct IntegerRules {
     /// Controls the severity level for maximum integer errors
     pub integer_maximum: Option<SeverityLevelDefaultError>,
 
