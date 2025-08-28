@@ -217,48 +217,72 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> crate::DocumentTreeAndErrors<crate::Value> {
         let mut array = Array::new_array(&self);
-
         let mut errors = Vec::new();
-        let mut array_comment_directives = Vec::new();
 
-        // Collect comment directives from the array.
-        for comment in self.leading_comments() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                array_comment_directives.push(comment_directive);
-            }
-        }
+        {
+            let mut comment_directives = Vec::new();
 
-        // Collect comment directives from the array.
-        for comments in self.inner_begin_dangling_comments() {
-            for comment in comments {
+            // Collect comment directives from the array.
+            for comment in self.leading_comments() {
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    array_comment_directives.push(comment_directive);
+                    comment_directives.push(comment_directive);
                 }
             }
-        }
 
-        for comments in self.inner_end_dangling_comments() {
-            for comment in comments {
-                if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    array_comment_directives.push(comment_directive);
+            // Collect comment directives from the array.
+            for comments in self.inner_begin_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
                 }
             }
-        }
 
-        if let Some(tailing_comment) = self.trailing_comment() {
-            if let Some(comment_directive) = tailing_comment.get_tombi_value_directive() {
-                array_comment_directives.push(comment_directive);
+            for comments in self.inner_end_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+
+            if let Some(tailing_comment) = self.trailing_comment() {
+                if let Some(comment_directive) = tailing_comment.get_tombi_value_directive() {
+                    comment_directives.push(comment_directive);
+                }
+            }
+
+            if !comment_directives.is_empty() {
+                array.comment_directives = Some(Box::new(comment_directives));
             }
         }
-
-        if !array_comment_directives.is_empty() {}
 
         for (value_or_key, comma) in self.value_or_key_values_with_commata() {
+            // Note: leading comments. trailing comments are collected in value side.
             match value_or_key {
                 tombi_ast::ValueOrKeyValue::Value(value) => {
-                    let (value, errs) = value.into_document_tree_and_errors(toml_version).into();
+                    let (mut value, errs) =
+                        value.into_document_tree_and_errors(toml_version).into();
+
                     if !errs.is_empty() {
                         errors.extend(errs);
+                    }
+
+                    if let Some(comma) = comma {
+                        let mut comma_comment_directives = vec![];
+                        for comment in comma.leading_comments() {
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                comma_comment_directives.push(comment_directive);
+                            }
+                        }
+                        if let Some(comment) = comma.trailing_comment() {
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                comma_comment_directives.push(comment_directive);
+                            }
+                        }
+                        if !comma_comment_directives.is_empty() {
+                            value.extend_comment_directives(comma_comment_directives);
+                        }
                     }
                     array.push(value);
                 }
@@ -268,20 +292,26 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     if !errs.is_empty() {
                         errors.extend(errs);
                     }
-                    array.push(crate::Value::Table(table));
-                }
-            }
 
-            if let Some(comma) = comma {
-                for comment in comma.leading_comments() {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        array_comment_directives.push(comment_directive);
+                    let mut value = crate::Value::Table(table);
+                    if let Some(comma) = comma {
+                        let mut comma_comment_directives = vec![];
+                        for comment in comma.leading_comments() {
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                comma_comment_directives.push(comment_directive);
+                            }
+                        }
+                        if let Some(comment) = comma.trailing_comment() {
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                comma_comment_directives.push(comment_directive);
+                            }
+                        }
+                        if !comma_comment_directives.is_empty() {
+                            value.extend_comment_directives(comma_comment_directives);
+                        }
                     }
-                }
-                if let Some(comment) = comma.trailing_comment() {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        array_comment_directives.push(comment_directive);
-                    }
+
+                    array.push(value);
                 }
             }
         }

@@ -4,7 +4,10 @@ use tombi_toml_text::{
 };
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{
+    value::collect_comment_directives, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
+    ValueType,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StringKind {
@@ -38,11 +41,12 @@ impl std::fmt::Display for String {
 }
 
 impl crate::String {
-    pub fn try_new(
+    fn try_new(
         kind: StringKind,
         quoted_string: impl Into<std::string::String>,
         range: tombi_text::Range,
         toml_version: TomlVersion,
+        comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
     ) -> Result<Self, tombi_toml_text::ParseError> {
         let quoted_string = quoted_string.into();
 
@@ -63,7 +67,7 @@ impl crate::String {
             kind,
             value,
             range,
-            comment_directives: None,
+            comment_directives,
         })
     }
 
@@ -188,20 +192,7 @@ fn into_string_and_errors<T: AstNode>(
     range: tombi_text::Range,
     toml_version: TomlVersion,
 ) -> DocumentTreeAndErrors<crate::Value> {
-    let mut comment_directives = vec![];
     let mut errors = vec![];
-
-    for comment in node.leading_comments() {
-        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-            comment_directives.push(comment_directive);
-        }
-    }
-
-    if let Some(comment) = node.trailing_comment() {
-        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-            comment_directives.push(comment_directive);
-        }
-    }
 
     let Some(token) = token else {
         errors.push(crate::Error::IncompleteNode { range });
@@ -217,13 +208,9 @@ fn into_string_and_errors<T: AstNode>(
         token.text().to_string(),
         token.range(),
         toml_version,
+        collect_comment_directives(node),
     ) {
-        Ok(mut string) => {
-            if !comment_directives.is_empty() {
-                string.comment_directives = Some(Box::new(comment_directives));
-            }
-            crate::Value::String(string)
-        }
+        Ok(string) => crate::Value::String(string),
         Err(error) => {
             errors.push(crate::Error::ParseStringError { error, range });
 

@@ -591,7 +591,12 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             seed_key_value.range = key.range() + value.range();
             seed_key_value.symbol_range = key.range() + value.symbol_range();
             match seed_key_value.insert(key, value) {
-                Ok(table) => table,
+                Ok(mut table) => {
+                    if !comment_directives.is_empty() {
+                        table.comment_directives = Some(Box::new(comment_directives));
+                    }
+                    table
+                }
                 Err(errs) => {
                     errors.extend(errs);
                     return make_keys_table(keys, table, errors);

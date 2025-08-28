@@ -3,6 +3,7 @@ use tombi_toml_version::TomlVersion;
 
 use crate::{
     support::integer::{try_from_binary, try_from_decimal, try_from_hexadecimal, try_from_octal},
+    value::collect_comment_directives,
     DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
@@ -171,7 +172,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerHex {
                     kind: IntegerKind::Hexadecimal,
                     value,
                     range: token.range(),
-                    comment_directives: None,
+                    comment_directives: collect_comment_directives(self),
                 }),
                 errors: Vec::with_capacity(0),
             },

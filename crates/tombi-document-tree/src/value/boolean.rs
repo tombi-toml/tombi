@@ -1,7 +1,10 @@
-use tombi_ast::{AstNode, TombiValueCommentDirective};
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{
+    value::collect_comment_directives, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
+    ValueType,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Boolean {
@@ -47,20 +50,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
         self,
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
-        let mut comment_directives = vec![];
-
-        for comment in self.leading_comments() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                comment_directives.push(comment_directive);
-            }
-        }
-
-        if let Some(comment) = self.trailing_comment() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                comment_directives.push(comment_directive);
-            }
-        }
-
         let range = self.range();
         let Some(token) = self.token() else {
             return DocumentTreeAndErrors {
@@ -79,7 +68,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
                 range: token.range(),
-                comment_directives: None,
+                comment_directives: collect_comment_directives(self),
             }),
             errors: Vec::with_capacity(0),
         }

@@ -2,8 +2,8 @@ use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::float::try_from_float, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
-    ValueType,
+    support::float::try_from_float, value::collect_comment_directives, DocumentTreeAndErrors,
+    IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -63,7 +63,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
                 tree: crate::Value::Float(crate::Float {
                     value,
                     range: token.range(),
-                    comment_directives: None,
+                    comment_directives: collect_comment_directives(self),
                 }),
                 errors: Vec::with_capacity(0),
             },

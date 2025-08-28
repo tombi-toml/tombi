@@ -1,8 +1,8 @@
 use tombi_ast::TombiValueCommentDirective;
 
 use crate::{
-    support::chrono::try_new_local_time, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
-    ValueImpl, ValueType,
+    support::chrono::try_new_local_time, value::collect_comment_directives, DocumentTreeAndErrors,
+    IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -68,7 +68,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalTime {
                 tree: crate::Value::LocalTime(crate::LocalTime {
                     value,
                     range: token.range(),
-                    comment_directives: None,
+                    comment_directives: collect_comment_directives(self),
                 }),
                 errors: Vec::with_capacity(0),
             },
