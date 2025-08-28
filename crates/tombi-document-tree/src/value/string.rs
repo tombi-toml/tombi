@@ -1,10 +1,13 @@
-use tombi_ast::TombiValueCommentDirective;
+use tombi_ast::{AstNode, TombiValueCommentDirective};
 use tombi_toml_text::{
     to_basic_string, to_literal_string, to_multi_line_basic_string, to_multi_line_literal_string,
 };
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{
+    support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl,
+    ValueType,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StringKind {
@@ -19,7 +22,7 @@ pub struct String {
     kind: StringKind,
     value: std::string::String,
     range: tombi_text::Range,
-    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl std::fmt::Display for String {
@@ -220,10 +223,31 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::MultiLineLiteralStri
         toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let mut errors = vec![];
+        let mut comment_directives = vec![];
+
+        for comment in self.leading_comments() {
+            if let Err(error) = try_new_comment(comment.as_ref()) {
+                errors.push(error);
+            }
+
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
+            }
+        }
+
+        if let Some(comment) = self.trailing_comment() {
+            if let Err(error) = try_new_comment(comment.as_ref()) {
+                errors.push(error);
+            }
+        }
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -237,10 +261,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::MultiLineLiteralStri
                 tree: crate::Value::String(string),
                 errors: Vec::with_capacity(0),
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseStringError { error, range }],
-            },
+            Err(error) => {
+                errors.push(crate::Error::ParseStringError { error, range });
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }

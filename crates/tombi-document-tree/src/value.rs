@@ -13,7 +13,7 @@ pub use float::Float;
 pub use integer::{Integer, IntegerKind};
 pub use string::{String, StringKind};
 pub use table::{Table, TableKind};
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, TombiValueCommentDirective};
 
 use crate::{support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
 
@@ -64,6 +64,23 @@ impl Value {
             Value::Array(value) => value.symbol_range(),
             Value::Table(value) => value.symbol_range(),
             Value::Incomplete { range } => *range,
+        }
+    }
+
+    #[inline]
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        match self {
+            Value::Boolean(value) => value.comment_directives(),
+            Value::Integer(value) => value.comment_directives(),
+            Value::Float(value) => value.comment_directives(),
+            Value::String(value) => value.comment_directives(),
+            Value::OffsetDateTime(value) => value.comment_directives(),
+            Value::LocalDateTime(value) => value.comment_directives(),
+            Value::LocalDate(value) => value.comment_directives(),
+            Value::LocalTime(value) => value.comment_directives(),
+            Value::Array(value) => value.comment_directives(),
+            Value::Table(value) => value.comment_directives(),
+            Value::Incomplete { .. } => None,
         }
     }
 }

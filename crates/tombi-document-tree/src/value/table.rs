@@ -1,6 +1,6 @@
 use indexmap::{map::Entry, IndexMap};
 use itertools::Itertools;
-use tombi_ast::{AstChildren, AstNode};
+use tombi_ast::{AstChildren, AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
@@ -24,7 +24,7 @@ pub struct Table {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     key_values: IndexMap<Key, Value>,
-    comment_directives: Option<Box<tombi_comment_directive::TableTombiCommentDirective>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Table {
@@ -132,6 +132,11 @@ impl Table {
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
             comment_directives: None,
         }
+    }
+
+    #[inline]
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 
     #[inline]
@@ -326,10 +331,8 @@ impl Table {
     }
 
     #[inline]
-    pub fn comment_directive(
-        &self,
-    ) -> Option<&tombi_comment_directive::TableTombiCommentDirective> {
-        self.comment_directives.as_deref()
+    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -533,10 +536,24 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
     ) -> DocumentTreeAndErrors<Table> {
         let table = Table::new_key_value(&self);
         let mut errors = Vec::new();
+        let mut comment_directives = vec![];
 
         for comment in self.leading_comments() {
             if let Err(error) = try_new_comment(comment.as_ref()) {
                 errors.push(error);
+            }
+
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
+            }
+        }
+
+        if let Some(comment) = self.trailing_comment() {
+            if let Err(error) = try_new_comment(comment.as_ref()) {
+                errors.push(error);
+            }
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
             }
         }
 
@@ -562,6 +579,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                 if !errs.is_empty() {
                     errors.extend(errs);
                 }
+
                 value
             }
             None => {

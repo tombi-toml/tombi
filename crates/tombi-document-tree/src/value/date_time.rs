@@ -98,7 +98,7 @@ impl LocalDate {
 pub struct LocalTime {
     value: tombi_date_time::LocalTime,
     range: tombi_text::Range,
-    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalTime {

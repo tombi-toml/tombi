@@ -19,7 +19,7 @@ pub struct Integer {
     kind: IntegerKind,
     value: i64,
     range: tombi_text::Range,
-    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Integer {

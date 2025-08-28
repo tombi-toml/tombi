@@ -7,7 +7,7 @@ use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueTy
 pub struct Boolean {
     value: bool,
     range: tombi_text::Range,
-    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Boolean {
