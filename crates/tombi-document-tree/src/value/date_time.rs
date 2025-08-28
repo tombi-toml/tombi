@@ -132,7 +132,7 @@ impl ValueImpl for OffsetDateTime {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 
@@ -196,7 +196,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
-        let Some(_) = self.token() else {
+        let Some(token) = self.token() else {
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![crate::Error::IncompleteNode { range }],
@@ -207,7 +207,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
             Ok(value) => DocumentTreeAndErrors {
                 tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -226,7 +226,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
-        let Some(_) = self.token() else {
+        let Some(token) = self.token() else {
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![crate::Error::IncompleteNode { range }],
@@ -237,7 +237,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
             Ok(value) => DocumentTreeAndErrors {
                 tree: crate::Value::LocalDateTime(crate::LocalDateTime {
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -256,7 +256,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDate {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
-        let Some(_) = self.token() else {
+        let Some(token) = self.token() else {
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![crate::Error::IncompleteNode { range }],
@@ -267,7 +267,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDate {
             Ok(value) => DocumentTreeAndErrors {
                 tree: crate::Value::LocalDate(crate::LocalDate {
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -286,7 +286,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalTime {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
-        let Some(_) = self.token() else {
+        let Some(token) = self.token() else {
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
                 errors: vec![crate::Error::IncompleteNode { range }],
@@ -297,7 +297,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalTime {
             Ok(value) => DocumentTreeAndErrors {
                 tree: crate::Value::LocalTime(crate::LocalTime {
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),

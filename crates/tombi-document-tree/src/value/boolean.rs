@@ -38,7 +38,7 @@ impl ValueImpl for Boolean {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 
@@ -64,7 +64,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
         DocumentTreeAndErrors {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
-                range,
+                range: token.range(),
                 comment_directive: None,
             }),
             errors: Vec::with_capacity(0),

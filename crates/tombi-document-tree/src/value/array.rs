@@ -193,7 +193,7 @@ impl ValueImpl for Array {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 

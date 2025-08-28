@@ -55,7 +55,7 @@ impl ValueImpl for Integer {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 
@@ -77,7 +77,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerBin {
                 tree: crate::Value::Integer(crate::Integer {
                     kind: IntegerKind::Binary,
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -108,7 +108,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerOct {
                 tree: crate::Value::Integer(crate::Integer {
                     kind: IntegerKind::Octal,
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -139,7 +139,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerDec {
                 tree: crate::Value::Integer(crate::Integer {
                     kind: IntegerKind::Decimal,
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -170,7 +170,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerHex {
                 tree: crate::Value::Integer(crate::Integer {
                     kind: IntegerKind::Hexadecimal,
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),

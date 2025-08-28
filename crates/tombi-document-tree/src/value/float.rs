@@ -41,7 +41,7 @@ impl ValueImpl for Float {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 
@@ -62,7 +62,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
             Ok(value) => DocumentTreeAndErrors {
                 tree: crate::Value::Float(crate::Float {
                     value,
-                    range,
+                    range: token.range(),
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),

@@ -117,7 +117,7 @@ impl ValueImpl for crate::String {
     }
 
     fn range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 }
 

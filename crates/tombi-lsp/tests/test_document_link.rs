@@ -293,7 +293,7 @@ mod document_link_tests {
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
                 },
                 {
-                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    path: project_root_path().join("crates/tombi-accessor/Cargo.toml"),
                     range: 8:12..8:20,
                     tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoTomlFirstMember,
                 },
