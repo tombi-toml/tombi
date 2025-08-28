@@ -1,7 +1,6 @@
 pub mod comment_directive;
 mod error;
 mod validate;
-mod validate_ast;
 mod warning;
 
 pub use comment_directive::{
