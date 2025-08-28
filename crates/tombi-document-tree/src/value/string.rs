@@ -19,7 +19,6 @@ pub struct String {
     kind: StringKind,
     value: std::string::String,
     range: tombi_text::Range,
-    symbol_range: tombi_text::Range,
     comment_directive: Option<Box<StringTombiCommentDirective>>,
 }
 
@@ -64,7 +63,6 @@ impl crate::String {
             kind,
             value,
             range,
-            symbol_range: range,
             comment_directive: None,
         })
     }
@@ -109,7 +107,7 @@ impl crate::String {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]

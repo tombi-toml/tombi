@@ -329,7 +329,7 @@ impl Table {
     pub fn comment_directive(
         &self,
     ) -> Option<&tombi_comment_directive::TableTombiCommentDirective> {
-        self.comment_directive.as_ref().map(|c| c.as_ref())
+        self.comment_directive.as_deref()
     }
 }
 

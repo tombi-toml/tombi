@@ -10,7 +10,6 @@ use crate::{
 pub struct Float {
     value: f64,
     range: tombi_text::Range,
-    symbol_range: tombi_text::Range,
     comment_directive: Option<Box<FloatTombiCommentDirective>>,
 }
 
@@ -27,7 +26,7 @@ impl Float {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]
@@ -64,7 +63,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
                 tree: crate::Value::Float(crate::Float {
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),

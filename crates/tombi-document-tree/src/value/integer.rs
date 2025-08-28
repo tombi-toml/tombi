@@ -19,7 +19,6 @@ pub struct Integer {
     kind: IntegerKind,
     value: i64,
     range: tombi_text::Range,
-    symbol_range: tombi_text::Range,
     comment_directive: Option<Box<IntegerTombiCommentDirective>>,
 }
 
@@ -41,7 +40,7 @@ impl Integer {
 
     #[inline]
     pub fn symbol_range(&self) -> tombi_text::Range {
-        self.range()
+        self.range
     }
 
     #[inline]
@@ -79,7 +78,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerBin {
                     kind: IntegerKind::Binary,
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -111,7 +109,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerOct {
                     kind: IntegerKind::Octal,
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -143,7 +140,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerDec {
                     kind: IntegerKind::Decimal,
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
@@ -175,7 +171,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerHex {
                     kind: IntegerKind::Hexadecimal,
                     value,
                     range,
-                    symbol_range: range,
                     comment_directive: None,
                 }),
                 errors: Vec::with_capacity(0),
