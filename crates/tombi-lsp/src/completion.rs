@@ -16,8 +16,8 @@ use tombi_extension::{
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, ReferableValueSchemas, SchemaDefinitions, SchemaStore, SchemaUri,
-    ValueSchema,
+    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, ReferableValueSchemas, SchemaDefinitions,
+    SchemaStore, SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -494,4 +494,81 @@ fn get_trailing_comma(node: &SyntaxNode, position: tombi_text::Position) -> Opti
         }
     }
     None
+}
+
+pub async fn get_completion_keys_with_context(
+    root: &tombi_ast::Root,
+    position: tombi_text::Position,
+    toml_version: tombi_config::TomlVersion,
+) -> Option<(Vec<tombi_document_tree::Key>, Vec<KeyContext>)> {
+    let mut keys_vec = vec![];
+    let mut key_contexts = vec![];
+
+    for node in ancestors_at_position(root.syntax(), position) {
+        if let Some(kv) = tombi_ast::KeyValue::cast(node.to_owned()) {
+            let keys = kv.keys()?;
+            let keys = if keys.range().contains(position) {
+                keys.keys()
+                    .take_while(|key| key.token().unwrap().range().start <= position)
+                    .collect_vec()
+            } else {
+                keys.keys().collect_vec()
+            };
+            for (i, key) in keys.into_iter().rev().enumerate() {
+                match key.try_into_document_tree(toml_version) {
+                    Ok(Some(key_dt)) => {
+                        let kind = if i == 0 {
+                            AccessorKeyKind::KeyValue
+                        } else {
+                            AccessorKeyKind::Dotted
+                        };
+                        keys_vec.push(key_dt.clone());
+                        key_contexts.push(KeyContext {
+                            kind,
+                            range: key_dt.range(),
+                        });
+                    }
+                    _ => return None,
+                }
+            }
+        } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
+            if let Some(header) = table.header() {
+                for key in header.keys().rev() {
+                    match key.try_into_document_tree(toml_version) {
+                        Ok(Some(key_dt)) => {
+                            keys_vec.push(key_dt.clone());
+                            key_contexts.push(KeyContext {
+                                kind: AccessorKeyKind::Header,
+                                range: key_dt.range(),
+                            });
+                        }
+                        _ => return None,
+                    }
+                }
+            }
+        } else if let Some(array_of_table) = tombi_ast::ArrayOfTable::cast(node.to_owned()) {
+            if let Some(header) = array_of_table.header() {
+                for key in header.keys().rev() {
+                    match key.try_into_document_tree(toml_version) {
+                        Ok(Some(key_dt)) => {
+                            keys_vec.push(key_dt.clone());
+                            key_contexts.push(KeyContext {
+                                kind: AccessorKeyKind::Header,
+                                range: key_dt.range(),
+                            });
+                        }
+                        _ => return None,
+                    }
+                }
+            }
+        }
+    }
+
+    if keys_vec.is_empty() {
+        return None;
+    }
+    Some((
+        keys_vec.into_iter().rev().collect(),
+        key_contexts.into_iter().rev().collect(),
+    ))
 }

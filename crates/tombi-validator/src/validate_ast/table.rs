@@ -118,7 +118,7 @@ where
                     ) in pattern_properties.write().await.iter_mut()
                     {
                         let Ok(pattern) = regex::Regex::new(pattern_key) else {
-                            tracing::error!("Invalid regex pattern property: {}", pattern_key);
+                            tracing::warn!("Invalid regex pattern property: {}", pattern_key);
                             continue;
                         };
                         if pattern.is_match(&key_raw_text) {

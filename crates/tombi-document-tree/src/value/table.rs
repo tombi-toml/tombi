@@ -4,8 +4,8 @@ use tombi_ast::{AstChildren, AstNode};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::comment::try_new_comment, Array, Comment, DocumentTreeAndErrors,
-    IntoDocumentTreeAndErrors, Key, Value, ValueImpl, ValueType,
+    support::comment::try_new_comment, Array, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
+    Key, Value, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -13,7 +13,7 @@ pub enum TableKind {
     Root,
     Table,
     ParentTable,
-    InlineTable,
+    InlineTable { has_comment: bool },
     ParentKey,
     KeyValue,
 }
@@ -24,62 +24,7 @@ pub struct Table {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     key_values: IndexMap<Key, Value>,
-
-    /// The leading comments of the table header.
-    ///
-    /// ```toml
-    /// # This comment
-    /// [table]
-    ///
-    /// [inline_table]
-    /// # This comment
-    /// table = {}
-    /// ```
-    leading_comments: Vec<Comment>,
-
-    /// The trailing comment of the table header.
-    ///
-    /// ```toml
-    /// [table]  # This comment
-    ///
-    /// [inline_table]
-    /// table = {}  # This comment
-    /// ```
-    trailing_comment: Option<Comment>,
-
-    /// The leading comments of the key-value pairs.
-    ///
-    /// ```toml
-    /// [table]
-    /// # This comments
-    ///
-    /// key = "value"
-    ///
-    /// [inline_table]
-    /// table = {
-    ///   # This comments
-    ///
-    ///   key = "value"
-    /// }
-    /// ```
-    key_values_begin_dangling_comments: Vec<Vec<Comment>>,
-
-    /// The trailing comments of the key-value pairs.
-    ///
-    /// ```toml
-    /// [table]
-    /// key = "value"
-    ///
-    /// # This comments
-    ///
-    /// [inline_table]
-    /// table = {
-    ///   key = "value"
-    ///
-    ///   # This comments
-    /// }
-    /// ```
-    key_values_end_dangling_comments: Vec<Vec<Comment>>,
+    comment_directive: Option<Box<tombi_comment_directive::TableTombiCommentDirective>>,
 }
 
 impl Table {
@@ -89,10 +34,7 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::default(),
             symbol_range: tombi_text::Range::default(),
-            leading_comments: Default::default(),
-            trailing_comment: Default::default(),
-            key_values_begin_dangling_comments: Default::default(),
-            key_values_end_dangling_comments: Default::default(),
+            comment_directive: None,
         }
     }
 
@@ -102,18 +44,7 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
-            leading_comments: vec![],
-            trailing_comment: None,
-            key_values_begin_dangling_comments: node
-                .key_values_begin_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
-            key_values_end_dangling_comments: node
-                .key_values_end_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
+            comment_directive: None,
         }
     }
 
@@ -128,21 +59,7 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
-            leading_comments: node
-                .header_leading_comments()
-                .map(crate::Comment::from)
-                .collect_vec(),
-            trailing_comment: node.header_trailing_comment().map(crate::Comment::from),
-            key_values_begin_dangling_comments: node
-                .key_values_begin_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
-            key_values_end_dangling_comments: node
-                .key_values_end_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
+            comment_directive: None,
         }
     }
 
@@ -157,50 +74,33 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
-            leading_comments: node
-                .header_leading_comments()
-                .map(crate::Comment::from)
-                .collect_vec(),
-            trailing_comment: node.header_trailing_comment().map(crate::Comment::from),
-            key_values_begin_dangling_comments: node
-                .key_values_begin_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
-            key_values_end_dangling_comments: node
-                .key_values_end_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
+            comment_directive: None,
         }
     }
 
     pub(crate) fn new_inline_table(node: &tombi_ast::InlineTable) -> Self {
-        Self {
-            kind: TableKind::InlineTable,
-            key_values: Default::default(),
-            range: node.syntax().range(),
-            symbol_range: tombi_text::Range::new(
-                node.brace_start()
-                    .map_or_else(|| node.range().start, |brace| brace.range().start),
-                node.brace_end()
-                    .map_or_else(|| node.range().end, |brace| brace.range().end),
-            ),
-            leading_comments: node
-                .leading_comments()
-                .map(crate::Comment::from)
-                .collect_vec(),
-            trailing_comment: node.trailing_comment().map(crate::Comment::from),
-            key_values_begin_dangling_comments: node
-                .inner_begin_dangling_comments()
-                .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
-            key_values_end_dangling_comments: node
+        let has_comment = !node.inner_begin_dangling_comments().is_empty()
+            || !node
                 .inner_end_dangling_comments()
                 .into_iter()
-                .map(|c| c.into_iter().map(crate::Comment::from).collect_vec())
-                .collect_vec(),
+                .flatten()
+                .collect_vec()
+                .is_empty()
+            || node.has_inner_comments();
+
+        let symbol_range = tombi_text::Range::new(
+            node.brace_start()
+                .map_or_else(|| node.range().start, |brace| brace.range().start),
+            node.brace_end()
+                .map_or_else(|| node.range().end, |brace| brace.range().end),
+        );
+
+        Self {
+            kind: TableKind::InlineTable { has_comment },
+            key_values: Default::default(),
+            range: node.syntax().range(),
+            symbol_range,
+            comment_directive: None,
         }
     }
 
@@ -210,13 +110,7 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
-            leading_comments: node
-                .leading_comments()
-                .map(crate::Comment::from)
-                .collect_vec(),
-            trailing_comment: node.trailing_comment().map(crate::Comment::from),
-            key_values_begin_dangling_comments: vec![],
-            key_values_end_dangling_comments: vec![],
+            comment_directive: None,
         }
     }
 
@@ -226,10 +120,7 @@ impl Table {
             key_values: Default::default(),
             range: self.range,
             symbol_range: self.symbol_range,
-            leading_comments: vec![],
-            trailing_comment: None,
-            key_values_begin_dangling_comments: vec![],
-            key_values_end_dangling_comments: vec![],
+            comment_directive: None,
         }
     }
 
@@ -239,10 +130,7 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::new(parent_key.range().start, self.range.end),
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
-            leading_comments: vec![],
-            trailing_comment: None,
-            key_values_begin_dangling_comments: vec![],
-            key_values_end_dangling_comments: vec![],
+            comment_directive: None,
         }
     }
 
@@ -278,20 +166,24 @@ impl Table {
                     .zip(other.key_values.values())
                     .next()
                 {
-                    Some((Value::Table(table1), _)) => table1.kind() == InlineTable,
-                    Some((_, Value::Table(table2))) => table2.kind() == InlineTable,
+                    Some((Value::Table(table1), _)) => {
+                        matches!(table1.kind(), TableKind::InlineTable { .. })
+                    }
+                    Some((_, Value::Table(table2))) => {
+                        matches!(table2.kind(), TableKind::InlineTable { .. })
+                    }
                     Some(_) => false,
                     None => unreachable!("KeyValue must have one value."),
                 }
             }
-            (Table | InlineTable | KeyValue, Table | InlineTable)
-            | (InlineTable, ParentTable | ParentKey | KeyValue)
+            (Table | InlineTable { .. } | KeyValue, Table | InlineTable { .. })
+            | (InlineTable { .. }, ParentTable | ParentKey | KeyValue)
             | (ParentTable, ParentKey) => true,
-            (ParentTable, Table | InlineTable) => {
+            (ParentTable, Table | InlineTable { .. }) => {
                 self.kind = other.kind;
                 false
             }
-            (ParentKey, Table | InlineTable) => {
+            (ParentKey, Table | InlineTable { .. }) => {
                 self.kind = other.kind;
                 true
             }
@@ -434,23 +326,10 @@ impl Table {
     }
 
     #[inline]
-    pub fn leading_comments(&self) -> &[Comment] {
-        &self.leading_comments
-    }
-
-    #[inline]
-    pub fn trailing_comment(&self) -> Option<&Comment> {
-        self.trailing_comment.as_ref()
-    }
-
-    #[inline]
-    pub fn key_values_begin_dangling_comments(&self) -> &[Vec<Comment>] {
-        &self.key_values_begin_dangling_comments
-    }
-
-    #[inline]
-    pub fn key_values_end_dangling_comments(&self) -> &[Vec<Comment>] {
-        &self.key_values_end_dangling_comments
+    pub fn comment_directive(
+        &self,
+    ) -> Option<&tombi_comment_directive::TableTombiCommentDirective> {
+        self.comment_directive.as_deref()
     }
 }
 
@@ -672,9 +551,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         };
 
         let (mut keys, errs) = keys.into_document_tree_and_errors(toml_version).into();
-        if let Some(key) = keys.first_mut() {
-            key.leading_comments = self.leading_comments().map(Into::into).collect_vec()
-        }
         if !errs.is_empty() {
             errors.extend(errs);
             return make_keys_table(keys, table, errors);
@@ -726,6 +602,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
         toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let mut table = Table::new_inline_table(&self);
+        let table_kind = table.kind;
         let mut errors = Vec::new();
 
         for comments in self.inner_begin_dangling_comments() {
@@ -762,7 +639,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
             }
         }
 
-        table.kind = TableKind::InlineTable;
+        table.kind = table_kind;
 
         for comments in self.inner_end_dangling_comments() {
             for comment in comments {

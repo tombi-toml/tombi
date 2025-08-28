@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_keys, Value};
-use tombi_schema_store::{dig_accessors, matches_accessors, Accessor};
+use tombi_document_tree::{dig_accessors, dig_keys, Value};
+use tombi_schema_store::{matches_accessors, Accessor};
 
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,

@@ -1,4 +1,3 @@
-use tombi_ast::TombiValueCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
@@ -87,10 +86,10 @@ pub async fn get_document_comment_directive_hover_info(
                             };
 
                             let document_schema =
-                                tombi_comment_directive::document_comment_directive_document_schema()
+                                tombi_comment_directive_store::document_comment_directive_document_schema()
                                     .await;
 
-                            let schema_store = tombi_comment_directive::schema_store().await;
+                            let schema_store = tombi_comment_directive_store::schema_store().await;
                             // Try to use the source schema if available, otherwise fall back to tombi schema
                             let schema_context = tombi_schema_store::SchemaContext {
                                 toml_version,
@@ -122,21 +121,5 @@ pub async fn get_document_comment_directive_hover_info(
             }
         }
     }
-    None
-}
-
-pub async fn get_value_comment_directive_hover_info(
-    comment: &tombi_document_tree::Comment,
-    position: tombi_text::Position,
-) -> Option<HoverContent> {
-    let Some(TombiValueCommentDirective {
-        directive_range, ..
-    }) = comment.get_tombi_value_directive()
-    else {
-        return None;
-    };
-
-    if directive_range.contains(position) {}
-
     None
 }

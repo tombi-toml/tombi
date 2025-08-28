@@ -8,8 +8,8 @@ pub use goto_definition::goto_definition;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::TryIntoDocumentTree;
-use tombi_schema_store::{dig_accessors, matches_accessors};
+use tombi_document_tree::{dig_accessors, TryIntoDocumentTree};
+use tombi_schema_store::matches_accessors;
 
 #[derive(Debug, Clone)]
 struct PackageLocation {

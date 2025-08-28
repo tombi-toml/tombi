@@ -12,8 +12,8 @@ pub use goto_definition::goto_definition;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_keys, TryIntoDocumentTree, ValueImpl};
-use tombi_schema_store::{dig_accessors, matches_accessors};
+use tombi_document_tree::{dig_accessors, dig_keys, TryIntoDocumentTree, ValueImpl};
+use tombi_schema_store::matches_accessors;
 
 #[derive(Debug, Clone)]
 struct CrateLocation {
@@ -231,7 +231,7 @@ fn goto_dependency_crates(
     );
 
     let Some((tombi_schema_store::Accessor::Key(crate_name), crate_value)) =
-        tombi_schema_store::dig_accessors(workspace_document_tree, accessors)
+        dig_accessors(workspace_document_tree, accessors)
     else {
         return Ok(Vec::with_capacity(0));
     };
@@ -335,8 +335,7 @@ fn goto_crate_package(
             || matches_accessors!(accessors, ["build-dependencies", _, "path"])
     );
 
-    let Some((_, value)) = tombi_schema_store::dig_accessors(workspace_document_tree, accessors)
-    else {
+    let Some((_, value)) = dig_accessors(workspace_document_tree, accessors) else {
         return Ok(None);
     };
 

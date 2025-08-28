@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
 use tombi_config::TomlVersion;
-use tombi_schema_store::{dig_accessors, matches_accessors};
+use tombi_document_tree::dig_accessors;
+use tombi_schema_store::matches_accessors;
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,

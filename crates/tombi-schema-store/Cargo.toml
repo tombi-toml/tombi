@@ -20,10 +20,11 @@ serde_json.workspace = true
 surf = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
+tombi-accessor.workspace = true
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-config.workspace = true
-tombi-document-tree.workspace = true
+tombi-document-tree = { workspace = true, optional = true }
 tombi-future.workspace = true
 tombi-json.workspace = true
 tombi-text.workspace = true
@@ -33,10 +34,10 @@ tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
-rstest.workspace = true
 
 [features]
 default = ["native"]
+document-tree = ["dep:tombi-document-tree"]
 gloo-net06 = ["dep:gloo-net"]
 native = ["reqwest01", "tombi-future/native"]
 reqwest01 = ["dep:reqwest"]

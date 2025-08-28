@@ -3,7 +3,7 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 use crate::{
     get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog, AllOfSchema,
     AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor, SchemaAccessors,
-    SchemaUri, SourceSchema, ValueSchema,
+    SourceSchema, ValueSchema,
 };
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
@@ -12,6 +12,7 @@ use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
 use tombi_config::{Schema, SchemaOptions};
 use tombi_future::{BoxFuture, Boxable};
+use tombi_uri::SchemaUri;
 
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
@@ -118,7 +119,7 @@ impl SchemaStore {
                             catalog_path: catalog_path.to_string(),
                         });
                     };
-                    let tagalog_uri = CatalogUri::new(tagalog_uri);
+                    let tagalog_uri = CatalogUri::from(tagalog_uri);
                     self.load_catalog_from_uri(&tagalog_uri).await
                 }))
                 .await;
@@ -143,7 +144,7 @@ impl SchemaStore {
         base_dir_path: Option<&std::path::Path>,
     ) {
         futures::future::join_all(schemas.iter().map(|schema| async move {
-            let schema_uri = if let Ok(schema_uri) = SchemaUri::parse(schema.path()) {
+            let schema_uri = if let Ok(schema_uri) = SchemaUri::from_str(schema.path()) {
                 schema_uri
             } else if let Ok(schema_uri) = match base_dir_path {
                 Some(base_dir_path) => SchemaUri::from_file_path(base_dir_path.join(schema.path())),
@@ -151,7 +152,7 @@ impl SchemaStore {
             } {
                 schema_uri
             } else {
-                tracing::error!("invalid schema path: {}", schema.path());
+                tracing::warn!("invalid schema path: {}", schema.path());
                 return;
             };
 
@@ -249,7 +250,7 @@ impl SchemaStore {
                 };
 
                 if let Err(err) = save_to_cache(catalog_cache_path.as_deref(), &bytes).await {
-                    tracing::error!("{err}");
+                    tracing::warn!("{err}");
                 }
 
                 match serde_json::from_slice::<crate::json::JsonCatalog>(&bytes) {
@@ -406,7 +407,7 @@ impl SchemaStore {
                 };
 
                 if let Err(err) = save_to_cache(schema_cache_path.as_deref(), &bytes).await {
-                    tracing::error!("{err}");
+                    tracing::warn!("{err}");
                 }
 
                 Ok(Some(
@@ -545,7 +546,7 @@ impl SchemaStore {
                 }
             };
             return self
-                .try_get_source_schema_from_remote_url(&SchemaUri::new(schema_uri))
+                .try_get_source_schema_from_remote_url(&SchemaUri::from(schema_uri))
                 .await
                 .map_err(|err| (err, uri_range));
         }
@@ -635,10 +636,10 @@ impl SchemaStore {
                     },
                 },
                 Ok(None) => {
-                    tracing::error!("failed to find document schema: {}", matching_schema.url);
+                    tracing::warn!("failed to find document schema: {}", matching_schema.url);
                 }
                 Err(err) => {
-                    tracing::error!(
+                    tracing::warn!(
                         "failed to get document schema for {url}: {err}",
                         url = matching_schema.url,
                     );

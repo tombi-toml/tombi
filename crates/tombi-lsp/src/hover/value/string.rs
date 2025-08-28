@@ -5,7 +5,6 @@ use crate::{
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
-        comment::get_value_comment_directive_hover_info,
         constraints::{build_enumerate_values, ValueConstraints},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
@@ -99,13 +98,6 @@ impl GetHoverContent for tombi_document_tree::String {
                     _ => None,
                 }
             } else {
-                for comment in self.leading_comments() {
-                    if let Some(hover_content) =
-                        get_value_comment_directive_hover_info(comment, position).await
-                    {
-                        return Some(hover_content);
-                    }
-                }
                 Some(
                     HoverValueContent {
                         title: None,

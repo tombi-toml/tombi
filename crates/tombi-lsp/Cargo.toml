@@ -24,6 +24,7 @@ tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-comment-directive.workspace = true
+tombi-comment-directive-store.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
 tombi-diagnostic.workspace = true
@@ -39,7 +40,7 @@ tombi-json.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true
 tombi-rg-tree.workspace = true
-tombi-schema-store.workspace = true
+tombi-schema-store = { workspace = true, features = ["document-tree"] }
 tombi-syntax.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true

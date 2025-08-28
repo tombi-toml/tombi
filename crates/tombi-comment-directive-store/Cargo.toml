@@ -1,0 +1,13 @@
+[package]
+name = "tombi-comment-directive-store"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio.workspace = true
+tombi-json.workspace = true
+tombi-schema-store.workspace = true
+tombi-uri.workspace = true

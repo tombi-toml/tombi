@@ -208,6 +208,8 @@ impl From<HoverValueContent> for tower_lsp::lsp_types::Hover {
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
+
     use rstest::rstest;
     use tombi_schema_store::SchemaUri;
 
@@ -219,7 +221,7 @@ mod test {
     #[case("file://./tombi.schema.json")]
     #[case("file://tombi.schema.json")]
     fn url_content(#[case] url: &str) {
-        let url = SchemaUri::parse(url).unwrap();
+        let url = SchemaUri::from_str(url).unwrap();
         pretty_assertions::assert_eq!(get_schema_name(&url).unwrap(), "tombi.schema.json");
     }
 }

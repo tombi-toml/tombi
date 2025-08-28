@@ -47,7 +47,7 @@ macro_rules! matches_accessors_inner {
 
 #[cfg(test)]
 mod tests {
-    use crate::accessor::Accessor;
+    use tombi_accessor::Accessor;
 
     #[test]
     fn test_matches_accessors() {

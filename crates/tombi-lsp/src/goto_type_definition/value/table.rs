@@ -164,7 +164,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                     .await;
                                             }
                                         } else {
-                                            tracing::error!(
+                                            tracing::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
                                             );

@@ -76,7 +76,7 @@ async fn validate_offset_date_time(
     offset_date_time_schema: &tombi_schema_store::OffsetDateTimeSchema,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
-    let value_string = offset_date_time_value.node().to_string();
+    let value_string = offset_date_time_value.value().to_string();
     let range = offset_date_time_value.range();
 
     if let Some(const_value) = &offset_date_time_schema.const_value {

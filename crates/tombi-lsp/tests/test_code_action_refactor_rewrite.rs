@@ -297,13 +297,13 @@ mod refactor_rewrite {
             #[tokio::test]
             async fn nested_dotted_keys_to_inline_table_with_comment(
                 r#"
-            foo.bar█.baz = 1 # comment
-            "#,
+                foo.bar█.baz = 1 # comment
+                "#,
                 Select(CodeActionRefactorRewriteName::DottedKeysToInlineTable),
             ) -> Ok(Some(
                 r#"
-            foo = { bar.baz = 1 } # comment
-            "#
+                foo = { bar.baz = 1 } # comment
+                "#
             ));
         }
 

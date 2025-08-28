@@ -304,6 +304,7 @@ impl std::fmt::Display for ValueType {
     }
 }
 
+#[cfg(feature = "document-tree")]
 impl From<tombi_document_tree::ValueType> for ValueType {
     fn from(value_type: tombi_document_tree::ValueType) -> Self {
         match value_type {

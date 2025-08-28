@@ -1,7 +1,7 @@
 use tombi_comment_directive::{
-    document_comment_directive_document_schema, schema_store, TombiDocumentCommentDirective,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    TombiDocumentCommentDirective, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
+use tombi_comment_directive_store::document_comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
@@ -27,7 +27,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
     if let Some(tombi_directives) = root.tombi_document_comment_directives() {
-        let schema_store = schema_store().await;
+        let schema_store = tombi_comment_directive_store::schema_store().await;
         for tombi_ast::TombiDocumentCommentDirective {
             content,
             content_range,

@@ -1,9 +1,4 @@
-use std::str::FromStr;
-
-use tombi_schema_store::{DocumentSchema, SchemaUri};
 use tombi_toml_version::TomlVersion;
-
-use crate::{schema_store, DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI};
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -77,28 +72,4 @@ fn default_true() -> Option<bool> {
 #[inline]
 fn default_false() -> Option<bool> {
     Some(false)
-}
-
-#[inline]
-pub fn document_comment_directive_schema_uri() -> &'static SchemaUri {
-    DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI.get_or_init(|| {
-        SchemaUri::from_str("tombi://json.tombi.dev/document-tombi-directive.json").unwrap()
-    })
-}
-
-pub async fn document_comment_directive_document_schema() -> DocumentSchema {
-    let schema_store = schema_store().await;
-    let schema_uri = document_comment_directive_schema_uri();
-    let tombi_json::ValueNode::Object(object) = schema_store
-        .fetch_schema_value(schema_uri)
-        .await
-        .unwrap()
-        .unwrap()
-    else {
-        panic!(
-            "Failed to fetch document comment directive schema from URL '{schema_uri}'. \
-             The fetched value was not an object."
-        );
-    };
-    DocumentSchema::new(object, schema_uri.clone())
 }

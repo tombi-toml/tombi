@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_ast::GetHeaderSchemarAccessors;
 use tombi_comment_directive::CommentContext;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{Accessor, GetHeaderSchemarAccessors};
+use tombi_schema_store::Accessor;
 
 use crate::{edit::get_schema, rule::table_keys_order};
 

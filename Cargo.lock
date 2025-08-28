@@ -3424,11 +3424,24 @@ name = "tombi"
 version = "0.0.0-dev"
 
 [[package]]
+name = "tombi-accessor"
+version = "0.0.0-dev"
+dependencies = [
+ "indexmap",
+ "itertools 0.14.0",
+ "pretty_assertions",
+ "rstest",
+ "tombi-text",
+ "tracing",
+]
+
+[[package]]
 name = "tombi-ast"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
  "thiserror 2.0.12",
+ "tombi-accessor",
  "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",
@@ -3501,13 +3514,21 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror 2.0.12",
- "tokio",
- "tombi-json",
- "tombi-schema-store",
  "tombi-severity-level",
  "tombi-text",
  "tombi-toml-version",
+ "tombi-uri",
  "tombi-x-keyword",
+]
+
+[[package]]
+name = "tombi-comment-directive-store"
+version = "0.0.0-dev"
+dependencies = [
+ "tokio",
+ "tombi-json",
+ "tombi-schema-store",
+ "tombi-uri",
 ]
 
 [[package]]
@@ -3578,7 +3599,9 @@ dependencies = [
  "indexmap",
  "itertools 0.14.0",
  "thiserror 2.0.12",
+ "tombi-accessor",
  "tombi-ast",
+ "tombi-comment-directive",
  "tombi-date-time",
  "tombi-diagnostic",
  "tombi-text",
@@ -3802,6 +3825,7 @@ dependencies = [
  "tombi-ast",
  "tombi-cache",
  "tombi-comment-directive",
+ "tombi-comment-directive-store",
  "tombi-config",
  "tombi-date-time",
  "tombi-diagnostic",
@@ -3874,12 +3898,12 @@ dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
  "reqwest",
- "rstest",
  "serde",
  "serde_json",
  "surf",
  "thiserror 2.0.12",
  "tokio",
+ "tombi-accessor",
  "tombi-ast",
  "tombi-cache",
  "tombi-config",
@@ -3967,6 +3991,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tombi-ast",
  "tombi-comment-directive",
+ "tombi-comment-directive-store",
  "tombi-diagnostic",
  "tombi-document",
  "tombi-document-tree",

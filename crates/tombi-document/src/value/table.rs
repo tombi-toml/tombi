@@ -15,7 +15,7 @@ impl From<tombi_document_tree::TableKind> for TableKind {
         use tombi_document_tree::TableKind::*;
         match kind {
             Root | Table | ParentTable | ParentKey => Self::Table,
-            InlineTable => Self::InlineTable,
+            InlineTable { .. } => Self::InlineTable,
             KeyValue => Self::KeyValue,
         }
     }

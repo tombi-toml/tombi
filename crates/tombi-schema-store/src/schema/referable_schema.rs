@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, str::FromStr};
 
 use tombi_x_keyword::StringFormat;
 
@@ -160,7 +160,11 @@ impl Referable<ValueSchema> {
                             return Ok(None);
                         }
                     } else if is_online_url(reference) {
-                        let schema_uri = SchemaUri::parse(reference)?;
+                        let schema_uri = SchemaUri::from_str(reference).map_err(|_| {
+                            crate::Error::InvalidSchemaUri {
+                                schema_uri: reference.to_owned(),
+                            }
+                        })?;
 
                         if let Some(mut document_schema) =
                             schema_store.try_get_document_schema(&schema_uri).await?

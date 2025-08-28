@@ -2,11 +2,11 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
+use tombi_document_tree::dig_accessors;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
-use tombi_schema_store::dig_accessors;
 use tombi_schema_store::matches_accessors;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
@@ -430,7 +430,7 @@ async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
     {
         Ok(bytes) => bytes,
         Err(e) => {
-            tracing::error!("Failed to fetch crate versions from {url}: {e}");
+            tracing::warn!("Failed to fetch crate versions from {url}: {e}");
             return None;
         }
     };
@@ -438,7 +438,7 @@ async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
     let resp: CratesIoVersionsResponse = match serde_json::from_slice(&bytes) {
         Ok(resp) => resp,
         Err(e) => {
-            tracing::error!("Failed to parse crate versions response: {e}");
+            tracing::warn!("Failed to parse crate versions response: {e}");
             return None;
         }
     };

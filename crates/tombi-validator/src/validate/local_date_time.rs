@@ -76,7 +76,7 @@ async fn validate_local_date_time(
     local_date_time_schema: &tombi_schema_store::LocalDateTimeSchema,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
-    let value_string = local_date_time_value.node().to_string();
+    let value_string = local_date_time_value.value().to_string();
     let range = local_date_time_value.range();
 
     if let Some(const_value) = &local_date_time_schema.const_value {

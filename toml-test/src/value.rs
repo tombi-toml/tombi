@@ -1,4 +1,3 @@
-use tombi_document_tree::support;
 use tombi_toml_version::TomlVersion;
 
 #[derive(Debug, serde::Serialize)]
@@ -31,52 +30,35 @@ impl IntoValue for tombi_document_tree::Value {
         match self {
             tombi_document_tree::Value::Boolean(value) => Value::Literal {
                 r#type: Type::Bool,
-                value: value.node().token().unwrap().text().to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::Integer(value) => Value::Literal {
                 r#type: Type::Integer,
-                value: match value.kind() {
-                    tombi_document_tree::IntegerKind::Binary(node) => {
-                        support::integer::try_from_binary(node.token().unwrap().text())
-                    }
-                    tombi_document_tree::IntegerKind::Octal(node) => {
-                        support::integer::try_from_octal(node.token().unwrap().text())
-                    }
-                    tombi_document_tree::IntegerKind::Decimal(node) => {
-                        support::integer::try_from_decimal(node.token().unwrap().text())
-                    }
-                    tombi_document_tree::IntegerKind::Hexadecimal(node) => {
-                        support::integer::try_from_hexadecimal(node.token().unwrap().text())
-                    }
-                }
-                .unwrap()
-                .to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::Float(value) => Value::Literal {
                 r#type: Type::Float,
-                value: support::float::try_from_float(value.node().token().unwrap().text())
-                    .unwrap()
-                    .to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::String(value) => Value::Literal {
                 r#type: Type::String,
-                value: value.into_value(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::OffsetDateTime(value) => Value::Literal {
                 r#type: Type::Datetime,
-                value: value.node().token().unwrap().text().to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::LocalDateTime(value) => Value::Literal {
                 r#type: Type::DatetimeLocal,
-                value: value.node().token().unwrap().text().to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::LocalDate(value) => Value::Literal {
                 r#type: Type::DateLocal,
-                value: value.node().token().unwrap().text().to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::LocalTime(value) => Value::Literal {
                 r#type: Type::TimeLocal,
-                value: value.node().token().unwrap().text().to_string(),
+                value: value.value().to_string(),
             },
             tombi_document_tree::Value::Array(array) => Value::Array(
                 array

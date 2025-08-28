@@ -1,5 +1,5 @@
-use tombi_document_tree::TableKind;
-use tombi_schema_store::{dig_accessors, Accessor, AccessorContext, AccessorKeyKind};
+use tombi_document_tree::{dig_accessors, TableKind};
+use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
     TextDocumentEdit, TextEdit, WorkspaceEdit,
@@ -45,13 +45,10 @@ pub fn dot_keys_to_inline_table_code_action(
                 && matches!(
                     parent_key_context.kind,
                     AccessorKeyKind::Dotted | AccessorKeyKind::KeyValue
-                ) =>
+                )
+                && !matches!(table.kind(), TableKind::InlineTable { .. }) =>
         {
             let (key, value) = table.key_values().iter().next().unwrap();
-
-            if table.kind() == TableKind::InlineTable {
-                return None;
-            }
 
             Some(CodeAction {
                 title: CodeActionRefactorRewriteName::DottedKeysToInlineTable.to_string(),
@@ -114,17 +111,10 @@ pub fn inline_table_to_dot_keys_code_action(
 
     match value {
         tombi_document_tree::Value::Table(table)
-            if table.len() == 1 && table.kind() == TableKind::InlineTable =>
+            if table.len() == 1
+                && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
         {
             let (key, value) = table.key_values().iter().next().unwrap();
-
-            if !table.key_values_begin_dangling_comments().is_empty()
-                || !table.key_values_end_dangling_comments().is_empty()
-                || !key.leading_comments().is_empty()
-                || value.trailing_comment().is_some()
-            {
-                return None;
-            }
 
             Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InlineTableToDottedKeys.to_string(),
