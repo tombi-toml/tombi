@@ -1,35 +1,35 @@
+use std::str::FromStr;
+
 use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_uri::SchemaUri;
 
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct FloatKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+pub type FloatKeyValueTombiCommentDirective = ValueTombiCommentDirective<FloatKeyValueRules>;
 
-    #[serde(flatten)]
-    value: FloatTombiCommentDirectiveRules,
+pub type FloatValueTombiCommentDirective = ValueTombiCommentDirective<FloatValueRules>;
+
+pub type FloatKeyValueRules = WithKeyRules<FloatValueRules>;
+
+pub type FloatValueRules = WithCommonRules<FloatRules>;
+
+impl TombiCommentDirectiveImpl for FloatKeyValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/float-key-value-tombi-directive.json").unwrap()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct FloatValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    common: CommonValueTombiCommentDirectiveRules,
-
-    #[serde(flatten)]
-    float: FloatTombiCommentDirectiveRules,
+impl TombiCommentDirectiveImpl for FloatValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/float-value-tombi-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct FloatTombiCommentDirectiveRules {
+pub struct FloatRules {
     /// Controls the severity level for maximum float errors
     pub float_maximum: Option<SeverityLevelDefaultError>,
 

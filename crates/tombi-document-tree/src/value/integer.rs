@@ -1,8 +1,9 @@
-use tombi_comment_directive::IntegerTombiCommentDirective;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
     support::integer::{try_from_binary, try_from_decimal, try_from_hexadecimal, try_from_octal},
+    value::collect_comment_directives_and_errors,
     DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
@@ -19,7 +20,7 @@ pub struct Integer {
     kind: IntegerKind,
     value: i64,
     range: tombi_text::Range,
-    comment_directive: Option<Box<IntegerTombiCommentDirective>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Integer {
@@ -44,8 +45,8 @@ impl Integer {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&IntegerTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -78,7 +79,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerBin {
                     kind: IntegerKind::Binary,
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },
@@ -109,7 +110,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerOct {
                     kind: IntegerKind::Octal,
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },
@@ -140,7 +141,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerDec {
                     kind: IntegerKind::Decimal,
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },
@@ -158,10 +159,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerHex {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
+
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -171,14 +176,18 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerHex {
                     kind: IntegerKind::Hexadecimal,
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives,
                 }),
-                errors: Vec::with_capacity(0),
+                errors,
             },
-            Err(error) => DocumentTreeAndErrors {
-                tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::ParseIntError { error, range }],
-            },
+            Err(error) => {
+                errors.push(crate::Error::ParseIntError { error, range });
+
+                DocumentTreeAndErrors {
+                    tree: crate::Value::Incomplete { range },
+                    errors,
+                }
+            }
         }
     }
 }

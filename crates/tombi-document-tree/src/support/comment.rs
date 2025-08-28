@@ -8,7 +8,6 @@ pub enum ParseError {
 
 pub fn try_from_comment(value: &str) -> Result<String, ParseError> {
     let comment = tombi_toml_text::parse_literal_string(&value[1..], false)?;
-
     Ok(comment)
 }
 

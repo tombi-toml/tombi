@@ -34,7 +34,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::BooleanValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::BooleanValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -45,7 +45,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::IntegerValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::IntegerValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -56,7 +56,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::FloatValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::FloatValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -67,7 +67,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::StringValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::StringValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -78,7 +78,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::OffsetDateTimeValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::OffsetDateTimeValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -89,7 +89,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateTimeValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::LocalDateTimeValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -100,7 +100,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::LocalDateValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -111,7 +111,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalTimeValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::LocalTimeValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -122,7 +122,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::ArrayValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::ArrayValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -133,7 +133,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::TableValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::TableValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -144,7 +144,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::BooleanKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::BooleanKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -155,7 +155,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::IntegerKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::IntegerKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -166,7 +166,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::FloatKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::FloatKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -177,8 +177,8 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::WithKeyTombiCommentDirectiveRules<
-                        tombi_comment_directive::StringValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::WithKeyRules<
+                        tombi_comment_directive::StringValueRules,
                     >,
                 >>(),
         )? + "\n",
@@ -190,7 +190,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::OffsetDateTimeKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::OffsetDateTimeKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -201,7 +201,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateTimeKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::LocalDateTimeKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -212,7 +212,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::LocalDateKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -223,7 +223,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalTimeKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::LocalTimeKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -234,7 +234,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::ArrayKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::ArrayKeyValueRules,
                 >>(),
         )? + "\n",
     )?;
@@ -245,7 +245,7 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::TableKeyValueTombiCommentDirectiveRules,
+                    tombi_comment_directive::TableKeyValueRules,
                 >>(),
         )? + "\n",
     )?;

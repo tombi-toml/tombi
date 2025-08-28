@@ -2,9 +2,7 @@ use std::ops::Deref;
 
 use tombi_toml_version::TomlVersion;
 
-use crate::{
-    support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Table,
-};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Table};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DocumentTree(pub(crate) Table);
@@ -41,12 +39,13 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
         toml_version: TomlVersion,
     ) -> crate::DocumentTreeAndErrors<crate::DocumentTree> {
         let mut tree = crate::DocumentTree(crate::Table::new_root(&self));
-        let mut errors = Vec::new();
+        let mut errors = vec![];
+        let mut comment_directives = vec![];
 
         for comments in self.key_values_begin_dangling_comments() {
             for comment in comments {
-                if let Err(error) = try_new_comment(comment.as_ref()) {
-                    errors.push(error);
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                    comment_directives.push(comment_directive);
                 }
             }
         }
@@ -64,8 +63,8 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
 
         for comments in self.key_values_end_dangling_comments() {
             for comment in comments {
-                if let Err(error) = try_new_comment(comment.as_ref()) {
-                    errors.push(error);
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                    comment_directives.push(comment_directive);
                 }
             }
         }

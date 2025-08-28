@@ -22,7 +22,7 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyTombiCommentDirectiveRules"
+              "$ref": "#/definitions/WithKeyRules"
             },
             {
               "type": "null"
@@ -32,7 +32,7 @@
       },
       "additionalProperties": false
     },
-    "WithKeyTombiCommentDirectiveRules": {
+    "WithKeyRules": {
       "type": "object",
       "properties": {
         "dotted-keys-out-of-order": {
@@ -125,7 +125,18 @@
             }
           ]
         },
-        "string-maximum-length": {
+        "deprecated": {
+          "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "string-max-length": {
           "description": "Controls the severity level for maximum length errors",
           "anyOf": [
             {
@@ -136,7 +147,7 @@
             }
           ]
         },
-        "string-minimum-length": {
+        "string-min-length": {
           "description": "Controls the severity level for minimum length errors",
           "anyOf": [
             {

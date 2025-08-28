@@ -10,7 +10,6 @@ mod offset_date_time;
 mod string;
 mod table;
 
-use crate::TombiCommentDirectiveImpl;
 pub use array::*;
 pub use boolean::*;
 pub use float::*;
@@ -22,55 +21,22 @@ pub use local_time::*;
 pub use offset_date_time::*;
 pub use string::*;
 pub use table::*;
-use tombi_severity_level::SeverityLevelDefaultError;
-
-pub type KeyTombiCommentDirective = ValueTombiCommentDirective<KeyTombiCommentDirectiveRules>;
-
-pub type BooleanTombiCommentDirective =
-    ValueTombiCommentDirective<BooleanValueTombiCommentDirectiveRules>;
-
-pub type IntegerTombiCommentDirective =
-    ValueTombiCommentDirective<IntegerValueTombiCommentDirectiveRules>;
-
-pub type FloatTombiCommentDirective =
-    ValueTombiCommentDirective<FloatValueTombiCommentDirectiveRules>;
-
-pub type StringTombiCommentDirective =
-    ValueTombiCommentDirective<StringValueTombiCommentDirectiveRules>;
-
-pub type OffsetDateTimeTombiCommentDirective =
-    ValueTombiCommentDirective<OffsetDateTimeValueTombiCommentDirectiveRules>;
-
-pub type LocalDateTimeTombiCommentDirective =
-    ValueTombiCommentDirective<LocalDateTimeValueTombiCommentDirectiveRules>;
-
-pub type LocalDateTombiCommentDirective =
-    ValueTombiCommentDirective<LocalDateValueTombiCommentDirectiveRules>;
-
-pub type LocalTimeTombiCommentDirective =
-    ValueTombiCommentDirective<LocalTimeValueTombiCommentDirectiveRules>;
-
-pub type ArrayTombiCommentDirective =
-    ValueTombiCommentDirective<ArrayValueTombiCommentDirectiveRules>;
-
-pub type TableTombiCommentDirective =
-    ValueTombiCommentDirective<TableValueTombiCommentDirectiveRules>;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
-#[serde(bound = "T: serde::de::DeserializeOwned + serde::Serialize + TombiCommentDirectiveImpl")]
+#[serde(bound = "T: serde::de::DeserializeOwned + serde::Serialize")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ValueTombiCommentDirective<T> {
-    lint: Option<ValueLintOptions<T>>,
+    pub lint: Option<ValueLintOptions<T>>,
 }
 
-impl<T> From<ValueTombiCommentDirective<WithKeyTombiCommentDirectiveRules<T>>>
-    for ValueTombiCommentDirective<T>
+impl<T> From<ValueTombiCommentDirective<WithKeyRules<T>>> for ValueTombiCommentDirective<T>
 where
-    T: From<WithKeyTombiCommentDirectiveRules<T>> + serde::de::DeserializeOwned + serde::Serialize,
+    T: From<WithKeyRules<T>> + serde::de::DeserializeOwned + serde::Serialize,
 {
-    fn from(value: ValueTombiCommentDirective<WithKeyTombiCommentDirectiveRules<T>>) -> Self {
+    fn from(value: ValueTombiCommentDirective<WithKeyRules<T>>) -> Self {
         Self {
             lint: value.lint.map(|lint| lint.into()),
         }
@@ -83,14 +49,14 @@ where
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ValueLintOptions<T> {
-    rules: Option<T>,
+    pub rules: Option<T>,
 }
 
-impl<T> From<ValueLintOptions<WithKeyTombiCommentDirectiveRules<T>>> for ValueLintOptions<T>
+impl<T> From<ValueLintOptions<WithKeyRules<T>>> for ValueLintOptions<T>
 where
-    T: serde::de::DeserializeOwned + serde::Serialize + From<WithKeyTombiCommentDirectiveRules<T>>,
+    T: serde::de::DeserializeOwned + serde::Serialize + From<WithKeyRules<T>>,
 {
-    fn from(value: ValueLintOptions<WithKeyTombiCommentDirectiveRules<T>>) -> Self {
+    fn from(value: ValueLintOptions<WithKeyRules<T>>) -> Self {
         Self {
             rules: value.rules.map(|rules| rules.into()),
         }
@@ -101,12 +67,24 @@ where
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct WithKeyTombiCommentDirectiveRules<T> {
+pub struct WithKeyRules<T> {
     #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+    pub key: KeyRules,
 
     #[serde(flatten)]
-    value: T,
+    pub value: T,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct WithCommonRules<T> {
+    #[serde(flatten)]
+    pub common: CommonValueTombiCommentDirectiveRules,
+
+    #[serde(flatten)]
+    pub value: T,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -122,4 +100,7 @@ pub struct CommonValueTombiCommentDirectiveRules {
 
     /// Controls the severity level for enumerate value errors
     pub enumerate: Option<SeverityLevelDefaultError>,
+
+    /// Controls the severity level for deprecated value errors
+    pub deprecated: Option<SeverityLevelDefaultWarn>,
 }

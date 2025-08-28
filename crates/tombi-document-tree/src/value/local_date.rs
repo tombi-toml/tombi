@@ -1,22 +1,21 @@
 use tombi_ast::TombiValueCommentDirective;
-use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::float::try_from_float, value::collect_comment_directives_and_errors,
+    support::chrono::try_new_local_date, value::collect_comment_directives_and_errors,
     DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Float {
-    value: f64,
+pub struct LocalDate {
+    value: tombi_date_time::LocalDate,
     range: tombi_text::Range,
     pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
-impl Float {
+impl LocalDate {
     #[inline]
-    pub fn value(&self) -> f64 {
-        self.value
+    pub fn value(&self) -> &tombi_date_time::LocalDate {
+        &self.value
     }
 
     #[inline]
@@ -35,9 +34,9 @@ impl Float {
     }
 }
 
-impl ValueImpl for Float {
+impl ValueImpl for LocalDate {
     fn value_type(&self) -> ValueType {
-        ValueType::Float
+        ValueType::LocalDate
     }
 
     fn range(&self) -> tombi_text::Range {
@@ -45,10 +44,16 @@ impl ValueImpl for Float {
     }
 }
 
-impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
+impl From<crate::LocalDate> for tombi_date_time::LocalDate {
+    fn from(node: crate::LocalDate) -> Self {
+        node.value
+    }
+}
+
+impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDate {
     fn into_document_tree_and_errors(
         self,
-        _toml_version: TomlVersion,
+        toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
         let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
@@ -62,9 +67,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
             };
         };
 
-        match try_from_float(token.text()) {
+        match try_new_local_date(&self, toml_version) {
             Ok(value) => DocumentTreeAndErrors {
-                tree: crate::Value::Float(crate::Float {
+                tree: crate::Value::LocalDate(crate::LocalDate {
                     value,
                     range: token.range(),
                     comment_directives,
@@ -72,7 +77,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
                 errors,
             },
             Err(error) => {
-                errors.push(crate::Error::ParseFloatError { error, range });
+                errors.push(error);
 
                 DocumentTreeAndErrors {
                     tree: crate::Value::Incomplete { range },

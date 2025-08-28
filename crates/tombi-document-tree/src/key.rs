@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use tombi_ast::AstNode;
-use tombi_comment_directive::KeyTombiCommentDirective;
+use tombi_ast::{AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
 
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
@@ -18,7 +17,7 @@ pub struct Key {
     kind: KeyKind,
     value: String,
     range: tombi_text::Range,
-    comment_directive: Option<Arc<KeyTombiCommentDirective>>,
+    comment_directives: Option<Arc<Vec<TombiValueCommentDirective>>>,
 }
 
 impl std::borrow::Borrow<String> for Key {
@@ -44,7 +43,7 @@ impl Key {
             kind,
             value,
             range,
-            comment_directive: None,
+            comment_directives: None,
         };
         key.try_to_raw_string(toml_version)?;
 
@@ -62,8 +61,8 @@ impl Key {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&KeyTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 
     pub fn to_raw_text(&self, toml_version: TomlVersion) -> String {

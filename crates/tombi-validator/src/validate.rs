@@ -69,10 +69,31 @@ fn type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,
     range: tombi_text::Range,
+    common_rules: Option<&tombi_comment_directive::CommonValueTombiCommentDirectiveRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
-    Err(vec![crate::Error {
+    let mut diagnostics = vec![];
+
+    let level = common_rules
+        .and_then(|common_rules| common_rules.type_mismatch)
+        .unwrap_or_default();
+
+    tracing::error!(
+        "type_mismatch: expected = {:?}, actual = {:?}, range = {:?}, level = {:?}",
+        expected,
+        actual,
+        range,
+        level
+    );
+
+    crate::Error {
         kind: crate::ErrorKind::TypeMismatch { expected, actual },
         range,
     }
-    .into()])
+    .push_diagnostic_with_level(level, &mut diagnostics);
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
+    }
 }

@@ -1,32 +1,37 @@
-use crate::{CommonValueTombiCommentDirectiveRules, KeyTombiCommentDirectiveRules};
+use std::str::FromStr;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct LocalDateTimeKeyValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    key: KeyTombiCommentDirectiveRules,
+use tombi_uri::SchemaUri;
 
-    #[serde(flatten)]
-    value: LocalDateTimeTombiCommentDirectiveRules,
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+
+pub type LocalDateTimeKeyValueTombiCommentDirective =
+    ValueTombiCommentDirective<LocalDateTimeKeyValueRules>;
+
+pub type LocalDateTimeValueTombiCommentDirective =
+    ValueTombiCommentDirective<LocalDateTimeValueRules>;
+
+pub type LocalDateTimeKeyValueRules = WithKeyRules<LocalDateTimeRules>;
+
+pub type LocalDateTimeValueRules = WithCommonRules<LocalDateTimeRules>;
+
+impl TombiCommentDirectiveImpl for LocalDateTimeKeyValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/local-date-time-key-value-tombi-directive.json")
+            .unwrap()
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct LocalDateTimeValueTombiCommentDirectiveRules {
-    #[serde(flatten)]
-    common: CommonValueTombiCommentDirectiveRules,
-
-    #[serde(flatten)]
-    local_date_time: LocalDateTimeTombiCommentDirectiveRules,
+impl TombiCommentDirectiveImpl for LocalDateTimeValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/local-date-time-value-tombi-directive.json")
+            .unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct LocalDateTimeTombiCommentDirectiveRules {
+pub struct LocalDateTimeRules {
     // No specific fields for local date time type
 }

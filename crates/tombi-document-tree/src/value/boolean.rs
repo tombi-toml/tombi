@@ -1,13 +1,16 @@
-use tombi_comment_directive::BooleanTombiCommentDirective;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
+use crate::{
+    value::collect_comment_directives_and_errors, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
+    ValueImpl, ValueType,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Boolean {
     value: bool,
     range: tombi_text::Range,
-    comment_directive: Option<Box<BooleanTombiCommentDirective>>,
+    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Boolean {
@@ -27,8 +30,8 @@ impl Boolean {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&BooleanTombiCommentDirective> {
-        self.comment_directive.as_deref()
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -48,10 +51,13 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
         _toml_version: TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let range = self.range();
+        let (comment_directives, mut errors) = collect_comment_directives_and_errors(&self);
+
         let Some(token) = self.token() else {
+            errors.push(crate::Error::IncompleteNode { range });
             return DocumentTreeAndErrors {
                 tree: crate::Value::Incomplete { range },
-                errors: vec![crate::Error::IncompleteNode { range }],
+                errors,
             };
         };
 
@@ -65,9 +71,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
                 range: token.range(),
-                comment_directive: None,
+                comment_directives,
             }),
-            errors: Vec::with_capacity(0),
+            errors,
         }
     }
 }

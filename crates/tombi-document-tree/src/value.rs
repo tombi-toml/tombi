@@ -1,21 +1,27 @@
 mod array;
 mod boolean;
-mod date_time;
 mod float;
 mod integer;
+mod local_date;
+mod local_date_time;
+mod local_time;
+mod offset_date_time;
 mod string;
 mod table;
 
 pub use array::{Array, ArrayKind};
 pub use boolean::Boolean;
-pub use date_time::{LocalDate, LocalDateTime, LocalTime, OffsetDateTime};
 pub use float::Float;
 pub use integer::{Integer, IntegerKind};
+pub use local_date::LocalDate;
+pub use local_date_time::LocalDateTime;
+pub use local_time::LocalTime;
+pub use offset_date_time::OffsetDateTime;
 pub use string::{String, StringKind};
 pub use table::{Table, TableKind};
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, TombiValueCommentDirective};
 
-use crate::{support::comment::try_new_comment, DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -66,6 +72,48 @@ impl Value {
             Value::Incomplete { range } => *range,
         }
     }
+
+    #[inline]
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        match self {
+            Value::Boolean(value) => value.comment_directives(),
+            Value::Integer(value) => value.comment_directives(),
+            Value::Float(value) => value.comment_directives(),
+            Value::String(value) => value.comment_directives(),
+            Value::OffsetDateTime(value) => value.comment_directives(),
+            Value::LocalDateTime(value) => value.comment_directives(),
+            Value::LocalDate(value) => value.comment_directives(),
+            Value::LocalTime(value) => value.comment_directives(),
+            Value::Array(value) => value.comment_directives(),
+            Value::Table(value) => value.comment_directives(),
+            Value::Incomplete { .. } => None,
+        }
+    }
+
+    pub(crate) fn extend_comment_directives(
+        &mut self,
+        comment_directives: Vec<TombiValueCommentDirective>,
+    ) {
+        let value_comment_directives = match self {
+            Value::Boolean(boolean) => &mut boolean.comment_directives,
+            Value::Integer(integer) => &mut integer.comment_directives,
+            Value::Float(float) => &mut float.comment_directives,
+            Value::String(string) => &mut string.comment_directives,
+            Value::OffsetDateTime(offset_date_time) => &mut offset_date_time.comment_directives,
+            Value::LocalDateTime(local_date_time) => &mut local_date_time.comment_directives,
+            Value::LocalDate(local_date) => &mut local_date.comment_directives,
+            Value::LocalTime(local_time) => &mut local_time.comment_directives,
+            Value::Array(array) => &mut array.comment_directives,
+            Value::Table(table) => &mut table.comment_directives,
+            Value::Incomplete { .. } => return,
+        };
+
+        if let Some(value_comment_directives) = value_comment_directives {
+            value_comment_directives.extend(comment_directives);
+        } else {
+            *value_comment_directives = Some(Box::new(comment_directives));
+        }
+    }
 }
 
 impl crate::ValueImpl for Value {
@@ -96,15 +144,17 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
         toml_version: tombi_toml_version::TomlVersion,
     ) -> DocumentTreeAndErrors<crate::Value> {
         let mut errors = Vec::new();
+        let mut comment_directives = vec![];
+
         for comment in self.leading_comments() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
             }
         }
 
         if let Some(comment) = self.trailing_comment() {
-            if let Err(error) = try_new_comment(comment.as_ref()) {
-                errors.push(error);
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
             }
         }
 
@@ -151,5 +201,41 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
         document_tree_result.errors = errors;
 
         document_tree_result
+    }
+}
+
+fn collect_comment_directives_and_errors(
+    node: &impl AstNode,
+) -> (
+    Option<Box<Vec<TombiValueCommentDirective>>>,
+    Vec<crate::Error>,
+) {
+    let mut comment_directives = vec![];
+    let mut errors = vec![];
+
+    for comment in node.leading_comments() {
+        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+            errors.push(error);
+        }
+
+        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+            comment_directives.push(comment_directive);
+        }
+    }
+
+    if let Some(comment) = node.trailing_comment() {
+        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+            errors.push(error);
+        }
+
+        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+            comment_directives.push(comment_directive);
+        }
+    }
+
+    if !comment_directives.is_empty() {
+        (Some(Box::new(comment_directives)), errors)
+    } else {
+        (None, errors)
     }
 }

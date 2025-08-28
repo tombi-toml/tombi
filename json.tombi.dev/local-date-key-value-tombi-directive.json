@@ -22,7 +22,7 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/LocalDateKeyValueTombiCommentDirectiveRules"
+              "$ref": "#/definitions/WithKeyRules"
             },
             {
               "type": "null"
@@ -32,7 +32,7 @@
       },
       "additionalProperties": false
     },
-    "LocalDateKeyValueTombiCommentDirectiveRules": {
+    "WithKeyRules": {
       "type": "object",
       "properties": {
         "dotted-keys-out-of-order": {

@@ -22,7 +22,7 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/StringValueTombiCommentDirectiveRules"
+              "$ref": "#/definitions/WithCommonRules"
             },
             {
               "type": "null"
@@ -32,7 +32,7 @@
       },
       "additionalProperties": false
     },
-    "StringValueTombiCommentDirectiveRules": {
+    "WithCommonRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {
@@ -68,7 +68,18 @@
             }
           ]
         },
-        "string-maximum-length": {
+        "deprecated": {
+          "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "string-max-length": {
           "description": "Controls the severity level for maximum length errors",
           "anyOf": [
             {
@@ -79,7 +90,7 @@
             }
           ]
         },
-        "string-minimum-length": {
+        "string-min-length": {
           "description": "Controls the severity level for minimum length errors",
           "anyOf": [
             {
@@ -113,7 +124,8 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "SeverityLevelDefaultError": {
       "default": "error",
@@ -139,6 +151,14 @@
           "title": "Display as Error.",
           "type": "string",
           "const": "error"
+        }
+      ]
+    },
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SeverityLevel"
         }
       ]
     }
