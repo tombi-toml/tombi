@@ -1,16 +1,15 @@
+mod diagnostic;
 mod error;
 mod lint;
 mod linter;
 mod rule;
-mod severity;
 
+pub use diagnostic::{Diagnostic, DiagnosticKind};
 pub use error::{Error, ErrorKind};
 use lint::Lint;
 pub use linter::Linter;
 use rule::Rule;
-pub use severity::{Severity, SeverityKind};
 pub use tombi_config::LintOptions;
-use tombi_diagnostic::Diagnostic;
 
 #[cfg(test)]
 #[macro_export]
@@ -360,7 +359,7 @@ mod tests {
                 "" = 1
                 "#,
             ) -> Err([
-                crate::SeverityKind::KeyEmpty
+                crate::DiagnosticKind::KeyEmpty
             ]);
         }
 
@@ -378,12 +377,12 @@ mod tests {
                 orange.color = "orange"
                 "#,
             ) -> Err([
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder
             ]);
         }
 

@@ -13,7 +13,7 @@ pub struct Linter<'a> {
     source_text: Cow<'a, str>,
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
-    pub(crate) diagnostics: Vec<crate::Diagnostic>,
+    pub(crate) diagnostics: Vec<tombi_diagnostic::Diagnostic>,
 }
 
 impl<'a> Linter<'a> {
@@ -48,7 +48,11 @@ impl<'a> Linter<'a> {
                 .await;
             if let Some((err, range)) = error_with_range {
                 self.diagnostics
-                    .push(Diagnostic::new_warning(err.to_string(), err.code(), range));
+                    .push(tombi_diagnostic::Diagnostic::new_warning(
+                        err.to_string(),
+                        err.code(),
+                        range,
+                    ));
             };
 
             let (tombi_document_comment_directive, diagnostics) =

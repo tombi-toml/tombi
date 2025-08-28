@@ -83,8 +83,8 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
                 .into();
 
             for range in out_of_order_ranges {
-                l.extend_diagnostics(crate::Severity {
-                    kind: crate::SeverityKind::DottedKeysOutOfOrder,
+                l.extend_diagnostics(crate::Diagnostic {
+                    kind: crate::DiagnosticKind::DottedKeysOutOfOrder,
                     level,
                     range,
                 });
