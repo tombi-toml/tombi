@@ -250,6 +250,23 @@ mod tests {
                 cargo_schema_path(),
             ) -> Ok(_);
         }
+
+        test_lint! {
+            #[test]
+            fn test_package_name_wrong_type_with_wrong_comment_directive_off(
+                r#"
+                [package]
+                name = 1 # tombi: lint.rules.type-mism = "off"
+                "#,
+                cargo_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed { key: "type-mism".to_string() },
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree::ValueType::Integer,
+                }
+            ]);
+        }
     }
 
     mod tombi_schema {

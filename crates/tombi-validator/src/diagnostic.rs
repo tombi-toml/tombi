@@ -36,12 +36,6 @@ or set `schema.strict = false` in your `tombi.toml`."#
         actual: tombi_document_tree::ValueType,
     },
 
-    #[error("Expected a value of type {expected}, but found {actual}")]
-    TypeMismatch2 {
-        expected: tombi_schema_store::ValueType,
-        actual: tombi_schema_store::ValueType,
-    },
-
     #[error("The value must be const value \"{expected}\", but found \"{actual}\"")]
     Const { expected: String, actual: String },
 
@@ -137,9 +131,7 @@ impl Diagnostic {
             DiagnosticKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
             DiagnosticKind::KeyRequired { .. } => "key-required",
             DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
-            DiagnosticKind::TypeMismatch { .. } | DiagnosticKind::TypeMismatch2 { .. } => {
-                "type-mismatch"
-            }
+            DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
             DiagnosticKind::Const { .. } => "const",
             DiagnosticKind::Enumerate { .. } => "enumerate",
             DiagnosticKind::IntegerMaximum { .. } => "integer-maximum",
