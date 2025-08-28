@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    TombiCommentDirectiveImpl, ValueLintOptions, ValueTombiCommentDirective, WithKeyRules,
+    TombiCommentDirectiveImpl, ValueLintOptions, ValueTombiCommentDirective,
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_diagnostic::SetDiagnostics;
@@ -16,8 +16,6 @@ pub async fn get_tombi_value_comment_directive<Rules>(
 where
     Rules: serde::de::DeserializeOwned + serde::Serialize,
     ValueTombiCommentDirective<Rules>: TombiCommentDirectiveImpl,
-    ValueTombiCommentDirective<WithKeyRules<Rules>>:
-        TombiCommentDirectiveImpl + Into<ValueTombiCommentDirective<Rules>>,
 {
     get_tombi_value_comment_directive_and_diagnostics(comment_directives)
         .await
