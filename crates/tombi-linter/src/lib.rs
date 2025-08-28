@@ -226,6 +226,31 @@ mod tests {
                 cargo_schema_path(),
             ) -> Err([tombi_validator::ErrorKind::KeyNotAllowed { key: "aaa".to_string() }]);
         }
+
+        test_lint! {
+            #[test]
+            fn test_package_name_wrong_type(
+                r#"
+                [package]
+                name = 1
+                "#,
+                cargo_schema_path(),
+            ) -> Err([tombi_validator::ErrorKind::TypeMismatch {
+                expected: tombi_schema_store::ValueType::String,
+                actual: tombi_document_tree::ValueType::Integer,
+            }]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_package_name_wrong_type_with_comment_directive_off(
+                r#"
+                [package]
+                name = 1 # tombi: lint.rules.type-mismatch = "off"
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(_);
+        }
     }
 
     mod tombi_schema {
