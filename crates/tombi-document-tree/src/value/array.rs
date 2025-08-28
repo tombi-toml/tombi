@@ -45,7 +45,7 @@ pub struct Array {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Array {
@@ -61,7 +61,7 @@ impl Array {
                 }
                 _ => node.range(),
             },
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -72,7 +72,7 @@ impl Array {
             values: vec![],
             range: table.range(),
             symbol_range: table.symbol_range(),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -83,7 +83,7 @@ impl Array {
             values: vec![],
             range: table.range(),
             symbol_range: table.symbol_range(),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -184,8 +184,8 @@ impl Array {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 
     #[inline]

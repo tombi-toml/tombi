@@ -19,7 +19,7 @@ pub struct String {
     kind: StringKind,
     value: std::string::String,
     range: tombi_text::Range,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl std::fmt::Display for String {
@@ -63,7 +63,7 @@ impl crate::String {
             kind,
             value,
             range,
-            comment_directive: None,
+            comment_directives: None,
         })
     }
 
@@ -106,8 +106,8 @@ impl crate::String {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 

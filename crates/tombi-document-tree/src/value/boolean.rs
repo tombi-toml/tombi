@@ -7,7 +7,7 @@ use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueTy
 pub struct Boolean {
     value: bool,
     range: tombi_text::Range,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl Boolean {
@@ -27,8 +27,8 @@ impl Boolean {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -65,7 +65,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
                 range: token.range(),
-                comment_directive: None,
+                comment_directives: None,
             }),
             errors: Vec::with_capacity(0),
         }

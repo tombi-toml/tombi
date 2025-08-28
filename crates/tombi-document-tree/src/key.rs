@@ -17,7 +17,7 @@ pub struct Key {
     kind: KeyKind,
     value: String,
     range: tombi_text::Range,
-    comment_directive: Option<Arc<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Arc<Vec<TombiValueCommentDirective>>>,
 }
 
 impl std::borrow::Borrow<String> for Key {
@@ -43,7 +43,7 @@ impl Key {
             kind,
             value,
             range,
-            comment_directive: None,
+            comment_directives: None,
         };
         key.try_to_raw_string(toml_version)?;
 
@@ -61,8 +61,8 @@ impl Key {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 
     pub fn to_raw_text(&self, toml_version: TomlVersion) -> String {

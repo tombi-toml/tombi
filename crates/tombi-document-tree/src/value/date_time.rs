@@ -11,7 +11,7 @@ use crate::{
 pub struct OffsetDateTime {
     value: tombi_date_time::OffsetDateTime,
     range: tombi_text::Range,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl OffsetDateTime {
@@ -31,8 +31,8 @@ impl OffsetDateTime {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -40,7 +40,7 @@ impl OffsetDateTime {
 pub struct LocalDateTime {
     value: tombi_date_time::LocalDateTime,
     range: tombi_text::Range,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalDateTime {
@@ -60,8 +60,8 @@ impl LocalDateTime {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -69,7 +69,7 @@ impl LocalDateTime {
 pub struct LocalDate {
     value: tombi_date_time::LocalDate,
     range: tombi_text::Range,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalDate {
@@ -89,8 +89,8 @@ impl LocalDate {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -98,7 +98,7 @@ impl LocalDate {
 pub struct LocalTime {
     value: tombi_date_time::LocalTime,
     range: tombi_text::Range,
-    comment_directive: Option<Box<Vec<TombiValueCommentDirective>>>,
+    comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
 impl LocalTime {
@@ -118,8 +118,8 @@ impl LocalTime {
     }
 
     #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directive.as_deref().map(|v| &**v)
+    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.comment_directives.as_deref().map(|v| &**v)
     }
 }
 
@@ -205,7 +205,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
                 tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },
@@ -235,7 +235,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDateTime {
                 tree: crate::Value::LocalDateTime(crate::LocalDateTime {
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },
@@ -265,7 +265,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalDate {
                 tree: crate::Value::LocalDate(crate::LocalDate {
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },
@@ -295,7 +295,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::LocalTime {
                 tree: crate::Value::LocalTime(crate::LocalTime {
                     value,
                     range: token.range(),
-                    comment_directive: None,
+                    comment_directives: None,
                 }),
                 errors: Vec::with_capacity(0),
             },

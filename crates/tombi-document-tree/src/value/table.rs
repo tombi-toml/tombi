@@ -24,7 +24,7 @@ pub struct Table {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     key_values: IndexMap<Key, Value>,
-    comment_directive: Option<Box<tombi_comment_directive::TableTombiCommentDirective>>,
+    comment_directives: Option<Box<tombi_comment_directive::TableTombiCommentDirective>>,
 }
 
 impl Table {
@@ -34,7 +34,7 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::default(),
             symbol_range: tombi_text::Range::default(),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -44,7 +44,7 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -59,7 +59,7 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -74,7 +74,7 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -100,7 +100,7 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range,
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -110,7 +110,7 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -120,7 +120,7 @@ impl Table {
             key_values: Default::default(),
             range: self.range,
             symbol_range: self.symbol_range,
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -130,7 +130,7 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::new(parent_key.range().start, self.range.end),
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
-            comment_directive: None,
+            comment_directives: None,
         }
     }
 
@@ -329,7 +329,7 @@ impl Table {
     pub fn comment_directive(
         &self,
     ) -> Option<&tombi_comment_directive::TableTombiCommentDirective> {
-        self.comment_directive.as_deref()
+        self.comment_directives.as_deref()
     }
 }
 
