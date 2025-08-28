@@ -6,7 +6,7 @@ use tombi_toml_version::TomlVersion;
 
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StringKind {
     BasicString,
     LiteralString,
@@ -68,18 +68,13 @@ impl crate::String {
     }
 
     #[inline]
-    pub fn kind(&self) -> &StringKind {
-        &self.kind
+    pub fn kind(&self) -> StringKind {
+        self.kind
     }
 
     #[inline]
     pub fn value(&self) -> &str {
         &self.value
-    }
-
-    #[inline]
-    pub fn into_value(self) -> std::string::String {
-        self.value
     }
 
     #[inline]

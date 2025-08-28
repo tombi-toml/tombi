@@ -1,36 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum IntegerKind {
-    Binary,
-    Decimal,
-    Octal,
-    Hexadecimal,
-}
-
-impl From<tombi_document_tree::IntegerKind> for IntegerKind {
-    fn from(kind: tombi_document_tree::IntegerKind) -> Self {
-        use tombi_document_tree::IntegerKind;
-
-        match kind {
-            IntegerKind::Binary => Self::Binary,
-            IntegerKind::Decimal => Self::Decimal,
-            IntegerKind::Octal => Self::Octal,
-            IntegerKind::Hexadecimal => Self::Hexadecimal,
-        }
-    }
-}
-
-impl From<&tombi_document_tree::IntegerKind> for IntegerKind {
-    fn from(kind: &tombi_document_tree::IntegerKind) -> Self {
-        use tombi_document_tree::IntegerKind;
-
-        match kind {
-            IntegerKind::Binary => Self::Binary,
-            IntegerKind::Decimal => Self::Decimal,
-            IntegerKind::Octal => Self::Octal,
-            IntegerKind::Hexadecimal => Self::Hexadecimal,
-        }
-    }
-}
+pub use tombi_document_tree::IntegerKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Integer {
@@ -61,7 +29,7 @@ impl Integer {
 impl From<tombi_document_tree::Integer> for Integer {
     fn from(node: tombi_document_tree::Integer) -> Self {
         Self {
-            kind: node.kind().into(),
+            kind: node.kind(),
             value: node.value(),
         }
     }

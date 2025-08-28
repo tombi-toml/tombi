@@ -6,7 +6,7 @@ use crate::{
     DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IntegerKind {
     Binary,
     Decimal,
@@ -24,8 +24,8 @@ pub struct Integer {
 
 impl Integer {
     #[inline]
-    pub fn kind(&self) -> &IntegerKind {
-        &self.kind
+    pub fn kind(&self) -> IntegerKind {
+        self.kind
     }
 
     #[inline]

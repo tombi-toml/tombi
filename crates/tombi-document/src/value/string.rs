@@ -1,36 +1,4 @@
-#[allow(clippy::enum_variant_names)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StringKind {
-    BasicString,
-    LiteralString,
-    MultiLineBasicString,
-    MultiLineLiteralString,
-}
-
-impl From<tombi_document_tree::StringKind> for StringKind {
-    fn from(kind: tombi_document_tree::StringKind) -> Self {
-        use tombi_document_tree::StringKind;
-        match kind {
-            StringKind::BasicString => Self::BasicString,
-            StringKind::LiteralString => Self::LiteralString,
-            StringKind::MultiLineBasicString => Self::MultiLineBasicString,
-            StringKind::MultiLineLiteralString => Self::MultiLineLiteralString,
-        }
-    }
-}
-
-impl From<&tombi_document_tree::StringKind> for StringKind {
-    fn from(kind: &tombi_document_tree::StringKind) -> Self {
-        use tombi_document_tree::StringKind;
-
-        match kind {
-            StringKind::BasicString => Self::BasicString,
-            StringKind::LiteralString => Self::LiteralString,
-            StringKind::MultiLineBasicString => Self::MultiLineBasicString,
-            StringKind::MultiLineLiteralString => Self::MultiLineLiteralString,
-        }
-    }
-}
+pub use tombi_document_tree::StringKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct String {
@@ -58,8 +26,8 @@ impl String {
 impl From<tombi_document_tree::String> for crate::String {
     fn from(node: tombi_document_tree::String) -> Self {
         Self {
-            kind: node.kind().into(),
-            value: node.into_value(),
+            kind: node.kind(),
+            value: node.value().to_owned(),
         }
     }
 }
