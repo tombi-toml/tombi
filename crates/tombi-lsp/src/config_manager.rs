@@ -171,19 +171,18 @@ impl ConfigManager {
     pub async fn update_config_with_path(
         &self,
         config: Config,
-        config_path: PathBuf,
+        config_path: &Path,
     ) -> Result<(), tombi_schema_store::Error> {
         let schema_options = schema_store_options(&config, &self.backend_options);
 
         let mut config_schema_stores = self.config_schema_stores.write().await;
-        let config_schema_store =
-            config_schema_stores
-                .entry(config_path.clone())
-                .or_insert(ConfigSchemaStore::new(
-                    config.clone(),
-                    Some(config_path.clone()),
-                    SchemaStore::new_with_options(schema_options),
-                ));
+        let config_schema_store = config_schema_stores
+            .entry(config_path.to_owned())
+            .or_insert(ConfigSchemaStore::new(
+                config.clone(),
+                Some(config_path.to_owned()),
+                SchemaStore::new_with_options(schema_options),
+            ));
         config_schema_store
             .schema_store
             .reload_config(&config, Some(&config_path))
