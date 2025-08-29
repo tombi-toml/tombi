@@ -242,15 +242,15 @@ mod tests {
 
     test_format! {
         #[test]
-        fn schema_comment(r"#:schema ../../schemas/x-tombi-toml-v1.0.0.schema.json") -> Ok(
-            "#:schema ../../schemas/x-tombi-toml-v1.0.0.schema.json"
+        fn schema_comment(r"#:schema https://json.schemastore.org/pyproject.json") -> Ok(
+            "#:schema https://json.schemastore.org/pyproject.json"
         );
     }
 
     test_format! {
         #[test]
-        fn schema_comment_with_space(r"#:schema  ../../schemas/x-tombi-toml-v1.0.0.schema.json  ") -> Ok(
-            "#:schema ../../schemas/x-tombi-toml-v1.0.0.schema.json"
+        fn schema_comment_with_space(r"#:schema  https://json.schemastore.org/pyproject.json  ") -> Ok(
+            "#:schema https://json.schemastore.org/pyproject.json"
         );
     }
 

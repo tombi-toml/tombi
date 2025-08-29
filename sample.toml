@@ -1,4 +1,4 @@
-#:schema ./schemas/x-tombi-toml-v1.1.0-preview.schema.json
+#:tombi toml-version = "v1.1.0-preview"
 
 # key values begin dangling comment1
 # key values begin dangling comment2
