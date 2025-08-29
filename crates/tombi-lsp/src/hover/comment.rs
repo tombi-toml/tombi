@@ -46,26 +46,17 @@ pub async fn get_document_comment_directive_hover_info(
         }
         return None;
     }
-    if let Some(TombiDocumentCommentDirective {
-        directive_range,
-        content,
-        content_range,
-    }) = get_tombi_document_comment_directive(root, position)
-    {
-        if directive_range.contains(position) {
-            return Some(HoverContent::Directive(HoverDirectiveContent {
-                title: DOCUMENT_TOMBI_DIRECTIVE_TITLE.to_string(),
-                description: DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
-                range: directive_range,
-            }));
-        }
-        if content_range.contains(position) {
+    if let Some(comment_directive) = get_tombi_document_comment_directive(root, position) {
+        if let Some(position_in_content) = comment_directive.position_in_content(position) {
+            let TombiDocumentCommentDirective {
+                content,
+                content_range,
+                ..
+            } = comment_directive;
             let toml_version = tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
             // Parse the directive content as TOML
             let (directive_ast, _) =
                 tombi_parser::parse(&content, toml_version).into_root_and_errors();
-            let position_in_content =
-                tombi_text::Position::new(0, position.column - (directive_range.end.column + 1));
 
             // Get hover information from the directive AST
             if let Some((keys, range)) =
@@ -120,6 +111,12 @@ pub async fn get_document_comment_directive_hover_info(
                     None => None,
                 };
             }
+        } else if comment_directive.directive_range.contains(position) {
+            return Some(HoverContent::Directive(HoverDirectiveContent {
+                title: DOCUMENT_TOMBI_DIRECTIVE_TITLE.to_string(),
+                description: DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
+                range: comment_directive.directive_range,
+            }));
         }
     }
 
@@ -133,25 +130,15 @@ pub async fn get_value_comment_directive_hover_info<CommentDirective>(
 where
     CommentDirective: TombiCommentDirectiveImpl,
 {
-    let TombiValueCommentDirective {
-        directive_range,
-        content,
-        content_range,
-    } = comment_directive;
-    if directive_range.contains(position) {
-        return Some(HoverContent::Directive(HoverDirectiveContent {
-            title: VALUE_TOMBI_DIRECTIVE_TITLE.to_string(),
-            description: VALUE_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
-            range: *directive_range,
-        }));
-    }
-
-    if content_range.contains(position) {
+    if let Some(position_in_content) = comment_directive.position_in_content(position) {
+        let TombiValueCommentDirective {
+            content,
+            content_range,
+            ..
+        } = comment_directive;
         let toml_version = tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         // Parse the directive content as TOML
         let (directive_ast, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
-        let position_in_content =
-            tombi_text::Position::new(0, position.column - (directive_range.end.column + 1));
 
         // Get hover information from the directive AST
         if let Some((keys, range)) =
@@ -212,6 +199,12 @@ where
                 None => None,
             };
         }
+    } else if comment_directive.directive_range.contains(position) {
+        return Some(HoverContent::Directive(HoverDirectiveContent {
+            title: VALUE_TOMBI_DIRECTIVE_TITLE.to_string(),
+            description: VALUE_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
+            range: comment_directive.directive_range,
+        }));
     }
     None
 }

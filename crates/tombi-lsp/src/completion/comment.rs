@@ -118,19 +118,19 @@ async fn document_tombi_comment_directive_content_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
-    if let Some(TombiDocumentCommentDirective {
-        content,
-        content_range,
-        directive_range,
-    }) = get_tombi_document_comment_directive(root, position)
-    {
-        if !content_range.contains(position) {
+    if let Some(comment_directive) = get_tombi_document_comment_directive(root, position) {
+        let Some(position_in_content) = comment_directive.position_in_content(position) else {
             return None;
-        }
+        };
+
+        let TombiDocumentCommentDirective {
+            content,
+            content_range,
+            ..
+        } = comment_directive;
+
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
-        let position_in_content =
-            tombi_text::Position::new(0, position.column - (directive_range.end.column + 1));
 
         let Some((keys, completion_hint)) =
             extract_keys_and_hint(&root, position_in_content, toml_version)
