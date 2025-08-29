@@ -12,7 +12,6 @@ itertools.workspace = true
 regex.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
-tombi-comment-directive.workspace = true
 tombi-document-tree.workspace = true
 tombi-future.workspace = true
 tombi-parser.workspace = true

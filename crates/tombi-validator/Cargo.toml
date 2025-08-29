@@ -21,7 +21,6 @@ tombi-diagnostic.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-future.workspace = true
-tombi-json.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-severity-level.workspace = true
