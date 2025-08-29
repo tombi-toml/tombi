@@ -59,28 +59,18 @@ trait GetHoverContent {
 
 #[derive(Debug, Clone)]
 pub enum HoverContent {
-    Directive(HoverDirectiveContent),
     Value(HoverValueContent),
+    Directive(HoverDirectiveContent),
+    DirectiveContent(HoverValueContent),
 }
 
 impl From<HoverContent> for tower_lsp::lsp_types::Hover {
     fn from(value: HoverContent) -> Self {
         match value {
-            HoverContent::Directive(content) => content.into(),
             HoverContent::Value(content) => content.into(),
+            HoverContent::Directive(content) => content.into(),
+            HoverContent::DirectiveContent(content) => content.into(),
         }
-    }
-}
-
-impl From<HoverValueContent> for HoverContent {
-    fn from(value: HoverValueContent) -> Self {
-        HoverContent::Value(value)
-    }
-}
-
-impl From<HoverDirectiveContent> for HoverContent {
-    fn from(value: HoverDirectiveContent) -> Self {
-        HoverContent::Directive(value)
     }
 }
 

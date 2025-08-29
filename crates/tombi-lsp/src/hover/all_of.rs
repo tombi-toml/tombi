@@ -79,8 +79,11 @@ where
                             constraints = Some(c);
                         }
                     }
-                    HoverContent::Directive(hover_directive_content) => {
-                        return Some(hover_directive_content.into());
+                    HoverContent::Directive(hover_content) => {
+                        return Some(HoverContent::Directive(hover_content))
+                    }
+                    HoverContent::DirectiveContent(hover_content) => {
+                        return Some(HoverContent::DirectiveContent(hover_content))
                     }
                 }
             }
@@ -131,18 +134,15 @@ where
             }
         }
 
-        Some(
-            HoverValueContent {
-                title,
-                description,
-                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                value_type,
-                constraints,
-                schema_uri: Some(schema_uri.to_owned()),
-                range: None,
-            }
-            .into(),
-        )
+        Some(HoverContent::Value(HoverValueContent {
+            title,
+            description,
+            accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+            value_type,
+            constraints,
+            schema_uri: Some(schema_uri.to_owned()),
+            range: None,
+        }))
     }
     .boxed()
 }
@@ -206,18 +206,15 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
             };
 
-            Some(
-                HoverValueContent {
-                    title,
-                    description,
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type,
-                    constraints: None,
-                    schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
-                    range: None,
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title,
+                description,
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type,
+                constraints: None,
+                schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
+                range: None,
+            }))
         }
         .boxed()
     }

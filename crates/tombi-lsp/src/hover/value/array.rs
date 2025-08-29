@@ -120,10 +120,13 @@ impl GetHoverContent for tombi_document_tree::Array {
                                                             Some(description.clone());
                                                     }
                                                 }
-                                                Some(hover_value_content.into())
+                                                Some(HoverContent::Value(hover_value_content))
                                             }
-                                            HoverContent::Directive(hover_directive_content) => {
-                                                Some(hover_directive_content.into())
+                                            HoverContent::Directive(hover_content) => {
+                                                Some(HoverContent::Directive(hover_content))
+                                            }
+                                            HoverContent::DirectiveContent(hover_content) => {
+                                                Some(HoverContent::DirectiveContent(hover_content))
                                             }
                                         };
                                     }
@@ -221,18 +224,15 @@ impl GetHoverContent for tombi_document_tree::Array {
                             }
                         }
 
-                        return Some(
-                            HoverValueContent {
-                                title: None,
-                                description: None,
-                                accessors: Accessors::from(accessors.to_vec()),
-                                value_type: ValueType::Array,
-                                constraints: None,
-                                schema_uri: None,
-                                range: Some(self.range()),
-                            }
-                            .into(),
-                        );
+                        return Some(HoverContent::Value(HoverValueContent {
+                            title: None,
+                            description: None,
+                            accessors: Accessors::from(accessors.to_vec()),
+                            value_type: ValueType::Array,
+                            constraints: None,
+                            schema_uri: None,
+                            range: Some(self.range()),
+                        }));
                     }
                     _ => {}
                 }
@@ -257,18 +257,15 @@ impl GetHoverContent for tombi_document_tree::Array {
                 }
             }
 
-            Some(
-                HoverValueContent {
-                    title: None,
-                    description: None,
-                    accessors: Accessors::from(accessors.to_vec()),
-                    value_type: ValueType::Array,
-                    constraints: None,
-                    schema_uri: None,
-                    range: Some(self.range()),
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title: None,
+                description: None,
+                accessors: Accessors::from(accessors.to_vec()),
+                value_type: ValueType::Array,
+                constraints: None,
+                schema_uri: None,
+                range: Some(self.range()),
+            }))
         }
         .boxed()
     }
@@ -284,39 +281,36 @@ impl GetHoverContent for ArraySchema {
         _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: Accessors::from(accessors.to_vec()),
-                    value_type: ValueType::Array,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| DisplayValue::try_from(value).ok(),
-                        ),
-                        default: self
-                            .default
-                            .as_ref()
-                            .and_then(|default| DisplayValue::try_from(default).ok()),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples
-                                .iter()
-                                .filter_map(|example| DisplayValue::try_from(example).ok())
-                                .collect()
-                        }),
-                        min_items: self.min_items,
-                        max_items: self.max_items,
-                        unique_items: self.unique_items,
-                        values_order: self.values_order.clone(),
-                        ..Default::default()
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: Accessors::from(accessors.to_vec()),
+                value_type: ValueType::Array,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| DisplayValue::try_from(value).ok(),
+                    ),
+                    default: self
+                        .default
+                        .as_ref()
+                        .and_then(|default| DisplayValue::try_from(default).ok()),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .filter_map(|example| DisplayValue::try_from(example).ok())
+                            .collect()
                     }),
-                    schema_uri: current_schema.map(|cs| cs.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+                    min_items: self.min_items,
+                    max_items: self.max_items,
+                    unique_items: self.unique_items,
+                    values_order: self.values_order.clone(),
+                    ..Default::default()
+                }),
+                schema_uri: current_schema.map(|cs| cs.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

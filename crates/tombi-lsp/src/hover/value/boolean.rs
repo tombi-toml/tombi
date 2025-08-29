@@ -92,18 +92,15 @@ impl GetHoverContent for tombi_document_tree::Boolean {
                     _ => None,
                 }
             } else {
-                Some(
-                    HoverValueContent {
-                        title: None,
-                        description: None,
-                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                        value_type: tombi_schema_store::ValueType::Boolean,
-                        constraints: None,
-                        schema_uri: None,
-                        range: Some(self.range()),
-                    }
-                    .into(),
-                )
+                Some(HoverContent::Value(HoverValueContent {
+                    title: None,
+                    description: None,
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                    value_type: tombi_schema_store::ValueType::Boolean,
+                    constraints: None,
+                    schema_uri: None,
+                    range: Some(self.range()),
+                }))
             }
         }
         .boxed()
@@ -120,32 +117,29 @@ impl GetHoverContent for BooleanSchema {
         _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type: tombi_schema_store::ValueType::Boolean,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| Some(DisplayValue::Boolean(*value)),
-                        ),
-                        default: self.default.map(DisplayValue::Boolean),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples
-                                .iter()
-                                .map(|example| DisplayValue::Boolean(*example))
-                                .collect()
-                        }),
-                        ..Default::default()
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type: tombi_schema_store::ValueType::Boolean,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(DisplayValue::Boolean(*value)),
+                    ),
+                    default: self.default.map(DisplayValue::Boolean),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .map(|example| DisplayValue::Boolean(*example))
+                            .collect()
                     }),
-                    schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+                    ..Default::default()
+                }),
+                schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

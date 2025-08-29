@@ -92,18 +92,15 @@ impl GetHoverContent for tombi_document_tree::Float {
                     _ => None,
                 }
             } else {
-                Some(
-                    HoverValueContent {
-                        title: None,
-                        description: None,
-                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                        value_type: tombi_schema_store::ValueType::Float,
-                        constraints: None,
-                        schema_uri: None,
-                        range: Some(self.range()),
-                    }
-                    .into(),
-                )
+                Some(HoverContent::Value(HoverValueContent {
+                    title: None,
+                    description: None,
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                    value_type: tombi_schema_store::ValueType::Float,
+                    constraints: None,
+                    schema_uri: None,
+                    range: Some(self.range()),
+                }))
             }
         }
         .boxed()
@@ -120,37 +117,34 @@ impl GetHoverContent for FloatSchema {
         _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type: tombi_schema_store::ValueType::Float,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| Some(DisplayValue::Float(*value)),
-                        ),
-                        default: self.default.map(DisplayValue::Float),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples
-                                .iter()
-                                .map(|example| DisplayValue::Float(*example))
-                                .collect()
-                        }),
-                        minimum: self.minimum.map(DisplayValue::Float),
-                        maximum: self.maximum.map(DisplayValue::Float),
-                        exclusive_minimum: self.exclusive_minimum.map(DisplayValue::Float),
-                        exclusive_maximum: self.exclusive_maximum.map(DisplayValue::Float),
-                        multiple_of: self.multiple_of.map(DisplayValue::Float),
-                        ..Default::default()
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type: tombi_schema_store::ValueType::Float,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(DisplayValue::Float(*value)),
+                    ),
+                    default: self.default.map(DisplayValue::Float),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .map(|example| DisplayValue::Float(*example))
+                            .collect()
                     }),
-                    schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+                    minimum: self.minimum.map(DisplayValue::Float),
+                    maximum: self.maximum.map(DisplayValue::Float),
+                    exclusive_minimum: self.exclusive_minimum.map(DisplayValue::Float),
+                    exclusive_maximum: self.exclusive_maximum.map(DisplayValue::Float),
+                    multiple_of: self.multiple_of.map(DisplayValue::Float),
+                    ..Default::default()
+                }),
+                schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

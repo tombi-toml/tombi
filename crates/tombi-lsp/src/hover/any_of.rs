@@ -115,8 +115,11 @@ where
 
                     any_hover_value_contents.push(hover_value_content);
                 }
-                Some(HoverContent::Directive(hover_directive_content)) => {
-                    return Some(hover_directive_content.into());
+                Some(HoverContent::Directive(hover_content)) => {
+                    return Some(HoverContent::Directive(hover_content));
+                }
+                Some(HoverContent::DirectiveContent(hover_content)) => {
+                    return Some(HoverContent::DirectiveContent(hover_content));
                 }
                 None => {
                     continue;
@@ -165,7 +168,7 @@ where
             }
         }
 
-        Some(hover_value_content.into())
+        Some(HoverContent::Value(hover_value_content))
     }
     .boxed()
 }
@@ -228,18 +231,15 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 tombi_schema_store::ValueType::AnyOf(value_type_set.into_iter().collect())
             };
 
-            Some(
-                HoverValueContent {
-                    title,
-                    description,
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type,
-                    constraints: None,
-                    schema_uri: Some(current_schema.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title,
+                description,
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type,
+                constraints: None,
+                schema_uri: Some(current_schema.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

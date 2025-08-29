@@ -86,18 +86,15 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
                     _ => None,
                 }
             } else {
-                Some(
-                    HoverValueContent {
-                        title: None,
-                        description: None,
-                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                        value_type: tombi_schema_store::ValueType::LocalDate,
-                        constraints: None,
-                        schema_uri: None,
-                        range: Some(self.range()),
-                    }
-                    .into(),
-                )
+                Some(HoverContent::Value(HoverValueContent {
+                    title: None,
+                    description: None,
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                    value_type: tombi_schema_store::ValueType::LocalDate,
+                    constraints: None,
+                    schema_uri: None,
+                    range: Some(self.range()),
+                }))
             }
         }
         .boxed()
@@ -114,38 +111,33 @@ impl GetHoverContent for LocalDateSchema {
         _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type: tombi_schema_store::ValueType::LocalDate,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| DisplayValue::try_new_local_date(value).ok(),
-                        ),
-                        default: self
-                            .default
-                            .as_ref()
-                            .and_then(|value| DisplayValue::try_new_local_date(value).ok()),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples
-                                .iter()
-                                .filter_map(|example| {
-                                    DisplayValue::try_new_local_date(example).ok()
-                                })
-                                .collect()
-                        }),
-                        ..Default::default()
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type: tombi_schema_store::ValueType::LocalDate,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| DisplayValue::try_new_local_date(value).ok(),
+                    ),
+                    default: self
+                        .default
+                        .as_ref()
+                        .and_then(|value| DisplayValue::try_new_local_date(value).ok()),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .filter_map(|example| DisplayValue::try_new_local_date(example).ok())
+                            .collect()
                     }),
-                    schema_uri: current_schema
-                        .map(|current_schema| current_schema.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+                    ..Default::default()
+                }),
+                schema_uri: current_schema
+                    .map(|current_schema| current_schema.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

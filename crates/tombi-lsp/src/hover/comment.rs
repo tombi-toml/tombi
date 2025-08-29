@@ -96,7 +96,7 @@ pub async fn get_document_comment_directive_hover_info(
                     strict: None,
                 };
 
-                let mut hover_content = get_hover_content(
+                let hover_content = get_hover_content(
                     &directive_ast
                         .into_document_tree_and_errors(toml_version)
                         .tree,
@@ -106,10 +106,19 @@ pub async fn get_document_comment_directive_hover_info(
                 )
                 .await;
 
-                if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
-                    hover_value_content.range = adjusted_range;
-                }
-                return hover_content;
+                return match hover_content {
+                    Some(
+                        HoverContent::Value(mut hover_value_content)
+                        | HoverContent::DirectiveContent(mut hover_value_content),
+                    ) => {
+                        hover_value_content.range = adjusted_range;
+                        Some(HoverContent::DirectiveContent(hover_value_content))
+                    }
+                    Some(HoverContent::Directive(hover_content)) => {
+                        Some(HoverContent::Directive(hover_content))
+                    }
+                    None => None,
+                };
             }
         }
     }
@@ -179,7 +188,7 @@ where
                 strict: None,
             };
 
-            let mut hover_content = get_hover_content(
+            let hover_content = get_hover_content(
                 &directive_ast
                     .into_document_tree_and_errors(toml_version)
                     .tree,
@@ -189,11 +198,19 @@ where
             )
             .await;
 
-            if let Some(HoverContent::Value(hover_value_content)) = hover_content.as_mut() {
-                hover_value_content.range = adjusted_range.map(|r| r.to_owned());
-            }
-
-            return hover_content;
+            return match hover_content {
+                Some(
+                    HoverContent::Value(mut hover_value_content)
+                    | HoverContent::DirectiveContent(mut hover_value_content),
+                ) => {
+                    hover_value_content.range = adjusted_range;
+                    Some(HoverContent::DirectiveContent(hover_value_content))
+                }
+                Some(HoverContent::Directive(hover_content)) => {
+                    Some(HoverContent::Directive(hover_content))
+                }
+                None => None,
+            };
         }
     }
     None

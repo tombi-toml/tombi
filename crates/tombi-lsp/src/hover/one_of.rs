@@ -105,7 +105,7 @@ where
                         == tombi_schema_store::ValueType::Array
                         && hover_value_content.value_type != tombi_schema_store::ValueType::Array
                     {
-                        return Some(hover_value_content.into());
+                        return Some(HoverContent::Value(hover_value_content));
                     }
 
                     match value
@@ -127,8 +127,11 @@ where
 
                     one_hover_value_contents.insert(hover_value_content);
                 }
-                Some(HoverContent::Directive(hover_directive_content)) => {
-                    return Some(hover_directive_content.into());
+                Some(HoverContent::Directive(hover_content)) => {
+                    return Some(HoverContent::Directive(hover_content));
+                }
+                Some(HoverContent::DirectiveContent(hover_content)) => {
+                    return Some(HoverContent::DirectiveContent(hover_content));
                 }
                 None => {
                     continue;
@@ -206,7 +209,7 @@ where
             }
         }
 
-        hover_value_content.map(Into::into)
+        hover_value_content.map(HoverContent::Value)
     }
     .boxed()
 }
@@ -269,18 +272,15 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 tombi_schema_store::ValueType::OneOf(value_type_set.into_iter().collect())
             };
 
-            Some(
-                HoverValueContent {
-                    title,
-                    description,
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type,
-                    constraints: None,
-                    schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
-                    range: None,
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title,
+                description,
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type,
+                constraints: None,
+                schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
+                range: None,
+            }))
         }
         .boxed()
     }
