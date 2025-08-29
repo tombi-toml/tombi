@@ -156,7 +156,7 @@ impl SchemaStore {
                 return;
             };
 
-            tracing::debug!("load config schema from: {}", schema_uri);
+            tracing::debug!("load schema from config: {}", schema_uri);
 
             self.schemas.write().await.push(crate::Schema {
                 url: schema_uri,
