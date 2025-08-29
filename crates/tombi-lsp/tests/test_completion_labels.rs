@@ -1214,6 +1214,7 @@ mod completion_labels {
                 "local-time",
                 "object",
                 "offset-date-time",
+                "string",
             ]);
         }
 
@@ -1236,6 +1237,7 @@ mod completion_labels {
                 "local-time",
                 "object",
                 "offset-date-time",
+                "string",
             ]);
         }
     }
