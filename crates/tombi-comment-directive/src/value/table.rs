@@ -58,10 +58,24 @@ pub struct TableRules {
     /// ```
     pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
 
-    /// Controls the severity level for max properties errors
+    /// # Maximum properties.
+    ///
+    /// Check if the table has more than the maximum number of properties.
+    ///
+    /// ```rust
+    /// length(table) <= maximum
+    /// ```
+    ///
     pub table_max_properties: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for min properties errors
+    /// # Minimum properties.
+    ///
+    /// Check if the table has less than the minimum number of properties.
+    ///
+    /// ```rust
+    /// length(table) >= minimum
+    /// ```
+    ///
     pub table_min_properties: Option<SeverityLevelDefaultError>,
 }
 

@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -104,7 +106,8 @@
           ]
         },
         "table-max-properties": {
-          "description": "Controls the severity level for max properties errors",
+          "title": "Maximum properties.",
+          "description": "Check if the table has more than the maximum number of properties.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -115,7 +118,8 @@
           ]
         },
         "table-min-properties": {
-          "description": "Controls the severity level for min properties errors",
+          "title": "Minimum properties.",
+          "description": "Check if the table has less than the minimum number of properties.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

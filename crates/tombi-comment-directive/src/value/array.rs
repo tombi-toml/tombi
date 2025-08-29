@@ -28,12 +28,33 @@ impl TombiCommentDirectiveImpl for ArrayValueTombiCommentDirective {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ArrayRules {
-    /// Controls the severity level for max values errors
+    /// # Maximum items.
+    ///
+    /// Check if the array has more than the maximum number of items.
+    ///
+    /// ```rust
+    /// length(array) <= maximum
+    /// ```
+    ///
     pub array_max_items: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for min values errors
+    /// # Minimum items.
+    ///
+    /// Check if the array has less than the minimum number of items.
+    ///
+    /// ```rust
+    /// length(array) >= minimum
+    /// ```
+    ///
     pub array_min_items: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for unique values errors
+    /// # Unique items.
+    ///
+    /// Check if the array has duplicate items.
+    ///
+    /// ```rust
+    /// length(array) == length(unique(array))
+    /// ```
+    ///
     pub array_unique_items: Option<SeverityLevelDefaultError>,
 }

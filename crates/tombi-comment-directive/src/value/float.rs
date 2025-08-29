@@ -29,18 +29,53 @@ impl TombiCommentDirectiveImpl for FloatValueTombiCommentDirective {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct FloatRules {
-    /// Controls the severity level for maximum float errors
+    /// # Maximum float.
+    ///
+    /// Check if the float is less than or equal to the maximum.
+    ///
+    /// ```rust
+    /// float <= maximum
+    /// ```
+    ///
     pub float_maximum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for minimum float errors
+    /// # Minimum float.
+    ///
+    /// Check if the float is greater than or equal to the minimum.
+    ///
+    /// ```rust
+    /// float >= minimum
+    /// ```
+    ///
     pub float_minimum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for exclusive maximum float errors
+    /// # Exclusive maximum float.
+    ///
+    /// Check if the float is less than the maximum.
+    ///
+    /// ```rust
+    /// float < maximum
+    /// ```
+    ///
     pub float_exclusive_maximum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for exclusive minimum float errors
+    /// # Exclusive minimum float.
+    ///
+    /// Check if the float is greater than the minimum.
+    ///
+    /// ```rust
+    /// float > minimum
+    /// ```
+    ///
     pub float_exclusive_minimum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for multiple of float errors
+    /// # Multiple of float.
+    ///
+    /// Check if the float is a multiple of the value.
+    ///
+    /// ```rust
+    /// float % multiple_of == 0
+    /// ```
+    ///
     pub float_multiple_of: Option<SeverityLevelDefaultError>,
 }

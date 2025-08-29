@@ -29,6 +29,7 @@ use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ValueTombiCommentDirective<Rules> {
+    /// # Linter directive.
     pub lint: Option<ValueLintOptions<Rules>>,
 }
 
@@ -50,6 +51,7 @@ where
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ValueLintOptions<Rules> {
+    /// # Lint rules.
     pub rules: Option<Rules>,
 }
 

@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithKeyRules"
@@ -48,7 +50,8 @@
           ]
         },
         "key-required": {
-          "description": "Controls the severity level for key required errors",
+          "title": "Key required.",
+          "description": "Check if the key is required in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -59,7 +62,8 @@
           ]
         },
         "key-not-allowed": {
-          "description": "Controls the severity level for key not allowed errors",
+          "title": "Key not allowed.",
+          "description": "Check if the key is not defined in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -70,7 +74,8 @@
           ]
         },
         "key-pattern": {
-          "description": "Controls the severity level for key pattern errors",
+          "title": "Key pattern.",
+          "description": "Check if the key matches the pattern in the Schema.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -125,7 +130,8 @@
           ]
         },
         "array-max-items": {
-          "description": "Controls the severity level for max values errors",
+          "title": "Maximum items.",
+          "description": "Check if the array has more than the maximum number of items.\n\n```rust\nlength(array) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -136,7 +142,8 @@
           ]
         },
         "array-min-items": {
-          "description": "Controls the severity level for min values errors",
+          "title": "Minimum items.",
+          "description": "Check if the array has less than the minimum number of items.\n\n```rust\nlength(array) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -147,7 +154,8 @@
           ]
         },
         "array-unique-items": {
-          "description": "Controls the severity level for unique values errors",
+          "title": "Unique items.",
+          "description": "Check if the array has duplicate items.\n\n```rust\nlength(array) == length(unique(array))\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

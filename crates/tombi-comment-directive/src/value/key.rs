@@ -31,12 +31,18 @@ pub struct KeyRules {
     /// ```
     pub key_empty: Option<SeverityLevelDefaultWarn>,
 
-    /// Controls the severity level for key required errors
+    /// # Key required.
+    ///
+    /// Check if the key is required in this Table.
     pub key_required: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for key not allowed errors
+    /// # Key not allowed.
+    ///
+    /// Check if the key is not defined in this Table.
     pub key_not_allowed: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for key pattern errors
+    /// # Key pattern.
+    ///
+    /// Check if the key matches the pattern in the Schema.
     pub key_pattern: Option<SeverityLevelDefaultError>,
 }

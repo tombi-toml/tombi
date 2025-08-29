@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithAdditionalPropertiesCommonRules"
@@ -92,7 +94,8 @@
           ]
         },
         "key-required": {
-          "description": "Controls the severity level for key required errors",
+          "title": "Key required.",
+          "description": "Check if the key is required in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -103,7 +106,8 @@
           ]
         },
         "key-not-allowed": {
-          "description": "Controls the severity level for key not allowed errors",
+          "title": "Key not allowed.",
+          "description": "Check if the key is not defined in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -114,7 +118,8 @@
           ]
         },
         "key-pattern": {
-          "description": "Controls the severity level for key pattern errors",
+          "title": "Key pattern.",
+          "description": "Check if the key matches the pattern in the Schema.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

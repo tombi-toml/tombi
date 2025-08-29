@@ -29,15 +29,43 @@ impl TombiCommentDirectiveImpl for StringValueTombiCommentDirective {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct StringRules {
-    /// Controls the severity level for maximum length errors
+    /// # Maximum length.
+    ///
+    /// Check if the string is longer than the maximum length.
+    ///
+    /// ```rust
+    /// length(string) <= maximum
+    /// ```
+    ///
     pub string_max_length: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for minimum length errors
+    /// # Minimum length.
+    ///
+    /// Check if the string is shorter than the minimum length.
+    ///
+    /// ```rust
+    /// length(string) >= minimum
+    /// ```
+    ///
     pub string_min_length: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for format errors
+    /// # Format.
+    ///
+    /// Check if the string matches the format.
+    ///
+    /// ```rust
+    /// matches(string, format)
+    /// ```
+    ///
     pub string_format: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for pattern errors
+    /// # Pattern.
+    ///
+    /// Check if the string matches the pattern.
+    ///
+    /// ```rust
+    /// matches(string, pattern)
+    /// ```
+    ///
     pub string_pattern: Option<SeverityLevelDefaultError>,
 }
