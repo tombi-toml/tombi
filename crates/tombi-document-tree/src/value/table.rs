@@ -561,15 +561,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             }
         }
 
-        if let Some(comment) = self.trailing_comment() {
-            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                errors.push(error);
-            }
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                comment_directives.push(comment_directive);
-            }
-        }
-
         let Some(keys) = self.keys() else {
             errors.push(crate::Error::IncompleteNode {
                 range: self.range(),
@@ -609,10 +600,21 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             }
         };
 
-        let table = if let Some(key) = keys.pop() {
+        if let Some(comment) = self.trailing_comment() {
+            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                errors.push(error);
+            }
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
+            }
+        }
+
+        let table = if let Some(mut key) = keys.pop() {
             let mut seed_key_value = Table::new_key_value(&self);
             seed_key_value.range = key.range() + value.range();
             seed_key_value.symbol_range = key.range() + value.symbol_range();
+            key.comment_directives = Some(Box::new(comment_directives.clone()));
+
             match seed_key_value.insert(key, value) {
                 Ok(mut table) => {
                     if !comment_directives.is_empty() {

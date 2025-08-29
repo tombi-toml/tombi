@@ -113,6 +113,8 @@ impl<'a> Linter<'a> {
 
             errors.set_diagnostics(&mut self.diagnostics);
 
+            tracing::trace!("document_tree: {:#?}", document_tree);
+
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
                 root_schema: source_schema
