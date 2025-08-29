@@ -8,7 +8,7 @@ pub type ArrayKeyValueTombiCommentDirective = ValueTombiCommentDirective<ArrayKe
 
 pub type ArrayValueTombiCommentDirective = ValueTombiCommentDirective<ArrayValueRules>;
 
-pub type ArrayKeyValueRules = WithKeyRules<ArrayRules>;
+pub type ArrayKeyValueRules = WithKeyRules<WithCommonRules<ArrayRules>>;
 
 pub type ArrayValueRules = WithCommonRules<ArrayRules>;
 

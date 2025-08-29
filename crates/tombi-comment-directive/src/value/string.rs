@@ -9,7 +9,7 @@ pub type StringKeyValueTombiCommentDirective = ValueTombiCommentDirective<String
 
 pub type StringValueTombiCommentDirective = ValueTombiCommentDirective<StringValueRules>;
 
-pub type StringKeyValueRules = WithKeyRules<StringRules>;
+pub type StringKeyValueRules = WithKeyRules<WithCommonRules<StringRules>>;
 
 pub type StringValueRules = WithCommonRules<StringRules>;
 

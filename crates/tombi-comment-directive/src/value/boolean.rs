@@ -8,7 +8,7 @@ pub type BooleanKeyValueTombiCommentDirective = ValueTombiCommentDirective<Boole
 
 pub type BooleanValueTombiCommentDirective = ValueTombiCommentDirective<BooleanValueRules>;
 
-pub type BooleanKeyValueRules = WithKeyRules<BooleanRules>;
+pub type BooleanKeyValueRules = WithKeyRules<WithCommonRules<BooleanRules>>;
 
 pub type BooleanValueRules = WithCommonRules<BooleanRules>;
 

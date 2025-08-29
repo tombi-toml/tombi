@@ -7,7 +7,7 @@ use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
+use crate::{comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -21,9 +21,10 @@ impl Validate for tombi_document_tree::Array {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics::<ArrayValueRules>(comment_directives)
-                        .await;
+                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
+                    ArrayValueRules,
+                >(comment_directives, accessors)
+                .await;
 
                 total_diagnostics.extend(diagnostics);
 

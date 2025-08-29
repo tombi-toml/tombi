@@ -9,7 +9,7 @@ pub type IntegerKeyValueTombiCommentDirective = ValueTombiCommentDirective<Integ
 
 pub type IntegerValueTombiCommentDirective = ValueTombiCommentDirective<IntegerValueRules>;
 
-pub type IntegerKeyValueRules = WithKeyRules<IntegerValueRules>;
+pub type IntegerKeyValueRules = WithKeyRules<WithCommonRules<IntegerRules>>;
 
 pub type IntegerValueRules = WithCommonRules<IntegerRules>;
 

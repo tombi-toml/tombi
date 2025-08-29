@@ -9,7 +9,7 @@ pub type FloatKeyValueTombiCommentDirective = ValueTombiCommentDirective<FloatKe
 
 pub type FloatValueTombiCommentDirective = ValueTombiCommentDirective<FloatValueRules>;
 
-pub type FloatKeyValueRules = WithKeyRules<FloatValueRules>;
+pub type FloatKeyValueRules = WithKeyRules<WithCommonRules<FloatRules>>;
 
 pub type FloatValueRules = WithCommonRules<FloatRules>;
 

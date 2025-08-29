@@ -6,7 +6,7 @@ use tombi_schema_store::ValueSchema;
 use tombi_x_keyword::StringFormat;
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics,
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
     validate::{format, type_mismatch},
 };
 
@@ -21,10 +21,18 @@ impl Validate for tombi_document_tree::String {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
+            tracing::error!("comment_directives: {:?}", self.comment_directives());
+
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics::<StringValueRules>(comment_directives)
-                        .await;
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<StringValueRules>(
+                        comment_directives,
+                        accessors,
+                    )
+                    .await;
+
+                tracing::error!("value_rules: {:?}", value_rules);
+                tracing::error!("diagnostics: {:?}", diagnostics);
 
                 total_diagnostics.extend(diagnostics);
 

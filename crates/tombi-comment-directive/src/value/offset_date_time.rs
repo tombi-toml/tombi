@@ -10,7 +10,7 @@ pub type OffsetDateTimeKeyValueTombiCommentDirective =
 pub type OffsetDateTimeValueTombiCommentDirective =
     ValueTombiCommentDirective<OffsetDateTimeValueRules>;
 
-pub type OffsetDateTimeKeyValueRules = WithKeyRules<OffsetDateTimeRules>;
+pub type OffsetDateTimeKeyValueRules = WithKeyRules<WithCommonRules<OffsetDateTimeRules>>;
 
 pub type OffsetDateTimeValueRules = WithCommonRules<OffsetDateTimeRules>;
 

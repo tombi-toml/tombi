@@ -9,7 +9,7 @@ pub type LocalDateKeyValueTombiCommentDirective =
 
 pub type LocalDateValueTombiCommentDirective = ValueTombiCommentDirective<LocalDateValueRules>;
 
-pub type LocalDateKeyValueRules = WithKeyRules<LocalDateRules>;
+pub type LocalDateKeyValueRules = WithKeyRules<WithCommonRules<LocalDateRules>>;
 
 pub type LocalDateValueRules = WithCommonRules<LocalDateRules>;
 

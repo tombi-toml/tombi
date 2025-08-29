@@ -85,7 +85,10 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            value_rules
+                                .as_ref()
+                                .map(|rules| &rules.value)
+                                .map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -96,7 +99,10 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            value_rules
+                                .as_ref()
+                                .map(|rules| &rules.value)
+                                .map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -107,7 +113,10 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            value_rules
+                                .as_ref()
+                                .map(|rules| &rules.value)
+                                .map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -116,7 +125,10 @@ impl Validate for tombi_document_tree::Table {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
-                        value_rules.as_ref().map(|rules| &rules.common),
+                        value_rules
+                            .as_ref()
+                            .map(|rules| &rules.value)
+                            .map(|rules| &rules.common),
                     ),
                 };
 
@@ -214,6 +226,7 @@ async fn validate_table(
                     {
                         if current_schema.value_schema.deprecated().await == Some(true) {
                             let level = table_rules
+                                .map(|rules| &rules.value)
                                 .map(|rules| &rules.common)
                                 .and_then(|rules| rules.deprecated)
                                 .unwrap_or_default();
@@ -235,7 +248,6 @@ async fn validate_table(
                     }
                 } else if !table_schema.allows_additional_properties(schema_context.strict()) {
                     let level = table_rules
-                        .map(|rules| &rules.value)
                         .map(|rules| &rules.key)
                         .and_then(|rules| rules.key_pattern)
                         .unwrap_or_default();
@@ -273,6 +285,7 @@ async fn validate_table(
                 {
                     if current_schema.value_schema.deprecated().await == Some(true) {
                         let level = table_rules
+                            .map(|rules| &rules.value)
                             .map(|rules| &rules.common)
                             .and_then(|rules| rules.deprecated)
                             .unwrap_or_default();
@@ -315,7 +328,6 @@ async fn validate_table(
             }
             if !table_schema.allows_any_additional_properties(schema_context.strict()) {
                 let level = table_rules
-                    .map(|rules| &rules.value)
                     .map(|rules| &rules.key)
                     .and_then(|rules| rules.key_not_allowed)
                     .unwrap_or_default();
@@ -341,7 +353,6 @@ async fn validate_table(
         for required_key in required {
             if !keys.contains(required_key) {
                 let level = table_rules
-                    .map(|rules| &rules.value)
                     .map(|rules| &rules.key)
                     .and_then(|rules| rules.key_required)
                     .unwrap_or_default();
@@ -398,6 +409,7 @@ async fn validate_table(
     if diagnostics.is_empty() {
         if table_schema.deprecated == Some(true) {
             let level = table_rules
+                .map(|rules| &rules.value)
                 .map(|rules| &rules.common)
                 .and_then(|rules| rules.deprecated)
                 .unwrap_or_default();

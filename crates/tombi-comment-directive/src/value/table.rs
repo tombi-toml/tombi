@@ -9,7 +9,7 @@ pub type TableKeyValueTombiCommentDirective = ValueTombiCommentDirective<TableKe
 
 pub type TableValueTombiCommentDirective = ValueTombiCommentDirective<TableValueRules>;
 
-pub type TableKeyValueRules = WithCommonRules<WithKeyRules<TableRules>>;
+pub type TableKeyValueRules = WithKeyRules<WithCommonRules<TableRules>>;
 
 pub type TableValueRules = WithCommonRules<TableRules>;
 
