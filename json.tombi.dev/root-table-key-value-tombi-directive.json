@@ -22,38 +22,6 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/ValueTombiCommentDirective"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "ValueTombiCommentDirective": {
-      "type": "object",
-      "properties": {
-        "lint": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ValueLintOptions2"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "ValueLintOptions2": {
-      "type": "object",
-      "properties": {
-        "rules": {
-          "anyOf": [
-            {
               "$ref": "#/definitions/WithCommonRules"
             },
             {

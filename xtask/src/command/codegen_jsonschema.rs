@@ -1,4 +1,18 @@
 use schemars::{generate::SchemaSettings, SchemaGenerator};
+use tombi_comment_directive::{
+    ArrayKeyValueTombiCommentDirective, ArrayValueTombiCommentDirective,
+    BooleanKeyValueTombiCommentDirective, BooleanValueTombiCommentDirective,
+    FloatKeyValueTombiCommentDirective, FloatValueTombiCommentDirective,
+    IntegerKeyValueTombiCommentDirective, IntegerValueTombiCommentDirective,
+    KeyTombiCommentDirective, LocalDateKeyValueTombiCommentDirective,
+    LocalDateTimeKeyValueTombiCommentDirective, LocalDateTimeValueTombiCommentDirective,
+    LocalDateValueTombiCommentDirective, LocalTimeKeyValueTombiCommentDirective,
+    LocalTimeValueTombiCommentDirective, OffsetDateTimeKeyValueTombiCommentDirective,
+    OffsetDateTimeValueTombiCommentDirective, RootTableValueTombiCommentDirective,
+    StringKeyValueTombiCommentDirective, StringValueTombiCommentDirective,
+    TableKeyValueTombiCommentDirective, TableValueTombiCommentDirective,
+    TombiDocumentCommentDirective,
+};
 use tombi_config::TomlVersion;
 
 use crate::utils::project_root_path;
@@ -24,7 +38,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::TombiDocumentCommentDirective>(),
+                .into_root_schema_for::<TombiDocumentCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -33,9 +47,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::BooleanValueRules,
-                >>(),
+                .into_root_schema_for::<BooleanValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -44,9 +56,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::IntegerValueRules,
-                >>(),
+                .into_root_schema_for::<IntegerValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -55,9 +65,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::FloatValueRules,
-                >>(),
+                .into_root_schema_for::<FloatValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -66,9 +74,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::StringValueRules,
-                >>(),
+                .into_root_schema_for::<StringValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -77,9 +83,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::OffsetDateTimeValueRules,
-                >>(),
+                .into_root_schema_for::<OffsetDateTimeValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -88,9 +92,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateTimeValueRules,
-                >>(),
+                .into_root_schema_for::<LocalDateTimeValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -99,9 +101,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateValueRules,
-                >>(),
+                .into_root_schema_for::<LocalDateValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -110,9 +110,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalTimeValueRules,
-                >>(),
+                .into_root_schema_for::<LocalTimeValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -121,9 +119,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::ArrayValueRules,
-                >>(),
+                .into_root_schema_for::<ArrayValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -132,9 +128,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::TableValueRules,
-                >>(),
+                .into_root_schema_for::<TableValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -143,9 +137,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::BooleanKeyValueRules,
-                >>(),
+                .into_root_schema_for::<BooleanKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -154,9 +146,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::IntegerKeyValueRules,
-                >>(),
+                .into_root_schema_for::<IntegerKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -165,9 +155,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::FloatKeyValueRules,
-                >>(),
+                .into_root_schema_for::<FloatKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -176,11 +164,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::WithKeyRules<
-                        tombi_comment_directive::StringValueRules,
-                    >,
-                >>(),
+                .into_root_schema_for::<StringKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -189,9 +173,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::OffsetDateTimeKeyValueRules,
-                >>(),
+                .into_root_schema_for::<OffsetDateTimeKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -200,9 +182,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateTimeKeyValueRules,
-                >>(),
+                .into_root_schema_for::<LocalDateTimeKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -211,9 +191,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalDateKeyValueRules,
-                >>(),
+                .into_root_schema_for::<LocalDateKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -222,9 +200,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::LocalTimeKeyValueRules,
-                >>(),
+                .into_root_schema_for::<LocalTimeKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -233,9 +209,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::ArrayKeyValueRules,
-                >>(),
+                .into_root_schema_for::<ArrayKeyValueTombiCommentDirective>(),
         )? + "\n",
     )?;
 
@@ -244,9 +218,25 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<tombi_comment_directive::ValueTombiCommentDirective<
-                    tombi_comment_directive::TableKeyValueRules,
-                >>(),
+                .into_root_schema_for::<TableKeyValueTombiCommentDirective>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path().join("json.tombi.dev/root-table-key-value-tombi-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<RootTableValueTombiCommentDirective>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path().join("json.tombi.dev/key-tombi-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<KeyTombiCommentDirective>(),
         )? + "\n",
     )?;
 

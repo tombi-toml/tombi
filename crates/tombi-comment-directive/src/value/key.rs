@@ -1,4 +1,17 @@
+use std::str::FromStr;
+
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_uri::SchemaUri;
+
+use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective};
+
+pub type KeyTombiCommentDirective = ValueTombiCommentDirective<KeyRules>;
+
+impl TombiCommentDirectiveImpl for KeyTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/key-tombi-directive.json").unwrap()
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]

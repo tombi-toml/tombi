@@ -17,4 +17,9 @@ tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
 
 [features]
-jsonschema = ["dep:schemars", "tombi-toml-version/jsonschema"]
+jsonschema = [
+  "dep:schemars",
+  "tombi-severity-level/jsonschema",
+  "tombi-toml-version/jsonschema",
+]
+serde = ["tombi-severity-level/serde"]
