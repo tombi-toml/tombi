@@ -51,7 +51,7 @@ pub async fn get_comment_directive_completion_contents(
                                 return Some(document_comment_directive_completion_contents(
                                     root,
                                     position,
-                                    prefix_range,
+                                    comment_range,
                                     text_document_uri,
                                 ));
                             }
@@ -81,7 +81,7 @@ pub async fn get_comment_directive_completion_contents(
 fn document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
-    prefix_range: tombi_text::Range,
+    comment_range: tombi_text::Range,
     text_document_uri: &Url,
 ) -> Vec<CompletionContent> {
     let mut completion_contents = Vec::new();
@@ -97,14 +97,18 @@ fn document_comment_directive_completion_contents(
             "schema",
             DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
             DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION,
-            CompletionEdit::new_schema_comment_directive(position, prefix_range, text_document_uri),
+            CompletionEdit::new_schema_comment_directive(
+                position,
+                comment_range,
+                text_document_uri,
+            ),
         ));
     }
     completion_contents.push(CompletionContent::new_comment_directive(
         "tombi",
         DOCUMENT_TOMBI_DIRECTIVE_TITLE,
         DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION,
-        CompletionEdit::new_comment_directive("tombi", position, prefix_range),
+        CompletionEdit::new_comment_directive("tombi", position, comment_range),
     ));
 
     completion_contents
