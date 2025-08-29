@@ -13,7 +13,7 @@ mod goto_type_definition_tests {
                 toml-version = "█v1.0.0"
                 "#,
                 tombi_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(tombi_schema_path());
         );
 
         test_goto_type_definition!(
@@ -24,7 +24,7 @@ mod goto_type_definition_tests {
                 path = "█https://json.schemastore.org/api/json/catalog.json"
                 "#,
                 tombi_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(tombi_schema_path());
         );
 
         test_goto_type_definition!(
@@ -34,7 +34,7 @@ mod goto_type_definition_tests {
                 [[schemas█]]
                 "#,
                 tombi_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(tombi_schema_path());
         );
     }
 
@@ -49,7 +49,7 @@ mod goto_type_definition_tests {
                 name█ = "tombi"
                 "#,
                 cargo_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(cargo_schema_path());
         );
 
         test_goto_type_definition!(
@@ -60,7 +60,7 @@ mod goto_type_definition_tests {
                 readme = "█README.md"
                 "#,
                 cargo_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(cargo_schema_path());
         );
 
         test_goto_type_definition!(
@@ -71,7 +71,7 @@ mod goto_type_definition_tests {
                 serde█ = { workspace = true }
                 "#,
                 cargo_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(cargo_schema_path());
         );
 
         test_goto_type_definition!(
@@ -82,7 +82,7 @@ mod goto_type_definition_tests {
                 strip = "debuginfo█"
                 "#,
                 cargo_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(cargo_schema_path());
         );
     }
 
@@ -97,7 +97,7 @@ mod goto_type_definition_tests {
                 readme = "█1.0.0"
                 "#,
                 pyproject_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(pyproject_schema_path());
         );
 
         test_goto_type_definition!(
@@ -110,7 +110,30 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 pyproject_schema_path(),
-            ) -> Ok(_);
+            ) -> Ok(pyproject_schema_path());
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn pyproject_tool_taskipy_tasks_format(
+                r#"
+                [tool.taskipy.tasks]
+                format█ = "ruff"
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok("https://json.schemastore.org/partial-taskipy.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn pyproject_tombi_document_directive_toml_version(
+                r#"
+                #:tombi toml-version█ = "v1.0.0"
+                [project]
+                name = "tombi"
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/document-tombi-directive.json");
         );
     }
 
@@ -245,11 +268,40 @@ mod goto_type_definition_tests {
 
                 let expected_path = $expected_schema_path.to_owned();
 
+                trait IntoPathString {
+                    fn into_path_string(self) -> String;
+                }
+
+                impl IntoPathString for String {
+                    fn into_path_string(self) -> String {
+                        self
+                    }
+                }
+
+                impl IntoPathString for std::path::PathBuf {
+                    fn into_path_string(self) -> String {
+                        self.to_string_lossy().to_string()
+                    }
+                }
+
                 match result {
                     Some(definition_links) => {
+                        let definition_urls = definition_links.into_iter().map(|mut link| {
+                                match link.uri.scheme() {
+                                    "file" => link.uri.to_file_path().unwrap().into_path_string(),
+                                    "tombi" | "http" | "https" => {
+                                        link.uri.set_fragment(None);
+                                        link.uri.to_string()
+                                    },
+                                    _ => panic!("unexpected schema: {}", link.uri.scheme()),
+                                }
+                            }).collect_vec();
+
+                        tracing::debug!("definition_urls: {:#?}", definition_urls);
+
                         pretty_assertions::assert_eq!(
-                            definition_links.into_iter().map(|link| link.uri.to_file_path().unwrap()).collect_vec(),
-                            vec![expected_path],
+                            definition_urls,
+                            vec![expected_path.into_path_string()],
                         );},
                     None => {
                         panic!("No type definition link was returned, but expected path: {:?}", expected_path);

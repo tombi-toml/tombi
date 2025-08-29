@@ -1,13 +1,30 @@
 use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::{TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION};
-use tombi_comment_directive_store::comment_directive_document_schema;
+use tombi_comment_directive_store::{
+    comment_directive_document_schema, document_comment_directive_schema_uri,
+};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_uri::SchemaUri;
 
 use crate::{
-    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
+    comment_directive::{
+        get_tombi_document_comment_directive_context, CommentDirectiveContext,
+        GetCommentDirectiveContext,
+    },
     goto_type_definition::{get_type_definition, TypeDefinition},
     handler::get_hover_keys_with_range,
 };
+pub async fn get_tombi_document_comment_directive_type_definition(
+    root: &tombi_ast::Root,
+    position: tombi_text::Position,
+) -> Option<TypeDefinition> {
+    get_tombi_comment_directive_type_definition(
+        get_tombi_document_comment_directive_context(root, position),
+        position,
+        document_comment_directive_schema_uri(),
+    )
+    .await
+}
 
 pub async fn get_tombi_value_comment_directive_type_definition<CommentDirective>(
     comment_directive: &TombiValueCommentDirective,
@@ -16,11 +33,24 @@ pub async fn get_tombi_value_comment_directive_type_definition<CommentDirective>
 where
     CommentDirective: TombiCommentDirectiveImpl,
 {
+    get_tombi_comment_directive_type_definition(
+        comment_directive.get_context(position),
+        position,
+        CommentDirective::comment_directive_schema_url(),
+    )
+    .await
+}
+
+async fn get_tombi_comment_directive_type_definition(
+    comment_directive_context: Option<CommentDirectiveContext<String>>,
+    position: tombi_text::Position,
+    schema_uri: SchemaUri,
+) -> Option<TypeDefinition> {
     let Some(CommentDirectiveContext::Content {
         content,
         position_in_content,
         ..
-    }) = comment_directive.get_context(position)
+    }) = comment_directive_context
     else {
         return None;
     };
@@ -42,13 +72,7 @@ where
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let source_schema = tombi_schema_store::SourceSchema {
-        root_schema: Some(
-            comment_directive_document_schema(
-                schema_store,
-                CommentDirective::comment_directive_schema_url(),
-            )
-            .await,
-        ),
+        root_schema: Some(comment_directive_document_schema(schema_store, schema_uri).await),
         sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
     };
 

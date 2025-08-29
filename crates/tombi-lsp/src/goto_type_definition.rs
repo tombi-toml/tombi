@@ -6,6 +6,7 @@ mod value;
 
 use std::{borrow::Cow, ops::Deref};
 
+pub use comment::get_tombi_document_comment_directive_type_definition;
 use tombi_schema_store::{CurrentSchema, SchemaUri};
 
 pub async fn get_type_definition(

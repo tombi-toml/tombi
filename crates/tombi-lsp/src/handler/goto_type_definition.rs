@@ -6,7 +6,9 @@ use tower_lsp::lsp_types::request::GotoTypeDefinitionParams;
 use crate::{
     backend::Backend,
     config_manager::ConfigSchemaStore,
-    goto_type_definition::{get_type_definition, TypeDefinition},
+    goto_type_definition::{
+        get_tombi_document_comment_directive_type_definition, get_type_definition, TypeDefinition,
+    },
     handler::hover::get_hover_keys_with_range,
 };
 
@@ -53,6 +55,15 @@ pub async fn handle_goto_type_definition(
     let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(Default::default());
     };
+
+    if let Some(type_definition) =
+        get_tombi_document_comment_directive_type_definition(&root, position).await
+    {
+        return Ok(Some(vec![tombi_extension::DefinitionLocation {
+            uri: type_definition.schema_uri.into(),
+            range: type_definition.range,
+        }]));
+    }
 
     let source_schema = schema_store
         .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
