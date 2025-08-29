@@ -102,7 +102,7 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
     }
 }
 
-pub fn get_schema_directive_context(
+pub fn get_schema_comment_directive_context(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
@@ -111,16 +111,14 @@ pub fn get_schema_directive_context(
         .and_then(|comment_directive| comment_directive.get_context(position))
 }
 
-pub fn get_tombi_document_comment_directive(
+pub fn get_tombi_document_comment_directive_context(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
-) -> Option<TombiDocumentCommentDirective> {
+) -> Option<CommentDirectiveContext<String>> {
     if let Some(comment_directives) = root.tombi_document_comment_directives() {
         for comment_directive in comment_directives {
-            if comment_directive.directive_range.contains(position)
-                || comment_directive.content_range.contains(position)
-            {
-                return Some(comment_directive);
+            if let Some(comment_directive_context) = comment_directive.get_context(position) {
+                return Some(comment_directive_context);
             }
         }
     }

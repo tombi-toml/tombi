@@ -7,7 +7,7 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
     comment_directive::{
-        get_schema_directive_context, get_tombi_document_comment_directive,
+        get_schema_comment_directive_context, get_tombi_document_comment_directive_context,
         CommentDirectiveContext, GetCommentDirectiveContext, VALUE_TOMBI_DIRECTIVE_DESCRIPTION,
         VALUE_TOMBI_DIRECTIVE_TITLE,
     },
@@ -22,7 +22,9 @@ pub async fn get_document_comment_directive_hover_info(
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
-    if let Some(comment_directive) = get_schema_directive_context(root, position, source_path) {
+    if let Some(comment_directive) =
+        get_schema_comment_directive_context(root, position, source_path)
+    {
         match comment_directive {
             CommentDirectiveContext::Directive { directive_range } => {
                 return Some(HoverContent::Directive(HoverDirectiveContent {
@@ -43,7 +45,7 @@ pub async fn get_document_comment_directive_hover_info(
     }
 
     if let Some(comment_directive_context) =
-        get_tombi_document_comment_directive(root, position).and_then(|c| c.get_context(position))
+        get_tombi_document_comment_directive_context(root, position)
     {
         match comment_directive_context {
             CommentDirectiveContext::Content {
