@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_comment_directive::TableKeyValueRules;
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree::{TableKind, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, SchemaAccessors,
@@ -24,9 +24,13 @@ impl Validate for tombi_document_tree::Table {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) =
+                let (value_rules, diagnostics) = if self.kind() == TableKind::KeyValue {
                     get_tombi_value_rules_and_diagnostics::<TableKeyValueRules>(comment_directives)
-                        .await;
+                        .await
+                } else {
+                    get_tombi_value_rules_and_diagnostics::<TableKeyValueRules>(comment_directives)
+                        .await
+                };
 
                 total_diagnostics.extend(diagnostics);
 

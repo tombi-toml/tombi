@@ -22,7 +22,7 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyRules"
+              "$ref": "#/definitions/ValueTombiCommentDirective"
             },
             {
               "type": "null"
@@ -32,54 +32,41 @@
       },
       "additionalProperties": false
     },
-    "WithKeyRules": {
+    "ValueTombiCommentDirective": {
       "type": "object",
       "properties": {
-        "key-empty": {
-          "title": "Key empty.",
-          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
+        "lint": {
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/ValueLintOptions2"
             },
             {
               "type": "null"
             }
           ]
-        },
-        "key-required": {
-          "description": "Controls the severity level for key required errors",
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValueLintOptions2": {
+      "type": "object",
+      "properties": {
+        "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/WithCommonRules"
             },
             {
               "type": "null"
             }
           ]
-        },
-        "key-not-allowed": {
-          "description": "Controls the severity level for key not allowed errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-pattern": {
-          "description": "Controls the severity level for key pattern errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
+        }
+      },
+      "additionalProperties": false
+    },
+    "WithCommonRules": {
+      "type": "object",
+      "properties": {
         "type-mismatch": {
           "description": "Controls the severity level for type mismatch errors",
           "anyOf": [
@@ -115,6 +102,18 @@
         },
         "deprecated": {
           "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tables-out-of-order": {
+          "title": "Tables out of order.",
+          "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultWarn"
@@ -162,8 +161,8 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
+    "SeverityLevelDefaultError": {
+      "default": "error",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -189,8 +188,8 @@
         }
       ]
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"

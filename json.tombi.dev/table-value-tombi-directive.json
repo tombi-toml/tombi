@@ -79,9 +79,9 @@
             }
           ]
         },
-        "tables-out-of-order": {
-          "title": "Tables out of order.",
-          "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
+        "dotted-keys-out-of-order": {
+          "title": "Dotted keys out of order.",
+          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultWarn"

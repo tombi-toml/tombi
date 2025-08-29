@@ -29,7 +29,6 @@ impl TombiCommentDirectiveImpl for LocalTimeValueTombiCommentDirective {
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct LocalTimeRules {
     // No specific fields for local time type
 }

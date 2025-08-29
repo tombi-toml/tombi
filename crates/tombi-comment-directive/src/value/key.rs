@@ -3,27 +3,7 @@ use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct KeyRules {
-    /// # Dotted keys out of order.
-    ///
-    /// Check if dotted keys are defined out of order.
-    ///
-    /// ```toml
-    /// # VALID BUT DISCOURAGED
-    /// apple.type = "fruit"
-    /// orange.type = "fruit"
-    /// apple.skin = "thin"
-    /// orange.skin = "thick"
-    ///
-    /// # RECOMMENDED
-    /// apple.type = "fruit"
-    /// apple.skin = "thin"
-    /// orange.type = "fruit"
-    /// orange.skin = "thick"
-    /// ```
-    pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
-
     /// # Key empty.
     ///
     /// Check if the key is empty.
