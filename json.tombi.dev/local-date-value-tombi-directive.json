@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"

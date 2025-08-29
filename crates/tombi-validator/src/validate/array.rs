@@ -2,12 +2,12 @@ use std::borrow::Cow;
 
 use ahash::AHashSet;
 use itertools::Itertools;
-use tombi_comment_directive::{ArrayValueRules, CommentContext};
+use tombi_comment_directive::ArrayValueRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
+use crate::{comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -17,14 +17,14 @@ impl Validate for tombi_document_tree::Array {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics::<ArrayValueRules>(comment_directives)
-                        .await;
+                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
+                    ArrayValueRules,
+                >(comment_directives, accessors)
+                .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -59,7 +59,6 @@ impl Validate for tombi_document_tree::Array {
                                     definitions: Cow::Borrowed(&definitions),
                                 }),
                                 schema_context,
-                                comment_context,
                             )
                             .await;
                     }
@@ -75,7 +74,6 @@ impl Validate for tombi_document_tree::Array {
                             array_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref(),
                         )
                         .await
@@ -87,7 +85,6 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -99,7 +96,6 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -111,7 +107,6 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -130,8 +125,7 @@ impl Validate for tombi_document_tree::Array {
                 }
             } else {
                 if let Err(diagnostics) =
-                    validate_array_without_schema(self, accessors, schema_context, comment_context)
-                        .await
+                    validate_array_without_schema(self, accessors, schema_context).await
                 {
                     total_diagnostics.extend(diagnostics);
                 }
@@ -153,7 +147,6 @@ async fn validate_array(
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_context: &CommentContext<'_>,
     value_rules: Option<&ArrayValueRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
@@ -177,12 +170,7 @@ async fn validate_array(
                     .collect_vec();
 
                 if let Err(schema_diagnostics) = value
-                    .validate(
-                        &new_accessors,
-                        Some(&current_schema),
-                        schema_context,
-                        comment_context,
-                    )
+                    .validate(&new_accessors, Some(&current_schema), schema_context)
                     .await
                 {
                     diagnostics.extend(schema_diagnostics);
@@ -198,11 +186,11 @@ async fn validate_array(
                 .and_then(|rules| rules.array_max_items)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::ArrayMaxItems {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::ArrayMaxItems {
                     max_values: max_items,
                     actual: array_value.values().len(),
-                },
+                }),
                 range: array_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -216,11 +204,11 @@ async fn validate_array(
                 .and_then(|rules| rules.array_min_items)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::ArrayMinItems {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::ArrayMinItems {
                     min_values: min_items,
                     actual: array_value.values().len(),
-                },
+                }),
                 range: array_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -247,8 +235,8 @@ async fn validate_array(
         for value in array_value.values() {
             if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
                 if duplicated_values.contains(&literal_value) {
-                    crate::Error {
-                        kind: crate::ErrorKind::ArrayUniqueItems,
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueItems),
                         range: value.range(),
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -264,8 +252,8 @@ async fn validate_array(
                 .and_then(|rules| rules.deprecated)
                 .unwrap_or_default();
 
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::Deprecated(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Deprecated(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                 )),
                 range: array_value.range(),
@@ -285,7 +273,6 @@ async fn validate_array_without_schema(
     array_value: &tombi_document_tree::Array,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    comment_context: &CommentContext<'_>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
@@ -300,7 +287,6 @@ async fn validate_array_without_schema(
                     .collect_vec(),
                 None,
                 schema_context,
-                comment_context,
             )
             .await
         {

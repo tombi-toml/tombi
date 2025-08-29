@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::CommentContext;
+
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
@@ -27,7 +27,6 @@ impl GetHoverContent for tombi_document_tree::Table {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
@@ -57,7 +56,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                         accessors,
                         current_schema.as_ref(),
                         schema_context,
-                        comment_context,
                     )
                     .await;
             }
@@ -115,7 +113,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await;
                                         if let Some(HoverContent::Value(hover_value_content)) =
@@ -170,7 +167,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 .collect_vec(),
                                             None,
                                             schema_context,
-                                            comment_context,
                                         )
                                         .await;
 
@@ -225,7 +221,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                                 .collect_vec(),
                                                             Some(&current_schema),
                                                             schema_context,
-                                                            comment_context,
                                                         )
                                                         .await;
 
@@ -290,7 +285,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                             .collect_vec(),
                                                         None,
                                                         schema_context,
-                                                        comment_context,
                                                     )
                                                     .await;
 
@@ -350,7 +344,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await;
 
@@ -404,7 +397,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             .collect_vec(),
                                         None,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await
                             } else {
@@ -418,7 +410,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     accessors,
                                     Some(current_schema),
                                     schema_context,
-                                    comment_context,
                                 )
                                 .await;
 
@@ -441,7 +432,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -455,7 +445,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -469,7 +458,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -491,23 +479,19 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     .collect_vec(),
                                 None,
                                 schema_context,
-                                comment_context,
                             )
                             .await;
                     }
                 }
-                Some(
-                    HoverValueContent {
-                        title: None,
-                        description: None,
-                        accessors: Accessors::from(accessors.to_vec()),
-                        value_type: ValueType::Table,
-                        constraints: None,
-                        schema_uri: None,
-                        range: Some(self.range()),
-                    }
-                    .into(),
-                )
+                Some(HoverContent::Value(HoverValueContent {
+                    title: None,
+                    description: None,
+                    accessors: Accessors::from(accessors.to_vec()),
+                    value_type: ValueType::Table,
+                    constraints: None,
+                    schema_uri: None,
+                    range: Some(self.range()),
+                }))
             }
         }
         .boxed()
@@ -522,41 +506,38 @@ impl GetHoverContent for TableSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: Accessors::from(accessors.to_vec()),
-                    value_type: ValueType::Table,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| Some(value.into()),
-                        ),
-                        default: self.default.as_ref().map(|default| default.into()),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples.iter().map(|example| example.into()).collect()
-                        }),
-                        required_keys: self.required.clone(),
-                        max_keys: self.max_properties,
-                        min_keys: self.min_properties,
-                        // NOTE: key_patterns are output for keys, not this tables.
-                        key_patterns: None,
-                        additional_keys: Some(
-                            self.allows_any_additional_properties(schema_context.strict()),
-                        ),
-                        keys_order: self.keys_order,
-                        ..Default::default()
-                    }),
-                    schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: Accessors::from(accessors.to_vec()),
+                value_type: ValueType::Table,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(value.into()),
+                    ),
+                    default: self.default.as_ref().map(|default| default.into()),
+                    examples: self
+                        .examples
+                        .as_ref()
+                        .map(|examples| examples.iter().map(|example| example.into()).collect()),
+                    required_keys: self.required.clone(),
+                    max_keys: self.max_properties,
+                    min_keys: self.min_properties,
+                    // NOTE: key_patterns are output for keys, not this tables.
+                    key_patterns: None,
+                    additional_keys: Some(
+                        self.allows_any_additional_properties(schema_context.strict()),
+                    ),
+                    keys_order: self.keys_order,
+                    ..Default::default()
+                }),
+                schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

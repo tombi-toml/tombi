@@ -1,9 +1,29 @@
 use itertools::Itertools;
+use tombi_schema_store::SchemaAccessors;
 use tombi_severity_level::SeverityLevel;
+use tombi_uri::SchemaUri;
 use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
-pub enum ErrorKind {
+pub enum DiagnosticKind {
+    #[error("`{0}` is deprecated")]
+    Deprecated(SchemaAccessors),
+
+    #[error("`{0} = {1}` is deprecated")]
+    DeprecatedValue(SchemaAccessors, String),
+
+    #[error(
+        r#"In strict mode, `{accessors}` does not allow "{key}" key.
+Please add `"additionalProperties": true` to the location where `{accessors}` is defined in {schema_uri},
+or add `#:tombi schema.strict = false` as a document comment directive at the top of your document,
+or set `schema.strict = false` in your `tombi.toml`."#
+    )]
+    StrictAdditionalProperties {
+        accessors: SchemaAccessors,
+        key: String,
+        schema_uri: SchemaUri,
+    },
+
     #[error("\"{key}\" is required")]
     KeyRequired { key: String },
 
@@ -14,12 +34,6 @@ pub enum ErrorKind {
     TypeMismatch {
         expected: tombi_schema_store::ValueType,
         actual: tombi_document_tree::ValueType,
-    },
-
-    #[error("Expected a value of type {expected}, but found {actual}")]
-    TypeMismatch2 {
-        expected: tombi_schema_store::ValueType,
-        actual: tombi_schema_store::ValueType,
     },
 
     #[error("The value must be const value \"{expected}\", but found \"{actual}\"")]
@@ -102,40 +116,44 @@ pub enum ErrorKind {
 }
 
 #[derive(Debug)]
-pub struct Error {
-    pub kind: ErrorKind,
+pub struct Diagnostic {
+    pub kind: Box<DiagnosticKind>,
     pub range: tombi_text::Range,
 }
 
-impl Error {
+impl Diagnostic {
     #[inline]
     pub fn code(&self) -> &'static str {
-        match self.kind {
-            ErrorKind::KeyRequired { .. } => "key-required",
-            ErrorKind::KeyNotAllowed { .. } => "key-not-allowed",
-            ErrorKind::TypeMismatch { .. } | ErrorKind::TypeMismatch2 { .. } => "type-mismatch",
-            ErrorKind::Const { .. } => "const",
-            ErrorKind::Enumerate { .. } => "enumerate",
-            ErrorKind::IntegerMaximum { .. } => "integer-maximum",
-            ErrorKind::IntegerMinimum { .. } => "integer-minimum",
-            ErrorKind::IntegerExclusiveMaximum { .. } => "integer-exclusive-maximum",
-            ErrorKind::IntegerExclusiveMinimum { .. } => "integer-exclusive-minimum",
-            ErrorKind::IntegerMultipleOf { .. } => "integer-multiple-of",
-            ErrorKind::FloatMaximum { .. } => "float-maximum",
-            ErrorKind::FloatMinimum { .. } => "float-minimum",
-            ErrorKind::FloatExclusiveMaximum { .. } => "float-exclusive-maximum",
-            ErrorKind::FloatExclusiveMinimum { .. } => "float-exclusive-minimum",
-            ErrorKind::FloatMultipleOf { .. } => "float-multiple-of",
-            ErrorKind::StringMaximumLength { .. } => "string-maximum-length",
-            ErrorKind::StringMinimumLength { .. } => "string-minimum-length",
-            ErrorKind::StringFormat { .. } => "string-format",
-            ErrorKind::StringPattern { .. } => "string-pattern",
-            ErrorKind::ArrayMaxItems { .. } => "array-max-items",
-            ErrorKind::ArrayMinItems { .. } => "array-min-items",
-            ErrorKind::ArrayUniqueItems => "array-unique-items",
-            ErrorKind::TableMaxProperties { .. } => "table-max-properties",
-            ErrorKind::TableMinProperties { .. } => "table-min-properties",
-            ErrorKind::KeyPattern { .. } => "key-pattern",
+        match *self.kind {
+            DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
+                "deprecated"
+            }
+            DiagnosticKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
+            DiagnosticKind::KeyRequired { .. } => "key-required",
+            DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
+            DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
+            DiagnosticKind::Const { .. } => "const",
+            DiagnosticKind::Enumerate { .. } => "enumerate",
+            DiagnosticKind::IntegerMaximum { .. } => "integer-maximum",
+            DiagnosticKind::IntegerMinimum { .. } => "integer-minimum",
+            DiagnosticKind::IntegerExclusiveMaximum { .. } => "integer-exclusive-maximum",
+            DiagnosticKind::IntegerExclusiveMinimum { .. } => "integer-exclusive-minimum",
+            DiagnosticKind::IntegerMultipleOf { .. } => "integer-multiple-of",
+            DiagnosticKind::FloatMaximum { .. } => "float-maximum",
+            DiagnosticKind::FloatMinimum { .. } => "float-minimum",
+            DiagnosticKind::FloatExclusiveMaximum { .. } => "float-exclusive-maximum",
+            DiagnosticKind::FloatExclusiveMinimum { .. } => "float-exclusive-minimum",
+            DiagnosticKind::FloatMultipleOf { .. } => "float-multiple-of",
+            DiagnosticKind::StringMaximumLength { .. } => "string-maximum-length",
+            DiagnosticKind::StringMinimumLength { .. } => "string-minimum-length",
+            DiagnosticKind::StringFormat { .. } => "string-format",
+            DiagnosticKind::StringPattern { .. } => "string-pattern",
+            DiagnosticKind::ArrayMaxItems { .. } => "array-max-items",
+            DiagnosticKind::ArrayMinItems { .. } => "array-min-items",
+            DiagnosticKind::ArrayUniqueItems => "array-unique-items",
+            DiagnosticKind::TableMaxProperties { .. } => "table-max-properties",
+            DiagnosticKind::TableMinProperties { .. } => "table-min-properties",
+            DiagnosticKind::KeyPattern { .. } => "key-pattern",
         }
     }
 

@@ -9,9 +9,13 @@ pub type TableKeyValueTombiCommentDirective = ValueTombiCommentDirective<TableKe
 
 pub type TableValueTombiCommentDirective = ValueTombiCommentDirective<TableValueRules>;
 
-pub type TableKeyValueRules = WithCommonRules<WithKeyRules<TableRules>>;
+pub type RootTableValueTombiCommentDirective = ValueTombiCommentDirective<RootTableValueRules>;
+
+pub type TableKeyValueRules = WithKeyRules<WithCommonRules<TableRules>>;
 
 pub type TableValueRules = WithCommonRules<TableRules>;
+
+pub type RootTableValueRules = WithCommonRules<RootTableRules>;
 
 impl TombiCommentDirectiveImpl for TableKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
@@ -25,11 +29,60 @@ impl TombiCommentDirectiveImpl for TableValueTombiCommentDirective {
     }
 }
 
+impl TombiCommentDirectiveImpl for RootTableValueTombiCommentDirective {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/root-table-value-tombi-directive.json").unwrap()
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct TableRules {
+    /// # Dotted keys out of order.
+    ///
+    /// Check if dotted keys are defined out of order.
+    ///
+    /// ```toml
+    /// # VALID BUT DISCOURAGED
+    /// apple.type = "fruit"
+    /// orange.type = "fruit"
+    /// apple.skin = "thin"
+    /// orange.skin = "thick"
+    ///
+    /// # RECOMMENDED
+    /// apple.type = "fruit"
+    /// apple.skin = "thin"
+    /// orange.type = "fruit"
+    /// orange.skin = "thick"
+    /// ```
+    pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
+
+    /// # Maximum properties.
+    ///
+    /// Check if the table has more than the maximum number of properties.
+    ///
+    /// ```rust
+    /// length(table) <= maximum
+    /// ```
+    ///
+    pub table_max_properties: Option<SeverityLevelDefaultError>,
+
+    /// # Minimum properties.
+    ///
+    /// Check if the table has less than the minimum number of properties.
+    ///
+    /// ```rust
+    /// length(table) >= minimum
+    /// ```
+    ///
+    pub table_min_properties: Option<SeverityLevelDefaultError>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct RootTableRules {
     /// # Tables out of order.
     ///
     /// Check if tables are defined out of order.
@@ -47,9 +100,6 @@ pub struct TableRules {
     /// ```
     pub tables_out_of_order: Option<SeverityLevelDefaultWarn>,
 
-    /// Controls the severity level for max properties errors
-    pub table_max_properties: Option<SeverityLevelDefaultError>,
-
-    /// Controls the severity level for min properties errors
-    pub table_min_properties: Option<SeverityLevelDefaultError>,
+    #[serde(flatten)]
+    pub table: TableRules,
 }

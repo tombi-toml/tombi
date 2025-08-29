@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,9 +21,10 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithCommonRules"
+              "$ref": "#/definitions/WithKeyRules"
             },
             {
               "type": "null"
@@ -32,9 +34,57 @@
       },
       "additionalProperties": false
     },
-    "WithCommonRules": {
+    "WithKeyRules": {
       "type": "object",
       "properties": {
+        "key-empty": {
+          "title": "Key empty.",
+          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key-required": {
+          "title": "Key required.",
+          "description": "Check if the key is required in this Table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key-not-allowed": {
+          "title": "Key not allowed.",
+          "description": "Check if the key is not defined in this Table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key-pattern": {
+          "title": "Key pattern.",
+          "description": "Check if the key matches the pattern in the Schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "type-mismatch": {
           "description": "Controls the severity level for type mismatch errors",
           "anyOf": [
@@ -91,65 +141,9 @@
             }
           ]
         },
-        "key-empty": {
-          "title": "Key empty.",
-          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-required": {
-          "description": "Controls the severity level for key required errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-not-allowed": {
-          "description": "Controls the severity level for key not allowed errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-pattern": {
-          "description": "Controls the severity level for key pattern errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "tables-out-of-order": {
-          "title": "Tables out of order.",
-          "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "table-max-properties": {
-          "description": "Controls the severity level for max properties errors",
+          "title": "Maximum properties.",
+          "description": "Check if the table has more than the maximum number of properties.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -160,7 +154,8 @@
           ]
         },
         "table-min-properties": {
-          "description": "Controls the severity level for min properties errors",
+          "title": "Minimum properties.",
+          "description": "Check if the table has less than the minimum number of properties.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -174,8 +169,8 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -201,8 +196,8 @@
         }
       ]
     },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
+    "SeverityLevelDefaultError": {
+      "default": "error",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"

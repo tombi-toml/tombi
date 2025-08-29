@@ -375,7 +375,7 @@ impl CompletionEdit {
 
     pub fn new_schema_comment_directive(
         position: tombi_text::Position,
-        prefix_range: tombi_text::Range,
+        comment_range: tombi_text::Range,
         text_document_uri: &Url,
     ) -> Option<Self> {
         let file_name = std::path::Path::new(text_document_uri.path())
@@ -393,7 +393,7 @@ impl CompletionEdit {
             }),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             additional_text_edits: Some(vec![TextEdit {
-                range: prefix_range.into(),
+                range: comment_range.into(),
                 new_text: "".to_string(),
             }]),
         })
@@ -402,7 +402,7 @@ impl CompletionEdit {
     pub fn new_comment_directive(
         directive_name: &str,
         position: tombi_text::Position,
-        prefix_range: tombi_text::Range,
+        comment_range: tombi_text::Range,
     ) -> Option<Self> {
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
@@ -411,7 +411,7 @@ impl CompletionEdit {
             }),
             insert_text_format: None,
             additional_text_edits: Some(vec![TextEdit {
-                range: prefix_range.into(),
+                range: comment_range.into(),
                 new_text: "".to_string(),
             }]),
         })

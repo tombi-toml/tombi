@@ -1,6 +1,7 @@
 mod array;
 mod array_or_table;
 mod builder;
+mod comment;
 mod inline_table;
 mod key;
 mod key_value;

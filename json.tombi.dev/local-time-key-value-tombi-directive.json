@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithKeyRules"
@@ -35,18 +37,6 @@
     "WithKeyRules": {
       "type": "object",
       "properties": {
-        "dotted-keys-out-of-order": {
-          "title": "Dotted keys out of order.",
-          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "key-empty": {
           "title": "Key empty.",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
@@ -60,7 +50,8 @@
           ]
         },
         "key-required": {
-          "description": "Controls the severity level for key required errors",
+          "title": "Key required.",
+          "description": "Check if the key is required in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -71,7 +62,8 @@
           ]
         },
         "key-not-allowed": {
-          "description": "Controls the severity level for key not allowed errors",
+          "title": "Key not allowed.",
+          "description": "Check if the key is not defined in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -82,10 +74,55 @@
           ]
         },
         "key-pattern": {
-          "description": "Controls the severity level for key pattern errors",
+          "title": "Key pattern.",
+          "description": "Check if the key matches the pattern in the Schema.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type-mismatch": {
+          "description": "Controls the severity level for type mismatch errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const-value": {
+          "description": "Controls the severity level for const value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deprecated": {
+          "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
             },
             {
               "type": "null"

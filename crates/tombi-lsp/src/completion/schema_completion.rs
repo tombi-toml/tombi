@@ -1,4 +1,3 @@
-use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, ValueSchema};
 
@@ -205,7 +204,6 @@ impl tombi_validator::Validate for SchemaCompletion {
         _accessors: &'a [tombi_schema_store::Accessor],
         _current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move { Ok(()) }.boxed()
     }

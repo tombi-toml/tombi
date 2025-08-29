@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -80,7 +82,8 @@
           ]
         },
         "float-maximum": {
-          "description": "Controls the severity level for maximum float errors",
+          "title": "Maximum float.",
+          "description": "Check if the float is less than or equal to the maximum.\n\n```rust\nfloat <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -91,7 +94,8 @@
           ]
         },
         "float-minimum": {
-          "description": "Controls the severity level for minimum float errors",
+          "title": "Minimum float.",
+          "description": "Check if the float is greater than or equal to the minimum.\n\n```rust\nfloat >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -102,7 +106,8 @@
           ]
         },
         "float-exclusive-maximum": {
-          "description": "Controls the severity level for exclusive maximum float errors",
+          "title": "Exclusive maximum float.",
+          "description": "Check if the float is less than the maximum.\n\n```rust\nfloat < maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -113,7 +118,8 @@
           ]
         },
         "float-exclusive-minimum": {
-          "description": "Controls the severity level for exclusive minimum float errors",
+          "title": "Exclusive minimum float.",
+          "description": "Check if the float is greater than the minimum.\n\n```rust\nfloat > minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -124,7 +130,8 @@
           ]
         },
         "float-multiple-of": {
-          "description": "Controls the severity level for multiple of float errors",
+          "title": "Multiple of float.",
+          "description": "Check if the float is a multiple of the value.\n\n```rust\nfloat % multiple_of == 0\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use tombi_comment_directive::CommentContext;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
@@ -19,7 +18,6 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     schema_uri: &'a SchemaUri,
     definitions: &'a tombi_schema_store::SchemaDefinitions,
     schema_context: &'a SchemaContext,
-    comment_context: &'a CommentContext<'a>,
 ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
     T: GetHoverContent + Sync + Send,
@@ -62,7 +60,6 @@ where
                     accessors,
                     Some(&current_schema),
                     schema_context,
-                    comment_context,
                 )
                 .await
             {
@@ -82,8 +79,11 @@ where
                             constraints = Some(c);
                         }
                     }
-                    HoverContent::Directive(hover_directive_content) => {
-                        return Some(hover_directive_content.into());
+                    HoverContent::Directive(hover_content) => {
+                        return Some(HoverContent::Directive(hover_content))
+                    }
+                    HoverContent::DirectiveContent(hover_content) => {
+                        return Some(HoverContent::DirectiveContent(hover_content))
                     }
                 }
             }
@@ -134,18 +134,15 @@ where
             }
         }
 
-        Some(
-            HoverValueContent {
-                title,
-                description,
-                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                value_type,
-                constraints,
-                schema_uri: Some(schema_uri.to_owned()),
-                range: None,
-            }
-            .into(),
-        )
+        Some(HoverContent::Value(HoverValueContent {
+            title,
+            description,
+            accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+            value_type,
+            constraints,
+            schema_uri: Some(schema_uri.to_owned()),
+            range: None,
+        }))
     }
     .boxed()
 }
@@ -158,7 +155,6 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             let Some(current_schema) = current_schema else {
@@ -210,18 +206,15 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
             };
 
-            Some(
-                HoverValueContent {
-                    title,
-                    description,
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type,
-                    constraints: None,
-                    schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
-                    range: None,
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title,
+                description,
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type,
+                constraints: None,
+                schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
+                range: None,
+            }))
         }
         .boxed()
     }

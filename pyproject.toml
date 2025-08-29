@@ -2,7 +2,7 @@
 #:tombi toml-version = "v1.0.0"
 
 [project]
-name = "tombi"
+name = "tombi"  # tombi: lint.rules.type-mismatch = "off"
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
 description = "🦅 TOML Toolkit 🦅 "
 readme = "python/tombi/README.md"

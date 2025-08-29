@@ -9,7 +9,7 @@ pub type IntegerKeyValueTombiCommentDirective = ValueTombiCommentDirective<Integ
 
 pub type IntegerValueTombiCommentDirective = ValueTombiCommentDirective<IntegerValueRules>;
 
-pub type IntegerKeyValueRules = WithKeyRules<IntegerValueRules>;
+pub type IntegerKeyValueRules = WithKeyRules<WithCommonRules<IntegerRules>>;
 
 pub type IntegerValueRules = WithCommonRules<IntegerRules>;
 
@@ -29,20 +29,54 @@ impl TombiCommentDirectiveImpl for IntegerValueTombiCommentDirective {
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct IntegerRules {
-    /// Controls the severity level for maximum integer errors
+    /// # Maximum integer.
+    ///
+    /// Check if the integer is less than or equal to the maximum.
+    ///
+    /// ```rust
+    /// integer <= maximum
+    /// ```
+    ///
     pub integer_maximum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for minimum integer errors
+    /// # Minimum integer.
+    ///
+    /// Check if the integer is greater than or equal to the minimum.
+    ///
+    /// ```rust
+    /// integer >= minimum
+    /// ```
+    ///
     pub integer_minimum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for exclusive maximum integer errors
+    /// # Exclusive maximum integer.
+    ///
+    /// Check if the integer is less than the maximum.
+    ///
+    /// ```rust
+    /// integer < maximum
+    /// ```
+    ///
     pub integer_exclusive_maximum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for exclusive minimum integer errors
+    /// # Exclusive minimum integer.
+    ///
+    /// Check if the integer is greater than the minimum.
+    ///
+    /// ```rust
+    /// integer > minimum
+    /// ```
+    ///
     pub integer_exclusive_minimum: Option<SeverityLevelDefaultError>,
 
-    /// Controls the severity level for multiple of integer errors
+    /// # Multiple of integer.
+    ///
+    /// Check if the integer is a multiple of the value.
+    ///
+    /// ```rust
+    /// integer % multiple_of == 0
+    /// ```
+    ///
     pub integer_multiple_of: Option<SeverityLevelDefaultError>,
 }

@@ -1,5 +1,5 @@
 #[derive(thiserror::Error, Debug)]
-pub enum SeverityKind {
+pub enum DiagnosticKind {
     #[error("An empty quoted key is discouraged")]
     KeyEmpty,
     #[error("Defining dotted keys out-of-order is discouraged")]
@@ -9,23 +9,23 @@ pub enum SeverityKind {
 }
 
 #[derive(Debug)]
-pub struct Severity {
-    pub kind: SeverityKind,
+pub struct Diagnostic {
+    pub kind: DiagnosticKind,
     pub level: tombi_config::SeverityLevel,
     pub range: tombi_text::Range,
 }
 
-impl Severity {
+impl Diagnostic {
     pub fn code(&self) -> &'static str {
         match self.kind {
-            SeverityKind::KeyEmpty => "key-empty",
-            SeverityKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
-            SeverityKind::TablesOutOfOrder => "tables-out-of-order",
+            DiagnosticKind::KeyEmpty => "key-empty",
+            DiagnosticKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
+            DiagnosticKind::TablesOutOfOrder => "tables-out-of-order",
         }
     }
 }
 
-impl tombi_diagnostic::SetDiagnostics for Severity {
+impl tombi_diagnostic::SetDiagnostics for Diagnostic {
     fn set_diagnostics(self, diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>) {
         match self.level {
             tombi_config::SeverityLevel::Error => {

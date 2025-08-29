@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -80,7 +82,8 @@
           ]
         },
         "integer-maximum": {
-          "description": "Controls the severity level for maximum integer errors",
+          "title": "Maximum integer.",
+          "description": "Check if the integer is less than or equal to the maximum.\n\n```rust\ninteger <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -91,7 +94,8 @@
           ]
         },
         "integer-minimum": {
-          "description": "Controls the severity level for minimum integer errors",
+          "title": "Minimum integer.",
+          "description": "Check if the integer is greater than or equal to the minimum.\n\n```rust\ninteger >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -102,7 +106,8 @@
           ]
         },
         "integer-exclusive-maximum": {
-          "description": "Controls the severity level for exclusive maximum integer errors",
+          "title": "Exclusive maximum integer.",
+          "description": "Check if the integer is less than the maximum.\n\n```rust\ninteger < maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -113,7 +118,8 @@
           ]
         },
         "integer-exclusive-minimum": {
-          "description": "Controls the severity level for exclusive minimum integer errors",
+          "title": "Exclusive minimum integer.",
+          "description": "Check if the integer is greater than the minimum.\n\n```rust\ninteger > minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -124,7 +130,8 @@
           ]
         },
         "integer-multiple-of": {
-          "description": "Controls the severity level for multiple of integer errors",
+          "title": "Multiple of integer.",
+          "description": "Check if the integer is a multiple of the value.\n\n```rust\ninteger % multiple_of == 0\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

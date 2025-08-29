@@ -1,9 +1,15 @@
+use tombi_ast::TombiValueCommentDirective;
+use tombi_comment_directive::{TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION};
+use tombi_comment_directive_store::{
+    comment_directive_document_schema, document_comment_directive_schema_uri,
+};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
     comment_directive::{
-        get_schema_document_comment_directive, get_tombi_document_comment_directive,
-        DocumentTombiDirective, DocumentTombiDirectiveContent, TombiDocumentCommentDirective,
+        get_schema_comment_directive_context, get_tombi_document_comment_directive_context,
+        CommentDirectiveContext, GetCommentDirectiveContext, VALUE_TOMBI_DIRECTIVE_DESCRIPTION,
+        VALUE_TOMBI_DIRECTIVE_TITLE,
     },
     handler::get_hover_keys_with_range,
     hover::{get_hover_content, HoverContent, HoverDirectiveContent},
@@ -16,108 +22,192 @@ pub async fn get_document_comment_directive_hover_info(
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
-    if let Some(schema_comment_directive) =
-        get_schema_document_comment_directive(root, position, source_path)
+    if let Some(comment_directive) =
+        get_schema_comment_directive_context(root, position, source_path)
     {
-        if schema_comment_directive.directive_range.contains(position) {
-            return Some(HoverContent::Directive(HoverDirectiveContent {
-                title: DOCUMENT_SCHEMA_DIRECTIVE_TITLE.to_string(),
-                description: DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION.to_string(),
-                range: schema_comment_directive.directive_range,
-            }));
+        match comment_directive {
+            CommentDirectiveContext::Directive { directive_range } => {
+                return Some(HoverContent::Directive(HoverDirectiveContent {
+                    title: DOCUMENT_SCHEMA_DIRECTIVE_TITLE.to_string(),
+                    description: DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION.to_string(),
+                    range: directive_range,
+                }));
+            }
+            CommentDirectiveContext::Content { content_range, .. } => {
+                return Some(HoverContent::Directive(HoverDirectiveContent {
+                    title: "Schema URL".to_string(),
+                    description: "The URL/Path of the schema that applies to this document."
+                        .to_string(),
+                    range: content_range,
+                }))
+            }
         }
-        if schema_comment_directive.uri_range.contains(position) {
-            return Some(HoverContent::Directive(HoverDirectiveContent {
-                title: "Schema URL".to_string(),
-                description: "The URL/Path of the schema that applies to this document."
-                    .to_string(),
-                range: schema_comment_directive.uri_range,
-            }));
-        }
-        return None;
     }
 
-    // Check if position is in a #:tombi comment directive
-    if let Some(comments) = root.get_document_header_comments() {
-        for comment in comments {
-            if let Some(comment_directive) =
-                get_tombi_document_comment_directive(&comment, position)
-            {
-                match comment_directive {
-                    TombiDocumentCommentDirective::Directive(DocumentTombiDirective {
-                        directive_range,
-                    }) => {
-                        if directive_range.contains(position) {
-                            return Some(HoverContent::Directive(HoverDirectiveContent {
-                                title: DOCUMENT_TOMBI_DIRECTIVE_TITLE.to_string(),
-                                description: DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
-                                range: directive_range,
-                            }));
-                        }
-                        return None;
-                    }
-                    TombiDocumentCommentDirective::Content(DocumentTombiDirectiveContent {
-                        content,
-                        position_in_content,
-                        content_range,
-                    }) => {
-                        let toml_version =
-                            tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-                        // Parse the directive content as TOML
-                        let (directive_ast, _) =
-                            tombi_parser::parse(&content, toml_version).into_root_and_errors();
+    if let Some(comment_directive_context) =
+        get_tombi_document_comment_directive_context(root, position)
+    {
+        match comment_directive_context {
+            CommentDirectiveContext::Content {
+                content,
+                content_range,
+                position_in_content,
+            } => {
+                let toml_version = tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+                // Parse the directive content as TOML
+                let (directive_ast, _) =
+                    tombi_parser::parse(&content, toml_version).into_root_and_errors();
 
-                        // Get hover information from the directive AST
-                        if let Some((keys, range)) = get_hover_keys_with_range(
-                            &directive_ast,
-                            position_in_content,
-                            toml_version,
-                        )
+                // Get hover information from the directive AST
+                if let Some((keys, range)) =
+                    get_hover_keys_with_range(&directive_ast, position_in_content, toml_version)
                         .await
-                        {
-                            // Adjust the range to match the original comment directive position
-                            let adjusted_range = if let Some(range) = range {
-                                let mut adjusted = content_range;
-                                adjusted.start.column += range.start.column;
-                                adjusted.end.column = content_range.start.column + range.end.column;
-                                Some(adjusted)
-                            } else {
-                                None
-                            };
+                {
+                    // Adjust the range to match the original comment directive position
+                    let adjusted_range = if let Some(range) = range {
+                        let mut adjusted = content_range;
+                        adjusted.start.column += range.start.column;
+                        adjusted.end.column = content_range.start.column + range.end.column;
+                        Some(adjusted)
+                    } else {
+                        None
+                    };
 
-                            let document_schema =
-                                tombi_comment_directive_store::document_comment_directive_document_schema()
-                                    .await;
+                    let schema_store = tombi_comment_directive_store::schema_store().await;
+                    let document_schema = comment_directive_document_schema(
+                        schema_store,
+                        document_comment_directive_schema_uri(),
+                    )
+                    .await;
+                    // Try to use the source schema if available, otherwise fall back to tombi schema
+                    let schema_context = tombi_schema_store::SchemaContext {
+                        toml_version,
+                        root_schema: Some(&document_schema),
+                        sub_schema_uri_map: None,
+                        store: schema_store,
+                        strict: None,
+                    };
 
-                            let schema_store = tombi_comment_directive_store::schema_store().await;
-                            // Try to use the source schema if available, otherwise fall back to tombi schema
-                            let schema_context = tombi_schema_store::SchemaContext {
-                                toml_version,
-                                root_schema: Some(&document_schema),
-                                sub_schema_uri_map: None,
-                                store: schema_store,
-                                strict: None,
-                            };
-
-                            let mut hover_content = get_hover_content(
-                                &directive_ast
-                                    .into_document_tree_and_errors(toml_version)
-                                    .tree,
-                                position_in_content,
-                                &keys,
-                                &schema_context,
-                            )
-                            .await;
-
-                            if let Some(HoverContent::Value(hover_value_content)) =
-                                hover_content.as_mut()
-                            {
+                    if let Some(hover_content) = get_hover_content(
+                        &directive_ast
+                            .into_document_tree_and_errors(toml_version)
+                            .tree,
+                        position_in_content,
+                        &keys,
+                        &schema_context,
+                    )
+                    .await
+                    {
+                        return match hover_content {
+                            HoverContent::Value(mut hover_value_content)
+                            | HoverContent::DirectiveContent(mut hover_value_content) => {
                                 hover_value_content.range = adjusted_range;
+                                Some(HoverContent::DirectiveContent(hover_value_content))
                             }
-                            return hover_content;
-                        }
+                            HoverContent::Directive(hover_content) => {
+                                Some(HoverContent::Directive(hover_content))
+                            }
+                        };
                     }
                 }
+            }
+            CommentDirectiveContext::Directive { directive_range } => {
+                return Some(HoverContent::Directive(HoverDirectiveContent {
+                    title: DOCUMENT_TOMBI_DIRECTIVE_TITLE.to_string(),
+                    description: DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
+                    range: directive_range,
+                }));
+            }
+        }
+    }
+
+    None
+}
+
+pub async fn get_value_comment_directive_hover_info<CommentDirective>(
+    comment_directive: &TombiValueCommentDirective,
+    position: tombi_text::Position,
+) -> Option<HoverContent>
+where
+    CommentDirective: TombiCommentDirectiveImpl,
+{
+    if let Some(comment_directive_context) = comment_directive.get_context(position) {
+        match comment_directive_context {
+            CommentDirectiveContext::Content {
+                content,
+                content_range,
+                position_in_content,
+            } => {
+                let toml_version = tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+                // Parse the directive content as TOML
+                let (directive_ast, _) =
+                    tombi_parser::parse(&content, toml_version).into_root_and_errors();
+
+                // Get hover information from the directive AST
+                if let Some((keys, range)) =
+                    get_hover_keys_with_range(&directive_ast, position_in_content, toml_version)
+                        .await
+                {
+                    // Adjust the range to match the original comment directive position
+                    let adjusted_range = if let Some(range) = range {
+                        let mut adjusted = content_range;
+                        adjusted.start.column += range.start.column;
+                        adjusted.end.column = content_range.start.column + range.end.column;
+                        Some(adjusted)
+                    } else {
+                        None
+                    };
+
+                    let schema_store = tombi_comment_directive_store::schema_store().await;
+
+                    let source_schema = tombi_schema_store::SourceSchema {
+                        root_schema: Some(
+                            comment_directive_document_schema(
+                                schema_store,
+                                CommentDirective::comment_directive_schema_url(),
+                            )
+                            .await,
+                        ),
+                        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+                    };
+
+                    let schema_context = tombi_schema_store::SchemaContext {
+                        toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+                        root_schema: source_schema.root_schema.as_ref(),
+                        sub_schema_uri_map: None,
+                        store: schema_store,
+                        strict: None,
+                    };
+
+                    if let Some(hover_content) = get_hover_content(
+                        &directive_ast
+                            .into_document_tree_and_errors(toml_version)
+                            .tree,
+                        position_in_content,
+                        &keys,
+                        &schema_context,
+                    )
+                    .await
+                    {
+                        return match hover_content {
+                            HoverContent::Value(mut hover_value_content)
+                            | HoverContent::DirectiveContent(mut hover_value_content) => {
+                                hover_value_content.range = adjusted_range;
+                                Some(HoverContent::DirectiveContent(hover_value_content))
+                            }
+                            HoverContent::Directive(hover_content) => {
+                                Some(HoverContent::Directive(hover_content))
+                            }
+                        };
+                    }
+                }
+            }
+            CommentDirectiveContext::Directive { directive_range } => {
+                return Some(HoverContent::Directive(HoverDirectiveContent {
+                    title: VALUE_TOMBI_DIRECTIVE_TITLE.to_string(),
+                    description: VALUE_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
+                    range: directive_range,
+                }));
             }
         }
     }

@@ -174,7 +174,7 @@ where
                             }
                         }
                         Err(e) => {
-                            tracing::error!("task failed {}", e);
+                            tracing::error!("Task failed {}", e);
                             error_num += 1;
                         }
                     }

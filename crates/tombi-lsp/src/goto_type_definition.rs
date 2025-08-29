@@ -1,20 +1,21 @@
 mod all_of;
 mod any_of;
+mod comment;
 mod one_of;
 mod value;
 
 use std::{borrow::Cow, ops::Deref};
 
-use tombi_comment_directive::CommentContext;
+pub use comment::get_tombi_document_comment_directive_type_definition;
 use tombi_schema_store::{CurrentSchema, SchemaUri};
 
 pub async fn get_type_definition(
-    tree: &tombi_document_tree::DocumentTree,
+    document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     keys: &[tombi_document_tree::Key],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Option<TypeDefinition> {
-    let table = tree.deref();
+    let table = document_tree.deref();
     match schema_context.root_schema {
         Some(document_schema) => {
             let current_schema =
@@ -27,26 +28,12 @@ pub async fn get_type_definition(
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });
             table
-                .get_type_definition(
-                    position,
-                    keys,
-                    &[],
-                    current_schema.as_ref(),
-                    schema_context,
-                    &CommentContext::default(),
-                )
+                .get_type_definition(position, keys, &[], current_schema.as_ref(), schema_context)
                 .await
         }
         None => {
             table
-                .get_type_definition(
-                    position,
-                    keys,
-                    &[],
-                    None,
-                    schema_context,
-                    &CommentContext::default(),
-                )
+                .get_type_definition(position, keys, &[], None, schema_context)
                 .await
         }
     }
@@ -55,7 +42,12 @@ pub async fn get_type_definition(
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypeDefinition {
     pub schema_uri: SchemaUri,
+
     pub schema_accessors: Vec<tombi_schema_store::SchemaAccessor>,
+
+    /// The range of the schema definition.
+    ///
+    /// It's JSON Schema file range, not TOML file range.
     pub range: tombi_text::Range,
 }
 
@@ -80,6 +72,5 @@ trait GetTypeDefinition {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
 }

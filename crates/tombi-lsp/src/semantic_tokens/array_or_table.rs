@@ -1,11 +1,11 @@
-use tombi_ast::{AstNode, AstToken};
+use tombi_ast::AstNode;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
 impl AppendSemanticTokens for tombi_ast::ArrayOfTable {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         for comment in self.header_leading_comments() {
-            builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
+            comment.append_semantic_tokens(builder);
         }
 
         if let Some(token) = self.double_bracket_start() {
@@ -23,7 +23,7 @@ impl AppendSemanticTokens for tombi_ast::ArrayOfTable {
         }
 
         if let Some(comment) = self.header_trailing_comment() {
-            builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into())
+            comment.append_semantic_tokens(builder);
         }
 
         for key_value in self.key_values() {

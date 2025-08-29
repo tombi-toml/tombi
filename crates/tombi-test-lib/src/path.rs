@@ -41,9 +41,3 @@ pub fn untagged_union_schema_path() -> PathBuf {
         .join("schemas")
         .join("untagged-union.schema.json")
 }
-
-pub fn x_tombi_table_keys_order_schema_path() -> PathBuf {
-    project_root_path()
-        .join("schemas")
-        .join("x-tombi-table-keys-order.schema.json")
-}

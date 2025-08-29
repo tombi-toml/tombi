@@ -90,6 +90,22 @@ impl Value {
         }
     }
 
+    pub fn is_inline(&self) -> bool {
+        match self {
+            Value::Boolean(_)
+            | Value::Integer(_)
+            | Value::Float(_)
+            | Value::String(_)
+            | Value::OffsetDateTime(_)
+            | Value::LocalDateTime(_)
+            | Value::LocalDate(_)
+            | Value::LocalTime(_) => true,
+            Value::Array(array) if array.kind() == ArrayKind::Array => true,
+            Value::Table(table) if matches!(table.kind(), TableKind::InlineTable { .. }) => true,
+            Value::Array(_) | Value::Table(_) | Value::Incomplete { .. } => false,
+        }
+    }
+
     pub(crate) fn extend_comment_directives(
         &mut self,
         comment_directives: Vec<TombiValueCommentDirective>,

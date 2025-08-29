@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
+      "title": "Linter directive.",
       "anyOf": [
         {
           "$ref": "#/definitions/ValueLintOptions"
@@ -20,6 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
+          "title": "Lint rules.",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -80,7 +82,8 @@
           ]
         },
         "string-max-length": {
-          "description": "Controls the severity level for maximum length errors",
+          "title": "Maximum length.",
+          "description": "Check if the string is longer than the maximum length.\n\n```rust\nlength(string) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -91,7 +94,8 @@
           ]
         },
         "string-min-length": {
-          "description": "Controls the severity level for minimum length errors",
+          "title": "Minimum length.",
+          "description": "Check if the string is shorter than the minimum length.\n\n```rust\nlength(string) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -102,7 +106,8 @@
           ]
         },
         "string-format": {
-          "description": "Controls the severity level for format errors",
+          "title": "Format.",
+          "description": "Check if the string matches the format.\n\n```rust\nmatches(string, format)\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -113,7 +118,8 @@
           ]
         },
         "string-pattern": {
-          "description": "Controls the severity level for pattern errors",
+          "title": "Pattern.",
+          "description": "Check if the string matches the pattern.\n\n```rust\nmatches(string, pattern)\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

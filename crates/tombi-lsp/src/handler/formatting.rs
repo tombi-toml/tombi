@@ -46,12 +46,12 @@ pub async fn handle_formatting(
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
                 tracing::info!(
-                    "skip {text_document_path:?} because it is not in config.files.include"
+                    "Skip {text_document_path:?} because it is not in config.files.include"
                 );
                 return Ok(None);
             }
             MatchResult::ExcludeMatched => {
-                tracing::info!("skip {text_document_path:?} because it is in config.files.exclude");
+                tracing::info!("Skip {text_document_path:?} because it is in config.files.exclude");
                 return Ok(None);
             }
         }
@@ -114,7 +114,7 @@ pub async fn handle_formatting(
             }
         }
         Err(diagnostics) => {
-            tracing::error!("failed to format");
+            tracing::error!("Failed to format");
             backend
                 .client
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {

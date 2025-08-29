@@ -1,4 +1,4 @@
-#:schema ./schemas/x-tombi-toml-v1.1.0-preview.schema.json
+#:tombi toml-version = "v1.1.0-preview"
 
 # key values begin dangling comment1
 # key values begin dangling comment2
@@ -19,9 +19,8 @@ key4 = '''
 multi line literal string
 '''
 key5 = { key6 = 1 }
-# tombi: lint.rules.string-format = "off"
 # tombi: lint.rules.key-empty = "off"
-key7.key8 = "aaaa"
+key7.key8 = "aaaa"  # tombi: lint.rules.string-format = "off"
 
 # key values end dangling comment1
 # key values end dangling comment2

@@ -1,9 +1,12 @@
-use tombi_comment_directive::{CommentContext, FloatValueRules};
+use tombi_comment_directive::FloatValueRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
+use crate::{
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    validate::type_mismatch,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -13,14 +16,16 @@ impl Validate for tombi_document_tree::Float {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics::<FloatValueRules>(comment_directives)
-                        .await;
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<FloatValueRules>(
+                        comment_directives,
+                        accessors,
+                    )
+                    .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -41,7 +46,6 @@ impl Validate for tombi_document_tree::Float {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -53,7 +57,6 @@ impl Validate for tombi_document_tree::Float {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -65,7 +68,6 @@ impl Validate for tombi_document_tree::Float {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -112,11 +114,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if (value - *const_value).abs() > f64::EPSILON {
-            crate::Error {
-                kind: crate::ErrorKind::Const {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
                     expected: const_value.to_string(),
                     actual: value.to_string(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -130,11 +132,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if !enumerate.contains(&value) {
-            crate::Error {
-                kind: crate::ErrorKind::Enumerate {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enumerate {
                     expected: enumerate.iter().map(ToString::to_string).collect(),
                     actual: value.to_string(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -148,11 +150,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if value > *maximum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatMaximum {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::FloatMaximum {
                     maximum: *maximum,
                     actual: value,
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -166,11 +168,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if value < *minimum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatMinimum {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::FloatMinimum {
                     minimum: *minimum,
                     actual: value,
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -184,11 +186,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if value >= *exclusive_maximum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatExclusiveMaximum {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::FloatExclusiveMaximum {
                     maximum: *exclusive_maximum,
                     actual: value,
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -202,11 +204,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if value <= *exclusive_minimum {
-            crate::Error {
-                kind: crate::ErrorKind::FloatExclusiveMinimum {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::FloatExclusiveMinimum {
                     minimum: *exclusive_minimum,
                     actual: value,
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -220,11 +222,11 @@ async fn validate_float(
             .unwrap_or_default();
 
         if (value % *multiple_of).abs() > f64::EPSILON {
-            crate::Error {
-                kind: crate::ErrorKind::FloatMultipleOf {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::FloatMultipleOf {
                     multiple_of: *multiple_of,
                     actual: value,
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -238,8 +240,8 @@ async fn validate_float(
             .unwrap_or_default();
 
         if float_schema.deprecated == Some(true) {
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::DeprecatedValue(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                     value.to_string(),
                 )),

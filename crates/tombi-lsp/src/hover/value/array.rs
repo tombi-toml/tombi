@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::CommentContext;
+
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, ArraySchema, CurrentSchema, DocumentSchema, ValueSchema, ValueType,
@@ -27,7 +27,6 @@ impl GetHoverContent for tombi_document_tree::Array {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         tracing::trace!("self = {:?}", self);
         tracing::trace!("keys = {:?}", keys);
@@ -57,7 +56,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                         accessors,
                         current_schema.as_ref(),
                         schema_context,
-                        comment_context,
                     )
                     .await;
             }
@@ -90,7 +88,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                                                     .collect_vec(),
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await?
                                         {
@@ -123,10 +120,13 @@ impl GetHoverContent for tombi_document_tree::Array {
                                                             Some(description.clone());
                                                     }
                                                 }
-                                                Some(hover_value_content.into())
+                                                Some(HoverContent::Value(hover_value_content))
                                             }
-                                            HoverContent::Directive(hover_directive_content) => {
-                                                Some(hover_directive_content.into())
+                                            HoverContent::Directive(hover_content) => {
+                                                Some(HoverContent::Directive(hover_content))
+                                            }
+                                            HoverContent::DirectiveContent(hover_content) => {
+                                                Some(HoverContent::DirectiveContent(hover_content))
                                             }
                                         };
                                     }
@@ -143,7 +143,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                                             .collect_vec(),
                                         None,
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await;
                             }
@@ -155,7 +154,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
-                                comment_context,
                             )
                             .await;
 
@@ -177,7 +175,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -191,7 +188,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -205,7 +201,6 @@ impl GetHoverContent for tombi_document_tree::Array {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await;
                     }
@@ -224,24 +219,20 @@ impl GetHoverContent for tombi_document_tree::Array {
                                             .collect_vec(),
                                         Some(current_schema),
                                         schema_context,
-                                        comment_context,
                                     )
                                     .await;
                             }
                         }
 
-                        return Some(
-                            HoverValueContent {
-                                title: None,
-                                description: None,
-                                accessors: Accessors::from(accessors.to_vec()),
-                                value_type: ValueType::Array,
-                                constraints: None,
-                                schema_uri: None,
-                                range: Some(self.range()),
-                            }
-                            .into(),
-                        );
+                        return Some(HoverContent::Value(HoverValueContent {
+                            title: None,
+                            description: None,
+                            accessors: Accessors::from(accessors.to_vec()),
+                            value_type: ValueType::Array,
+                            constraints: None,
+                            schema_uri: None,
+                            range: Some(self.range()),
+                        }));
                     }
                     _ => {}
                 }
@@ -261,24 +252,20 @@ impl GetHoverContent for tombi_document_tree::Array {
                                 .collect_vec(),
                             None,
                             schema_context,
-                            comment_context,
                         )
                         .await;
                 }
             }
 
-            Some(
-                HoverValueContent {
-                    title: None,
-                    description: None,
-                    accessors: Accessors::from(accessors.to_vec()),
-                    value_type: ValueType::Array,
-                    constraints: None,
-                    schema_uri: None,
-                    range: Some(self.range()),
-                }
-                .into(),
-            )
+            Some(HoverContent::Value(HoverValueContent {
+                title: None,
+                description: None,
+                accessors: Accessors::from(accessors.to_vec()),
+                value_type: ValueType::Array,
+                constraints: None,
+                schema_uri: None,
+                range: Some(self.range()),
+            }))
         }
         .boxed()
     }
@@ -292,42 +279,38 @@ impl GetHoverContent for ArraySchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: Accessors::from(accessors.to_vec()),
-                    value_type: ValueType::Array,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| DisplayValue::try_from(value).ok(),
-                        ),
-                        default: self
-                            .default
-                            .as_ref()
-                            .and_then(|default| DisplayValue::try_from(default).ok()),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples
-                                .iter()
-                                .filter_map(|example| DisplayValue::try_from(example).ok())
-                                .collect()
-                        }),
-                        min_items: self.min_items,
-                        max_items: self.max_items,
-                        unique_items: self.unique_items,
-                        values_order: self.values_order.clone(),
-                        ..Default::default()
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: Accessors::from(accessors.to_vec()),
+                value_type: ValueType::Array,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| DisplayValue::try_from(value).ok(),
+                    ),
+                    default: self
+                        .default
+                        .as_ref()
+                        .and_then(|default| DisplayValue::try_from(default).ok()),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .filter_map(|example| DisplayValue::try_from(example).ok())
+                            .collect()
                     }),
-                    schema_uri: current_schema.map(|cs| cs.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+                    min_items: self.min_items,
+                    max_items: self.max_items,
+                    unique_items: self.unique_items,
+                    values_order: self.values_order.clone(),
+                    ..Default::default()
+                }),
+                schema_uri: current_schema.map(|cs| cs.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

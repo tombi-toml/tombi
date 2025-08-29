@@ -1,4 +1,3 @@
-use tombi_comment_directive::CommentContext;
 use tombi_schema_store::{Accessor, CurrentSchema, IntegerSchema, ValueSchema};
 
 use crate::{
@@ -22,7 +21,6 @@ impl GetHoverContent for tombi_document_tree::Integer {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some(current_schema) = current_schema {
@@ -41,7 +39,6 @@ impl GetHoverContent for tombi_document_tree::Integer {
                                 accessors,
                                 Some(current_schema),
                                 schema_context,
-                                comment_context,
                             )
                             .await;
 
@@ -63,7 +60,6 @@ impl GetHoverContent for tombi_document_tree::Integer {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -77,7 +73,6 @@ impl GetHoverContent for tombi_document_tree::Integer {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
@@ -91,25 +86,21 @@ impl GetHoverContent for tombi_document_tree::Integer {
                             &current_schema.schema_uri,
                             &current_schema.definitions,
                             schema_context,
-                            comment_context,
                         )
                         .await
                     }
                     _ => None,
                 }
             } else {
-                Some(
-                    HoverValueContent {
-                        title: None,
-                        description: None,
-                        accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                        value_type: tombi_schema_store::ValueType::Integer,
-                        constraints: None,
-                        schema_uri: None,
-                        range: Some(self.range()),
-                    }
-                    .into(),
-                )
+                Some(HoverContent::Value(HoverValueContent {
+                    title: None,
+                    description: None,
+                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                    value_type: tombi_schema_store::ValueType::Integer,
+                    constraints: None,
+                    schema_uri: None,
+                    range: Some(self.range()),
+                }))
             }
         }
         .boxed()
@@ -124,40 +115,36 @@ impl GetHoverContent for IntegerSchema {
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-        _comment_context: &'a CommentContext<'a>,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            Some(
-                HoverValueContent {
-                    title: self.title.clone(),
-                    description: self.description.clone(),
-                    accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                    value_type: tombi_schema_store::ValueType::Integer,
-                    constraints: Some(ValueConstraints {
-                        enumerate: build_enumerate_values(
-                            &self.const_value,
-                            &self.enumerate,
-                            |value| Some(DisplayValue::Integer(*value)),
-                        ),
-                        default: self.default.map(DisplayValue::Integer),
-                        examples: self.examples.as_ref().map(|examples| {
-                            examples
-                                .iter()
-                                .map(|example| DisplayValue::Integer(*example))
-                                .collect()
-                        }),
-                        minimum: self.minimum.map(DisplayValue::Integer),
-                        maximum: self.maximum.map(DisplayValue::Integer),
-                        exclusive_minimum: self.exclusive_minimum.map(DisplayValue::Integer),
-                        exclusive_maximum: self.exclusive_maximum.map(DisplayValue::Integer),
-                        multiple_of: self.multiple_of.map(DisplayValue::Integer),
-                        ..Default::default()
+            Some(HoverContent::Value(HoverValueContent {
+                title: self.title.clone(),
+                description: self.description.clone(),
+                accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+                value_type: tombi_schema_store::ValueType::Integer,
+                constraints: Some(ValueConstraints {
+                    enumerate: build_enumerate_values(
+                        &self.const_value,
+                        &self.enumerate,
+                        |value| Some(DisplayValue::Integer(*value)),
+                    ),
+                    default: self.default.map(DisplayValue::Integer),
+                    examples: self.examples.as_ref().map(|examples| {
+                        examples
+                            .iter()
+                            .map(|example| DisplayValue::Integer(*example))
+                            .collect()
                     }),
-                    schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
-                    range: None,
-                }
-                .into(),
-            )
+                    minimum: self.minimum.map(DisplayValue::Integer),
+                    maximum: self.maximum.map(DisplayValue::Integer),
+                    exclusive_minimum: self.exclusive_minimum.map(DisplayValue::Integer),
+                    exclusive_maximum: self.exclusive_maximum.map(DisplayValue::Integer),
+                    multiple_of: self.multiple_of.map(DisplayValue::Integer),
+                    ..Default::default()
+                }),
+                schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),
+                range: None,
+            }))
         }
         .boxed()
     }

@@ -80,8 +80,8 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
                 .into();
 
             for range in out_of_order_ranges {
-                l.extend_diagnostics(crate::Severity {
-                    kind: crate::SeverityKind::TablesOutOfOrder,
+                l.extend_diagnostics(crate::Diagnostic {
+                    kind: crate::DiagnosticKind::TablesOutOfOrder,
                     level,
                     range,
                 });

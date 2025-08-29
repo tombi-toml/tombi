@@ -134,12 +134,12 @@ impl ConfigManager {
                         });
 
                     if schema_store.is_empty().await {
-                        tracing::info!("add new SchemaStore for {config_path_buf:?}");
+                        tracing::info!("Add new SchemaStore for {config_path_buf:?}");
                         if let Err(err) = schema_store
                             .load_config(config, Some(&config_path_buf))
                             .await
                         {
-                            tracing::error!("failed to load config: {err}");
+                            tracing::error!("Failed to load config: {err}");
                         }
 
                         for associated_schema in self.associated_schemas.read().await.iter() {
@@ -203,7 +203,7 @@ impl ConfigManager {
             let schema_store = SchemaStore::new_with_options(schema_options);
 
             if let Err(err) = schema_store.load_config(&config, None).await {
-                tracing::error!("failed to load default config: {err}");
+                tracing::error!("Failed to load default config: {err}");
             }
 
             for associated_schema in self.associated_schemas.read().await.iter() {

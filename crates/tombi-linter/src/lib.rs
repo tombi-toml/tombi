@@ -1,16 +1,15 @@
+mod diagnostic;
 mod error;
 mod lint;
 mod linter;
 mod rule;
-mod severity;
 
+pub use diagnostic::{Diagnostic, DiagnosticKind};
 pub use error::{Error, ErrorKind};
 use lint::Lint;
 pub use linter::Linter;
 use rule::Rule;
-pub use severity::{Severity, SeverityKind};
 pub use tombi_config::LintOptions;
-use tombi_diagnostic::Diagnostic;
 
 #[cfg(test)]
 #[macro_export]
@@ -207,7 +206,7 @@ mod tests {
                 aaa = 1
                 "#,
                 cargo_schema_path(),
-            ) -> Err([tombi_validator::WarningKind::StrictAdditionalProperties {
+            ) -> Err([tombi_validator::DiagnosticKind::StrictAdditionalProperties {
                 accessors: tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
@@ -224,7 +223,49 @@ mod tests {
                 bbb = 1
                 "#,
                 cargo_schema_path(),
-            ) -> Err([tombi_validator::ErrorKind::KeyNotAllowed { key: "aaa".to_string() }]);
+            ) -> Err([tombi_validator::DiagnosticKind::KeyNotAllowed { key: "aaa".to_string() }]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_package_name_wrong_type(
+                r#"
+                [package]
+                name = 1
+                "#,
+                cargo_schema_path(),
+            ) -> Err([tombi_validator::DiagnosticKind::TypeMismatch {
+                expected: tombi_schema_store::ValueType::String,
+                actual: tombi_document_tree::ValueType::Integer,
+            }]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_package_name_wrong_type_with_comment_directive_off(
+                r#"
+                [package]
+                name = 1 # tombi: lint.rules.type-mismatch = "off"
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_package_name_wrong_type_with_wrong_comment_directive_off(
+                r#"
+                [package]
+                name = 1 # tombi: lint.rules.type-mism = "off"
+                "#,
+                cargo_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed { key: "type-mism".to_string() },
+                tombi_validator::DiagnosticKind::TypeMismatch {
+                    expected: tombi_schema_store::ValueType::String,
+                    actual: tombi_document_tree::ValueType::Integer,
+                }
+            ]);
         }
     }
 
@@ -251,7 +292,7 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::WarningKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::from(vec![
+                tombi_validator::DiagnosticKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
                     tombi_schema_store::SchemaAccessor::Index,
                     tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
@@ -268,15 +309,15 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::ErrorKind::Const {
+                tombi_validator::DiagnosticKind::Const {
                     expected: "\"off\"".to_string(),
                     actual: "\"undefined\"".to_string()
                 },
-                tombi_validator::ErrorKind::Const {
+                tombi_validator::DiagnosticKind::Const {
                     expected: "\"warn\"".to_string(),
                     actual: "\"undefined\"".to_string()
                 },
-                tombi_validator::ErrorKind::Const {
+                tombi_validator::DiagnosticKind::Const {
                     expected: "\"error\"".to_string(),
                     actual: "\"undefined\"".to_string()
                 }
@@ -335,7 +376,7 @@ mod tests {
                 "" = 1
                 "#,
             ) -> Err([
-                crate::SeverityKind::KeyEmpty
+                crate::DiagnosticKind::KeyEmpty
             ]);
         }
 
@@ -353,12 +394,12 @@ mod tests {
                 orange.color = "orange"
                 "#,
             ) -> Err([
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder,
-                crate::SeverityKind::DottedKeysOutOfOrder
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder,
+                crate::DiagnosticKind::DottedKeysOutOfOrder
             ]);
         }
 

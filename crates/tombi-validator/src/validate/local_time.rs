@@ -1,9 +1,9 @@
-use tombi_comment_directive::{CommentContext, LocalTimeValueRules};
+use tombi_comment_directive::LocalTimeValueRules;
 use tombi_document_tree::{LocalTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
+use crate::{comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -13,14 +13,13 @@ impl Validate for LocalTime {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
+                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
                     LocalTimeValueRules,
-                >(comment_directives)
+                >(comment_directives, accessors)
                 .await;
 
                 total_diagnostics.extend(diagnostics);
@@ -48,7 +47,6 @@ impl Validate for LocalTime {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -60,7 +58,6 @@ impl Validate for LocalTime {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -72,7 +69,6 @@ impl Validate for LocalTime {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            comment_context,
                             value_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -110,11 +106,11 @@ async fn validate_local_time(
                 .and_then(|rules| rules.const_value)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::Const {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Const {
                     expected: const_value.clone(),
                     actual: value_string.clone(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -128,11 +124,11 @@ async fn validate_local_time(
                 .and_then(|rules| rules.enumerate)
                 .unwrap_or_default();
 
-            crate::Error {
-                kind: crate::ErrorKind::Enumerate {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::Enumerate {
                     expected: enumerate.iter().map(ToString::to_string).collect(),
                     actual: value_string.clone(),
-                },
+                }),
                 range,
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
@@ -146,8 +142,8 @@ async fn validate_local_time(
                 .and_then(|rules| rules.deprecated)
                 .unwrap_or_default();
 
-            crate::Warning {
-                kind: Box::new(crate::WarningKind::DeprecatedValue(
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(accessors),
                     value_string,
                 )),

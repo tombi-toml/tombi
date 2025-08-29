@@ -531,7 +531,7 @@ mod hover_keys_value {
                 )
                 .await;
 
-                let Ok(Some(tombi_lsp::HoverContent::Value(hover_content))) = tombi_lsp::handler::handle_hover(
+                let Ok(Some(tombi_lsp::HoverContent::Value(hover_content) | tombi_lsp::HoverContent::DirectiveContent(hover_content))) = tombi_lsp::handler::handle_hover(
                     &backend,
                     tower_lsp::lsp_types::HoverParams {
                         text_document_position_params: tower_lsp::lsp_types::TextDocumentPositionParams {
@@ -546,7 +546,7 @@ mod hover_keys_value {
                     },
                 )
                 .await else {
-                    return Err("failed to handle hover".into());
+                    return Err("failed to handle hover content".into());
                 };
 
                 tracing::debug!("hover_content: {:#?}", hover_content);

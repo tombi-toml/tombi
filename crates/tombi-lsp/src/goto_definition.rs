@@ -169,14 +169,14 @@ async fn fetch_remote_content(url: &Url) -> Result<String, tower_lsp::jsonrpc::E
         Ok(response) => match response.text().await {
             Ok(content) => content,
             Err(e) => {
-                tracing::error!("Error fetching content: {}", e);
+                tracing::error!("Failed to fetch content: {}", e);
                 return Err(tower_lsp::jsonrpc::Error::new(
                     tower_lsp::jsonrpc::ErrorCode::InternalError,
                 ));
             }
         },
         Err(e) => {
-            tracing::error!("Error fetching content: {}", e);
+            tracing::error!("Failed to fetch content: {}", e);
             return Err(tower_lsp::jsonrpc::Error::new(
                 tower_lsp::jsonrpc::ErrorCode::InternalError,
             ));
@@ -185,7 +185,7 @@ async fn fetch_remote_content(url: &Url) -> Result<String, tower_lsp::jsonrpc::E
 
     // Check if the content is valid JSON
     tombi_json::ValueNode::from_str(&content.clone()).map_err(|e| {
-        tracing::error!("Error parsing {url} content: {}", e);
+        tracing::error!("Failed to parse {url} content: {}", e);
         tower_lsp::jsonrpc::Error::new(tower_lsp::jsonrpc::ErrorCode::InternalError)
     })?;
 

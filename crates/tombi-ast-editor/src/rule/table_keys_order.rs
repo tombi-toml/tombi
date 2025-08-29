@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
-use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaContext,
@@ -18,7 +17,6 @@ pub async fn table_keys_order<'a>(
     key_values: Vec<tombi_ast::KeyValue>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    comment_context: &'a CommentContext<'a>,
 ) -> Vec<crate::Change> {
     if key_values.is_empty() {
         return Vec::with_capacity(0);
@@ -49,18 +47,11 @@ pub async fn table_keys_order<'a>(
         })
         .collect_vec();
 
-    let new = sorted_accessors(
-        value,
-        &[],
-        targets,
-        current_schema,
-        schema_context,
-        comment_context,
-    )
-    .await
-    .into_iter()
-    .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
-    .collect_vec();
+    let new = sorted_accessors(value, &[], targets, current_schema, schema_context)
+        .await
+        .into_iter()
+        .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
+        .collect_vec();
 
     vec![crate::Change::ReplaceRange { old, new }]
 }
@@ -71,7 +62,6 @@ pub fn sorted_accessors<'a: 'b, 'b, T>(
     targets: Vec<(Vec<tombi_schema_store::Accessor>, T)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    comment_context: &'a CommentContext<'a>,
 ) -> BoxFuture<'b, Vec<T>>
 where
     T: Send + Clone + std::fmt::Debug + 'b,
@@ -98,12 +88,7 @@ where
                             .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             if value
-                                .validate(
-                                    accessors,
-                                    Some(&current_schema),
-                                    schema_context,
-                                    comment_context,
-                                )
+                                .validate(accessors, Some(&current_schema), schema_context)
                                 .await
                                 .is_ok()
                             {
@@ -113,7 +98,6 @@ where
                                     targets.clone(),
                                     Some(&current_schema),
                                     schema_context,
-                                    comment_context,
                                 )
                                 .await;
                             }
@@ -214,7 +198,6 @@ where
                                                 targets,
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await,
                                         );
@@ -247,7 +230,6 @@ where
                                                 targets,
                                                 Some(&current_schema),
                                                 schema_context,
-                                                comment_context,
                                             )
                                             .await,
                                         );
@@ -290,7 +272,6 @@ where
                                             targets,
                                             Some(&current_schema),
                                             schema_context,
-                                            comment_context,
                                         )
                                         .await,
                                     );

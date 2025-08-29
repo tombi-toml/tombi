@@ -52,7 +52,7 @@ pub async fn handle_document_link(
         document_links.push(
             tombi_extension::DocumentLink {
                 range,
-                target: get_tombi_github_uri(&schema_uri).unwrap_or(schema_uri),
+                target: get_tombi_github_uri(&schema_uri).unwrap_or(schema_uri.into()),
                 tooltip,
             }
             .into(),

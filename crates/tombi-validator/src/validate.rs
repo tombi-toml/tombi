@@ -19,7 +19,6 @@ use std::borrow::Cow;
 pub use all_of::validate_all_of;
 pub use any_of::validate_any_of;
 pub use one_of::validate_one_of;
-use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
@@ -29,7 +28,6 @@ pub trait Validate {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>;
 }
 
@@ -52,13 +50,8 @@ pub fn validate<'a: 'b, 'b>(
             })
         });
 
-        tree.validate(
-            &[],
-            current_schema.as_ref(),
-            schema_context,
-            &CommentContext::default(),
-        )
-        .await?;
+        tree.validate(&[], current_schema.as_ref(), schema_context)
+            .await?;
 
         Ok(())
     }
@@ -69,7 +62,7 @@ fn type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,
     range: tombi_text::Range,
-    common_rules: Option<&tombi_comment_directive::CommonValueTombiCommentDirectiveRules>,
+    common_rules: Option<&tombi_comment_directive::CommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
@@ -77,16 +70,8 @@ fn type_mismatch(
         .and_then(|common_rules| common_rules.type_mismatch)
         .unwrap_or_default();
 
-    tracing::error!(
-        "type_mismatch: expected = {:?}, actual = {:?}, range = {:?}, level = {:?}",
-        expected,
-        actual,
-        range,
-        level
-    );
-
-    crate::Error {
-        kind: crate::ErrorKind::TypeMismatch { expected, actual },
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::TypeMismatch { expected, actual }),
         range,
     }
     .push_diagnostic_with_level(level, &mut diagnostics);

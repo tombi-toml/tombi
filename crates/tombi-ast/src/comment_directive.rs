@@ -14,7 +14,7 @@ pub struct SchemaDocumentCommentDirective {
     /// #:schema https://example.com/schema.json
     ///          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This URI
     /// ```
-    pub uri: Result<tombi_uri::Uri, String>,
+    pub uri: Result<tombi_uri::SchemaUri, String>,
 
     /// The range of the URI of the schema.
     ///

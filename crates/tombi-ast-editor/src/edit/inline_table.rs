@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use tombi_comment_directive::CommentContext;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
@@ -12,7 +11,6 @@ impl crate::Edit for tombi_ast::InlineTable {
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        comment_context: &'a CommentContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
@@ -31,13 +29,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                     for key_value in self.key_values() {
                         changes.extend(
                             key_value
-                                .edit(
-                                    accessors,
-                                    source_path,
-                                    Some(current_schema),
-                                    schema_context,
-                                    comment_context,
-                                )
+                                .edit(accessors, source_path, Some(current_schema), schema_context)
                                 .await,
                         );
                     }
@@ -53,13 +45,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                 ));
                 changes.extend(
                     key_value
-                        .edit(
-                            accessors,
-                            source_path,
-                            None,
-                            schema_context,
-                            comment_context,
-                        )
+                        .edit(accessors, source_path, None, schema_context)
                         .await,
                 );
             }

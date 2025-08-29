@@ -11,8 +11,8 @@ impl Rule<tombi_ast::Key> for KeyEmptyRule {
             tombi_ast::Key::BasicString(node) => node.syntax().text() == "\"\"",
             tombi_ast::Key::LiteralString(node) => node.syntax().text() == "''",
         } {
-            l.extend_diagnostics(crate::Severity {
-                kind: crate::SeverityKind::KeyEmpty,
+            l.extend_diagnostics(crate::Diagnostic {
+                kind: crate::DiagnosticKind::KeyEmpty,
                 level: l
                     .options()
                     .rules
@@ -45,8 +45,8 @@ mod tests {
         .unwrap_err();
 
         let mut expected = vec![];
-        crate::Severity {
-            kind: crate::SeverityKind::KeyEmpty,
+        crate::Diagnostic {
+            kind: crate::DiagnosticKind::KeyEmpty,
             level: tombi_config::SeverityLevel::Warn,
             range: tombi_text::Range::new((0, 0).into(), (0, 2).into()),
         }

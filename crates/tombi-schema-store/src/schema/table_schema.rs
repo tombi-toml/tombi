@@ -97,13 +97,13 @@ impl TableSchema {
                 match TableKeysOrder::try_from(order.as_str()) {
                     Ok(val) => Some(val),
                     Err(_) => {
-                        tracing::warn!("invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
+                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
                         None
                     }
                 }
             }
             Some(order) => {
-                tracing::warn!("invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
+                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
                 None
             }
             None => None,

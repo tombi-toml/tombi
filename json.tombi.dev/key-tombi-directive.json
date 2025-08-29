@@ -24,7 +24,7 @@
           "title": "Lint rules.",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyRules"
+              "$ref": "#/definitions/WithAdditionalPropertiesCommonRules"
             },
             {
               "type": "null"
@@ -34,9 +34,53 @@
       },
       "additionalProperties": false
     },
-    "WithKeyRules": {
+    "WithAdditionalPropertiesCommonRules": {
       "type": "object",
       "properties": {
+        "type-mismatch": {
+          "description": "Controls the severity level for type mismatch errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const-value": {
+          "description": "Controls the severity level for const value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deprecated": {
+          "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-empty": {
           "title": "Key empty.",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
@@ -84,105 +128,12 @@
               "type": "null"
             }
           ]
-        },
-        "type-mismatch": {
-          "description": "Controls the severity level for type mismatch errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "const-value": {
-          "description": "Controls the severity level for const value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "enumerate": {
-          "description": "Controls the severity level for enumerate value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "deprecated": {
-          "description": "Controls the severity level for deprecated value errors",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "string-max-length": {
-          "title": "Maximum length.",
-          "description": "Check if the string is longer than the maximum length.\n\n```rust\nlength(string) <= maximum\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "string-min-length": {
-          "title": "Minimum length.",
-          "description": "Check if the string is shorter than the minimum length.\n\n```rust\nlength(string) >= minimum\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "string-format": {
-          "title": "Format.",
-          "description": "Check if the string matches the format.\n\n```rust\nmatches(string, format)\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "string-pattern": {
-          "title": "Pattern.",
-          "description": "Check if the string matches the pattern.\n\n```rust\nmatches(string, pattern)\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
       },
-      "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
+    "SeverityLevelDefaultError": {
+      "default": "error",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -208,8 +159,8 @@
         }
       ]
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
