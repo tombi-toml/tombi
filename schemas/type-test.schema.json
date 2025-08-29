@@ -23,6 +23,12 @@
       ],
       "format": "double"
     },
+    "string": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "array": {
       "type": [
         "array",

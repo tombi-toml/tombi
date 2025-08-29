@@ -261,6 +261,7 @@ struct TypeTest {
     boolean: Option<bool>,
     integer: Option<i64>,
     float: Option<f64>,
+    string: Option<String>,
     array: Option<Vec<u64>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
     local_date_time: Option<chrono::NaiveDateTime>,
