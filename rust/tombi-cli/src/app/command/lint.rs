@@ -83,7 +83,7 @@ where
         .enable_all()
         .build()
     else {
-        tracing::error!("Failed to create tokio runtime");
+        tracing::error!("Tailed to create tokio runtime");
         std::process::exit(1);
     };
 
@@ -174,7 +174,7 @@ where
                             }
                         }
                         Err(e) => {
-                            tracing::error!("task failed {}", e);
+                            tracing::error!("Task failed {}", e);
                             error_num += 1;
                         }
                     }

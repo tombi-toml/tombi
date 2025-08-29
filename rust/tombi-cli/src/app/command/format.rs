@@ -85,7 +85,7 @@ where
     .inspect_err(|_| {
         if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin {
             if let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
-                tracing::error!("failed to copy stdin to stdout: {}", error);
+                tracing::error!("Failed to copy stdin to stdout: {}", error);
             }
         }
     })?;
@@ -127,7 +127,7 @@ where
 
         match input {
             FileSearch::Stdin => {
-                tracing::debug!("formatting... stdin input");
+                tracing::debug!("Formatting... stdin input");
                 match format_stdin(
                     FormatFile::from_stdin(args.stdin_filename.map(std::path::PathBuf::from)),
                     printer,
@@ -149,7 +149,7 @@ where
                 for file in files {
                     match file {
                         Ok(source_path) => {
-                            tracing::debug!("formatting... {:?}", &source_path);
+                            tracing::debug!("Formatting... {:?}", &source_path);
                             match FormatFile::from_file(&source_path).await {
                                 Ok(file) => {
                                     let printer = printer.clone();
@@ -202,7 +202,7 @@ where
                             error_num += 1;
                         }
                         Err(e) => {
-                            tracing::error!("task failed {}", e);
+                            tracing::error!("Task failed {}", e);
                             error_num += 1;
                         }
                     }

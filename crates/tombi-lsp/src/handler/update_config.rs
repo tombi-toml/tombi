@@ -20,15 +20,15 @@ pub async fn handle_update_config(
                 .await
             {
                 Ok(_) => {
-                    tracing::info!("updated config: {}", text_document_uri);
+                    tracing::info!("Updated config: {}", text_document_uri);
                     return Ok(true);
                 }
                 Err(err) => {
-                    tracing::error!("failed to update config: {}", err);
+                    tracing::error!("Failed to update config: {}", err);
                 }
             }
         } else {
-            tracing::error!("failed to load config for update: {}", text_document_uri);
+            tracing::error!("Failed to load config for update: {}", text_document_uri);
         }
     }
 

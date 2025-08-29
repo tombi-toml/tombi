@@ -65,12 +65,12 @@ pub async fn get_diagnostics_result(
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
                 tracing::info!(
-                    "skip {text_document_path:?} because it is not in config.files.include"
+                    "Skip {text_document_path:?} because it is not in config.files.include"
                 );
                 return None;
             }
             MatchResult::ExcludeMatched => {
-                tracing::info!("skip {text_document_path:?} because it is in config.files.exclude");
+                tracing::info!("Skip {text_document_path:?} because it is in config.files.exclude");
                 return None;
             }
         }

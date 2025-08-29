@@ -20,7 +20,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
 
     for content_change in content_changes {
         if let Some(range) = content_change.range {
-            tracing::warn!("range change is not supported: {:?}", range);
+            tracing::warn!("Range change is not supported: {:?}", range);
         } else {
             document.text = content_change.text;
         }

@@ -72,7 +72,7 @@ impl ArraySchema {
                             Ok(val) => Some(val),
                             Err(_) => {
                                 tracing::warn!(
-                                    "invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}",
+                                    "Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}",
                                     string.value
                                 );
                                 None
@@ -81,7 +81,7 @@ impl ArraySchema {
                     }
                     _ => {
                         tracing::warn!(
-                            "invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}",
+                            "Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}",
                             order.to_string()
                         );
                         None

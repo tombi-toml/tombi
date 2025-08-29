@@ -46,10 +46,6 @@ impl SemanticTokensBuilder {
         let prefix_len = directive_range.start.column - comment_range.start.column;
         let directive_len = directive_range.end.column - directive_range.start.column;
 
-        tracing::error!("comment: {:?}", comment.as_ref().syntax().to_string());
-        tracing::error!("directive_range: {:?}", directive_range);
-        tracing::error!("prefix_len: {}", prefix_len);
-
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
             delta_start: relative.start.character as u32,
