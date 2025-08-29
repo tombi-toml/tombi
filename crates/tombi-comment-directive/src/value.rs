@@ -82,7 +82,18 @@ pub struct WithKeyRules<Rules> {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 pub struct WithCommonRules<Rules> {
     #[serde(flatten)]
-    pub common: CommonValueTombiCommentDirectiveRules,
+    pub common: CommonRules,
+
+    #[serde(flatten)]
+    pub value: Rules,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct WithAdditionalPropertiesCommonRules<Rules> {
+    #[serde(flatten)]
+    pub common: CommonRules,
 
     #[serde(flatten)]
     pub value: Rules,
@@ -92,7 +103,7 @@ pub struct WithCommonRules<Rules> {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct CommonValueTombiCommentDirectiveRules {
+pub struct CommonRules {
     /// Controls the severity level for type mismatch errors
     pub type_mismatch: Option<SeverityLevelDefaultError>,
 

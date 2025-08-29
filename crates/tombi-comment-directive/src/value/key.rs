@@ -3,9 +3,13 @@ use std::str::FromStr;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective};
+use crate::{
+    TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithAdditionalPropertiesCommonRules,
+};
 
-pub type KeyTombiCommentDirective = ValueTombiCommentDirective<KeyRules>;
+pub type KeyTombiCommentDirective = ValueTombiCommentDirective<AdditionalPropertiesKeyCommonRules>;
+
+pub type AdditionalPropertiesKeyCommonRules = WithAdditionalPropertiesCommonRules<KeyRules>;
 
 impl TombiCommentDirectiveImpl for KeyTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use tombi_comment_directive::CommonValueTombiCommentDirectiveRules;
+use tombi_comment_directive::CommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, ValueSchema};
@@ -16,7 +16,7 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 
-    common_rules: Option<&'a CommonValueTombiCommentDirectiveRules>,
+    common_rules: Option<&'a CommonRules>,
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,

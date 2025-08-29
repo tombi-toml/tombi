@@ -22,7 +22,7 @@
         "rules": {
           "anyOf": [
             {
-              "$ref": "#/definitions/KeyRules"
+              "$ref": "#/definitions/WithAdditionalPropertiesCommonRules"
             },
             {
               "type": "null"
@@ -32,9 +32,53 @@
       },
       "additionalProperties": false
     },
-    "KeyRules": {
+    "WithAdditionalPropertiesCommonRules": {
       "type": "object",
       "properties": {
+        "type-mismatch": {
+          "description": "Controls the severity level for type mismatch errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const-value": {
+          "description": "Controls the severity level for const value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "description": "Controls the severity level for enumerate value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deprecated": {
+          "description": "Controls the severity level for deprecated value errors",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-empty": {
           "title": "Key empty.",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
@@ -80,10 +124,11 @@
             }
           ]
         }
-      }
+      },
+      "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
+    "SeverityLevelDefaultError": {
+      "default": "error",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
@@ -109,8 +154,8 @@
         }
       ]
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
+    "SeverityLevelDefaultWarn": {
+      "default": "warn",
       "allOf": [
         {
           "$ref": "#/definitions/SeverityLevel"
