@@ -1,13 +1,14 @@
-use tombi_ast::AstToken;
+use itertools::Itertools;
+use tombi_ast::{AstToken, TombiDocumentCommentDirective};
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+use tombi_comment_directive_store::{
+    comment_directive_document_schema, document_comment_directive_schema_uri,
+};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::Url;
 
 use crate::{
-    comment_directive::{
-        get_tombi_document_comment_directive, DocumentTombiDirectiveContent,
-        TombiDocumentCommentDirective,
-    },
+    comment_directive::get_tombi_document_comment_directive,
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
@@ -38,10 +39,15 @@ pub async fn get_comment_directive_completion_contents(
                             prefix_range.end.column =
                                 comment_range.start.column + 1 + colon_pos as u32;
 
-                            if comment_text[colon_pos + 1..]
+                            let directive_str = comment_text[colon_pos + 1..]
                                 .chars()
-                                .all(|c| c.is_whitespace())
-                            {
+                                .take_while(|c| !c.is_whitespace())
+                                .collect_vec()
+                                .len();
+                            let mut directive_range = prefix_range;
+                            directive_range.end.column += directive_str as u32;
+
+                            if directive_range.contains(position) {
                                 return Some(document_comment_directive_completion_contents(
                                     root,
                                     position,
@@ -51,8 +57,10 @@ pub async fn get_comment_directive_completion_contents(
                             }
 
                             if let Some(completions) =
-                                document_tombi_directive_completion_contents(&comment, position)
-                                    .await
+                                document_tombi_comment_directive_content_completion_contents(
+                                    &root, position,
+                                )
+                                .await
                             {
                                 return Some(completions);
                             }
@@ -102,18 +110,23 @@ fn document_comment_directive_completion_contents(
     completion_contents
 }
 
-async fn document_tombi_directive_completion_contents(
-    comment: &tombi_ast::Comment,
+async fn document_tombi_comment_directive_content_completion_contents(
+    root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
-    if let Some(TombiDocumentCommentDirective::Content(DocumentTombiDirectiveContent {
+    if let Some(TombiDocumentCommentDirective {
         content,
-        position_in_content,
         content_range,
-    })) = get_tombi_document_comment_directive(comment, position)
+        directive_range,
+    }) = get_tombi_document_comment_directive(root, position)
     {
+        if !content_range.contains(position) {
+            return None;
+        }
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
+        let position_in_content =
+            tombi_text::Position::new(0, position.column - (directive_range.end.column + 1));
 
         let Some((keys, completion_hint)) =
             extract_keys_and_hint(&root, position_in_content, toml_version)
@@ -123,13 +136,21 @@ async fn document_tombi_directive_completion_contents(
 
         let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
-        let document_schema =
-            tombi_comment_directive_store::document_comment_directive_document_schema().await;
+        let schema_store = tombi_comment_directive_store::schema_store().await;
+        let document_schema = comment_directive_document_schema(
+            schema_store,
+            document_comment_directive_schema_uri(),
+        )
+        .await;
+        let source_schema = tombi_schema_store::SourceSchema {
+            root_schema: Some(document_schema),
+            sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+        };
         let schema_context = tombi_schema_store::SchemaContext {
-            toml_version,
-            root_schema: Some(&document_schema),
+            toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+            root_schema: source_schema.root_schema.as_ref(),
             sub_schema_uri_map: None,
-            store: tombi_comment_directive_store::schema_store().await,
+            store: schema_store,
             strict: None,
         };
 

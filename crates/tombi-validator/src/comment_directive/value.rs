@@ -3,10 +3,11 @@ use tombi_comment_directive::{
     TombiCommentDirectiveImpl, ValueLintOptions, ValueTombiCommentDirective, WithKeyRules,
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
+use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{DocumentSchema, SchemaUri};
+use tombi_schema_store::SchemaUri;
 
 use crate::comment_directive::into_directive_diagnostic;
 
@@ -35,7 +36,7 @@ where
     let schema_uri = ValueTombiCommentDirective::<Rules>::comment_directive_schema_url();
 
     let (document_tree_table, diagnostics) =
-        get_comment_directive_document_tree_and_diagnostics(comment_directives, &schema_uri).await;
+        get_comment_directive_document_tree_and_diagnostics(comment_directives, schema_uri).await;
 
     if let Some(total_document_tree_table) = document_tree_table {
         (
@@ -104,7 +105,7 @@ where
 
 pub async fn get_comment_directive_document_tree_and_diagnostics(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
-    schema_uri: &SchemaUri,
+    schema_uri: SchemaUri,
 ) -> (
     Option<tombi_document_tree::Table>,
     Vec<tombi_diagnostic::Diagnostic>,
@@ -112,6 +113,19 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
     let schema_store = tombi_comment_directive_store::schema_store().await;
+
+    let source_schema = tombi_schema_store::SourceSchema {
+        root_schema: Some(comment_directive_document_schema(schema_store, schema_uri).await),
+        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+    };
+
+    let schema_context = tombi_schema_store::SchemaContext {
+        toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+        root_schema: source_schema.root_schema.as_ref(),
+        sub_schema_uri_map: None,
+        store: schema_store,
+        strict: None,
+    };
 
     for tombi_ast::TombiValueCommentDirective {
         content,
@@ -150,33 +164,6 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
                     .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_range)),
             );
         } else {
-            let tombi_json::ValueNode::Object(object) = schema_store
-                .fetch_schema_value(&schema_uri)
-                .await
-                // Value Comment Directive Schema is embedded in the crate
-                .unwrap()
-                .unwrap()
-            else {
-                panic!(
-                    "Failed to fetch value comment directive schema from URL '{schema_uri}'. \
-                    The fetched value was not an object."
-                );
-            };
-            let document_schema = DocumentSchema::new(object, schema_uri.clone());
-
-            let source_schema = tombi_schema_store::SourceSchema {
-                root_schema: Some(document_schema),
-                sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-            };
-
-            let schema_context = tombi_schema_store::SchemaContext {
-                toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-                root_schema: source_schema.root_schema.as_ref(),
-                sub_schema_uri_map: None,
-                store: schema_store,
-                strict: None,
-            };
-
             if let Err(diagnostics) =
                 crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
             {

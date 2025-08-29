@@ -328,11 +328,6 @@ impl Table {
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.symbol_range
     }
-
-    #[inline]
-    pub fn comment_directive(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &**v)
-    }
 }
 
 impl From<Table> for IndexMap<Key, Value> {

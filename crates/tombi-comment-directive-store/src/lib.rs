@@ -2,9 +2,6 @@ use std::str::FromStr;
 use tombi_schema_store::DocumentSchema;
 use tombi_uri::SchemaUri;
 
-static DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI: std::sync::OnceLock<SchemaUri> =
-    std::sync::OnceLock::new();
-
 static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store::SchemaStore> =
     tokio::sync::OnceCell::const_new();
 
@@ -23,25 +20,25 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
 }
 
 #[inline]
-pub fn document_comment_directive_schema_uri() -> &'static SchemaUri {
-    DOCUMENT_COMMENT_DIRECTIVE_SCHEMA_URI.get_or_init(|| {
-        SchemaUri::from_str("tombi://json.tombi.dev/document-tombi-directive.json").unwrap()
-    })
+pub fn document_comment_directive_schema_uri() -> SchemaUri {
+    SchemaUri::from_str("tombi://json.tombi.dev/document-tombi-directive.json").unwrap()
 }
 
-pub async fn document_comment_directive_document_schema() -> DocumentSchema {
-    let schema_store = schema_store().await;
-    let schema_uri = document_comment_directive_schema_uri();
-    let tombi_json::ValueNode::Object(object) = schema_store
-        .fetch_schema_value(schema_uri)
+pub async fn comment_directive_document_schema(
+    store: &tombi_schema_store::SchemaStore,
+    schema_uri: SchemaUri,
+) -> DocumentSchema {
+    let tombi_json::ValueNode::Object(object) = store
+        .fetch_schema_value(&schema_uri)
         .await
+        // Value Comment Directive Schema is embedded in the crate
         .unwrap()
         .unwrap()
     else {
         panic!(
-            "Failed to fetch document comment directive schema from URL '{schema_uri}'. \
+            "Failed to fetch value comment directive schema from URL '{schema_uri}'. \
              The fetched value was not an object."
         );
     };
-    DocumentSchema::new(object, schema_uri.clone())
+    DocumentSchema::new(object, schema_uri)
 }

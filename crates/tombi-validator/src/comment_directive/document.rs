@@ -1,7 +1,9 @@
 use tombi_comment_directive::{
     TombiDocumentCommentDirective, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
-use tombi_comment_directive_store::document_comment_directive_document_schema;
+use tombi_comment_directive_store::{
+    comment_directive_document_schema, document_comment_directive_schema_uri,
+};
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
@@ -28,6 +30,23 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
     let mut total_diagnostics = Vec::new();
     if let Some(tombi_directives) = root.tombi_document_comment_directives() {
         let schema_store = tombi_comment_directive_store::schema_store().await;
+        let document_schema = comment_directive_document_schema(
+            schema_store,
+            document_comment_directive_schema_uri(),
+        )
+        .await;
+        let source_schema = tombi_schema_store::SourceSchema {
+            root_schema: Some(document_schema),
+            sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+        };
+        let schema_context = tombi_schema_store::SchemaContext {
+            toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+            root_schema: source_schema.root_schema.as_ref(),
+            sub_schema_uri_map: None,
+            store: schema_store,
+            strict: None,
+        };
+
         for tombi_ast::TombiDocumentCommentDirective {
             content,
             content_range,
@@ -67,24 +86,9 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
                         .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_range)),
                 );
             } else {
-                let document_schema = document_comment_directive_document_schema().await;
-                let schema_context = tombi_schema_store::SchemaContext {
-                    toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-                    root_schema: None,
-                    sub_schema_uri_map: None,
-                    store: schema_store,
-                    strict: None,
-                };
-
-                if let Err(diagnostics) = crate::validate(
-                    document_tree.clone(),
-                    Some(&tombi_schema_store::SourceSchema {
-                        root_schema: Some(document_schema),
-                        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-                    }),
-                    &schema_context,
-                )
-                .await
+                if let Err(diagnostics) =
+                    crate::validate(document_tree.clone(), Some(&source_schema), &schema_context)
+                        .await
                 {
                     total_diagnostics.extend(
                         diagnostics.into_iter().map(|diagnostic| {
