@@ -21,7 +21,6 @@ impl Validate for tombi_document_tree::String {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
-            tracing::error!("comment_directives: {:?}", self.comment_directives());
 
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
@@ -30,9 +29,6 @@ impl Validate for tombi_document_tree::String {
                         accessors,
                     )
                     .await;
-
-                tracing::error!("value_rules: {:?}", value_rules);
-                tracing::error!("diagnostics: {:?}", diagnostics);
 
                 total_diagnostics.extend(diagnostics);
 
