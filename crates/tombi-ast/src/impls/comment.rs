@@ -36,7 +36,7 @@ impl Comment {
                 ),
             );
 
-            if let Ok(uri) = uri_str.parse::<tombi_uri::Uri>() {
+            if let Ok(uri) = uri_str.parse::<tombi_uri::SchemaUri>() {
                 Some(SchemaDocumentCommentDirective {
                     directive_range,
                     uri: Ok(uri),
@@ -53,7 +53,7 @@ impl Comment {
 
                 Some(SchemaDocumentCommentDirective {
                     directive_range,
-                    uri: tombi_uri::Uri::from_file_path(&schema_file_path)
+                    uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
                         .map_err(|_| uri_str.to_string()),
                     uri_range,
                 })

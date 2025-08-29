@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_ast::{AstToken, TombiDocumentCommentDirective};
+use tombi_ast::AstToken;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_comment_directive_store::{
     comment_directive_document_schema, document_comment_directive_schema_uri,
@@ -8,7 +8,9 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::Url;
 
 use crate::{
-    comment_directive::get_tombi_document_comment_directive,
+    comment_directive::{
+        get_tombi_document_comment_directive, CommentDirectiveContext, GetCommentDirectiveContext,
+    },
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
@@ -119,15 +121,14 @@ async fn document_tombi_comment_directive_content_completion_contents(
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
     if let Some(comment_directive) = get_tombi_document_comment_directive(root, position) {
-        let Some(position_in_content) = comment_directive.position_in_content(position) else {
-            return None;
-        };
-
-        let TombiDocumentCommentDirective {
+        let Some(CommentDirectiveContext::Content {
             content,
             content_range,
-            ..
-        } = comment_directive;
+            position_in_content,
+        }) = comment_directive.get_context(position)
+        else {
+            return None;
+        };
 
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

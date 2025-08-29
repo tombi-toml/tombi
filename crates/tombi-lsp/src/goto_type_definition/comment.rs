@@ -4,6 +4,7 @@ use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 
 use crate::{
+    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     goto_type_definition::{get_type_definition, TypeDefinition},
     handler::get_hover_keys_with_range,
 };
@@ -15,17 +16,12 @@ pub async fn get_tombi_value_comment_directive_type_definition<CommentDirective>
 where
     CommentDirective: TombiCommentDirectiveImpl,
 {
-    let TombiValueCommentDirective {
+    let Some(CommentDirectiveContext::Content {
         content,
-        directive_range,
+        position_in_content,
         ..
-    } = comment_directive;
-
-    if directive_range.contains(position) {
-        return None;
-    }
-
-    let Some(position_in_content) = comment_directive.position_in_content(position) else {
+    }) = comment_directive.get_context(position)
+    else {
         return None;
     };
 

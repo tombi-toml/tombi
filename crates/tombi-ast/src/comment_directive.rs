@@ -14,7 +14,7 @@ pub struct SchemaDocumentCommentDirective {
     /// #:schema https://example.com/schema.json
     ///          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This URI
     /// ```
-    pub uri: Result<tombi_uri::Uri, String>,
+    pub uri: Result<tombi_uri::SchemaUri, String>,
 
     /// The range of the URI of the schema.
     ///
@@ -52,22 +52,6 @@ pub struct TombiDocumentCommentDirective {
     pub content_range: tombi_text::Range,
 }
 
-impl TombiDocumentCommentDirective {
-    pub fn position_in_content(
-        &self,
-        position: tombi_text::Position,
-    ) -> Option<tombi_text::Position> {
-        if self.content_range.contains(position) {
-            Some(tombi_text::Position::new(
-                0,
-                position.column - (self.directive_range.end.column + 1),
-            ))
-        } else {
-            None
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TombiValueCommentDirective {
     /// The range of the directive.
@@ -93,20 +77,4 @@ pub struct TombiValueCommentDirective {
     ///         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This range
     /// ```
     pub content_range: tombi_text::Range,
-}
-
-impl TombiValueCommentDirective {
-    pub fn position_in_content(
-        &self,
-        position: tombi_text::Position,
-    ) -> Option<tombi_text::Position> {
-        if self.content_range.contains(position) {
-            Some(tombi_text::Position::new(
-                0,
-                position.column - (self.directive_range.end.column + 1),
-            ))
-        } else {
-            None
-        }
-    }
 }
