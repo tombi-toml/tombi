@@ -86,7 +86,7 @@ pub async fn get_document_comment_directive_hover_info(
                         strict: None,
                     };
 
-                    let hover_content = get_hover_content(
+                    if let Some(hover_content) = get_hover_content(
                         &directive_ast
                             .into_document_tree_and_errors(toml_version)
                             .tree,
@@ -94,21 +94,19 @@ pub async fn get_document_comment_directive_hover_info(
                         &keys,
                         &schema_context,
                     )
-                    .await;
-
-                    return match hover_content {
-                        Some(
+                    .await
+                    {
+                        return match hover_content {
                             HoverContent::Value(mut hover_value_content)
-                            | HoverContent::DirectiveContent(mut hover_value_content),
-                        ) => {
-                            hover_value_content.range = adjusted_range;
-                            Some(HoverContent::DirectiveContent(hover_value_content))
-                        }
-                        Some(HoverContent::Directive(hover_content)) => {
-                            Some(HoverContent::Directive(hover_content))
-                        }
-                        None => None,
-                    };
+                            | HoverContent::DirectiveContent(mut hover_value_content) => {
+                                hover_value_content.range = adjusted_range;
+                                Some(HoverContent::DirectiveContent(hover_value_content))
+                            }
+                            HoverContent::Directive(hover_content) => {
+                                Some(HoverContent::Directive(hover_content))
+                            }
+                        };
+                    }
                 }
             }
             CommentDirectiveContext::Directive { directive_range } => {
@@ -179,7 +177,7 @@ where
                         strict: None,
                     };
 
-                    let hover_content = get_hover_content(
+                    if let Some(hover_content) = get_hover_content(
                         &directive_ast
                             .into_document_tree_and_errors(toml_version)
                             .tree,
@@ -187,21 +185,19 @@ where
                         &keys,
                         &schema_context,
                     )
-                    .await;
-
-                    return match hover_content {
-                        Some(
+                    .await
+                    {
+                        return match hover_content {
                             HoverContent::Value(mut hover_value_content)
-                            | HoverContent::DirectiveContent(mut hover_value_content),
-                        ) => {
-                            hover_value_content.range = adjusted_range;
-                            Some(HoverContent::DirectiveContent(hover_value_content))
-                        }
-                        Some(HoverContent::Directive(hover_content)) => {
-                            Some(HoverContent::Directive(hover_content))
-                        }
-                        None => None,
-                    };
+                            | HoverContent::DirectiveContent(mut hover_value_content) => {
+                                hover_value_content.range = adjusted_range;
+                                Some(HoverContent::DirectiveContent(hover_value_content))
+                            }
+                            HoverContent::Directive(hover_content) => {
+                                Some(HoverContent::Directive(hover_content))
+                            }
+                        };
+                    }
                 }
             }
             CommentDirectiveContext::Directive { directive_range } => {
