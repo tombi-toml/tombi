@@ -1,11 +1,11 @@
-use tombi_ast::{AstNode, AstToken};
+use tombi_ast::AstNode;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
 impl AppendSemanticTokens for tombi_ast::Value {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         for comment in self.leading_comments() {
-            builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
+            comment.append_semantic_tokens(builder);
         }
 
         match self {
@@ -52,7 +52,7 @@ impl AppendSemanticTokens for tombi_ast::Value {
         }
 
         if let Some(comment) = self.trailing_comment() {
-            builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into())
+            comment.append_semantic_tokens(builder);
         }
     }
 }

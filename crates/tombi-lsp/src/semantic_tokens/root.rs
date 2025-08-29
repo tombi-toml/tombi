@@ -1,19 +1,18 @@
 use itertools::Itertools;
-use tombi_ast::AstToken;
 
-use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
+use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
 impl AppendSemanticTokens for tombi_ast::Root {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
         let key_values = self.key_values().collect_vec();
 
         let source_path = builder.text_document_uri.to_file_path().ok();
-        let schema_comment_directive =
+        let schema_document_directive =
             self.schema_document_comment_directive(source_path.as_deref());
         if key_values.is_empty() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
-                    if let Some(schema_comment_directive) = &schema_comment_directive {
+                    if let Some(schema_comment_directive) = &schema_document_directive {
                         if comment
                             .syntax()
                             .range()
@@ -32,39 +31,33 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             &tombi_comment_directive.directive_range,
                         );
                     } else {
-                        builder.add_token(
-                            TokenType::COMMENT,
-                            comment.as_ref().syntax().clone().into(),
-                        );
+                        comment.append_semantic_tokens(builder);
                     }
                 }
             }
         } else {
             for comments in self.key_values_begin_dangling_comments() {
                 for comment in comments {
-                    if let Some(schema_comment_directive) = &schema_comment_directive {
+                    if let Some(schema_document_directive) = &schema_document_directive {
                         if comment
                             .syntax()
                             .range()
-                            .contains(schema_comment_directive.directive_range.start)
+                            .contains(schema_document_directive.directive_range.start)
                         {
                             builder.add_comment_directive(
                                 &comment,
-                                &schema_comment_directive.directive_range,
+                                &schema_document_directive.directive_range,
                             );
                             continue;
                         }
                     }
-                    if let Some(tombi_comment_directive) = comment.get_tombi_document_directive() {
+                    if let Some(tombi_document_directive) = comment.get_tombi_document_directive() {
                         builder.add_comment_directive(
                             &comment,
-                            &tombi_comment_directive.directive_range,
+                            &tombi_document_directive.directive_range,
                         );
                     } else {
-                        builder.add_token(
-                            TokenType::COMMENT,
-                            comment.as_ref().syntax().clone().into(),
-                        );
+                        comment.append_semantic_tokens(builder);
                     }
                 }
             }
@@ -75,7 +68,7 @@ impl AppendSemanticTokens for tombi_ast::Root {
 
             for comments in self.key_values_end_dangling_comments() {
                 for comment in comments {
-                    builder.add_token(TokenType::COMMENT, comment.as_ref().syntax().clone().into());
+                    comment.append_semantic_tokens(builder);
                 }
             }
         }

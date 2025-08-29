@@ -43,19 +43,24 @@ impl SemanticTokensBuilder {
         let comment_range = comment.as_ref().syntax().range();
 
         let relative = relative_range(comment_range, self.last_range);
+        let prefix_len = directive_range.start.column - comment_range.start.column;
         let directive_len = directive_range.end.column - directive_range.start.column;
+
+        tracing::error!("comment: {:?}", comment.as_ref().syntax().to_string());
+        tracing::error!("directive_range: {:?}", directive_range);
+        tracing::error!("prefix_len: {}", prefix_len);
 
         self.tokens.push(SemanticToken {
             delta_line: relative.start.line as u32,
             delta_start: relative.start.character as u32,
-            length: 1_u32,
+            length: prefix_len,
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
         });
 
         self.tokens.push(SemanticToken {
             delta_line: 0,
-            delta_start: 1_u32,
+            delta_start: prefix_len,
             length: directive_len,
             token_type: TokenType::KEYWORD as u32,
             token_modifiers_bitset: 0,
@@ -68,6 +73,7 @@ impl SemanticTokensBuilder {
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
         });
+
         self.last_range = comment_range;
     }
 
