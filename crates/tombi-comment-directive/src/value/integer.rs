@@ -15,8 +15,7 @@ pub type IntegerValueRules = WithCommonRules<IntegerRules>;
 
 impl TombiCommentDirectiveImpl for IntegerKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/integer-key-value-tombi-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
     }
 }
 

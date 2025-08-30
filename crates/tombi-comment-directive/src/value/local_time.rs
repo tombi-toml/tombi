@@ -15,8 +15,7 @@ pub type LocalTimeValueRules = WithCommonRules<LocalTimeRules>;
 
 impl TombiCommentDirectiveImpl for LocalTimeKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/local-time-key-value-tombi-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-time-directive.json").unwrap()
     }
 }
 

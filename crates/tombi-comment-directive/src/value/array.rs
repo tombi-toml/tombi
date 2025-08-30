@@ -14,7 +14,7 @@ pub type ArrayValueRules = WithCommonRules<ArrayRules>;
 
 impl TombiCommentDirectiveImpl for ArrayKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/array-key-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 

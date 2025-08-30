@@ -15,7 +15,7 @@ pub type FloatValueRules = WithCommonRules<FloatRules>;
 
 impl TombiCommentDirectiveImpl for FloatKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/float-key-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-float-directive.json").unwrap()
     }
 }
 

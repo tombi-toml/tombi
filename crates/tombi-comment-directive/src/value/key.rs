@@ -13,7 +13,7 @@ pub type AdditionalPropertiesKeyCommonRules = WithAdditionalPropertiesCommonRule
 
 impl TombiCommentDirectiveImpl for KeyTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/key-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }
 }
 

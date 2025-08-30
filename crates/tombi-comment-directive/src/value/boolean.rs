@@ -14,8 +14,7 @@ pub type BooleanValueRules = WithCommonRules<BooleanRules>;
 
 impl TombiCommentDirectiveImpl for BooleanKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/boolean-key-value-tombi-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-boolean-directive.json").unwrap()
     }
 }
 

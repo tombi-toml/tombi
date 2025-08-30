@@ -16,10 +16,8 @@ pub type OffsetDateTimeValueRules = WithCommonRules<OffsetDateTimeRules>;
 
 impl TombiCommentDirectiveImpl for OffsetDateTimeKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str(
-            "tombi://json.tombi.dev/offset-date-time-key-value-tombi-directive.json",
-        )
-        .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-offset-date-time-directive.json")
+            .unwrap()
     }
 }
 

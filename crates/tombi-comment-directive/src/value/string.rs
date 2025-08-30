@@ -15,7 +15,7 @@ pub type StringValueRules = WithCommonRules<StringRules>;
 
 impl TombiCommentDirectiveImpl for StringKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/string-key-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
     }
 }
 

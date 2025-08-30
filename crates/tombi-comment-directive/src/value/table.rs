@@ -19,7 +19,7 @@ pub type RootTableValueRules = WithCommonRules<RootTableRules>;
 
 impl TombiCommentDirectiveImpl for TableKeyValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/table-key-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-table-directive.json").unwrap()
     }
 }
 
