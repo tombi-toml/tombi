@@ -1,17 +1,19 @@
 use itertools::Itertools;
-use tombi_ast::AstToken;
+use tombi_ast::{AstToken, TombiValueCommentDirective};
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent,
+    value::{TombiValueDirectiveContent, WithKeyRules},
+    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_schema_store::Accessor;
+use tombi_uri::SchemaUri;
 use tower_lsp::lsp_types::Url;
 
 use crate::{
     comment_directive::{
-        get_tombi_document_comment_directive_context, CommentDirectiveContent,
-        CommentDirectiveContext,
+        CommentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
     },
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
@@ -33,41 +35,38 @@ pub async fn get_document_comment_directive_completion_contents(
             if comment_range.contains(position) {
                 in_comments = true;
                 let comment_text = comment.syntax().text();
-                if comment_text.starts_with('#') {
-                    if let Some(colon_pos) = comment_text.find(':') {
-                        if comment_text[1..colon_pos]
+                if let Some(colon_pos) = comment_text.find(':') {
+                    if comment_text[1..colon_pos]
+                        .chars()
+                        .all(|c| c.is_whitespace())
+                    {
+                        let mut prefix_range = comment_range;
+                        prefix_range.end.column = comment_range.start.column + 1 + colon_pos as u32;
+
+                        let directive_len = comment_text[colon_pos + 1..]
                             .chars()
-                            .all(|c| c.is_whitespace())
+                            .take_while(|c| !c.is_whitespace())
+                            .collect_vec()
+                            .len();
+                        let mut directive_range = prefix_range;
+                        directive_range.end.column += directive_len as u32;
+
+                        if directive_range.contains(position) {
+                            return Some(document_comment_directive_completion_contents(
+                                root,
+                                position,
+                                comment_range,
+                                text_document_uri,
+                            ));
+                        }
+
+                        if let Some(completions) =
+                            get_tombi_document_comment_directive_content_completion_contents(
+                                &root, position,
+                            )
+                            .await
                         {
-                            let mut prefix_range = comment_range;
-                            prefix_range.end.column =
-                                comment_range.start.column + 1 + colon_pos as u32;
-
-                            let directive_str = comment_text[colon_pos + 1..]
-                                .chars()
-                                .take_while(|c| !c.is_whitespace())
-                                .collect_vec()
-                                .len();
-                            let mut directive_range = prefix_range;
-                            directive_range.end.column += directive_str as u32;
-
-                            if directive_range.contains(position) {
-                                return Some(document_comment_directive_completion_contents(
-                                    root,
-                                    position,
-                                    comment_range,
-                                    text_document_uri,
-                                ));
-                            }
-
-                            if let Some(completions) =
-                                get_tombi_document_comment_directive_content_completion_contents(
-                                    &root, position,
-                                )
-                                .await
-                            {
-                                return Some(completions);
-                            }
+                            return Some(completions);
                         }
                     }
                 }
@@ -122,54 +121,90 @@ async fn get_tombi_document_comment_directive_content_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
-    if let Some(CommentDirectiveContext::Content(CommentDirectiveContent {
+    if let Some(CommentDirectiveContext::Content(comment_directive)) = root
+        .tombi_document_comment_directives()
+        .and_then(|directives| directives.get_context(position))
+    {
+        get_comment_directive_content_completion_contents(
+            comment_directive,
+            TombiDocumentDirectiveContent::comment_directive_schema_url(),
+        )
+        .await
+    } else {
+        None
+    }
+}
+
+pub async fn get_value_comment_directive_completion_contents<Rules>(
+    comment_directive: &TombiValueCommentDirective,
+    position: tombi_text::Position,
+    accessors: &[tombi_schema_store::Accessor],
+) -> Option<Vec<CompletionContent>>
+where
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
+{
+    if let Some(CommentDirectiveContext::Content(comment_directive)) =
+        comment_directive.get_context(position)
+    {
+        let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
+            TombiValueDirectiveContent::<Rules>::comment_directive_schema_url()
+        } else {
+            TombiValueDirectiveContent::<WithKeyRules<Rules>>::comment_directive_schema_url()
+        };
+
+        get_comment_directive_content_completion_contents(comment_directive, schema_uri).await
+    } else {
+        Some(Vec::with_capacity(0))
+    }
+}
+
+async fn get_comment_directive_content_completion_contents(
+    comment_directive: CommentDirectiveContent<String>,
+    schema_uri: SchemaUri,
+) -> Option<Vec<CompletionContent>> {
+    let CommentDirectiveContent {
         content,
         content_range,
         position_in_content,
-    })) = get_tombi_document_comment_directive_context(root, position)
-    {
-        let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-        let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
+    } = comment_directive;
 
-        let Some((keys, completion_hint)) =
-            extract_keys_and_hint(&root, position_in_content, toml_version)
-        else {
-            return Some(Vec::with_capacity(0));
-        };
+    let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+    let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
 
-        let document_tree = root.into_document_tree_and_errors(toml_version).tree;
+    let Some((keys, completion_hint)) =
+        extract_keys_and_hint(&root, position_in_content, toml_version)
+    else {
+        return Some(Vec::with_capacity(0));
+    };
 
-        let schema_store = tombi_comment_directive_store::schema_store().await;
-        let document_schema = comment_directive_document_schema(
-            schema_store,
-            TombiDocumentDirectiveContent::comment_directive_schema_url(),
+    let document_tree = root.into_document_tree_and_errors(toml_version).tree;
+
+    let schema_store = tombi_comment_directive_store::schema_store().await;
+    let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
+    let source_schema = tombi_schema_store::SourceSchema {
+        root_schema: Some(document_schema),
+        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
+    };
+    let schema_context = tombi_schema_store::SchemaContext {
+        toml_version,
+        root_schema: source_schema.root_schema.as_ref(),
+        sub_schema_uri_map: None,
+        store: schema_store,
+        strict: None,
+    };
+
+    Some(
+        find_completion_contents_with_tree(
+            &document_tree,
+            position_in_content,
+            &keys,
+            &schema_context,
+            completion_hint,
         )
-        .await;
-        let source_schema = tombi_schema_store::SourceSchema {
-            root_schema: Some(document_schema),
-            sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-        };
-        let schema_context = tombi_schema_store::SchemaContext {
-            toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-            root_schema: source_schema.root_schema.as_ref(),
-            sub_schema_uri_map: None,
-            store: schema_store,
-            strict: None,
-        };
-
-        return Some(
-            find_completion_contents_with_tree(
-                &document_tree,
-                position_in_content,
-                &keys,
-                &schema_context,
-                completion_hint,
-            )
-            .await
-            .into_iter()
-            .map(|content| content.with_position(content_range.start))
-            .collect(),
-        );
-    }
-    None
+        .await
+        .into_iter()
+        .map(|content| content.with_position(content_range.start))
+        .collect(),
+    )
 }
