@@ -106,25 +106,25 @@ pub struct WithCommonExtensibleRules<Rules> {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct CommonRules {
-    /// Type mismatch
+    /// # Type mismatch
     ///
     /// Check if the value is of the correct type.
     ///
     pub type_mismatch: Option<SeverityLevelDefaultError>,
 
-    /// Const value
+    /// # Const value
     ///
     /// Check if the value is equal to the const value.
     ///
     pub const_value: Option<SeverityLevelDefaultError>,
 
-    /// Enumerate
+    /// # Enumerate
     ///
     /// Check if the value is one of the values in the enumerate.
     ///
     pub enumerate: Option<SeverityLevelDefaultError>,
 
-    /// Deprecated
+    /// # Deprecated
     ///
     /// Check if the value is deprecated.
     ///
