@@ -1,11 +1,10 @@
 use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::{
+    document::TombiDocumentDirectiveContent,
     value::{TombiValueDirectiveContent, WithKeyRules},
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
-use tombi_comment_directive_store::{
-    comment_directive_document_schema, document_comment_directive_schema_uri,
-};
+use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::Accessor;
 
@@ -80,7 +79,7 @@ pub async fn get_document_comment_directive_hover_content(
                     let schema_store = tombi_comment_directive_store::schema_store().await;
                     let document_schema = comment_directive_document_schema(
                         schema_store,
-                        document_comment_directive_schema_uri(),
+                        TombiDocumentDirectiveContent::comment_directive_schema_url(),
                     )
                     .await;
                     // Try to use the source schema if available, otherwise fall back to tombi schema

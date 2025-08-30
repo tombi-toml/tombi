@@ -1,9 +1,10 @@
 use itertools::Itertools;
 use tombi_ast::AstToken;
-use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-use tombi_comment_directive_store::{
-    comment_directive_document_schema, document_comment_directive_schema_uri,
+use tombi_comment_directive::{
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
+use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::Url;
 
@@ -138,7 +139,7 @@ async fn get_tombi_document_comment_directive_content_completion_contents(
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let document_schema = comment_directive_document_schema(
             schema_store,
-            document_comment_directive_schema_uri(),
+            TombiDocumentDirectiveContent::comment_directive_schema_url(),
         )
         .await;
         let source_schema = tombi_schema_store::SourceSchema {

@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use tombi_schema_store::DocumentSchema;
 use tombi_uri::SchemaUri;
 
@@ -17,11 +16,6 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
             schema_store
         })
         .await
-}
-
-#[inline]
-pub fn document_comment_directive_schema_uri() -> SchemaUri {
-    SchemaUri::from_str("tombi://json.tombi.dev/tombi-document-directive.json").unwrap()
 }
 
 pub async fn comment_directive_document_schema(
