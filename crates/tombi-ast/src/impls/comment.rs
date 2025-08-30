@@ -13,12 +13,12 @@ impl Comment {
         &self,
         source_path: Option<&std::path::Path>,
     ) -> Option<SchemaDocumentCommentDirective> {
-        let comment_string = self.to_string();
-        if let Some(mut uri_str) = comment_string.strip_prefix("#:schema ") {
-            let original_len = uri_str.len();
-            uri_str = uri_str.trim_start_matches(' ');
-            let space_count = (original_len - uri_str.len()) as u32;
-            uri_str = uri_str.trim();
+        let comment_text = self.to_string();
+        if let Some(mut uri_text) = comment_text.strip_prefix("#:schema ") {
+            let original_len = uri_text.len();
+            uri_text = uri_text.trim_start_matches(' ');
+            let space_count = (original_len - uri_text.len()) as u32;
+            uri_text = uri_text.trim();
 
             let comment_range = self.syntax().range();
             let directive_range = tombi_text::Range::new(
@@ -32,18 +32,18 @@ impl Comment {
                 tombi_text::Position::new(comment_range.start.line, 9 + space_count),
                 tombi_text::Position::new(
                     comment_range.end.line,
-                    9 + space_count + uri_str.len() as tombi_text::Column,
+                    9 + space_count + uri_text.len() as tombi_text::Column,
                 ),
             );
 
-            if let Ok(uri) = uri_str.parse::<tombi_uri::SchemaUri>() {
+            if let Ok(uri) = uri_text.parse::<tombi_uri::SchemaUri>() {
                 Some(SchemaDocumentCommentDirective {
                     directive_range,
                     uri: Ok(uri),
                     uri_range,
                 })
             } else if let Some(source_dir_path) = source_path {
-                let mut schema_file_path = std::path::PathBuf::from(uri_str);
+                let mut schema_file_path = std::path::PathBuf::from(uri_text);
                 if let Some(parent) = source_dir_path.parent() {
                     schema_file_path = parent.join(schema_file_path);
                 }
@@ -54,13 +54,13 @@ impl Comment {
                 Some(SchemaDocumentCommentDirective {
                     directive_range,
                     uri: tombi_uri::SchemaUri::from_file_path(&schema_file_path)
-                        .map_err(|_| uri_str.to_string()),
+                        .map_err(|_| uri_text.to_string()),
                     uri_range,
                 })
             } else {
                 Some(SchemaDocumentCommentDirective {
                     directive_range,
-                    uri: Err(uri_str.to_string()),
+                    uri: Err(uri_text.to_string()),
                     uri_range,
                 })
             }
@@ -75,8 +75,8 @@ impl Comment {
     /// #:tombi toml-version = "v1.0.0"
     /// ```
     pub fn get_tombi_document_directive(&self) -> Option<TombiDocumentCommentDirective> {
-        let comment_str = self.syntax().text();
-        if let Some(content) = comment_str.strip_prefix("#:tombi ") {
+        let comment_text = self.syntax().text();
+        if let Some(content) = comment_text.strip_prefix("#:tombi ") {
             let comment_range = self.syntax().range();
             let directive_range = tombi_text::Range::new(
                 tombi_text::Position::new(comment_range.start.line, comment_range.start.column + 1),
@@ -107,14 +107,14 @@ impl Comment {
     /// # tombi: lint.rules.const_value = "error"
     /// ```
     pub fn get_tombi_value_directive(&self) -> Option<TombiValueCommentDirective> {
-        let comment_str = self.syntax().text();
+        let comment_text = self.syntax().text();
         let comment_range = self.syntax().range();
 
-        let content_with_directive = comment_str[1..].trim_start();
+        let content_with_directive = comment_text[1..].trim_start();
         if !content_with_directive.starts_with("tombi:") {
             return None;
         }
-        let prefix_len = (comment_str.len() - content_with_directive.len()) as u32;
+        let prefix_len = (comment_text.len() - content_with_directive.len()) as u32;
         let directive_range = tombi_text::Range::new(
             tombi_text::Position::new(
                 comment_range.start.line,
@@ -129,7 +129,7 @@ impl Comment {
         let content_range = tombi_text::Range::new(
             tombi_text::Position::new(
                 comment_range.start.line,
-                comment_range.start.column + comment_str.len() as u32 - content.len() as u32,
+                comment_range.start.column + comment_text.len() as u32 - content.len() as u32,
             ),
             comment_range.end,
         );

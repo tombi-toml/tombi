@@ -136,7 +136,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         {
                                             if keys.len() == 1 {
                                                 // Check if cursor is not on the value
-                                                if !value.range().contains(position) {
+                                                if !value.contains(position) {
                                                     // When cursor is on key or equals sign,
                                                     // use the property's title and description
                                                     if let Some(title) =
@@ -246,7 +246,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     {
                                                         if keys.len() == 1 {
                                                             // Check if cursor is not on the value
-                                                            if !value.range().contains(position) {
+                                                            if !value.contains(position) {
                                                                 // When cursor is on key or equals sign,
                                                                 // use the property's title and description
                                                                 if let Some(title) = current_schema
@@ -368,8 +368,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         {
                                             if keys.len() == 1 {
                                                 // Check if cursor is not on the value
-                                                let cursor_on_value =
-                                                    value.range().contains(position);
+                                                let cursor_on_value = value.contains(position);
 
                                                 if !cursor_on_value {
                                                     // When cursor is on key or equals sign,

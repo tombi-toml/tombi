@@ -86,7 +86,8 @@
           ]
         },
         "type-mismatch": {
-          "description": "Controls the severity level for type mismatch errors",
+          "title": "Type mismatch",
+          "description": "Check if the value is of the correct type.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -97,7 +98,8 @@
           ]
         },
         "const-value": {
-          "description": "Controls the severity level for const value errors",
+          "title": "Const value",
+          "description": "Check if the value is equal to the const value.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -108,7 +110,8 @@
           ]
         },
         "enumerate": {
-          "description": "Controls the severity level for enumerate value errors",
+          "title": "Enumerate",
+          "description": "Check if the value is one of the values in the enumerate.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -119,7 +122,8 @@
           ]
         },
         "deprecated": {
-          "description": "Controls the severity level for deprecated value errors",
+          "title": "Deprecated",
+          "description": "Check if the value is deprecated.",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultWarn"

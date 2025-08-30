@@ -32,8 +32,15 @@ pub fn find_all_of_completion_items<'a: 'b, 'b, T>(
     completion_hint: Option<CompletionHint>,
 ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>>
 where
-    T: FindCompletionContents + Sync + Send,
+    T: FindCompletionContents + Sync + Send + std::fmt::Debug,
 {
+    tracing::trace!("value = {:?}", value);
+    tracing::trace!("position = {:?}", position);
+    tracing::trace!("keys = {:?}", keys);
+    tracing::trace!("accessors = {:?}", accessors);
+    tracing::trace!("all_of_schema = {:?}", all_of_schema);
+    tracing::trace!("completion_hint = {:?}", completion_hint);
+
     async move {
         let mut completion_items = Vec::new();
 

@@ -43,7 +43,9 @@ impl GetCommentDirectiveContext<Result<tombi_uri::SchemaUri, String>>
                 content_range: self.uri_range,
                 position_in_content: tombi_text::Position::new(
                     0,
-                    position.column - (self.directive_range.end.column + 1),
+                    position
+                        .column
+                        .saturating_sub(self.directive_range.end.column + 1),
                 ),
             }))
         } else if self.directive_range.contains(position) {
@@ -67,7 +69,9 @@ impl GetCommentDirectiveContext<String> for TombiDocumentCommentDirective {
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
                     0,
-                    position.column - (self.directive_range.end.column + 1),
+                    position
+                        .column
+                        .saturating_sub(self.directive_range.end.column + 1),
                 ),
             }))
         } else if self.directive_range.contains(position) {
@@ -91,7 +95,9 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
                     0,
-                    position.column - (self.directive_range.end.column + 1),
+                    position
+                        .column
+                        .saturating_sub(self.directive_range.end.column + 1),
                 ),
             }));
         } else if self.directive_range.contains(position) {
@@ -113,25 +119,16 @@ impl GetCommentDirectiveContext<String> for CommentDirectiveContext<String> {
     }
 }
 
-pub fn get_schema_comment_directive_context(
-    root: &tombi_ast::Root,
-    position: tombi_text::Position,
-    source_path: Option<&std::path::Path>,
-) -> Option<CommentDirectiveContext<Result<tombi_uri::SchemaUri, String>>> {
-    root.schema_document_comment_directive(source_path)
-        .and_then(|comment_directive| comment_directive.get_context(position))
-}
-
-pub fn get_tombi_document_comment_directive_context(
-    root: &tombi_ast::Root,
-    position: tombi_text::Position,
-) -> Option<CommentDirectiveContext<String>> {
-    if let Some(comment_directives) = root.tombi_document_comment_directives() {
-        for comment_directive in comment_directives {
+impl GetCommentDirectiveContext<String> for Vec<TombiDocumentCommentDirective> {
+    fn get_context(
+        &self,
+        position: tombi_text::Position,
+    ) -> Option<CommentDirectiveContext<String>> {
+        for comment_directive in self {
             if let Some(comment_directive_context) = comment_directive.get_context(position) {
                 return Some(comment_directive_context);
             }
         }
+        None
     }
-    None
 }

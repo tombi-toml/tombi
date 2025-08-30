@@ -1,21 +1,69 @@
+use tombi_comment_directive::value::OffsetDateTimeCommonRules;
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, SchemaUri};
 
 use crate::completion::{
-    CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
+    comment::get_value_comment_directive_completion_contents, CompletionContent, CompletionEdit,
+    CompletionHint, FindCompletionContents,
 };
+
+impl FindCompletionContents for tombi_document_tree::OffsetDateTime {
+    fn find_completion_contents<'a: 'b, 'b>(
+        &'a self,
+        position: tombi_text::Position,
+        keys: &'a [tombi_document_tree::Key],
+        accessors: &'a [Accessor],
+        current_schema: Option<&'a CurrentSchema<'a>>,
+        _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        completion_hint: Option<CompletionHint>,
+    ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("position = {:?}", position);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
+
+        async move {
+            if let Some(comment_directives) = self.comment_directives() {
+                for comment_directive in comment_directives {
+                    if let Some(completion_contents) =
+                        get_value_comment_directive_completion_contents::<OffsetDateTimeCommonRules>(
+                            comment_directive,
+                            position,
+                            accessors,
+                        )
+                        .await
+                    {
+                        return completion_contents;
+                    }
+                }
+            }
+
+            Vec::with_capacity(0)
+        }
+        .boxed()
+    }
+}
 
 impl FindCompletionContents for OffsetDateTimeSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
-        _accessors: &'a [Accessor],
+        keys: &'a [tombi_document_tree::Key],
+        accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("position = {:?}", position);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
+
         async move {
             let mut completion_items = vec![];
             let schema_uri = current_schema.map(|schema| schema.schema_uri.as_ref());

@@ -11,7 +11,6 @@ use tombi_uri::SchemaUri;
 
 use crate::{
     comment_directive::{
-        get_schema_comment_directive_context, get_tombi_document_comment_directive_context,
         CommentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
         VALUE_TOMBI_DIRECTIVE_DESCRIPTION, VALUE_TOMBI_DIRECTIVE_TITLE,
     },
@@ -26,8 +25,9 @@ pub async fn get_document_comment_directive_hover_content(
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
 ) -> Option<HoverContent> {
-    if let Some(comment_directive) =
-        get_schema_comment_directive_context(root, position, source_path)
+    if let Some(comment_directive) = root
+        .schema_document_comment_directive(source_path)
+        .and_then(|comment_directive| comment_directive.get_context(position))
     {
         match comment_directive {
             CommentDirectiveContext::Directive { directive_range } => {
@@ -48,7 +48,10 @@ pub async fn get_document_comment_directive_hover_content(
         }
     }
 
-    match get_tombi_document_comment_directive_context(root, position) {
+    match root
+        .tombi_document_comment_directives()
+        .and_then(|directives| directives.get_context(position))
+    {
         Some(CommentDirectiveContext::Content(content)) => {
             return get_comment_directive_toml_content_hover_content(
                 content,
@@ -106,7 +109,7 @@ async fn get_comment_directive_toml_content_hover_content(
         position_in_content,
     } = comment_directive;
 
-    let toml_version = tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+    let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     // Parse the directive content as TOML
     let (directive_ast, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
 
@@ -131,7 +134,7 @@ async fn get_comment_directive_toml_content_hover_content(
         };
 
         let schema_context = tombi_schema_store::SchemaContext {
-            toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+            toml_version,
             root_schema: source_schema.root_schema.as_ref(),
             sub_schema_uri_map: None,
             store: schema_store,

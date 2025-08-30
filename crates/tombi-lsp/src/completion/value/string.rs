@@ -1,10 +1,11 @@
+use tombi_comment_directive::value::StringCommonRules;
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri, StringSchema};
 
 use crate::completion::{
-    schema_completion::SchemaCompletion, CompletionContent, CompletionEdit, CompletionHint,
-    FindCompletionContents,
+    comment::get_value_comment_directive_completion_contents, schema_completion::SchemaCompletion,
+    CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
 };
 
 impl FindCompletionContents for tombi_document_tree::String {
@@ -17,7 +18,28 @@ impl FindCompletionContents for tombi_document_tree::String {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
+
         async move {
+            if let Some(comment_directives) = self.comment_directives() {
+                for comment_directive in comment_directives {
+                    if let Some(completion_contents) =
+                        get_value_comment_directive_completion_contents::<StringCommonRules>(
+                            comment_directive,
+                            position,
+                            accessors,
+                        )
+                        .await
+                    {
+                        return completion_contents;
+                    }
+                }
+            }
+
             if !self.range().contains(position) {
                 return Vec::with_capacity(0);
             }

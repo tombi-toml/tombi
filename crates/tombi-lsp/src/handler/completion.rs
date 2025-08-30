@@ -75,11 +75,9 @@ pub async fn handle_completion(
         .ok()
         .flatten();
 
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
     let (toml_version, _) = backend
         .source_toml_version(
-            tombi_document_comment_directive,
+            tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await,
             source_schema.as_ref(),
             &config,
         )
@@ -87,6 +85,7 @@ pub async fn handle_completion(
 
     let document_sources = backend.document_sources.read().await;
     let Some(document_source) = document_sources.get(&text_document_uri) else {
+        tracing::trace!("document_source not found");
         return Ok(None);
     };
 
@@ -121,10 +120,15 @@ pub async fn handle_completion(
         get_document_comment_directive_completion_contents(&root, position, &text_document_uri)
             .await
     {
+        tracing::trace!(
+            "Get comment_completion_contents = {:?}",
+            comment_completion_contents
+        );
         return Ok(Some(comment_completion_contents));
     }
 
     let Some((keys, completion_hint)) = extract_keys_and_hint(&root, position, toml_version) else {
+        tracing::trace!("keys and completion_hint not found");
         return Ok(Some(Vec::with_capacity(0)));
     };
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;

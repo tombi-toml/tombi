@@ -72,16 +72,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Array(array_schema) => {
                         for (index, value) in self.values().iter().enumerate() {
-                            if value.range().contains(position)
-                                || value
-                                    .comment_directives()
-                                    .map(|comment_directives| {
-                                        comment_directives.iter().any(|comment_directive| {
-                                            comment_directive.range().contains(position)
-                                        })
-                                    })
-                                    .unwrap_or_default()
-                            {
+                            if value.contains(position) {
                                 let accessor = Accessor::Index(index);
 
                                 if let Some(items) = &array_schema.items {
@@ -179,7 +170,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
             }
 
             for (index, value) in self.values().iter().enumerate() {
-                if value.range().contains(position) {
+                if value.contains(position) {
                     let accessor = Accessor::Index(index);
                     return value
                         .get_type_definition(

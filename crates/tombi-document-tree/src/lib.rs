@@ -140,7 +140,7 @@ pub fn get_accessors(
 
     if let crate::Value::Array(array) = current_value {
         for (index, value) in array.values().iter().enumerate() {
-            if value.range().contains(position) {
+            if value.contains(position) {
                 accessors.push(tombi_accessor::Accessor::Index(index));
                 break;
             }
@@ -159,7 +159,7 @@ fn find_value_in_current<'a>(
     match current_value {
         crate::Value::Array(array) => {
             for (index, value) in array.values().iter().enumerate() {
-                if value.range().contains(position) {
+                if value.contains(position) {
                     accessors.push(tombi_accessor::Accessor::Index(index));
                     return find_value_in_current(value, key, accessors, position);
                 }
