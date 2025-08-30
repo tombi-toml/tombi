@@ -29,7 +29,9 @@ impl GetHoverContent for tombi_document_tree::String {
                 for comment_directive in comment_directives {
                     if let Some(hover_content) = get_value_comment_directive_hover_info::<
                         StringValueTombiCommentDirective,
-                    >(comment_directive, position)
+                    >(
+                        comment_directive, position, accessors
+                    )
                     .await
                     {
                         return Some(hover_content);

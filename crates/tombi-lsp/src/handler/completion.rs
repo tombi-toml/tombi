@@ -9,7 +9,7 @@ use crate::{
     backend,
     completion::{
         extract_keys_and_hint, find_completion_contents_with_tree,
-        get_comment_directive_completion_contents,
+        get_document_comment_directive_completion_contents,
     },
     config_manager::ConfigSchemaStore,
 };
@@ -118,7 +118,8 @@ pub async fn handle_completion(
     let position = position.into();
 
     if let Some(comment_completion_contents) =
-        get_comment_directive_completion_contents(&root, position, &text_document_uri).await
+        get_document_comment_directive_completion_contents(&root, position, &text_document_uri)
+            .await
     {
         return Ok(Some(comment_completion_contents));
     }

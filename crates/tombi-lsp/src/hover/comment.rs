@@ -127,6 +127,7 @@ pub async fn get_document_comment_directive_hover_info(
 pub async fn get_value_comment_directive_hover_info<CommentDirective>(
     comment_directive: &TombiValueCommentDirective,
     position: tombi_text::Position,
+    _accessors: &[tombi_schema_store::Accessor],
 ) -> Option<HoverContent>
 where
     CommentDirective: TombiCommentDirectiveImpl,
