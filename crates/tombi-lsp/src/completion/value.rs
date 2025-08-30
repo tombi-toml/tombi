@@ -55,13 +55,90 @@ impl FindCompletionContents for tombi_document_tree::Value {
 
         async move {
             match self {
-                Self::Boolean(_)
-                | Self::Integer(_)
-                | Self::Float(_)
-                | Self::OffsetDateTime(_)
-                | Self::LocalDateTime(_)
-                | Self::LocalDate(_)
-                | Self::LocalTime(_) => Vec::with_capacity(0),
+                Self::Boolean(boolean) => {
+                    boolean
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
+                Self::Integer(integer) => {
+                    integer
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
+                Self::Float(float) => {
+                    float
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
+                Self::OffsetDateTime(offset_date_time) => {
+                    offset_date_time
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
+                Self::LocalDateTime(local_date_time) => {
+                    local_date_time
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
+                Self::LocalDate(local_date) => {
+                    local_date
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
+                Self::LocalTime(local_time) => {
+                    local_time
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            current_schema,
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await
+                }
                 Self::String(string_value) => {
                     string_value
                         .find_completion_contents(

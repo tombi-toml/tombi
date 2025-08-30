@@ -80,7 +80,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Array(array_schema) => {
                         for (index, value) in self.values().iter().enumerate() {
-                            if value.range().contains(position) {
+                            if value.contains(position) {
                                 let accessor = Accessor::Index(index);
 
                                 if let Some(items) = &array_schema.items {
@@ -222,7 +222,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                     }
                     ValueSchema::Null => {
                         for (index, value) in self.values().iter().enumerate() {
-                            if value.range().contains(position) {
+                            if value.contains(position) {
                                 let accessor = Accessor::Index(index);
                                 return value
                                     .get_hover_content(
@@ -255,7 +255,7 @@ impl GetHoverContent for tombi_document_tree::Array {
             }
 
             for (index, value) in self.values().iter().enumerate() {
-                if value.range().contains(position) {
+                if value.contains(position) {
                     let accessor = Accessor::Index(index);
                     return value
                         .get_hover_content(

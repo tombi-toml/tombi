@@ -82,8 +82,8 @@
           ]
         },
         "string-max-length": {
-          "title": "Maximum length.",
-          "description": "Check if the string is longer than the maximum length.\n\n```rust\nlength(string) <= maximum\n```",
+          "title": "Max length.",
+          "description": "Check if the string is longer than the max length.\n\n```rust\nlength(string) <= max\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"
@@ -94,8 +94,8 @@
           ]
         },
         "string-min-length": {
-          "title": "Minimum length.",
-          "description": "Check if the string is shorter than the minimum length.\n\n```rust\nlength(string) >= minimum\n```",
+          "title": "Min length.",
+          "description": "Check if the string is shorter than the min length.\n\n```rust\nlength(string) >= min\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/SeverityLevelDefaultError"

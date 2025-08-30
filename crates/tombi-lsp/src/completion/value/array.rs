@@ -1,6 +1,7 @@
 use ahash::AHashSet;
 use itertools::Itertools;
 use std::borrow::Cow;
+use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
@@ -12,7 +13,10 @@ use super::{
     all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
     one_of::find_one_of_completion_items, type_hint_value, CompletionHint, FindCompletionContents,
 };
-use crate::completion::{schema_completion::SchemaCompletion, CompletionContent, CompletionEdit};
+use crate::completion::{
+    comment::get_value_comment_directive_completion_contents, schema_completion::SchemaCompletion,
+    CompletionContent, CompletionEdit,
+};
 
 impl FindCompletionContents for tombi_document_tree::Array {
     fn find_completion_contents<'a: 'b, 'b>(
@@ -31,6 +35,21 @@ impl FindCompletionContents for tombi_document_tree::Array {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
+            if let Some(comment_directives) = self.comment_directives() {
+                for comment_directive in comment_directives {
+                    if let Some(completion_contents) =
+                        get_value_comment_directive_completion_contents::<ArrayCommonRules>(
+                            comment_directive,
+                            position,
+                            accessors,
+                        )
+                        .await
+                    {
+                        return completion_contents;
+                    }
+                }
+            }
+
             if let Some(Ok(DocumentSchema {
                 value_schema: Some(value_schema),
                 schema_uri,
@@ -66,7 +85,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                 new_item_index = index + 1;
                                 new_item_start_position = Some(value.range().end);
                             }
-                            if value.range().contains(position) {
+                            if value.contains(position) {
                                 let accessor = Accessor::Index(index);
                                 if let Some(items) = &array_schema.items {
                                     if let Ok(Some(current_schema)) = items
@@ -248,7 +267,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                 }
             } else {
                 for (index, value) in self.values().iter().enumerate() {
-                    if value.range().contains(position) {
+                    if value.contains(position) {
                         // Array of tables
                         if let tombi_document_tree::Value::Table(table) = value {
                             if keys.len() == 1

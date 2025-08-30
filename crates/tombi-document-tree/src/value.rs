@@ -130,6 +130,18 @@ impl Value {
             *value_comment_directives = Some(Box::new(comment_directives));
         }
     }
+
+    pub fn contains(&self, position: tombi_text::Position) -> bool {
+        self.range().contains(position)
+            || self
+                .comment_directives()
+                .map(|comment_directives| {
+                    comment_directives
+                        .iter()
+                        .any(|comment_directive| comment_directive.range().contains(position))
+                })
+                .unwrap_or_default()
+    }
 }
 
 impl crate::ValueImpl for Value {
