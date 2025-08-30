@@ -1,9 +1,13 @@
 use tombi_ast::TombiValueCommentDirective;
-use tombi_comment_directive::{TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION};
+use tombi_comment_directive::{
+    TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithKeyRules,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+};
 use tombi_comment_directive_store::{
     comment_directive_document_schema, document_comment_directive_schema_uri,
 };
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_schema_store::Accessor;
 
 use crate::{
     comment_directive::{
@@ -17,7 +21,7 @@ use crate::{
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
 };
 
-pub async fn get_document_comment_directive_hover_info(
+pub async fn get_document_comment_directive_hover_content(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
@@ -124,12 +128,14 @@ pub async fn get_document_comment_directive_hover_info(
     None
 }
 
-pub async fn get_value_comment_directive_hover_info<CommentDirective>(
+pub async fn get_value_comment_directive_hover_content<Rules>(
     comment_directive: &TombiValueCommentDirective,
     position: tombi_text::Position,
+    accessors: &[tombi_schema_store::Accessor],
 ) -> Option<HoverContent>
 where
-    CommentDirective: TombiCommentDirectiveImpl,
+    ValueTombiCommentDirective<Rules>: TombiCommentDirectiveImpl,
+    ValueTombiCommentDirective<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
 {
     if let Some(comment_directive_context) = comment_directive.get_context(position) {
         match comment_directive_context {
@@ -159,14 +165,15 @@ where
                     };
 
                     let schema_store = tombi_comment_directive_store::schema_store().await;
+                    let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
+                        ValueTombiCommentDirective::<Rules>::comment_directive_schema_url()
+                    } else {
+                        ValueTombiCommentDirective::<WithKeyRules<Rules>>::comment_directive_schema_url()
+                    };
 
                     let source_schema = tombi_schema_store::SourceSchema {
                         root_schema: Some(
-                            comment_directive_document_schema(
-                                schema_store,
-                                CommentDirective::comment_directive_schema_url(),
-                            )
-                            .await,
+                            comment_directive_document_schema(schema_store, schema_uri).await,
                         ),
                         sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
                     };

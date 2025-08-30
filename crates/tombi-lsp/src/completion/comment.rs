@@ -16,7 +16,7 @@ use crate::{
 
 use super::{CompletionContent, CompletionEdit};
 
-pub async fn get_comment_directive_completion_contents(
+pub async fn get_document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     text_document_uri: &Url,
@@ -57,7 +57,7 @@ pub async fn get_comment_directive_completion_contents(
                             }
 
                             if let Some(completions) =
-                                document_tombi_comment_directive_content_completion_contents(
+                                get_tombi_document_comment_directive_content_completion_contents(
                                     &root, position,
                                 )
                                 .await
@@ -114,7 +114,7 @@ fn document_comment_directive_completion_contents(
     completion_contents
 }
 
-async fn document_tombi_comment_directive_content_completion_contents(
+async fn get_tombi_document_comment_directive_content_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {

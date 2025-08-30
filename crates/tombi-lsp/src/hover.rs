@@ -8,7 +8,7 @@ mod value;
 
 use std::{borrow::Cow, fmt::Debug, ops::Deref};
 
-pub use comment::get_document_comment_directive_hover_info;
+pub use comment::get_document_comment_directive_hover_content;
 use constraints::ValueConstraints;
 
 use tombi_extension::get_tombi_github_uri;

@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 
+use tombi_comment_directive::TableValueRules;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
@@ -12,6 +13,7 @@ use crate::{
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
+        comment::get_value_comment_directive_hover_content,
         constraints::{build_enumerate_values, ValueConstraints},
         one_of::get_one_of_hover_content,
         GetHoverContent, HoverValueContent,
@@ -34,6 +36,20 @@ impl GetHoverContent for tombi_document_tree::Table {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
+            if let Some(comment_directives) = self.comment_directives() {
+                for comment_directive in comment_directives {
+                    if let Some(hover_content) = get_value_comment_directive_hover_content::<
+                        TableValueRules,
+                    >(
+                        comment_directive, position, accessors
+                    )
+                    .await
+                    {
+                        return Some(hover_content);
+                    }
+                }
+            }
+
             if let Some(Ok(DocumentSchema {
                 value_schema,
                 schema_uri,

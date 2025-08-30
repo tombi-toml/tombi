@@ -146,94 +146,167 @@ impl GetEnumerate for ValueSchema {
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
         async move {
             match self {
-                ValueSchema::Boolean(schema) => schema
-                    .enumerate
-                    .as_ref()
-                    .map(|v| v.clone().into_iter().map(DisplayValue::Boolean).collect()),
-                ValueSchema::Integer(schema) => schema
-                    .enumerate
-                    .as_ref()
-                    .map(|v| v.clone().into_iter().map(DisplayValue::Integer).collect()),
-                ValueSchema::Float(schema) => schema
-                    .enumerate
-                    .as_ref()
-                    .map(|v| v.clone().into_iter().map(DisplayValue::Float).collect()),
-                ValueSchema::String(schema) => schema
-                    .enumerate
-                    .as_ref()
-                    .map(|v| v.clone().into_iter().map(DisplayValue::String).collect()),
-                ValueSchema::LocalDate(schema) => schema
-                    .enumerate
-                    .as_ref()
-                    .map(|v| v.clone().into_iter().map(DisplayValue::LocalDate).collect()),
-                ValueSchema::LocalDateTime(schema) => schema.enumerate.as_ref().map(|v| {
-                    v.clone()
-                        .into_iter()
-                        .map(DisplayValue::LocalDateTime)
-                        .collect()
-                }),
-                ValueSchema::LocalTime(schema) => schema
-                    .enumerate
-                    .as_ref()
-                    .map(|v| v.clone().into_iter().map(DisplayValue::LocalTime).collect()),
-                ValueSchema::OffsetDateTime(schema) => schema.enumerate.as_ref().map(|v| {
-                    v.clone()
-                        .into_iter()
-                        .map(DisplayValue::OffsetDateTime)
-                        .collect()
-                }),
+                ValueSchema::Boolean(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    // Add const_value if present
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::Boolean(*const_value));
+                    }
+
+                    // Add enumerate values if present
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values
+                            .extend(enumerate.iter().map(|v| DisplayValue::Boolean(*v)));
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::Integer(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::Integer(*const_value));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values
+                            .extend(enumerate.iter().map(|v| DisplayValue::Integer(*v)));
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::Float(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::Float(*const_value));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values.extend(enumerate.iter().map(|v| DisplayValue::Float(*v)));
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::String(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::String(const_value.clone()));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values
+                            .extend(enumerate.iter().map(|v| DisplayValue::String(v.clone())));
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::OffsetDateTime(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::OffsetDateTime(const_value.clone()));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values.extend(
+                            enumerate
+                                .iter()
+                                .map(|v| DisplayValue::OffsetDateTime(v.clone())),
+                        );
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::LocalDateTime(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::LocalDateTime(const_value.clone()));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values.extend(
+                            enumerate
+                                .iter()
+                                .map(|v| DisplayValue::LocalDateTime(v.clone())),
+                        );
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::LocalDate(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::LocalDate(const_value.clone()));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values
+                            .extend(enumerate.iter().map(|v| DisplayValue::LocalDate(v.clone())));
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
+                ValueSchema::LocalTime(schema) => {
+                    let mut enumerate_values = Vec::new();
+
+                    if let Some(const_value) = &schema.const_value {
+                        enumerate_values.push(DisplayValue::LocalTime(const_value.clone()));
+                    }
+
+                    if let Some(enumerate) = &schema.enumerate {
+                        enumerate_values
+                            .extend(enumerate.iter().map(|v| DisplayValue::LocalTime(v.clone())));
+                    }
+
+                    if !enumerate_values.is_empty() {
+                        Some(enumerate_values)
+                    } else {
+                        None
+                    }
+                }
                 ValueSchema::Array(_) | ValueSchema::Table(_) | ValueSchema::Null => None,
-                ValueSchema::OneOf(schema) => {
-                    schema
-                        .get_enumerate(schema_uri, definitions, schema_context)
-                        .await
-                }
-                ValueSchema::AnyOf(schema) => {
-                    schema
-                        .get_enumerate(schema_uri, definitions, schema_context)
-                        .await
-                }
-                ValueSchema::AllOf(schema) => {
-                    schema
-                        .get_enumerate(schema_uri, definitions, schema_context)
+                ValueSchema::OneOf(OneOfSchema { schemas, .. })
+                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+                | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                    get_enumerate_from_schemas(schemas, schema_uri, definitions, schema_context)
                         .await
                 }
             }
         }
         .boxed()
-    }
-}
-
-impl GetEnumerate for OneOfSchema {
-    fn get_enumerate<'a: 'b, 'b>(
-        &'a self,
-        schema_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        schema_context: &'a SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
-        get_enumerate_from_schemas(&self.schemas, schema_uri, definitions, schema_context)
-    }
-}
-
-impl GetEnumerate for AnyOfSchema {
-    fn get_enumerate<'a: 'b, 'b>(
-        &'a self,
-        schema_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        schema_context: &'a SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
-        get_enumerate_from_schemas(&self.schemas, schema_uri, definitions, schema_context)
-    }
-}
-
-impl GetEnumerate for AllOfSchema {
-    fn get_enumerate<'a: 'b, 'b>(
-        &'a self,
-        schema_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        schema_context: &'a SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
-        get_enumerate_from_schemas(&self.schemas, schema_uri, definitions, schema_context)
     }
 }
 

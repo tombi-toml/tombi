@@ -1,11 +1,11 @@
-use tombi_comment_directive::StringValueTombiCommentDirective;
+use tombi_comment_directive::StringValueRules;
 use tombi_schema_store::{Accessor, CurrentSchema, StringSchema, ValueSchema};
 
 use crate::{
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
-        comment::get_value_comment_directive_hover_info,
+        comment::get_value_comment_directive_hover_content,
         constraints::{build_enumerate_values, ValueConstraints},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
@@ -27,9 +27,11 @@ impl GetHoverContent for tombi_document_tree::String {
         async move {
             if let Some(comment_directives) = self.comment_directives() {
                 for comment_directive in comment_directives {
-                    if let Some(hover_content) = get_value_comment_directive_hover_info::<
-                        StringValueTombiCommentDirective,
-                    >(comment_directive, position)
+                    if let Some(hover_content) = get_value_comment_directive_hover_content::<
+                        StringValueRules,
+                    >(
+                        comment_directive, position, accessors
+                    )
                     .await
                     {
                         return Some(hover_content);

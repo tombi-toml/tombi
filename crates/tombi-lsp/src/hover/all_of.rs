@@ -20,8 +20,14 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<HoverContent>>
 where
-    T: GetHoverContent + Sync + Send,
+    T: GetHoverContent + Sync + Send + std::fmt::Debug,
 {
+    tracing::trace!("value = {:?}", value);
+    tracing::trace!("keys = {:?}", keys);
+    tracing::trace!("accessors = {:?}", accessors);
+    tracing::trace!("all_of_schema = {:?}", all_of_schema);
+    tracing::trace!("schema_uri = {:?}", schema_uri);
+
     async move {
         let mut title_description_set = ahash::AHashSet::new();
         let mut value_type_set = indexmap::IndexSet::new();
@@ -163,10 +169,19 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
 
             let mut title_description_set = ahash::AHashSet::new();
             let mut value_type_set = indexmap::IndexSet::new();
-            let mut schemas = self.schemas.write().await;
+            let mut enumerate_values = Vec::new();
+            let default = self
+                .default
+                .as_ref()
+                .and_then(|default| DisplayValue::try_from(default).ok());
 
-            for referable_schema in schemas.iter_mut() {
-                let Ok(Some(CurrentSchema { value_schema, .. })) = referable_schema
+            for referable_schema in self.schemas.write().await.iter_mut() {
+                let Ok(Some(CurrentSchema {
+                    value_schema,
+                    schema_uri,
+                    definitions,
+                    ..
+                })) = referable_schema
                     .resolve(
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
@@ -174,7 +189,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                     )
                     .await
                 else {
-                    return None;
+                    continue;
                 };
                 if value_schema.title().is_some() || value_schema.description().is_some() {
                     title_description_set.insert((
@@ -183,6 +198,14 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                     ));
                 }
                 value_type_set.insert(value_schema.value_type().await);
+
+                if let Some(values) = value_schema
+                    .as_ref()
+                    .get_enumerate(&schema_uri, &definitions, schema_context)
+                    .await
+                {
+                    enumerate_values.extend(values);
+                }
             }
 
             let (mut title, mut description) = if title_description_set.len() == 1 {
@@ -206,7 +229,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 tombi_schema_store::ValueType::AllOf(value_type_set.into_iter().collect())
             };
 
-            Some(HoverContent::Value(HoverValueContent {
+            let mut hover_value_content = HoverValueContent {
                 title,
                 description,
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
@@ -214,7 +237,33 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 constraints: None,
                 schema_uri: Some(current_schema.schema_uri.as_ref().to_owned()),
                 range: None,
-            }))
+            };
+
+            if let Some(default) = default {
+                if let Some(constraints) = hover_value_content.constraints.as_mut() {
+                    if constraints.default.is_none() {
+                        constraints.default = Some(default);
+                    }
+                } else {
+                    hover_value_content.constraints = Some(ValueConstraints {
+                        default: Some(default),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            if !enumerate_values.is_empty() {
+                if let Some(constraints) = hover_value_content.constraints.as_mut() {
+                    constraints.enumerate = Some(enumerate_values);
+                } else {
+                    hover_value_content.constraints = Some(ValueConstraints {
+                        enumerate: Some(enumerate_values),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            Some(HoverContent::Value(hover_value_content))
         }
         .boxed()
     }

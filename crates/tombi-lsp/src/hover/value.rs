@@ -25,6 +25,11 @@ impl GetHoverContent for tombi_document_tree::Value {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+
         async move {
             match self {
                 Self::Boolean(boolean) => {
