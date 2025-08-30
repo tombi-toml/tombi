@@ -1,10 +1,9 @@
-use tombi_test_lib::{cargo_schema_path, pyproject_schema_path, tombi_schema_path};
-
 mod goto_type_definition_tests {
     use super::*;
 
     mod tombi_schema {
         use super::*;
+        use tombi_test_lib::tombi_schema_path;
 
         test_goto_type_definition!(
             #[tokio::test]
@@ -40,6 +39,7 @@ mod goto_type_definition_tests {
 
     mod cargo_schema {
         use super::*;
+        use tombi_test_lib::cargo_schema_path;
 
         test_goto_type_definition!(
             #[tokio::test]
@@ -89,6 +89,8 @@ mod goto_type_definition_tests {
     mod pyproject_schema {
         use super::*;
 
+        use tombi_test_lib::pyproject_schema_path;
+
         test_goto_type_definition!(
             #[tokio::test]
             async fn pyproject_project_readme(
@@ -134,6 +136,48 @@ mod goto_type_definition_tests {
                 "#,
                 pyproject_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+        );
+    }
+
+    mod type_test_schema {
+        use super::*;
+
+        use tombi_test_lib::type_test_schema_path;
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_document_directive(
+                r#"
+                #:tombi schema.strict█ = true
+
+                [object]
+                a = 42
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_document_directive_in_table_scope(
+                r#"
+                #:tombi schema.strict█ = true
+                [object]
+                a = 42
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_string_directive(
+                r#"
+                # tombi: lint.rules.key-empty█ = "off"
+                string = "string"
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
         );
     }
 

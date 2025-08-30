@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ValueTombiCommentDirective",
+  "title": "TombiValueDirectiveContent",
   "type": "object",
   "properties": {
     "lint": {
       "title": "Linter directive.",
       "anyOf": [
         {
-          "$ref": "#/definitions/ValueLintOptions"
+          "$ref": "#/definitions/LintOptions"
         },
         {
           "type": "null"
@@ -17,14 +17,14 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "ValueLintOptions": {
+    "LintOptions": {
       "type": "object",
       "properties": {
         "rules": {
           "title": "Lint rules.",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithAdditionalPropertiesCommonRules"
+              "$ref": "#/definitions/WithCommonExtensibleRules"
             },
             {
               "type": "null"
@@ -34,7 +34,7 @@
       },
       "additionalProperties": false
     },
-    "WithAdditionalPropertiesCommonRules": {
+    "WithCommonExtensibleRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {
