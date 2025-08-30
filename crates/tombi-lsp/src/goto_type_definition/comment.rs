@@ -11,8 +11,8 @@ use tombi_uri::SchemaUri;
 
 use crate::{
     comment_directive::{
-        get_tombi_document_comment_directive_context, CommentDirectiveContext,
-        GetCommentDirectiveContext,
+        get_tombi_document_comment_directive_context, CommentDirectiveContent,
+        CommentDirectiveContext, GetCommentDirectiveContext,
     },
     goto_type_definition::{get_type_definition, TypeDefinition},
     handler::get_hover_keys_with_range,
@@ -57,11 +57,11 @@ async fn get_tombi_comment_directive_type_definition(
     position: tombi_text::Position,
     schema_uri: SchemaUri,
 ) -> Option<TypeDefinition> {
-    let Some(CommentDirectiveContext::Content {
+    let Some(CommentDirectiveContext::Content(CommentDirectiveContent {
         content,
         position_in_content,
         ..
-    }) = comment_directive_context
+    })) = comment_directive_context
     else {
         return None;
     };

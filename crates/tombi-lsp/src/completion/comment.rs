@@ -9,7 +9,10 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tower_lsp::lsp_types::Url;
 
 use crate::{
-    comment_directive::{get_tombi_document_comment_directive_context, CommentDirectiveContext},
+    comment_directive::{
+        get_tombi_document_comment_directive_context, CommentDirectiveContent,
+        CommentDirectiveContext,
+    },
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
@@ -119,11 +122,11 @@ async fn get_tombi_document_comment_directive_content_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<Vec<CompletionContent>> {
-    if let Some(CommentDirectiveContext::Content {
+    if let Some(CommentDirectiveContext::Content(CommentDirectiveContent {
         content,
         content_range,
         position_in_content,
-    }) = get_tombi_document_comment_directive_context(root, position)
+    })) = get_tombi_document_comment_directive_context(root, position)
     {
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

@@ -13,15 +13,17 @@ pub const DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION: &str =
 pub const VALUE_TOMBI_DIRECTIVE_TITLE: &str = "Tombi Value Directive";
 pub const VALUE_TOMBI_DIRECTIVE_DESCRIPTION: &str = "Directives that apply only to this value.";
 
+#[derive(Debug, Clone)]
 pub enum CommentDirectiveContext<T> {
-    Directive {
-        directive_range: tombi_text::Range,
-    },
-    Content {
-        content: T,
-        content_range: tombi_text::Range,
-        position_in_content: tombi_text::Position,
-    },
+    Directive { directive_range: tombi_text::Range },
+    Content(CommentDirectiveContent<T>),
+}
+
+#[derive(Debug, Clone)]
+pub struct CommentDirectiveContent<T> {
+    pub content: T,
+    pub content_range: tombi_text::Range,
+    pub position_in_content: tombi_text::Position,
 }
 
 pub trait GetCommentDirectiveContext<T> {
@@ -36,14 +38,14 @@ impl GetCommentDirectiveContext<Result<tombi_uri::SchemaUri, String>>
         position: tombi_text::Position,
     ) -> Option<CommentDirectiveContext<Result<tombi_uri::SchemaUri, String>>> {
         if self.uri_range.contains(position) {
-            Some(CommentDirectiveContext::Content {
+            Some(CommentDirectiveContext::Content(CommentDirectiveContent {
                 content: self.uri.to_owned(),
                 content_range: self.uri_range,
                 position_in_content: tombi_text::Position::new(
                     0,
                     position.column - (self.directive_range.end.column + 1),
                 ),
-            })
+            }))
         } else if self.directive_range.contains(position) {
             Some(CommentDirectiveContext::Directive {
                 directive_range: self.directive_range,
@@ -60,14 +62,14 @@ impl GetCommentDirectiveContext<String> for TombiDocumentCommentDirective {
         position: tombi_text::Position,
     ) -> Option<CommentDirectiveContext<String>> {
         if self.content_range.contains(position) {
-            Some(CommentDirectiveContext::Content {
+            Some(CommentDirectiveContext::Content(CommentDirectiveContent {
                 content: self.content.clone(),
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
                     0,
                     position.column - (self.directive_range.end.column + 1),
                 ),
-            })
+            }))
         } else if self.directive_range.contains(position) {
             Some(CommentDirectiveContext::Directive {
                 directive_range: self.directive_range,
@@ -84,14 +86,14 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
         position: tombi_text::Position,
     ) -> Option<CommentDirectiveContext<String>> {
         if self.content_range.contains(position) {
-            return Some(CommentDirectiveContext::Content {
+            return Some(CommentDirectiveContext::Content(CommentDirectiveContent {
                 content: self.content.clone(),
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
                     0,
                     position.column - (self.directive_range.end.column + 1),
                 ),
-            });
+            }));
         } else if self.directive_range.contains(position) {
             return Some(CommentDirectiveContext::Directive {
                 directive_range: self.directive_range,
@@ -99,6 +101,15 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
         } else {
             None
         }
+    }
+}
+
+impl GetCommentDirectiveContext<String> for CommentDirectiveContext<String> {
+    fn get_context(
+        &self,
+        _position: tombi_text::Position,
+    ) -> Option<CommentDirectiveContext<String>> {
+        Some(self.clone())
     }
 }
 
