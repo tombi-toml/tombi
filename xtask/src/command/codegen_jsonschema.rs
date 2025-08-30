@@ -273,14 +273,54 @@ enum LiteralValue {
     LocalDateTime(chrono::NaiveDateTime),
     LocalDate(chrono::NaiveDate),
     LocalTime(chrono::NaiveTime),
-    Array(Vec<LiteralValue>),
+    Array(Vec<LiteralValue2>),
+    Object(ObjectValue2),
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[serde(untagged)]
+enum LiteralValue2 {
+    Boolean(bool),
+    Integer(i64),
+    Float(f64),
+    String(String),
+    OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
+    LocalDateTime(chrono::NaiveDateTime),
+    LocalDate(chrono::NaiveDate),
+    LocalTime(chrono::NaiveTime),
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 struct ObjectValue {
-    a: Option<i64>,
-    b: Option<String>,
-    c: Option<bool>,
+    boolean: Option<bool>,
+    integer: Option<i64>,
+    float: Option<f64>,
+    string: Option<String>,
+    array: Option<Vec<LiteralValue2>>,
+    offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
+    local_date_time: Option<chrono::NaiveDateTime>,
+    local_date: Option<chrono::NaiveDate>,
+    local_time: Option<chrono::NaiveTime>,
+    literal: Option<LiteralValue2>,
+    object: Option<ObjectValue2>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+struct ObjectValue2 {
+    boolean: Option<bool>,
+    integer: Option<i64>,
+    float: Option<f64>,
+    string: Option<String>,
+    array: Option<Vec<u64>>,
+    offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
+    local_date_time: Option<chrono::NaiveDateTime>,
+    local_date: Option<chrono::NaiveDate>,
+    local_time: Option<chrono::NaiveTime>,
 }

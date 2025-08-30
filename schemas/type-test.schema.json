@@ -127,31 +127,202 @@
         {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/LiteralValue"
+            "$ref": "#/definitions/LiteralValue2"
           }
+        },
+        {
+          "$ref": "#/definitions/ObjectValue2"
         }
       ]
     },
-    "ObjectValue": {
+    "LiteralValue2": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer",
+          "format": "int64"
+        },
+        {
+          "type": "number",
+          "format": "double"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "string",
+          "format": "partial-date-time"
+        },
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "partial-time"
+        }
+      ]
+    },
+    "ObjectValue2": {
       "type": "object",
       "properties": {
-        "a": {
+        "boolean": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "integer": {
           "type": [
             "integer",
             "null"
           ],
           "format": "int64"
         },
-        "b": {
+        "float": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "string": {
           "type": [
             "string",
             "null"
           ]
         },
-        "c": {
+        "array": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "offset-date-time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "local-date-time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "partial-date-time"
+        },
+        "local-date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "local-time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "partial-time"
+        }
+      }
+    },
+    "ObjectValue": {
+      "type": "object",
+      "properties": {
+        "boolean": {
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "integer": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "float": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "string": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "array": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/LiteralValue2"
+          }
+        },
+        "offset-date-time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "local-date-time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "partial-date-time"
+        },
+        "local-date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "local-time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "partial-time"
+        },
+        "literal": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LiteralValue2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "object": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ObjectValue2"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       }

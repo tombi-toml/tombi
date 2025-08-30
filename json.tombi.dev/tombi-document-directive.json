@@ -1,7 +1,7 @@
 {
   "$id": "tombi://json.tombi.dev/tombi-document-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "TombiDocumentCommentDirective",
+  "title": "TombiDocumentDirectiveContent",
   "type": "object",
   "properties": {
     "toml-version": {
