@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 
-use tombi_comment_directive::TableValueRules;
+use tombi_comment_directive::value::TableCommonRules;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
@@ -39,7 +39,7 @@ impl GetHoverContent for tombi_document_tree::Table {
             if let Some(comment_directives) = self.comment_directives() {
                 for comment_directive in comment_directives {
                     if let Some(hover_content) = get_value_comment_directive_hover_content::<
-                        TableValueRules,
+                        TableCommonRules,
                     >(
                         comment_directive, position, accessors
                     )

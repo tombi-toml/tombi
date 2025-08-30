@@ -1,11 +1,16 @@
+use std::str::FromStr;
+
 use tombi_toml_version::TomlVersion;
+use tombi_uri::SchemaUri;
+
+use crate::TombiCommentDirectiveImpl;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/document-tombi-directive.json")))]
-pub struct TombiDocumentCommentDirective {
+#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/tombi-document-directive.json")))]
+pub struct TombiDocumentDirectiveContent {
     /// # TOML version.
     ///
     /// This directive specifies the TOML version of this document, with the highest priority.
@@ -20,6 +25,12 @@ pub struct TombiDocumentCommentDirective {
 
     /// # Schema options.
     pub schema: Option<SchemaOptions>,
+}
+
+impl TombiCommentDirectiveImpl for TombiDocumentDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-document-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

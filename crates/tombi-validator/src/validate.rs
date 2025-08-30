@@ -62,7 +62,7 @@ fn type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,
     range: tombi_text::Range,
-    common_rules: Option<&tombi_comment_directive::CommonRules>,
+    common_rules: Option<&tombi_comment_directive::value::CommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

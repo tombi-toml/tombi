@@ -1,17 +1,15 @@
 use schemars::{generate::SchemaSettings, SchemaGenerator};
-use tombi_comment_directive::{
-    ArrayKeyValueTombiCommentDirective, ArrayValueTombiCommentDirective,
-    BooleanKeyValueTombiCommentDirective, BooleanValueTombiCommentDirective,
-    FloatKeyValueTombiCommentDirective, FloatValueTombiCommentDirective,
-    IntegerKeyValueTombiCommentDirective, IntegerValueTombiCommentDirective,
-    KeyTombiCommentDirective, LocalDateKeyValueTombiCommentDirective,
-    LocalDateTimeKeyValueTombiCommentDirective, LocalDateTimeValueTombiCommentDirective,
-    LocalDateValueTombiCommentDirective, LocalTimeKeyValueTombiCommentDirective,
-    LocalTimeValueTombiCommentDirective, OffsetDateTimeKeyValueTombiCommentDirective,
-    OffsetDateTimeValueTombiCommentDirective, RootTableValueTombiCommentDirective,
-    StringKeyValueTombiCommentDirective, StringValueTombiCommentDirective,
-    TableKeyValueTombiCommentDirective, TableValueTombiCommentDirective,
-    TombiDocumentCommentDirective,
+use tombi_comment_directive::document::TombiDocumentDirectiveContent;
+use tombi_comment_directive::value::{
+    TombiArrayDirectiveContent, TombiBooleanDirectiveContent, TombiFloatDirectiveContent,
+    TombiIntegerDirectiveContent, TombiKeyArrayDirectiveContent, TombiKeyBooleanDirectiveContent,
+    TombiKeyDirectiveContent, TombiKeyFloatDirectiveContent, TombiKeyIntegerDirectiveContent,
+    TombiKeyLocalDateDirectiveContent, TombiKeyLocalDateTimeDirectiveContent,
+    TombiKeyLocalTimeDirectiveContent, TombiKeyOffsetDateTimeDirectiveContent,
+    TombiKeyStringDirectiveContent, TombiKeyTableDirectiveContent, TombiLocalDateDirectiveContent,
+    TombiLocalDateTimeDirectiveContent, TombiLocalTimeDirectiveContent,
+    TombiOffsetDateTimeDirectiveContent, TombiRootTableDirectiveContent,
+    TombiStringDirectiveContent, TombiTableDirectiveContent,
 };
 use tombi_config::TomlVersion;
 
@@ -34,209 +32,209 @@ pub fn run() -> Result<(), anyhow::Error> {
         )? + "\n",
     )?;
     std::fs::write(
-        project_root_path().join("json.tombi.dev/document-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-document-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiDocumentCommentDirective>(),
+                .into_root_schema_for::<TombiDocumentDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/boolean-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-boolean-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<BooleanValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiBooleanDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/integer-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-integer-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<IntegerValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiIntegerDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/float-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-float-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<FloatValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiFloatDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/string-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-string-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<StringValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiStringDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/offset-date-time-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-offset-date-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<OffsetDateTimeValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiOffsetDateTimeDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-date-time-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-local-date-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<LocalDateTimeValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiLocalDateTimeDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-date-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-local-date-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<LocalDateValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiLocalDateDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-time-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-local-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<LocalTimeValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiLocalTimeDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/array-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-array-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<ArrayValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiArrayDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/table-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-table-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TableValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiTableDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/boolean-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-boolean-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<BooleanKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyBooleanDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/integer-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-integer-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<IntegerKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyIntegerDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/float-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-float-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<FloatKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyFloatDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/string-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-string-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<StringKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyStringDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/offset-date-time-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-offset-date-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<OffsetDateTimeKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyOffsetDateTimeDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-date-time-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-local-date-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<LocalDateTimeKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyLocalDateTimeDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-date-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-local-date-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<LocalDateKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyLocalDateDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-time-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-local-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<LocalTimeKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyLocalTimeDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/array-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-array-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<ArrayKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyArrayDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/table-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-table-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TableKeyValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyTableDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/root-table-key-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-root-table-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<RootTableValueTombiCommentDirective>(),
+                .into_root_schema_for::<TombiRootTableDirectiveContent>(),
         )? + "\n",
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/key-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-key-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<KeyTombiCommentDirective>(),
+                .into_root_schema_for::<TombiKeyDirectiveContent>(),
         )? + "\n",
     )?;
 

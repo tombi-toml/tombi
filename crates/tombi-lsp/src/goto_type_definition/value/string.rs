@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::StringKeyValueTombiCommentDirective;
+use tombi_comment_directive::value::TombiKeyStringDirectiveContent;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
@@ -24,7 +24,7 @@ impl GetTypeDefinition for tombi_document_tree::String {
                 for comment_directive in comment_directives {
                     if let Some(type_definition) =
                         get_tombi_value_comment_directive_type_definition::<
-                            StringKeyValueTombiCommentDirective,
+                            TombiKeyStringDirectiveContent,
                         >(&comment_directive, position)
                         .await
                     {

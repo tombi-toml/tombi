@@ -1,9 +1,12 @@
-use tombi_comment_directive::IntegerValueRules;
+use tombi_comment_directive::value::IntegerCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch};
+use crate::{
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    validate::type_mismatch,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -17,10 +20,12 @@ impl Validate for tombi_document_tree::Integer {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
-                    IntegerValueRules,
-                >(comment_directives, accessors)
-                .await;
+                let (value_rules, diagnostics) =
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<IntegerCommonRules>(
+                        comment_directives,
+                        accessors,
+                    )
+                    .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -110,7 +115,7 @@ async fn validate_integer_schema(
     integer_value: &tombi_document_tree::Integer,
     accessors: &[tombi_schema_store::Accessor],
     integer_schema: &tombi_schema_store::IntegerSchema,
-    value_rules: Option<&IntegerValueRules>,
+    value_rules: Option<&IntegerCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value = integer_value.value();
@@ -271,7 +276,7 @@ async fn validate_float_schema_for_integer(
     integer_value: &tombi_document_tree::Integer,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
-    value_rules: Option<&IntegerValueRules>,
+    value_rules: Option<&IntegerCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value = integer_value.value() as f64;

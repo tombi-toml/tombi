@@ -1,9 +1,8 @@
 use tombi_comment_directive::{
-    TombiDocumentCommentDirective, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
-use tombi_comment_directive_store::{
-    comment_directive_document_schema, document_comment_directive_schema_uri,
-};
+use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
@@ -12,7 +11,7 @@ use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_document_comment_directive(
     root: &tombi_ast::Root,
-) -> Option<TombiDocumentCommentDirective> {
+) -> Option<TombiDocumentDirectiveContent> {
     get_tombi_document_comment_directive_and_diagnostics(root)
         .await
         .0
@@ -21,7 +20,7 @@ pub async fn get_tombi_document_comment_directive(
 pub async fn get_tombi_document_comment_directive_and_diagnostics(
     root: &tombi_ast::Root,
 ) -> (
-    Option<TombiDocumentCommentDirective>,
+    Option<TombiDocumentDirectiveContent>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     use serde::Deserialize;
@@ -32,7 +31,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let document_schema = comment_directive_document_schema(
             schema_store,
-            document_comment_directive_schema_uri(),
+            TombiDocumentDirectiveContent::comment_directive_schema_url(),
         )
         .await;
         let source_schema = tombi_schema_store::SourceSchema {
@@ -117,7 +116,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
     if let Some(total_document_tree_table) = total_document_tree_table {
         (
-            TombiDocumentCommentDirective::deserialize(
+            TombiDocumentDirectiveContent::deserialize(
                 &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             )
             .ok(),

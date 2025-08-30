@@ -1,4 +1,4 @@
-use tombi_comment_directive::LocalDateValueRules;
+use tombi_comment_directive::value::LocalDateCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateSchema, ValueSchema};
 
 use crate::{
@@ -28,7 +28,7 @@ impl GetHoverContent for tombi_document_tree::LocalDate {
             if let Some(comment_directives) = self.comment_directives() {
                 for comment_directive in comment_directives {
                     if let Some(hover_content) = get_value_comment_directive_hover_content::<
-                        LocalDateValueRules,
+                        LocalDateCommonRules,
                     >(
                         comment_directive, position, accessors
                     )

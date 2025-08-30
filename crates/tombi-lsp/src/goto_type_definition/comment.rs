@@ -1,8 +1,9 @@
 use tombi_ast::TombiValueCommentDirective;
-use tombi_comment_directive::{TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION};
-use tombi_comment_directive_store::{
-    comment_directive_document_schema, document_comment_directive_schema_uri,
+use tombi_comment_directive::{
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
+use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_uri::SchemaUri;
 
@@ -21,7 +22,7 @@ pub async fn get_tombi_document_comment_directive_type_definition(
     get_tombi_comment_directive_type_definition(
         get_tombi_document_comment_directive_context(root, position),
         position,
-        document_comment_directive_schema_uri(),
+        TombiDocumentDirectiveContent::comment_directive_schema_url(),
     )
     .await
 }

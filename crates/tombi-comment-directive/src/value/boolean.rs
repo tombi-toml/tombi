@@ -2,26 +2,26 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type BooleanKeyValueTombiCommentDirective = ValueTombiCommentDirective<BooleanKeyValueRules>;
+pub type TombiKeyBooleanDirectiveContent = TombiValueDirectiveContent<KeyBooleanCommonRules>;
 
-pub type BooleanValueTombiCommentDirective = ValueTombiCommentDirective<BooleanValueRules>;
+pub type TombiBooleanDirectiveContent = TombiValueDirectiveContent<BooleanCommonRules>;
 
-pub type BooleanKeyValueRules = WithKeyRules<WithCommonRules<BooleanRules>>;
+pub type KeyBooleanCommonRules = WithKeyRules<WithCommonRules<BooleanRules>>;
 
-pub type BooleanValueRules = WithCommonRules<BooleanRules>;
+pub type BooleanCommonRules = WithCommonRules<BooleanRules>;
 
-impl TombiCommentDirectiveImpl for BooleanKeyValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyBooleanDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/boolean-key-value-tombi-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-boolean-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for BooleanValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiBooleanDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/boolean-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-boolean-directive.json").unwrap()
     }
 }
 

@@ -1,4 +1,4 @@
-use tombi_comment_directive::FloatValueRules;
+use tombi_comment_directive::value::FloatCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
@@ -21,7 +21,7 @@ impl Validate for tombi_document_tree::Float {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<FloatValueRules>(
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<FloatCommonRules>(
                         comment_directives,
                         accessors,
                     )
@@ -100,7 +100,7 @@ async fn validate_float(
     float_value: &tombi_document_tree::Float,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
-    value_rules: Option<&FloatValueRules>,
+    value_rules: Option<&FloatCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

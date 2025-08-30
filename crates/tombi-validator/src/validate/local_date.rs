@@ -1,10 +1,11 @@
-use tombi_comment_directive::LocalDateValueRules;
+use tombi_comment_directive::value::LocalDateCommonRules;
 use tombi_document_tree::{LocalDate, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch,
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    validate::type_mismatch,
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -19,10 +20,12 @@ impl Validate for LocalDate {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
-                    LocalDateValueRules,
-                >(comment_directives, accessors)
-                .await;
+                let (value_rules, diagnostics) =
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<LocalDateCommonRules>(
+                        comment_directives,
+                        accessors,
+                    )
+                    .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -103,7 +106,7 @@ async fn validate_local_date(
     local_date_value: &LocalDate,
     accessors: &[tombi_schema_store::Accessor],
     local_date_schema: &tombi_schema_store::LocalDateSchema,
-    value_rules: Option<&LocalDateValueRules>,
+    value_rules: Option<&LocalDateCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value_string = local_date_value.value().to_string();

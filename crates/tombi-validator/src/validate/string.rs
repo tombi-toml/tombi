@@ -1,5 +1,5 @@
 use regex::Regex;
-use tombi_comment_directive::StringValueRules;
+use tombi_comment_directive::value::StringCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
@@ -24,7 +24,7 @@ impl Validate for tombi_document_tree::String {
 
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<StringValueRules>(
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<StringCommonRules>(
                         comment_directives,
                         accessors,
                     )
@@ -103,7 +103,7 @@ async fn validate_string(
     string_value: &tombi_document_tree::String,
     accessors: &[tombi_schema_store::Accessor],
     string_schema: &tombi_schema_store::StringSchema,
-    value_rules: Option<&StringValueRules>,
+    value_rules: Option<&StringCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value = string_value.value().to_string();

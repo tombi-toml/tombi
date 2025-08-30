@@ -3,25 +3,26 @@ use std::str::FromStr;
 use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type StringKeyValueTombiCommentDirective = ValueTombiCommentDirective<StringKeyValueRules>;
+pub type TombiKeyStringDirectiveContent = TombiValueDirectiveContent<KeyStringCommonRules>;
 
-pub type StringValueTombiCommentDirective = ValueTombiCommentDirective<StringValueRules>;
+pub type TombiStringDirectiveContent = TombiValueDirectiveContent<StringCommonRules>;
 
-pub type StringKeyValueRules = WithKeyRules<WithCommonRules<StringRules>>;
+pub type KeyStringCommonRules = WithKeyRules<WithCommonRules<StringRules>>;
 
-pub type StringValueRules = WithCommonRules<StringRules>;
+pub type StringCommonRules = WithCommonRules<StringRules>;
 
-impl TombiCommentDirectiveImpl for StringKeyValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyStringDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/string-key-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for StringValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiStringDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/string-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
     }
 }
 

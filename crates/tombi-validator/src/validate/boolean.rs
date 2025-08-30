@@ -1,10 +1,11 @@
-use tombi_comment_directive::BooleanValueRules;
+use tombi_comment_directive::value::BooleanCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch,
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    validate::type_mismatch,
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -19,10 +20,12 @@ impl Validate for tombi_document_tree::Boolean {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
-                    BooleanValueRules,
-                >(comment_directives, accessors)
-                .await;
+                let (value_rules, diagnostics) =
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<BooleanCommonRules>(
+                        comment_directives,
+                        accessors,
+                    )
+                    .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -98,7 +101,7 @@ async fn validate_boolean(
     boolean_value: &tombi_document_tree::Boolean,
     accessors: &[tombi_schema_store::Accessor],
     boolean_schema: &tombi_schema_store::BooleanSchema,
-    value_rules: Option<&BooleanValueRules>,
+    value_rules: Option<&BooleanCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

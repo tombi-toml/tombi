@@ -1,4 +1,4 @@
-use tombi_comment_directive::BooleanValueRules;
+use tombi_comment_directive::value::BooleanCommonRules;
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, ValueSchema};
 
 use crate::{
@@ -28,7 +28,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
             if let Some(comment_directives) = self.comment_directives() {
                 for comment_directive in comment_directives {
                     if let Some(hover_content) = get_value_comment_directive_hover_content::<
-                        BooleanValueRules,
+                        BooleanCommonRules,
                     >(
                         comment_directive, position, accessors
                     )

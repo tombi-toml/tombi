@@ -3,17 +3,16 @@ use std::str::FromStr;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_uri::SchemaUri;
 
-use crate::{
-    TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithAdditionalPropertiesCommonRules,
-};
+use crate::value::{TombiValueDirectiveContent, WithCommonExtensibleRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type KeyTombiCommentDirective = ValueTombiCommentDirective<AdditionalPropertiesKeyCommonRules>;
+pub type TombiKeyDirectiveContent = TombiValueDirectiveContent<KeyCommonExtensibleRules>;
 
-pub type AdditionalPropertiesKeyCommonRules = WithAdditionalPropertiesCommonRules<KeyRules>;
+pub type KeyCommonExtensibleRules = WithCommonExtensibleRules<KeyRules>;
 
-impl TombiCommentDirectiveImpl for KeyTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/key-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }
 }
 

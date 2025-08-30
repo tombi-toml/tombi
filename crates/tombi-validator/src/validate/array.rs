@@ -2,12 +2,15 @@ use std::borrow::Cow;
 
 use ahash::AHashSet;
 use itertools::Itertools;
-use tombi_comment_directive::ArrayValueRules;
+use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch};
+use crate::{
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    validate::type_mismatch,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -21,10 +24,12 @@ impl Validate for tombi_document_tree::Array {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
-                    ArrayValueRules,
-                >(comment_directives, accessors)
-                .await;
+                let (value_rules, diagnostics) =
+                    get_tombi_value_rules_and_diagnostics_with_key_rules::<ArrayCommonRules>(
+                        comment_directives,
+                        accessors,
+                    )
+                    .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -147,7 +152,7 @@ async fn validate_array(
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    value_rules: Option<&ArrayValueRules>,
+    value_rules: Option<&ArrayCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

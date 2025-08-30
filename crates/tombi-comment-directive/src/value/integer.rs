@@ -3,26 +3,26 @@ use std::str::FromStr;
 use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type IntegerKeyValueTombiCommentDirective = ValueTombiCommentDirective<IntegerKeyValueRules>;
+pub type TombiKeyIntegerDirectiveContent = TombiValueDirectiveContent<KeyIntegerCommonRules>;
 
-pub type IntegerValueTombiCommentDirective = ValueTombiCommentDirective<IntegerValueRules>;
+pub type TombiIntegerDirectiveContent = TombiValueDirectiveContent<IntegerCommonRules>;
 
-pub type IntegerKeyValueRules = WithKeyRules<WithCommonRules<IntegerRules>>;
+pub type KeyIntegerCommonRules = WithKeyRules<WithCommonRules<IntegerRules>>;
 
-pub type IntegerValueRules = WithCommonRules<IntegerRules>;
+pub type IntegerCommonRules = WithCommonRules<IntegerRules>;
 
-impl TombiCommentDirectiveImpl for IntegerKeyValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyIntegerDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/integer-key-value-tombi-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for IntegerValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiIntegerDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/integer-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-integer-directive.json").unwrap()
     }
 }
 
