@@ -32,6 +32,20 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
+            async fn tombi_lint_rules_key_empty(
+                r#"
+                [lint.rules]
+                key-empty = █
+                "#,
+                tombi_schema_path(),
+            ) -> Ok({
+                "Keys": "lint.rules.key-empty",
+                "Value": "String?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
             async fn tombi_schema_catalog_path(
                 r#"
                 [schema.catalog]
