@@ -14,7 +14,7 @@ use tombi_extension::{
     CommaHint, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
 use tombi_future::Boxable;
-use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
+use tombi_rg_tree::NodeOrToken;
 use tombi_schema_store::{
     Accessor, AccessorKeyKind, CurrentSchema, KeyContext, ReferableValueSchemas, SchemaDefinitions,
     SchemaStore, SchemaUri, ValueSchema,
