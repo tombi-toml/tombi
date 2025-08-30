@@ -247,8 +247,11 @@ pub fn run() -> Result<(), anyhow::Error> {
 #[schemars(extend("x-tombi-toml-version" = TomlVersion::V1_1_0_Preview))]
 struct TypeTest {
     boolean: Option<bool>,
+    #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
+    #[validate(range(min = 1, max = 10))]
     float: Option<f64>,
+    #[validate(length(min = 1, max = 10))]
     string: Option<String>,
     array: Option<Vec<LiteralValue>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
@@ -266,12 +269,9 @@ struct TypeTest {
 #[serde(untagged)]
 enum LiteralValue {
     Boolean(bool),
-    #[validate(range(min = 1, max = 10))]
-    Integer(i64),
-    #[validate(range(min = 1, max = 10))]
-    Float(f64),
-    #[validate(length(min = 1, max = 10))]
-    String(String),
+    Integer(#[validate(range(min = 1, max = 10))] i64),
+    Float(#[validate(range(min = 1, max = 10))] f64),
+    String(#[validate(length(min = 1, max = 10))] String),
     OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
     LocalDateTime(chrono::NaiveDateTime),
     LocalDate(chrono::NaiveDate),
@@ -287,12 +287,9 @@ enum LiteralValue {
 #[serde(untagged)]
 enum LiteralValue2 {
     Boolean(bool),
-    #[validate(range(min = 1, max = 10))]
-    Integer(i64),
-    #[validate(range(min = 1, max = 10))]
-    Float(f64),
-    #[validate(length(min = 1, max = 10))]
-    String(String),
+    Integer(#[validate(range(min = 1, max = 10))] i64),
+    Float(#[validate(range(min = 1, max = 10))] f64),
+    String(#[validate(length(min = 1, max = 10))] String),
     OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
     LocalDateTime(chrono::NaiveDateTime),
     LocalDate(chrono::NaiveDate),
