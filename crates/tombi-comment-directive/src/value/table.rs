@@ -3,33 +3,34 @@ use std::str::FromStr;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirective, WithCommonRules, WithKeyRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type TableKeyValueTombiCommentDirective = ValueTombiCommentDirective<TableKeyValueRules>;
+pub type TombiKeyTableDirective = TombiValueDirective<KeyTableCommonRules>;
 
-pub type TableValueTombiCommentDirective = ValueTombiCommentDirective<TableValueRules>;
+pub type TombiTableDirective = TombiValueDirective<TableCommonRules>;
 
-pub type RootTableValueTombiCommentDirective = ValueTombiCommentDirective<RootTableValueRules>;
+pub type TombiRootTableDirective = TombiValueDirective<RootTableCommonRules>;
 
-pub type TableKeyValueRules = WithKeyRules<WithCommonRules<TableRules>>;
+pub type KeyTableCommonRules = WithKeyRules<WithCommonRules<TableRules>>;
 
-pub type TableValueRules = WithCommonRules<TableRules>;
+pub type TableCommonRules = WithCommonRules<TableRules>;
 
-pub type RootTableValueRules = WithCommonRules<RootTableRules>;
+pub type RootTableCommonRules = WithCommonRules<RootTableRules>;
 
-impl TombiCommentDirectiveImpl for TableKeyValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyTableDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TableValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiTableDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for RootTableValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiRootTableDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/root-tombi-table-directive.json").unwrap()
     }

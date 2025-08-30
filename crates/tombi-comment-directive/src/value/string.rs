@@ -3,23 +3,24 @@ use std::str::FromStr;
 use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirective, WithCommonRules, WithKeyRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type StringKeyValueTombiCommentDirective = ValueTombiCommentDirective<StringKeyValueRules>;
+pub type TombiKeyStringDirective = TombiValueDirective<KeyStringCommonRules>;
 
-pub type StringValueTombiCommentDirective = ValueTombiCommentDirective<StringValueRules>;
+pub type TombiStringDirective = TombiValueDirective<StringCommonRules>;
 
-pub type StringKeyValueRules = WithKeyRules<WithCommonRules<StringRules>>;
+pub type KeyStringCommonRules = WithKeyRules<WithCommonRules<StringRules>>;
 
-pub type StringValueRules = WithCommonRules<StringRules>;
+pub type StringCommonRules = WithCommonRules<StringRules>;
 
-impl TombiCommentDirectiveImpl for StringKeyValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyStringDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for StringValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiStringDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
     }

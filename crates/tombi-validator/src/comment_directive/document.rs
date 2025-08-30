@@ -1,5 +1,5 @@
 use tombi_comment_directive::{
-    TombiDocumentCommentDirective, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirective, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::{
     comment_directive_document_schema, document_comment_directive_schema_uri,
@@ -12,7 +12,7 @@ use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_document_comment_directive(
     root: &tombi_ast::Root,
-) -> Option<TombiDocumentCommentDirective> {
+) -> Option<TombiDocumentDirective> {
     get_tombi_document_comment_directive_and_diagnostics(root)
         .await
         .0
@@ -21,7 +21,7 @@ pub async fn get_tombi_document_comment_directive(
 pub async fn get_tombi_document_comment_directive_and_diagnostics(
     root: &tombi_ast::Root,
 ) -> (
-    Option<TombiDocumentCommentDirective>,
+    Option<TombiDocumentDirective>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
     use serde::Deserialize;
@@ -117,7 +117,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
     if let Some(total_document_tree_table) = total_document_tree_table {
         (
-            TombiDocumentCommentDirective::deserialize(
+            TombiDocumentDirective::deserialize(
                 &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             )
             .ok(),

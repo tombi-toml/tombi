@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::{
-    AdditionalPropertiesKeyCommonRules, CommonRules, KeyRules, TableKeyValueRules, TableRules,
+use tombi_comment_directive::value::{
+    CommonRules, KeyCommonExtensibleRules, KeyRules, KeyTableCommonRules, TableRules,
     WithCommonRules,
 };
 use tombi_document_tree::{TableKind, ValueImpl};
@@ -38,11 +38,11 @@ impl Validate for tombi_document_tree::Table {
                             .unwrap_or_default()
                     {
                         let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                            AdditionalPropertiesKeyCommonRules,
+                            KeyCommonExtensibleRules,
                         >(comment_directives)
                         .await;
 
-                        if let Some(AdditionalPropertiesKeyCommonRules {
+                        if let Some(KeyCommonExtensibleRules {
                             common, value: key, ..
                         }) = rules
                         {
@@ -52,11 +52,11 @@ impl Validate for tombi_document_tree::Table {
                         }
                     } else {
                         let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                            TableKeyValueRules,
+                            KeyTableCommonRules,
                         >(comment_directives)
                         .await;
 
-                        if let Some(TableKeyValueRules {
+                        if let Some(KeyTableCommonRules {
                             key,
                             value: WithCommonRules { common, value },
                             ..

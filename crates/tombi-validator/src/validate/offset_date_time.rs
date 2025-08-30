@@ -1,9 +1,12 @@
-use tombi_comment_directive::OffsetDateTimeValueRules;
+use tombi_comment_directive::value::OffsetDateTimeCommonRules;
 use tombi_document_tree::{OffsetDateTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules, validate::type_mismatch};
+use crate::{
+    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    validate::type_mismatch,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 
@@ -18,7 +21,7 @@ impl Validate for OffsetDateTime {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
-                    OffsetDateTimeValueRules,
+                    OffsetDateTimeCommonRules,
                 >(comment_directives, accessors)
                 .await;
 
@@ -101,7 +104,7 @@ async fn validate_offset_date_time(
     offset_date_time_value: &OffsetDateTime,
     accessors: &[tombi_schema_store::Accessor],
     offset_date_time_schema: &tombi_schema_store::OffsetDateTimeSchema,
-    value_rules: Option<&OffsetDateTimeValueRules>,
+    value_rules: Option<&OffsetDateTimeCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value_string = offset_date_time_value.value().to_string();

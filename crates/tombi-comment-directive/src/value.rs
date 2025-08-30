@@ -28,17 +28,16 @@ use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 #[serde(bound = "Rules: serde::de::DeserializeOwned + serde::Serialize")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct ValueTombiCommentDirective<Rules> {
+pub struct TombiValueDirective<Rules> {
     /// # Linter directive.
-    pub lint: Option<ValueLintOptions<Rules>>,
+    pub lint: Option<LintOptions<Rules>>,
 }
 
-impl<Rules> From<ValueTombiCommentDirective<WithKeyRules<Rules>>>
-    for ValueTombiCommentDirective<Rules>
+impl<Rules> From<TombiValueDirective<WithKeyRules<Rules>>> for TombiValueDirective<Rules>
 where
     Rules: From<WithKeyRules<Rules>> + serde::de::DeserializeOwned + serde::Serialize,
 {
-    fn from(value: ValueTombiCommentDirective<WithKeyRules<Rules>>) -> Self {
+    fn from(value: TombiValueDirective<WithKeyRules<Rules>>) -> Self {
         Self {
             lint: value.lint.map(|lint| lint.into()),
         }
@@ -50,16 +49,16 @@ where
 #[serde(bound = "Rules: serde::de::DeserializeOwned + serde::Serialize ")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct ValueLintOptions<Rules> {
+pub struct LintOptions<Rules> {
     /// # Lint rules.
     pub rules: Option<Rules>,
 }
 
-impl<Rules> From<ValueLintOptions<WithKeyRules<Rules>>> for ValueLintOptions<Rules>
+impl<Rules> From<LintOptions<WithKeyRules<Rules>>> for LintOptions<Rules>
 where
     Rules: serde::de::DeserializeOwned + serde::Serialize + From<WithKeyRules<Rules>>,
 {
-    fn from(value: ValueLintOptions<WithKeyRules<Rules>>) -> Self {
+    fn from(value: LintOptions<WithKeyRules<Rules>>) -> Self {
         Self {
             rules: value.rules.map(|rules| rules.into()),
         }
@@ -93,7 +92,7 @@ pub struct WithCommonRules<Rules> {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
-pub struct WithAdditionalPropertiesCommonRules<Rules> {
+pub struct WithCommonExtensibleRules<Rules> {
     #[serde(flatten)]
     pub common: CommonRules,
 

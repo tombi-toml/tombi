@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use tombi_comment_directive::CommonRules;
+use tombi_comment_directive::value::CommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, ValueSchema};

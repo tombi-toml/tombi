@@ -2,26 +2,25 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::{TombiCommentDirectiveImpl, ValueTombiCommentDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirective, WithCommonRules, WithKeyRules};
+use crate::TombiCommentDirectiveImpl;
 
-pub type LocalDateTimeKeyValueTombiCommentDirective =
-    ValueTombiCommentDirective<LocalDateTimeKeyValueRules>;
+pub type TombiKeyLocalDateTimeDirective = TombiValueDirective<KeyLocalDateTimeCommonRules>;
 
-pub type LocalDateTimeValueTombiCommentDirective =
-    ValueTombiCommentDirective<LocalDateTimeValueRules>;
+pub type TombiLocalDateTimeDirective = TombiValueDirective<LocalDateTimeCommonRules>;
 
-pub type LocalDateTimeKeyValueRules = WithKeyRules<WithCommonRules<LocalDateTimeRules>>;
+pub type KeyLocalDateTimeCommonRules = WithKeyRules<WithCommonRules<LocalDateTimeRules>>;
 
-pub type LocalDateTimeValueRules = WithCommonRules<LocalDateTimeRules>;
+pub type LocalDateTimeCommonRules = WithCommonRules<LocalDateTimeRules>;
 
-impl TombiCommentDirectiveImpl for LocalDateTimeKeyValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiKeyLocalDateTimeDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-date-time-directive.json")
             .unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for LocalDateTimeValueTombiCommentDirective {
+impl TombiCommentDirectiveImpl for TombiLocalDateTimeDirective {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-date-time-directive.json").unwrap()
     }
