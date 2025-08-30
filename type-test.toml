@@ -5,6 +5,6 @@ local-time = 23:58:14.588
 array = [
   "",  # tombi: lint.rules.string-min-length = "off"
 ]
-integer = 5  # tombi: lint.rules.integer-minimum = "off"
+integer = 42  # tombi: lint.rules.integer-maximum = "off"
 boolean = true
 object = { boolean = true }
