@@ -17,8 +17,19 @@ pub fn get_any_of_type_definition<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>>
 where
-    T: GetTypeDefinition + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
+    T: GetTypeDefinition
+        + tombi_document_tree::ValueImpl
+        + tombi_validator::Validate
+        + Sync
+        + Send
+        + std::fmt::Debug,
 {
+    tracing::trace!("value: {:?}", value);
+    tracing::trace!("keys: {:?}", keys);
+    tracing::trace!("accessors: {:?}", accessors);
+    tracing::trace!("any_of_schema: {:?}", any_of_schema);
+    tracing::trace!("schema_uri: {:?}", schema_uri);
+
     async move {
         for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
             let Ok(Some(current_schema)) = referable_schema
