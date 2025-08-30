@@ -1,10 +1,12 @@
 use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent,
+    value::{TombiValueDirectiveContent, WithKeyRules},
+    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_schema_store::Accessor;
 use tombi_uri::SchemaUri;
 
 use crate::{
@@ -27,17 +29,25 @@ pub async fn get_tombi_document_comment_directive_type_definition(
     .await
 }
 
-pub async fn get_tombi_value_comment_directive_type_definition<CommentDirective>(
+pub async fn get_tombi_value_comment_directive_type_definition<Rules>(
     comment_directive: &TombiValueCommentDirective,
     position: tombi_text::Position,
+    accessors: &[tombi_schema_store::Accessor],
 ) -> Option<TypeDefinition>
 where
-    CommentDirective: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
 {
+    let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
+        TombiValueDirectiveContent::<Rules>::comment_directive_schema_url()
+    } else {
+        TombiValueDirectiveContent::<WithKeyRules<Rules>>::comment_directive_schema_url()
+    };
+
     get_tombi_comment_directive_type_definition(
         comment_directive.get_context(position),
         position,
-        CommentDirective::comment_directive_schema_url(),
+        schema_uri,
     )
     .await
 }
