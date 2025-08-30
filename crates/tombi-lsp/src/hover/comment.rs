@@ -21,7 +21,7 @@ use crate::{
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
 };
 
-pub async fn get_document_comment_directive_hover_info(
+pub async fn get_document_comment_directive_hover_content(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     source_path: Option<&std::path::Path>,
@@ -128,7 +128,7 @@ pub async fn get_document_comment_directive_hover_info(
     None
 }
 
-pub async fn get_value_comment_directive_hover_info<Rules>(
+pub async fn get_value_comment_directive_hover_content<Rules>(
     comment_directive: &TombiValueCommentDirective,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
