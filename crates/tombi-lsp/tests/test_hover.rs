@@ -35,7 +35,7 @@ mod hover_keys_value {
             async fn tombi_lint_rules_key_empty(
                 r#"
                 [lint.rules]
-                key-empty = █
+                key-empty = "█warn"
                 "#,
                 tombi_schema_path(),
             ) -> Ok({
