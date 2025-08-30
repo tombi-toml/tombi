@@ -3,24 +3,24 @@ use std::str::FromStr;
 use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyFloatDirective = TombiValueDirective<KeyFloatCommonRules>;
+pub type TombiKeyFloatDirectiveContent = TombiValueDirectiveContent<KeyFloatCommonRules>;
 
-pub type TombiFloatDirective = TombiValueDirective<FloatCommonRules>;
+pub type TombiFloatDirectiveContent = TombiValueDirectiveContent<FloatCommonRules>;
 
 pub type KeyFloatCommonRules = WithKeyRules<WithCommonRules<FloatRules>>;
 
 pub type FloatCommonRules = WithCommonRules<FloatRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyFloatDirective {
+impl TombiCommentDirectiveImpl for TombiKeyFloatDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-float-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiFloatDirective {
+impl TombiCommentDirectiveImpl for TombiFloatDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-float-directive.json").unwrap()
     }

@@ -1,25 +1,25 @@
 use std::str::FromStr;
 
-use crate::value::{TombiValueDirective, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
 use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-pub type TombiKeyArrayDirective = TombiValueDirective<ArrayKeyCommonRules>;
+pub type TombiKeyArrayDirectiveContent = TombiValueDirectiveContent<ArrayKeyCommonRules>;
 
-pub type TombiArrayDirective = TombiValueDirective<ArrayCommonRules>;
+pub type TombiArrayDirectiveContent = TombiValueDirectiveContent<ArrayCommonRules>;
 
 pub type ArrayKeyCommonRules = WithKeyRules<WithCommonRules<ArrayRules>>;
 
 pub type ArrayCommonRules = WithCommonRules<ArrayRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyArrayDirective {
+impl TombiCommentDirectiveImpl for TombiKeyArrayDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiArrayDirective {
+impl TombiCommentDirectiveImpl for TombiArrayDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }

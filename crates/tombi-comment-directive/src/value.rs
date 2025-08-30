@@ -28,16 +28,17 @@ use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 #[serde(bound = "Rules: serde::de::DeserializeOwned + serde::Serialize")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-pub struct TombiValueDirective<Rules> {
+pub struct TombiValueDirectiveContent<Rules> {
     /// # Linter directive.
     pub lint: Option<LintOptions<Rules>>,
 }
 
-impl<Rules> From<TombiValueDirective<WithKeyRules<Rules>>> for TombiValueDirective<Rules>
+impl<Rules> From<TombiValueDirectiveContent<WithKeyRules<Rules>>>
+    for TombiValueDirectiveContent<Rules>
 where
     Rules: From<WithKeyRules<Rules>> + serde::de::DeserializeOwned + serde::Serialize,
 {
-    fn from(value: TombiValueDirective<WithKeyRules<Rules>>) -> Self {
+    fn from(value: TombiValueDirectiveContent<WithKeyRules<Rules>>) -> Self {
         Self {
             lint: value.lint.map(|lint| lint.into()),
         }

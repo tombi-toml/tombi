@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    value::{LintOptions, TombiValueDirective, WithKeyRules},
+    value::{LintOptions, TombiValueDirectiveContent, WithKeyRules},
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
@@ -13,10 +13,10 @@ use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_value_comment_directive<Rules>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
-) -> Option<TombiValueDirective<Rules>>
+) -> Option<TombiValueDirectiveContent<Rules>>
 where
     Rules: serde::de::DeserializeOwned + serde::Serialize,
-    TombiValueDirective<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
 {
     get_tombi_value_comment_directive_and_diagnostics(comment_directives)
         .await
@@ -26,21 +26,21 @@ where
 pub async fn get_tombi_value_comment_directive_and_diagnostics<Rules>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
 ) -> (
-    Option<TombiValueDirective<Rules>>,
+    Option<TombiValueDirectiveContent<Rules>>,
     Vec<tombi_diagnostic::Diagnostic>,
 )
 where
     Rules: serde::de::DeserializeOwned + serde::Serialize,
-    TombiValueDirective<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
 {
-    let schema_uri = TombiValueDirective::<Rules>::comment_directive_schema_url();
+    let schema_uri = TombiValueDirectiveContent::<Rules>::comment_directive_schema_url();
 
     let (document_tree_table, diagnostics) =
         get_comment_directive_document_tree_and_diagnostics(comment_directives, schema_uri).await;
 
     if let Some(total_document_tree_table) = document_tree_table {
         (
-            TombiValueDirective::<Rules>::deserialize(
+            TombiValueDirectiveContent::<Rules>::deserialize(
                 &total_document_tree_table.into_document(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION),
             )
             .ok(),
@@ -57,8 +57,8 @@ pub async fn get_tombi_value_rules_and_diagnostics_with_key_rules<Rules>(
 ) -> (Option<Rules>, Vec<tombi_diagnostic::Diagnostic>)
 where
     Rules: serde::de::DeserializeOwned + serde::Serialize,
-    TombiValueDirective<Rules>: TombiCommentDirectiveImpl,
-    TombiValueDirective<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
 {
     match accessors.last() {
         Some(tombi_schema_store::Accessor::Index(_)) => {
@@ -71,7 +71,7 @@ where
                 )
                 .await;
 
-            if let Some(TombiValueDirective {
+            if let Some(TombiValueDirectiveContent {
                 lint: Some(LintOptions { rules, .. }),
                 ..
             }) = comment_directive
@@ -89,12 +89,12 @@ pub async fn get_tombi_value_rules_and_diagnostics<Rules>(
 ) -> (Option<Rules>, Vec<tombi_diagnostic::Diagnostic>)
 where
     Rules: serde::de::DeserializeOwned + serde::Serialize,
-    TombiValueDirective<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
 {
     let (comment_directive, diagnostics) =
         get_tombi_value_comment_directive_and_diagnostics(comment_directives).await;
 
-    if let Some(TombiValueDirective {
+    if let Some(TombiValueDirectiveContent {
         lint: Some(LintOptions { rules, .. }),
         ..
     }) = comment_directive
