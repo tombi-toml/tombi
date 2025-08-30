@@ -288,6 +288,41 @@ mod tests {
 
     test_format! {
         #[test]
+        fn multiline_array5(
+            r#"
+            array = [
+              1  # comment
+            ]
+            "#
+        ) -> Ok(
+            r#"
+            array = [
+              1,  # comment
+            ]
+            "#
+        );
+    }
+
+    test_format! {
+        #[test]
+        fn multiline_array6(
+            r#"
+            array = [
+              1  # comment
+              ,
+            ]
+            "#
+        ) -> Ok(
+            r#"
+            array = [
+              1,  # comment
+            ]
+            "#
+        );
+    }
+
+    test_format! {
+        #[test]
         fn multiline_array_with_full_comment(
             r#"
             # array leading comment1
