@@ -7,14 +7,14 @@ use std::borrow::Cow;
 use ahash::AHashMap;
 pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
-use tombi_ast::{algo::ancestors_at_position, AstNode};
+use tombi_ast::{algo::ancestors_at_position, AstNode, AstToken};
 use tombi_config::TomlVersion;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_extension::{
     CommaHint, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
 use tombi_future::Boxable;
-use tombi_rg_tree::NodeOrToken;
+use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
     Accessor, AccessorKeyKind, CurrentSchema, KeyContext, ReferableValueSchemas, SchemaDefinitions,
     SchemaStore, SchemaUri, ValueSchema,
@@ -28,6 +28,31 @@ pub fn extract_keys_and_hint(
 ) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
     let mut keys: Vec<tombi_document_tree::Key> = vec![];
     let mut completion_hint = None;
+
+    match root.syntax().token_at_position(position) {
+        TokenAtOffset::Single(token) if token.kind() == SyntaxKind::COMMENT => {
+            if let Some(comment) = tombi_ast::Comment::cast(token) {
+                if comment.get_tombi_value_directive().is_none() {
+                    return None;
+                }
+            }
+        }
+        TokenAtOffset::Between(token1, token2)
+            if token1.kind() == SyntaxKind::COMMENT || token2.kind() == SyntaxKind::COMMENT =>
+        {
+            if let Some(comment) = tombi_ast::Comment::cast(token1) {
+                if comment.get_tombi_value_directive().is_none() {
+                    return None;
+                }
+            }
+            if let Some(comment) = tombi_ast::Comment::cast(token2) {
+                if comment.get_tombi_value_directive().is_none() {
+                    return None;
+                }
+            }
+        }
+        _ => {}
+    }
 
     for (index, node) in ancestors_at_position(root.syntax(), position).enumerate() {
         let ast_keys = if tombi_ast::Keys::cast(node.to_owned()).is_some() {

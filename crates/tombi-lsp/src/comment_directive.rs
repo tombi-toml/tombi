@@ -43,7 +43,9 @@ impl GetCommentDirectiveContext<Result<tombi_uri::SchemaUri, String>>
                 content_range: self.uri_range,
                 position_in_content: tombi_text::Position::new(
                     0,
-                    position.column - (self.directive_range.end.column + 1),
+                    position
+                        .column
+                        .saturating_sub(self.directive_range.end.column),
                 ),
             }))
         } else if self.directive_range.contains(position) {
@@ -67,7 +69,9 @@ impl GetCommentDirectiveContext<String> for TombiDocumentCommentDirective {
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
                     0,
-                    position.column - (self.directive_range.end.column + 1),
+                    position
+                        .column
+                        .saturating_sub(self.directive_range.end.column),
                 ),
             }))
         } else if self.directive_range.contains(position) {
@@ -93,7 +97,7 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
                     0,
                     position
                         .column
-                        .saturating_sub(self.directive_range.end.column + 1),
+                        .saturating_sub(self.directive_range.end.column),
                 ),
             }));
         } else if self.directive_range.contains(position) {
