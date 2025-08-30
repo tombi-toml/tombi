@@ -1,6 +1,6 @@
 [package]
 name = "zed-tombi"
-version = "0.1.8"
+version = "0.1.9"
 authors.workspace = true
 edition.workspace = true
 description = "🦅  TOML Language Server  🦅 "
