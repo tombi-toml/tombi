@@ -61,7 +61,10 @@ where
     ValueTombiCommentDirective<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
 {
     match accessors.last() {
-        Some(tombi_schema_store::Accessor::Key(_)) => {
+        Some(tombi_schema_store::Accessor::Index(_)) => {
+            get_tombi_value_rules_and_diagnostics(comment_directives).await
+        }
+        _ => {
             let (comment_directive, diagnostics) =
                 get_tombi_value_comment_directive_and_diagnostics::<WithKeyRules<Rules>>(
                     comment_directives,
@@ -78,7 +81,6 @@ where
                 (None, diagnostics)
             }
         }
-        _ => get_tombi_value_rules_and_diagnostics(comment_directives).await,
     }
 }
 
