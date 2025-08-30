@@ -27,13 +27,11 @@ pub async fn get_document_comment_directive_completion_contents(
     position: tombi_text::Position,
     text_document_uri: &Url,
 ) -> Option<Vec<CompletionContent>> {
-    let mut in_comments = false;
     if let Some(comments) = root.get_document_header_comments() {
         for comment in comments {
             let comment_range = comment.syntax().range();
 
             if comment_range.contains(position) {
-                in_comments = true;
                 let comment_text = comment.syntax().text();
                 if let Some(colon_pos) = comment_text.find(':') {
                     if comment_text[1..colon_pos]
@@ -74,11 +72,7 @@ pub async fn get_document_comment_directive_completion_contents(
         }
     }
 
-    if in_comments {
-        Some(Vec::with_capacity(0))
-    } else {
-        None
-    }
+    None
 }
 
 fn document_comment_directive_completion_contents(
