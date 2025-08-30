@@ -199,8 +199,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 }
                 value_type_set.insert(value_schema.value_type().await);
 
-                if let Some(values) = current_schema
-                    .value_schema
+                if let Some(values) = value_schema
                     .as_ref()
                     .get_enumerate(&schema_uri, &definitions, schema_context)
                     .await
