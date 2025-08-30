@@ -91,7 +91,9 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
                     0,
-                    position.column - (self.directive_range.end.column + 1),
+                    position
+                        .column
+                        .saturating_sub(self.directive_range.end.column + 1),
                 ),
             }));
         } else if self.directive_range.contains(position) {

@@ -29,18 +29,6 @@ pub fn extract_keys_and_hint(
     let mut keys: Vec<tombi_document_tree::Key> = vec![];
     let mut completion_hint = None;
 
-    match root.syntax().token_at_position(position) {
-        TokenAtOffset::Single(token) if token.kind() == SyntaxKind::COMMENT => {
-            return None;
-        }
-        TokenAtOffset::Between(token1, token2)
-            if token1.kind() == SyntaxKind::COMMENT || token2.kind() == SyntaxKind::COMMENT =>
-        {
-            return None;
-        }
-        _ => {}
-    }
-
     for (index, node) in ancestors_at_position(root.syntax(), position).enumerate() {
         let ast_keys = if tombi_ast::Keys::cast(node.to_owned()).is_some() {
             if let Some(SyntaxElement::Token(last_token)) = node.last_child_or_token() {

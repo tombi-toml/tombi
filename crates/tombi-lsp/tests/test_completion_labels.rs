@@ -605,6 +605,18 @@ mod completion_labels {
                 "''",
             ]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn tombi_toml_version_v1_0_0_comment_directive(
+                r#"
+                toml-version = "v1.0.0" # tombi:█
+                "#,
+                Schema(tombi_schema_path()),
+            ) -> Ok([
+                "lint",
+            ]);
+        }
     }
 
     mod pyproject_schema {
