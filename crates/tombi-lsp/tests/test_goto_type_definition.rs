@@ -151,7 +151,18 @@ mod goto_type_definition_tests {
                 #:tombi schema.strict█ = true
 
                 [object]
-                a = 42
+                integer = 42
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_document_directive_in_integer_scope(
+                r#"
+                #:tombi schema.strict█ = true
+                integer = 42
                 "#,
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
@@ -163,7 +174,7 @@ mod goto_type_definition_tests {
                 r#"
                 #:tombi schema.strict█ = true
                 [object]
-                a = 42
+                integer = 42
                 "#,
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");

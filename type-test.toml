@@ -5,4 +5,4 @@ local-time = 23:58:14.588
 array = []
 integer = 42
 boolean = true
-object = { a = 42 }
+object = { boolean = true }
