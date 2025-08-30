@@ -21,17 +21,17 @@ impl GetTypeDefinition for tombi_document_tree::Array {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
-        tracing::trace!("self = {:?}", self);
-        tracing::trace!("keys = {:?}", keys);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::error!("self = {:?}", self);
+        tracing::error!("keys = {:?}", keys);
+        tracing::error!("accessors = {:?}", accessors);
+        tracing::error!("current_schema = {:?}", current_schema);
 
         async move {
             if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
+                for comment_directives in comment_directives {
                     if let Some(type_definition) =
                         get_tombi_value_comment_directive_type_definition::<ArrayCommonRules>(
-                            &comment_directive,
+                            &comment_directives,
                             position,
                             accessors,
                         )
@@ -72,7 +72,16 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Array(array_schema) => {
                         for (index, value) in self.values().iter().enumerate() {
-                            if value.range().contains(position) {
+                            if value.range().contains(position)
+                                || value
+                                    .comment_directives()
+                                    .map(|comment_directives| {
+                                        comment_directives.iter().any(|comment_directive| {
+                                            comment_directive.range().contains(position)
+                                        })
+                                    })
+                                    .unwrap_or_default()
+                            {
                                 let accessor = Accessor::Index(index);
 
                                 if let Some(items) = &array_schema.items {

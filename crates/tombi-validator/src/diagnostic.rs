@@ -76,10 +76,10 @@ or set `schema.strict = false` in your `tombi.toml`."#
     FloatMultipleOf { multiple_of: f64, actual: f64 },
 
     #[error("The length must be ≤ {maximum}, but found {actual}")]
-    StringMaximumLength { maximum: usize, actual: usize },
+    StringMaxLength { maximum: usize, actual: usize },
 
     #[error("The length must be ≥ {minimum}, but found {actual}")]
-    StringMinimumLength { minimum: usize, actual: usize },
+    StringMinLength { minimum: usize, actual: usize },
 
     #[error("{actual} is not a valid `{format}` format")]
     StringFormat {
@@ -144,8 +144,8 @@ impl Diagnostic {
             DiagnosticKind::FloatExclusiveMaximum { .. } => "float-exclusive-maximum",
             DiagnosticKind::FloatExclusiveMinimum { .. } => "float-exclusive-minimum",
             DiagnosticKind::FloatMultipleOf { .. } => "float-multiple-of",
-            DiagnosticKind::StringMaximumLength { .. } => "string-maximum-length",
-            DiagnosticKind::StringMinimumLength { .. } => "string-minimum-length",
+            DiagnosticKind::StringMaxLength { .. } => "string-max-length",
+            DiagnosticKind::StringMinLength { .. } => "string-min-length",
             DiagnosticKind::StringFormat { .. } => "string-format",
             DiagnosticKind::StringPattern { .. } => "string-pattern",
             DiagnosticKind::ArrayMaxItems { .. } => "array-max-items",

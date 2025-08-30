@@ -52,6 +52,12 @@ pub struct TombiDocumentCommentDirective {
     pub content_range: tombi_text::Range,
 }
 
+impl TombiDocumentCommentDirective {
+    pub fn range(&self) -> tombi_text::Range {
+        self.directive_range + self.content_range
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TombiValueCommentDirective {
     /// The range of the directive.
@@ -77,4 +83,10 @@ pub struct TombiValueCommentDirective {
     ///         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ <- This range
     /// ```
     pub content_range: tombi_text::Range,
+}
+
+impl TombiValueCommentDirective {
+    pub fn range(&self) -> tombi_text::Range {
+        self.directive_range + self.content_range
+    }
 }

@@ -2,7 +2,9 @@ local-date = 2025-01-30
 local-date-time = 2025-01-30T23:57:55.453
 offset-date-time = 2025-01-30T23:58:05.683+09:00
 local-time = 23:58:14.588
-array = []
-integer = 42
+array = [
+  "",  # tombi: lint.rules.string-min-length = "off"
+]
+integer = 5
 boolean = true
 object = { boolean = true }

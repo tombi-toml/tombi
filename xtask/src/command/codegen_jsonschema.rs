@@ -247,10 +247,13 @@ pub fn run() -> Result<(), anyhow::Error> {
 #[schemars(extend("x-tombi-toml-version" = TomlVersion::V1_1_0_Preview))]
 struct TypeTest {
     boolean: Option<bool>,
+    #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
+    #[validate(range(min = 1, max = 10))]
     float: Option<f64>,
+    #[validate(length(min = 1, max = 10))]
     string: Option<String>,
-    array: Option<Vec<u64>>,
+    array: Option<Vec<LiteralValue>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
     local_date_time: Option<chrono::NaiveDateTime>,
     local_date: Option<chrono::NaiveDate>,
@@ -266,9 +269,9 @@ struct TypeTest {
 #[serde(untagged)]
 enum LiteralValue {
     Boolean(bool),
-    Integer(i64),
-    Float(f64),
-    String(String),
+    Integer(#[validate(range(min = 1, max = 10))] i64),
+    Float(#[validate(range(min = 1, max = 10))] f64),
+    String(#[validate(length(min = 1, max = 10))] String),
     OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
     LocalDateTime(chrono::NaiveDateTime),
     LocalDate(chrono::NaiveDate),
@@ -284,9 +287,9 @@ enum LiteralValue {
 #[serde(untagged)]
 enum LiteralValue2 {
     Boolean(bool),
-    Integer(i64),
-    Float(f64),
-    String(String),
+    Integer(#[validate(range(min = 1, max = 10))] i64),
+    Float(#[validate(range(min = 1, max = 10))] f64),
+    String(#[validate(length(min = 1, max = 10))] String),
     OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
     LocalDateTime(chrono::NaiveDateTime),
     LocalDate(chrono::NaiveDate),
@@ -298,8 +301,11 @@ enum LiteralValue2 {
 #[serde(rename_all = "kebab-case")]
 struct ObjectValue {
     boolean: Option<bool>,
+    #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
+    #[validate(range(min = 1, max = 10))]
     float: Option<f64>,
+    #[validate(length(min = 1, max = 10))]
     string: Option<String>,
     array: Option<Vec<LiteralValue2>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
@@ -315,10 +321,12 @@ struct ObjectValue {
 #[serde(rename_all = "kebab-case")]
 struct ObjectValue2 {
     boolean: Option<bool>,
+    #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
+    #[validate(range(min = 1, max = 10))]
     float: Option<f64>,
+    #[validate(length(min = 1, max = 10))]
     string: Option<String>,
-    array: Option<Vec<u64>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
     local_date_time: Option<chrono::NaiveDateTime>,
     local_date: Option<chrono::NaiveDate>,

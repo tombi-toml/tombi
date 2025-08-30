@@ -17,8 +17,19 @@ pub fn get_all_of_type_definition<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>>
 where
-    T: GetTypeDefinition + tombi_document_tree::ValueImpl + tombi_validator::Validate + Sync + Send,
+    T: GetTypeDefinition
+        + tombi_document_tree::ValueImpl
+        + tombi_validator::Validate
+        + Sync
+        + Send
+        + std::fmt::Debug,
 {
+    tracing::trace!("value: {:?}", value);
+    tracing::trace!("keys: {:?}", keys);
+    tracing::trace!("accessors: {:?}", accessors);
+    tracing::trace!("all_of_schema: {:?}", all_of_schema);
+    tracing::trace!("schema_uri: {:?}", schema_uri);
+
     async move {
         let mut all_of_type_definition = None;
 

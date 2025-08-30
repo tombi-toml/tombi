@@ -110,12 +110,12 @@ async fn validate_string(
     let range = string_value.range();
 
     if let Some(const_value) = &string_schema.const_value {
-        let level = value_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| rules.const_value)
-            .unwrap_or_default();
-
         if value != *const_value {
+            let level = value_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| rules.const_value)
+                .unwrap_or_default();
+
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::Const {
                     expected: format!("\"{const_value}\""),
@@ -128,12 +128,12 @@ async fn validate_string(
     }
 
     if let Some(enumerate) = &string_schema.enumerate {
-        let level = value_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| rules.enumerate)
-            .unwrap_or_default();
-
         if !enumerate.contains(&value) {
+            let level = value_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| rules.enumerate)
+                .unwrap_or_default();
+
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::Enumerate {
                     expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
@@ -146,14 +146,14 @@ async fn validate_string(
     }
 
     if let Some(max_length) = &string_schema.max_length {
-        let level = value_rules
-            .map(|rules| &rules.value)
-            .and_then(|rules| rules.string_max_length)
-            .unwrap_or_default();
-
         if value.len() > *max_length {
+            let level = value_rules
+                .map(|rules| &rules.value)
+                .and_then(|rules| rules.string_max_length)
+                .unwrap_or_default();
+
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::StringMaximumLength {
+                kind: Box::new(crate::DiagnosticKind::StringMaxLength {
                     maximum: *max_length,
                     actual: value.len(),
                 }),
@@ -164,14 +164,13 @@ async fn validate_string(
     }
 
     if let Some(min_length) = &string_schema.min_length {
-        let level = value_rules
-            .map(|rules| &rules.value)
-            .and_then(|rules| rules.string_min_length)
-            .unwrap_or_default();
-
         if value.len() < *min_length {
+            let level = value_rules
+                .map(|rules| &rules.value)
+                .and_then(|rules| rules.string_min_length)
+                .unwrap_or_default();
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::StringMinimumLength {
+                kind: Box::new(crate::DiagnosticKind::StringMinLength {
                     minimum: *min_length,
                     actual: value.len(),
                 }),
@@ -182,14 +181,14 @@ async fn validate_string(
     }
 
     if let Some(format) = string_schema.format {
-        let level = value_rules
-            .map(|rules| &rules.value)
-            .and_then(|rules| rules.string_format)
-            .unwrap_or_default();
-
         match format {
             StringFormat::Email => {
                 if !format::email::validate_format(&value) {
+                    let level = value_rules
+                        .map(|rules| &rules.value)
+                        .and_then(|rules| rules.string_format)
+                        .unwrap_or_default();
+
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
@@ -202,6 +201,11 @@ async fn validate_string(
             }
             StringFormat::Hostname => {
                 if !format::hostname::validate_format(&value) {
+                    let level = value_rules
+                        .map(|rules| &rules.value)
+                        .and_then(|rules| rules.string_format)
+                        .unwrap_or_default();
+
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
@@ -214,6 +218,11 @@ async fn validate_string(
             }
             StringFormat::Uri => {
                 if !format::uri::validate_format(&value) {
+                    let level = value_rules
+                        .map(|rules| &rules.value)
+                        .and_then(|rules| rules.string_format)
+                        .unwrap_or_default();
+
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
@@ -226,6 +235,11 @@ async fn validate_string(
             }
             StringFormat::Uuid => {
                 if !format::uuid::validate_format(&value) {
+                    let level = value_rules
+                        .map(|rules| &rules.value)
+                        .and_then(|rules| rules.string_format)
+                        .unwrap_or_default();
+
                     crate::Diagnostic {
                         kind: Box::new(crate::DiagnosticKind::StringFormat {
                             format,
@@ -240,13 +254,13 @@ async fn validate_string(
     }
 
     if let Some(pattern) = &string_schema.pattern {
-        let level = value_rules
-            .map(|rules| &rules.value)
-            .and_then(|rules| rules.string_pattern)
-            .unwrap_or_default();
-
         if let Ok(regex) = Regex::new(pattern) {
             if !regex.is_match(&value) {
+                let level = value_rules
+                    .map(|rules| &rules.value)
+                    .and_then(|rules| rules.string_pattern)
+                    .unwrap_or_default();
+
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::StringPattern {
                         pattern: pattern.clone(),
@@ -262,12 +276,12 @@ async fn validate_string(
     }
 
     if diagnostics.is_empty() {
-        let level = value_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| rules.deprecated)
-            .unwrap_or_default();
-
         if string_schema.deprecated == Some(true) {
+            let level = value_rules
+                .map(|rules| &rules.common)
+                .and_then(|rules| rules.deprecated)
+                .unwrap_or_default();
+
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(accessors),

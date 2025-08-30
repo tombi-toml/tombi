@@ -190,6 +190,18 @@ mod goto_type_definition_tests {
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
         );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_array_string_directive(
+                r#"
+                array = [
+                  "string" # tombi: lint.rules.string-min-length█ = "off"
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-string-directive.json");
+        );
     }
 
     #[macro_export]

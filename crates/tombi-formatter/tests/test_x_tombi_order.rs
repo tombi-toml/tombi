@@ -136,6 +136,7 @@ mod table_keys_order {
                   # tombi-cli leading comment1
                   # tombi-cli leading comment2
                   "tombi-cli>=0.0.0" # tombi-cli trailing comment
+                  ,
                 ]
                 "#,
                 pyproject_schema_path(),
