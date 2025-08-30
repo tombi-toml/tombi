@@ -52,8 +52,6 @@ impl crate::Edit for tombi_ast::Array {
                                         .await,
                                 );
                             }
-
-                            return changes;
                         }
                     }
                 }

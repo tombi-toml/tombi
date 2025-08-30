@@ -33,8 +33,6 @@ impl crate::Edit for tombi_ast::InlineTable {
                                 .await,
                         );
                     }
-
-                    return changes;
                 }
             }
 
