@@ -21,7 +21,7 @@ impl TombiCommentDirectiveImpl for BooleanKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for BooleanValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/boolean-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-boolean-directive.json").unwrap()
     }
 }
 

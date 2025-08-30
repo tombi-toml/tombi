@@ -48,62 +48,62 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
             "/boolean-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/boolean-key-value-tombi-directive.json"
             )),
-            "/boolean-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/boolean-value-tombi-directive.json"
+            "/tombi-boolean-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-boolean-directive.json"
             )),
             "/integer-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/integer-key-value-tombi-directive.json"
             )),
-            "/integer-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/integer-value-tombi-directive.json"
+            "/tombi-integer-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-integer-directive.json"
             )),
             "/float-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/float-key-value-tombi-directive.json"
             )),
-            "/float-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/float-value-tombi-directive.json"
+            "/tombi-float-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-float-directive.json"
             )),
             "/string-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/string-key-value-tombi-directive.json"
             )),
-            "/string-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/string-value-tombi-directive.json"
+            "/tombi-string-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-string-directive.json"
             )),
             "/offset-date-time-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/offset-date-time-key-value-tombi-directive.json"
             )),
-            "/offset-date-time-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/offset-date-time-value-tombi-directive.json"
+            "/tombi-offset-date-time-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-offset-date-time-directive.json"
             )),
             "/local-date-time-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/local-date-time-key-value-tombi-directive.json"
             )),
-            "/local-date-time-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/local-date-time-value-tombi-directive.json"
+            "/tombi-local-date-time-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-local-date-time-directive.json"
             )),
             "/local-date-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/local-date-key-value-tombi-directive.json"
             )),
-            "/local-date-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/local-date-value-tombi-directive.json"
+            "/tombi-local-date-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-local-date-directive.json"
             )),
             "/local-time-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/local-time-key-value-tombi-directive.json"
             )),
-            "/local-time-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/local-time-value-tombi-directive.json"
+            "/tombi-local-time-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-local-time-directive.json"
             )),
             "/array-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/array-key-value-tombi-directive.json"
             )),
-            "/array-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/array-value-tombi-directive.json"
+            "/tombi-array-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-array-directive.json"
             )),
             "/table-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/table-key-value-tombi-directive.json"
             )),
-            "/table-value-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/table-value-tombi-directive.json"
+            "/tombi-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-table-directive.json"
             )),
             "/root-table-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/root-table-key-value-tombi-directive.json"

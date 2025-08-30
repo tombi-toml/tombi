@@ -21,7 +21,7 @@ impl TombiCommentDirectiveImpl for FloatKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for FloatValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/float-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-float-directive.json").unwrap()
     }
 }
 

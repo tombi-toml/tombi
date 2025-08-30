@@ -20,7 +20,7 @@ impl TombiCommentDirectiveImpl for ArrayKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for ArrayValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/array-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }
 }
 

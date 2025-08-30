@@ -22,7 +22,7 @@ impl TombiCommentDirectiveImpl for IntegerKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for IntegerValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/integer-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-integer-directive.json").unwrap()
     }
 }
 

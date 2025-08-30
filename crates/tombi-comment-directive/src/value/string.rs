@@ -21,7 +21,7 @@ impl TombiCommentDirectiveImpl for StringKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for StringValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/string-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
     }
 }
 

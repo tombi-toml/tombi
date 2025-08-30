@@ -25,8 +25,7 @@ impl TombiCommentDirectiveImpl for OffsetDateTimeKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for OffsetDateTimeValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/offset-date-time-value-tombi-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-offset-date-time-directive.json").unwrap()
     }
 }
 

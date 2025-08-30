@@ -25,13 +25,13 @@ impl TombiCommentDirectiveImpl for TableKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for TableValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/table-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-table-directive.json").unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for RootTableValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/root-table-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/root-tombi-table-directive.json").unwrap()
     }
 }
 

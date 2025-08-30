@@ -43,7 +43,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/boolean-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-boolean-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -52,7 +52,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/integer-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-integer-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -61,7 +61,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/float-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-float-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -70,7 +70,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/string-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-string-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -79,7 +79,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/offset-date-time-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-offset-date-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -88,7 +88,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-date-time-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-local-date-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -97,7 +97,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-date-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-local-date-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -106,7 +106,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/local-time-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-local-time-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -115,7 +115,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/array-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-array-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
@@ -124,7 +124,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/table-value-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-table-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()

@@ -22,7 +22,7 @@ impl TombiCommentDirectiveImpl for LocalDateKeyValueTombiCommentDirective {
 
 impl TombiCommentDirectiveImpl for LocalDateValueTombiCommentDirective {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/local-date-value-tombi-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-date-directive.json").unwrap()
     }
 }
 
