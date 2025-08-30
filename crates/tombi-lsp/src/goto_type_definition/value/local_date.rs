@@ -1,11 +1,13 @@
 use itertools::Itertools;
 
+use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
 use crate::goto_type_definition::{
     all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
-    one_of::get_one_of_type_definition, GetTypeDefinition, TypeDefinition,
+    comment::get_tombi_value_comment_directive_type_definition, one_of::get_one_of_type_definition,
+    GetTypeDefinition, TypeDefinition,
 };
 
 impl GetTypeDefinition for tombi_document_tree::LocalDate {
@@ -18,6 +20,21 @@ impl GetTypeDefinition for tombi_document_tree::LocalDate {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
         async move {
+            if let Some(comment_directives) = self.comment_directives() {
+                for comment_directive in comment_directives {
+                    if let Some(type_definition) =
+                        get_tombi_value_comment_directive_type_definition::<ArrayCommonRules>(
+                            &comment_directive,
+                            position,
+                            accessors,
+                        )
+                        .await
+                    {
+                        return Some(type_definition);
+                    }
+                }
+            }
+
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::LocalDate(local_date_schema) => {
