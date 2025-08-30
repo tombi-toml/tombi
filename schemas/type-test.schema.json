@@ -35,9 +35,7 @@
         "null"
       ],
       "items": {
-        "type": "integer",
-        "format": "uint64",
-        "minimum": 0
+        "$ref": "#/definitions/LiteralValue"
       }
     },
     "offset-date-time": {
@@ -197,17 +195,6 @@
             "string",
             "null"
           ]
-        },
-        "array": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0
-          }
         },
         "offset-date-time": {
           "type": [

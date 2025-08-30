@@ -28,10 +28,10 @@ impl GetTypeDefinition for tombi_document_tree::Array {
 
         async move {
             if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
+                for comment_directives in comment_directives {
                     if let Some(type_definition) =
                         get_tombi_value_comment_directive_type_definition::<ArrayCommonRules>(
-                            &comment_directive,
+                            &comment_directives,
                             position,
                             accessors,
                         )
