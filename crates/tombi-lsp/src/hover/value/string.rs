@@ -1,4 +1,4 @@
-use tombi_comment_directive::StringCommonRules;
+use tombi_comment_directive::value::StringCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, StringSchema, ValueSchema};
 
 use crate::{

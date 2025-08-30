@@ -1,4 +1,4 @@
-use tombi_comment_directive::BooleanCommonRules;
+use tombi_comment_directive::value::BooleanCommonRules;
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, ValueSchema};
 
 use crate::{

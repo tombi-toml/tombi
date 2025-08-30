@@ -1,4 +1,4 @@
-use tombi_comment_directive::FloatCommonRules;
+use tombi_comment_directive::value::FloatCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, ValueSchema};
 
 use crate::{

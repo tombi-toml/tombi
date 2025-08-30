@@ -1,4 +1,4 @@
-use tombi_comment_directive::LocalTimeCommonRules;
+use tombi_comment_directive::value::LocalTimeCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalTimeSchema, ValueSchema};
 
 use crate::{

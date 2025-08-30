@@ -1,7 +1,7 @@
 use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::{
-    TombiCommentDirectiveImpl, TombiValueDirective, WithKeyRules,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    value::{TombiValueDirectiveContent, WithKeyRules},
+    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::{
     comment_directive_document_schema, document_comment_directive_schema_uri,
@@ -134,8 +134,8 @@ pub async fn get_value_comment_directive_hover_content<Rules>(
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<HoverContent>
 where
-    TombiValueDirective<Rules>: TombiCommentDirectiveImpl,
-    TombiValueDirective<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
 {
     if let Some(comment_directive_context) = comment_directive.get_context(position) {
         match comment_directive_context {
@@ -166,9 +166,9 @@ where
 
                     let schema_store = tombi_comment_directive_store::schema_store().await;
                     let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
-                        TombiValueDirective::<Rules>::comment_directive_schema_url()
+                        TombiValueDirectiveContent::<Rules>::comment_directive_schema_url()
                     } else {
-                        TombiValueDirective::<WithKeyRules<Rules>>::comment_directive_schema_url()
+                        TombiValueDirectiveContent::<WithKeyRules<Rules>>::comment_directive_schema_url()
                     };
 
                     let source_schema = tombi_schema_store::SourceSchema {

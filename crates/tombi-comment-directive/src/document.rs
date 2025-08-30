@@ -1,4 +1,9 @@
+use std::str::FromStr;
+
 use tombi_toml_version::TomlVersion;
+use tombi_uri::SchemaUri;
+
+use crate::TombiCommentDirectiveImpl;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -20,6 +25,12 @@ pub struct TombiDocumentDirectiveContent {
 
     /// # Schema options.
     pub schema: Option<SchemaOptions>,
+}
+
+impl TombiCommentDirectiveImpl for TombiDocumentDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-document-directive.json").unwrap()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

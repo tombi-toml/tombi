@@ -1,4 +1,4 @@
-use tombi_comment_directive::OffsetDateTimeCommonRules;
+use tombi_comment_directive::value::OffsetDateTimeCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, ValueSchema};
 
 use crate::{
