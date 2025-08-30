@@ -15,6 +15,18 @@ impl crate::Edit for tombi_ast::InlineTable {
         async move {
             let mut changes = vec![];
 
+            for (key_value, comma) in self.key_values_with_comma() {
+                changes.extend(inline_table_comma_trailing_comment(
+                    &key_value,
+                    comma.as_ref(),
+                ));
+                changes.extend(
+                    key_value
+                        .edit(accessors, source_path, None, schema_context)
+                        .await,
+                );
+            }
+
             if let Some(current_schema) = current_schema {
                 if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
                     changes.extend(
@@ -34,18 +46,6 @@ impl crate::Edit for tombi_ast::InlineTable {
                         );
                     }
                 }
-            }
-
-            for (key_value, comma) in self.key_values_with_comma() {
-                changes.extend(inline_table_comma_trailing_comment(
-                    &key_value,
-                    comma.as_ref(),
-                ));
-                changes.extend(
-                    key_value
-                        .edit(accessors, source_path, None, schema_context)
-                        .await,
-                );
             }
 
             changes

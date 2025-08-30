@@ -17,6 +17,15 @@ impl crate::Edit for tombi_ast::Array {
         async move {
             let mut changes = vec![];
 
+            for (value, comma) in self.values_with_comma() {
+                changes.extend(array_comma_trailing_comment(
+                    &value,
+                    comma.as_ref(),
+                    schema_context,
+                ));
+                changes.extend(value.edit(&[], source_path, None, schema_context).await);
+            }
+
             if let Some(current_schema) = current_schema {
                 if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
                     changes.extend(
@@ -55,15 +64,6 @@ impl crate::Edit for tombi_ast::Array {
                         }
                     }
                 }
-            }
-
-            for (value, comma) in self.values_with_comma() {
-                changes.extend(array_comma_trailing_comment(
-                    &value,
-                    comma.as_ref(),
-                    schema_context,
-                ));
-                changes.extend(value.edit(&[], source_path, None, schema_context).await);
             }
 
             changes
