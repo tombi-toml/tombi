@@ -266,8 +266,11 @@ struct TypeTest {
 #[serde(untagged)]
 enum LiteralValue {
     Boolean(bool),
+    #[validate(range(min = 1, max = 10))]
     Integer(i64),
+    #[validate(range(min = 1, max = 10))]
     Float(f64),
+    #[validate(length(min = 1, max = 10))]
     String(String),
     OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
     LocalDateTime(chrono::NaiveDateTime),
@@ -284,8 +287,11 @@ enum LiteralValue {
 #[serde(untagged)]
 enum LiteralValue2 {
     Boolean(bool),
+    #[validate(range(min = 1, max = 10))]
     Integer(i64),
+    #[validate(range(min = 1, max = 10))]
     Float(f64),
+    #[validate(length(min = 1, max = 10))]
     String(String),
     OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
     LocalDateTime(chrono::NaiveDateTime),
@@ -298,8 +304,11 @@ enum LiteralValue2 {
 #[serde(rename_all = "kebab-case")]
 struct ObjectValue {
     boolean: Option<bool>,
+    #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
+    #[validate(range(min = 1, max = 10))]
     float: Option<f64>,
+    #[validate(length(min = 1, max = 10))]
     string: Option<String>,
     array: Option<Vec<LiteralValue2>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
@@ -315,8 +324,11 @@ struct ObjectValue {
 #[serde(rename_all = "kebab-case")]
 struct ObjectValue2 {
     boolean: Option<bool>,
+    #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
+    #[validate(range(min = 1, max = 10))]
     float: Option<f64>,
+    #[validate(length(min = 1, max = 10))]
     string: Option<String>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
     local_date_time: Option<chrono::NaiveDateTime>,

@@ -181,20 +181,26 @@
             "integer",
             "null"
           ],
-          "format": "int64"
+          "format": "int64",
+          "minimum": 1,
+          "maximum": 10
         },
         "float": {
           "type": [
             "number",
             "null"
           ],
-          "format": "double"
+          "format": "double",
+          "minimum": 1,
+          "maximum": 10
         },
         "string": {
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1,
+          "maxLength": 10
         },
         "offset-date-time": {
           "type": [
@@ -240,20 +246,26 @@
             "integer",
             "null"
           ],
-          "format": "int64"
+          "format": "int64",
+          "minimum": 1,
+          "maximum": 10
         },
         "float": {
           "type": [
             "number",
             "null"
           ],
-          "format": "double"
+          "format": "double",
+          "minimum": 1,
+          "maximum": 10
         },
         "string": {
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1,
+          "maxLength": 10
         },
         "array": {
           "type": [
