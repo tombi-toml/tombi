@@ -19,6 +19,11 @@ impl GetTypeDefinition for tombi_document_tree::LocalDateTime {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+
         async move {
             if let Some(comment_directives) = self.comment_directives() {
                 for comment_directive in comment_directives {
