@@ -133,7 +133,7 @@ mod goto_type_definition_tests {
                 name = "tombi"
                 "#,
                 pyproject_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/document-tombi-directive.json");
+            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
         );
     }
 

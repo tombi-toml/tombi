@@ -42,8 +42,8 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
             _ => None,
         },
         Some("json.tombi.dev") => match schema_uri.path() {
-            "/document-tombi-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/document-tombi-directive.json"
+            "/tombi-document-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-document-directive.json"
             )),
             "/boolean-key-value-tombi-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/boolean-key-value-tombi-directive.json"

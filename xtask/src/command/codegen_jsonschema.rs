@@ -34,7 +34,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         )? + "\n",
     )?;
     std::fs::write(
-        project_root_path().join("json.tombi.dev/document-tombi-directive.json"),
+        project_root_path().join("json.tombi.dev/tombi-document-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
