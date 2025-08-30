@@ -9,6 +9,7 @@ use super::{
 };
 
 /// A tag data that indicates that only schema information is used for completion.
+#[derive(Debug)]
 pub struct SchemaCompletion;
 
 impl FindCompletionContents for SchemaCompletion {

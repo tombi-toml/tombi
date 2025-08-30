@@ -538,12 +538,19 @@ impl FindCompletionContents for TableSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> BoxFuture<'b, Vec<CompletionContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("position = {:?}", position);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
+
         async move {
             let Some(current_schema) = current_schema else {
                 unreachable!("schema must be provided");

@@ -12,12 +12,19 @@ impl FindCompletionContents for tombi_document_tree::LocalDateTime {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
+        keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
-        _current_schema: Option<&'a CurrentSchema<'a>>,
+        current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-        _completion_hint: Option<CompletionHint>,
+        completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("position = {:?}", position);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
+
         async move {
             if let Some(comment_directives) = self.comment_directives() {
                 for comment_directive in comment_directives {
@@ -44,12 +51,19 @@ impl FindCompletionContents for LocalDateTimeSchema {
     fn find_completion_contents<'a: 'b, 'b>(
         &'a self,
         position: tombi_text::Position,
-        _keys: &'a [tombi_document_tree::Key],
-        _accessors: &'a [Accessor],
+        keys: &'a [tombi_document_tree::Key],
+        accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
+        tracing::trace!("self = {:?}", self);
+        tracing::trace!("position = {:?}", position);
+        tracing::trace!("keys = {:?}", keys);
+        tracing::trace!("accessors = {:?}", accessors);
+        tracing::trace!("current_schema = {:?}", current_schema);
+        tracing::trace!("completion_hint = {:?}", completion_hint);
+
         async move {
             let mut completion_items = vec![];
             let schema_uri = current_schema.map(|schema| schema.schema_uri.as_ref());
