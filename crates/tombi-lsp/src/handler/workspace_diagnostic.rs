@@ -16,7 +16,7 @@ pub async fn handle_workspace_diagnostic(
     backend: &Backend,
     params: WorkspaceDiagnosticParams,
 ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_workspace_diagnostic");
+    tracing::trace!("handle_workspace_diagnostic");
     tracing::trace!(?params);
 
     if let Some(configs) = get_workspace_configs(backend).await {

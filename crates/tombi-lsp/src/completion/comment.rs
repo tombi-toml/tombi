@@ -149,7 +149,7 @@ where
 
         get_comment_directive_content_completion_contents(comment_directive, schema_uri).await
     } else {
-        Some(Vec::with_capacity(0))
+        None
     }
 }
 
