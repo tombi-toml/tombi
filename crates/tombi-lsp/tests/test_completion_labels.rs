@@ -853,8 +853,11 @@ mod completion_labels {
             #[tokio::test]
             async fn pyproject_project_comment_directive_name_eq_tombi(
                 r#"
+                #:schema tombi://json.schemastore.org/pyproject.json
+                #:tombi toml-version = "v1.0.0"
+
                 [project]
-                # tombi: lint█
+                # tombi: lint.rules█
                 name = "tombi"
                 "#,
                 Schema(pyproject_schema_path()),

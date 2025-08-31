@@ -129,7 +129,7 @@ impl Comment {
         let content_range = tombi_text::Range::new(
             tombi_text::Position::new(
                 comment_range.start.line,
-                comment_range.start.column + comment_text.len() as u32 - content.len() as u32,
+                std::cmp::min(directive_range.end.column + 1, comment_range.end.column),
             ),
             comment_range.end,
         );
