@@ -708,7 +708,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             }
         };
 
-        let table = if let Some(mut key) = keys.pop() {
+        let mut table = if let Some(mut key) = keys.pop() {
             let mut seed_key_value = Table::new_key_value(&self);
             seed_key_value.range = key.range() + value.range();
             seed_key_value.symbol_range = key.range() + value.symbol_range();
@@ -737,7 +737,27 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             };
         };
 
-        make_keys_table(keys, table, errors)
+        for key in keys.into_iter().rev() {
+            let dummy_table = table.clone();
+            match table.new_parent_key(&key).insert(
+                key,
+                crate::Value::Table(std::mem::replace(&mut table, dummy_table)),
+            ) {
+                Ok(t) => table = t,
+                Err(errs) => {
+                    errors.extend(errs);
+                    return DocumentTreeAndErrors {
+                        tree: empty_table,
+                        errors,
+                    };
+                }
+            }
+        }
+
+        DocumentTreeAndErrors {
+            tree: table,
+            errors,
+        }
     }
 }
 
@@ -901,29 +921,6 @@ fn insert_array_of_tables(
             Ok(())
         }
         Err(errors) => Err(errors),
-    }
-}
-
-fn make_keys_table(
-    keys: Vec<crate::Key>,
-    mut table: crate::Table,
-    mut errors: Vec<crate::Error>,
-) -> DocumentTreeAndErrors<crate::Table> {
-    for key in keys.into_iter().rev() {
-        let dummy_table = table.clone();
-        match table.new_parent_key(&key).insert(
-            key,
-            crate::Value::Table(std::mem::replace(&mut table, dummy_table)),
-        ) {
-            Ok(t) => table = t,
-            Err(errs) => {
-                errors.extend(errs);
-            }
-        }
-    }
-    DocumentTreeAndErrors {
-        tree: table,
-        errors,
     }
 }
 
