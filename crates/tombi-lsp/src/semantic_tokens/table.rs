@@ -26,8 +26,20 @@ impl AppendSemanticTokens for tombi_ast::Table {
             comment.append_semantic_tokens(builder);
         }
 
+        for comments in self.key_values_begin_dangling_comments() {
+            for comment in comments {
+                comment.append_semantic_tokens(builder);
+            }
+        }
+
         for key_value in self.key_values() {
             key_value.append_semantic_tokens(builder);
+        }
+
+        for comments in self.key_values_end_dangling_comments() {
+            for comment in comments {
+                comment.append_semantic_tokens(builder);
+            }
         }
     }
 }
