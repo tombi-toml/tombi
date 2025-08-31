@@ -869,6 +869,22 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_project_comment_directive_newline_name_eq_tombi(
+                r#"
+                [project]
+                # tombi: lint.rules█
+
+                name = "tombi"
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_project_name_eq_tombi_comment_directive(
                 r#"
                 [project]
