@@ -15,24 +15,42 @@ pub enum TableKind {
     /// A table.
     ///
     /// ```toml
-    /// [table]
-    ///  ^^^^^
+    /// [key1.key2.key3]
+    ///            ^^^^
     /// ```
     Table,
 
+    /// A table of parent keys.
+    ///
+    /// ```toml
+    /// [key1.key2.key3]
+    ///  ^^^^^^^^^
+    /// ```
     ParentTable,
 
     /// An inline table.
     ///
     /// ```toml
-    /// key = { key = "value" }
-    ///       ^^^^^^^^^^^^^^^^^
+    /// key1 = { key2 = "value" }
+    ///        ^^^^^^^^^^^^^^^^^^
     ///
     /// ```
-    InlineTable {
-        has_comment: bool,
-    },
+    InlineTable { has_comment: bool },
+
+    /// A table of parent keys.
+    ///
+    /// ```toml
+    /// key1.key2.key3 = "value"
+    /// ^^^^^^^^^
+    /// ```
     ParentKey,
+
+    /// A key-value.
+    ///
+    /// ```toml
+    /// key1.key2.key3 = "value"
+    ///           ^^^^^^^^^^^^^^
+    /// ```
     KeyValue,
 }
 
