@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use futures::future::join_all;
 use itertools::Itertools;
+use tombi_comment_directive::value::TableCommonRules;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
@@ -9,6 +10,7 @@ use tombi_schema_store::{
 };
 
 use crate::completion::{
+    comment::get_value_comment_directive_completion_contents,
     value::{
         all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
         one_of::find_one_of_completion_items, type_hint_value,
@@ -298,6 +300,21 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
                         } else {
+                            if let Some(comment_directives) = self.comment_directives() {
+                                for comment_directive in comment_directives {
+                                    if let Some(completion_contents) =
+                                        get_value_comment_directive_completion_contents::<
+                                            TableCommonRules,
+                                        >(
+                                            comment_directive, position, accessors
+                                        )
+                                        .await
+                                    {
+                                        return completion_contents;
+                                    }
+                                }
+                            }
+
                             for (
                                 schema_accessor,
                                 PropertySchema {
@@ -523,6 +540,21 @@ impl FindCompletionContents for tombi_document_tree::Table {
                     Vec::with_capacity(0)
                 }
             } else {
+                if let Some(comment_directives) = self.comment_directives() {
+                    for comment_directive in comment_directives {
+                        if let Some(completion_contents) =
+                            get_value_comment_directive_completion_contents::<TableCommonRules>(
+                                comment_directive,
+                                position,
+                                accessors,
+                            )
+                            .await
+                        {
+                            return completion_contents;
+                        }
+                    }
+                }
+
                 vec![CompletionContent::new_type_hint_empty_key(
                     position,
                     None,
