@@ -127,10 +127,7 @@ impl Comment {
         );
         let content = &content_with_directive[6..];
         let content_range = tombi_text::Range::new(
-            tombi_text::Position::new(
-                comment_range.start.line,
-                comment_range.start.column + comment_text.len() as u32 - content.len() as u32,
-            ),
+            tombi_text::Position::new(comment_range.start.line, directive_range.end.column),
             comment_range.end,
         );
 

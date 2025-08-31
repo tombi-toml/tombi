@@ -848,6 +848,52 @@ mod completion_labels {
                 "{}",
             ]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_comment_directive_name_eq_tombi(
+                r#"
+                #:schema tombi://json.schemastore.org/pyproject.json
+                #:tombi toml-version = "v1.0.0"
+
+                [project]
+                # tombi: lint.rules█
+                name = "tombi"
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_name_eq_tombi_comment_directive(
+                r#"
+                [project]
+                name = "tombi" # tombi: lint█
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_description_comment_directive(
+                r#"
+                [project]
+                description = "🦅 TOML Toolkit 🦅 " # tombi: lint█
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
     }
 
     mod cargo_schema {
