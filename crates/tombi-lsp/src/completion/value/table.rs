@@ -35,21 +35,36 @@ impl FindCompletionContents for tombi_document_tree::Table {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if keys.is_empty()
-                && !matches!(
+            if keys.is_empty() {
+                if let Some(comment_directives) = self.comment_directives() {
+                    for comment_directive in comment_directives {
+                        if let Some(completion_contents) =
+                            get_value_comment_directive_completion_contents::<TableCommonRules>(
+                                comment_directive,
+                                position,
+                                accessors,
+                            )
+                            .await
+                        {
+                            return completion_contents;
+                        }
+                    }
+                }
+
+                if !matches!(
                     self.kind(),
                     tombi_document_tree::TableKind::InlineTable { .. }
-                )
-            {
-                // Skip if the cursor is the end space of key value like:
-                //
-                // ```toml
-                // key = "value" █
-                // ```
-                for value in self.values() {
-                    let end = value.range().end;
-                    if end.line == position.line && end.column < position.column {
-                        return vec![];
+                ) {
+                    // Skip if the cursor is the end space of key value like:
+                    //
+                    // ```toml
+                    // key = "value" █
+                    // ```
+                    for value in self.values() {
+                        let end = value.range().end;
+                        if end.line == position.line && end.column < position.column {
+                            return vec![];
+                        }
                     }
                 }
             }
@@ -300,21 +315,6 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
                         } else {
-                            if let Some(comment_directives) = self.comment_directives() {
-                                for comment_directive in comment_directives {
-                                    if let Some(completion_contents) =
-                                        get_value_comment_directive_completion_contents::<
-                                            TableCommonRules,
-                                        >(
-                                            comment_directive, position, accessors
-                                        )
-                                        .await
-                                    {
-                                        return completion_contents;
-                                    }
-                                }
-                            }
-
                             for (
                                 schema_accessor,
                                 PropertySchema {
@@ -540,21 +540,6 @@ impl FindCompletionContents for tombi_document_tree::Table {
                     Vec::with_capacity(0)
                 }
             } else {
-                if let Some(comment_directives) = self.comment_directives() {
-                    for comment_directive in comment_directives {
-                        if let Some(completion_contents) =
-                            get_value_comment_directive_completion_contents::<TableCommonRules>(
-                                comment_directive,
-                                position,
-                                accessors,
-                            )
-                            .await
-                        {
-                            return completion_contents;
-                        }
-                    }
-                }
-
                 vec![CompletionContent::new_type_hint_empty_key(
                     position,
                     None,

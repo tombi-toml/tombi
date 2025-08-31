@@ -60,7 +60,7 @@ pub async fn get_document_comment_directive_completion_contents(
 
                         if let Some(completions) =
                             get_tombi_document_comment_directive_content_completion_contents(
-                                &root, position,
+                                root, position,
                             )
                             .await
                         {

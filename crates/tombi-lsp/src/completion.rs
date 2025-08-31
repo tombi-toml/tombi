@@ -28,6 +28,7 @@ pub fn extract_keys_and_hint(
 ) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
     let mut keys: Vec<tombi_document_tree::Key> = vec![];
     let mut completion_hint = None;
+    let mut is_tombi_value_comment_directive = false;
 
     match root.syntax().token_at_position(position) {
         TokenAtOffset::Single(token) if token.kind() == SyntaxKind::COMMENT => {
@@ -35,6 +36,7 @@ pub fn extract_keys_and_hint(
                 if comment.get_tombi_value_directive().is_none() {
                     return None;
                 }
+                is_tombi_value_comment_directive = true;
             }
         }
         TokenAtOffset::Between(token1, token2)
@@ -44,11 +46,13 @@ pub fn extract_keys_and_hint(
                 if comment.get_tombi_value_directive().is_none() {
                     return None;
                 }
+                is_tombi_value_comment_directive = true;
             }
             if let Some(comment) = tombi_ast::Comment::cast(token2) {
                 if comment.get_tombi_value_directive().is_none() {
                     return None;
                 }
+                is_tombi_value_comment_directive = true;
             }
         }
         _ => {}
@@ -96,9 +100,10 @@ pub fn extract_keys_and_hint(
                     }
                     _ => return None,
                 };
-            if position < bracket_start_range.start
-                || (bracket_end_range.end <= position
-                    && position.line == bracket_end_range.end.line)
+            if !is_tombi_value_comment_directive
+                && (position < bracket_start_range.start
+                    || (bracket_end_range.end <= position
+                        && position.line == bracket_end_range.end.line))
             {
                 return None;
             } else {
@@ -119,9 +124,10 @@ pub fn extract_keys_and_hint(
                     _ => return None,
                 }
             };
-            if position < double_bracket_start_range.start
-                && (double_bracket_end_range.end <= position
-                    && position.line == double_bracket_end_range.end.line)
+            if !is_tombi_value_comment_directive
+                && (position < double_bracket_start_range.start
+                    && (double_bracket_end_range.end <= position
+                        && position.line == double_bracket_end_range.end.line))
             {
                 return None;
             } else {
