@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_ast::{AstNode, TombiValueCommentDirective};
 
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Value, ValueImpl, ValueType};
@@ -219,19 +220,32 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         let mut array = Array::new_array(&self);
         let mut errors = Vec::new();
 
-        {
-            let mut comment_directives = Vec::new();
+        let mut comment_directives = Vec::new();
 
-            // Collect comment directives from the array.
-            for comment in self.leading_comments() {
-                if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                    errors.push(error);
-                }
-                if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+        let value_or_key_values_with_comma = self.value_or_key_values_with_comma().collect_vec();
+
+        // Collect comment directives from the array.
+        for comment in self.leading_comments() {
+            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                errors.push(error);
+            }
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
+            }
+        }
+
+        if value_or_key_values_with_comma.is_empty() {
+            for comments in self.inner_dangling_comments() {
+                for comment in comments {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
+                    }
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
                 }
             }
-
+        } else {
             // Collect comment directives from the array.
             for comments in self.inner_begin_dangling_comments() {
                 for comment in comments {
@@ -254,22 +268,22 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     }
                 }
             }
+        }
 
-            if let Some(comment) = self.trailing_comment() {
-                if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                    errors.push(error);
-                }
-                if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
-                }
+        if let Some(comment) = self.trailing_comment() {
+            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                errors.push(error);
             }
-
-            if !comment_directives.is_empty() {
-                array.comment_directives = Some(Box::new(comment_directives));
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                comment_directives.push(comment_directive);
             }
         }
 
-        for (value_or_key, comma) in self.value_or_key_values_with_commata() {
+        if !comment_directives.is_empty() {
+            array.comment_directives = Some(Box::new(comment_directives));
+        }
+
+        for (value_or_key, comma) in value_or_key_values_with_comma {
             // Note: leading comments. trailing comments are collected in value side.
             match value_or_key {
                 tombi_ast::ValueOrKeyValue::Value(value) => {
