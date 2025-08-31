@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use futures::future::join_all;
 use itertools::Itertools;
+use tombi_comment_directive::value::TableCommonRules;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
@@ -9,6 +10,7 @@ use tombi_schema_store::{
 };
 
 use crate::completion::{
+    comment::get_value_comment_directive_completion_contents,
     value::{
         all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
         one_of::find_one_of_completion_items, type_hint_value,
@@ -33,21 +35,36 @@ impl FindCompletionContents for tombi_document_tree::Table {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if keys.is_empty()
-                && !matches!(
+            if keys.is_empty() {
+                if let Some(comment_directives) = self.comment_directives() {
+                    for comment_directive in comment_directives {
+                        if let Some(completion_contents) =
+                            get_value_comment_directive_completion_contents::<TableCommonRules>(
+                                comment_directive,
+                                position,
+                                accessors,
+                            )
+                            .await
+                        {
+                            return completion_contents;
+                        }
+                    }
+                }
+
+                if !matches!(
                     self.kind(),
                     tombi_document_tree::TableKind::InlineTable { .. }
-                )
-            {
-                // Skip if the cursor is the end space of key value like:
-                //
-                // ```toml
-                // key = "value" █
-                // ```
-                for value in self.values() {
-                    let end = value.range().end;
-                    if end.line == position.line && end.column < position.column {
-                        return vec![];
+                ) {
+                    // Skip if the cursor is the end space of key value like:
+                    //
+                    // ```toml
+                    // key = "value" █
+                    // ```
+                    for value in self.values() {
+                        let end = value.range().end;
+                        if end.line == position.line && end.column < position.column {
+                            return vec![];
+                        }
                     }
                 }
             }
@@ -299,13 +316,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             }
                         } else {
                             for (
-                                accessor,
+                                schema_accessor,
                                 PropertySchema {
                                     property_schema, ..
                                 },
                             ) in table_schema.properties.write().await.iter_mut()
                             {
-                                let key_name = &accessor.to_string();
+                                let key_name = &schema_accessor.to_string();
 
                                 if let Some(value) = self.get(key_name) {
                                     if check_used_table_value(

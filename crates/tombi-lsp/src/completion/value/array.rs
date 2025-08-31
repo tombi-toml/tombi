@@ -35,17 +35,19 @@ impl FindCompletionContents for tombi_document_tree::Array {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
-                    if let Some(completion_contents) =
-                        get_value_comment_directive_completion_contents::<ArrayCommonRules>(
-                            comment_directive,
-                            position,
-                            accessors,
-                        )
-                        .await
-                    {
-                        return completion_contents;
+            if keys.is_empty() {
+                if let Some(comment_directives) = self.comment_directives() {
+                    for comment_directive in comment_directives {
+                        if let Some(completion_contents) =
+                            get_value_comment_directive_completion_contents::<ArrayCommonRules>(
+                                comment_directive,
+                                position,
+                                accessors,
+                            )
+                            .await
+                        {
+                            return completion_contents;
+                        }
                     }
                 }
             }
@@ -116,6 +118,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                 }
                             }
                         }
+
                         if let Some(items) = &array_schema.items {
                             if let Ok(Some(current_schema)) = items
                                 .write()

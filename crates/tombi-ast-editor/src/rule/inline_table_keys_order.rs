@@ -60,12 +60,12 @@ pub async fn inline_table_keys_order<'a>(
         TableKeysOrder::Schema => {
             let mut new_key_values_with_comma = vec![];
             let mut key_values_with_comma = key_values_with_comma;
-            for (accessor, _) in table_schema.properties.write().await.iter_mut() {
+            for (schema_accessor, _) in table_schema.properties.write().await.iter_mut() {
                 key_values_with_comma = key_values_with_comma
                     .into_iter()
                     .filter_map(|(key_value, comma)| {
                         if key_value.keys().iter().next().map(ToString::to_string)
-                            == Some(accessor.to_string())
+                            == Some(schema_accessor.to_string())
                         {
                             new_key_values_with_comma.push((key_value, comma));
                             None

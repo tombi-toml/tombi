@@ -851,11 +851,54 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_project_leading_comments_directive_newline_name_eq_tombi(
+                r#"
+                # tombi: lint.rules█
+                [project]
+                name = "tombi"
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_comment_directive_newline_name_eq_tombi(
+                r#"
+                [project]
+                # tombi: lint.rules█
+
+                name = "tombi"
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_trailing_comment_directive_newline_name_eq_tombi(
+                r#"
+                [project]  # tombi: lint.rules█
+
+                name = "tombi"
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_project_comment_directive_name_eq_tombi(
                 r#"
-                #:schema tombi://json.schemastore.org/pyproject.json
-                #:tombi toml-version = "v1.0.0"
-
                 [project]
                 # tombi: lint.rules█
                 name = "tombi"
