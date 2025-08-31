@@ -848,6 +848,20 @@ mod completion_labels {
                 "{}",
             ]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_description_comment_directive(
+                r#"
+                [project]
+                description = "🦅 TOML Toolkit 🦅 " # tombi: lint█
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
     }
 
     mod cargo_schema {
