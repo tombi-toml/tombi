@@ -97,7 +97,7 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
                     0,
                     position
                         .column
-                        .saturating_sub(self.directive_range.end.column + 1),
+                        .saturating_sub(self.directive_range.end.column),
                 ),
             }));
         } else if self.directive_range.contains(position) {
