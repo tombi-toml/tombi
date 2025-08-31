@@ -299,13 +299,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             }
                         } else {
                             for (
-                                accessor,
+                                schema_accessor,
                                 PropertySchema {
                                     property_schema, ..
                                 },
                             ) in table_schema.properties.write().await.iter_mut()
                             {
-                                let key_name = &accessor.to_string();
+                                let key_name = &schema_accessor.to_string();
 
                                 if let Some(value) = self.get(key_name) {
                                     if check_used_table_value(
