@@ -9,13 +9,16 @@ use tombi_schema_store::{
     Referable, SchemaAccessor, SchemaStore, TableSchema, ValueSchema,
 };
 
-use crate::completion::{
-    comment::get_value_comment_directive_completion_contents,
-    value::{
-        all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
-        one_of::find_one_of_completion_items, type_hint_value,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    completion::{
+        comment::get_tombi_comment_directive_content_completion_contents,
+        value::{
+            all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
+            one_of::find_one_of_completion_items, type_hint_value,
+        },
+        CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
     },
-    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
 };
 
 impl FindCompletionContents for tombi_document_tree::Table {
@@ -36,18 +39,21 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
         async move {
             if keys.is_empty() {
-                if let Some(comment_directives) = self.comment_directives() {
-                    for comment_directive in comment_directives {
-                        if let Some(completion_contents) =
-                            get_value_comment_directive_completion_contents::<TableCommonRules>(
-                                comment_directive,
-                                position,
-                                accessors,
-                            )
-                            .await
-                        {
-                            return completion_contents;
-                        }
+                if let Some((comment_directive_context, schema_uri)) =
+                    get_value_comment_directive_content_with_schema_uri::<TableCommonRules>(
+                        self.comment_directives(),
+                        position,
+                        accessors,
+                    )
+                {
+                    if let Some(completions) =
+                        get_tombi_comment_directive_content_completion_contents(
+                            comment_directive_context,
+                            schema_uri,
+                        )
+                        .await
+                    {
+                        return completions;
                     }
                 }
 

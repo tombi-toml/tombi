@@ -3,9 +3,12 @@ use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, SchemaUri};
 
-use crate::completion::{
-    comment::get_value_comment_directive_completion_contents, CompletionContent, CompletionEdit,
-    CompletionHint, FindCompletionContents,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    completion::{
+        comment::get_tombi_comment_directive_content_completion_contents, CompletionContent,
+        CompletionEdit, CompletionHint, FindCompletionContents,
+    },
 };
 
 impl FindCompletionContents for tombi_document_tree::LocalDateTime {
@@ -26,18 +29,20 @@ impl FindCompletionContents for tombi_document_tree::LocalDateTime {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
-                    if let Some(completion_contents) =
-                        get_value_comment_directive_completion_contents::<LocalDateTimeCommonRules>(
-                            comment_directive,
-                            position,
-                            accessors,
-                        )
-                        .await
-                    {
-                        return completion_contents;
-                    }
+            if let Some((comment_directive_context, schema_uri)) =
+                get_value_comment_directive_content_with_schema_uri::<LocalDateTimeCommonRules>(
+                    self.comment_directives(),
+                    position,
+                    accessors,
+                )
+            {
+                if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
+                {
+                    return completions;
                 }
             }
 

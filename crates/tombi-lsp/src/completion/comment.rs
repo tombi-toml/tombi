@@ -1,13 +1,11 @@
 use itertools::Itertools;
-use tombi_ast::{AstToken, TombiValueCommentDirective};
+use tombi_ast::AstToken;
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent,
-    value::{ArrayCommonRules, TombiValueDirectiveContent, WithKeyRules},
-    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::Accessor;
 use tombi_uri::SchemaUri;
 use tower_lsp::lsp_types::Url;
 
@@ -58,13 +56,19 @@ pub async fn get_document_comment_directive_completion_contents(
                             ));
                         }
 
-                        if let Some(completions) =
-                            get_tombi_document_comment_directive_content_completion_contents(
-                                root, position,
-                            )
-                            .await
+                        if let Some(comment_directive_context) = root
+                            .tombi_document_comment_directives()
+                            .and_then(|directives| directives.get_context(position))
                         {
-                            return Some(completions);
+                            if let Some(completions) =
+                                get_tombi_comment_directive_content_completion_contents(
+                                    comment_directive_context,
+                                    TombiDocumentDirectiveContent::comment_directive_schema_url(),
+                                )
+                                .await
+                            {
+                                return Some(completions);
+                            }
                         }
                     }
                 }
@@ -111,94 +115,18 @@ fn document_comment_directive_completion_contents(
     completion_contents
 }
 
-async fn get_tombi_document_comment_directive_content_completion_contents(
-    root: &tombi_ast::Root,
-    position: tombi_text::Position,
-) -> Option<Vec<CompletionContent>> {
-    if let Some(CommentDirectiveContext::Content(comment_directive)) = root
-        .tombi_document_comment_directives()
-        .and_then(|directives| directives.get_context(position))
-    {
-        get_comment_directive_content_completion_contents(
-            comment_directive,
-            TombiDocumentDirectiveContent::comment_directive_schema_url(),
-        )
-        .await
-    } else {
-        None
-    }
-}
-
-pub async fn get_value_comment_directive_completion_contents<Rules>(
-    comment_directive: &TombiValueCommentDirective,
-    position: tombi_text::Position,
-    accessors: &[tombi_schema_store::Accessor],
-) -> Option<Vec<CompletionContent>>
-where
-    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
-{
-    if let Some(CommentDirectiveContext::Content(comment_directive_content)) =
-        comment_directive.get_context(position)
-    {
-        let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
-            TombiValueDirectiveContent::<Rules>::comment_directive_schema_url()
-        } else {
-            TombiValueDirectiveContent::<WithKeyRules<Rules>>::comment_directive_schema_url()
-        };
-
-        get_comment_directive_content_completion_contents(comment_directive_content, schema_uri)
-            .await
-    } else {
-        None
-    }
-}
-
-pub async fn get_array_comment_directive_completion_contents(
-    array: &tombi_document_tree::Array,
-    position: tombi_text::Position,
-    accessors: &[tombi_schema_store::Accessor],
-) -> Option<Vec<CompletionContent>> {
-    if let Some(comment_directives) = array.comment_directives() {
-        for comment_directive in comment_directives {
-            if let Some(completion_contents) = get_value_comment_directive_completion_contents::<
-                ArrayCommonRules,
-            >(comment_directive, position, accessors)
-            .await
-            {
-                return Some(completion_contents);
-            }
-        }
-    }
-    if let Some(comment_directives) = array.inner_comment_directives() {
-        for comment_directive in comment_directives {
-            if let Some(CommentDirectiveContext::Content(comment_directive_content)) =
-                comment_directive.get_context(position)
-            {
-                if let Some(completion_contents) = get_comment_directive_content_completion_contents(
-                    comment_directive_content,
-                    TombiValueDirectiveContent::<ArrayCommonRules>::comment_directive_schema_url(),
-                )
-                .await
-                {
-                    return Some(completion_contents);
-                }
-            }
-        }
-    }
-
-    None
-}
-
-async fn get_comment_directive_content_completion_contents(
-    comment_directive: CommentDirectiveContent<String>,
+pub async fn get_tombi_comment_directive_content_completion_contents(
+    comment_directive_context: CommentDirectiveContext<String>,
     schema_uri: SchemaUri,
 ) -> Option<Vec<CompletionContent>> {
-    let CommentDirectiveContent {
+    let CommentDirectiveContext::Content(CommentDirectiveContent {
         content,
         content_range,
         position_in_content,
-    } = comment_directive;
+    }) = comment_directive_context
+    else {
+        return None;
+    };
 
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

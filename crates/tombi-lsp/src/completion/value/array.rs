@@ -12,9 +12,12 @@ use super::{
     all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
     one_of::find_one_of_completion_items, type_hint_value, CompletionHint, FindCompletionContents,
 };
-use crate::completion::{
-    comment::get_array_comment_directive_completion_contents, schema_completion::SchemaCompletion,
-    CompletionContent, CompletionEdit,
+use crate::{
+    comment_directive::get_array_comment_directive_content_with_schema_uri,
+    completion::{
+        comment::get_tombi_comment_directive_content_completion_contents,
+        schema_completion::SchemaCompletion, CompletionContent, CompletionEdit,
+    },
 };
 
 impl FindCompletionContents for tombi_document_tree::Array {
@@ -35,10 +38,18 @@ impl FindCompletionContents for tombi_document_tree::Array {
 
         async move {
             if keys.is_empty() {
-                if let Some(comment_directives) =
-                    get_array_comment_directive_completion_contents(self, position, accessors).await
+                if let Some((comment_directive_context, schema_uri)) =
+                    get_array_comment_directive_content_with_schema_uri(self, position, accessors)
                 {
-                    return comment_directives;
+                    if let Some(completions) =
+                        get_tombi_comment_directive_content_completion_contents(
+                            comment_directive_context,
+                            schema_uri,
+                        )
+                        .await
+                    {
+                        return completions;
+                    }
                 }
             }
 
