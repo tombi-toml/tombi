@@ -10,9 +10,6 @@ license.workspace = true
 schemars = { workspace = true, optional = true }
 serde.workspace = true
 thiserror.workspace = true
-tombi-accessor.workspace = true
-tombi-ast.workspace = true
-tombi-document-tree.workspace = true
 tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-toml-version.workspace = true

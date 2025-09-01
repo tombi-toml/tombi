@@ -1,15 +1,16 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::{
-    get_value_comment_directive_content_with_schema_uri, value::BooleanCommonRules,
-};
+use tombi_comment_directive::value::BooleanCommonRules;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
-use crate::goto_type_definition::{
-    all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
-    comment::get_tombi_value_comment_directive_type_definition, one_of::get_one_of_type_definition,
-    GetTypeDefinition, TypeDefinition,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    goto_type_definition::{
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
+        comment::get_tombi_value_comment_directive_type_definition,
+        one_of::get_one_of_type_definition, GetTypeDefinition, TypeDefinition,
+    },
 };
 
 impl GetTypeDefinition for tombi_document_tree::Boolean {

@@ -2,22 +2,23 @@ use std::borrow::Cow;
 
 use futures::future::join_all;
 use itertools::Itertools;
-use tombi_comment_directive::{
-    get_value_comment_directive_content_with_schema_uri, value::TableCommonRules,
-};
+use tombi_comment_directive::value::TableCommonRules;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
     Referable, SchemaAccessor, SchemaStore, TableSchema, ValueSchema,
 };
 
-use crate::completion::{
-    comment::get_tombi_comment_directive_content_completion_contents,
-    value::{
-        all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
-        one_of::find_one_of_completion_items, type_hint_value,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    completion::{
+        comment::get_tombi_comment_directive_content_completion_contents,
+        value::{
+            all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
+            one_of::find_one_of_completion_items, type_hint_value,
+        },
+        CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
     },
-    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
 };
 
 impl FindCompletionContents for tombi_document_tree::Table {
