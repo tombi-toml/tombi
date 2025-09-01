@@ -11,18 +11,6 @@ use tombi_schema_store::SchemaUri;
 
 use crate::comment_directive::into_directive_diagnostic;
 
-pub async fn get_tombi_value_comment_directive<Rules>(
-    comment_directives: &[tombi_ast::TombiValueCommentDirective],
-) -> Option<TombiValueDirectiveContent<Rules>>
-where
-    Rules: serde::de::DeserializeOwned + serde::Serialize,
-    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
-{
-    get_tombi_value_comment_directive_and_diagnostics(comment_directives)
-        .await
-        .0
-}
-
 pub async fn get_tombi_value_comment_directive_and_diagnostics<Rules>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
 ) -> (
