@@ -5,21 +5,23 @@ use crate::Rule;
 pub struct KeyEmptyRule;
 
 impl Rule<tombi_ast::Key> for KeyEmptyRule {
-    fn check(node: &tombi_ast::Key, l: &mut crate::Linter) {
+    async fn check(node: &tombi_ast::Key, l: &mut crate::Linter<'_>) {
         if match node {
             tombi_ast::Key::BareKey(_) => false,
             tombi_ast::Key::BasicString(node) => node.syntax().text() == "\"\"",
             tombi_ast::Key::LiteralString(node) => node.syntax().text() == "''",
         } {
+            let level = l
+                .options()
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.key_empty)
+                .unwrap_or_default()
+                .into();
+
             l.extend_diagnostics(crate::Diagnostic {
                 kind: crate::DiagnosticKind::KeyEmpty,
-                level: l
-                    .options()
-                    .rules
-                    .as_ref()
-                    .and_then(|rules| rules.key_empty)
-                    .unwrap_or_default()
-                    .into(),
+                level,
                 range: node.syntax().range(),
             });
         }

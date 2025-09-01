@@ -105,7 +105,9 @@ impl<'a> Linter<'a> {
             error.set_diagnostics(&mut self.diagnostics);
         }
 
-        root.lint(&mut self);
+        {
+            root.lint(&mut self).await;
+        }
 
         if self.diagnostics.is_empty() {
             let (document_tree, errors) =

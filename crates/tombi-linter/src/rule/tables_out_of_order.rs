@@ -6,7 +6,7 @@ use crate::Rule;
 pub struct TablesOutOfOrderRule;
 
 impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
-    fn check(node: &tombi_ast::Root, l: &mut crate::Linter) {
+    async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
         let source_text = l.source_text();
         let mut table_positions: Vec<(usize, Vec<&str>, tombi_text::Range)> = Vec::new();
 

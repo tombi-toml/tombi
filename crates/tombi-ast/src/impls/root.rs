@@ -1,7 +1,10 @@
 use itertools::Itertools;
 use tombi_syntax::SyntaxKind;
 
-use crate::{support, AstNode, SchemaDocumentCommentDirective, TombiDocumentCommentDirective};
+use crate::{
+    support, AstNode, SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
+    TombiValueCommentDirective,
+};
 
 impl crate::Root {
     pub fn schema_document_comment_directive(
@@ -88,5 +91,35 @@ impl crate::Root {
 
     pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
         support::node::dangling_comments(self.syntax().children_with_tokens())
+    }
+
+    pub fn tombi_value_comment_directives(&self) -> Vec<TombiValueCommentDirective> {
+        let mut inner_comment_directives = vec![];
+        if self.items().collect_vec().is_empty() {
+            for comments in self.key_values_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        } else {
+            for comments in self.key_values_begin_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+            for comments in self.key_values_end_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        }
+
+        inner_comment_directives
     }
 }
