@@ -1,13 +1,12 @@
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
+    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_uri::SchemaUri;
 
 use crate::{
-    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     goto_type_definition::{get_type_definition, TypeDefinition},
     handler::get_hover_keys_with_range,
 };
