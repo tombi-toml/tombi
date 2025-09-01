@@ -268,6 +268,32 @@ mod goto_type_definition_tests {
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-string-directive.json");
         );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_array_string_comma_newline_bracket_directive(
+                r#"
+                array = [
+                  "string",
+                  # tombi: lint.rules.array-min-items█ = "off"
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-array-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_array_string_newline_comma_bracket_directive(
+                r#"
+                array = [
+                  "string"
+                  ,
+                ] # tombi: lint.rules.array-min-items█ = "off"
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-directive.json");
+        );
     }
 
     #[macro_export]
