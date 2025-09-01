@@ -10,6 +10,7 @@ use tombi_schema_store::{
 };
 
 use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
@@ -36,17 +37,18 @@ impl GetHoverContent for tombi_document_tree::Table {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
-                    if let Some(hover_content) = get_value_comment_directive_hover_content::<
-                        TableCommonRules,
-                    >(
-                        comment_directive, position, accessors
-                    )
-                    .await
-                    {
-                        return Some(hover_content);
-                    }
+            if let Some((comment_directive_context, schema_uri)) =
+                get_value_comment_directive_content_with_schema_uri::<TableCommonRules>(
+                    self.comment_directives(),
+                    position,
+                    accessors,
+                )
+            {
+                if let Some(hover_content) =
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
+                        .await
+                {
+                    return Some(hover_content);
                 }
             }
 

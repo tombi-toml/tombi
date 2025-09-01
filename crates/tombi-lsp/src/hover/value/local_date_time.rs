@@ -2,6 +2,7 @@ use tombi_comment_directive::value::LocalDateTimeCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, ValueSchema};
 
 use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
@@ -25,17 +26,18 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
-            if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
-                    if let Some(hover_content) = get_value_comment_directive_hover_content::<
-                        LocalDateTimeCommonRules,
-                    >(
-                        comment_directive, position, accessors
-                    )
-                    .await
-                    {
-                        return Some(hover_content);
-                    }
+            if let Some((comment_directive_context, schema_uri)) =
+                get_value_comment_directive_content_with_schema_uri::<LocalDateTimeCommonRules>(
+                    self.comment_directives(),
+                    position,
+                    accessors,
+                )
+            {
+                if let Some(hover_content) =
+                    get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
+                        .await
+                {
+                    return Some(hover_content);
                 }
             }
 

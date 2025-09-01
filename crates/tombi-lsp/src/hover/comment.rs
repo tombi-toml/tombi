@@ -1,12 +1,9 @@
-use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent,
-    value::{ArrayCommonRules, TombiValueDirectiveContent, WithKeyRules},
-    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::Accessor;
 use tombi_uri::SchemaUri;
 
 use crate::{
@@ -70,70 +67,22 @@ pub async fn get_document_comment_directive_hover_content(
     }
 }
 
-pub async fn get_value_comment_directive_hover_content<Rules>(
-    comment_directive: &TombiValueCommentDirective,
-    position: tombi_text::Position,
-    accessors: &[tombi_schema_store::Accessor],
-) -> Option<HoverContent>
-where
-    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
-{
-    match comment_directive.get_context(position) {
-        Some(CommentDirectiveContext::Content(content)) => {
-            let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
-                TombiValueDirectiveContent::<Rules>::comment_directive_schema_url()
-            } else {
-                TombiValueDirectiveContent::<WithKeyRules<Rules>>::comment_directive_schema_url()
-            };
+pub async fn get_value_comment_directive_hover_content(
+    comment_directive_context: CommentDirectiveContext<String>,
+    schema_uri: tombi_uri::SchemaUri,
+) -> Option<HoverContent> {
+    match comment_directive_context {
+        CommentDirectiveContext::Content(content) => {
             get_comment_directive_toml_content_hover_content(content, schema_uri).await
         }
-        Some(CommentDirectiveContext::Directive { directive_range }) => {
+        CommentDirectiveContext::Directive { directive_range } => {
             Some(HoverContent::Directive(HoverDirectiveContent {
                 title: VALUE_TOMBI_DIRECTIVE_TITLE.to_string(),
                 description: VALUE_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
                 range: directive_range,
             }))
         }
-        None => None,
     }
-}
-
-pub async fn get_array_comment_directive_hover_content(
-    array: &tombi_document_tree::Array,
-    position: tombi_text::Position,
-    accessors: &[tombi_schema_store::Accessor],
-) -> Option<HoverContent> {
-    if let Some(comment_directives) = array.comment_directives() {
-        for comment_directive in comment_directives {
-            if let Some(completion_contents) = get_value_comment_directive_hover_content::<
-                ArrayCommonRules,
-            >(comment_directive, position, accessors)
-            .await
-            {
-                return Some(completion_contents);
-            }
-        }
-    }
-
-    if let Some(comment_directives) = array.inner_comment_directives() {
-        for comment_directive in comment_directives {
-            if let Some(CommentDirectiveContext::Content(comment_directive_content)) =
-                comment_directive.get_context(position)
-            {
-                if let Some(completion_contents) = get_comment_directive_toml_content_hover_content(
-                    comment_directive_content,
-                    TombiValueDirectiveContent::<ArrayCommonRules>::comment_directive_schema_url(),
-                )
-                .await
-                {
-                    return Some(completion_contents);
-                }
-            }
-        }
-    }
-
-    None
 }
 
 async fn get_comment_directive_toml_content_hover_content(
