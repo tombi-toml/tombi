@@ -1,7 +1,6 @@
 use ahash::AHashSet;
 use itertools::Itertools;
 use std::borrow::Cow;
-use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
@@ -14,7 +13,7 @@ use super::{
     one_of::find_one_of_completion_items, type_hint_value, CompletionHint, FindCompletionContents,
 };
 use crate::completion::{
-    comment::get_value_comment_directive_completion_contents, schema_completion::SchemaCompletion,
+    comment::get_array_comment_directive_completion_contents, schema_completion::SchemaCompletion,
     CompletionContent, CompletionEdit,
 };
 
@@ -36,19 +35,10 @@ impl FindCompletionContents for tombi_document_tree::Array {
 
         async move {
             if keys.is_empty() {
-                if let Some(comment_directives) = self.comment_directives() {
-                    for comment_directive in comment_directives {
-                        if let Some(completion_contents) =
-                            get_value_comment_directive_completion_contents::<ArrayCommonRules>(
-                                comment_directive,
-                                position,
-                                accessors,
-                            )
-                            .await
-                        {
-                            return completion_contents;
-                        }
-                    }
+                if let Some(comment_directives) =
+                    get_array_comment_directive_completion_contents(self, position, accessors).await
+                {
+                    return comment_directives;
                 }
             }
 

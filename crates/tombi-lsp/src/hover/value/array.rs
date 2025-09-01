@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 
-use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, ArraySchema, CurrentSchema, DocumentSchema, ValueSchema, ValueType,
@@ -12,7 +11,7 @@ use crate::{
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
-        comment::get_value_comment_directive_hover_content,
+        comment::get_array_comment_directive_hover_content,
         constraints::{build_enumerate_values, ValueConstraints},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
@@ -36,18 +35,10 @@ impl GetHoverContent for tombi_document_tree::Array {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
-                    if let Some(hover_content) = get_value_comment_directive_hover_content::<
-                        ArrayCommonRules,
-                    >(
-                        comment_directive, position, accessors
-                    )
-                    .await
-                    {
-                        return Some(hover_content);
-                    }
-                }
+            if let Some(hover_content) =
+                get_array_comment_directive_hover_content(self, position, accessors).await
+            {
+                return Some(hover_content);
             }
 
             if let Some(Ok(DocumentSchema {

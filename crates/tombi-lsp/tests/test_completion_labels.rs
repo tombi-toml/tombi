@@ -937,6 +937,23 @@ mod completion_labels {
                 "="
             ]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_dependencies_eq_array_comment_directive(
+                r#"
+                [project]
+                name = "tombi"
+                dependencies = [
+                    # tombi: lint█
+                ]
+                "#,
+                Schema(pyproject_schema_path()),
+            ) -> Ok([
+                ".",
+                "="
+            ]);
+        }
     }
 
     mod cargo_schema {

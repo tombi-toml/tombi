@@ -52,7 +52,7 @@ impl crate::Array {
     }
 
     #[inline]
-    pub fn value_or_key_values_with_commata(
+    pub fn value_or_key_values_with_comma(
         &self,
     ) -> impl Iterator<Item = (crate::ValueOrKeyValue, Option<crate::Comma>)> {
         self.value_or_key_values()
