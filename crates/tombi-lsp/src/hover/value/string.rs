@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::FloatCommonRules;
+use tombi_comment_directive::value::StringCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, StringSchema, ValueSchema};
 
 use crate::{
@@ -27,7 +27,7 @@ impl GetHoverContent for tombi_document_tree::String {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_value_comment_directive_content_with_schema_uri::<FloatCommonRules>(
+                get_value_comment_directive_content_with_schema_uri::<StringCommonRules>(
                     self.comment_directives(),
                     position,
                     accessors,
