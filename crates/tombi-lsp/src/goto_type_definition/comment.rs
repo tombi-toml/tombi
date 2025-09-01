@@ -7,9 +7,7 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_uri::SchemaUri;
 
 use crate::{
-    comment_directive::{
-        CommentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
-    },
+    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     goto_type_definition::{get_type_definition, TypeDefinition},
     handler::get_hover_keys_with_range,
 };
@@ -35,11 +33,11 @@ pub async fn get_tombi_value_comment_directive_type_definition(
     comment_directive_context: CommentDirectiveContext<String>,
     schema_uri: SchemaUri,
 ) -> Option<TypeDefinition> {
-    let CommentDirectiveContext::Content(CommentDirectiveContent {
+    let CommentDirectiveContext::Content {
         content,
         position_in_content,
         ..
-    }) = comment_directive_context
+    } = comment_directive_context
     else {
         return None;
     };

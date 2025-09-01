@@ -10,9 +10,7 @@ use tombi_uri::SchemaUri;
 use tower_lsp::lsp_types::Url;
 
 use crate::{
-    comment_directive::{
-        CommentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
-    },
+    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
@@ -119,11 +117,11 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     comment_directive_context: CommentDirectiveContext<String>,
     schema_uri: SchemaUri,
 ) -> Option<Vec<CompletionContent>> {
-    let CommentDirectiveContext::Content(CommentDirectiveContent {
+    let CommentDirectiveContext::Content {
         content,
         content_range,
         position_in_content,
-    }) = comment_directive_context
+    } = comment_directive_context
     else {
         return None;
     };
