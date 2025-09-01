@@ -1,18 +1,13 @@
-use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent,
-    value::{TombiValueDirectiveContent, WithKeyRules},
-    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::Accessor;
 use tombi_uri::SchemaUri;
 
 use crate::{
-    comment_directive::{
-        CommentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
-    },
+    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     goto_type_definition::{get_type_definition, TypeDefinition},
     handler::get_hover_keys_with_range,
 };
@@ -20,48 +15,29 @@ pub async fn get_tombi_document_comment_directive_type_definition(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<TypeDefinition> {
-    get_tombi_comment_directive_type_definition(
-        root.tombi_document_comment_directives()
-            .and_then(|directives| directives.get_context(position)),
-        position,
-        TombiDocumentDirectiveContent::comment_directive_schema_url(),
-    )
-    .await
-}
-
-pub async fn get_tombi_value_comment_directive_type_definition<Rules>(
-    comment_directive: &TombiValueCommentDirective,
-    position: tombi_text::Position,
-    accessors: &[tombi_schema_store::Accessor],
-) -> Option<TypeDefinition>
-where
-    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<WithKeyRules<Rules>>: TombiCommentDirectiveImpl,
-{
-    let schema_uri = if let Some(Accessor::Index(_)) = accessors.last() {
-        TombiValueDirectiveContent::<Rules>::comment_directive_schema_url()
+    if let Some(comment_directive_context) = root
+        .tombi_document_comment_directives()
+        .and_then(|directives| directives.get_context(position))
+    {
+        get_tombi_value_comment_directive_type_definition(
+            comment_directive_context,
+            TombiDocumentDirectiveContent::comment_directive_schema_url(),
+        )
+        .await
     } else {
-        TombiValueDirectiveContent::<WithKeyRules<Rules>>::comment_directive_schema_url()
-    };
-
-    get_tombi_comment_directive_type_definition(
-        comment_directive.get_context(position),
-        position,
-        schema_uri,
-    )
-    .await
+        None
+    }
 }
 
-async fn get_tombi_comment_directive_type_definition(
-    comment_directive_context: Option<CommentDirectiveContext<String>>,
-    position: tombi_text::Position,
+pub async fn get_tombi_value_comment_directive_type_definition(
+    comment_directive_context: CommentDirectiveContext<String>,
     schema_uri: SchemaUri,
 ) -> Option<TypeDefinition> {
-    let Some(CommentDirectiveContext::Content(CommentDirectiveContent {
+    let CommentDirectiveContext::Content {
         content,
         position_in_content,
         ..
-    })) = comment_directive_context
+    } = comment_directive_context
     else {
         return None;
     };
@@ -95,5 +71,5 @@ async fn get_tombi_comment_directive_type_definition(
         strict: None,
     };
 
-    get_type_definition(&document_tree, position, &keys, &schema_context).await
+    get_type_definition(&document_tree, position_in_content, &keys, &schema_context).await
 }

@@ -8,8 +8,8 @@ use tombi_uri::SchemaUri;
 
 use crate::{
     comment_directive::{
-        CommentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
-        VALUE_TOMBI_DIRECTIVE_DESCRIPTION, VALUE_TOMBI_DIRECTIVE_TITLE,
+        CommentDirectiveContext, GetCommentDirectiveContext, VALUE_TOMBI_DIRECTIVE_DESCRIPTION,
+        VALUE_TOMBI_DIRECTIVE_TITLE,
     },
     handler::get_hover_keys_with_range,
     hover::{get_hover_content, HoverContent, HoverDirectiveContent},
@@ -34,7 +34,7 @@ pub async fn get_document_comment_directive_hover_content(
                     range: directive_range,
                 }));
             }
-            CommentDirectiveContext::Content(CommentDirectiveContent { content_range, .. }) => {
+            CommentDirectiveContext::Content { content_range, .. } => {
                 return Some(HoverContent::Directive(HoverDirectiveContent {
                     title: "Schema URL".to_string(),
                     description: "The URL/Path of the schema that applies to this document."
@@ -49,9 +49,15 @@ pub async fn get_document_comment_directive_hover_content(
         .tombi_document_comment_directives()
         .and_then(|directives| directives.get_context(position))
     {
-        Some(CommentDirectiveContext::Content(content)) => {
+        Some(CommentDirectiveContext::Content {
+            content,
+            content_range,
+            position_in_content,
+        }) => {
             return get_comment_directive_toml_content_hover_content(
                 content,
+                content_range,
+                position_in_content,
                 TombiDocumentDirectiveContent::comment_directive_schema_url(),
             )
             .await;
@@ -72,8 +78,18 @@ pub async fn get_value_comment_directive_hover_content(
     schema_uri: tombi_uri::SchemaUri,
 ) -> Option<HoverContent> {
     match comment_directive_context {
-        CommentDirectiveContext::Content(content) => {
-            get_comment_directive_toml_content_hover_content(content, schema_uri).await
+        CommentDirectiveContext::Content {
+            content,
+            content_range,
+            position_in_content,
+        } => {
+            get_comment_directive_toml_content_hover_content(
+                content,
+                content_range,
+                position_in_content,
+                schema_uri,
+            )
+            .await
         }
         CommentDirectiveContext::Directive { directive_range } => {
             Some(HoverContent::Directive(HoverDirectiveContent {
@@ -86,15 +102,11 @@ pub async fn get_value_comment_directive_hover_content(
 }
 
 async fn get_comment_directive_toml_content_hover_content(
-    comment_directive: CommentDirectiveContent<String>,
+    content: String,
+    content_range: tombi_text::Range,
+    position_in_content: tombi_text::Position,
     schema_uri: SchemaUri,
 ) -> Option<HoverContent> {
-    let CommentDirectiveContent {
-        content,
-        content_range,
-        position_in_content,
-    } = comment_directive;
-
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     // Parse the directive content as TOML
     let (directive_ast, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();

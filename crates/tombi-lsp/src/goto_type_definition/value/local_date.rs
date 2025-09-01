@@ -1,13 +1,16 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::value::ArrayCommonRules;
+use tombi_comment_directive::value::LocalDateCommonRules;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
-use crate::goto_type_definition::{
-    all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
-    comment::get_tombi_value_comment_directive_type_definition, one_of::get_one_of_type_definition,
-    GetTypeDefinition, TypeDefinition,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    goto_type_definition::{
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
+        comment::get_tombi_value_comment_directive_type_definition,
+        one_of::get_one_of_type_definition, GetTypeDefinition, TypeDefinition,
+    },
 };
 
 impl GetTypeDefinition for tombi_document_tree::LocalDate {
@@ -25,18 +28,20 @@ impl GetTypeDefinition for tombi_document_tree::LocalDate {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            if let Some(comment_directives) = self.comment_directives() {
-                for comment_directive in comment_directives {
-                    if let Some(type_definition) =
-                        get_tombi_value_comment_directive_type_definition::<ArrayCommonRules>(
-                            &comment_directive,
-                            position,
-                            accessors,
-                        )
-                        .await
-                    {
-                        return Some(type_definition);
-                    }
+            if let Some((comment_directive_context, schema_uri)) =
+                get_value_comment_directive_content_with_schema_uri::<LocalDateCommonRules>(
+                    self.comment_directives(),
+                    position,
+                    accessors,
+                )
+            {
+                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
+                {
+                    return Some(hover_content);
                 }
             }
 
