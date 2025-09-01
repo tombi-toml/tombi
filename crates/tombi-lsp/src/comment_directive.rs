@@ -189,3 +189,30 @@ pub fn get_array_comment_directive_content_with_schema_uri(
 
     None
 }
+
+pub fn get_table_comment_directive_content_with_schema_uri(
+    table: &tombi_document_tree::Table,
+    position: tombi_text::Position,
+    accessors: &[tombi_schema_store::Accessor],
+) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
+    if let Some((comment_directive, schema_uri)) =
+        get_value_comment_directive_content_with_schema_uri::<ArrayCommonRules>(
+            table.comment_directives(),
+            position,
+            accessors,
+        )
+    {
+        return Some((comment_directive, schema_uri));
+    }
+    if let Some(comment_directive) = table.inner_comment_directives() {
+        for comment_directive in comment_directive {
+            if let Some(comment_directive_context) = comment_directive.get_context(position) {
+                let schema_uri =
+                    TombiValueDirectiveContent::<ArrayCommonRules>::comment_directive_schema_url();
+                return Some((comment_directive_context, schema_uri));
+            }
+        }
+    }
+
+    None
+}
