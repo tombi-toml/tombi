@@ -3789,6 +3789,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tombi-ast",
+ "tombi-comment-directive",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree",

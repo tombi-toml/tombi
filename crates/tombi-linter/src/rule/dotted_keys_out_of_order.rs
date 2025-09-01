@@ -1,13 +1,15 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::TableCommonRules;
+use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules;
 
 use crate::Rule;
 
 pub struct DottedKeysOutOfOrderRule;
 
-impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
-    fn check(node: &tombi_ast::Root, l: &mut crate::Linter) {
+impl Rule< tombi_ast::Root> for DottedKeysOutOfOrderRule {
+    async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
         let source_text = l.source_text();
         let mut prefix_groups: AHashMap<&str, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
         let mut all_positions = Vec::new();
@@ -74,18 +76,27 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
 
         // Report diagnostics for all out-of-order dotted keys
         if !out_of_order_ranges.is_empty() {
-            let level = l
-                .options()
-                .rules
-                .as_ref()
-                .and_then(|rules| rules.dotted_keys_out_of_order)
-                .unwrap_or_default()
-                .into();
+            let level = get_tombi_value_rules_and_diagnostics_with_key_rules::<TableCommonRules>(
+                &node.tombi_value_comment_directives(),
+                &[],
+            )
+            .await
+            .0
+            .as_ref()
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.dotted_keys_out_of_order)
+            .unwrap_or_else(|| {
+                l.options()
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.dotted_keys_out_of_order)
+                    .unwrap_or_default()
+            });
 
             for range in out_of_order_ranges {
                 l.extend_diagnostics(crate::Diagnostic {
                     kind: crate::DiagnosticKind::DottedKeysOutOfOrder,
-                    level,
+                    level: level.into(),
                     range,
                 });
             }

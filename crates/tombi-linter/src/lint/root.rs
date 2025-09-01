@@ -1,23 +1,23 @@
 use crate::{Lint, Rule};
 
 impl Lint for tombi_ast::Root {
-    fn lint(&self, l: &mut crate::Linter) {
+    async fn lint(&self, l: &mut crate::Linter<'_>) {
         // Apply root-level rules
-        crate::rule::DottedKeysOutOfOrderRule::check(self, l);
-        crate::rule::TablesOutOfOrderRule::check(self, l);
+        crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
+        crate::rule::TablesOutOfOrderRule::check(self, l).await;
 
         for item in self.items() {
-            item.lint(l);
+            item.lint(l).await;
         }
     }
 }
 
 impl Lint for tombi_ast::RootItem {
-    fn lint(&self, l: &mut crate::Linter) {
+    async fn lint(&self, l: &mut crate::Linter<'_>) {
         match self {
-            Self::Table(table) => table.lint(l),
-            Self::ArrayOfTable(array_of_table) => array_of_table.lint(l),
-            Self::KeyValue(key_value) => key_value.lint(l),
+            Self::Table(table) => table.lint(l).await,
+            Self::ArrayOfTable(array_of_table) => array_of_table.lint(l).await,
+            Self::KeyValue(key_value) => key_value.lint(l).await,
         }
     }
 }

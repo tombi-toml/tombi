@@ -6,5 +6,5 @@ mod table;
 mod value;
 
 pub trait Lint {
-    fn lint(&self, l: &mut crate::Linter);
+    async fn lint(&self, l: &mut crate::Linter<'_>);
 }
