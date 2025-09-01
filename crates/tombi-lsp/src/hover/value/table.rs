@@ -2,7 +2,9 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 
-use tombi_comment_directive::value::TableCommonRules;
+use tombi_comment_directive::{
+    get_value_comment_directive_content_with_schema_uri, value::TableCommonRules,
+};
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
@@ -10,7 +12,6 @@ use tombi_schema_store::{
 };
 
 use crate::{
-    comment_directive::get_value_comment_directive_content_with_schema_uri,
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
