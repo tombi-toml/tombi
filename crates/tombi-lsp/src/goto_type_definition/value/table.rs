@@ -2,15 +2,20 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 
+use tombi_comment_directive::value::TableCommonRules;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, TableSchema,
     ValueSchema,
 };
 
-use crate::goto_type_definition::{
-    all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
-    one_of::get_one_of_type_definition, GetTypeDefinition, TypeDefinition,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    goto_type_definition::{
+        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
+        comment::get_tombi_value_comment_directive_type_definition,
+        one_of::get_one_of_type_definition, GetTypeDefinition, TypeDefinition,
+    },
 };
 
 impl GetTypeDefinition for tombi_document_tree::Table {
@@ -28,6 +33,23 @@ impl GetTypeDefinition for tombi_document_tree::Table {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
+            if let Some((comment_directive_context, schema_uri)) =
+                get_value_comment_directive_content_with_schema_uri::<TableCommonRules>(
+                    self.comment_directives(),
+                    position,
+                    accessors,
+                )
+            {
+                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
+                {
+                    return Some(hover_content);
+                }
+            }
+
             if let Some(Ok(DocumentSchema {
                 value_schema,
                 schema_uri,
