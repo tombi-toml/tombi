@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use futures::future::join_all;
 use itertools::Itertools;
-use tombi_comment_directive::value::TableCommonRules;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
@@ -10,7 +9,7 @@ use tombi_schema_store::{
 };
 
 use crate::{
-    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    comment_directive::get_table_comment_directive_content_with_schema_uri,
     completion::{
         comment::get_tombi_comment_directive_content_completion_contents,
         value::{
@@ -40,11 +39,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
         async move {
             if keys.is_empty() {
                 if let Some((comment_directive_context, schema_uri)) =
-                    get_value_comment_directive_content_with_schema_uri::<TableCommonRules>(
-                        self.comment_directives(),
-                        position,
-                        accessors,
-                    )
+                    get_table_comment_directive_content_with_schema_uri(self, position, accessors)
                 {
                     if let Some(completions) =
                         get_tombi_comment_directive_content_completion_contents(
