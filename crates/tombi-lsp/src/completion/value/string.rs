@@ -1,14 +1,15 @@
-use tombi_comment_directive::{
-    get_value_comment_directive_content_with_schema_uri, value::StringCommonRules,
-};
+use tombi_comment_directive::value::StringCommonRules;
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri, StringSchema};
 
-use crate::completion::{
-    comment::get_tombi_comment_directive_content_completion_contents,
-    schema_completion::SchemaCompletion, CompletionContent, CompletionEdit, CompletionHint,
-    FindCompletionContents,
+use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    completion::{
+        comment::get_tombi_comment_directive_content_completion_contents,
+        schema_completion::SchemaCompletion, CompletionContent, CompletionEdit, CompletionHint,
+        FindCompletionContents,
+    },
 };
 
 impl FindCompletionContents for tombi_document_tree::String {

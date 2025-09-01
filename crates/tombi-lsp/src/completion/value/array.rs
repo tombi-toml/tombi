@@ -1,7 +1,6 @@
 use ahash::AHashSet;
 use itertools::Itertools;
 use std::borrow::Cow;
-use tombi_comment_directive::get_array_comment_directive_content_with_schema_uri;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
@@ -13,9 +12,12 @@ use super::{
     all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
     one_of::find_one_of_completion_items, type_hint_value, CompletionHint, FindCompletionContents,
 };
-use crate::completion::{
-    comment::get_tombi_comment_directive_content_completion_contents,
-    schema_completion::SchemaCompletion, CompletionContent, CompletionEdit,
+use crate::{
+    comment_directive::get_array_comment_directive_content_with_schema_uri,
+    completion::{
+        comment::get_tombi_comment_directive_content_completion_contents,
+        schema_completion::SchemaCompletion, CompletionContent, CompletionEdit,
+    },
 };
 
 impl FindCompletionContents for tombi_document_tree::Array {

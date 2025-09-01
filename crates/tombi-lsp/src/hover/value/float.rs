@@ -1,9 +1,8 @@
-use tombi_comment_directive::{
-    get_value_comment_directive_content_with_schema_uri, value::FloatCommonRules,
-};
+use tombi_comment_directive::value::FloatCommonRules;
 use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, ValueSchema};
 
 use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,

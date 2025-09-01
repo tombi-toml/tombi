@@ -1,9 +1,8 @@
-use tombi_comment_directive::{
-    get_value_comment_directive_content_with_schema_uri, value::BooleanCommonRules,
-};
+use tombi_comment_directive::value::BooleanCommonRules;
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, ValueSchema};
 
 use crate::{
+    comment_directive::get_value_comment_directive_content_with_schema_uri,
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,

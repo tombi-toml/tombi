@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use tombi_ast::AstToken;
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent, CommentDirectiveContext, GetCommentDirectiveContext,
-    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
@@ -10,6 +10,7 @@ use tombi_uri::SchemaUri;
 use tower_lsp::lsp_types::Url;
 
 use crate::{
+    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
