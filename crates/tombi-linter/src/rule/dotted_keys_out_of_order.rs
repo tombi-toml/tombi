@@ -1,6 +1,4 @@
 use ahash::AHashMap;
-use itertools::Itertools;
-use tombi_ast::AstNode;
 use tombi_comment_directive::value::TableCommonRules;
 use tombi_config::SeverityLevel;
 use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules;
@@ -32,45 +30,20 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
             return;
         }
 
-        let source_text = l.source_text();
-        let mut prefix_groups: AHashMap<&str, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
-        let mut all_positions = Vec::new();
+        let mut prefix_groups: AHashMap<String, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
 
         // Single pass to collect all data
-        for (position, item) in node.items().enumerate() {
+        for (index, item) in node.items().enumerate() {
             if let tombi_ast::RootItem::KeyValue(key_value) = item {
-                all_positions.push(position);
-
-                if let Some(keys) = key_value.keys() {
-                    let key_parts = keys
-                        .keys()
-                        .map(|key| match key {
-                            tombi_ast::Key::BareKey(k) => &source_text[k.syntax().span()],
-                            tombi_ast::Key::BasicString(k) => {
-                                let mut span = k.syntax().span();
-                                // Remove quotes
-                                span.start += 1;
-                                span.end -= 1;
-                                &source_text[span]
-                            }
-                            tombi_ast::Key::LiteralString(k) => {
-                                let mut span = k.syntax().span();
-                                // Remove quotes
-                                span.start += 1;
-                                span.end -= 1;
-                                &source_text[span]
-                            }
-                        })
-                        .collect_vec();
-
-                    if key_parts.len() > 1 {
-                        // This is a dotted key
-                        let prefix = key_parts[0];
-                        prefix_groups
-                            .entry(prefix)
-                            .or_default()
-                            .push((position, key_value.syntax().range()));
-                    }
+                if let Some(key_text) = key_value
+                    .keys()
+                    .and_then(|keys| keys.keys().next())
+                    .and_then(|key| key.try_to_raw_text(l.toml_version()).ok())
+                {
+                    prefix_groups
+                        .entry(key_text)
+                        .or_default()
+                        .push((index, key_value.range()));
                 }
             }
         }
@@ -79,20 +52,11 @@ impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
         let mut out_of_order_ranges = Vec::new();
 
         for (_, positions) in &prefix_groups {
-            if positions.len() > 1 {
-                let min_pos = positions.iter().map(|(pos, _)| *pos).min().unwrap();
-                let max_pos = positions.iter().map(|(pos, _)| *pos).max().unwrap();
-
-                // Count keys in the range (including non-dotted)
-                let keys_in_range = all_positions
-                    .iter()
-                    .filter(|&&pos| pos >= min_pos && pos <= max_pos)
-                    .count();
-
-                // If there are more keys in range than dotted keys with this prefix, it's out of order
-                if keys_in_range > positions.len() {
-                    out_of_order_ranges.extend(positions.iter().map(|(_, range)| *range));
-                }
+            if positions
+                .windows(2)
+                .any(|window| window.first().unwrap().0 + 1 != window.last().unwrap().0)
+            {
+                out_of_order_ranges.extend(positions.iter().map(|(_, range)| *range))
             }
         }
 
