@@ -27,7 +27,8 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
-    if let Some(tombi_directives) = root.tombi_document_comment_directives() {
+    let tombi_directives = root.tombi_document_comment_directives();
+    if !tombi_directives.is_empty() {
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let document_schema = comment_directive_document_schema(
             schema_store,

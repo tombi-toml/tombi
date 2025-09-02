@@ -1,7 +1,9 @@
 use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
-use crate::{support, ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable};
+use crate::{
+    support, ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable, TombiValueCommentDirective,
+};
 
 impl crate::ArrayOfTable {
     pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
@@ -10,11 +12,6 @@ impl crate::ArrayOfTable {
 
     pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
         support::node::trailing_comment(self.syntax().children_with_tokens(), T!("]]"))
-    }
-
-    pub fn contains_header(&self, position: tombi_text::Position) -> bool {
-        self.double_bracket_start().unwrap().range().end <= position
-            && position <= self.double_bracket_end().unwrap().range().start
     }
 
     pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
@@ -39,6 +36,67 @@ impl crate::ArrayOfTable {
 
     pub fn key_values_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
         support::node::end_dangling_comments(self.syntax().children_with_tokens())
+    }
+
+    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+        itertools::chain!(
+            self.header_comment_directives(),
+            self.key_values_comment_directives(),
+        )
+    }
+
+    pub fn header_comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+        let mut header_comment_directives = vec![];
+
+        for comment in self.header_leading_comments() {
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                header_comment_directives.push(comment_directive);
+            }
+        }
+        if let Some(comment) = self.header_trailing_comment() {
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                header_comment_directives.push(comment_directive);
+            }
+        }
+
+        header_comment_directives.into_iter()
+    }
+
+    pub fn key_values_comment_directives(
+        &self,
+    ) -> impl Iterator<Item = TombiValueCommentDirective> {
+        let mut key_values_comment_directives = vec![];
+        if self.key_values().count() == 0 {
+            for comments in self.key_values_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        key_values_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        } else {
+            for comments in self.key_values_begin_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        key_values_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+            for comments in self.key_values_end_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        key_values_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        }
+
+        key_values_comment_directives.into_iter()
+    }
+
+    pub fn contains_header(&self, position: tombi_text::Position) -> bool {
+        self.double_bracket_start().unwrap().range().end <= position
+            && position <= self.double_bracket_end().unwrap().range().start
     }
 
     /// Returns an iterator over the subtables of this table.

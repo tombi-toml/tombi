@@ -46,7 +46,40 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
             let mut table = crate::Table::new_root(&self);
 
             {
-                let inner_comment_directives = self.tombi_value_comment_directives();
+                let mut inner_comment_directives = vec![];
+                if self.items().count() == 0 {
+                    for comments in self.key_values_dangling_comments() {
+                        for comment in comments {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                inner_comment_directives.push(comment_directive);
+                            }
+                        }
+                    }
+                } else {
+                    for comments in self.key_values_begin_dangling_comments() {
+                        for comment in comments {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                inner_comment_directives.push(comment_directive);
+                            }
+                        }
+                    }
+                    for comments in self.key_values_end_dangling_comments() {
+                        for comment in comments {
+                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                                errors.push(error);
+                            }
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                inner_comment_directives.push(comment_directive);
+                            }
+                        }
+                    }
+                }
 
                 if !inner_comment_directives.is_empty() {
                     table.inner_comment_directives = Some(Box::new(inner_comment_directives));

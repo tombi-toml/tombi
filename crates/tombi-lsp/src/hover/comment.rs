@@ -47,7 +47,7 @@ pub async fn get_document_comment_directive_hover_content(
 
     match root
         .tombi_document_comment_directives()
-        .and_then(|directives| directives.get_context(position))
+        .get_context(position)
     {
         Some(CommentDirectiveContext::Content {
             content,

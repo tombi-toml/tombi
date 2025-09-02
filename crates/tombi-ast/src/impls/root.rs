@@ -21,7 +21,7 @@ impl crate::Root {
         None
     }
 
-    pub fn tombi_document_comment_directives(&self) -> Option<Vec<TombiDocumentCommentDirective>> {
+    pub fn tombi_document_comment_directives(&self) -> Vec<TombiDocumentCommentDirective> {
         let mut tombi_directives = vec![];
         if let Some(comments) = self.get_document_header_comments() {
             for comment in comments {
@@ -31,11 +31,39 @@ impl crate::Root {
             }
         }
 
-        if tombi_directives.is_empty() {
-            None
+        tombi_directives
+    }
+
+    pub fn tombi_value_comment_directives(
+        &self,
+    ) -> impl Iterator<Item = TombiValueCommentDirective> {
+        let mut inner_comment_directives = vec![];
+        if self.items().collect_vec().is_empty() {
+            for comments in self.key_values_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
+                    }
+                }
+            }
         } else {
-            Some(tombi_directives)
+            for comments in self.key_values_begin_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
+                    }
+                }
+            }
+            for comments in self.key_values_end_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
+                    }
+                }
+            }
         }
+
+        inner_comment_directives.into_iter()
     }
 
     #[inline]
@@ -91,35 +119,5 @@ impl crate::Root {
 
     pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
         support::node::dangling_comments(self.syntax().children_with_tokens())
-    }
-
-    pub fn tombi_value_comment_directives(&self) -> Vec<TombiValueCommentDirective> {
-        let mut inner_comment_directives = vec![];
-        if self.items().collect_vec().is_empty() {
-            for comments in self.key_values_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        inner_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        } else {
-            for comments in self.key_values_begin_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        inner_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-            for comments in self.key_values_end_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        inner_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        }
-
-        inner_comment_directives
     }
 }
