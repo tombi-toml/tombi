@@ -14,6 +14,7 @@ tombi-comment-directive.workspace = true
 tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-document-tree.workspace = true
+tombi-future.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true

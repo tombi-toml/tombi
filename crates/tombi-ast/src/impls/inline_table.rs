@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
-use crate::{support, AstNode};
+use crate::{support, AstNode, TombiValueCommentDirective};
 
 impl crate::InlineTable {
     pub fn inner_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
@@ -31,6 +31,38 @@ impl crate::InlineTable {
                 .skip(1) // skip '{'
                 .take_while(|node| node.kind() != T!('}')),
         )
+    }
+
+    #[inline]
+    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+        let mut comment_directives = vec![];
+
+        if self.key_values().next().is_none() {
+            for comments in self.inner_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        } else {
+            for comments in self.inner_begin_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+            for comments in self.inner_end_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        }
+
+        comment_directives.into_iter()
     }
 
     pub fn key_values_with_comma(

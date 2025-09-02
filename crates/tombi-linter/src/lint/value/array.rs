@@ -1,5 +1,14 @@
+use tombi_future::Boxable;
+
 use crate::Lint;
 
 impl Lint for tombi_ast::Array {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
+        async move {
+            for value in self.items() {
+                value.lint(l).await;
+            }
+        }
+        .boxed()
+    }
 }
