@@ -5,6 +5,6 @@ pub use dotted_keys_out_of_order::DottedKeysOutOfOrderRule;
 pub use key_empty::KeyEmptyRule;
 pub use tables_out_of_order::TablesOutOfOrderRule;
 
-pub trait Rule<N: tombi_ast::AstNode> {
+pub trait Rule<N> {
     async fn check(node: &N, l: &mut crate::Linter<'_>);
 }
