@@ -1,5 +1,7 @@
 use ahash::AHashMap;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::RootTableCommonRules;
+use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics;
 
 use crate::Rule;
 
@@ -71,18 +73,26 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
 
         // Report diagnostics for all out-of-order tables
         if !out_of_order_ranges.is_empty() {
-            let level = l
-                .options()
-                .rules
-                .as_ref()
-                .and_then(|rules| rules.tables_out_of_order)
-                .unwrap_or_default()
-                .into();
+            let level = get_tombi_value_rules_and_diagnostics::<RootTableCommonRules>(
+                &node.tombi_value_comment_directives(),
+            )
+            .await
+            .0
+            .as_ref()
+            .map(|rules| &rules.value)
+            .and_then(|rules| rules.tables_out_of_order)
+            .unwrap_or_else(|| {
+                l.options()
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.tables_out_of_order)
+                    .unwrap_or_default()
+            });
 
             for range in out_of_order_ranges {
                 l.extend_diagnostics(crate::Diagnostic {
                     kind: crate::DiagnosticKind::TablesOutOfOrder,
-                    level,
+                    level: level.into(),
                     range,
                 });
             }
