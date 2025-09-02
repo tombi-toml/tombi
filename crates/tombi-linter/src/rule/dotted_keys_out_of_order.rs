@@ -9,8 +9,7 @@ pub struct DottedKeysOutOfOrderRule;
 
 impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
     async fn check(root: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
-        check_dotted_keys_out_of_order(root.key_values(), root.tombi_value_comment_directives(), l)
-            .await;
+        check_dotted_keys_out_of_order(root.key_values(), root.comment_directives(), l).await;
     }
 }
 
@@ -22,6 +21,12 @@ impl Rule<tombi_ast::Table> for DottedKeysOutOfOrderRule {
 
 impl Rule<tombi_ast::ArrayOfTable> for DottedKeysOutOfOrderRule {
     async fn check(table: &tombi_ast::ArrayOfTable, l: &mut crate::Linter<'_>) {
+        check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
+    }
+}
+
+impl Rule<tombi_ast::InlineTable> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast::InlineTable, l: &mut crate::Linter<'_>) {
         check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
     }
 }

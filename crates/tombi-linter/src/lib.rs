@@ -382,6 +382,76 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_table_warning_empty(
+                r#"
+                [aaa]
+                "" = 1
+                "#,
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_of_table_warning_empty(
+                r#"
+                [[aaa]]
+                "" = 1
+                "#,
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_inline_table_warning_empty(
+                r#"
+                key = { "" = 1 }
+                "#,
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_nested_inline_table_warning_empty(
+                r#"
+                key = { key2 = { "" = 1 } }
+                "#,
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_table_inline_table_warning_empty(
+                r#"
+                [array]
+                key = { "" = 1 }
+                "#,
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_of_table_inline_table_warning_empty(
+                r#"
+                [[array]]
+                key = { "" = 1 }
+                "#,
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_dotted_keys_out_of_order(
                 r#"
                 apple.type = "fruit"

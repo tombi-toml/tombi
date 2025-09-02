@@ -34,11 +34,9 @@ impl crate::Root {
         tombi_directives
     }
 
-    pub fn tombi_value_comment_directives(
-        &self,
-    ) -> impl Iterator<Item = TombiValueCommentDirective> {
+    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
         let mut inner_comment_directives = vec![];
-        if self.items().collect_vec().is_empty() {
+        if self.items().next().is_none() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {

@@ -1,17 +1,39 @@
+use tombi_future::Boxable;
+
 use crate::Lint;
 
 impl Lint for tombi_ast::BasicString {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
 
 impl Lint for tombi_ast::LiteralString {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
 
 impl Lint for tombi_ast::MultiLineBasicString {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
 
 impl Lint for tombi_ast::MultiLineLiteralString {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }

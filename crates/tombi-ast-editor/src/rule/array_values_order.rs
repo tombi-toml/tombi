@@ -66,7 +66,7 @@ pub async fn array_values_order<'a>(
         if !is_last_comma {
             if let Some(last_comma) = comma {
                 if last_comma.trailing_comment().is_none()
-                    && last_comma.leading_comments().collect_vec().is_empty()
+                    && last_comma.leading_comments().next().is_none()
                 {
                     *comma = None;
                 }
@@ -99,9 +99,7 @@ pub async fn array_values_order<'a>(
     if !is_last_comma {
         if let Some(tombi_syntax::SyntaxElement::Node(node)) = new.last() {
             if let Some(comma) = tombi_ast::Comma::cast(node.clone()) {
-                if comma.trailing_comment().is_none()
-                    && comma.leading_comments().collect_vec().is_empty()
-                {
+                if comma.trailing_comment().is_none() && comma.leading_comments().next().is_none() {
                     changes.push(crate::Change::Remove {
                         target: SyntaxElement::Node(comma.syntax().clone()),
                     });

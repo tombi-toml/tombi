@@ -100,7 +100,7 @@ impl crate::Table {
         &self,
     ) -> impl Iterator<Item = TombiValueCommentDirective> {
         let mut key_values_comment_directives = vec![];
-        if self.key_values().count() == 0 {
+        if self.key_values().next().is_none() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {

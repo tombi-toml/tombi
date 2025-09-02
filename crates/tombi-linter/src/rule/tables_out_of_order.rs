@@ -12,7 +12,7 @@ pub struct TablesOutOfOrderRule;
 impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
     async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
         let level = get_tombi_value_rules_and_diagnostics::<RootTableCommonRules>(
-            &node.tombi_value_comment_directives().collect_vec(),
+            &node.comment_directives().collect_vec(),
         )
         .await
         .0

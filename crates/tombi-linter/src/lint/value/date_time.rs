@@ -1,17 +1,39 @@
+use tombi_future::Boxable;
+
 use crate::Lint;
 
 impl Lint for tombi_ast::OffsetDateTime {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
 
 impl Lint for tombi_ast::LocalDateTime {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
 
 impl Lint for tombi_ast::LocalDate {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
 
 impl Lint for tombi_ast::LocalTime {
-    async fn lint(&self, _l: &mut crate::Linter<'_>) {}
+    fn lint<'a: 'b, 'b>(
+        &'a self,
+        _l: &'a mut crate::Linter<'_>,
+    ) -> tombi_future::BoxFuture<'b, ()> {
+        async move {}.boxed()
+    }
 }
