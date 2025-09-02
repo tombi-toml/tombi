@@ -77,16 +77,16 @@ async fn check_key_empty(
             .unwrap_or_default()
     });
 
+    if level == SeverityLevel::Off {
+        return;
+    }
+
     for key in keys.keys() {
         if match &key {
             tombi_ast::Key::BareKey(_) => false,
             tombi_ast::Key::BasicString(node) => node.syntax().text() == "\"\"",
             tombi_ast::Key::LiteralString(node) => node.syntax().text() == "''",
         } {
-            if level == SeverityLevel::Off {
-                return;
-            }
-
             l.extend_diagnostics(crate::Diagnostic {
                 kind: crate::DiagnosticKind::KeyEmpty,
                 level: level.into(),
