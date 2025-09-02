@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_syntax::SyntaxElement;
 
@@ -11,8 +10,7 @@ pub fn inline_table_comma_trailing_comment(
     if let Some(trailing_comment) = key_value.trailing_comment() {
         if match comma {
             Some(comma) => {
-                comma.trailing_comment().is_none()
-                    && comma.leading_comments().collect_vec().is_empty()
+                comma.trailing_comment().is_none() && comma.leading_comments().next().is_none()
             }
             None => true,
         } {
