@@ -22,7 +22,7 @@ impl crate::Edit for tombi_ast::Root {
             if self
                 .schema_document_comment_directive(source_path)
                 .is_some()
-                || self.tombi_document_comment_directives().is_some()
+                || !self.tombi_document_comment_directives().is_empty()
             {
                 changes.push(crate::Change::AppendTop {
                     new: self

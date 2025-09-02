@@ -56,7 +56,7 @@ pub async fn get_document_comment_directive_completion_contents(
 
                         if let Some(comment_directive_context) = root
                             .tombi_document_comment_directives()
-                            .and_then(|directives| directives.get_context(position))
+                            .get_context(position)
                         {
                             if let Some(completions) =
                                 get_tombi_comment_directive_content_completion_contents(

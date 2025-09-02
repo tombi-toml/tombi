@@ -1,74 +1,93 @@
+use crate::Rule;
 use ahash::AHashMap;
+use itertools::Itertools;
 use tombi_comment_directive::value::TableCommonRules;
 use tombi_config::SeverityLevel;
 use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules;
 
-use crate::Rule;
-
 pub struct DottedKeysOutOfOrderRule;
 
 impl Rule<tombi_ast::Root> for DottedKeysOutOfOrderRule {
-    async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
-        let level = get_tombi_value_rules_and_diagnostics_with_key_rules::<TableCommonRules>(
-            &node.tombi_value_comment_directives(),
-            &[],
-        )
-        .await
-        .0
-        .as_ref()
-        .map(|rules| &rules.value)
-        .and_then(|rules| rules.dotted_keys_out_of_order)
-        .unwrap_or_else(|| {
-            l.options()
-                .rules
-                .as_ref()
-                .and_then(|rules| rules.dotted_keys_out_of_order)
-                .unwrap_or_default()
-        });
+    async fn check(root: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
+        check_dotted_keys_out_of_order(root.key_values(), root.tombi_value_comment_directives(), l)
+            .await;
+    }
+}
 
-        if level == SeverityLevel::Off {
-            return;
+impl Rule<tombi_ast::Table> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast::Table, l: &mut crate::Linter<'_>) {
+        check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
+    }
+}
+
+impl Rule<tombi_ast::ArrayOfTable> for DottedKeysOutOfOrderRule {
+    async fn check(table: &tombi_ast::ArrayOfTable, l: &mut crate::Linter<'_>) {
+        check_dotted_keys_out_of_order(table.key_values(), table.comment_directives(), l).await;
+    }
+}
+
+async fn check_dotted_keys_out_of_order(
+    key_values: impl Iterator<Item = tombi_ast::KeyValue>,
+    comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
+    l: &mut crate::Linter<'_>,
+) {
+    let level = get_tombi_value_rules_and_diagnostics_with_key_rules::<TableCommonRules>(
+        &comment_directives.collect_vec(),
+        &[],
+    )
+    .await
+    .0
+    .as_ref()
+    .map(|rules| &rules.value)
+    .and_then(|rules| rules.dotted_keys_out_of_order)
+    .unwrap_or_else(|| {
+        l.options()
+            .rules
+            .as_ref()
+            .and_then(|rules| rules.dotted_keys_out_of_order)
+            .unwrap_or_default()
+    });
+
+    if level == SeverityLevel::Off {
+        return;
+    }
+
+    let mut prefix_groups: AHashMap<String, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
+
+    // Single pass to collect all data
+    for (index, key_value) in key_values.enumerate() {
+        if let Some(key_text) = key_value
+            .keys()
+            .and_then(|keys| keys.keys().next())
+            .and_then(|key| key.try_to_raw_text(l.toml_version()).ok())
+        {
+            prefix_groups
+                .entry(key_text)
+                .or_default()
+                .push((index, key_value.range()));
         }
+    }
 
-        let mut prefix_groups: AHashMap<String, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
+    // Check if any prefix group is out of order
+    let mut out_of_order_ranges = Vec::new();
 
-        // Single pass to collect all data
-        for (index, item) in node.items().enumerate() {
-            if let tombi_ast::RootItem::KeyValue(key_value) = item {
-                if let Some(key_text) = key_value
-                    .keys()
-                    .and_then(|keys| keys.keys().next())
-                    .and_then(|key| key.try_to_raw_text(l.toml_version()).ok())
-                {
-                    prefix_groups
-                        .entry(key_text)
-                        .or_default()
-                        .push((index, key_value.range()));
-                }
-            }
+    for (_, positions) in &prefix_groups {
+        if positions
+            .windows(2)
+            .any(|window| window.first().unwrap().0 + 1 != window.last().unwrap().0)
+        {
+            out_of_order_ranges.extend(positions.iter().map(|(_, range)| *range))
         }
+    }
 
-        // Check if any prefix group is out of order
-        let mut out_of_order_ranges = Vec::new();
-
-        for (_, positions) in &prefix_groups {
-            if positions
-                .windows(2)
-                .any(|window| window.first().unwrap().0 + 1 != window.last().unwrap().0)
-            {
-                out_of_order_ranges.extend(positions.iter().map(|(_, range)| *range))
-            }
-        }
-
-        // Report diagnostics for all out-of-order dotted keys
-        if !out_of_order_ranges.is_empty() {
-            for range in out_of_order_ranges {
-                l.extend_diagnostics(crate::Diagnostic {
-                    kind: crate::DiagnosticKind::DottedKeysOutOfOrder,
-                    level: level.into(),
-                    range,
-                });
-            }
+    // Report diagnostics for all out-of-order dotted keys
+    if !out_of_order_ranges.is_empty() {
+        for range in out_of_order_ranges {
+            l.extend_diagnostics(crate::Diagnostic {
+                kind: crate::DiagnosticKind::DottedKeysOutOfOrder,
+                level: level.into(),
+                range,
+            });
         }
     }
 }
