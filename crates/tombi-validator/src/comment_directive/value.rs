@@ -39,6 +39,27 @@ where
     }
 }
 
+pub async fn get_tombi_value_rules_and_diagnostics<Rules>(
+    comment_directives: &[tombi_ast::TombiValueCommentDirective],
+) -> (Option<Rules>, Vec<tombi_diagnostic::Diagnostic>)
+where
+    Rules: serde::de::DeserializeOwned + serde::Serialize,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
+{
+    let (comment_directive, diagnostics) =
+        get_tombi_value_comment_directive_and_diagnostics(comment_directives).await;
+
+    if let Some(TombiValueDirectiveContent {
+        lint: Some(LintOptions { rules, .. }),
+        ..
+    }) = comment_directive
+    {
+        (rules, diagnostics)
+    } else {
+        (None, diagnostics)
+    }
+}
+
 pub async fn get_tombi_value_rules_and_diagnostics_with_key_rules<Rules>(
     comment_directives: &[tombi_ast::TombiValueCommentDirective],
     accessors: &[tombi_schema_store::Accessor],
@@ -69,27 +90,6 @@ where
                 (None, diagnostics)
             }
         }
-    }
-}
-
-pub async fn get_tombi_value_rules_and_diagnostics<Rules>(
-    comment_directives: &[tombi_ast::TombiValueCommentDirective],
-) -> (Option<Rules>, Vec<tombi_diagnostic::Diagnostic>)
-where
-    Rules: serde::de::DeserializeOwned + serde::Serialize,
-    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
-{
-    let (comment_directive, diagnostics) =
-        get_tombi_value_comment_directive_and_diagnostics(comment_directives).await;
-
-    if let Some(TombiValueDirectiveContent {
-        lint: Some(LintOptions { rules, .. }),
-        ..
-    }) = comment_directive
-    {
-        (rules, diagnostics)
-    } else {
-        (None, diagnostics)
     }
 }
 

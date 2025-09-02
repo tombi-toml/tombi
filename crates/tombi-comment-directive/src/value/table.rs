@@ -32,7 +32,7 @@ impl TombiCommentDirectiveImpl for TombiTableDirectiveContent {
 
 impl TombiCommentDirectiveImpl for TombiRootTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/root-tombi-table-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-root-table-directive.json").unwrap()
     }
 }
 

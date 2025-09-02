@@ -1,5 +1,8 @@
 use ahash::AHashMap;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::RootTableCommonRules;
+use tombi_config::SeverityLevel;
+use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics;
 
 use crate::Rule;
 
@@ -7,6 +10,26 @@ pub struct TablesOutOfOrderRule;
 
 impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
     async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
+        let level = get_tombi_value_rules_and_diagnostics::<RootTableCommonRules>(
+            &node.tombi_value_comment_directives(),
+        )
+        .await
+        .0
+        .as_ref()
+        .map(|rules| &rules.value)
+        .and_then(|rules| rules.tables_out_of_order)
+        .unwrap_or_else(|| {
+            l.options()
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.tables_out_of_order)
+                .unwrap_or_default()
+        });
+
+        if level == SeverityLevel::Off {
+            return;
+        }
+
         let source_text = l.source_text();
         let mut table_positions: Vec<(usize, Vec<&str>, tombi_text::Range)> = Vec::new();
 
@@ -71,18 +94,10 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
 
         // Report diagnostics for all out-of-order tables
         if !out_of_order_ranges.is_empty() {
-            let level = l
-                .options()
-                .rules
-                .as_ref()
-                .and_then(|rules| rules.tables_out_of_order)
-                .unwrap_or_default()
-                .into();
-
             for range in out_of_order_ranges {
                 l.extend_diagnostics(crate::Diagnostic {
                     kind: crate::DiagnosticKind::TablesOutOfOrder,
-                    level,
+                    level: level.into(),
                     range,
                 });
             }
