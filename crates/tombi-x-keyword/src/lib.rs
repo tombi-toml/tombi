@@ -42,6 +42,42 @@ impl<'a> TryFrom<&'a str> for ArrayValuesOrder {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum TableGroup {
+    All,
+    Properties,
+    AdditionalProperties,
+    PatternProperties,
+}
+
+impl std::fmt::Display for TableGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TableGroup::All => write!(f, "all"),
+            TableGroup::Properties => write!(f, "properties"),
+            TableGroup::AdditionalProperties => write!(f, "additionalProperties"),
+            TableGroup::PatternProperties => write!(f, "patternProperties"),
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a str> for TableGroup {
+    type Error = &'a str;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        match value {
+            "all" => Ok(TableGroup::All),
+            "properties" => Ok(TableGroup::Properties),
+            "additionalProperties" => Ok(TableGroup::AdditionalProperties),
+            "patternProperties" => Ok(TableGroup::PatternProperties),
+            _ => Err("Invalid table group"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum TableKeysOrder {
     Ascending,
     Descending,

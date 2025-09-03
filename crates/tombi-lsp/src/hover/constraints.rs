@@ -1,3 +1,4 @@
+use tombi_schema_store::TableGroupOrder;
 use tombi_x_keyword::{ArrayValuesOrder, StringFormat, TableKeysOrder};
 
 use super::display_value::DisplayValue;
@@ -69,7 +70,7 @@ pub struct ValueConstraints {
     pub max_keys: Option<usize>,
     pub key_patterns: Option<Vec<String>>,
     pub additional_keys: Option<bool>,
-    pub keys_order: Option<TableKeysOrder>,
+    pub keys_order: Option<Vec<TableGroupOrder>>,
 }
 
 impl std::fmt::Display for ValueConstraints {
@@ -173,7 +174,10 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(keys_order) = &self.keys_order {
-            write!(f, "Keys Order: `{keys_order}`\n\n")?;
+            write!(f, "Keys Order:\n\n")?;
+            for key in keys_order.iter() {
+                write!(f, "- `{key}`\n\n")?;
+            }
         }
 
         Ok(())
