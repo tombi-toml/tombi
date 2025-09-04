@@ -1,9 +1,8 @@
 use std::str::FromStr;
 
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
 
 pub type TombiKeyStringDirectiveContent = TombiValueDirectiveContent<KeyStringCommonRules>;
@@ -38,7 +37,7 @@ pub struct StringRules {
     /// length(string) <= max
     /// ```
     ///
-    pub string_max_length: Option<SeverityLevelDefaultError>,
+    pub string_max_length: Option<ErrorRuleOptions>,
 
     /// # Min length.
     ///
@@ -48,7 +47,7 @@ pub struct StringRules {
     /// length(string) >= min
     /// ```
     ///
-    pub string_min_length: Option<SeverityLevelDefaultError>,
+    pub string_min_length: Option<ErrorRuleOptions>,
 
     /// # Format.
     ///
@@ -58,7 +57,7 @@ pub struct StringRules {
     /// matches(string, format)
     /// ```
     ///
-    pub string_format: Option<SeverityLevelDefaultError>,
+    pub string_format: Option<ErrorRuleOptions>,
 
     /// # Pattern.
     ///
@@ -68,5 +67,5 @@ pub struct StringRules {
     /// matches(string, pattern)
     /// ```
     ///
-    pub string_pattern: Option<SeverityLevelDefaultError>,
+    pub string_pattern: Option<ErrorRuleOptions>,
 }

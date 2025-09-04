@@ -6,6 +6,7 @@ use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
     comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
@@ -188,7 +189,12 @@ async fn validate_array(
         if array_value.values().len() > max_items {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.array_max_items)
+                .and_then(|rules| {
+                    rules
+                        .array_max_items
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -206,7 +212,12 @@ async fn validate_array(
         if array_value.values().len() < min_items {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.array_min_items)
+                .and_then(|rules| {
+                    rules
+                        .array_min_items
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -223,7 +234,12 @@ async fn validate_array(
     if array_schema.unique_items == Some(true) {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.array_unique_items)
+            .and_then(|rules| {
+                rules
+                    .array_unique_items
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         let literal_values = array_value
@@ -254,7 +270,12 @@ async fn validate_array(
         if array_schema.deprecated == Some(true) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {

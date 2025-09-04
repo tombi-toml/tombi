@@ -11,7 +11,7 @@ use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, SchemaAccessors,
     ValueSchema,
 };
-use tombi_severity_level::SeverityLevel;
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
 
@@ -258,12 +258,54 @@ async fn validate_table(
                     {
                         if current_schema.value_schema.deprecated().await == Some(true) {
                             let level = common_rules
-                                .and_then(|rules| rules.deprecated)
+                                .and_then(|rules| {
+                                    rules
+                                        .deprecated
+                                        .as_ref()
+                                        .map(SeverityLevelDefaultWarn::from)
+                                })
                                 .unwrap_or_default();
 
+                            let value_string = match value {
+                                tombi_document_tree::Value::Boolean(b) => b.value().to_string(),
+                                tombi_document_tree::Value::Integer(i) => i.value().to_string(),
+                                tombi_document_tree::Value::Float(f) => f.value().to_string(),
+                                tombi_document_tree::Value::String(s) => s.to_string(),
+                                tombi_document_tree::Value::Array(a) => {
+                                    let items: Vec<String> = a
+                                        .iter()
+                                        .map(|v| match v {
+                                            tombi_document_tree::Value::Boolean(b) => {
+                                                b.value().to_string()
+                                            }
+                                            tombi_document_tree::Value::Integer(i) => {
+                                                i.value().to_string()
+                                            }
+                                            tombi_document_tree::Value::Float(f) => {
+                                                f.value().to_string()
+                                            }
+                                            tombi_document_tree::Value::String(s) => s.to_string(),
+                                            _ => "null".to_string(),
+                                        })
+                                        .collect();
+                                    format!("[{}]", items.join(", "))
+                                }
+                                tombi_document_tree::Value::Table(_) => "{}".to_string(),
+                                tombi_document_tree::Value::OffsetDateTime(dt) => {
+                                    dt.value().to_string()
+                                }
+                                tombi_document_tree::Value::LocalDateTime(dt) => {
+                                    dt.value().to_string()
+                                }
+                                tombi_document_tree::Value::LocalDate(d) => d.value().to_string(),
+                                tombi_document_tree::Value::LocalTime(t) => t.value().to_string(),
+                                tombi_document_tree::Value::Incomplete { .. } => "null".to_string(),
+                            };
+
                             crate::Diagnostic {
-                                kind: Box::new(crate::DiagnosticKind::Deprecated(
+                                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                                     SchemaAccessors::from(&new_accessors),
+                                    value_string,
                                 )),
                                 range: key.range() + value.range(),
                             }
@@ -278,7 +320,12 @@ async fn validate_table(
                     }
                 } else if !table_schema.allows_additional_properties(schema_context.strict()) {
                     let level = key_rules
-                        .and_then(|rules| rules.key_pattern)
+                        .and_then(|rules| {
+                            rules
+                                .key_pattern
+                                .as_ref()
+                                .map(SeverityLevelDefaultError::from)
+                        })
                         .unwrap_or_default();
 
                     crate::Diagnostic {
@@ -314,7 +361,12 @@ async fn validate_table(
                 {
                     if current_schema.value_schema.deprecated().await == Some(true) {
                         let level = common_rules
-                            .and_then(|rules| rules.deprecated)
+                            .and_then(|rules| {
+                                rules
+                                    .deprecated
+                                    .as_ref()
+                                    .map(SeverityLevelDefaultWarn::from)
+                            })
                             .unwrap_or_default();
 
                         crate::Diagnostic {
@@ -349,7 +401,12 @@ async fn validate_table(
             }
             if !table_schema.allows_any_additional_properties(schema_context.strict()) {
                 let level = key_rules
-                    .and_then(|rules| rules.key_not_allowed)
+                    .and_then(|rules| {
+                        rules
+                            .key_not_allowed
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
                     .unwrap_or_default();
 
                 crate::Diagnostic {
@@ -373,7 +430,12 @@ async fn validate_table(
         for required_key in required {
             if !keys.contains(required_key) {
                 let level = key_rules
-                    .and_then(|rules| rules.key_required)
+                    .and_then(|rules| {
+                        rules
+                            .key_required
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
                     .unwrap_or_default();
 
                 crate::Diagnostic {
@@ -390,7 +452,12 @@ async fn validate_table(
     if let Some(max_properties) = table_schema.max_properties {
         if table_value.keys().count() > max_properties {
             let level = table_rules
-                .and_then(|rules| rules.table_max_properties)
+                .and_then(|rules| {
+                    rules
+                        .table_max_properties
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -407,7 +474,12 @@ async fn validate_table(
     if let Some(min_properties) = table_schema.min_properties {
         if table_value.keys().count() < min_properties {
             let level = table_rules
-                .and_then(|rules| rules.table_min_properties)
+                .and_then(|rules| {
+                    rules
+                        .table_min_properties
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -424,7 +496,12 @@ async fn validate_table(
     if diagnostics.is_empty() {
         if table_schema.deprecated == Some(true) {
             let level = common_rules
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {

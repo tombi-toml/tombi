@@ -3796,6 +3796,7 @@ dependencies = [
  "tombi-future",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-severity-level",
  "tombi-test-lib",
  "tombi-text",
  "tombi-uri",

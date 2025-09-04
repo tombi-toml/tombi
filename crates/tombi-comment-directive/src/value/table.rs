@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonRules, WithKeyRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
 pub type TombiKeyTableDirectiveContent = TombiValueDirectiveContent<KeyTableCommonRules>;
@@ -57,7 +58,7 @@ pub struct TableRules {
     /// orange.type = "fruit"
     /// orange.skin = "thick"
     /// ```
-    pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
+    pub dotted_keys_out_of_order: Option<WarnRuleOptions>,
 
     /// # Maximum properties.
     ///
@@ -67,7 +68,7 @@ pub struct TableRules {
     /// length(table) <= maximum
     /// ```
     ///
-    pub table_max_properties: Option<SeverityLevelDefaultError>,
+    pub table_max_properties: Option<ErrorRuleOptions>,
 
     /// # Minimum properties.
     ///
@@ -77,7 +78,7 @@ pub struct TableRules {
     /// length(table) >= minimum
     /// ```
     ///
-    pub table_min_properties: Option<SeverityLevelDefaultError>,
+    pub table_min_properties: Option<ErrorRuleOptions>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -99,7 +100,7 @@ pub struct RootTableRules {
     /// [fruit.orange]
     /// [animal]
     /// ```
-    pub tables_out_of_order: Option<SeverityLevelDefaultWarn>,
+    pub tables_out_of_order: Option<WarnRuleOptions>,
 
     #[serde(flatten)]
     pub table: TableRules,

@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonExtensibleRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonExtensibleRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
 pub type TombiKeyDirectiveContent = TombiValueDirectiveContent<KeyCommonExtensibleRules>;
@@ -29,23 +30,23 @@ pub struct KeyRules {
     /// "" = true
     /// ```
     ///
-    pub key_empty: Option<SeverityLevelDefaultWarn>,
+    pub key_empty: Option<WarnRuleOptions>,
 
     /// # Key required.
     ///
     /// Check if the key is required in this Table.
     ///
-    pub key_required: Option<SeverityLevelDefaultError>,
+    pub key_required: Option<ErrorRuleOptions>,
 
     /// # Key not allowed.
     ///
     /// Check if the key is not defined in this Table.
     ///
-    pub key_not_allowed: Option<SeverityLevelDefaultError>,
+    pub key_not_allowed: Option<ErrorRuleOptions>,
 
     /// # Key pattern.
     ///
     /// Check if the key matches the pattern in the Schema.
     ///
-    pub key_pattern: Option<SeverityLevelDefaultError>,
+    pub key_pattern: Option<ErrorRuleOptions>,
 }

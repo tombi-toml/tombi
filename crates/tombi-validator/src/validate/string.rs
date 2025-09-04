@@ -3,6 +3,7 @@ use tombi_comment_directive::value::StringCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_x_keyword::StringFormat;
 
 use crate::{
@@ -113,7 +114,12 @@ async fn validate_string(
         if value != *const_value {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.const_value)
+                .and_then(|rules| {
+                    rules
+                        .const_value
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -131,7 +137,12 @@ async fn validate_string(
         if !enumerate.contains(&value) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.enumerate)
+                .and_then(|rules| {
+                    rules
+                        .enumerate
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -149,7 +160,12 @@ async fn validate_string(
         if value.len() > *max_length {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.string_max_length)
+                .and_then(|rules| {
+                    rules
+                        .string_max_length
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -167,7 +183,12 @@ async fn validate_string(
         if value.len() < *min_length {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.string_min_length)
+                .and_then(|rules| {
+                    rules
+                        .string_min_length
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::StringMinLength {
@@ -186,7 +207,12 @@ async fn validate_string(
                 if !format::email::validate_format(&value) {
                     let level = value_rules
                         .map(|rules| &rules.value)
-                        .and_then(|rules| rules.string_format)
+                        .and_then(|rules| {
+                            rules
+                                .string_format
+                                .as_ref()
+                                .map(SeverityLevelDefaultError::from)
+                        })
                         .unwrap_or_default();
 
                     crate::Diagnostic {
@@ -203,7 +229,12 @@ async fn validate_string(
                 if !format::hostname::validate_format(&value) {
                     let level = value_rules
                         .map(|rules| &rules.value)
-                        .and_then(|rules| rules.string_format)
+                        .and_then(|rules| {
+                            rules
+                                .string_format
+                                .as_ref()
+                                .map(SeverityLevelDefaultError::from)
+                        })
                         .unwrap_or_default();
 
                     crate::Diagnostic {
@@ -220,7 +251,12 @@ async fn validate_string(
                 if !format::uri::validate_format(&value) {
                     let level = value_rules
                         .map(|rules| &rules.value)
-                        .and_then(|rules| rules.string_format)
+                        .and_then(|rules| {
+                            rules
+                                .string_format
+                                .as_ref()
+                                .map(SeverityLevelDefaultError::from)
+                        })
                         .unwrap_or_default();
 
                     crate::Diagnostic {
@@ -237,7 +273,12 @@ async fn validate_string(
                 if !format::uuid::validate_format(&value) {
                     let level = value_rules
                         .map(|rules| &rules.value)
-                        .and_then(|rules| rules.string_format)
+                        .and_then(|rules| {
+                            rules
+                                .string_format
+                                .as_ref()
+                                .map(SeverityLevelDefaultError::from)
+                        })
                         .unwrap_or_default();
 
                     crate::Diagnostic {
@@ -258,7 +299,12 @@ async fn validate_string(
             if !regex.is_match(&value) {
                 let level = value_rules
                     .map(|rules| &rules.value)
-                    .and_then(|rules| rules.string_pattern)
+                    .and_then(|rules| {
+                        rules
+                            .string_pattern
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
                     .unwrap_or_default();
 
                 crate::Diagnostic {
@@ -279,7 +325,12 @@ async fn validate_string(
         if string_schema.deprecated == Some(true) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {

@@ -342,7 +342,7 @@ impl NodeData {
         }
     }
     #[inline]
-    fn green_siblings(&self) -> slice::Iter<GreenChild> {
+    fn green_siblings(&self) -> slice::Iter<'_, GreenChild> {
         match &self.parent().map(|it| &it.green) {
             Some(Green::Node { ptr }) => unsafe { &*ptr.get().as_ptr() }.children().raw,
             Some(Green::Token { .. }) => {

@@ -3,6 +3,7 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_comment_directive::value::TableCommonRules;
 use tombi_config::SeverityLevel;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules;
 
 pub struct DottedKeysOutOfOrderRule;
@@ -44,7 +45,12 @@ async fn check_dotted_keys_out_of_order(
     .0
     .as_ref()
     .map(|rules| &rules.value)
-    .and_then(|rules| rules.dotted_keys_out_of_order)
+    .and_then(|rules| {
+        rules
+            .dotted_keys_out_of_order
+            .as_ref()
+            .map(SeverityLevelDefaultWarn::from)
+    })
     .unwrap_or_else(|| {
         l.options()
             .rules
