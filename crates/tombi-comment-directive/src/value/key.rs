@@ -32,12 +32,6 @@ pub struct KeyRules {
     ///
     pub key_empty: Option<WarnRuleOptions>,
 
-    /// # Key required.
-    ///
-    /// Check if the key is required in this Table.
-    ///
-    pub key_required: Option<ErrorRuleOptions>,
-
     /// # Key not allowed.
     ///
     /// Check if the key is not defined in this Table.

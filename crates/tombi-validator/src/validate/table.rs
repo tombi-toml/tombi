@@ -2,8 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_comment_directive::value::{
-    CommonRules, KeyCommonExtensibleRules, KeyRules, KeyTableCommonRules, TableRules,
-    WithCommonRules,
+    CommonRules, KeyCommonExtensibleRules, KeyTableCommonRules, TableRules, WithCommonRules,
 };
 use tombi_document_tree::{TableKind, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
@@ -27,53 +26,53 @@ impl Validate for tombi_document_tree::Table {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
-            let (key_rules, value_rules, common_rules) =
-                if let Some(comment_directives) = self.comment_directives() {
-                    let (key_rules, value_rules, common_rules, diagnostics) = if self.kind()
-                        == TableKind::KeyValue
-                        && self
-                            .values()
-                            .next()
-                            .map(|value| value.is_inline())
-                            .unwrap_or_default()
-                    {
-                        let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                            KeyCommonExtensibleRules,
-                        >(comment_directives)
-                        .await;
+            let (value_rules, common_rules) = if let Some(comment_directives) =
+                self.comment_directives()
+            {
+                let (value_rules, common_rules, diagnostics) = if self.kind() == TableKind::KeyValue
+                    && self
+                        .values()
+                        .next()
+                        .map(|value| value.is_inline())
+                        .unwrap_or_default()
+                {
+                    let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
+                        KeyCommonExtensibleRules,
+                    >(comment_directives)
+                    .await;
 
-                        if let Some(KeyCommonExtensibleRules {
-                            common, value: key, ..
-                        }) = rules
-                        {
-                            (Some(key), None, Some(common), diagnostics)
-                        } else {
-                            (None, None, None, diagnostics)
-                        }
+                    if let Some(KeyCommonExtensibleRules { common, .. }) = rules {
+                        (None, Some(common), diagnostics)
                     } else {
-                        let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                            KeyTableCommonRules,
-                        >(comment_directives)
-                        .await;
-
-                        if let Some(KeyTableCommonRules {
-                            key,
-                            value: WithCommonRules { common, value },
-                            ..
-                        }) = rules
-                        {
-                            (Some(key), Some(value), Some(common), diagnostics)
-                        } else {
-                            (None, None, None, diagnostics)
-                        }
-                    };
-
-                    total_diagnostics.extend(diagnostics);
-
-                    (key_rules, value_rules, common_rules)
+                        (None, None, diagnostics)
+                    }
                 } else {
-                    (None, None, None)
+                    let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
+                        KeyTableCommonRules,
+                    >(comment_directives)
+                    .await;
+
+                    if let Some(KeyTableCommonRules {
+                        value:
+                            WithCommonRules {
+                                common,
+                                value: table,
+                            },
+                        ..
+                    }) = rules
+                    {
+                        (Some(table), Some(common), diagnostics)
+                    } else {
+                        (None, None, diagnostics)
+                    }
                 };
+
+                total_diagnostics.extend(diagnostics);
+
+                (value_rules, common_rules)
+            } else {
+                (None, None)
+            };
 
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
@@ -114,7 +113,6 @@ impl Validate for tombi_document_tree::Table {
                             table_schema,
                             current_schema,
                             schema_context,
-                            key_rules.as_ref(),
                             value_rules.as_ref(),
                             common_rules.as_ref(),
                         )
@@ -189,13 +187,22 @@ async fn validate_table(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    key_rules: Option<&KeyRules>,
     table_rules: Option<&TableRules>,
     common_rules: Option<&CommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
     for (key, value) in table_value.key_values() {
+        let key_rules = if let Some(directives) = key.comment_directives() {
+            get_tombi_value_rules_and_diagnostics::<KeyCommonExtensibleRules>(&directives)
+                .await
+                .0
+                .map(|rules| rules.value)
+        } else {
+            None
+        };
+        let key_rules = key_rules.as_ref();
+
         let accessor_raw_text = key.to_raw_text(schema_context.toml_version);
         let accessor = Accessor::Key(accessor_raw_text.clone());
         let new_accessors = accessors
@@ -391,7 +398,7 @@ async fn validate_table(
 
         for required_key in required {
             if !keys.contains(required_key) {
-                let level = key_rules
+                let level = table_rules
                     .and_then(|rules| {
                         rules
                             .key_required
