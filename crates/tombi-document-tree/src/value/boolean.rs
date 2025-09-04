@@ -13,6 +13,12 @@ pub struct Boolean {
     pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
+impl std::fmt::Display for Boolean {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 impl Boolean {
     #[inline]
     pub fn value(&self) -> bool {

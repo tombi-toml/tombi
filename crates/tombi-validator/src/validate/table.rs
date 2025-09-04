@@ -267,8 +267,9 @@ async fn validate_table(
                                 .unwrap_or_default();
 
                             crate::Diagnostic {
-                                kind: Box::new(crate::DiagnosticKind::Deprecated(
+                                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                                     SchemaAccessors::from(&new_accessors),
+                                    value.to_string(),
                                 )),
                                 range: key.range() + value.range(),
                             }
@@ -333,8 +334,9 @@ async fn validate_table(
                             .unwrap_or_default();
 
                         crate::Diagnostic {
-                            kind: Box::new(crate::DiagnosticKind::Deprecated(
+                            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
                                 SchemaAccessors::from(&new_accessors),
+                                value.to_string(),
                             )),
                             range: key.range() + value.range(),
                         }
@@ -468,9 +470,9 @@ async fn validate_table(
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Deprecated(SchemaAccessors::from(
-                    accessors,
-                ))),
+                kind: Box::new(crate::DiagnosticKind::Deprecated(
+                    tombi_schema_store::SchemaAccessors::from(accessors),
+                )),
                 range: table_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);

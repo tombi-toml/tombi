@@ -144,6 +144,24 @@ impl Value {
     }
 }
 
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Boolean(boolean) => write!(f, "{}", boolean),
+            Value::Integer(integer) => write!(f, "{}", integer),
+            Value::Float(float) => write!(f, "{}", float),
+            Value::String(string) => write!(f, "{}", string),
+            Value::OffsetDateTime(offset_date_time) => write!(f, "{}", offset_date_time),
+            Value::LocalDateTime(local_date_time) => write!(f, "{}", local_date_time),
+            Value::LocalDate(local_date) => write!(f, "{}", local_date),
+            Value::LocalTime(local_time) => write!(f, "{}", local_time),
+            Value::Array(array) => write!(f, "{}", array),
+            Value::Table(table) => write!(f, "{}", table),
+            Value::Incomplete { .. } => write!(f, "null"),
+        }
+    }
+}
+
 impl crate::ValueImpl for Value {
     fn value_type(&self) -> crate::ValueType {
         match self {

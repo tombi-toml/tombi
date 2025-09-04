@@ -381,6 +381,23 @@ impl Table {
     }
 }
 
+impl std::fmt::Display for Table {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{ {} }}",
+            self.key_values
+                .iter()
+                .filter_map(|(k, v)| if let crate::Value::Incomplete { .. } = &v {
+                    None
+                } else {
+                    Some(format!("{} = {}", k, v))
+                })
+                .join(", ")
+        )
+    }
+}
+
 impl From<Table> for IndexMap<Key, Value> {
     fn from(table: Table) -> IndexMap<Key, Value> {
         table.key_values

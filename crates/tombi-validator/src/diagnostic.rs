@@ -6,9 +6,11 @@ use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
+    /// The entire Table or Array is deprecated
     #[error("`{0}` is deprecated")]
     Deprecated(SchemaAccessors),
 
+    /// The value is deprecated
     #[error("`{0} = {1}` is deprecated")]
     DeprecatedValue(SchemaAccessors, String),
 
