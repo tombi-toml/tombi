@@ -202,7 +202,7 @@
       "properties": {
         "disabled": {
           "title": "Warn rule disabled.",
-          "description": "If `true`, formatting is disabled for this document.",
+          "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",
             "null"
@@ -220,7 +220,7 @@
       "properties": {
         "disabled": {
           "title": "Error rule disabled.",
-          "description": "If `true`, formatting is disabled for this document.",
+          "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
             "null"
