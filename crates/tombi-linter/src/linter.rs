@@ -67,20 +67,23 @@ impl<'a> Linter<'a> {
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive {
             if let Some(lint) = &tombi_document_comment_directive.lint {
                 if lint.disabled() == Some(true) {
-                    match self.source_uri_or_path.map(|path| match path {
-                        Either::Left(url) => url.to_string(),
-                        Either::Right(path) => path.to_string_lossy().to_string(),
-                    }) {
-                        Some(source_url_or_path) => {
-                            tracing::info!(
-                                "Skip linting for \"{source_url_or_path}\" due to `lint.disable`"
-                            );
+                    // Only skip linting if there are no validation errors
+                    if self.diagnostics.is_empty() {
+                        match self.source_uri_or_path.map(|path| match path {
+                            Either::Left(url) => url.to_string(),
+                            Either::Right(path) => path.to_string_lossy().to_string(),
+                        }) {
+                            Some(source_url_or_path) => {
+                                tracing::info!(
+                                    "Skip linting for \"{source_url_or_path}\" due to `lint.disable`"
+                                );
+                            }
+                            None => {
+                                tracing::info!("Skip linting for stdin due to `lint.disable`");
+                            }
                         }
-                        None => {
-                            tracing::info!("Skip linting for stdin due to `lint.disable`");
-                        }
+                        return Ok(());
                     }
-                    return Ok(());
                 }
             }
         }
