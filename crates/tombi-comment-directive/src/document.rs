@@ -3,7 +3,7 @@ use std::str::FromStr;
 use tombi_toml_version::TomlVersion;
 use tombi_uri::SchemaUri;
 
-use crate::{default_false, default_true, TombiCommentDirectiveImpl};
+use crate::TombiCommentDirectiveImpl;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -41,7 +41,7 @@ pub struct FormatOptions {
     /// # Format disabled.
     ///
     /// If `true`, formatting is disabled for this document.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 
@@ -50,7 +50,7 @@ pub struct FormatOptions {
     /// **🚧 Deprecated 🚧**\
     /// Please use `format.disabled` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     disable: Option<bool>,
 }
 
@@ -69,7 +69,7 @@ pub struct LintOptions {
     /// # Lint disabled.
     ///
     /// If `true`, linting is disabled for this document.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 
@@ -78,7 +78,7 @@ pub struct LintOptions {
     /// **🚧 Deprecated 🚧**\
     /// Please use `lint.disabled` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     disable: Option<bool>,
 }
 
@@ -99,6 +99,6 @@ pub struct SchemaOptions {
     /// If `additionalProperties` is not specified in the JSON Schema,
     /// the strict mode treats it as `additionalProperties: false`,
     /// which is different from the JSON Schema specification.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_true"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_true"))]
     pub strict: Option<bool>,
 }

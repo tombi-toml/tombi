@@ -543,5 +543,16 @@ mod tests {
                 }
             ]);
         }
+
+        test_lint! {
+            #[test]
+            fn test_tombi_document_comment_directive_lint_not_exist_eq_true(
+                r#"
+                #:tombi lint.not-exist = true
+                "#,
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed { key: "not-exist".to_string() }
+            ]);
+        }
     }
 }

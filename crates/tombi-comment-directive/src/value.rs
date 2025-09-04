@@ -23,8 +23,6 @@ pub use string::*;
 pub use table::*;
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
-use crate::default_false;
-
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(bound = "Rules: serde::de::DeserializeOwned + serde::Serialize")]
@@ -111,7 +109,7 @@ pub struct WarnRuleOptions {
     /// # Warn rule disabled.
     ///
     /// If `true`, formatting is disabled for this document.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 }
@@ -124,7 +122,7 @@ pub struct ErrorRuleOptions {
     /// # Error rule disabled.
     ///
     /// If `true`, formatting is disabled for this document.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 }
