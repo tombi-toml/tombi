@@ -66,7 +66,7 @@ impl<'a> Linter<'a> {
 
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive {
             if let Some(lint) = &tombi_document_comment_directive.lint {
-                if lint.disable == Some(true) {
+                if lint.disabled() == Some(true) {
                     match self.source_uri_or_path.map(|path| match path {
                         Either::Left(url) => url.to_string(),
                         Either::Right(path) => path.to_string_lossy().to_string(),

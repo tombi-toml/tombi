@@ -120,10 +120,6 @@ pub async fn handle_completion(
         get_document_comment_directive_completion_contents(&root, position, &text_document_uri)
             .await
     {
-        tracing::trace!(
-            "Get comment_completion_contents = {:?}",
-            comment_completion_contents
-        );
         return Ok(Some(comment_completion_contents));
     }
 

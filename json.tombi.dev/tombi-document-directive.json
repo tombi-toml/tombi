@@ -64,13 +64,26 @@
     "FormatOptions": {
       "type": "object",
       "properties": {
-        "disable": {
-          "title": "Format disable",
-          "description": "Disable formatting for this document.",
+        "disabled": {
+          "title": "Format disabled.",
+          "description": "If `true`, formatting is disabled for this document.",
           "type": [
             "boolean",
             "null"
           ],
+          "enum": [
+            true
+          ],
+          "default": false
+        },
+        "disable": {
+          "title": "Deprecated. Use `format.disabled` instead.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.disabled` instead.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "deprecated": true,
           "default": false
         }
       },
@@ -79,13 +92,26 @@
     "LintOptions": {
       "type": "object",
       "properties": {
-        "disable": {
-          "title": "Lint disable",
-          "description": "Disable linting for this document.",
+        "disabled": {
+          "title": "Lint disabled.",
+          "description": "If `true`, linting is disabled for this document.",
           "type": [
             "boolean",
             "null"
           ],
+          "enum": [
+            true
+          ],
+          "default": false
+        },
+        "disable": {
+          "title": "Deprecated. Use `lint.disabled` instead.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `lint.disabled` instead.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "deprecated": true,
           "default": false
         }
       },

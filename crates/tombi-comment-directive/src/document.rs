@@ -38,11 +38,27 @@ impl TombiCommentDirectiveImpl for TombiDocumentDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct FormatOptions {
-    /// # Format disable
+    /// # Format disabled.
     ///
-    /// Disable formatting for this document.
+    /// If `true`, formatting is disabled for this document.
     #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
-    pub disable: Option<bool>,
+    #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
+    disabled: Option<bool>,
+
+    /// # Deprecated. Use `format.disabled` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `format.disabled` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    disable: Option<bool>,
+}
+
+impl FormatOptions {
+    pub fn disabled(&self) -> Option<bool> {
+        #[allow(deprecated)]
+        self.disabled.or_else(|| self.disable)
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -50,11 +66,27 @@ pub struct FormatOptions {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct LintOptions {
-    /// # Lint disable
+    /// # Lint disabled.
     ///
-    /// Disable linting for this document.
+    /// If `true`, linting is disabled for this document.
     #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
-    pub disable: Option<bool>,
+    #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
+    disabled: Option<bool>,
+
+    /// # Deprecated. Use `lint.disabled` instead.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `lint.disabled` instead.
+    #[cfg_attr(feature = "jsonschema", deprecated)]
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    disable: Option<bool>,
+}
+
+impl LintOptions {
+    pub fn disabled(&self) -> Option<bool> {
+        #[allow(deprecated)]
+        self.disabled.or_else(|| self.disable)
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
