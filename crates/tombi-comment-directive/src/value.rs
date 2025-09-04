@@ -21,7 +21,9 @@ pub use local_time::*;
 pub use offset_date_time::*;
 pub use string::*;
 pub use table::*;
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+
+use crate::default_false;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -102,6 +104,52 @@ pub struct WithCommonExtensibleRules<Rules> {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct WarnRuleOptions {
+    /// # Warn rule disabled.
+    ///
+    /// If `true`, formatting is disabled for this document.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
+    disabled: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct ErrorRuleOptions {
+    /// # Error rule disabled.
+    ///
+    /// If `true`, formatting is disabled for this document.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "default_false"))]
+    #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
+    disabled: Option<bool>,
+}
+
+impl From<&WarnRuleOptions> for SeverityLevelDefaultWarn {
+    fn from(value: &WarnRuleOptions) -> Self {
+        if value.disabled.unwrap_or(false) {
+            SeverityLevel::Off.into()
+        } else {
+            Self::default()
+        }
+    }
+}
+
+impl From<&ErrorRuleOptions> for SeverityLevelDefaultError {
+    fn from(value: &ErrorRuleOptions) -> Self {
+        if value.disabled.unwrap_or(false) {
+            SeverityLevel::Off.into()
+        } else {
+            Self::default()
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
@@ -110,23 +158,23 @@ pub struct CommonRules {
     ///
     /// Check if the value is of the correct type.
     ///
-    pub type_mismatch: Option<SeverityLevelDefaultError>,
+    pub type_mismatch: Option<ErrorRuleOptions>,
 
     /// # Const value
     ///
     /// Check if the value is equal to the const value.
     ///
-    pub const_value: Option<SeverityLevelDefaultError>,
+    pub const_value: Option<ErrorRuleOptions>,
 
     /// # Enumerate
     ///
     /// Check if the value is one of the values in the enumerate.
     ///
-    pub enumerate: Option<SeverityLevelDefaultError>,
+    pub enumerate: Option<ErrorRuleOptions>,
 
     /// # Deprecated
     ///
     /// Check if the value is deprecated.
     ///
-    pub deprecated: Option<SeverityLevelDefaultWarn>,
+    pub deprecated: Option<WarnRuleOptions>,
 }

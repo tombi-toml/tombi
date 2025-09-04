@@ -3,7 +3,7 @@ use std::str::FromStr;
 use tombi_toml_version::TomlVersion;
 use tombi_uri::SchemaUri;
 
-use crate::TombiCommentDirectiveImpl;
+use crate::{default_false, default_true, TombiCommentDirectiveImpl};
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -101,18 +101,4 @@ pub struct SchemaOptions {
     /// which is different from the JSON Schema specification.
     #[cfg_attr(feature = "jsonschema", schemars(default = "default_true"))]
     pub strict: Option<bool>,
-}
-
-#[cfg(feature = "jsonschema")]
-#[allow(unused)]
-#[inline]
-fn default_true() -> Option<bool> {
-    Some(true)
-}
-
-#[cfg(feature = "jsonschema")]
-#[allow(unused)]
-#[inline]
-fn default_false() -> Option<bool> {
-    Some(false)
 }

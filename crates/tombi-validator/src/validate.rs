@@ -21,6 +21,7 @@ pub use any_of::validate_any_of;
 pub use one_of::validate_one_of;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
+use tombi_severity_level::SeverityLevelDefaultError;
 
 pub trait Validate {
     fn validate<'a: 'b, 'b>(
@@ -67,7 +68,12 @@ fn type_mismatch(
     let mut diagnostics = vec![];
 
     let level = common_rules
-        .and_then(|common_rules| common_rules.type_mismatch)
+        .and_then(|common_rules| {
+            common_rules
+                .type_mismatch
+                .as_ref()
+                .map(SeverityLevelDefaultError::from)
+        })
         .unwrap_or_default();
 
     crate::Diagnostic {

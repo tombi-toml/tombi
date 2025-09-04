@@ -1,9 +1,8 @@
 use std::str::FromStr;
 
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
 
 pub type TombiKeyFloatDirectiveContent = TombiValueDirectiveContent<KeyFloatCommonRules>;
@@ -38,7 +37,7 @@ pub struct FloatRules {
     /// float <= maximum
     /// ```
     ///
-    pub float_maximum: Option<SeverityLevelDefaultError>,
+    pub float_maximum: Option<ErrorRuleOptions>,
 
     /// # Minimum float.
     ///
@@ -48,7 +47,7 @@ pub struct FloatRules {
     /// float >= minimum
     /// ```
     ///
-    pub float_minimum: Option<SeverityLevelDefaultError>,
+    pub float_minimum: Option<ErrorRuleOptions>,
 
     /// # Exclusive maximum float.
     ///
@@ -58,7 +57,7 @@ pub struct FloatRules {
     /// float < maximum
     /// ```
     ///
-    pub float_exclusive_maximum: Option<SeverityLevelDefaultError>,
+    pub float_exclusive_maximum: Option<ErrorRuleOptions>,
 
     /// # Exclusive minimum float.
     ///
@@ -68,7 +67,7 @@ pub struct FloatRules {
     /// float > minimum
     /// ```
     ///
-    pub float_exclusive_minimum: Option<SeverityLevelDefaultError>,
+    pub float_exclusive_minimum: Option<ErrorRuleOptions>,
 
     /// # Multiple of float.
     ///
@@ -78,5 +77,5 @@ pub struct FloatRules {
     /// float % multiple_of == 0
     /// ```
     ///
-    pub float_multiple_of: Option<SeverityLevelDefaultError>,
+    pub float_multiple_of: Option<ErrorRuleOptions>,
 }

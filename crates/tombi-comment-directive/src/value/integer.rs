@@ -1,9 +1,8 @@
 use std::str::FromStr;
 
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
 
 pub type TombiKeyIntegerDirectiveContent = TombiValueDirectiveContent<KeyIntegerCommonRules>;
@@ -38,7 +37,7 @@ pub struct IntegerRules {
     /// integer <= maximum
     /// ```
     ///
-    pub integer_maximum: Option<SeverityLevelDefaultError>,
+    pub integer_maximum: Option<ErrorRuleOptions>,
 
     /// # Minimum integer.
     ///
@@ -48,7 +47,7 @@ pub struct IntegerRules {
     /// integer >= minimum
     /// ```
     ///
-    pub integer_minimum: Option<SeverityLevelDefaultError>,
+    pub integer_minimum: Option<ErrorRuleOptions>,
 
     /// # Exclusive maximum integer.
     ///
@@ -58,7 +57,7 @@ pub struct IntegerRules {
     /// integer < maximum
     /// ```
     ///
-    pub integer_exclusive_maximum: Option<SeverityLevelDefaultError>,
+    pub integer_exclusive_maximum: Option<ErrorRuleOptions>,
 
     /// # Exclusive minimum integer.
     ///
@@ -68,7 +67,7 @@ pub struct IntegerRules {
     /// integer > minimum
     /// ```
     ///
-    pub integer_exclusive_minimum: Option<SeverityLevelDefaultError>,
+    pub integer_exclusive_minimum: Option<ErrorRuleOptions>,
 
     /// # Multiple of integer.
     ///
@@ -78,5 +77,5 @@ pub struct IntegerRules {
     /// integer % multiple_of == 0
     /// ```
     ///
-    pub integer_multiple_of: Option<SeverityLevelDefaultError>,
+    pub integer_multiple_of: Option<ErrorRuleOptions>,
 }

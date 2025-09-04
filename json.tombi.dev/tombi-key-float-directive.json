@@ -42,7 +42,7 @@
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/WarnRuleOptions"
             },
             {
               "type": "null"
@@ -54,7 +54,7 @@
           "description": "Check if the key is required in this Table.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -66,7 +66,7 @@
           "description": "Check if the key is not defined in this Table.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -78,7 +78,7 @@
           "description": "Check if the key matches the pattern in the Schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -90,7 +90,7 @@
           "description": "Check if the value is of the correct type.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -102,7 +102,7 @@
           "description": "Check if the value is equal to the const value.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -114,7 +114,7 @@
           "description": "Check if the value is one of the values in the enumerate.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -126,7 +126,7 @@
           "description": "Check if the value is deprecated.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/WarnRuleOptions"
             },
             {
               "type": "null"
@@ -138,7 +138,7 @@
           "description": "Check if the float is less than or equal to the maximum.\n\n```rust\nfloat <= maximum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -150,7 +150,7 @@
           "description": "Check if the float is greater than or equal to the minimum.\n\n```rust\nfloat >= minimum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -162,7 +162,7 @@
           "description": "Check if the float is less than the maximum.\n\n```rust\nfloat < maximum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -174,7 +174,7 @@
           "description": "Check if the float is greater than the minimum.\n\n```rust\nfloat > minimum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -186,7 +186,7 @@
           "description": "Check if the float is a multiple of the value.\n\n```rust\nfloat % multiple_of == 0\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -197,40 +197,41 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
+    "WarnRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Warn rule disabled.",
+          "description": "If `true`, formatting is disabled for this document.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
         }
-      ]
+      },
+      "additionalProperties": false
     },
-    "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
-        },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
+    "ErrorRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Error rule disabled.",
+          "description": "If `true`, formatting is disabled for this document.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
         }
-      ]
-    },
-    "SeverityLevelDefaultError": {
-      "default": "error",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
-        }
-      ]
+      },
+      "additionalProperties": false
     }
   }
 }

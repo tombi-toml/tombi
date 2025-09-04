@@ -34,6 +34,12 @@ macro_rules! severity_level_wrapper {
             }
         }
 
+        impl From<SeverityLevel> for $name {
+            fn from(level: SeverityLevel) -> Self {
+                Self(level)
+            }
+        }
+
         impl PartialEq<SeverityLevel> for $name {
             fn eq(&self, other: &SeverityLevel) -> bool {
                 self.0 == *other

@@ -2,6 +2,7 @@ use tombi_comment_directive::value::LocalTimeCommonRules;
 use tombi_document_tree::{LocalTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
     comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
@@ -108,7 +109,12 @@ async fn validate_local_time(
         if value_string != *const_value {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.const_value)
+                .and_then(|rules| {
+                    rules
+                        .const_value
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -126,7 +132,12 @@ async fn validate_local_time(
         if !enumerate.contains(&value_string) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.enumerate)
+                .and_then(|rules| {
+                    rules
+                        .enumerate
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -144,7 +155,12 @@ async fn validate_local_time(
         if local_time_schema.deprecated == Some(true) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {

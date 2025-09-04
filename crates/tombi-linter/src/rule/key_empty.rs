@@ -1,6 +1,7 @@
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::KeyCommonExtensibleRules;
 use tombi_config::SeverityLevel;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics;
 
 use crate::Rule;
@@ -68,7 +69,7 @@ async fn check_key_empty(
     .0
     .as_ref()
     .map(|rules| &rules.value)
-    .and_then(|rules| rules.key_empty)
+    .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
     .unwrap_or_else(|| {
         l.options()
             .rules

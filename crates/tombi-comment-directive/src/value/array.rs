@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
 pub type TombiKeyArrayDirectiveContent = TombiValueDirectiveContent<ArrayKeyCommonRules>;
@@ -37,7 +36,7 @@ pub struct ArrayRules {
     /// length(array) <= maximum
     /// ```
     ///
-    pub array_max_items: Option<SeverityLevelDefaultError>,
+    pub array_max_items: Option<ErrorRuleOptions>,
 
     /// # Minimum items.
     ///
@@ -47,7 +46,7 @@ pub struct ArrayRules {
     /// length(array) >= minimum
     /// ```
     ///
-    pub array_min_items: Option<SeverityLevelDefaultError>,
+    pub array_min_items: Option<ErrorRuleOptions>,
 
     /// # Unique items.
     ///
@@ -57,5 +56,5 @@ pub struct ArrayRules {
     /// length(array) == length(unique(array))
     /// ```
     ///
-    pub array_unique_items: Option<SeverityLevelDefaultError>,
+    pub array_unique_items: Option<ErrorRuleOptions>,
 }
