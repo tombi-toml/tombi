@@ -77,13 +77,10 @@ async fn check_dotted_keys_out_of_order(
     let mut out_of_order_ranges = Vec::new();
 
     for (_, positions) in &prefix_groups {
-        if positions.windows(2).any(|window| {
-            if let (Some(first), Some(last)) = (window.first(), window.last()) {
-                first.0 + 1 != last.0
-            } else {
-                false
-            }
-        }) {
+        if positions
+            .windows(2)
+            .any(|window| window[0].0 + 1 != window[1].0)
+        {
             out_of_order_ranges.extend(positions.iter().map(|(_, range)| *range))
         }
     }
