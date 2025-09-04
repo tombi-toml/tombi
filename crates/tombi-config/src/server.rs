@@ -16,7 +16,7 @@ pub struct LspOptions {
     /// # Diagnostic Feature options.
     diagnostic: Option<LspDiagnostic>,
 
-    /// # Deprecated. Use `lsp.diagnostic` instead.
+    /// # Deprecated. Please use `lsp.diagnostic` instead.
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `lsp.diagnostic` instead.

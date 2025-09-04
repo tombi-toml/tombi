@@ -45,7 +45,7 @@ pub struct FormatOptions {
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 
-    /// # Deprecated. Use `format.disabled` instead.
+    /// # Deprecated. Please use `format.disabled` instead.
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `format.disabled` instead.
@@ -73,7 +73,7 @@ pub struct LintOptions {
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 
-    /// # Deprecated. Use `lint.disabled` instead.
+    /// # Deprecated. Please use `lint.disabled` instead.
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `lint.disabled` instead.

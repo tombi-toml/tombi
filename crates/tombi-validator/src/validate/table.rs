@@ -266,46 +266,9 @@ async fn validate_table(
                                 })
                                 .unwrap_or_default();
 
-                            let value_string = match value {
-                                tombi_document_tree::Value::Boolean(b) => b.value().to_string(),
-                                tombi_document_tree::Value::Integer(i) => i.value().to_string(),
-                                tombi_document_tree::Value::Float(f) => f.value().to_string(),
-                                tombi_document_tree::Value::String(s) => s.to_string(),
-                                tombi_document_tree::Value::Array(a) => {
-                                    let items: Vec<String> = a
-                                        .iter()
-                                        .map(|v| match v {
-                                            tombi_document_tree::Value::Boolean(b) => {
-                                                b.value().to_string()
-                                            }
-                                            tombi_document_tree::Value::Integer(i) => {
-                                                i.value().to_string()
-                                            }
-                                            tombi_document_tree::Value::Float(f) => {
-                                                f.value().to_string()
-                                            }
-                                            tombi_document_tree::Value::String(s) => s.to_string(),
-                                            _ => "null".to_string(),
-                                        })
-                                        .collect();
-                                    format!("[{}]", items.join(", "))
-                                }
-                                tombi_document_tree::Value::Table(_) => "{}".to_string(),
-                                tombi_document_tree::Value::OffsetDateTime(dt) => {
-                                    dt.value().to_string()
-                                }
-                                tombi_document_tree::Value::LocalDateTime(dt) => {
-                                    dt.value().to_string()
-                                }
-                                tombi_document_tree::Value::LocalDate(d) => d.value().to_string(),
-                                tombi_document_tree::Value::LocalTime(t) => t.value().to_string(),
-                                tombi_document_tree::Value::Incomplete { .. } => "null".to_string(),
-                            };
-
                             crate::Diagnostic {
-                                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
+                                kind: Box::new(crate::DiagnosticKind::Deprecated(
                                     SchemaAccessors::from(&new_accessors),
-                                    value_string,
                                 )),
                                 range: key.range() + value.range(),
                             }
@@ -505,9 +468,9 @@ async fn validate_table(
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Deprecated(
-                    tombi_schema_store::SchemaAccessors::from(accessors),
-                )),
+                kind: Box::new(crate::DiagnosticKind::Deprecated(SchemaAccessors::from(
+                    accessors,
+                ))),
                 range: table_value.range(),
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
