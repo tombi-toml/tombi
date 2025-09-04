@@ -50,6 +50,12 @@ impl Integer {
     }
 }
 
+impl std::fmt::Display for Integer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 impl ValueImpl for Integer {
     fn value_type(&self) -> ValueType {
         ValueType::Integer

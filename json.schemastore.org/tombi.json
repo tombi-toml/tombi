@@ -19,7 +19,7 @@
       "default": "v1.0.0"
     },
     "include": {
-      "title": "Deprecated. Use `files.include` instead.",
+      "title": "Deprecated. Please use `files.include` instead.",
       "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
       "type": [
         "array",
@@ -32,7 +32,7 @@
       "minItems": 1
     },
     "exclude": {
-      "title": "Deprecated. Use `files.exclude` instead.",
+      "title": "Deprecated. Please use `files.exclude` instead.",
       "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
       "type": [
         "array",
@@ -88,7 +88,7 @@
       ]
     },
     "server": {
-      "title": "Deprecated. Use `lsp` instead.",
+      "title": "Deprecated. Please use `lsp` instead.",
       "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
       "anyOf": [
         {
@@ -301,7 +301,7 @@
           ]
         },
         "diagnostics": {
-          "title": "Deprecated. Use `lsp.diagnostic` instead.",
+          "title": "Deprecated. Please use `lsp.diagnostic` instead.",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp.diagnostic` instead.",
           "anyOf": [
             {

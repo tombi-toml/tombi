@@ -77,7 +77,7 @@
           "default": false
         },
         "disable": {
-          "title": "Deprecated. Use `format.disabled` instead.",
+          "title": "Deprecated. Please use `format.disabled` instead.",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.disabled` instead.",
           "type": [
             "boolean",
@@ -105,7 +105,7 @@
           "default": false
         },
         "disable": {
-          "title": "Deprecated. Use `lint.disabled` instead.",
+          "title": "Deprecated. Please use `lint.disabled` instead.",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `lint.disabled` instead.",
           "type": [
             "boolean",

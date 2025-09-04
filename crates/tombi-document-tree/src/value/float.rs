@@ -35,6 +35,12 @@ impl Float {
     }
 }
 
+impl std::fmt::Display for Float {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 impl ValueImpl for Float {
     fn value_type(&self) -> ValueType {
         ValueType::Float

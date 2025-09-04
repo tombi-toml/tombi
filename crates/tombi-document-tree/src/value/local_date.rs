@@ -34,6 +34,12 @@ impl LocalDate {
     }
 }
 
+impl std::fmt::Display for LocalDate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 impl ValueImpl for LocalDate {
     fn value_type(&self) -> ValueType {
         ValueType::LocalDate
