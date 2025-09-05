@@ -343,8 +343,30 @@ mod table_keys_order {
                 serde = { version = "^1.0.0", features = ["derive"] }
 
                 [features]
-                clap = ["clap/derive"]
                 default = ["clap"]
+                clap = ["clap/derive"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_default_feature(
+                r#"
+                [features]
+                wasm = ["tombi-schema-store/wasm"]
+                clap = ["dep:clap"]
+                default = ["clap", "native"]
+                native = ["tombi-schema-store/native"]
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                [features]
+                default = ["clap", "native"]
+                clap = ["dep:clap"]
+                native = ["tombi-schema-store/native"]
+                wasm = ["tombi-schema-store/wasm"]
                 "#
             )
         }
