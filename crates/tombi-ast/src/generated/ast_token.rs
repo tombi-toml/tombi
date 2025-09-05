@@ -4,6 +4,7 @@ use crate::AstToken;
 use tombi_syntax::{SyntaxKind, SyntaxToken};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct Whitespace {
     pub(crate) syntax: SyntaxToken,
 }
@@ -29,6 +30,7 @@ impl AstToken for Whitespace {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct LineBreak {
     pub(crate) syntax: SyntaxToken,
 }
@@ -54,6 +56,7 @@ impl AstToken for LineBreak {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct BareKey {
     pub(crate) syntax: SyntaxToken,
 }
@@ -79,6 +82,7 @@ impl AstToken for BareKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct Comment {
     pub(crate) syntax: SyntaxToken,
 }
@@ -104,6 +108,7 @@ impl AstToken for Comment {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct Error {
     pub(crate) syntax: SyntaxToken,
 }
