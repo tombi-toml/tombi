@@ -120,6 +120,18 @@
               "type": "null"
             }
           ]
+        },
+        "key-required": {
+          "title": "Key required.",
+          "description": "Check if the key is required in this Table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,

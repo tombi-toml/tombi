@@ -3,7 +3,8 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonRules, WithKeyRules,
+    ArrayRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonRules,
+    WithKeyRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
@@ -11,11 +12,29 @@ pub type TombiKeyTableDirectiveContent = TombiValueDirectiveContent<KeyTableComm
 
 pub type TombiTableDirectiveContent = TombiValueDirectiveContent<TableCommonRules>;
 
+pub type TombiKeyArrayOfTableDirectiveContent =
+    TombiValueDirectiveContent<KeyArrayOfTableCommonRules>;
+
+pub type TombiArrayOfTableDirectiveContent = TombiValueDirectiveContent<ArrayOfTableCommonRules>;
+
+pub type TombiKeyInlineTableDirectiveContent =
+    TombiValueDirectiveContent<KeyInlineTableCommonRules>;
+
+pub type TombiInlineTableDirectiveContent = TombiValueDirectiveContent<InlineTableCommonRules>;
+
 pub type TombiRootTableDirectiveContent = TombiValueDirectiveContent<RootTableCommonRules>;
 
 pub type KeyTableCommonRules = WithKeyRules<WithCommonRules<TableRules>>;
 
+pub type KeyArrayOfTableCommonRules = WithKeyRules<WithCommonRules<ArrayOfTableRules>>;
+
+pub type KeyInlineTableCommonRules = WithKeyRules<WithCommonRules<InlineTableRules>>;
+
 pub type TableCommonRules = WithCommonRules<TableRules>;
+
+pub type ArrayOfTableCommonRules = WithCommonRules<ArrayOfTableRules>;
+
+pub type InlineTableCommonRules = WithCommonRules<InlineTableRules>;
 
 pub type RootTableCommonRules = WithCommonRules<RootTableRules>;
 
@@ -28,6 +47,31 @@ impl TombiCommentDirectiveImpl for TombiKeyTableDirectiveContent {
 impl TombiCommentDirectiveImpl for TombiTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-table-directive.json").unwrap()
+    }
+}
+
+impl TombiCommentDirectiveImpl for TombiKeyArrayOfTableDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json")
+            .unwrap()
+    }
+}
+
+impl TombiCommentDirectiveImpl for TombiArrayOfTableDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-of-table-directive.json").unwrap()
+    }
+}
+
+impl TombiCommentDirectiveImpl for TombiKeyInlineTableDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-inline-table-directive.json").unwrap()
+    }
+}
+
+impl TombiCommentDirectiveImpl for TombiInlineTableDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-inline-table-directive.json").unwrap()
     }
 }
 
@@ -86,6 +130,22 @@ pub struct TableRules {
     ///
     pub key_required: Option<ErrorRuleOptions>,
 }
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct ArrayOfTableRules {
+    #[serde(flatten)]
+    pub array: ArrayRules,
+
+    #[serde(flatten)]
+    pub table: TableRules,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct InlineTableRules(TableRules);
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]

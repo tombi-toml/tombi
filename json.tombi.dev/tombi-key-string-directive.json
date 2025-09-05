@@ -49,18 +49,6 @@
             }
           ]
         },
-        "key-required": {
-          "title": "Key required.",
-          "description": "Check if the key is required in this Table.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "key-not-allowed": {
           "title": "Key not allowed.",
           "description": "Check if the key is not defined in this Table.",
