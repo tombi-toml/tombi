@@ -10,6 +10,7 @@ pub fn generate_ast_token() -> Result<String, anyhow::Error> {
         let kind = format_ident!("{}", token.to_case(Case::UpperSnake));
         quote! {
             #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+            #[allow(dead_code)]
             pub struct #name {
                 pub(crate) syntax: SyntaxToken,
             }
