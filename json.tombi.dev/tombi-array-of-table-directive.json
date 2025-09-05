@@ -24,7 +24,7 @@
           "title": "Lint rules.",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyRules"
+              "$ref": "#/definitions/WithCommonRules"
             },
             {
               "type": "null"
@@ -34,45 +34,9 @@
       },
       "additionalProperties": false
     },
-    "WithKeyRules": {
+    "WithCommonRules": {
       "type": "object",
       "properties": {
-        "key-empty": {
-          "title": "Key empty.",
-          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/WarnRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-not-allowed": {
-          "title": "Key not allowed.",
-          "description": "Check if the key is not defined in this Table.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-pattern": {
-          "title": "Key pattern.",
-          "description": "Check if the key matches the pattern in the Schema.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "type-mismatch": {
           "title": "Type mismatch",
           "description": "Check if the value is of the correct type.",
@@ -115,6 +79,42 @@
           "anyOf": [
             {
               "$ref": "#/definitions/WarnRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-max-items": {
+          "title": "Maximum items.",
+          "description": "Check if the array has more than the maximum number of items.\n\n```rust\nlength(array) <= maximum\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-min-items": {
+          "title": "Minimum items.",
+          "description": "Check if the array has less than the minimum number of items.\n\n```rust\nlength(array) >= minimum\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-unique-items": {
+          "title": "Unique items.",
+          "description": "Check if the array has duplicate items.\n\n```rust\nlength(array) == length(unique(array))\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -173,12 +173,12 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "WarnRuleOptions": {
+    "ErrorRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
-          "description": "If `true`, Warn is disabled for this value.",
+          "title": "Error rule disabled.",
+          "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
             "null"
@@ -191,12 +191,12 @@
       },
       "additionalProperties": false
     },
-    "ErrorRuleOptions": {
+    "WarnRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
-          "description": "If `true`, Error is disabled for this value.",
+          "title": "Warn rule disabled.",
+          "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",
             "null"

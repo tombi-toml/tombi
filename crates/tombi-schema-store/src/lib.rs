@@ -99,14 +99,26 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
             "/tombi-array-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/tombi-array-directive.json"
             )),
-            "/tombi-key-table-directive.json" => Some(include_str!(
-                "../../../json.tombi.dev/tombi-key-table-directive.json"
+            "/tombi-inline-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-inline-table-directive.json"
             )),
             "/tombi-table-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/tombi-table-directive.json"
             )),
+            "/tombi-array-of-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-array-of-table-directive.json"
+            )),
             "/tombi-root-table-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/tombi-root-table-directive.json"
+            )),
+            "/tombi-key-inline-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-key-inline-table-directive.json"
+            )),
+            "/tombi-key-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-key-table-directive.json"
+            )),
+            "/tombi-key-array-of-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-key-array-of-table-directive.json"
             )),
             "/tombi-key-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/tombi-key-directive.json"

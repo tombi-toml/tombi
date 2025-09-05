@@ -24,7 +24,7 @@
           "title": "Lint rules.",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyRules"
+              "$ref": "#/definitions/WithCommonRules"
             },
             {
               "type": "null"
@@ -34,45 +34,9 @@
       },
       "additionalProperties": false
     },
-    "WithKeyRules": {
+    "WithCommonRules": {
       "type": "object",
       "properties": {
-        "key-empty": {
-          "title": "Key empty.",
-          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/WarnRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-not-allowed": {
-          "title": "Key not allowed.",
-          "description": "Check if the key is not defined in this Table.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-pattern": {
-          "title": "Key pattern.",
-          "description": "Check if the key matches the pattern in the Schema.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "type-mismatch": {
           "title": "Type mismatch",
           "description": "Check if the value is of the correct type.",
@@ -120,7 +84,55 @@
               "type": "null"
             }
           ]
-        },
+        }
+      },
+      "x-tombi-table-keys-order": "ascending",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$ref": "#/definitions/TableRules"
+        }
+      ]
+    },
+    "ErrorRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Error rule disabled.",
+          "description": "If `true`, Error is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "WarnRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Warn rule disabled.",
+          "description": "If `true`, Warn is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "TableRules": {
+      "type": "object",
+      "properties": {
         "dotted-keys-out-of-order": {
           "title": "Dotted keys out of order.",
           "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
@@ -169,45 +181,7 @@
             }
           ]
         }
-      },
-      "additionalProperties": false,
-      "x-tombi-table-keys-order": "ascending"
-    },
-    "WarnRuleOptions": {
-      "type": "object",
-      "properties": {
-        "disabled": {
-          "title": "Warn rule disabled.",
-          "description": "If `true`, Warn is disabled for this value.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "enum": [
-            true
-          ],
-          "default": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "ErrorRuleOptions": {
-      "type": "object",
-      "properties": {
-        "disabled": {
-          "title": "Error rule disabled.",
-          "description": "If `true`, Error is disabled for this value.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "enum": [
-            true
-          ],
-          "default": false
-        }
-      },
-      "additionalProperties": false
+      }
     }
   }
 }

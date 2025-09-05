@@ -1,9 +1,11 @@
 use schemars::{generate::SchemaSettings, SchemaGenerator};
 use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_comment_directive::value::{
-    TombiArrayDirectiveContent, TombiBooleanDirectiveContent, TombiFloatDirectiveContent,
-    TombiIntegerDirectiveContent, TombiKeyArrayDirectiveContent, TombiKeyBooleanDirectiveContent,
-    TombiKeyDirectiveContent, TombiKeyFloatDirectiveContent, TombiKeyIntegerDirectiveContent,
+    TombiArrayDirectiveContent, TombiArrayOfTableDirectiveContent, TombiBooleanDirectiveContent,
+    TombiFloatDirectiveContent, TombiInlineTableDirectiveContent, TombiIntegerDirectiveContent,
+    TombiKeyArrayDirectiveContent, TombiKeyArrayOfTableDirectiveContent,
+    TombiKeyBooleanDirectiveContent, TombiKeyDirectiveContent, TombiKeyFloatDirectiveContent,
+    TombiKeyInlineTableDirectiveContent, TombiKeyIntegerDirectiveContent,
     TombiKeyLocalDateDirectiveContent, TombiKeyLocalDateTimeDirectiveContent,
     TombiKeyLocalTimeDirectiveContent, TombiKeyOffsetDateTimeDirectiveContent,
     TombiKeyStringDirectiveContent, TombiKeyTableDirectiveContent, TombiLocalDateDirectiveContent,
@@ -23,6 +25,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         project_root_path().join("schemas/type-test.schema.json"),
         serde_json::to_string_pretty(&generator.clone().into_root_schema_for::<TypeTest>())? + "\n",
     )?;
+
     std::fs::write(
         project_root_path().join("json.schemastore.org/tombi.json"),
         serde_json::to_string_pretty(
@@ -31,6 +34,7 @@ pub fn run() -> Result<(), anyhow::Error> {
                 .into_root_schema_for::<tombi_config::Config>(),
         )? + "\n",
     )?;
+
     std::fs::write(
         project_root_path().join("json.tombi.dev/tombi-document-directive.json"),
         serde_json::to_string_pretty(
@@ -122,11 +126,29 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-inline-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiInlineTableDirectiveContent>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
         project_root_path().join("json.tombi.dev/tombi-table-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
                 .into_root_schema_for::<TombiTableDirectiveContent>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-array-of-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiArrayOfTableDirectiveContent>(),
         )? + "\n",
     )?;
 
@@ -212,11 +234,29 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-key-inline-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiKeyInlineTableDirectiveContent>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
         project_root_path().join("json.tombi.dev/tombi-key-table-directive.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()
                 .into_root_schema_for::<TombiKeyTableDirectiveContent>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-key-array-of-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiKeyArrayOfTableDirectiveContent>(),
         )? + "\n",
     )?;
 
