@@ -7,11 +7,9 @@ use crate::value::{
 };
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyDirectiveContent = TombiValueDirectiveContent<KeyCommonExtensibleRules>;
-
 pub type KeyCommonExtensibleRules = WithCommonExtensibleRules<KeyRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyCommonExtensibleRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }

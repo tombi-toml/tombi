@@ -1,17 +1,14 @@
 use schemars::{generate::SchemaSettings, SchemaGenerator};
 use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_comment_directive::value::{
-    TombiArrayDirectiveContent, TombiArrayOfTableDirectiveContent, TombiBooleanDirectiveContent,
-    TombiFloatDirectiveContent, TombiInlineTableDirectiveContent, TombiIntegerDirectiveContent,
-    TombiKeyArrayDirectiveContent, TombiKeyArrayOfTableDirectiveContent,
-    TombiKeyBooleanDirectiveContent, TombiKeyDirectiveContent, TombiKeyFloatDirectiveContent,
-    TombiKeyInlineTableDirectiveContent, TombiKeyIntegerDirectiveContent,
-    TombiKeyLocalDateDirectiveContent, TombiKeyLocalDateTimeDirectiveContent,
-    TombiKeyLocalTimeDirectiveContent, TombiKeyOffsetDateTimeDirectiveContent,
-    TombiKeyStringDirectiveContent, TombiKeyTableDirectiveContent, TombiLocalDateDirectiveContent,
-    TombiLocalDateTimeDirectiveContent, TombiLocalTimeDirectiveContent,
-    TombiOffsetDateTimeDirectiveContent, TombiRootTableDirectiveContent,
-    TombiStringDirectiveContent, TombiTableDirectiveContent,
+    ArrayCommonRules, ArrayKeyCommonRules, ArrayOfTableCommonRules, BooleanCommonRules,
+    FloatCommonRules, InlineTableCommonRules, IntegerCommonRules, KeyArrayOfTableCommonRules,
+    KeyBooleanCommonRules, KeyCommonExtensibleRules, KeyFloatCommonRules,
+    KeyInlineTableCommonRules, KeyIntegerCommonRules, KeyLocalDateCommonRules,
+    KeyLocalDateTimeCommonRules, KeyLocalTimeCommonRules, KeyOffsetDateTimeCommonRules,
+    KeyStringCommonRules, KeyTableCommonRules, LocalDateCommonRules, LocalDateTimeCommonRules,
+    LocalTimeCommonRules, OffsetDateTimeCommonRules, RootTableCommonRules, StringCommonRules,
+    TableCommonRules, TombiValueDirectiveContent,
 };
 use tombi_config::TomlVersion;
 
@@ -49,7 +46,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiBooleanDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<BooleanCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -58,7 +55,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiIntegerDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<IntegerCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -67,7 +64,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiFloatDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<FloatCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -76,7 +73,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiStringDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<StringCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -85,7 +82,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiOffsetDateTimeDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<OffsetDateTimeCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -94,7 +91,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiLocalDateTimeDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateTimeCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -103,7 +100,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiLocalDateDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -112,7 +109,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiLocalTimeDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalTimeCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -121,7 +118,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiArrayDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<ArrayCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -130,7 +127,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiInlineTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<InlineTableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -139,7 +136,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -148,7 +145,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiArrayOfTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<ArrayOfTableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -157,7 +154,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyBooleanDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyBooleanCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -166,7 +163,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyIntegerDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyIntegerCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -175,7 +172,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyFloatDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyFloatCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -184,7 +181,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyStringDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyStringCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -193,7 +190,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyOffsetDateTimeDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyOffsetDateTimeCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -202,7 +199,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyLocalDateTimeDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyLocalDateTimeCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -211,7 +208,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyLocalDateDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyLocalDateCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -220,7 +217,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyLocalTimeDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyLocalTimeCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -229,7 +226,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyArrayDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<ArrayKeyCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -238,7 +235,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyInlineTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyInlineTableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -247,7 +244,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyTableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -256,7 +253,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyArrayOfTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyArrayOfTableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -265,7 +262,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiRootTableDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<RootTableCommonRules>>(),
         )? + "\n",
     )?;
 
@@ -274,7 +271,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiKeyDirectiveContent>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<KeyCommonExtensibleRules>>(),
         )? + "\n",
     )?;
 

@@ -5,21 +5,17 @@ use tombi_uri::SchemaUri;
 use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyStringDirectiveContent = TombiValueDirectiveContent<KeyStringCommonRules>;
-
-pub type TombiStringDirectiveContent = TombiValueDirectiveContent<StringCommonRules>;
-
 pub type KeyStringCommonRules = WithKeyRules<WithCommonRules<StringRules>>;
 
 pub type StringCommonRules = WithCommonRules<StringRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyStringDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyStringCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiStringDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<StringCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
     }

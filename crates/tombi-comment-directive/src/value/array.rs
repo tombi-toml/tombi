@@ -4,21 +4,17 @@ use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules
 use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
 
-pub type TombiKeyArrayDirectiveContent = TombiValueDirectiveContent<ArrayKeyCommonRules>;
-
-pub type TombiArrayDirectiveContent = TombiValueDirectiveContent<ArrayCommonRules>;
-
 pub type ArrayKeyCommonRules = WithKeyRules<WithCommonRules<ArrayRules>>;
 
 pub type ArrayCommonRules = WithCommonRules<ArrayRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyArrayDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayKeyCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiArrayDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }
