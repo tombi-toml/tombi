@@ -5,15 +5,15 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_json::StringNode;
-use tombi_x_keyword::{StringFormat, TableGroup, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
+use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
 use crate::{
-    schema::table_order_schema::{TableGroupOrder, TableOrderSchema},
-    Accessor, Referable, SchemaProperties, SchemaStore,
+    schema::table_order_schema::TableOrderSchema, Accessor, Referable, SchemaProperties,
+    SchemaStore,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -28,7 +28,7 @@ pub struct TableSchema {
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
-    pub keys_order: Option<Vec<TableGroupOrder>>,
+    pub keys_order: Option<TableOrderSchema>,
     pub default: Option<tombi_json::Object>,
     pub const_value: Option<tombi_json::Object>,
     pub enumerate: Option<Vec<tombi_json::Object>>,
@@ -98,20 +98,14 @@ impl TableSchema {
         let keys_order = match object_node.get(X_TOMBI_TABLE_KEYS_ORDER) {
             Some(tombi_json::ValueNode::String(StringNode { value: order, .. })) => {
                 match TableKeysOrder::try_from(order.as_str()) {
-                    Ok(val) => Some(vec![TableGroupOrder {
-                        target: TableGroup::All,
-                        order: val,
-                    }]),
+                    Ok(val) => Some(TableOrderSchema::All(val)),
                     Err(_) => {
                         tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
                         None
                     }
                 }
             }
-            Some(tombi_json::ValueNode::Object(object_node)) => {
-                let order_schema = TableOrderSchema::new(object_node);
-                order_schema.map(|schema| schema.orders)
-            }
+            Some(tombi_json::ValueNode::Object(object_node)) => TableOrderSchema::new(object_node),
             Some(order) => {
                 tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
                 None

@@ -1,12 +1,13 @@
 use tombi_x_keyword::{TableGroup, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 #[derive(Debug, Clone)]
-pub struct TableOrderSchema {
-    pub orders: Vec<TableGroupOrder>,
+pub enum TableOrderSchema {
+    All(TableKeysOrder),
+    Groups(Vec<GroupTableKeysOrder>),
 }
 
 #[derive(Debug, Clone)]
-pub struct TableGroupOrder {
+pub struct GroupTableKeysOrder {
     pub target: TableGroup,
     pub order: TableKeysOrder,
 }
@@ -16,7 +17,7 @@ impl TableOrderSchema {
         let mut sort_orders = vec![];
         for (group_name, order) in &object.properties {
             let Ok(target) = TableGroup::try_from(group_name.value.as_str()) else {
-                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {group_name}");
+                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");
                 return None;
             };
 
@@ -24,19 +25,14 @@ impl TableOrderSchema {
                 tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}.{group_name}: {order}");
                 return None;
             };
-            sort_orders.push(TableGroupOrder { target, order });
+
+            if order == TableKeysOrder::Schema && target == TableGroup::AdditionalProperties {
+                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}.{group_name}: {order}");
+                return None;
+            }
+
+            sort_orders.push(GroupTableKeysOrder { target, order });
         }
-
-        // Maybe validate that the order "all" in the first position cannot be combined with other orders?
-
-        Some(Self {
-            orders: sort_orders,
-        })
-    }
-}
-
-impl std::fmt::Display for TableGroupOrder {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.target, self.order)
+        Some(Self::Groups(sort_orders))
     }
 }

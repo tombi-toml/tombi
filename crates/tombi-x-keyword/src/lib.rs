@@ -43,7 +43,6 @@ impl<'a> TryFrom<&'a str> for ArrayValuesOrder {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum TableGroup {
-    All,
     Properties,
     AdditionalProperties,
     PatternProperties,
@@ -52,10 +51,9 @@ pub enum TableGroup {
 impl std::fmt::Display for TableGroup {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TableGroup::All => write!(f, "all"),
             TableGroup::Properties => write!(f, "properties"),
-            TableGroup::AdditionalProperties => write!(f, "additionalProperties"),
-            TableGroup::PatternProperties => write!(f, "patternProperties"),
+            TableGroup::AdditionalProperties => write!(f, "additional-properties"),
+            TableGroup::PatternProperties => write!(f, "pattern-properties"),
         }
     }
 }
@@ -65,7 +63,6 @@ impl<'a> TryFrom<&'a str> for TableGroup {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         match value {
-            "all" => Ok(TableGroup::All),
             "properties" => Ok(TableGroup::Properties),
             "additionalProperties" => Ok(TableGroup::AdditionalProperties),
             "patternProperties" => Ok(TableGroup::PatternProperties),
