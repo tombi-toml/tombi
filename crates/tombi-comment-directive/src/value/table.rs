@@ -88,31 +88,31 @@ pub struct TableRules {
     /// ```
     pub dotted_keys_out_of_order: Option<WarnRuleOptions>,
 
-    /// # Maximum properties.
+    /// # Maximum keys.
     ///
-    /// Check if the table has more than the maximum number of properties.
+    /// Check if the table has more than the maximum number of keys.
     ///
     /// ```rust
     /// length(table) <= maximum
     /// ```
     ///
-    pub table_max_properties: Option<ErrorRuleOptions>,
+    pub table_max_keys: Option<ErrorRuleOptions>,
 
-    /// # Minimum properties.
+    /// # Minimum keys.
     ///
-    /// Check if the table has less than the minimum number of properties.
+    /// Check if the table has less than the minimum number of keys.
     ///
     /// ```rust
     /// length(table) >= minimum
     /// ```
     ///
-    pub table_min_properties: Option<ErrorRuleOptions>,
+    pub table_min_keys: Option<ErrorRuleOptions>,
 
     /// # Key required.
     ///
     /// Check if the key is required in this Table.
     ///
-    pub key_required: Option<ErrorRuleOptions>,
+    pub table_key_required: Option<ErrorRuleOptions>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

@@ -121,9 +121,9 @@
             }
           ]
         },
-        "array-max-items": {
-          "title": "Maximum items.",
-          "description": "Check if the array has more than the maximum number of items.\n\n```rust\nlength(array) <= maximum\n```",
+        "array-max-values": {
+          "title": "Maximum values.",
+          "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -133,9 +133,9 @@
             }
           ]
         },
-        "array-min-items": {
-          "title": "Minimum items.",
-          "description": "Check if the array has less than the minimum number of items.\n\n```rust\nlength(array) >= minimum\n```",
+        "array-min-values": {
+          "title": "Minimum values.",
+          "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -145,9 +145,9 @@
             }
           ]
         },
-        "array-unique-items": {
-          "title": "Unique items.",
-          "description": "Check if the array has duplicate items.\n\n```rust\nlength(array) == length(unique(array))\n```",
+        "array-unique-values": {
+          "title": "Unique values.",
+          "description": "Check if the array has duplicate values.\n\n```rust\nlength(array) == length(unique(array))\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
