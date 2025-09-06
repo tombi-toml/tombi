@@ -112,7 +112,7 @@ pub struct TableRules {
     ///
     /// Check if the key is required in this Table.
     ///
-    pub key_required: Option<ErrorRuleOptions>,
+    pub table_key_required: Option<ErrorRuleOptions>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

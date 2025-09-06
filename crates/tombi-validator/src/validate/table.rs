@@ -401,14 +401,14 @@ async fn validate_table(
                 let level = table_rules
                     .and_then(|rules| {
                         rules
-                            .key_required
+                            .table_key_required
                             .as_ref()
                             .map(SeverityLevelDefaultError::from)
                     })
                     .unwrap_or_default();
 
                 crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::KeyRequired {
+                    kind: Box::new(crate::DiagnosticKind::TableKeyRequired {
                         key: required_key.to_string(),
                     }),
                     range: table_value.range(),

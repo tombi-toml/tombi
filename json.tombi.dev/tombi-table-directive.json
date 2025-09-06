@@ -121,7 +121,7 @@
             }
           ]
         },
-        "key-required": {
+        "table-key-required": {
           "title": "Key required.",
           "description": "Check if the key is required in this Table.",
           "anyOf": [

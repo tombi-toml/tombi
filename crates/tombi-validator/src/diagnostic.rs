@@ -26,11 +26,11 @@ or set `schema.strict = false` in your `tombi.toml`."#
         schema_uri: SchemaUri,
     },
 
-    #[error("\"{key}\" is required")]
-    KeyRequired { key: String },
-
     #[error("\"{key}\" is not allowed")]
     KeyNotAllowed { key: String },
+
+    #[error("Key must match the pattern `{patterns}`")]
+    KeyPattern { patterns: Patterns },
 
     #[error("Expected a value of type {expected}, but found {actual}")]
     TypeMismatch {
@@ -107,8 +107,8 @@ or set `schema.strict = false` in your `tombi.toml`."#
     #[error("Table must contain at least {min_keys} keys, but found {actual}")]
     TableMinKeys { min_keys: usize, actual: usize },
 
-    #[error("Key must match the pattern `{patterns}`")]
-    KeyPattern { patterns: Patterns },
+    #[error("\"{key}\" is required")]
+    TableKeyRequired { key: String },
 }
 
 #[derive(Debug)]
@@ -125,8 +125,8 @@ impl Diagnostic {
                 "deprecated"
             }
             DiagnosticKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
-            DiagnosticKind::KeyRequired { .. } => "key-required",
             DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
+            DiagnosticKind::KeyPattern { .. } => "key-pattern",
             DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
             DiagnosticKind::Const { .. } => "const",
             DiagnosticKind::Enumerate { .. } => "enumerate",
@@ -149,7 +149,7 @@ impl Diagnostic {
             DiagnosticKind::ArrayUniqueValues => "array-unique-values",
             DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
             DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
-            DiagnosticKind::KeyPattern { .. } => "key-pattern",
+            DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
         }
     }
 
