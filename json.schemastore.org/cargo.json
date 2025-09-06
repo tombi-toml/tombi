@@ -2144,6 +2144,23 @@
     "features": {
       "description": "Cargo supports features to allow expression of:\n\n* conditional compilation options (usable through `cfg` attributes);\n* optional dependencies, which enhance a package, but are not required; and\n* clusters of optional dependencies, such as `postgres-all`, that would include the\n  `postgres` package, the `postgres-macros` package, and possibly other packages\n  (such as development-time mocking libraries, debugging tools, etc.).\n\nA feature of a package is either an optional dependency, or a set of other\nfeatures.\n",
       "type": "object",
+      "properties": {
+        "default": {
+          "title": "Default Feature",
+          "description": "The default features of the crate.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          },
+          "x-tombi-array-values-order": "version-sort",
+          "x-taplo": {
+            "links": {
+              "key": "https://doc.rust-lang.org/cargo/reference/features.html#the-default-feature"
+          }
+          }
+        }
+      },
       "additionalProperties": {
         "type": "array",
         "uniqueItems": true,
@@ -2152,7 +2169,10 @@
         },
         "x-tombi-array-values-order": "version-sort"
       },
-      "x-tombi-table-keys-order": "version-sort",
+      "x-tombi-table-keys-order": {
+        "properties": "schema",
+        "additionalProperties": "version-sort"
+      },
       "x-taplo": {
         "links": {
           "key": "https://doc.rust-lang.org/cargo/reference/features.html"
