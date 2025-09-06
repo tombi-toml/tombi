@@ -423,15 +423,15 @@ async fn validate_table(
             let level = table_rules
                 .and_then(|rules| {
                     rules
-                        .table_max_properties
+                        .table_max_keys
                         .as_ref()
                         .map(SeverityLevelDefaultError::from)
                 })
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::TableMaxProperties {
-                    max_properties,
+                kind: Box::new(crate::DiagnosticKind::TableMaxKeys {
+                    max_keys: max_properties,
                     actual: table_value.keys().count(),
                 }),
                 range: table_value.range(),
@@ -445,15 +445,15 @@ async fn validate_table(
             let level = table_rules
                 .and_then(|rules| {
                     rules
-                        .table_min_properties
+                        .table_min_keys
                         .as_ref()
                         .map(SeverityLevelDefaultError::from)
                 })
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::TableMinProperties {
-                    min_properties,
+                kind: Box::new(crate::DiagnosticKind::TableMinKeys {
+                    min_keys: min_properties,
                     actual: table_value.keys().count(),
                 }),
                 range: table_value.range(),

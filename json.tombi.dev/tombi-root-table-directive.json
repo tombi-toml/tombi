@@ -109,9 +109,9 @@
             }
           ]
         },
-        "table-max-properties": {
-          "title": "Maximum properties.",
-          "description": "Check if the table has more than the maximum number of properties.\n\n```rust\nlength(table) <= maximum\n```",
+        "table-max-keys": {
+          "title": "Maximum keys.",
+          "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -121,9 +121,9 @@
             }
           ]
         },
-        "table-min-properties": {
-          "title": "Minimum properties.",
-          "description": "Check if the table has less than the minimum number of properties.\n\n```rust\nlength(table) >= minimum\n```",
+        "table-min-keys": {
+          "title": "Minimum keys.",
+          "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"

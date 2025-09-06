@@ -93,25 +93,19 @@ or set `schema.strict = false` in your `tombi.toml`."#
     StringPattern { pattern: String, actual: String },
 
     #[error("Array must contain at most {max_values} values, but found {actual}")]
-    ArrayMaxItems { max_values: usize, actual: usize },
+    ArrayMaxValues { max_values: usize, actual: usize },
 
     #[error("Array must contain at least {min_values} values, but found {actual}")]
-    ArrayMinItems { min_values: usize, actual: usize },
+    ArrayMinValues { min_values: usize, actual: usize },
 
     #[error("Array values must be unique")]
-    ArrayUniqueItems,
+    ArrayUniqueValues,
 
-    #[error("Table must contain at most {max_properties} properties, but found {actual}")]
-    TableMaxProperties {
-        max_properties: usize,
-        actual: usize,
-    },
+    #[error("Table must contain at most {max_keys} keys, but found {actual}")]
+    TableMaxKeys { max_keys: usize, actual: usize },
 
-    #[error("Table must contain at least {min_properties} properties, but found {actual}")]
-    TableMinProperties {
-        min_properties: usize,
-        actual: usize,
-    },
+    #[error("Table must contain at least {min_keys} keys, but found {actual}")]
+    TableMinKeys { min_keys: usize, actual: usize },
 
     #[error("Key must match the pattern `{patterns}`")]
     KeyPattern { patterns: Patterns },
@@ -150,11 +144,11 @@ impl Diagnostic {
             DiagnosticKind::StringMinLength { .. } => "string-min-length",
             DiagnosticKind::StringFormat { .. } => "string-format",
             DiagnosticKind::StringPattern { .. } => "string-pattern",
-            DiagnosticKind::ArrayMaxItems { .. } => "array-max-items",
-            DiagnosticKind::ArrayMinItems { .. } => "array-min-items",
-            DiagnosticKind::ArrayUniqueItems => "array-unique-items",
-            DiagnosticKind::TableMaxProperties { .. } => "table-max-properties",
-            DiagnosticKind::TableMinProperties { .. } => "table-min-properties",
+            DiagnosticKind::ArrayMaxValues { .. } => "array-max-values",
+            DiagnosticKind::ArrayMinValues { .. } => "array-min-values",
+            DiagnosticKind::ArrayUniqueValues => "array-unique-values",
+            DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
+            DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
             DiagnosticKind::KeyPattern { .. } => "key-pattern",
         }
     }

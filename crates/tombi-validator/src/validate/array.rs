@@ -191,14 +191,14 @@ async fn validate_array(
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
-                        .array_max_items
+                        .array_max_values
                         .as_ref()
                         .map(SeverityLevelDefaultError::from)
                 })
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::ArrayMaxItems {
+                kind: Box::new(crate::DiagnosticKind::ArrayMaxValues {
                     max_values: max_items,
                     actual: array_value.values().len(),
                 }),
@@ -214,14 +214,14 @@ async fn validate_array(
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
-                        .array_min_items
+                        .array_min_values
                         .as_ref()
                         .map(SeverityLevelDefaultError::from)
                 })
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::ArrayMinItems {
+                kind: Box::new(crate::DiagnosticKind::ArrayMinValues {
                     min_values: min_items,
                     actual: array_value.values().len(),
                 }),
@@ -236,7 +236,7 @@ async fn validate_array(
             .map(|rules| &rules.value)
             .and_then(|rules| {
                 rules
-                    .array_unique_items
+                    .array_unique_values
                     .as_ref()
                     .map(SeverityLevelDefaultError::from)
             })
@@ -257,7 +257,7 @@ async fn validate_array(
             if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
                 if duplicated_values.contains(&literal_value) {
                     crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueItems),
+                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueValues),
                         range: value.range(),
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
