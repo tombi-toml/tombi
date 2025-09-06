@@ -273,7 +273,7 @@ pub fn get_table_comment_directive_content_with_schema_uri(
                             comment_directive.get_context(position)
                         {
                             let schema_uri =
-                    TombiValueDirectiveContent::<InlineTableCommonRules>::comment_directive_schema_url();
+                    TombiValueDirectiveContent::<TableCommonRules>::comment_directive_schema_url();
                             return Some((comment_directive_context, schema_uri));
                         }
                     }
