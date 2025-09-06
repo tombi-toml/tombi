@@ -99,30 +99,101 @@ async fn check_key_empty(
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
+    use crate::test_lint;
 
-    use tombi_diagnostic::SetDiagnostics;
+    test_lint! {
+        #[test]
+        fn test_warning_empty(
+            r#"
+            "" = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
 
-    #[tokio::test]
-    async fn test_key_empty() {
-        let diagnostics = crate::Linter::new(
-            tombi_config::TomlVersion::default(),
-            &crate::LintOptions::default(),
-            None,
-            &tombi_schema_store::SchemaStore::new(),
-        )
-        .lint("'' = 1")
-        .await
-        .unwrap_err();
+    test_lint! {
+        #[test]
+        fn test_empty_key_with_leading_comment_directive(
+            r#"
+            # tombi: lint.rules.key-empty.disabled = true
+            "" = 1
+            "#,
+        ) -> Ok(_);
+    }
 
-        let mut expected = vec![];
-        crate::Diagnostic {
-            kind: crate::DiagnosticKind::KeyEmpty,
-            level: tombi_config::SeverityLevel::Warn,
-            range: tombi_text::Range::new((0, 0).into(), (0, 2).into()),
-        }
-        .set_diagnostics(&mut expected);
+    test_lint! {
+        #[test]
+        fn test_empty_key_with_trailing_comment_directive(
+            r#"
+            "" = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
+    }
 
-        assert_eq!(diagnostics, expected);
+    test_lint! {
+        #[test]
+        fn test_table_empty_key(
+            r#"
+            [table]
+            "" = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_table_empty_key_with_leading_comment_directive(
+            r#"
+            [table]
+            # tombi: lint.rules.key-empty.disabled = true
+            "" = 1
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_table_empty_key_with_trailing_comment_directive(
+            r#"
+            [table]
+            "" = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_array_of_table_empty_key(
+            r#"
+            [[table]]
+            "" = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_array_of_table_empty_key_with_leading_comment_directive(
+            r#"
+            [[table]]
+            # tombi: lint.rules.key-empty.disabled = true
+            "" = 1
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_array_of_table_empty_key_with_trailing_comment_directive(
+            r#"
+            [[table]]
+            "" = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
     }
 }
