@@ -340,6 +340,38 @@ mod goto_type_definition_tests {
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
         );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_array_of_table_directive(
+                r#"
+                # tombi: lint.rules.const-value.disabled█ = true
+                [[table]]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_table_key_array_of_table_directive(
+                r#"
+                [[table]] # tombi: lint.rules.const-value.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_array_of_table_directive(
+                r#"
+                [[table]]
+                # tombi: lint.rules.const-value.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-array-of-table-directive.json");
+        );
     }
 
     #[macro_export]
