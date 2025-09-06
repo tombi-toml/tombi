@@ -2,9 +2,15 @@ use tombi_ast::{
     SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
 };
 use tombi_comment_directive::{
-    value::{ArrayCommonRules, TombiValueDirectiveContent, WithKeyRules},
+    value::{
+        ArrayCommonRules, ArrayOfTableCommonRules, InlineTableCommonRules,
+        KeyArrayOfTableCommonRules, KeyTableCommonRules, RootTableCommonRules, TableCommonRules,
+        TombiValueDirectiveContent, WithKeyRules,
+    },
     TombiCommentDirectiveImpl,
 };
+use tombi_document_tree::{ArrayKind, TableKind};
+use tombi_schema_store::Accessor;
 
 pub const DOCUMENT_SCHEMA_DIRECTIVE_TITLE: &str = "Schema Document Directive";
 pub const DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION: &str =
@@ -169,14 +175,22 @@ pub fn get_array_comment_directive_content_with_schema_uri(
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
     if let Some((comment_directive, schema_uri)) =
-        get_value_comment_directive_content_with_schema_uri::<ArrayCommonRules>(
-            array.comment_directives(),
-            position,
-            accessors,
-        )
+        match array.kind() {
+            ArrayKind::Array => get_value_comment_directive_content_with_schema_uri::<
+                ArrayCommonRules,
+            >(array.comment_directives(), position, accessors),
+            ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
+                get_value_comment_directive_content_with_schema_uri::<ArrayOfTableCommonRules>(
+                    array.comment_directives(),
+                    position,
+                    accessors,
+                )
+            }
+        }
     {
         return Some((comment_directive, schema_uri));
     }
+
     if let Some(comment_directive) = array.inner_comment_directives() {
         for comment_directive in comment_directive {
             if let Some(comment_directive_context) = comment_directive.get_context(position) {
@@ -195,21 +209,92 @@ pub fn get_table_comment_directive_content_with_schema_uri(
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
-    if let Some((comment_directive, schema_uri)) =
-        get_value_comment_directive_content_with_schema_uri::<ArrayCommonRules>(
-            table.comment_directives(),
-            position,
-            accessors,
-        )
-    {
-        return Some((comment_directive, schema_uri));
-    }
-    if let Some(comment_directive) = table.inner_comment_directives() {
-        for comment_directive in comment_directive {
-            if let Some(comment_directive_context) = comment_directive.get_context(position) {
-                let schema_uri =
-                    TombiValueDirectiveContent::<ArrayCommonRules>::comment_directive_schema_url();
-                return Some((comment_directive_context, schema_uri));
+    match table.kind() {
+        TableKind::InlineTable { .. } => {
+            if let Some((comment_directive, schema_uri)) =
+                get_value_comment_directive_content_with_schema_uri::<InlineTableCommonRules>(
+                    table.comment_directives(),
+                    position,
+                    accessors,
+                )
+            {
+                return Some((comment_directive, schema_uri));
+            }
+            if let Some(comment_directive) = table.inner_comment_directives() {
+                for comment_directive in comment_directive {
+                    if let Some(comment_directive_context) = comment_directive.get_context(position)
+                    {
+                        let schema_uri =
+                    TombiValueDirectiveContent::<InlineTableCommonRules>::comment_directive_schema_url();
+                        return Some((comment_directive_context, schema_uri));
+                    }
+                }
+            }
+        }
+        TableKind::Table | TableKind::ParentTable | TableKind::ParentKey | TableKind::KeyValue => {
+            if accessors
+                .iter()
+                .any(|accessor| matches!(accessor, Accessor::Index(_)))
+            {
+                if let Some(comment_directive) = table.comment_directives() {
+                    for comment_directive in comment_directive {
+                        if let Some(comment_directive_context) =
+                            comment_directive.get_context(position)
+                        {
+                            let schema_uri =
+                    TombiValueDirectiveContent::<KeyArrayOfTableCommonRules>::comment_directive_schema_url();
+                            return Some((comment_directive_context, schema_uri));
+                        }
+                    }
+                }
+
+                if let Some(comment_directive) = table.inner_comment_directives() {
+                    for comment_directive in comment_directive {
+                        if let Some(comment_directive_context) =
+                            comment_directive.get_context(position)
+                        {
+                            let schema_uri =
+                    TombiValueDirectiveContent::<ArrayOfTableCommonRules>::comment_directive_schema_url();
+                            return Some((comment_directive_context, schema_uri));
+                        }
+                    }
+                }
+            } else {
+                if let Some(comment_directive) = table.comment_directives() {
+                    for comment_directive in comment_directive {
+                        if let Some(comment_directive_context) =
+                            comment_directive.get_context(position)
+                        {
+                            let schema_uri =
+                    TombiValueDirectiveContent::<KeyTableCommonRules>::comment_directive_schema_url();
+                            return Some((comment_directive_context, schema_uri));
+                        }
+                    }
+                }
+
+                if let Some(comment_directive) = table.inner_comment_directives() {
+                    for comment_directive in comment_directive {
+                        if let Some(comment_directive_context) =
+                            comment_directive.get_context(position)
+                        {
+                            let schema_uri =
+                    TombiValueDirectiveContent::<TableCommonRules>::comment_directive_schema_url();
+                            return Some((comment_directive_context, schema_uri));
+                        }
+                    }
+                }
+            }
+        }
+        TableKind::Root => {
+            if let Some(comment_directive) = table.inner_comment_directives() {
+                for comment_directive in comment_directive {
+                    if let Some(comment_directive_context) = comment_directive.get_context(position)
+                    {
+                        let schema_uri =
+                    TombiValueDirectiveContent::<RootTableCommonRules>::comment_directive_schema_url();
+                        return Some((comment_directive_context, schema_uri));
+                    }
+                }
             }
         }
     }
