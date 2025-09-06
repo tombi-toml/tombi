@@ -321,6 +321,16 @@ mod goto_type_definition_tests {
 
         test_goto_type_definition!(
             #[tokio::test]
+            async fn type_test_tombi_key_inline_table_directive(
+                r#"
+                inline-table = { key = "value", } # tombi: lint.rules.table-min-properties█ = "off"
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-inline-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
             async fn type_test_tombi_key_table_directive(
                 r#"
                 # tombi: lint.rules.const-value.disabled█ = true
