@@ -135,9 +135,9 @@ async fn extract_properties(
     key_values_with_comma: &mut Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     table_schema: &TableSchema,
 ) -> Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)> {
-    let schema_accessors = table_schema.accessors().await;
-    let mut sorted = Vec::with_capacity(schema_accessors.len());
-    for accessor in schema_accessors {
+    let accessor = table_schema.accessors().await;
+    let mut sorted = Vec::with_capacity(accessor.len());
+    for accessor in accessor {
         if let Some(key_index) = key_values_with_comma.iter().position(|(key_value, _)| {
             key_value
                 .keys()

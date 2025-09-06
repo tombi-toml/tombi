@@ -95,23 +95,9 @@ impl TableSchema {
                 _ => (None, None),
             };
 
-        let keys_order = match object_node.get(X_TOMBI_TABLE_KEYS_ORDER) {
-            Some(tombi_json::ValueNode::String(StringNode { value: order, .. })) => {
-                match TableKeysOrder::try_from(order.as_str()) {
-                    Ok(val) => Some(TableOrderSchema::All(val)),
-                    Err(_) => {
-                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
-                        None
-                    }
-                }
-            }
-            Some(tombi_json::ValueNode::Object(object_node)) => TableOrderSchema::new(object_node),
-            Some(order) => {
-                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
-                None
-            }
-            None => None,
-        };
+        let keys_order = object_node
+            .get(X_TOMBI_TABLE_KEYS_ORDER)
+            .and_then(TableOrderSchema::new);
 
         Self {
             title: object_node

@@ -1,5 +1,5 @@
-use tombi_schema_store::{GroupTableKeysOrder, TableOrderSchema};
-use tombi_x_keyword::{ArrayValuesOrder, StringFormat, TableKeysOrder};
+use tombi_schema_store::TableOrderSchema;
+use tombi_x_keyword::{ArrayValuesOrder, StringFormat};
 
 use super::display_value::DisplayValue;
 
