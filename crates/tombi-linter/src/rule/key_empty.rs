@@ -133,6 +133,36 @@ mod tests {
 
     test_lint! {
         #[test]
+        fn test_key_value_empty_key(
+            r#"
+            a."".b = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_key_value_empty_key_with_leading_comment_directive(
+            r#"
+            # tombi: lint.rules.key-empty.disabled = true
+            a."".b = 1
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_key_value_empty_key_with_trailing_comment_directive(
+            r#"
+            a."".b = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
         fn test_table_empty_key(
             r#"
             [table]
