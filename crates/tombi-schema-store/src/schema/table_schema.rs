@@ -4,8 +4,7 @@ use ahash::AHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_json::StringNode;
-use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
+use tombi_x_keyword::{StringFormat, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,

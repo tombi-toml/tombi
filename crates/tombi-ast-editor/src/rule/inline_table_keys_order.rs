@@ -1,9 +1,11 @@
-use std::cmp::Reverse;
+use std::{cmp::Reverse, collections::HashSet};
 
 use crate::rule::inline_table_comma_trailing_comment;
 use itertools::Itertools;
 use tombi_ast::AstNode;
-use tombi_schema_store::{GroupTableKeysOrder, SchemaContext, TableOrderSchema, TableSchema};
+use tombi_schema_store::{
+    Accessor, GroupTableKeysOrder, SchemaAccessor, SchemaContext, TableOrderSchema, TableSchema,
+};
 use tombi_syntax::SyntaxElement;
 use tombi_version_sort::version_sort;
 use tombi_x_keyword::{TableGroup, TableKeysOrder};
@@ -34,15 +36,15 @@ pub async fn inline_table_keys_order<'a>(
     );
 
     let mut sorted_key_values_with_comma = match keys_order {
-        TableOrderSchema::All(TableKeysOrder::Schema) => {
-            extract_properties(&mut key_values_with_comma, &table_schema).await
+        TableOrderSchema::All(order) => {
+            sort_targets(
+                key_values_with_comma.into_iter().collect_vec(),
+                *order,
+                schema_context,
+                &table_schema,
+            )
+            .await
         }
-        TableOrderSchema::All(order) => sort_targets(
-            key_values_with_comma.into_iter().collect_vec(),
-            *order,
-            schema_context,
-        ),
-
         TableOrderSchema::Groups(groups) => {
             let mut sorted_targets = Vec::with_capacity(key_values_with_comma.len());
 
@@ -61,17 +63,29 @@ pub async fn inline_table_keys_order<'a>(
             for group in groups {
                 match group.target {
                     TableGroup::Properties => {
-                        properties = sort_targets(properties, group.order, schema_context);
+                        properties =
+                            sort_targets(properties, group.order, schema_context, &table_schema)
+                                .await;
                         sorted_targets.append(&mut properties);
                     }
                     TableGroup::PatternProperties => {
-                        pattern_properties =
-                            sort_targets(pattern_properties, group.order, schema_context);
+                        pattern_properties = sort_targets(
+                            pattern_properties,
+                            group.order,
+                            schema_context,
+                            &table_schema,
+                        )
+                        .await;
                         sorted_targets.append(&mut pattern_properties);
                     }
                     TableGroup::AdditionalProperties => {
-                        additional_properties =
-                            sort_targets(additional_properties, group.order, schema_context);
+                        additional_properties = sort_targets(
+                            additional_properties,
+                            group.order,
+                            schema_context,
+                            &table_schema,
+                        )
+                        .await;
                         sorted_targets.append(&mut additional_properties);
                     }
                 }
@@ -135,21 +149,17 @@ async fn extract_properties(
     key_values_with_comma: &mut Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     table_schema: &TableSchema,
 ) -> Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)> {
-    let accessor = table_schema.accessors().await;
-    let mut sorted = Vec::with_capacity(accessor.len());
-    for accessor in accessor {
-        if let Some(key_index) = key_values_with_comma.iter().position(|(key_value, _)| {
-            key_value
-                .keys()
-                .as_ref()
-                .map(ToString::to_string)
-                .as_deref()
-                == accessor.as_key()
-        }) {
-            sorted.push(key_values_with_comma.remove(key_index));
-        }
-    }
-    sorted
+    let accessors: HashSet<_> = table_schema.accessors().await.into_iter().collect();
+
+    key_values_with_comma
+        .extract_if(.., |(element, _)| {
+            if let Some(keys) = &element.keys() {
+                accessors.contains(&Accessor::Key(keys.to_string()))
+            } else {
+                false
+            }
+        })
+        .collect()
 }
 
 /// Extracts the pattern properties, and sorts them by the schema
@@ -178,10 +188,11 @@ async fn extract_pattern_properties(
     sorted_targets
 }
 
-fn sort_targets<'a>(
+async fn sort_targets<'a>(
     mut key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     order: TableKeysOrder,
     schema_context: &'a SchemaContext<'a>,
+    table_schema: &TableSchema,
 ) -> Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)> {
     match order {
         TableKeysOrder::Ascending => key_values_with_comma.sort_by_key(|(key, _)| {
@@ -205,7 +216,22 @@ fn sort_targets<'a>(
             )
         }),
         TableKeysOrder::Schema => {
-            // Assume they are in order already.
+            let mut new_key_values_with_comma = vec![];
+            for (schema_accessor, _) in table_schema.properties.write().await.iter_mut() {
+                new_key_values_with_comma.extend(key_values_with_comma.extract_if(
+                    ..,
+                    |(element, ..)| {
+                        if let Some(keys) = &element.keys() {
+                            schema_accessor == &SchemaAccessor::Key(keys.to_string())
+                        } else {
+                            false
+                        }
+                    },
+                ));
+            }
+
+            new_key_values_with_comma.append(&mut key_values_with_comma);
+            return new_key_values_with_comma;
         }
         TableKeysOrder::VersionSort => key_values_with_comma.sort_by(|(a, _), (b, _)| {
             let a_key = a

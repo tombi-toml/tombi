@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashSet};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -130,17 +130,19 @@ where
                         .all(|(accessor, _)| matches!(accessor, Accessor::Key(_)))
                     {
                         let sorted_targets = match &table_schema.keys_order {
-                            Some(TableOrderSchema::All(TableKeysOrder::Schema)) => {
-                                extract_properties(&mut new_targets_map, &table_schema).await
-                            }
                             Some(TableOrderSchema::All(order)) => {
-                                sort_targets(new_targets_map.into_iter().collect_vec(), *order)
+                                sort_targets(
+                                    new_targets_map.into_iter().collect_vec(),
+                                    *order,
+                                    table_schema,
+                                )
+                                .await
                             }
                             Some(TableOrderSchema::Groups(groups)) => {
                                 let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
 
                                 let mut properties = if has_group(groups, TableGroup::Properties) {
-                                    extract_properties(&mut new_targets_map, &table_schema).await
+                                    extract_properties(&mut new_targets_map, table_schema).await
                                 } else {
                                     Vec::new()
                                 };
@@ -148,7 +150,7 @@ where
                                     if has_group(groups, TableGroup::PatternProperties) {
                                         extract_pattern_properties(
                                             &mut new_targets_map,
-                                            &table_schema,
+                                            table_schema,
                                         )
                                         .await
                                     } else {
@@ -160,17 +162,27 @@ where
                                 for group in groups {
                                     match group.target {
                                         TableGroup::Properties => {
-                                            properties = sort_targets(properties, group.order);
+                                            properties =
+                                                sort_targets(properties, group.order, table_schema)
+                                                    .await;
                                             sorted_targets.append(&mut properties);
                                         }
                                         TableGroup::PatternProperties => {
-                                            pattern_properties =
-                                                sort_targets(pattern_properties, group.order);
+                                            pattern_properties = sort_targets(
+                                                pattern_properties,
+                                                group.order,
+                                                table_schema,
+                                            )
+                                            .await;
                                             sorted_targets.append(&mut pattern_properties);
                                         }
                                         TableGroup::AdditionalProperties => {
-                                            additional_properties =
-                                                sort_targets(additional_properties, group.order);
+                                            additional_properties = sort_targets(
+                                                additional_properties,
+                                                group.order,
+                                                table_schema,
+                                            )
+                                            .await;
                                             sorted_targets.append(&mut additional_properties);
                                         }
                                     }
@@ -314,14 +326,10 @@ async fn extract_properties<T>(
     targets_map: &mut IndexMap<Accessor, Vec<(Vec<Accessor>, T)>>,
     table_schema: &TableSchema,
 ) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
-    let schema_accessors = table_schema.accessors().await;
-    let mut sorted_targets = Vec::with_capacity(schema_accessors.len());
-    for accessor in schema_accessors {
-        if let Some(targets) = targets_map.shift_remove(&accessor) {
-            sorted_targets.push((accessor, targets));
-        }
-    }
-    sorted_targets
+    let accessors: HashSet<_> = table_schema.accessors().await.into_iter().collect();
+    targets_map
+        .extract_if(.., |element, _| accessors.contains(element))
+        .collect()
 }
 
 /// Extracts the pattern properties, and sorts them by the schema
@@ -347,9 +355,10 @@ async fn extract_pattern_properties<T>(
     sorted_targets
 }
 
-fn sort_targets<T>(
+async fn sort_targets<T>(
     mut targets: Vec<(Accessor, Vec<(Vec<Accessor>, T)>)>,
     order: TableKeysOrder,
+    table_schema: &TableSchema,
 ) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
     match order {
         TableKeysOrder::Ascending => targets.sort_by(|(a_accessor, _), (b_accessor, _)| {
@@ -359,7 +368,12 @@ fn sort_targets<T>(
             b_accessor.partial_cmp(a_accessor).unwrap()
         }),
         TableKeysOrder::Schema => {
-            // Assume they are in order already.
+            let mut new_targets = vec![];
+            for accessor in table_schema.accessors().await {
+                new_targets.extend(targets.extract_if(.., |(element, ..)| *element == accessor));
+            }
+            new_targets.append(&mut targets);
+            return new_targets;
         }
         TableKeysOrder::VersionSort => {
             targets.sort_by(
