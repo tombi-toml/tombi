@@ -290,6 +290,7 @@ struct TypeTest {
     float: Option<f64>,
     #[validate(length(min = 1, max = 10))]
     string: Option<String>,
+    #[validate(length(min = 2, max = 10))]
     array: Option<Vec<LiteralValue>>,
     offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
     local_date_time: Option<chrono::NaiveDateTime>,

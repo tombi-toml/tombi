@@ -1102,7 +1102,7 @@ fn insert_array_of_tables(
     let mut array = new_array_of_tables_fn(table);
     let new_table = table.new_parent_table();
     array.push(Value::Table(std::mem::replace(table, new_table)));
-    array.comment_directives = table.comment_directives.clone();
+    array.comment_directives = key.comment_directives.clone();
     match table.new_parent_table().insert(key, Value::Array(array)) {
         Ok(t) => {
             *table = t;
