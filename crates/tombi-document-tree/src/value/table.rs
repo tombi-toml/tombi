@@ -1,4 +1,7 @@
-use indexmap::{map::Entry, IndexMap};
+use indexmap::{
+    map::{Entry, MutableKeys},
+    IndexMap,
+};
 use itertools::Itertools;
 use tombi_ast::{AstChildren, AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
@@ -341,6 +344,13 @@ impl Table {
         self.key_values.get(key)
     }
 
+    pub fn get_mut<K>(&mut self, key: &K) -> Option<&mut Value>
+    where
+        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+    {
+        self.key_values.get_mut(key)
+    }
+
     pub fn get_key_value<K>(&self, key: &K) -> Option<(&Key, &Value)>
     where
         K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
@@ -348,11 +358,42 @@ impl Table {
         self.key_values.get_key_value(key)
     }
 
-    pub fn get_mut<K>(&mut self, key: &K) -> Option<&mut Value>
+    pub fn get_key_value_mut<K>(&mut self, key: &K) -> Option<(&Key, &mut Value)>
     where
         K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
     {
-        self.key_values.get_mut(key)
+        self.key_values
+            .get_full_mut(key)
+            .map(|(_, key, value)| (key, value))
+    }
+
+    pub fn get_full<K>(&self, key: &K) -> Option<(usize, &Key, &Value)>
+    where
+        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+    {
+        self.key_values.get_full(key)
+    }
+
+    pub fn get_full_mut<K>(&mut self, key: &K) -> Option<(usize, &Key, &mut Value)>
+    where
+        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+    {
+        self.key_values.get_full_mut(key)
+    }
+
+    pub fn get_index_of<K>(&self, key: &K) -> Option<usize>
+    where
+        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+    {
+        self.key_values.get_index_of(key)
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Key, &mut Value)> {
+        self.key_values.iter_mut()
+    }
+
+    pub fn iter_mut2(&mut self) -> impl Iterator<Item = (&mut Key, &mut Value)> {
+        self.key_values.iter_mut2()
     }
 
     #[inline]
@@ -944,12 +985,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                 }
 
                 if !comment_directives.is_empty() {
-                    other.comment_directives = Some(Box::new(comment_directives));
                     if let Some(keys) = keys {
-                        for key in keys {
-                            key.comment_directives = other.comment_directives.clone();
-                        }
+                        append_comment_directives(
+                            &mut other,
+                            keys.into_iter(),
+                            &comment_directives,
+                        );
                     }
+                    other.comment_directives = Some(Box::new(comment_directives));
                 }
             }
 
@@ -1066,5 +1109,52 @@ fn insert_array_of_tables(
             Ok(())
         }
         Err(errors) => Err(errors),
+    }
+}
+
+fn append_comment_directives(
+    table: &mut Table,
+    mut keys: impl Iterator<Item = tombi_ast::Key>,
+    comment_directives: &Vec<TombiValueCommentDirective>,
+) {
+    // Get the next key in the path
+    let Some(ast_key) = keys.next() else {
+        // No more keys, append comment directives to the final table
+        if let Some(table_comment_directives) = table.comment_directives.as_mut() {
+            table_comment_directives.extend(comment_directives.iter().cloned());
+        } else {
+            table.comment_directives = Some(Box::new(comment_directives.clone()));
+        }
+        return;
+    };
+
+    // Since Table has only one key, we can directly access it without iteration
+    let temp_key_values = std::mem::replace(&mut table.key_values, IndexMap::new());
+
+    // Extract the single key-value pair
+    let Some((mut key, value)) = temp_key_values.into_iter().next() else {
+        return;
+    };
+
+    // Check if this is the key we're looking for
+    if key == ast_key {
+        // Update the key's comment directives
+        if let Some(key_comment_directives) = key.comment_directives.as_mut() {
+            key_comment_directives.extend(comment_directives.iter().cloned());
+        } else {
+            key.comment_directives = Some(Box::new(comment_directives.clone()));
+        }
+
+        if let Value::Table(mut nested_table) = value {
+            // Recursively process the remaining keys
+            append_comment_directives(&mut nested_table, keys, comment_directives);
+            table.key_values.insert(key, Value::Table(nested_table));
+        } else {
+            // Put the value back if it's not a table
+            table.key_values.insert(key, value);
+        }
+    } else {
+        // Key doesn't match, put it back
+        table.key_values.insert(key, value);
     }
 }
