@@ -129,7 +129,7 @@ pub struct ArrayOfTableRules {
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct InlineTableRules(TableRules);
+pub struct InlineTableRules(pub TableRules);
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]

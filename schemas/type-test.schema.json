@@ -42,7 +42,9 @@
       ],
       "items": {
         "$ref": "#/definitions/LiteralValue"
-      }
+      },
+      "minItems": 2,
+      "maxItems": 10
     },
     "offset-date-time": {
       "type": [

@@ -1,10 +1,8 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::value::{
-    CommonRules, KeyCommonExtensibleRules, KeyTableCommonRules, TableRules, WithCommonRules,
-};
-use tombi_document_tree::{TableKind, ValueImpl};
+use tombi_comment_directive::value::{CommonRules, TableRules};
+use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, SchemaAccessors,
@@ -12,7 +10,12 @@ use tombi_schema_store::{
 };
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
-use crate::{comment_directive::get_tombi_value_rules_and_diagnostics, validate::type_mismatch};
+use crate::{
+    comment_directive::{
+        get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
+    },
+    validate::type_mismatch,
+};
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
 use crate::diagnostic::Patterns;
@@ -26,53 +29,12 @@ impl Validate for tombi_document_tree::Table {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
-            let (value_rules, common_rules) = if let Some(comment_directives) =
-                self.comment_directives()
-            {
-                let (value_rules, common_rules, diagnostics) = if self.kind() == TableKind::KeyValue
-                    && self
-                        .values()
-                        .next()
-                        .map(|value| value.is_inline())
-                        .unwrap_or_default()
-                {
-                    let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                        KeyCommonExtensibleRules,
-                    >(comment_directives)
-                    .await;
+            let (table_rules, common_rules, diagnostics) =
+                get_tombi_table_comment_directive_and_diagnostics(self, accessors).await;
 
-                    if let Some(KeyCommonExtensibleRules { common, .. }) = rules {
-                        (None, Some(common), diagnostics)
-                    } else {
-                        (None, None, diagnostics)
-                    }
-                } else {
-                    let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                        KeyTableCommonRules,
-                    >(comment_directives)
-                    .await;
-
-                    if let Some(KeyTableCommonRules {
-                        value:
-                            WithCommonRules {
-                                common,
-                                value: table,
-                            },
-                        ..
-                    }) = rules
-                    {
-                        (Some(table), Some(common), diagnostics)
-                    } else {
-                        (None, None, diagnostics)
-                    }
-                };
-
+            if !diagnostics.is_empty() {
                 total_diagnostics.extend(diagnostics);
-
-                (value_rules, common_rules)
-            } else {
-                (None, None)
-            };
+            }
 
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
@@ -113,7 +75,7 @@ impl Validate for tombi_document_tree::Table {
                             table_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref(),
+                            table_rules.as_ref(),
                             common_rules.as_ref(),
                         )
                         .await
@@ -194,13 +156,14 @@ async fn validate_table(
 
     for (key, value) in table_value.key_values() {
         let key_rules = if let Some(directives) = key.comment_directives() {
-            get_tombi_value_rules_and_diagnostics::<KeyCommonExtensibleRules>(&directives)
+            get_tombi_key_rules_and_diagnostics(&directives)
                 .await
                 .0
                 .map(|rules| rules.value)
         } else {
             None
         };
+
         let key_rules = key_rules.as_ref();
 
         let accessor_raw_text = key.to_raw_text(schema_context.toml_version);

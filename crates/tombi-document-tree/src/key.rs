@@ -18,18 +18,6 @@ pub struct Key {
     pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
 
-impl std::borrow::Borrow<String> for Key {
-    fn borrow(&self) -> &String {
-        &self.value
-    }
-}
-
-impl indexmap::Equivalent<Key> for &Key {
-    fn equivalent(&self, other: &Key) -> bool {
-        self.value == other.value
-    }
-}
-
 impl Key {
     pub fn try_new(
         kind: KeyKind,
@@ -114,11 +102,35 @@ impl PartialEq for Key {
 
 impl Eq for Key {}
 
+impl PartialEq<tombi_ast::Key> for Key {
+    fn eq(&self, other: &tombi_ast::Key) -> bool {
+        self.value == other.syntax().text().to_string()
+    }
+}
+
 impl std::hash::Hash for Key {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.try_to_raw_string(TomlVersion::latest())
             .unwrap_or_else(|_| self.value.to_string())
             .hash(state);
+    }
+}
+
+impl std::borrow::Borrow<String> for Key {
+    fn borrow(&self) -> &String {
+        &self.value
+    }
+}
+
+impl indexmap::Equivalent<Key> for &Key {
+    fn equivalent(&self, other: &Key) -> bool {
+        self.value == other.value
+    }
+}
+
+impl indexmap::Equivalent<tombi_ast::Key> for &Key {
+    fn equivalent(&self, other: &tombi_ast::Key) -> bool {
+        self.value == other.syntax().text().to_string()
     }
 }
 
