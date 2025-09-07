@@ -173,9 +173,24 @@ mod tests {
         #[test]
         fn test_inline_table_empty_key_with_leading_comment_directive(
             r#"
-            # tombi: lint.rules.key-empty.disabled = true
-            a = { "".b = 1 }
+            a = {
+              # tombi: lint.rules.key-empty.disabled = true
+              "".b = 1
+            }
             "#,
+            TomlVersion(TomlVersion::V1_1_0_Preview),
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_inline_table_empty_key_with_trailing_comment_directive(
+            r#"
+            a = {
+              "".b = 1  # tombi: lint.rules.key-empty.disabled = true
+            }
+            "#,
+            TomlVersion(TomlVersion::V1_1_0_Preview),
         ) -> Ok(_);
     }
 

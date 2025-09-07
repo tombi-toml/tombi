@@ -17,12 +17,33 @@ macro_rules! test_lint {
     (
         #[test]
         fn $name:ident(
-            $source:expr,
+            $source:expr$(,)?
         ) -> Ok(_);
     ) => {
         test_lint! {
             #[test]
-            fn _$name($source, Option::<std::path::PathBuf>::None) -> Ok(_);
+            fn _$name(
+                $source,
+                Option::<std::path::PathBuf>::None,
+                TomlVersion::default(),
+            ) -> Ok(_);
+        }
+    };
+
+    (
+        #[test]
+        fn $name:ident(
+            $source:expr,
+            TomlVersion($toml_version:expr)$(,)?
+        ) -> Ok(_);
+    ) => {
+        test_lint! {
+            #[test]
+            fn _$name(
+                $source,
+                Option::<std::path::PathBuf>::None,
+                $toml_version,
+            ) -> Ok(_);
         }
     };
 
@@ -35,7 +56,11 @@ macro_rules! test_lint {
     ) => {
         test_lint! {
             #[test]
-            fn _$name($source, Some($schema_path)) -> Ok(_);
+            fn _$name(
+                $source,
+                Some($schema_path),
+                TomlVersion::default(),
+            ) -> Ok(_);
         }
     };
 
@@ -43,7 +68,8 @@ macro_rules! test_lint {
         #[test]
         fn _$name:ident(
             $source:expr,
-            $schema_path:expr$(,)?
+            $schema_path:expr,
+            $toml_version:expr,
         ) -> Ok(_);
     ) => {
         #[tokio::test]
@@ -73,7 +99,7 @@ macro_rules! test_lint {
             let source_path = tombi_test_lib::project_root_path().join("test.toml");
             let options = $crate::LintOptions::default();
             let linter = $crate::Linter::new(
-                TomlVersion::default(),
+                $toml_version,
                 &options,
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
@@ -101,7 +127,11 @@ macro_rules! test_lint {
     ) => {
         test_lint! {
             #[test]
-            fn _$name($source, Some($schema_path)) -> Err([$($error.to_string()),*]);
+            fn _$name(
+                $source,
+                Some($schema_path),
+                TomlVersion::default(),
+            ) -> Err([$($error.to_string()),*]);
         }
     };
 
@@ -113,7 +143,28 @@ macro_rules! test_lint {
     ) => {
         test_lint! {
             #[test]
-            fn _$name($source, Option::<std::path::PathBuf>::None) -> Err([$($error.to_string()),*]);
+            fn _$name(
+                $source,
+                Option::<std::path::PathBuf>::None,
+                TomlVersion::default(),
+            ) -> Err([$($error.to_string()),*]);
+        }
+    };
+
+    (
+        #[test]
+        fn $name:ident(
+            $source:expr,
+            TomlVersion($toml_version:expr),
+        ) -> Err([$( $error:expr ),*$(,)?]);
+    ) => {
+        test_lint! {
+            #[test]
+            fn _$name(
+                $source,
+                Option::<std::path::PathBuf>::None,
+                $toml_version,
+            ) -> Err([$($error.to_string()),*]);
         }
     };
 
@@ -121,7 +172,8 @@ macro_rules! test_lint {
         #[test]
         fn _$name:ident(
             $source:expr,
-            $schema_path:expr$(,)?
+            $schema_path:expr,
+            $toml_version:expr,
         ) -> Err([$( $error:expr ),*$(,)?]);
     ) => {
         #[tokio::test]
@@ -152,7 +204,7 @@ macro_rules! test_lint {
             let source_path = tombi_test_lib::project_root_path().join("test.toml");
             let options = $crate::LintOptions::default();
             let linter = $crate::Linter::new(
-                TomlVersion::default(),
+                $toml_version,
                 &options,
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
