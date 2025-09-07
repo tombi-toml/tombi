@@ -57,5 +57,60 @@ mod tests {
                 type_test_schema_path(),
             ) -> Ok(_);
         }
+
+        test_lint! {
+            #[test]
+            fn test_array_min_values_with_dangling_comment_directive(
+                r#"
+                array = [
+                  # tombi: lint.rules.array-min-values.disabled = true
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_min_values_with_begin_dangling_comment_directive(
+                r#"
+                array = [
+                  # tombi: lint.rules.array-min-values.disabled = true
+
+                  1,
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_min_values_with_end_dangling_comment_directive(
+                r#"
+                array = [
+                  1,
+
+                  # tombi: lint.rules.array-min-values.disabled = true
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_min_values_with_leading_and_end_dangling_comment_directive(
+                r#"
+                # tombi: lint.rules.array-max-values.disabled = true
+                array = [
+                  1,
+
+                  # tombi: lint.rules.array-min-values.disabled = true
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
     }
 }
