@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use serde::Deserialize;
 use tombi_comment_directive::{
     value::{
@@ -53,67 +52,23 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
     Option<CommonRules>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
-    let mut comment_directives = table
-        .comment_directives()
-        .unwrap_or_default()
-        .into_iter()
-        .cloned()
-        .collect_vec();
-    comment_directives.extend(
-        table
-            .inner_comment_directives()
-            .unwrap_or_default()
-            .into_iter()
-            .cloned(),
-    );
-    match table.kind() {
-        TableKind::InlineTable { .. } => {
-            let (rules, diagnostics) =
-                get_tombi_rules_and_diagnostics::<InlineTableCommonRules>(&comment_directives)
-                    .await;
-            if let Some(WithCommonRules {
-                common,
-                value: InlineTableRules(table),
-            }) = rules
-            {
-                (Some(table), Some(common), diagnostics)
-            } else {
-                (None, None, diagnostics)
-            }
-        }
-        TableKind::Table | TableKind::ParentTable | TableKind::ParentKey | TableKind::KeyValue => {
-            if accessors
-                .iter()
-                .any(|accessor| matches!(accessor, tombi_schema_store::Accessor::Index(_)))
-            {
-                let (rules, diagnostics) = get_tombi_rules_and_diagnostics::<
-                    KeyArrayOfTableCommonRules,
-                >(&comment_directives)
-                .await;
-                if let Some(WithKeyRules {
-                    value:
-                        WithCommonRules {
-                            common,
-                            value: ArrayOfTableRules { table, .. },
-                        },
-                    ..
-                }) = rules
-                {
-                    (Some(table), Some(common), diagnostics)
-                } else {
-                    (None, None, diagnostics)
-                }
-            } else {
+    async fn inner_get_tombi_table_comment_directive_and_diagnostics(
+        table: &tombi_document_tree::Table,
+        accessors: &[tombi_schema_store::Accessor],
+        comment_directives: &[tombi_ast::TombiValueCommentDirective],
+    ) -> (
+        Option<TableRules>,
+        Option<CommonRules>,
+        Vec<tombi_diagnostic::Diagnostic>,
+    ) {
+        match table.kind() {
+            TableKind::InlineTable { .. } => {
                 let (rules, diagnostics) =
-                    get_tombi_rules_and_diagnostics::<KeyTableCommonRules>(&comment_directives)
+                    get_tombi_rules_and_diagnostics::<InlineTableCommonRules>(&comment_directives)
                         .await;
-                if let Some(WithKeyRules {
-                    value:
-                        WithCommonRules {
-                            common,
-                            value: table,
-                        },
-                    ..
+                if let Some(WithCommonRules {
+                    common,
+                    value: InlineTableRules(table),
                 }) = rules
                 {
                     (Some(table), Some(common), diagnostics)
@@ -121,22 +76,108 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
                     (None, None, diagnostics)
                 }
             }
-        }
-        TableKind::Root => {
-            let (rules, diagnostics) =
-                get_tombi_rules_and_diagnostics::<RootTableCommonRules>(&comment_directives).await;
+            TableKind::Table
+            | TableKind::ParentTable
+            | TableKind::ParentKey
+            | TableKind::KeyValue => {
+                if accessors
+                    .iter()
+                    .any(|accessor| matches!(accessor, tombi_schema_store::Accessor::Index(_)))
+                {
+                    let (rules, diagnostics) = get_tombi_rules_and_diagnostics::<
+                        KeyArrayOfTableCommonRules,
+                    >(&comment_directives)
+                    .await;
+                    if let Some(WithKeyRules {
+                        value:
+                            WithCommonRules {
+                                common,
+                                value: ArrayOfTableRules { table, .. },
+                            },
+                        ..
+                    }) = rules
+                    {
+                        (Some(table), Some(common), diagnostics)
+                    } else {
+                        (None, None, diagnostics)
+                    }
+                } else {
+                    let (rules, diagnostics) =
+                        get_tombi_rules_and_diagnostics::<KeyTableCommonRules>(&comment_directives)
+                            .await;
+                    if let Some(WithKeyRules {
+                        value:
+                            WithCommonRules {
+                                common,
+                                value: table,
+                            },
+                        ..
+                    }) = rules
+                    {
+                        (Some(table), Some(common), diagnostics)
+                    } else {
+                        (None, None, diagnostics)
+                    }
+                }
+            }
+            TableKind::Root => {
+                let (rules, diagnostics) =
+                    get_tombi_rules_and_diagnostics::<RootTableCommonRules>(&comment_directives)
+                        .await;
 
-            if let Some(WithCommonRules {
-                common,
-                value: RootTableRules { table, .. },
-            }) = rules
-            {
-                (Some(table), Some(common), diagnostics)
-            } else {
-                (None, None, diagnostics)
+                if let Some(WithCommonRules {
+                    common,
+                    value: RootTableRules { table, .. },
+                }) = rules
+                {
+                    (Some(table), Some(common), diagnostics)
+                } else {
+                    (None, None, diagnostics)
+                }
             }
         }
     }
+
+    let mut total_diagnostics = vec![];
+    let (mut table_rules, mut common_rules) =
+        if let Some(comment_directives) = table.comment_directives() {
+            let (table_rules, common_rules, diagnostics) =
+                inner_get_tombi_table_comment_directive_and_diagnostics(
+                    table,
+                    accessors,
+                    comment_directives,
+                )
+                .await;
+
+            total_diagnostics.extend(diagnostics);
+            (table_rules, common_rules)
+        } else {
+            (None, None)
+        };
+
+    if let Some(comment_directives) = table.inner_comment_directives() {
+        let (inner_table_rules, inner_common_rules, diagnostics) =
+            inner_get_tombi_table_comment_directive_and_diagnostics(
+                table,
+                accessors,
+                comment_directives,
+            )
+            .await;
+
+        if table_rules.is_none() {
+            table_rules = inner_table_rules;
+        }
+        if common_rules.is_none() {
+            common_rules = inner_common_rules;
+        }
+        for diagnostic in diagnostics {
+            if !total_diagnostics.contains(&diagnostic) {
+                total_diagnostics.push(diagnostic);
+            }
+        }
+    };
+
+    (table_rules, common_rules, total_diagnostics)
 }
 
 pub async fn get_tombi_key_rules_and_diagnostics(
