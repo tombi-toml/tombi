@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::Deserialize;
 use tombi_comment_directive::{
     value::{
@@ -142,12 +143,24 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
     let (mut table_rules, mut common_rules) =
         if let Some(comment_directives) = table.comment_directives() {
             let (table_rules, common_rules, diagnostics) =
-                inner_get_tombi_table_comment_directive_and_diagnostics(
-                    table,
-                    accessors,
-                    comment_directives,
-                )
-                .await;
+                if let Some(inner_comment_directives) = table.inner_comment_directives() {
+                    inner_get_tombi_table_comment_directive_and_diagnostics(
+                        table,
+                        accessors,
+                        comment_directives
+                            .iter()
+                            .chain(inner_comment_directives)
+                            .collect_vec(),
+                    )
+                    .await
+                } else {
+                    inner_get_tombi_table_comment_directive_and_diagnostics(
+                        table,
+                        accessors,
+                        comment_directives.iter().collect_vec(),
+                    )
+                    .await
+                };
 
             total_diagnostics.extend(diagnostics);
             (table_rules, common_rules)
@@ -155,12 +168,12 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
             (None, None)
         };
 
-    if let Some(comment_directives) = table.inner_comment_directives() {
+    if let Some(inner_comment_directives) = table.inner_comment_directives() {
         let (inner_table_rules, inner_common_rules, diagnostics) =
             inner_get_tombi_table_comment_directive_and_diagnostics(
                 table,
                 accessors,
-                comment_directives,
+                inner_comment_directives.iter(),
             )
             .await;
 
