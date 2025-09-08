@@ -56,8 +56,10 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
     ) -> (Option<ArrayCommonRules>, Vec<tombi_diagnostic::Diagnostic>) {
         match array.kind() {
             ArrayKind::Array => {
-                let (rules, diagnostics) =
-                    get_tombi_rules_and_diagnostics::<ArrayCommonRules>(comment_directives).await;
+                let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
+                    ArrayCommonRules,
+                >(comment_directives, accessors)
+                .await;
                 if let Some(array_common_rules) = rules {
                     (Some(array_common_rules), diagnostics)
                 } else {
