@@ -93,7 +93,7 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_root_table_unkown_key_not_allowed_with_leading_comment_directive(
+            fn test_root_table_unknown_key_not_allowed_with_leading_comment_directive(
                 r#"
                 # tombi: lint.rules.key-not-allowed.disabled = true
                 table.unknown = "value"
@@ -104,7 +104,7 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_root_table_unkown_key_not_allowed_with_trailing_comment_directive(
+            fn test_root_table_unknown_key_not_allowed_with_trailing_comment_directive(
                 r#"
                 table.unknown = "value"  # tombi: lint.rules.key-not-allowed.disabled = true
                 "#,
