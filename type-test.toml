@@ -8,4 +8,4 @@ array = [
 ]
 integer = 1  # tombi: lint.rules.integer-maximum.disabled = true
 boolean = true
-object = { boolean = true }
+table = { boolean = true }
