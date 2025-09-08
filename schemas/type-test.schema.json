@@ -84,10 +84,10 @@
         }
       ]
     },
-    "object": {
+    "table": {
       "anyOf": [
         {
-          "$ref": "#/definitions/ObjectValue"
+          "$ref": "#/definitions/TableValue"
         },
         {
           "type": "null"
@@ -144,7 +144,7 @@
           }
         },
         {
-          "$ref": "#/definitions/ObjectValue2"
+          "$ref": "#/definitions/TableValue2"
         }
       ]
     },
@@ -188,7 +188,7 @@
         }
       ]
     },
-    "ObjectValue2": {
+    "TableValue2": {
       "type": "object",
       "properties": {
         "boolean": {
@@ -253,7 +253,7 @@
         }
       }
     },
-    "ObjectValue": {
+    "TableValue": {
       "type": "object",
       "properties": {
         "boolean": {
@@ -335,17 +335,18 @@
             }
           ]
         },
-        "object": {
+        "table": {
           "anyOf": [
             {
-              "$ref": "#/definitions/ObjectValue2"
+              "$ref": "#/definitions/TableValue2"
             },
             {
               "type": "null"
             }
           ]
         }
-      }
+      },
+      "minProperties": 1
     }
   }
 }

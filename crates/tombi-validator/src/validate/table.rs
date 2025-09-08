@@ -319,7 +319,7 @@ async fn validate_table(
             }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::StrictAdditionalProperties {
+                    kind: Box::new(crate::DiagnosticKind::StrictAdditionalKeys {
                         accessors: SchemaAccessors::from(accessors),
                         schema_uri: current_schema.schema_uri.as_ref().clone(),
                         key: key.to_string(),

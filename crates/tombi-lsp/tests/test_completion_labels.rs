@@ -1330,9 +1330,9 @@ mod completion_labels {
                 "local-date",
                 "local-date-time",
                 "local-time",
-                "object",
                 "offset-date-time",
                 "string",
+                "table",
             ]);
         }
 
@@ -1353,9 +1353,9 @@ mod completion_labels {
                 "local-date",
                 "local-date-time",
                 "local-time",
-                "object",
                 "offset-date-time",
                 "string",
+                "table",
             ]);
         }
     }

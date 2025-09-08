@@ -15,3 +15,27 @@ impl Lint for tombi_ast::Table {
         .boxed()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_lint;
+
+    mod type_test {
+        use tombi_test_lib::type_test_schema_path;
+
+        use super::*;
+
+        test_lint! {
+            #[test]
+            fn test_table_min_keys(
+                r#"
+                [table]
+                "#,
+                type_test_schema_path(),
+            ) -> Err([tombi_validator::DiagnosticKind::TableMinKeys {
+                min_keys: 1,
+                actual: 0,
+            }]);
+        }
+    }
+}

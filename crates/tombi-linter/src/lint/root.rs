@@ -115,8 +115,22 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_root_table_unknown_key_not_allowed(
+                r#"
+                #:tombi schema.strict = false
+
+                table.unknown = "value"
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_root_table_unknown_key_not_allowed_with_leading_comment_directive(
                 r#"
+                #:tombi schema.strict = false
+
                 # tombi: lint.rules.key-not-allowed.disabled = true
                 table.unknown = "value"
                 "#,
@@ -128,6 +142,8 @@ mod tests {
             #[test]
             fn test_root_table_unknown_key_not_allowed_with_trailing_comment_directive(
                 r#"
+                #:tombi schema.strict = false
+
                 table.unknown = "value"  # tombi: lint.rules.key-not-allowed.disabled = true
                 "#,
                 type_test_schema_path(),

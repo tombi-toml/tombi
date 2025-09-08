@@ -298,7 +298,7 @@ struct TypeTest {
     local_date: Option<chrono::NaiveDate>,
     local_time: Option<chrono::NaiveTime>,
     literal: Option<LiteralValue>,
-    object: Option<ObjectValue>,
+    table: Option<TableValue>,
 }
 
 #[allow(dead_code)]
@@ -316,7 +316,7 @@ enum LiteralValue {
     LocalDate(chrono::NaiveDate),
     LocalTime(chrono::NaiveTime),
     Array(Vec<LiteralValue2>),
-    Object(ObjectValue2),
+    Table(TableValue2),
 }
 
 #[allow(dead_code)]
@@ -338,7 +338,8 @@ enum LiteralValue2 {
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-struct ObjectValue {
+#[schemars(extend("minProperties" = 1))]
+struct TableValue {
     boolean: Option<bool>,
     #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,
@@ -352,13 +353,13 @@ struct ObjectValue {
     local_date: Option<chrono::NaiveDate>,
     local_time: Option<chrono::NaiveTime>,
     literal: Option<LiteralValue2>,
-    object: Option<ObjectValue2>,
+    table: Option<TableValue2>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-struct ObjectValue2 {
+struct TableValue2 {
     boolean: Option<bool>,
     #[validate(range(min = 1, max = 10))]
     integer: Option<i64>,

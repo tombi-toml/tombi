@@ -258,7 +258,7 @@ mod tests {
                 aaa = 1
                 "#,
                 cargo_schema_path(),
-            ) -> Err([tombi_validator::DiagnosticKind::StrictAdditionalProperties {
+            ) -> Err([tombi_validator::DiagnosticKind::StrictAdditionalKeys {
                 accessors: tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
