@@ -145,7 +145,9 @@ mod tests {
             #[test]
             fn test_nexted_array(
                 r#"
-                array = [[]]
+                array = [[
+                    # tombi: lint.rules.array-min-values.disabled = true
+                ]]
                 "#,
                 type_test_schema_path(),
             ) -> Err([
