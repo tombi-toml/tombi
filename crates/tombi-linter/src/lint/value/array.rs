@@ -174,5 +174,25 @@ mod tests {
                 tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
             ]);
         }
+
+        test_lint! {
+            #[test]
+            fn test_nexted_array_integer_min_values_with_array_leading_and_array_dangling_comment_directive(
+                r#"
+                # tombi: lint.rules.array-min-values.disabled = true
+                array = [
+                    [
+                    # tombi: lint.rules.array-min-values.disabled = true
+
+                    # tombi: lint.rules.key-empty.disabled = true
+                    0, # tombi: lint.rules.integer-minimum.disabled = true
+                    ]
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+            ]);
+        }
     }
 }
