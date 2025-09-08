@@ -150,7 +150,7 @@ mod goto_type_definition_tests {
                 r#"
                 #:tombi schema.strict█ = true
 
-                [object]
+                [table]
                 integer = 42
                 "#,
                 type_test_schema_path(),
@@ -173,7 +173,8 @@ mod goto_type_definition_tests {
             async fn type_test_tombi_document_directive_in_table_scope(
                 r#"
                 #:tombi schema.strict█ = true
-                [object]
+
+                [table]
                 integer = 42
                 "#,
                 type_test_schema_path(),
