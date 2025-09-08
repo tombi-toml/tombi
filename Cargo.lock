@@ -3606,6 +3606,7 @@ dependencies = [
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",
+ "tracing",
 ]
 
 [[package]]

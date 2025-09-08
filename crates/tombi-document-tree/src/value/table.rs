@@ -837,13 +837,28 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         };
 
         let mut table = if let Some(mut key) = keys.pop() {
-            let mut seed_key_value = table;
-            seed_key_value.range = key.range() + value.range();
-            seed_key_value.symbol_range = key.range() + value.symbol_range();
-            key.comment_directives = seed_key_value.comment_directives.clone();
+            table.range = key.range() + value.range();
+            table.symbol_range = key.range() + value.symbol_range();
+            key.comment_directives =
+                match (table.comment_directives.clone(), value.comment_directives()) {
+                    (Some(table_comment_directives), Some(value_comment_directives)) => {
+                        Some(Box::new(
+                            table_comment_directives
+                                .iter()
+                                .chain(value_comment_directives.iter())
+                                .cloned()
+                                .collect(),
+                        ))
+                    }
+                    (Some(table_comment_directives), None) => Some(table_comment_directives),
+                    (None, Some(value_comment_directives)) => {
+                        Some(Box::new(value_comment_directives.to_vec()))
+                    }
+                    (None, None) => None,
+                };
 
-            match seed_key_value.insert(key, value) {
-                Ok(table) => table,
+            match table.insert(key, value) {
+                Ok(t) => t,
                 Err(errs) => {
                     errors.extend(errs);
 
@@ -862,7 +877,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
 
         for mut key in keys.into_iter().rev() {
             let dummy_table = table.clone();
-            key.comment_directives = dummy_table.comment_directives.clone();
+            key.comment_directives = table.comment_directives.clone();
 
             match table.new_parent_key(&key).insert(
                 key,
