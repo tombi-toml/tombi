@@ -820,9 +820,25 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                     errors.extend(errs);
                 }
 
-                if !comment_directives.is_empty() {
-                    value.extend_comment_directives(comment_directives.clone());
-                }
+                let joined_comment_directives =
+                    match (table.comment_directives.clone(), value.comment_directives()) {
+                        (Some(table_comment_directives), Some(value_comment_directives)) => Some(
+                            table_comment_directives
+                                .into_iter()
+                                .chain(value_comment_directives.iter().cloned())
+                                .collect(),
+                        ),
+                        (Some(table_comment_directives), None) => Some(*table_comment_directives),
+                        (None, Some(value_comment_directives)) => {
+                            Some(value_comment_directives.to_vec())
+                        }
+                        (None, None) => None,
+                    };
+
+                if let Some(joined_comment_directives) = joined_comment_directives {
+                    table.comment_directives = Some(Box::new(joined_comment_directives.clone()));
+                    value.set_comment_directives(joined_comment_directives);
+                };
 
                 value
             }
@@ -839,23 +855,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         let mut table = if let Some(mut key) = keys.pop() {
             table.range = key.range() + value.range();
             table.symbol_range = key.range() + value.symbol_range();
-            key.comment_directives =
-                match (table.comment_directives.clone(), value.comment_directives()) {
-                    (Some(table_comment_directives), Some(value_comment_directives)) => {
-                        Some(Box::new(
-                            table_comment_directives
-                                .iter()
-                                .chain(value_comment_directives.iter())
-                                .cloned()
-                                .collect(),
-                        ))
-                    }
-                    (Some(table_comment_directives), None) => Some(table_comment_directives),
-                    (None, Some(value_comment_directives)) => {
-                        Some(Box::new(value_comment_directives.to_vec()))
-                    }
-                    (None, None) => None,
-                };
+            key.comment_directives = table.comment_directives.clone();
 
             match table.insert(key, value) {
                 Ok(t) => t,
@@ -893,6 +893,8 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                 }
             }
         }
+
+        table.comment_directives = None;
 
         DocumentTreeAndErrors {
             tree: table,
