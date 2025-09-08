@@ -38,6 +38,28 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_root_table_min_keys(
+                r#"
+                "#,
+                type_test_schema_path(),
+            ) -> Err([tombi_validator::DiagnosticKind::TableMinKeys {
+                min_keys: 1,
+                actual: 0,
+            }]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_table_min_keys_with_disabled_comment_directive(
+                r#"
+                # tombi: lint.rules.table-min-keys.disabled = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_root_type_mismatch(
                 r#"
                 integer = "1"
