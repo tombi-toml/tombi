@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::value::{CommonRules, TableRules};
+use tombi_comment_directive::value::TableCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
@@ -29,7 +29,7 @@ impl Validate for tombi_document_tree::Table {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
-            let (table_rules, common_rules, diagnostics) =
+            let (table_common_rules, diagnostics) =
                 get_tombi_table_comment_directive_and_diagnostics(self, accessors).await;
 
             if !diagnostics.is_empty() {
@@ -75,8 +75,7 @@ impl Validate for tombi_document_tree::Table {
                             table_schema,
                             current_schema,
                             schema_context,
-                            table_rules.as_ref(),
-                            common_rules.as_ref(),
+                            table_common_rules.as_ref(),
                         )
                         .await
                     }
@@ -87,7 +86,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            common_rules.as_ref(),
+                            table_common_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -98,7 +97,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            common_rules.as_ref(),
+                            table_common_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -109,7 +108,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            common_rules.as_ref(),
+                            table_common_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -118,7 +117,7 @@ impl Validate for tombi_document_tree::Table {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
-                        common_rules.as_ref(),
+                        table_common_rules.as_ref().map(|rules| &rules.common),
                     ),
                 };
 
@@ -149,8 +148,7 @@ async fn validate_table(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    table_rules: Option<&TableRules>,
-    common_rules: Option<&CommonRules>,
+    value_rules: Option<&TableCommonRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 
@@ -291,7 +289,8 @@ async fn validate_table(
                     .inspect_err(|err| tracing::warn!("{err}"))
                 {
                     if current_schema.value_schema.deprecated().await == Some(true) {
-                        let level = common_rules
+                        let level = value_rules
+                            .map(|rules| &rules.common)
                             .and_then(|rules| {
                                 rules
                                     .deprecated
@@ -361,7 +360,8 @@ async fn validate_table(
 
         for required_key in required {
             if !keys.contains(required_key) {
-                let level = table_rules
+                let level = value_rules
+                    .map(|rules| &rules.value)
                     .and_then(|rules| {
                         rules
                             .table_key_required
@@ -383,7 +383,8 @@ async fn validate_table(
 
     if let Some(max_properties) = table_schema.max_properties {
         if table_value.keys().count() > max_properties {
-            let level = table_rules
+            let level = value_rules
+                .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
                         .table_max_keys
@@ -405,7 +406,8 @@ async fn validate_table(
 
     if let Some(min_properties) = table_schema.min_properties {
         if table_value.keys().count() < min_properties {
-            let level = table_rules
+            let level = value_rules
+                .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
                         .table_min_keys
@@ -427,7 +429,8 @@ async fn validate_table(
 
     if diagnostics.is_empty() {
         if table_schema.deprecated == Some(true) {
-            let level = common_rules
+            let level = value_rules
+                .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
                         .deprecated

@@ -9,8 +9,7 @@ use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
-    validate::type_mismatch,
+    comment_directive::get_tombi_array_comment_directive_and_diagnostics, validate::type_mismatch,
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -24,20 +23,12 @@ impl Validate for tombi_document_tree::Array {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
-            let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<ArrayCommonRules>(
-                        comment_directives,
-                        accessors,
-                    )
-                    .await;
+            let (value_rules, diagnostics) =
+                get_tombi_array_comment_directive_and_diagnostics(self, accessors).await;
 
+            if !diagnostics.is_empty() {
                 total_diagnostics.extend(diagnostics);
-
-                value_rules
-            } else {
-                None
-            };
+            }
 
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
