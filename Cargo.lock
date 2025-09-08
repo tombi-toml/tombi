@@ -3988,6 +3988,7 @@ dependencies = [
  "addr",
  "ahash",
  "email_address",
+ "indexmap",
  "itertools 0.14.0",
  "regex",
  "serde",
