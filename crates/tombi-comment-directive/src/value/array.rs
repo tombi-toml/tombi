@@ -1,25 +1,22 @@
 use std::str::FromStr;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-pub type TombiKeyArrayDirectiveContent = TombiValueDirectiveContent<ArrayKeyCommonRules>;
-
-pub type TombiArrayDirectiveContent = TombiValueDirectiveContent<ArrayCommonRules>;
-
-pub type ArrayKeyCommonRules = WithKeyRules<WithCommonRules<ArrayRules>>;
+pub type ArrayKeyCommonRules = WithKeyTableRules<WithCommonRules<ArrayRules>>;
 
 pub type ArrayCommonRules = WithCommonRules<ArrayRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyArrayDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayKeyCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiArrayDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }
@@ -29,33 +26,33 @@ impl TombiCommentDirectiveImpl for TombiArrayDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ArrayRules {
-    /// # Maximum items.
+    /// # Maximum values
     ///
-    /// Check if the array has more than the maximum number of items.
+    /// Check if the array has more than the maximum number of values.
     ///
     /// ```rust
     /// length(array) <= maximum
     /// ```
     ///
-    pub array_max_items: Option<SeverityLevelDefaultError>,
+    pub array_max_values: Option<ErrorRuleOptions>,
 
-    /// # Minimum items.
+    /// # Minimum values
     ///
-    /// Check if the array has less than the minimum number of items.
+    /// Check if the array has less than the minimum number of values.
     ///
     /// ```rust
     /// length(array) >= minimum
     /// ```
     ///
-    pub array_min_items: Option<SeverityLevelDefaultError>,
+    pub array_min_values: Option<ErrorRuleOptions>,
 
-    /// # Unique items.
+    /// # Unique values
     ///
-    /// Check if the array has duplicate items.
+    /// Check if the array has duplicate values.
     ///
     /// ```rust
     /// length(array) == length(unique(array))
     /// ```
     ///
-    pub array_unique_items: Option<SeverityLevelDefaultError>,
+    pub array_unique_values: Option<ErrorRuleOptions>,
 }

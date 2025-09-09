@@ -42,7 +42,9 @@
       ],
       "items": {
         "$ref": "#/definitions/LiteralValue"
-      }
+      },
+      "minItems": 2,
+      "maxItems": 10
     },
     "offset-date-time": {
       "type": [
@@ -82,10 +84,10 @@
         }
       ]
     },
-    "object": {
+    "table": {
       "anyOf": [
         {
-          "$ref": "#/definitions/ObjectValue"
+          "$ref": "#/definitions/TableValue"
         },
         {
           "type": "null"
@@ -95,6 +97,7 @@
   },
   "additionalProperties": false,
   "x-tombi-toml-version": "v1.1.0-preview",
+  "minProperties": 1,
   "definitions": {
     "LiteralValue": {
       "anyOf": [
@@ -138,10 +141,12 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/LiteralValue2"
-          }
+          },
+          "minItems": 1,
+          "maxItems": 10
         },
         {
-          "$ref": "#/definitions/ObjectValue2"
+          "$ref": "#/definitions/TableValue2"
         }
       ]
     },
@@ -185,7 +190,7 @@
         }
       ]
     },
-    "ObjectValue2": {
+    "TableValue2": {
       "type": "object",
       "properties": {
         "boolean": {
@@ -248,9 +253,10 @@
           ],
           "format": "partial-time"
         }
-      }
+      },
+      "minProperties": 2
     },
-    "ObjectValue": {
+    "TableValue": {
       "type": "object",
       "properties": {
         "boolean": {
@@ -332,17 +338,18 @@
             }
           ]
         },
-        "object": {
+        "table": {
           "anyOf": [
             {
-              "$ref": "#/definitions/ObjectValue2"
+              "$ref": "#/definitions/TableValue2"
             },
             {
               "type": "null"
             }
           ]
         }
-      }
+      },
+      "minProperties": 2
     }
   }
 }

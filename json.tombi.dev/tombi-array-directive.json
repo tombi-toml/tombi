@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -42,7 +42,7 @@
           "description": "Check if the value is of the correct type.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -54,7 +54,7 @@
           "description": "Check if the value is equal to the const value.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -66,7 +66,7 @@
           "description": "Check if the value is one of the values in the enumerate.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -78,43 +78,43 @@
           "description": "Check if the value is deprecated.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/WarnRuleOptions"
             },
             {
               "type": "null"
             }
           ]
         },
-        "array-max-items": {
-          "title": "Maximum items.",
-          "description": "Check if the array has more than the maximum number of items.\n\n```rust\nlength(array) <= maximum\n```",
+        "array-max-values": {
+          "title": "Maximum values",
+          "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
             }
           ]
         },
-        "array-min-items": {
-          "title": "Minimum items.",
-          "description": "Check if the array has less than the minimum number of items.\n\n```rust\nlength(array) >= minimum\n```",
+        "array-min-values": {
+          "title": "Minimum values",
+          "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
             }
           ]
         },
-        "array-unique-items": {
-          "title": "Unique items.",
-          "description": "Check if the array has duplicate items.\n\n```rust\nlength(array) == length(unique(array))\n```",
+        "array-unique-values": {
+          "title": "Unique values",
+          "description": "Check if the array has duplicate values.\n\n```rust\nlength(array) == length(unique(array))\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -125,40 +125,41 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
+    "ErrorRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Error rule disabled",
+          "description": "If `true`, Error is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
         }
-      ]
+      },
+      "additionalProperties": false
     },
-    "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
-        },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
+    "WarnRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Warn rule disabled",
+          "description": "If `true`, Warn is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
         }
-      ]
-    },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
-        }
-      ]
+      },
+      "additionalProperties": false
     }
   }
 }

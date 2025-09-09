@@ -2,9 +2,10 @@ local-date = 2025-01-30
 local-date-time = 2025-01-30T23:57:55.453
 offset-date-time = 2025-01-30T23:58:05.683+09:00
 local-time = 23:58:14.588
+# tombi: lint.rules.array-min-values.disabled = true
 array = [
-  "",  # tombi: lint.rules.string-min-length = "off"
+  "a",  # tombi: lint.rules.string-min-length.disabled = true
 ]
-integer = 42  # tombi: lint.rules.integer-maximum = "off"
-boolean = true
-object = { boolean = true }
+integer = 1  # tombi: lint.rules.integer-maximum.disabled = true
+boolean = true  # tombi: lint.rules.table-key-required.disabled = true
+table = { boolean = true }  # tombi: lint.rules.table-min-keys.disabled = true

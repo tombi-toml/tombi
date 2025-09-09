@@ -1,26 +1,23 @@
 use std::str::FromStr;
 
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyFloatDirectiveContent = TombiValueDirectiveContent<KeyFloatCommonRules>;
-
-pub type TombiFloatDirectiveContent = TombiValueDirectiveContent<FloatCommonRules>;
-
-pub type KeyFloatCommonRules = WithKeyRules<WithCommonRules<FloatRules>>;
+pub type KeyFloatCommonRules = WithKeyTableRules<WithCommonRules<FloatRules>>;
 
 pub type FloatCommonRules = WithCommonRules<FloatRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyFloatDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyFloatCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-float-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiFloatDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<FloatCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-float-directive.json").unwrap()
     }
@@ -30,7 +27,7 @@ impl TombiCommentDirectiveImpl for TombiFloatDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct FloatRules {
-    /// # Maximum float.
+    /// # Maximum float
     ///
     /// Check if the float is less than or equal to the maximum.
     ///
@@ -38,9 +35,9 @@ pub struct FloatRules {
     /// float <= maximum
     /// ```
     ///
-    pub float_maximum: Option<SeverityLevelDefaultError>,
+    pub float_maximum: Option<ErrorRuleOptions>,
 
-    /// # Minimum float.
+    /// # Minimum float
     ///
     /// Check if the float is greater than or equal to the minimum.
     ///
@@ -48,9 +45,9 @@ pub struct FloatRules {
     /// float >= minimum
     /// ```
     ///
-    pub float_minimum: Option<SeverityLevelDefaultError>,
+    pub float_minimum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive maximum float.
+    /// # Exclusive maximum float
     ///
     /// Check if the float is less than the maximum.
     ///
@@ -58,9 +55,9 @@ pub struct FloatRules {
     /// float < maximum
     /// ```
     ///
-    pub float_exclusive_maximum: Option<SeverityLevelDefaultError>,
+    pub float_exclusive_maximum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive minimum float.
+    /// # Exclusive minimum float
     ///
     /// Check if the float is greater than the minimum.
     ///
@@ -68,9 +65,9 @@ pub struct FloatRules {
     /// float > minimum
     /// ```
     ///
-    pub float_exclusive_minimum: Option<SeverityLevelDefaultError>,
+    pub float_exclusive_minimum: Option<ErrorRuleOptions>,
 
-    /// # Multiple of float.
+    /// # Multiple of float
     ///
     /// Check if the float is a multiple of the value.
     ///
@@ -78,5 +75,5 @@ pub struct FloatRules {
     /// float % multiple_of == 0
     /// ```
     ///
-    pub float_multiple_of: Option<SeverityLevelDefaultError>,
+    pub float_multiple_of: Option<ErrorRuleOptions>,
 }

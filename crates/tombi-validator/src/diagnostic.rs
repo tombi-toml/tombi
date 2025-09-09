@@ -6,9 +6,11 @@ use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
+    /// The entire Table or Array is deprecated
     #[error("`{0}` is deprecated")]
     Deprecated(SchemaAccessors),
 
+    /// The value is deprecated
     #[error("`{0} = {1}` is deprecated")]
     DeprecatedValue(SchemaAccessors, String),
 
@@ -18,17 +20,17 @@ Please add `"additionalProperties": true` to the location where `{accessors}` is
 or add `#:tombi schema.strict = false` as a document comment directive at the top of your document,
 or set `schema.strict = false` in your `tombi.toml`."#
     )]
-    StrictAdditionalProperties {
+    StrictAdditionalKeys {
         accessors: SchemaAccessors,
         key: String,
         schema_uri: SchemaUri,
     },
 
-    #[error("\"{key}\" is required")]
-    KeyRequired { key: String },
-
     #[error("\"{key}\" is not allowed")]
     KeyNotAllowed { key: String },
+
+    #[error("Key must match the pattern `{patterns}`")]
+    KeyPattern { patterns: Patterns },
 
     #[error("Expected a value of type {expected}, but found {actual}")]
     TypeMismatch {
@@ -91,28 +93,22 @@ or set `schema.strict = false` in your `tombi.toml`."#
     StringPattern { pattern: String, actual: String },
 
     #[error("Array must contain at most {max_values} values, but found {actual}")]
-    ArrayMaxItems { max_values: usize, actual: usize },
+    ArrayMaxValues { max_values: usize, actual: usize },
 
     #[error("Array must contain at least {min_values} values, but found {actual}")]
-    ArrayMinItems { min_values: usize, actual: usize },
+    ArrayMinValues { min_values: usize, actual: usize },
 
     #[error("Array values must be unique")]
-    ArrayUniqueItems,
+    ArrayUniqueValues,
 
-    #[error("Table must contain at most {max_properties} properties, but found {actual}")]
-    TableMaxProperties {
-        max_properties: usize,
-        actual: usize,
-    },
+    #[error("Table must contain at most {max_keys} keys, but found {actual}")]
+    TableMaxKeys { max_keys: usize, actual: usize },
 
-    #[error("Table must contain at least {min_properties} properties, but found {actual}")]
-    TableMinProperties {
-        min_properties: usize,
-        actual: usize,
-    },
+    #[error("Table must contain at least {min_keys} keys, but found {actual}")]
+    TableMinKeys { min_keys: usize, actual: usize },
 
-    #[error("Key must match the pattern `{patterns}`")]
-    KeyPattern { patterns: Patterns },
+    #[error("\"{key}\" is required")]
+    TableKeyRequired { key: String },
 }
 
 #[derive(Debug)]
@@ -128,9 +124,9 @@ impl Diagnostic {
             DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
                 "deprecated"
             }
-            DiagnosticKind::StrictAdditionalProperties { .. } => "strict-additional-properties",
-            DiagnosticKind::KeyRequired { .. } => "key-required",
+            DiagnosticKind::StrictAdditionalKeys { .. } => "strict-additional-keys",
             DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
+            DiagnosticKind::KeyPattern { .. } => "key-pattern",
             DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
             DiagnosticKind::Const { .. } => "const",
             DiagnosticKind::Enumerate { .. } => "enumerate",
@@ -148,12 +144,12 @@ impl Diagnostic {
             DiagnosticKind::StringMinLength { .. } => "string-min-length",
             DiagnosticKind::StringFormat { .. } => "string-format",
             DiagnosticKind::StringPattern { .. } => "string-pattern",
-            DiagnosticKind::ArrayMaxItems { .. } => "array-max-items",
-            DiagnosticKind::ArrayMinItems { .. } => "array-min-items",
-            DiagnosticKind::ArrayUniqueItems => "array-unique-items",
-            DiagnosticKind::TableMaxProperties { .. } => "table-max-properties",
-            DiagnosticKind::TableMinProperties { .. } => "table-min-properties",
-            DiagnosticKind::KeyPattern { .. } => "key-pattern",
+            DiagnosticKind::ArrayMaxValues { .. } => "array-max-values",
+            DiagnosticKind::ArrayMinValues { .. } => "array-min-values",
+            DiagnosticKind::ArrayUniqueValues => "array-unique-values",
+            DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
+            DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
+            DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
         }
     }
 

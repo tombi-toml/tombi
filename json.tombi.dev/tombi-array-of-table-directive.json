@@ -24,7 +24,7 @@
           "title": "Lint rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyTableRules"
+              "$ref": "#/definitions/WithCommonRules"
             },
             {
               "type": "null"
@@ -34,24 +34,12 @@
       },
       "additionalProperties": false
     },
-    "WithKeyTableRules": {
+    "WithCommonRules": {
       "type": "object",
       "properties": {
-        "key-empty": {
-          "title": "Key empty",
-          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/WarnRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-not-allowed": {
-          "title": "Key not allowed",
-          "description": "Check if the key is not defined in this Table.",
+        "type-mismatch": {
+          "title": "Type mismatch",
+          "description": "Check if the value is of the correct type.",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -61,9 +49,69 @@
             }
           ]
         },
-        "key-pattern": {
-          "title": "Key pattern",
-          "description": "Check if the key matches the pattern in the Schema.",
+        "const-value": {
+          "title": "Const value",
+          "description": "Check if the value is equal to the const value.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "title": "Enumerate",
+          "description": "Check if the value is one of the values in the enumerate.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deprecated": {
+          "title": "Deprecated",
+          "description": "Check if the value is deprecated.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WarnRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-max-values": {
+          "title": "Maximum values",
+          "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-min-values": {
+          "title": "Minimum values",
+          "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-unique-values": {
+          "title": "Unique values",
+          "description": "Check if the array has duplicate values.\n\n```rust\nlength(array) == length(unique(array))\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -120,65 +168,17 @@
               "type": "null"
             }
           ]
-        },
-        "type-mismatch": {
-          "title": "Type mismatch",
-          "description": "Check if the value is of the correct type.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "const-value": {
-          "title": "Const value",
-          "description": "Check if the value is equal to the const value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "enumerate": {
-          "title": "Enumerate",
-          "description": "Check if the value is one of the values in the enumerate.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "deprecated": {
-          "title": "Deprecated",
-          "description": "Check if the value is deprecated.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/WarnRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
       },
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "WarnRuleOptions": {
+    "ErrorRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled",
-          "description": "If `true`, Warn is disabled for this value.",
+          "title": "Error rule disabled",
+          "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
             "null"
@@ -191,12 +191,12 @@
       },
       "additionalProperties": false
     },
-    "ErrorRuleOptions": {
+    "WarnRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled",
-          "description": "If `true`, Error is disabled for this value.",
+          "title": "Warn rule disabled",
+          "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",
             "null"

@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -42,7 +42,7 @@
           "description": "Check if the value is of the correct type.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -54,7 +54,7 @@
           "description": "Check if the value is equal to the const value.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -66,7 +66,7 @@
           "description": "Check if the value is one of the values in the enumerate.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -78,7 +78,7 @@
           "description": "Check if the value is deprecated.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/WarnRuleOptions"
             },
             {
               "type": "null"
@@ -86,11 +86,11 @@
           ]
         },
         "tables-out-of-order": {
-          "title": "Tables out of order.",
+          "title": "Tables out of order",
           "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/WarnRuleOptions"
             },
             {
               "type": "null"
@@ -98,35 +98,47 @@
           ]
         },
         "dotted-keys-out-of-order": {
-          "title": "Dotted keys out of order.",
+          "title": "Dotted keys out of order",
           "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultWarn"
+              "$ref": "#/definitions/WarnRuleOptions"
             },
             {
               "type": "null"
             }
           ]
         },
-        "table-max-properties": {
-          "title": "Maximum properties.",
-          "description": "Check if the table has more than the maximum number of properties.\n\n```rust\nlength(table) <= maximum\n```",
+        "table-max-keys": {
+          "title": "Maximum keys",
+          "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
             }
           ]
         },
-        "table-min-properties": {
-          "title": "Minimum properties.",
-          "description": "Check if the table has less than the minimum number of properties.\n\n```rust\nlength(table) >= minimum\n```",
+        "table-min-keys": {
+          "title": "Minimum keys",
+          "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/SeverityLevelDefaultError"
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "table-key-required": {
+          "title": "Key required",
+          "description": "Check if the key is required in this Table.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -137,40 +149,41 @@
       "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "SeverityLevelDefaultError": {
-      "default": "error",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
+    "ErrorRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Error rule disabled",
+          "description": "If `true`, Error is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
         }
-      ]
+      },
+      "additionalProperties": false
     },
-    "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
-        },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
+    "WarnRuleOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Warn rule disabled",
+          "description": "If `true`, Warn is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
         }
-      ]
-    },
-    "SeverityLevelDefaultWarn": {
-      "default": "warn",
-      "allOf": [
-        {
-          "$ref": "#/definitions/SeverityLevel"
-        }
-      ]
+      },
+      "additionalProperties": false
     }
   }
 }

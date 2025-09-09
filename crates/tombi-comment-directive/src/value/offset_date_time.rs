@@ -2,27 +2,21 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules};
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyOffsetDateTimeDirectiveContent =
-    TombiValueDirectiveContent<KeyOffsetDateTimeCommonRules>;
-
-pub type TombiOffsetDateTimeDirectiveContent =
-    TombiValueDirectiveContent<OffsetDateTimeCommonRules>;
-
-pub type KeyOffsetDateTimeCommonRules = WithKeyRules<WithCommonRules<OffsetDateTimeRules>>;
+pub type KeyOffsetDateTimeCommonRules = WithKeyTableRules<WithCommonRules<OffsetDateTimeRules>>;
 
 pub type OffsetDateTimeCommonRules = WithCommonRules<OffsetDateTimeRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyOffsetDateTimeDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyOffsetDateTimeCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-offset-date-time-directive.json")
             .unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiOffsetDateTimeDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<OffsetDateTimeCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-offset-date-time-directive.json").unwrap()
     }

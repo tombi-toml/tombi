@@ -264,6 +264,9 @@ impl ValueSchema {
                 } else {
                     let mut has_deprecated = false;
                     for schema in schemas.read().await.iter() {
+                        if schema.value_type().await == crate::ValueType::Null {
+                            continue;
+                        }
                         if schema.deprecated().await != Some(true) {
                             return None;
                         } else {

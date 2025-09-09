@@ -18,9 +18,11 @@ use std::borrow::Cow;
 
 pub use all_of::validate_all_of;
 pub use any_of::validate_any_of;
+use itertools::Itertools;
 pub use one_of::validate_one_of;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
+use tombi_severity_level::SeverityLevelDefaultError;
 
 pub trait Validate {
     fn validate<'a: 'b, 'b>(
@@ -50,10 +52,14 @@ pub fn validate<'a: 'b, 'b>(
             })
         });
 
-        tree.validate(&[], current_schema.as_ref(), schema_context)
-            .await?;
-
-        Ok(())
+        if let Err(diagnostics) = tree
+            .validate(&[], current_schema.as_ref(), schema_context)
+            .await
+        {
+            Err(diagnostics.into_iter().unique().collect_vec())
+        } else {
+            Ok(())
+        }
     }
     .boxed()
 }
@@ -67,7 +73,12 @@ fn type_mismatch(
     let mut diagnostics = vec![];
 
     let level = common_rules
-        .and_then(|common_rules| common_rules.type_mismatch)
+        .and_then(|common_rules| {
+            common_rules
+                .type_mismatch
+                .as_ref()
+                .map(SeverityLevelDefaultError::from)
+        })
         .unwrap_or_default();
 
     crate::Diagnostic {

@@ -147,7 +147,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             current_schema.value_schema
                                         );
 
-                                        return value
+                                        let mut contents = value
                                             .find_completion_contents(
                                                 position,
                                                 &keys[1..],
@@ -161,6 +161,17 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 completion_hint,
                                             )
                                             .await;
+
+                                        if !contents.is_empty()
+                                            && current_schema.value_schema.deprecated().await
+                                                == Some(true)
+                                        {
+                                            for content in &mut contents {
+                                                content.deprecated = Some(true);
+                                            }
+                                        }
+
+                                        return contents;
                                     }
                                 } else if keys.len() == 1 {
                                     for (
@@ -198,7 +209,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 &current_schema.value_schema
                                             );
 
-                                            let Some(contents) =
+                                            let Some(mut contents) =
                                                 collect_table_key_completion_contents(
                                                     self,
                                                     key_name,
@@ -213,6 +224,16 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             else {
                                                 continue;
                                             };
+
+                                            if !contents.is_empty()
+                                                && current_schema.value_schema.deprecated().await
+                                                    == Some(true)
+                                            {
+                                                for content in &mut contents {
+                                                    content.deprecated = Some(true);
+                                                }
+                                            }
+
                                             completion_contents.extend(contents);
                                         }
                                     }
@@ -250,17 +271,32 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 )
                                                 .await
                                             {
-                                                return get_property_value_completion_contents(
-                                                    value,
-                                                    position,
-                                                    key,
-                                                    keys,
-                                                    accessors,
-                                                    Some(&current_schema),
-                                                    schema_context,
-                                                    completion_hint,
-                                                )
-                                                .await;
+                                                let mut contents =
+                                                    get_property_value_completion_contents(
+                                                        value,
+                                                        position,
+                                                        key,
+                                                        keys,
+                                                        accessors,
+                                                        Some(&current_schema),
+                                                        schema_context,
+                                                        completion_hint,
+                                                    )
+                                                    .await;
+
+                                                if !contents.is_empty()
+                                                    && current_schema
+                                                        .value_schema
+                                                        .deprecated()
+                                                        .await
+                                                        == Some(true)
+                                                {
+                                                    for content in &mut contents {
+                                                        content.deprecated = Some(true);
+                                                    }
+                                                }
+
+                                                return contents;
                                             }
                                         }
                                     }
@@ -285,7 +321,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             )
                                             .await
                                     {
-                                        return get_property_value_completion_contents(
+                                        let mut contents = get_property_value_completion_contents(
                                             value,
                                             position,
                                             key,
@@ -296,6 +332,17 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             completion_hint,
                                         )
                                         .await;
+
+                                        if !contents.is_empty()
+                                            && current_schema.value_schema.deprecated().await
+                                                == Some(true)
+                                        {
+                                            for content in &mut contents {
+                                                content.deprecated = Some(true);
+                                            }
+                                        }
+
+                                        return contents;
                                     }
                                 }
 

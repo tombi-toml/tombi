@@ -3,7 +3,8 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_comment_directive::value::TableCommonRules;
 use tombi_config::SeverityLevel;
-use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules;
+use tombi_severity_level::SeverityLevelDefaultWarn;
+use tombi_validator::comment_directive::get_tombi_key_value_rules_and_diagnostics;
 
 pub struct DottedKeysOutOfOrderRule;
 
@@ -36,7 +37,7 @@ async fn check_dotted_keys_out_of_order(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let level = get_tombi_value_rules_and_diagnostics_with_key_rules::<TableCommonRules>(
+    let level = get_tombi_key_value_rules_and_diagnostics::<TableCommonRules>(
         &comment_directives.collect_vec(),
         &[],
     )
@@ -44,7 +45,12 @@ async fn check_dotted_keys_out_of_order(
     .0
     .as_ref()
     .map(|rules| &rules.value)
-    .and_then(|rules| rules.dotted_keys_out_of_order)
+    .and_then(|rules| {
+        rules
+            .dotted_keys_out_of_order
+            .as_ref()
+            .map(SeverityLevelDefaultWarn::from)
+    })
     .unwrap_or_else(|| {
         l.options()
             .rules
@@ -79,7 +85,7 @@ async fn check_dotted_keys_out_of_order(
     for (_, positions) in &prefix_groups {
         if positions
             .windows(2)
-            .any(|window| window.first().unwrap().0 + 1 != window.last().unwrap().0)
+            .any(|window| window[0].0 + 1 != window[1].0)
         {
             out_of_order_ranges.extend(positions.iter().map(|(_, range)| *range))
         }

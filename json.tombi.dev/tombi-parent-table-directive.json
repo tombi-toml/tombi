@@ -24,7 +24,7 @@
           "title": "Lint rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyTableRules"
+              "$ref": "#/definitions/WithCommonExtensibleRules"
             },
             {
               "type": "null"
@@ -34,39 +34,51 @@
       },
       "additionalProperties": false
     },
-    "WithKeyTableRules": {
+    "WithCommonExtensibleRules": {
       "type": "object",
       "properties": {
-        "key-empty": {
-          "title": "Key empty",
-          "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
+        "type-mismatch": {
+          "title": "Type mismatch",
+          "description": "Check if the value is of the correct type.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const-value": {
+          "title": "Const value",
+          "description": "Check if the value is equal to the const value.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumerate": {
+          "title": "Enumerate",
+          "description": "Check if the value is one of the values in the enumerate.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deprecated": {
+          "title": "Deprecated",
+          "description": "Check if the value is deprecated.",
           "anyOf": [
             {
               "$ref": "#/definitions/WarnRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-not-allowed": {
-          "title": "Key not allowed",
-          "description": "Check if the key is not defined in this Table.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "key-pattern": {
-          "title": "Key pattern",
-          "description": "Check if the key matches the pattern in the Schema.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
             },
             {
               "type": "null"
@@ -120,65 +132,16 @@
               "type": "null"
             }
           ]
-        },
-        "type-mismatch": {
-          "title": "Type mismatch",
-          "description": "Check if the value is of the correct type.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "const-value": {
-          "title": "Const value",
-          "description": "Check if the value is equal to the const value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "enumerate": {
-          "title": "Enumerate",
-          "description": "Check if the value is one of the values in the enumerate.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ErrorRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "deprecated": {
-          "title": "Deprecated",
-          "description": "Check if the value is deprecated.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/WarnRuleOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
       },
-      "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
-    "WarnRuleOptions": {
+    "ErrorRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled",
-          "description": "If `true`, Warn is disabled for this value.",
+          "title": "Error rule disabled",
+          "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
             "null"
@@ -191,12 +154,12 @@
       },
       "additionalProperties": false
     },
-    "ErrorRuleOptions": {
+    "WarnRuleOptions": {
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled",
-          "description": "If `true`, Error is disabled for this value.",
+          "title": "Warn rule disabled",
+          "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",
             "null"

@@ -1,7 +1,7 @@
 use tombi_ast::AstNode;
-use tombi_comment_directive::value::KeyCommonExtensibleRules;
 use tombi_config::SeverityLevel;
-use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics;
+use tombi_severity_level::SeverityLevelDefaultWarn;
+use tombi_validator::comment_directive::get_tombi_key_rules_and_diagnostics;
 
 use crate::Rule;
 use itertools::Itertools;
@@ -61,21 +61,19 @@ async fn check_key_empty(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let level = get_tombi_value_rules_and_diagnostics::<KeyCommonExtensibleRules>(
-        &comment_directives.collect_vec(),
-    )
-    .await
-    .0
-    .as_ref()
-    .map(|rules| &rules.value)
-    .and_then(|rules| rules.key_empty)
-    .unwrap_or_else(|| {
-        l.options()
-            .rules
-            .as_ref()
-            .and_then(|rules| rules.key_empty)
-            .unwrap_or_default()
-    });
+    let level = get_tombi_key_rules_and_diagnostics(&comment_directives.collect_vec())
+        .await
+        .0
+        .as_ref()
+        .map(|rules| &rules.value)
+        .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
+        .unwrap_or_else(|| {
+            l.options()
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.key_empty)
+                .unwrap_or_default()
+        });
 
     if level == SeverityLevel::Off {
         return;
@@ -98,30 +96,167 @@ async fn check_key_empty(
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
+    use crate::test_lint;
 
-    use tombi_diagnostic::SetDiagnostics;
+    test_lint! {
+        #[test]
+        fn test_warning_empty(
+            r#"
+            "" = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
 
-    #[tokio::test]
-    async fn test_key_empty() {
-        let diagnostics = crate::Linter::new(
-            tombi_config::TomlVersion::default(),
-            &crate::LintOptions::default(),
-            None,
-            &tombi_schema_store::SchemaStore::new(),
-        )
-        .lint("'' = 1")
-        .await
-        .unwrap_err();
+    test_lint! {
+        #[test]
+        fn test_empty_key_with_leading_comment_directive(
+            r#"
+            # tombi: lint.rules.key-empty.disabled = true
+            "" = 1
+            "#,
+        ) -> Ok(_);
+    }
 
-        let mut expected = vec![];
-        crate::Diagnostic {
-            kind: crate::DiagnosticKind::KeyEmpty,
-            level: tombi_config::SeverityLevel::Warn,
-            range: tombi_text::Range::new((0, 0).into(), (0, 2).into()),
-        }
-        .set_diagnostics(&mut expected);
+    test_lint! {
+        #[test]
+        fn test_empty_key_with_trailing_comment_directive(
+            r#"
+            "" = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
+    }
 
-        assert_eq!(diagnostics, expected);
+    test_lint! {
+        #[test]
+        fn test_key_value_empty_key(
+            r#"
+            a."".b = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_key_value_empty_key_with_leading_comment_directive(
+            r#"
+            # tombi: lint.rules.key-empty.disabled = true
+            a."".b = 1
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_key_value_empty_key_with_trailing_comment_directive(
+            r#"
+            a."".b = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_inline_table_empty_key(
+            r#"
+            a = { "".b = 1 }
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_inline_table_empty_key_with_leading_comment_directive(
+            r#"
+            a = {
+              # tombi: lint.rules.key-empty.disabled = true
+              "".b = 1
+            }
+            "#,
+            TomlVersion(TomlVersion::V1_1_0_Preview),
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_inline_table_empty_key_with_trailing_comment_directive(
+            r#"
+            a = {
+              "".b = 1  # tombi: lint.rules.key-empty.disabled = true
+            }
+            "#,
+            TomlVersion(TomlVersion::V1_1_0_Preview),
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_table_empty_key(
+            r#"
+            [table]
+            "" = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_table_empty_key_with_leading_comment_directive(
+            r#"
+            [table]
+            # tombi: lint.rules.key-empty.disabled = true
+            "" = 1
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_table_empty_key_with_trailing_comment_directive(
+            r#"
+            [table]
+            "" = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_array_of_table_empty_key(
+            r#"
+            [[table]]
+            "" = 1
+            "#,
+        ) -> Err([
+            crate::DiagnosticKind::KeyEmpty
+        ]);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_array_of_table_empty_key_with_leading_comment_directive(
+            r#"
+            [[table]]
+            # tombi: lint.rules.key-empty.disabled = true
+            "" = 1
+            "#,
+        ) -> Ok(_);
+    }
+
+    test_lint! {
+        #[test]
+        fn test_array_of_table_empty_key_with_trailing_comment_directive(
+            r#"
+            [[table]]
+            "" = 1 # tombi: lint.rules.key-empty.disabled = true
+            "#,
+        ) -> Ok(_);
     }
 }

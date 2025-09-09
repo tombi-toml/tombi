@@ -7,6 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+tombi-ast.workspace = true
 tombi-schema-store.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true

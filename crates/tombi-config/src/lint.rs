@@ -7,7 +7,7 @@ use tombi_severity_level::SeverityLevelDefaultWarn;
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LintOptions {
-    /// # Lint rules.
+    /// # Lint rules
     pub rules: Option<LintRules>,
 }
 
@@ -24,7 +24,7 @@ impl LintOptions {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::VersionSort)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LintRules {
-    /// # Key empty.
+    /// # Key empty
     ///
     /// Check if the key is empty.
     ///
@@ -34,7 +34,7 @@ pub struct LintRules {
     /// ```
     pub key_empty: Option<SeverityLevelDefaultWarn>,
 
-    /// # Dotted keys out of order.
+    /// # Dotted keys out of order
     ///
     /// Check if dotted keys are defined out of order.
     ///
@@ -53,7 +53,7 @@ pub struct LintRules {
     /// ```
     pub dotted_keys_out_of_order: Option<SeverityLevelDefaultWarn>,
 
-    /// # Tables out of order.
+    /// # Tables out of order
     ///
     /// Check if tables are defined out of order.
     ///

@@ -1,26 +1,23 @@
 use std::str::FromStr;
 
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyStringDirectiveContent = TombiValueDirectiveContent<KeyStringCommonRules>;
-
-pub type TombiStringDirectiveContent = TombiValueDirectiveContent<StringCommonRules>;
-
-pub type KeyStringCommonRules = WithKeyRules<WithCommonRules<StringRules>>;
+pub type KeyStringCommonRules = WithKeyTableRules<WithCommonRules<StringRules>>;
 
 pub type StringCommonRules = WithCommonRules<StringRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyStringDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyStringCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiStringDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<StringCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
     }
@@ -30,7 +27,7 @@ impl TombiCommentDirectiveImpl for TombiStringDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct StringRules {
-    /// # Max length.
+    /// # Integer Max length
     ///
     /// Check if the string is longer than the max length.
     ///
@@ -38,9 +35,9 @@ pub struct StringRules {
     /// length(string) <= max
     /// ```
     ///
-    pub string_max_length: Option<SeverityLevelDefaultError>,
+    pub string_max_length: Option<ErrorRuleOptions>,
 
-    /// # Min length.
+    /// # Min length
     ///
     /// Check if the string is shorter than the min length.
     ///
@@ -48,9 +45,9 @@ pub struct StringRules {
     /// length(string) >= min
     /// ```
     ///
-    pub string_min_length: Option<SeverityLevelDefaultError>,
+    pub string_min_length: Option<ErrorRuleOptions>,
 
-    /// # Format.
+    /// # String Format
     ///
     /// Check if the string matches the format.
     ///
@@ -58,9 +55,9 @@ pub struct StringRules {
     /// matches(string, format)
     /// ```
     ///
-    pub string_format: Option<SeverityLevelDefaultError>,
+    pub string_format: Option<ErrorRuleOptions>,
 
-    /// # Pattern.
+    /// # String Pattern
     ///
     /// Check if the string matches the pattern.
     ///
@@ -68,5 +65,5 @@ pub struct StringRules {
     /// matches(string, pattern)
     /// ```
     ///
-    pub string_pattern: Option<SeverityLevelDefaultError>,
+    pub string_pattern: Option<ErrorRuleOptions>,
 }

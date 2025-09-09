@@ -3,13 +3,8 @@
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum SeverityLevel {
-    /// # Disable the Rule.
     Off,
-
-    /// # Display as Warning.
     Warn,
-
-    /// # Display as Error.
     Error,
 }
 
@@ -31,6 +26,12 @@ macro_rules! severity_level_wrapper {
         impl From<$name> for SeverityLevel {
             fn from(level: $name) -> Self {
                 level.0
+            }
+        }
+
+        impl From<SeverityLevel> for $name {
+            fn from(level: SeverityLevel) -> Self {
+                Self(level)
             }
         }
 

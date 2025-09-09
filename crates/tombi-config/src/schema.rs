@@ -12,17 +12,17 @@ use crate::{
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaOptions {
-    /// # Enable the schema validation.
+    /// # Enable the schema validation
     pub enabled: Option<BoolDefaultTrue>,
 
-    /// # Enable strict schema validation.
+    /// # Enable strict schema validation
     ///
     /// If `additionalProperties` is not specified in the JSON Schema,
     /// the strict mode treats it as `additionalProperties: false`,
     /// which is different from the JSON Schema specification.
     pub strict: Option<BoolDefaultTrue>,
 
-    /// # Schema catalog options.
+    /// # Schema catalog options
     pub catalog: Option<SchemaCatalog>,
 }
 
@@ -84,7 +84,7 @@ impl SchemaCatalog {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct NewSchemaCatalog {
-    /// # The schema catalog path/url array.
+    /// # The schema catalog path/url array
     ///
     /// The catalog is evaluated after the schemas specified by [[schemas]].\
     /// Schemas are loaded in order from the beginning of the catalog list.
@@ -114,7 +114,7 @@ fn catalog_paths_default() -> Option<Vec<SchemaCatalogPath>> {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct SchemaCatalogOld {
-    /// # The schema catalog path or url.
+    /// # The schema catalog path or url
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `schema.catalog.paths` instead.
@@ -171,7 +171,7 @@ impl Schema {
     }
 }
 
-/// # The schema for the root table.
+/// # The schema for the root table
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -179,13 +179,13 @@ impl Schema {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct RootSchema {
-    /// # The TOML version that the schema is available.
+    /// # The TOML version that the schema is available
     pub toml_version: Option<TomlVersion>,
 
-    /// # The schema path.
+    /// # The schema path
     pub path: String,
 
-    /// # The file match pattern of the schema.
+    /// # The file match pattern of the schema
     ///
     /// The file match pattern to include the target to apply the schema.
     /// Supports glob pattern.
@@ -193,7 +193,7 @@ pub struct RootSchema {
     pub include: Vec<String>,
 }
 
-/// # The schema for the sub value.
+/// # The schema for the sub value
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -201,16 +201,16 @@ pub struct RootSchema {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct SubSchema {
-    /// # The accessors to apply the sub schema.
+    /// # The accessors to apply the sub schema
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "tools.tombi"))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "items[0].name"))]
     pub root: String,
 
-    /// # The sub schema path.
+    /// # The sub schema path
     pub path: String,
 
-    /// # The file match pattern of the sub schema.
+    /// # The file match pattern of the sub schema
     ///
     /// The file match pattern to include the target to apply the sub schema.
     /// Supports glob pattern.
@@ -218,7 +218,7 @@ pub struct SubSchema {
     pub include: Vec<String>,
 }
 
-/// # The schema for the old sub value.
+/// # The schema for the old sub value
 ///
 /// This is for backward compatibility.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -228,17 +228,17 @@ pub struct SubSchema {
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct OldSubSchema {
-    /// # The sub schema path.
+    /// # The sub schema path
     pub path: String,
 
-    /// # The file match pattern of the sub schema.
+    /// # The file match pattern of the sub schema
     ///
     /// The file match pattern to include the target to apply the sub schema.
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     pub include: Vec<String>,
 
-    /// # The keys to apply the sub schema.
+    /// # The keys to apply the sub schema
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `schemas[*].root` instead.

@@ -1,16 +1,15 @@
 use std::str::FromStr;
 
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonExtensibleRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonExtensibleRules,
+};
 use crate::TombiCommentDirectiveImpl;
-
-pub type TombiKeyDirectiveContent = TombiValueDirectiveContent<KeyCommonExtensibleRules>;
 
 pub type KeyCommonExtensibleRules = WithCommonExtensibleRules<KeyRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyCommonExtensibleRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }
@@ -20,7 +19,7 @@ impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct KeyRules {
-    /// # Key empty.
+    /// # Key empty
     ///
     /// Check if the key is empty.
     ///
@@ -29,23 +28,17 @@ pub struct KeyRules {
     /// "" = true
     /// ```
     ///
-    pub key_empty: Option<SeverityLevelDefaultWarn>,
+    pub key_empty: Option<WarnRuleOptions>,
 
-    /// # Key required.
-    ///
-    /// Check if the key is required in this Table.
-    ///
-    pub key_required: Option<SeverityLevelDefaultError>,
-
-    /// # Key not allowed.
+    /// # Key not allowed
     ///
     /// Check if the key is not defined in this Table.
     ///
-    pub key_not_allowed: Option<SeverityLevelDefaultError>,
+    pub key_not_allowed: Option<ErrorRuleOptions>,
 
-    /// # Key pattern.
+    /// # Key pattern
     ///
     /// Check if the key matches the pattern in the Schema.
     ///
-    pub key_pattern: Option<SeverityLevelDefaultError>,
+    pub key_pattern: Option<ErrorRuleOptions>,
 }

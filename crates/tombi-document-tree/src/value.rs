@@ -106,6 +106,37 @@ impl Value {
         }
     }
 
+    pub(crate) fn set_comment_directives(
+        &mut self,
+        comment_directives: Vec<TombiValueCommentDirective>,
+    ) {
+        match self {
+            Value::Boolean(boolean) => {
+                boolean.comment_directives = Some(Box::new(comment_directives))
+            }
+            Value::Integer(integer) => {
+                integer.comment_directives = Some(Box::new(comment_directives))
+            }
+            Value::Float(float) => float.comment_directives = Some(Box::new(comment_directives)),
+            Value::String(string) => string.comment_directives = Some(Box::new(comment_directives)),
+            Value::OffsetDateTime(offset_date_time) => {
+                offset_date_time.comment_directives = Some(Box::new(comment_directives))
+            }
+            Value::LocalDateTime(local_date_time) => {
+                local_date_time.comment_directives = Some(Box::new(comment_directives))
+            }
+            Value::LocalDate(local_date) => {
+                local_date.comment_directives = Some(Box::new(comment_directives))
+            }
+            Value::LocalTime(local_time) => {
+                local_time.comment_directives = Some(Box::new(comment_directives))
+            }
+            Value::Array(array) => array.comment_directives = Some(Box::new(comment_directives)),
+            Value::Table(table) => table.comment_directives = Some(Box::new(comment_directives)),
+            Value::Incomplete { .. } => return,
+        }
+    }
+
     pub(crate) fn extend_comment_directives(
         &mut self,
         comment_directives: Vec<TombiValueCommentDirective>,
@@ -141,6 +172,24 @@ impl Value {
                         .any(|comment_directive| comment_directive.range().contains(position))
                 })
                 .unwrap_or_default()
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Boolean(boolean) => write!(f, "{}", boolean),
+            Value::Integer(integer) => write!(f, "{}", integer),
+            Value::Float(float) => write!(f, "{}", float),
+            Value::String(string) => write!(f, "{}", string),
+            Value::OffsetDateTime(offset_date_time) => write!(f, "{}", offset_date_time),
+            Value::LocalDateTime(local_date_time) => write!(f, "{}", local_date_time),
+            Value::LocalDate(local_date) => write!(f, "{}", local_date),
+            Value::LocalTime(local_time) => write!(f, "{}", local_time),
+            Value::Array(array) => write!(f, "{}", array),
+            Value::Table(table) => write!(f, "{}", table),
+            Value::Incomplete { .. } => write!(f, "null"),
+        }
     }
 }
 

@@ -150,7 +150,7 @@ mod goto_type_definition_tests {
                 r#"
                 #:tombi schema.strict█ = true
 
-                [object]
+                [table]
                 integer = 42
                 "#,
                 type_test_schema_path(),
@@ -173,11 +173,36 @@ mod goto_type_definition_tests {
             async fn type_test_tombi_document_directive_in_table_scope(
                 r#"
                 #:tombi schema.strict█ = true
-                [object]
+
+                [table]
                 integer = 42
                 "#,
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_root_table_directive(
+                r#"
+                # tombi: lint.rules.const-value.disabled█ = true
+
+                key = "value"
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-root-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_root_table_directive_at_end(
+                r#"
+                key = "value"
+
+                # tombi: lint.rules.const-value.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-root-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -293,6 +318,90 @@ mod goto_type_definition_tests {
                 "#,
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-key-array-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_inline_table_directive(
+                r#"
+                inline-table = { key = "value", } # tombi: lint.rules.table-min-properties█ = "off"
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-inline-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_table_directive(
+                r#"
+                # tombi: lint.rules.const-value.disabled█ = true
+                [table]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_table_directive(
+                r#"
+                [table]
+                # tombi: lint.rules.const-value.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_array_of_table_directive(
+                r#"
+                # tombi: lint.rules.const-value.disabled█ = true
+                [[array]]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_table_key_array_of_table_directive(
+                r#"
+                [[array]] # tombi: lint.rules.const-value.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_array_of_table_directive(
+                r#"
+                [[array]]
+                # tombi: lint.rules.const-value.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn key_eq_value_with_comment_directive(
+                r#"
+                key = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn key1_key2_eq_value_with_comment_directive(
+                r#"
+                key1.key2 = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
         );
     }
 

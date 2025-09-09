@@ -3,6 +3,7 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::RootTableCommonRules;
 use tombi_config::SeverityLevel;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics;
 
 use crate::Rule;
@@ -18,7 +19,12 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
         .0
         .as_ref()
         .map(|rules| &rules.value)
-        .and_then(|rules| rules.tables_out_of_order)
+        .and_then(|rules| {
+            rules
+                .tables_out_of_order
+                .as_ref()
+                .map(SeverityLevelDefaultWarn::from)
+        })
         .unwrap_or_else(|| {
             l.options()
                 .rules

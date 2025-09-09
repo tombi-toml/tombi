@@ -3606,12 +3606,14 @@ dependencies = [
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",
+ "tracing",
 ]
 
 [[package]]
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-ast",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3796,6 +3798,7 @@ dependencies = [
  "tombi-future",
  "tombi-parser",
  "tombi-schema-store",
+ "tombi-severity-level",
  "tombi-test-lib",
  "tombi-text",
  "tombi-uri",

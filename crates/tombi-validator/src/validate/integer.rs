@@ -2,9 +2,10 @@ use tombi_comment_directive::value::IntegerCommonRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::type_mismatch,
 };
 
@@ -21,7 +22,7 @@ impl Validate for tombi_document_tree::Integer {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<IntegerCommonRules>(
+                    get_tombi_key_table_value_rules_and_diagnostics::<IntegerCommonRules>(
                         comment_directives,
                         accessors,
                     )
@@ -124,7 +125,12 @@ async fn validate_integer_schema(
     if let Some(const_value) = &integer_schema.const_value {
         let level = value_rules
             .map(|rules| &rules.common)
-            .and_then(|rules| rules.const_value)
+            .and_then(|rules| {
+                rules
+                    .const_value
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if value != *const_value {
@@ -142,7 +148,12 @@ async fn validate_integer_schema(
     if let Some(enumerate) = &integer_schema.enumerate {
         let level = value_rules
             .map(|rules| &rules.common)
-            .and_then(|rules| rules.enumerate)
+            .and_then(|rules| {
+                rules
+                    .enumerate
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if !enumerate.contains(&value) {
@@ -160,7 +171,12 @@ async fn validate_integer_schema(
     if let Some(maximum) = &integer_schema.maximum {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.integer_maximum)
+            .and_then(|rules| {
+                rules
+                    .integer_maximum
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if value > *maximum {
@@ -178,7 +194,12 @@ async fn validate_integer_schema(
     if let Some(minimum) = &integer_schema.minimum {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.integer_minimum)
+            .and_then(|rules| {
+                rules
+                    .integer_minimum
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if value < *minimum {
@@ -196,7 +217,12 @@ async fn validate_integer_schema(
     if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.integer_exclusive_maximum)
+            .and_then(|rules| {
+                rules
+                    .integer_exclusive_maximum
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if value >= *exclusive_maximum {
@@ -214,7 +240,12 @@ async fn validate_integer_schema(
     if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.integer_exclusive_minimum)
+            .and_then(|rules| {
+                rules
+                    .integer_exclusive_minimum
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if value <= *exclusive_minimum {
@@ -232,7 +263,12 @@ async fn validate_integer_schema(
     if let Some(multiple_of) = &integer_schema.multiple_of {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.integer_multiple_of)
+            .and_then(|rules| {
+                rules
+                    .integer_multiple_of
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         if value % *multiple_of != 0 {
@@ -251,7 +287,12 @@ async fn validate_integer_schema(
         if integer_schema.deprecated == Some(true) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -286,7 +327,12 @@ async fn validate_float_schema_for_integer(
         if (value - *const_value).abs() > f64::EPSILON {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.const_value)
+                .and_then(|rules| {
+                    rules
+                        .const_value
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -304,7 +350,12 @@ async fn validate_float_schema_for_integer(
         if !enumerate.contains(&value) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.enumerate)
+                .and_then(|rules| {
+                    rules
+                        .enumerate
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -322,7 +373,12 @@ async fn validate_float_schema_for_integer(
         if value > *maximum {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.integer_maximum)
+                .and_then(|rules| {
+                    rules
+                        .integer_maximum
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -340,7 +396,12 @@ async fn validate_float_schema_for_integer(
         if value < *minimum {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.integer_minimum)
+                .and_then(|rules| {
+                    rules
+                        .integer_minimum
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -358,7 +419,12 @@ async fn validate_float_schema_for_integer(
         if value >= *exclusive_maximum {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.integer_exclusive_maximum)
+                .and_then(|rules| {
+                    rules
+                        .integer_exclusive_maximum
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -376,7 +442,12 @@ async fn validate_float_schema_for_integer(
         if value <= *exclusive_minimum {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.integer_exclusive_minimum)
+                .and_then(|rules| {
+                    rules
+                        .integer_exclusive_minimum
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -394,7 +465,12 @@ async fn validate_float_schema_for_integer(
         if value % *multiple_of != 0.0 {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.integer_multiple_of)
+                .and_then(|rules| {
+                    rules
+                        .integer_multiple_of
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
@@ -412,7 +488,12 @@ async fn validate_float_schema_for_integer(
         if float_schema.deprecated == Some(true) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {

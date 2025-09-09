@@ -2,13 +2,13 @@
 #:tombi toml-version = "v1.0.0"
 
 [project]
-name = "tombi"  # tombi: lint.rules.type-mismatch = "off"
+name = "tombi"  # tombi: lint.rules.type-mismatch.disabled = true
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
 description = "🦅 TOML Toolkit 🦅 "
 readme = "python/tombi/README.md"
 requires-python = ">=3.10"
 dependencies = [
-  # tombi: lint.rules.array-min-items = "error"
+  # tombi: lint.rules.array-min-values.disabled = true
 
   "tombi-config>=0.0.0-dev",
 ]

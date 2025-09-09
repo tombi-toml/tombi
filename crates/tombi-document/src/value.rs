@@ -117,7 +117,7 @@ impl Value {
     }
 
     #[cfg(feature = "serde")]
-    pub(crate) fn unexpected(&self) -> serde::de::Unexpected {
+    pub(crate) fn unexpected(&self) -> serde::de::Unexpected<'_> {
         match self {
             Value::Boolean(bool) => serde::de::Unexpected::Bool(bool.value()),
             Value::Integer(integer) => serde::de::Unexpected::Signed(integer.value()),

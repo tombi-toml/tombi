@@ -211,6 +211,23 @@ impl Array {
     }
 }
 
+impl std::fmt::Display for Array {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.values
+                .iter()
+                .filter_map(|v| if let crate::Value::Incomplete { .. } = &v {
+                    None
+                } else {
+                    Some(v.to_string())
+                })
+                .join(", ")
+        )
+    }
+}
+
 impl ValueImpl for Array {
     fn value_type(&self) -> ValueType {
         ValueType::Array

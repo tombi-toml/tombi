@@ -6,10 +6,10 @@ use tombi_comment_directive::value::ArrayCommonRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
-    validate::type_mismatch,
+    comment_directive::get_tombi_array_comment_directive_and_diagnostics, validate::type_mismatch,
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -23,20 +23,12 @@ impl Validate for tombi_document_tree::Array {
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
             let mut total_diagnostics = vec![];
-            let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<ArrayCommonRules>(
-                        comment_directives,
-                        accessors,
-                    )
-                    .await;
+            let (value_rules, diagnostics) =
+                get_tombi_array_comment_directive_and_diagnostics(self, accessors).await;
 
+            if !diagnostics.is_empty() {
                 total_diagnostics.extend(diagnostics);
-
-                value_rules
-            } else {
-                None
-            };
+            }
 
             if let Some(sub_schema_uri) = schema_context
                 .sub_schema_uri_map
@@ -188,11 +180,16 @@ async fn validate_array(
         if array_value.values().len() > max_items {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.array_max_items)
+                .and_then(|rules| {
+                    rules
+                        .array_max_values
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::ArrayMaxItems {
+                kind: Box::new(crate::DiagnosticKind::ArrayMaxValues {
                     max_values: max_items,
                     actual: array_value.values().len(),
                 }),
@@ -206,11 +203,16 @@ async fn validate_array(
         if array_value.values().len() < min_items {
             let level = value_rules
                 .map(|rules| &rules.value)
-                .and_then(|rules| rules.array_min_items)
+                .and_then(|rules| {
+                    rules
+                        .array_min_values
+                        .as_ref()
+                        .map(SeverityLevelDefaultError::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::ArrayMinItems {
+                kind: Box::new(crate::DiagnosticKind::ArrayMinValues {
                     min_values: min_items,
                     actual: array_value.values().len(),
                 }),
@@ -223,7 +225,12 @@ async fn validate_array(
     if array_schema.unique_items == Some(true) {
         let level = value_rules
             .map(|rules| &rules.value)
-            .and_then(|rules| rules.array_unique_items)
+            .and_then(|rules| {
+                rules
+                    .array_unique_values
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
             .unwrap_or_default();
 
         let literal_values = array_value
@@ -241,7 +248,7 @@ async fn validate_array(
             if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
                 if duplicated_values.contains(&literal_value) {
                     crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueItems),
+                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueValues),
                         range: value.range(),
                     }
                     .push_diagnostic_with_level(level, &mut diagnostics);
@@ -254,7 +261,12 @@ async fn validate_array(
         if array_schema.deprecated == Some(true) {
             let level = value_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| rules.deprecated)
+                .and_then(|rules| {
+                    rules
+                        .deprecated
+                        .as_ref()
+                        .map(SeverityLevelDefaultWarn::from)
+                })
                 .unwrap_or_default();
 
             crate::Diagnostic {

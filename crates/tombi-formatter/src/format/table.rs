@@ -66,7 +66,7 @@ mod tests {
 
     test_format! {
         #[test]
-        fn table_only_header_nexted_keys(
+        fn table_only_header_nested_keys(
             r#"[dependencies.unicase]"#
         ) -> Ok(source);
     }

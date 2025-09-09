@@ -19,7 +19,7 @@ macro_rules! define_toml_version {
             $($(#[$attr:meta])* $variant:ident => $version:literal),* $(,)?
         }
     ) => {
-        /// # TOML version.
+        /// # TOML version
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
         #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]

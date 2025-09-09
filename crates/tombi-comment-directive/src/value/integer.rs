@@ -1,26 +1,23 @@
 use std::str::FromStr;
 
-use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
-pub type TombiKeyIntegerDirectiveContent = TombiValueDirectiveContent<KeyIntegerCommonRules>;
-
-pub type TombiIntegerDirectiveContent = TombiValueDirectiveContent<IntegerCommonRules>;
-
-pub type KeyIntegerCommonRules = WithKeyRules<WithCommonRules<IntegerRules>>;
+pub type KeyIntegerCommonRules = WithKeyTableRules<WithCommonRules<IntegerRules>>;
 
 pub type IntegerCommonRules = WithCommonRules<IntegerRules>;
 
-impl TombiCommentDirectiveImpl for TombiKeyIntegerDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyIntegerCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiIntegerDirectiveContent {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<IntegerCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-integer-directive.json").unwrap()
     }
@@ -30,7 +27,7 @@ impl TombiCommentDirectiveImpl for TombiIntegerDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct IntegerRules {
-    /// # Maximum integer.
+    /// # Maximum integer
     ///
     /// Check if the integer is less than or equal to the maximum.
     ///
@@ -38,9 +35,9 @@ pub struct IntegerRules {
     /// integer <= maximum
     /// ```
     ///
-    pub integer_maximum: Option<SeverityLevelDefaultError>,
+    pub integer_maximum: Option<ErrorRuleOptions>,
 
-    /// # Minimum integer.
+    /// # Minimum integer
     ///
     /// Check if the integer is greater than or equal to the minimum.
     ///
@@ -48,9 +45,9 @@ pub struct IntegerRules {
     /// integer >= minimum
     /// ```
     ///
-    pub integer_minimum: Option<SeverityLevelDefaultError>,
+    pub integer_minimum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive maximum integer.
+    /// # Exclusive maximum integer
     ///
     /// Check if the integer is less than the maximum.
     ///
@@ -58,9 +55,9 @@ pub struct IntegerRules {
     /// integer < maximum
     /// ```
     ///
-    pub integer_exclusive_maximum: Option<SeverityLevelDefaultError>,
+    pub integer_exclusive_maximum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive minimum integer.
+    /// # Exclusive minimum integer
     ///
     /// Check if the integer is greater than the minimum.
     ///
@@ -68,9 +65,9 @@ pub struct IntegerRules {
     /// integer > minimum
     /// ```
     ///
-    pub integer_exclusive_minimum: Option<SeverityLevelDefaultError>,
+    pub integer_exclusive_minimum: Option<ErrorRuleOptions>,
 
-    /// # Multiple of integer.
+    /// # Multiple of integer
     ///
     /// Check if the integer is a multiple of the value.
     ///
@@ -78,5 +75,5 @@ pub struct IntegerRules {
     /// integer % multiple_of == 0
     /// ```
     ///
-    pub integer_multiple_of: Option<SeverityLevelDefaultError>,
+    pub integer_multiple_of: Option<ErrorRuleOptions>,
 }
