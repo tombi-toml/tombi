@@ -6,7 +6,7 @@ use tombi_ast::AstNode;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, GroupTableKeysOrder, OneOfSchema,
-    PropertySchema, SchemaContext, TableKeysOrderSchema, TableSchema, ValueSchema,
+    PropertySchema, SchemaContext, TableKeysOrderSpec, TableSchema, ValueSchema,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
@@ -130,7 +130,7 @@ where
                         .all(|(accessor, _)| matches!(accessor, Accessor::Key(_)))
                     {
                         let sorted_targets = match &table_schema.keys_order {
-                            Some(TableKeysOrderSchema::All(order)) => {
+                            Some(TableKeysOrderSpec::All(order)) => {
                                 sort_targets(
                                     new_targets_map.into_iter().collect_vec(),
                                     *order,
@@ -138,7 +138,7 @@ where
                                 )
                                 .await
                             }
-                            Some(TableKeysOrderSchema::Groups(groups)) => {
+                            Some(TableKeysOrderSpec::Groups(groups)) => {
                                 let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
 
                                 let mut properties = if has_group(groups, TableKeysOrderGroup::Keys)

@@ -5,7 +5,7 @@ use ahash::HashSet;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_schema_store::{
-    GroupTableKeysOrder, SchemaAccessor, SchemaContext, TableKeysOrderSchema, TableSchema,
+    GroupTableKeysOrder, SchemaAccessor, SchemaContext, TableKeysOrderSpec, TableSchema,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_toml_version::TomlVersion;
@@ -38,7 +38,7 @@ pub async fn inline_table_keys_order<'a>(
     );
 
     let mut sorted_key_values_with_comma = match keys_order {
-        TableKeysOrderSchema::All(order) => {
+        TableKeysOrderSpec::All(order) => {
             sort_targets(
                 key_values_with_comma.into_iter().collect_vec(),
                 *order,
@@ -47,7 +47,7 @@ pub async fn inline_table_keys_order<'a>(
             )
             .await
         }
-        TableKeysOrderSchema::Groups(groups) => {
+        TableKeysOrderSpec::Groups(groups) => {
             let mut sorted_targets = Vec::with_capacity(key_values_with_comma.len());
 
             let mut properties = if has_group(groups, TableKeysOrderGroup::Keys) {

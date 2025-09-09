@@ -2,7 +2,7 @@ use tombi_json::StringNode;
 use tombi_x_keyword::{TableKeysOrder, TableKeysOrderGroup, X_TOMBI_TABLE_KEYS_ORDER};
 
 #[derive(Debug, Clone)]
-pub enum TableKeysOrderSchema {
+pub enum TableKeysOrderSpec {
     All(TableKeysOrder),
     Groups(Vec<GroupTableKeysOrder>),
 }
@@ -13,12 +13,12 @@ pub struct GroupTableKeysOrder {
     pub order: TableKeysOrder,
 }
 
-impl TableKeysOrderSchema {
+impl TableKeysOrderSpec {
     pub fn new(value_node: &tombi_json::ValueNode) -> Option<Self> {
         match value_node {
             tombi_json::ValueNode::String(StringNode { value: order, .. }) => {
                 match TableKeysOrder::try_from(order.as_str()) {
-                    Ok(val) => Some(TableKeysOrderSchema::All(val)),
+                    Ok(val) => Some(TableKeysOrderSpec::All(val)),
                     Err(_) => {
                         tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
                         None
