@@ -279,7 +279,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             {
                                 let key = &keys.first().unwrap();
                                 return vec![CompletionContent::new_type_hint_key(
-                                    key.value(),
+                                    &key.value,
                                     key.range(),
                                     None,
                                     Some(CompletionHint::InArray {

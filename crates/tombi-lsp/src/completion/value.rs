@@ -195,7 +195,7 @@ impl FindCompletionContents for tombi_document_tree::Value {
                                 if range.end < position =>
                             {
                                 vec![CompletionContent::new_type_hint_key(
-                                    &last_key.value(),
+                                    &last_key.value,
                                     last_key.range(),
                                     None,
                                     completion_hint,
@@ -248,7 +248,7 @@ pub fn type_hint_value(
         };
         if need_key_hint {
             completion_contents.push(CompletionContent::new_type_hint_key(
-                &key.value(),
+                &key.value,
                 key.range(),
                 schema_uri,
                 completion_hint,

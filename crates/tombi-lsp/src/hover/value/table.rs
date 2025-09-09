@@ -78,8 +78,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                     ValueSchema::Table(table_schema) => {
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
-                                let key_string = key.value();
-                                let accessor = Accessor::Key(key_string.to_owned());
+                                let accessor = Accessor::Key(key.value.clone());
                                 let key_patterns = match table_schema.pattern_properties.as_ref() {
                                     Some(pattern_properties) => Some(
                                         pattern_properties
@@ -104,7 +103,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     let required = table_schema
                                         .required
                                         .as_ref()
-                                        .map(|r| r.contains(&key_string.to_owned()))
+                                        .map(|r| r.contains(&key.value))
                                         .unwrap_or(false);
 
                                     if let Ok(Some(current_schema)) = property_schema
@@ -214,7 +213,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     ) in pattern_properties.write().await.iter_mut()
                                     {
                                         if let Ok(pattern) = regex::Regex::new(property_key) {
-                                            if pattern.is_match(&key_string) {
+                                            if pattern.is_match(&key.value) {
                                                 if let Ok(Some(current_schema)) = property_schema
                                                     .resolve(
                                                         current_schema.schema_uri.clone(),
@@ -478,7 +477,7 @@ impl GetHoverContent for tombi_document_tree::Table {
             } else {
                 if let Some(key) = keys.first() {
                     if let Some(value) = self.get(key) {
-                        let accessor = Accessor::Key(key.value().to_owned());
+                        let accessor = Accessor::Key(key.value.clone());
 
                         return value
                             .get_hover_content(

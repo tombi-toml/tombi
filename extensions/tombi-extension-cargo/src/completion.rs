@@ -494,7 +494,7 @@ async fn fetch_local_crate_features(
         let mut features = AHashMap::new();
 
         for (feature_name, feature_deps) in features_table.key_values() {
-            let feature_name = feature_name.value().to_string();
+            let feature_name = feature_name.value.clone();
             let deps = match feature_deps {
                 tombi_document_tree::Value::Array(arr) => arr
                     .values()

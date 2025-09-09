@@ -13,7 +13,7 @@ pub enum KeyKind {
 #[derive(Debug, Clone)]
 pub struct Key {
     kind: KeyKind,
-    value: String,
+    pub value: String,
     range: tombi_text::Range,
     pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
 }
@@ -22,11 +22,6 @@ impl Key {
     #[inline]
     pub fn kind(&self) -> KeyKind {
         self.kind
-    }
-
-    #[inline]
-    pub fn value(&self) -> &str {
-        &self.value
     }
 
     #[inline]

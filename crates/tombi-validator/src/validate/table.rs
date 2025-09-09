@@ -164,7 +164,7 @@ async fn validate_table(
 
         let key_rules = key_rules.as_ref();
 
-        let accessor_raw_text = key.value();
+        let accessor_raw_text = &key.value;
         let accessor = Accessor::Key(accessor_raw_text.to_owned());
         let new_accessors = accessors
             .iter()
@@ -353,10 +353,10 @@ async fn validate_table(
     }
 
     if let Some(required) = &table_schema.required {
-        let keys = table_value.keys().map(|key| key.value()).collect_vec();
+        let keys = table_value.keys().map(|key| &key.value).collect_vec();
 
         for required_key in required {
-            if !keys.contains(&required_key.as_str()) {
+            if !keys.contains(&required_key) {
                 let level = value_rules
                     .map(|rules| &rules.value)
                     .and_then(|rules| {
@@ -467,7 +467,7 @@ async fn validate_table_without_schema(
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Key(key.value().to_owned())))
+                    .chain(std::iter::once(Accessor::Key(key.value.clone())))
                     .collect_vec(),
                 None,
                 schema_context,
