@@ -101,7 +101,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         let mut completion_contents = Vec::new();
 
                         if let Some(key) = keys.first() {
-                            let accessor_str = &key.to_raw_text(schema_context.toml_version);
+                            let accessor_str = &key.value();
                             if let Some(value) = self.get(key) {
                                 let accessor: Accessor = Accessor::Key(accessor_str.to_string());
 
@@ -787,19 +787,13 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                     if current_schema.is_none() {
                         if range.end <= key.range().start {
                             return vec![CompletionContent::new_type_hint_key(
-                                &key.to_raw_text(schema_context.toml_version),
+                                key.value(),
                                 key.range(),
                                 None,
                                 completion_hint,
                             )];
                         }
-                        return type_hint_value(
-                            Some(key),
-                            position,
-                            schema_context.toml_version,
-                            None,
-                            completion_hint,
-                        );
+                        return type_hint_value(Some(key), position, None, completion_hint);
                     }
                 }
                 Some(CompletionHint::InTableHeader) => {
@@ -814,7 +808,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 Some(CompletionHint::InArray { .. } | CompletionHint::Comma { .. }) | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
                         return CompletionContent::new_magic_triggers(
-                            &key.to_raw_text(schema_context.toml_version),
+                            key.value(),
                             position,
                             current_schema.map(|schema| schema.schema_uri.as_ref()),
                         );
@@ -830,9 +824,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Key(
-                        key.to_raw_text(schema_context.toml_version),
-                    )))
+                    .chain(std::iter::once(Accessor::Key(key.value().to_owned())))
                     .collect_vec(),
                 current_schema,
                 schema_context,

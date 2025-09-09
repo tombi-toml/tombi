@@ -547,11 +547,6 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
             .into();
         if !errs.is_empty() {
             errors.extend(errs);
-
-            return DocumentTreeAndErrors {
-                tree: empty_table,
-                errors,
-            };
         }
 
         for key_value in key_values {
@@ -575,18 +570,9 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
                     insert_array_of_tables(&mut table, key, Array::new_parent_array_of_tables)
                 {
                     errors.extend(errs);
-
-                    return DocumentTreeAndErrors {
-                        tree: empty_table,
-                        errors,
-                    };
                 };
             } else if let Err(errs) = insert_table(&mut table, key) {
                 errors.extend(errs);
-                return DocumentTreeAndErrors {
-                    tree: empty_table,
-                    errors,
-                };
             };
 
             is_array_of_table = array_of_table_keys.contains(&header_keys);
@@ -689,13 +675,9 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
         let (mut header_keys, errs) = header_keys
             .into_document_tree_and_errors(toml_version)
             .into();
+
         if !errs.is_empty() {
             errors.extend(errs);
-
-            return DocumentTreeAndErrors {
-                tree: empty_table,
-                errors,
-            };
         }
 
         for key_value in key_values {
@@ -715,10 +697,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
             key.comment_directives = table.comment_directives.clone();
             if let Err(errs) = insert_array_of_tables(&mut table, key, Array::new_array_of_tables) {
                 errors.extend(errs);
-                return DocumentTreeAndErrors {
-                    tree: empty_table,
-                    errors,
-                };
             }
         }
 
@@ -729,17 +707,9 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
                     insert_array_of_tables(&mut table, key, Array::new_parent_array_of_tables)
                 {
                     errors.extend(errs);
-                    return DocumentTreeAndErrors {
-                        tree: empty_table,
-                        errors,
-                    };
                 };
             } else if let Err(errs) = insert_table(&mut table, key) {
                 errors.extend(errs);
-                return DocumentTreeAndErrors {
-                    tree: empty_table,
-                    errors,
-                };
             };
 
             is_array_of_table = array_of_table_keys.contains(&header_keys);
@@ -802,11 +772,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         let (mut keys, errs) = keys.into_document_tree_and_errors(toml_version).into();
         if !errs.is_empty() {
             errors.extend(errs);
-
-            return DocumentTreeAndErrors {
-                tree: empty_table,
-                errors,
-            };
         }
 
         let value = match self.value() {
@@ -875,10 +840,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                 Ok(t) => table = t,
                 Err(errs) => {
                     errors.extend(errs);
-                    return DocumentTreeAndErrors {
-                        tree: empty_table,
-                        errors,
-                    };
                 }
             }
         }

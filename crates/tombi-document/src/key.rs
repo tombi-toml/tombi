@@ -77,10 +77,10 @@ impl std::fmt::Display for Key {
 }
 
 impl IntoDocument<Key> for tombi_document_tree::Key {
-    fn into_document(self, toml_version: TomlVersion) -> Key {
+    fn into_document(self, _toml_version: TomlVersion) -> Key {
         Key {
             kind: self.kind().into(),
-            value: self.to_raw_text(toml_version),
+            value: self.value().to_string(),
         }
     }
 }

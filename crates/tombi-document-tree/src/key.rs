@@ -19,23 +19,6 @@ pub struct Key {
 }
 
 impl Key {
-    pub fn try_new(
-        kind: KeyKind,
-        value: String,
-        range: tombi_text::Range,
-        toml_version: TomlVersion,
-    ) -> Result<Self, crate::Error> {
-        let key = Self {
-            kind,
-            value,
-            range,
-            comment_directives: None,
-        };
-        key.try_to_raw_string(toml_version)?;
-
-        Ok(key)
-    }
-
     #[inline]
     pub fn kind(&self) -> KeyKind {
         self.kind
@@ -49,29 +32,6 @@ impl Key {
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
         self.comment_directives.as_deref().map(|v| &**v)
-    }
-
-    pub fn to_raw_text(&self, toml_version: TomlVersion) -> String {
-        // NOTE: Key has already been validated by `impl TryIntoDocumentTree<Key>`,
-        //       so it's safe to unwrap.
-        self.try_to_raw_string(toml_version).unwrap()
-    }
-
-    fn try_to_raw_string(
-        &self,
-        toml_version: TomlVersion,
-    ) -> Result<std::string::String, crate::Error> {
-        match self.kind {
-            KeyKind::BareKey => tombi_toml_text::try_from_bare_key(&self.value),
-            KeyKind::BasicString => {
-                tombi_toml_text::try_from_basic_string(&self.value, toml_version)
-            }
-            KeyKind::LiteralString => tombi_toml_text::try_from_literal_string(&self.value),
-        }
-        .map_err(|error| crate::Error::ParseStringError {
-            error,
-            range: self.range,
-        })
     }
 
     #[inline]
@@ -95,8 +55,7 @@ impl Key {
 
 impl PartialEq for Key {
     fn eq(&self, other: &Self) -> bool {
-        self.try_to_raw_string(TomlVersion::latest())
-            == other.try_to_raw_string(TomlVersion::latest())
+        self.value == other.value
     }
 }
 
@@ -110,9 +69,7 @@ impl PartialEq<tombi_ast::Key> for Key {
 
 impl std::hash::Hash for Key {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.try_to_raw_string(TomlVersion::latest())
-            .unwrap_or_else(|_| self.value.to_string())
-            .hash(state);
+        self.value.hash(state);
     }
 }
 
@@ -165,24 +122,32 @@ impl IntoDocumentTreeAndErrors<Option<Key>> for tombi_ast::Key {
             };
         };
 
-        match Key::try_new(
-            match self {
+        // Convert ParseError to crate::Error directly, not via error::Error
+        let (value, errors) = match self.try_to_raw_text(toml_version) {
+            Ok(value) => (value, Vec::with_capacity(0)),
+            Err(error) => (
+                token.text().to_string(),
+                vec![crate::Error::ParseStringError {
+                    error,
+                    range: self.range(),
+                }],
+            ),
+        };
+
+        let key = Key {
+            kind: match self {
                 tombi_ast::Key::BareKey(_) => KeyKind::BareKey,
                 tombi_ast::Key::BasicString(_) => KeyKind::BasicString,
                 tombi_ast::Key::LiteralString(_) => KeyKind::LiteralString,
             },
-            token.text().to_string(),
-            token.range(),
-            toml_version,
-        ) {
-            Ok(key) => DocumentTreeAndErrors {
-                tree: Some(key),
-                errors: Vec::with_capacity(0),
-            },
-            Err(error) => DocumentTreeAndErrors {
-                tree: None,
-                errors: vec![error],
-            },
+            value,
+            range: token.range(),
+            comment_directives: None,
+        };
+
+        DocumentTreeAndErrors {
+            tree: Some(key),
+            errors,
         }
     }
 }
@@ -199,8 +164,6 @@ impl IntoDocumentTreeAndErrors<Vec<crate::Key>> for tombi_ast::Keys {
             let result = key.into_document_tree_and_errors(toml_version);
             if !result.errors.is_empty() {
                 errors.extend(result.errors);
-
-                return DocumentTreeAndErrors { tree: keys, errors };
             }
             if let Some(key) = result.tree {
                 keys.push(key);

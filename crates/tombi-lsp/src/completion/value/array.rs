@@ -279,7 +279,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             {
                                 let key = &keys.first().unwrap();
                                 return vec![CompletionContent::new_type_hint_key(
-                                    &key.to_raw_text(schema_context.toml_version),
+                                    key.value(),
                                     key.range(),
                                     None,
                                     Some(CompletionHint::InArray {
@@ -307,13 +307,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             .await;
                     }
                 }
-                type_hint_value(
-                    None,
-                    position,
-                    schema_context.toml_version,
-                    None,
-                    completion_hint,
-                )
+                type_hint_value(None, position, None, completion_hint)
             }
         }
         .boxed()

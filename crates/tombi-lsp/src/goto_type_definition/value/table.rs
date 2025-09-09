@@ -76,8 +76,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                     ValueSchema::Table(table_schema) => {
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
-                                let key_str = key.to_raw_text(schema_context.toml_version);
-                                let accessor = Accessor::Key(key_str.clone());
+                                let key_str = key.value();
+                                let accessor = Accessor::Key(key_str.to_owned());
                                 let schema_accessor = SchemaAccessor::from(&accessor);
                                 let accessors = accessors
                                     .iter()
@@ -299,7 +299,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
             } else {
                 if let Some(key) = keys.first() {
                     if let Some(value) = self.get(key) {
-                        let accessor = Accessor::Key(key.to_raw_text(schema_context.toml_version));
+                        let accessor = Accessor::Key(key.value().to_owned());
 
                         return value
                             .get_type_definition(

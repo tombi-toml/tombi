@@ -69,7 +69,7 @@ impl IntoValue for tombi_document_tree::Value {
             tombi_document_tree::Value::Table(value) => Value::Table(
                 value
                     .into_iter()
-                    .map(|(k, v)| (k.to_raw_text(toml_version), v.into_value(toml_version)))
+                    .map(|(k, v)| (k.value().to_owned(), v.into_value(toml_version)))
                     .collect(),
             ),
             tombi_document_tree::Value::Incomplete { .. } => {
@@ -84,7 +84,7 @@ impl IntoValue for tombi_document_tree::DocumentTree {
         Value::Table(
             tombi_document_tree::Table::from(self)
                 .into_iter()
-                .map(|(k, v)| (k.to_raw_text(toml_version), v.into_value(toml_version)))
+                .map(|(k, v)| (k.value().to_owned(), v.into_value(toml_version)))
                 .collect(),
         )
     }
