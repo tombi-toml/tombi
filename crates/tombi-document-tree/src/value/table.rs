@@ -882,11 +882,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             }
         }
 
-        if !comment_directives.is_empty() {
-            tracing::error!("comment_directives: {:?}", comment_directives);
-            table.comment_directives = Some(Box::new(comment_directives));
-        }
-
         DocumentTreeAndErrors {
             tree: table,
             errors,
