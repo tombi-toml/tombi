@@ -10,7 +10,6 @@ license.workspace = true
 addr.workspace = true
 ahash.workspace = true
 email_address.workspace = true
-indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
 serde.workspace = true
