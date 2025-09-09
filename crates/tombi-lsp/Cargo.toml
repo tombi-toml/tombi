@@ -59,7 +59,7 @@ tokio = { workspace = true, features = ["fs", "macros", "rt"] }
 tombi-test-lib.workspace = true
 
 [features]
-clap = ["dep:clap"]
 default = ["clap", "native"]
+clap = ["dep:clap"]
 native = ["tombi-schema-store/native"]
 wasm = ["tombi-schema-store/wasm"]
