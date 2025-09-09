@@ -69,7 +69,12 @@ mod tests {
                 # tombi: lint.rules.array-min-values.disabled = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok(_);
+            ) -> Err([
+                tombi_validator::DiagnosticKind::ArrayMinValues {
+                    min_values: 2,
+                    actual: 1,
+                }
+            ]);
         }
 
         test_lint! {
