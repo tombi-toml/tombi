@@ -28,7 +28,7 @@ impl Validate for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
         async move {
-            let mut total_diagnostics = indexmap::IndexSet::new();
+            let mut total_diagnostics = vec![];
             let (table_common_rules, diagnostics) =
                 get_tombi_table_comment_directive_and_diagnostics(self, accessors).await;
 
@@ -135,7 +135,7 @@ impl Validate for tombi_document_tree::Table {
             if total_diagnostics.is_empty() {
                 Ok(())
             } else {
-                Err(total_diagnostics.into_iter().collect_vec())
+                Err(total_diagnostics)
             }
         }
         .boxed()

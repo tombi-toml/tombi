@@ -5,7 +5,7 @@ pub use level::Level;
 pub use printer::Print;
 use tower_lsp::lsp_types::NumberOrString;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Diagnostic {
@@ -80,6 +80,12 @@ impl Diagnostic {
     #[inline]
     pub fn source_file(&self) -> Option<&std::path::Path> {
         self.source_file.as_deref()
+    }
+}
+
+impl PartialEq for Diagnostic {
+    fn eq(&self, other: &Self) -> bool {
+        self.range == other.range && self.code == other.code && self.message == other.message
     }
 }
 
