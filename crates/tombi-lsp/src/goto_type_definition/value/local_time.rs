@@ -5,7 +5,7 @@ use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
 use crate::{
-    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     goto_type_definition::{
         all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
         comment::get_tombi_value_comment_directive_type_definition,
@@ -29,7 +29,7 @@ impl GetTypeDefinition for tombi_document_tree::LocalTime {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_value_comment_directive_content_with_schema_uri::<LocalTimeCommonRules>(
+                get_key_table_value_comment_directive_content_and_schema_uri::<LocalTimeCommonRules>(
                     self.comment_directives(),
                     position,
                     accessors,

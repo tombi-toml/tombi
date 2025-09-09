@@ -1,10 +1,12 @@
+#[cfg(feature = "jsonschema")]
+use std::borrow::Cow;
 use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ArrayRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonRules,
-    WithKeyRules,
+    ArrayRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions,
+    WithCommonExtensibleRules, WithCommonRules, WithKeyRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
@@ -19,6 +21,8 @@ pub type TableCommonRules = WithCommonRules<TableRules>;
 pub type ArrayOfTableCommonRules = WithCommonRules<ArrayOfTableRules>;
 
 pub type InlineTableCommonRules = WithCommonRules<InlineTableRules>;
+
+pub type ParentTableCommonRules = WithCommonExtensibleRules<TableRules>;
 
 pub type RootTableCommonRules = WithCommonRules<RootTableRules>;
 
@@ -56,6 +60,12 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyInlineTableComm
 impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<InlineTableCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-inline-table-directive.json").unwrap()
+    }
+}
+
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ParentTableCommonRules> {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-parent-table-directive.json").unwrap()
     }
 }
 
@@ -128,8 +138,22 @@ pub struct ArrayOfTableRules {
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct InlineTableRules(pub TableRules);
+
+#[cfg(feature = "jsonschema")]
+impl schemars::JsonSchema for InlineTableRules {
+    fn schema_name() -> Cow<'static, str> {
+        "InlineTableRules".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        TableRules::json_schema(generator)
+    }
+
+    fn inline_schema() -> bool {
+        true
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]

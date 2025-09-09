@@ -5,7 +5,7 @@ use tombi_schema_store::ValueSchema;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::type_mismatch,
 };
 
@@ -22,7 +22,7 @@ impl Validate for tombi_document_tree::Integer {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<IntegerCommonRules>(
+                    get_tombi_key_table_value_rules_and_diagnostics::<IntegerCommonRules>(
                         comment_directives,
                         accessors,
                     )

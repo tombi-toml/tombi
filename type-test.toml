@@ -7,5 +7,5 @@ array = [
   "a",  # tombi: lint.rules.string-min-length.disabled = true
 ]
 integer = 1  # tombi: lint.rules.integer-maximum.disabled = true
-boolean = true
-table = { boolean = true }
+boolean = true  # tombi: lint.rules.table-key-required.disabled = true
+table = { boolean = true }  # tombi: lint.rules.table-min-keys.disabled = true

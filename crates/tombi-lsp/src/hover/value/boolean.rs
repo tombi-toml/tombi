@@ -2,7 +2,7 @@ use tombi_comment_directive::value::BooleanCommonRules;
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, ValueSchema};
 
 use crate::{
-    comment_directive::get_value_comment_directive_content_with_schema_uri,
+    comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     hover::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
@@ -27,7 +27,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_value_comment_directive_content_with_schema_uri::<BooleanCommonRules>(
+                get_key_table_value_comment_directive_content_and_schema_uri::<BooleanCommonRules>(
                     self.comment_directives(),
                     position,
                     accessors,

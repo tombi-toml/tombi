@@ -7,7 +7,7 @@ use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_x_keyword::StringFormat;
 
 use crate::{
-    comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules,
+    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{format, type_mismatch},
 };
 
@@ -25,7 +25,7 @@ impl Validate for tombi_document_tree::String {
 
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) =
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<StringCommonRules>(
+                    get_tombi_key_table_value_rules_and_diagnostics::<StringCommonRules>(
                         comment_directives,
                         accessors,
                     )
