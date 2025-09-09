@@ -13,7 +13,7 @@ use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;
 use tombi_document::IntoDocument;
 use tombi_document_tree::{ArrayKind, IntoDocumentTreeAndErrors, TableKind};
-use tombi_schema_store::SchemaUri;
+use tombi_schema_store::{Accessor, SchemaUri};
 
 use crate::comment_directive::into_directive_diagnostic;
 
@@ -49,7 +49,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
     array: &tombi_document_tree::Array,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<ArrayCommonRules>, Vec<tombi_diagnostic::Diagnostic>) {
-    async fn inner_get_tombi_array_comment_directive_and_diagnostics(
+    async fn _get_tombi_array_comment_directive_and_diagnostics(
         array: &tombi_document_tree::Array,
         accessors: &[tombi_schema_store::Accessor],
         comment_directives: impl IntoIterator<Item = &tombi_ast::TombiValueCommentDirective>,
@@ -101,7 +101,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
     let mut array_common_rules = if let Some(comment_directives) = array.comment_directives() {
         let (array_common_rules, diagnostics) =
             if let Some(inner_comment_directives) = array.inner_comment_directives() {
-                inner_get_tombi_array_comment_directive_and_diagnostics(
+                _get_tombi_array_comment_directive_and_diagnostics(
                     array,
                     accessors,
                     comment_directives
@@ -112,7 +112,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
                 )
                 .await
             } else {
-                inner_get_tombi_array_comment_directive_and_diagnostics(
+                _get_tombi_array_comment_directive_and_diagnostics(
                     array,
                     accessors,
                     comment_directives.iter().collect_vec(),
@@ -130,7 +130,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
 
     if let Some(inner_comment_directives) = array.inner_comment_directives() {
         let (inner_array_common_rules, diagnostics) =
-            inner_get_tombi_array_comment_directive_and_diagnostics(
+            _get_tombi_array_comment_directive_and_diagnostics(
                 array,
                 accessors,
                 inner_comment_directives.iter(),
@@ -155,10 +155,11 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
     table: &tombi_document_tree::Table,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<TableCommonRules>, Vec<tombi_diagnostic::Diagnostic>) {
-    async fn inner_get_tombi_table_comment_directive_and_diagnostics(
+    async fn _get_tombi_table_comment_directive_and_diagnostics(
         table: &tombi_document_tree::Table,
         accessors: &[tombi_schema_store::Accessor],
         comment_directives: impl IntoIterator<Item = &tombi_ast::TombiValueCommentDirective>,
+        is_inner_comment_directives: bool,
     ) -> (Option<TableCommonRules>, Vec<tombi_diagnostic::Diagnostic>) {
         match table.kind() {
             TableKind::InlineTable { .. } => {
@@ -186,10 +187,10 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
             | TableKind::ParentTable
             | TableKind::ParentKey
             | TableKind::KeyValue => {
-                if accessors
-                    .iter()
-                    .any(|accessor| matches!(accessor, tombi_schema_store::Accessor::Index(_)))
-                {
+                if is_inner_comment_directives {
+                    get_tombi_value_rules_and_diagnostics::<TableCommonRules>(comment_directives)
+                        .await
+                } else if matches!(accessors.last(), Some(Accessor::Index(_))) {
                     let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
                         KeyArrayOfTableCommonRules,
                     >(comment_directives)
@@ -254,20 +255,22 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
     let mut table_common_rules = if let Some(comment_directives) = table.comment_directives() {
         let (table_common_rules, diagnostics) =
             if let Some(inner_comment_directives) = table.inner_comment_directives() {
-                inner_get_tombi_table_comment_directive_and_diagnostics(
+                _get_tombi_table_comment_directive_and_diagnostics(
                     table,
                     accessors,
                     comment_directives
                         .iter()
                         .chain(inner_comment_directives)
                         .collect_vec(),
+                    false,
                 )
                 .await
             } else {
-                inner_get_tombi_table_comment_directive_and_diagnostics(
+                _get_tombi_table_comment_directive_and_diagnostics(
                     table,
                     accessors,
                     comment_directives.iter().collect_vec(),
+                    false,
                 )
                 .await
             };
@@ -280,10 +283,11 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
 
     if let Some(inner_comment_directives) = table.inner_comment_directives() {
         let (inner_table_common_rules, diagnostics) =
-            inner_get_tombi_table_comment_directive_and_diagnostics(
+            _get_tombi_table_comment_directive_and_diagnostics(
                 table,
                 accessors,
                 inner_comment_directives.iter(),
+                true,
             )
             .await;
 
