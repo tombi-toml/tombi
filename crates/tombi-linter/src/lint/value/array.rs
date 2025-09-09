@@ -143,7 +143,7 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_nexted_array(
+            fn test_nested_array(
                 r#"
                 array = [[
                     # tombi: lint.rules.array-min-values.disabled = true
@@ -178,7 +178,7 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_nexted_array_integer_min_values_with_array_leading_and_array_dangling_comment_directive(
+            fn test_nested_array_integer_min_values_with_array_leading_and_array_dangling_comment_directive(
                 r#"
                 # tombi: lint.rules.array-min-values.disabled = true
                 array = [
