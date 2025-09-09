@@ -253,7 +253,8 @@
           ],
           "format": "partial-time"
         }
-      }
+      },
+      "minProperties": 2
     },
     "TableValue": {
       "type": "object",
@@ -348,7 +349,7 @@
           ]
         }
       },
-      "minProperties": 1
+      "minProperties": 2
     }
   }
 }

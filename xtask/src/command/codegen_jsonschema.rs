@@ -339,7 +339,7 @@ enum LiteralValue2 {
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-#[schemars(extend("minProperties" = 1))]
+#[schemars(extend("minProperties" = 2))]
 struct TableValue {
     boolean: Option<bool>,
     #[validate(range(min = 1, max = 10))]
@@ -360,6 +360,7 @@ struct TableValue {
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
+#[schemars(extend("minProperties" = 2))]
 struct TableValue2 {
     boolean: Option<bool>,
     #[validate(range(min = 1, max = 10))]

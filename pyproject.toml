@@ -8,7 +8,7 @@ description = "🦅 TOML Toolkit 🦅 "
 readme = "python/tombi/README.md"
 requires-python = ">=3.10"
 dependencies = [
-  # tombi: lint.rules.array-min-items = "error"
+  # tombi: lint.rules.array-min-values.disabled = true
 
   "tombi-config>=0.0.0-dev",
 ]

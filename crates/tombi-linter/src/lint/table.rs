@@ -33,7 +33,7 @@ mod tests {
                 "#,
                 type_test_schema_path(),
             ) -> Err([tombi_validator::DiagnosticKind::TableMinKeys {
-                min_keys: 1,
+                min_keys: 2,
                 actual: 0,
             }]);
         }

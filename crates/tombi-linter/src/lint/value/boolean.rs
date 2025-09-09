@@ -10,3 +10,31 @@ impl Lint for tombi_ast::Boolean {
         async move {}.boxed()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_lint;
+
+    mod non_schema {
+
+        use super::*;
+
+        test_lint! {
+            #[test]
+            fn test_key_eq_string(
+                r#"
+                key = "value"  # tombi: lint.rules.string-pattern.disabled = true
+                "#
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_key1_key2_eq_string(
+                r#"
+                key1.key2 = "value"  # tombi: lint.rules.string-pattern.disabled = true
+                "#
+            ) -> Ok(_);
+        }
+    }
+}

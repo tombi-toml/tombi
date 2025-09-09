@@ -132,6 +132,7 @@ mod tests {
                 #:tombi schema.strict = false
 
                 # tombi: lint.rules.key-not-allowed.disabled = true
+                # tombi: lint.rules.table-min-keys.disabled = true
                 table.unknown = "value"
                 "#,
                 type_test_schema_path(),

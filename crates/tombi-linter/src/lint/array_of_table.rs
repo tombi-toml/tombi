@@ -30,6 +30,8 @@ mod tests {
             fn test_array_of_table_min_values(
                 r#"
                 [[array]]
+                boolean = true
+                integer = 1
                 "#,
                 type_test_schema_path(),
             ) -> Err([
@@ -46,6 +48,8 @@ mod tests {
                 r#"
                 # tombi: lint.rules.array-min-values.disabled = true
                 [[array]]
+                boolean = true
+                integer = 1
                 "#,
                 type_test_schema_path(),
             ) -> Ok(_);
@@ -56,6 +60,8 @@ mod tests {
             fn test_array_of_table_min_values_with_header_trailing_comment_directive(
                 r#"
                 [[array]] # tombi: lint.rules.array-min-values.disabled = true
+                boolean = true
+                integer = 1
                 "#,
                 type_test_schema_path(),
             ) -> Ok(_);
@@ -67,6 +73,8 @@ mod tests {
                 r#"
                 [[array]]
                 # tombi: lint.rules.array-min-values.disabled = true
+                boolean = true
+                integer = 1
                 "#,
                 type_test_schema_path(),
             ) -> Err([
@@ -88,6 +96,8 @@ mod tests {
 
                 # tombi: lint.rules.array-min-values.disabled = true
                 [[array]]
+                boolean = true
+                integer = 1
 
                 # tombi: lint.rules.key-empty.disabled = true
                 [array.""]
@@ -104,6 +114,8 @@ mod tests {
 
                 # tombi: lint.rules.array-min-values.disabled = true
                 [[array]]
+                boolean = true
+                integer = 1
 
                 [array.""]
                 # tombi: lint.rules.key-empty.disabled = true
