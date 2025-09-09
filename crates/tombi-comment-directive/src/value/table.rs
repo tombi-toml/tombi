@@ -1,3 +1,5 @@
+#[cfg(feature = "jsonschema")]
+use std::borrow::Cow;
 use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
@@ -136,8 +138,22 @@ pub struct ArrayOfTableRules {
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct InlineTableRules(pub TableRules);
+
+#[cfg(feature = "jsonschema")]
+impl schemars::JsonSchema for InlineTableRules {
+    fn schema_name() -> Cow<'static, str> {
+        "InlineTableRules".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        TableRules::json_schema(generator)
+    }
+
+    fn inline_schema() -> bool {
+        true
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
