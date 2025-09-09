@@ -11,7 +11,7 @@ use super::{
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
 use crate::{
-    schema::table_order_schema::TableOrderSchema, Accessor, Referable, SchemaProperties,
+    schema::table_keys_order_schema::TableKeysOrderSpec, Accessor, Referable, SchemaProperties,
     SchemaStore,
 };
 
@@ -27,7 +27,7 @@ pub struct TableSchema {
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
-    pub keys_order: Option<TableOrderSchema>,
+    pub keys_order: Option<TableKeysOrderSpec>,
     pub default: Option<tombi_json::Object>,
     pub const_value: Option<tombi_json::Object>,
     pub enumerate: Option<Vec<tombi_json::Object>>,
@@ -96,7 +96,7 @@ impl TableSchema {
 
         let keys_order = object_node
             .get(X_TOMBI_TABLE_KEYS_ORDER)
-            .and_then(TableOrderSchema::new);
+            .and_then(TableKeysOrderSpec::new);
 
         Self {
             title: object_node
