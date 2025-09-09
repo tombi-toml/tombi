@@ -160,12 +160,13 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_nexted_array_min_values_with_array_leading_and_key_dangling_comment_directive(
+            fn test_nested_array_min_values_with_array_leading_and_key_dangling_comment_directive(
                 r#"
                 # tombi: lint.rules.array-min-values.disabled = true
                 array = [
                     [
                     # tombi: lint.rules.key-empty.disabled = true
+                    # tombi: lint.rules.array-min-values.disabled = true
                     ]
                 ]
                 "#,
