@@ -39,6 +39,10 @@ Available sorting strategies:
 - `version-sort`
 - `schema`
 
+<Note>
+The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
+</Note>
+
 By specifying objects instead of strings, you can individually define sorting methods for the different groups: `properties`, `additionalProperties`, and `patternProperties`.
 
 ```json
@@ -54,7 +58,7 @@ By specifying objects instead of strings, you can individually define sorting me
 The order of the object's properties is significant. Sorting is performed sequentially for each group starting from the first property, and the results are then combined.
 
 <Note>
-The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
+The `schema` strategy can only be used for `properties`.
 </Note>
 
 ### x-tombi-array-values-order
