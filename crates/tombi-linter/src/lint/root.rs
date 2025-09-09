@@ -122,7 +122,12 @@ mod tests {
                 table.unknown = "value"
                 "#,
                 type_test_schema_path(),
-            ) -> Ok(_);
+            ) -> Err([
+                tombi_validator::DiagnosticKind::TableMinKeys {
+                    min_keys: 2,
+                    actual: 1,
+                },
+            ]);
         }
 
         test_lint! {
@@ -145,6 +150,7 @@ mod tests {
                 r#"
                 #:tombi schema.strict = false
 
+                # tombi: lint.rules.table-min-keys.disabled = true
                 table.unknown = "value"  # tombi: lint.rules.key-not-allowed.disabled = true
                 "#,
                 type_test_schema_path(),

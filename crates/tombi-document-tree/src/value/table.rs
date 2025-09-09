@@ -166,7 +166,7 @@ impl Table {
             key_values: Default::default(),
             range: self.range,
             symbol_range: self.symbol_range,
-            comment_directives: None,
+            comment_directives: self.comment_directives.clone(),
             inner_comment_directives: None,
         }
     }
@@ -177,7 +177,7 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::new(parent_key.range().start, self.range.end),
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
-            comment_directives: None,
+            comment_directives: parent_key.comment_directives.clone(),
             inner_comment_directives: None,
         }
     }
@@ -821,6 +821,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                 }
 
                 if !comment_directives.is_empty() {
+                    table.comment_directives = Some(Box::new(comment_directives.clone()));
                     value.set_comment_directives(comment_directives.clone());
                 }
 

@@ -2,10 +2,10 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules};
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyLocalTimeCommonRules = WithKeyRules<WithCommonRules<LocalTimeRules>>;
+pub type KeyLocalTimeCommonRules = WithKeyTableRules<WithCommonRules<LocalTimeRules>>;
 
 pub type LocalTimeCommonRules = WithCommonRules<LocalTimeRules>;
 

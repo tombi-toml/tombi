@@ -5,7 +5,7 @@ use tombi_comment_directive::{
         ArrayCommonRules, ArrayOfTableCommonRules, ArrayOfTableRules, InlineTableCommonRules,
         InlineTableRules, KeyArrayOfTableCommonRules, KeyCommonExtensibleRules,
         KeyTableCommonRules, LintOptions, RootTableCommonRules, RootTableRules, TableCommonRules,
-        TombiValueDirectiveContent, WithCommonRules, WithKeyRules,
+        TombiValueDirectiveContent, WithCommonRules, WithKeyRules, WithKeyTableRules,
     },
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
@@ -17,7 +17,7 @@ use tombi_schema_store::{Accessor, SchemaUri};
 
 use crate::comment_directive::into_directive_diagnostic;
 
-pub async fn get_tombi_comment_directive_and_diagnostics<Rules>(
+pub async fn get_tombi_value_comment_directive_and_diagnostics<Rules>(
     comment_directives: impl IntoIterator<Item = &tombi_ast::TombiValueCommentDirective>,
 ) -> (
     Option<TombiValueDirectiveContent<Rules>>,
@@ -61,7 +61,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
                     get_tombi_value_rules_and_diagnostics::<ArrayCommonRules>(comment_directives)
                         .await
                 } else {
-                    get_tombi_value_rules_and_diagnostics_with_key_rules::<ArrayCommonRules>(
+                    get_tombi_key_table_value_rules_and_diagnostics::<ArrayCommonRules>(
                         comment_directives,
                         accessors,
                     )
@@ -74,7 +74,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
                 }
             }
             ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
-                let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
+                let (rules, diagnostics) = get_tombi_key_value_rules_and_diagnostics::<
                     ArrayOfTableCommonRules,
                 >(comment_directives, accessors)
                 .await;
@@ -163,7 +163,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
     ) -> (Option<TableCommonRules>, Vec<tombi_diagnostic::Diagnostic>) {
         match table.kind() {
             TableKind::InlineTable { .. } => {
-                let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics_with_key_rules::<
+                let (rules, diagnostics) = get_tombi_key_value_rules_and_diagnostics::<
                     InlineTableCommonRules,
                 >(comment_directives, accessors)
                 .await;
@@ -322,7 +322,7 @@ where
     TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
 {
     let (comment_directive, diagnostics) =
-        get_tombi_comment_directive_and_diagnostics(comment_directives).await;
+        get_tombi_value_comment_directive_and_diagnostics(comment_directives).await;
 
     if let Some(TombiValueDirectiveContent {
         lint: Some(LintOptions { rules, .. }),
@@ -335,7 +335,7 @@ where
     }
 }
 
-pub async fn get_tombi_value_rules_and_diagnostics_with_key_rules<Rules>(
+pub async fn get_tombi_key_value_rules_and_diagnostics<Rules>(
     comment_directives: impl IntoIterator<Item = &tombi_ast::TombiValueCommentDirective>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<Rules>, Vec<tombi_diagnostic::Diagnostic>)
@@ -347,9 +347,39 @@ where
     if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last() {
         get_tombi_value_rules_and_diagnostics(comment_directives).await
     } else {
-        let (comment_directive, diagnostics) =
-            get_tombi_comment_directive_and_diagnostics::<WithKeyRules<Rules>>(comment_directives)
-                .await;
+        let (comment_directive, diagnostics) = get_tombi_value_comment_directive_and_diagnostics::<
+            WithKeyRules<Rules>,
+        >(comment_directives)
+        .await;
+
+        if let Some(TombiValueDirectiveContent {
+            lint: Some(LintOptions { rules, .. }),
+            ..
+        }) = comment_directive
+        {
+            (rules.map(|rules| rules.value), diagnostics)
+        } else {
+            (None, diagnostics)
+        }
+    }
+}
+
+pub async fn get_tombi_key_table_value_rules_and_diagnostics<Rules>(
+    comment_directives: impl IntoIterator<Item = &tombi_ast::TombiValueCommentDirective>,
+    accessors: &[tombi_schema_store::Accessor],
+) -> (Option<Rules>, Vec<tombi_diagnostic::Diagnostic>)
+where
+    Rules: serde::de::DeserializeOwned + serde::Serialize,
+    TombiValueDirectiveContent<Rules>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyTableRules<Rules>>: TombiCommentDirectiveImpl,
+{
+    if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last() {
+        get_tombi_value_rules_and_diagnostics(comment_directives).await
+    } else {
+        let (comment_directive, diagnostics) = get_tombi_value_comment_directive_and_diagnostics::<
+            WithKeyTableRules<Rules>,
+        >(comment_directives)
+        .await;
 
         if let Some(TombiValueDirectiveContent {
             lint: Some(LintOptions { rules, .. }),

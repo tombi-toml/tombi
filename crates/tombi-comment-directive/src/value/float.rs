@@ -2,10 +2,10 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules};
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyFloatCommonRules = WithKeyRules<WithCommonRules<FloatRules>>;
+pub type KeyFloatCommonRules = WithKeyTableRules<WithCommonRules<FloatRules>>;
 
 pub type FloatCommonRules = WithCommonRules<FloatRules>;
 

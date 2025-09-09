@@ -4,7 +4,7 @@ use itertools::Itertools;
 use tombi_comment_directive::value::TableCommonRules;
 use tombi_config::SeverityLevel;
 use tombi_severity_level::SeverityLevelDefaultWarn;
-use tombi_validator::comment_directive::get_tombi_value_rules_and_diagnostics_with_key_rules;
+use tombi_validator::comment_directive::get_tombi_key_value_rules_and_diagnostics;
 
 pub struct DottedKeysOutOfOrderRule;
 
@@ -37,7 +37,7 @@ async fn check_dotted_keys_out_of_order(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let level = get_tombi_value_rules_and_diagnostics_with_key_rules::<TableCommonRules>(
+    let level = get_tombi_key_value_rules_and_diagnostics::<TableCommonRules>(
         &comment_directives.collect_vec(),
         &[],
     )
