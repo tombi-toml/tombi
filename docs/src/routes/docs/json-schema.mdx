@@ -39,9 +39,19 @@ Available sorting strategies:
 - `version-sort`
 - `schema`
 
-<Note>
-When using the `schema` strategy, we recommend avoiding `additionalProperties` or `patternProperties` as they are not sorted with `properties` and will appear at the end.
-</Note>
+By specifying objects instead of strings, you can individually define sorting methods for the different groups: `properties`, `additionalProperties`, and `patternProperties`.
+
+```json
+{
+  "x-tombi-table-keys-order": {
+    "properties": "schema",
+    "patternProperties": "version-sort",
+    "additionalProperties": "descending"
+  }
+}
+```
+
+The order of the object's properties is significant. Sorting is performed sequentially for each group starting from the first property, and the results are then combined.
 
 <Note>
 The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
