@@ -26,7 +26,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonRules> 
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ArrayRules {
-    /// # Maximum values.
+    /// # Maximum values
     ///
     /// Check if the array has more than the maximum number of values.
     ///
@@ -36,7 +36,7 @@ pub struct ArrayRules {
     ///
     pub array_max_values: Option<ErrorRuleOptions>,
 
-    /// # Minimum values.
+    /// # Minimum values
     ///
     /// Check if the array has less than the minimum number of values.
     ///
@@ -46,7 +46,7 @@ pub struct ArrayRules {
     ///
     pub array_min_values: Option<ErrorRuleOptions>,
 
-    /// # Unique values.
+    /// # Unique values
     ///
     /// Check if the array has duplicate values.
     ///

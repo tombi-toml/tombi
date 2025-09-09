@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -86,7 +86,7 @@
           ]
         },
         "integer-maximum": {
-          "title": "Maximum integer.",
+          "title": "Maximum integer",
           "description": "Check if the integer is less than or equal to the maximum.\n\n```rust\ninteger <= maximum\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "integer-minimum": {
-          "title": "Minimum integer.",
+          "title": "Minimum integer",
           "description": "Check if the integer is greater than or equal to the minimum.\n\n```rust\ninteger >= minimum\n```",
           "anyOf": [
             {
@@ -110,7 +110,7 @@
           ]
         },
         "integer-exclusive-maximum": {
-          "title": "Exclusive maximum integer.",
+          "title": "Exclusive maximum integer",
           "description": "Check if the integer is less than the maximum.\n\n```rust\ninteger < maximum\n```",
           "anyOf": [
             {
@@ -122,7 +122,7 @@
           ]
         },
         "integer-exclusive-minimum": {
-          "title": "Exclusive minimum integer.",
+          "title": "Exclusive minimum integer",
           "description": "Check if the integer is greater than the minimum.\n\n```rust\ninteger > minimum\n```",
           "anyOf": [
             {
@@ -134,7 +134,7 @@
           ]
         },
         "integer-multiple-of": {
-          "title": "Multiple of integer.",
+          "title": "Multiple of integer",
           "description": "Check if the integer is a multiple of the value.\n\n```rust\ninteger % multiple_of == 0\n```",
           "anyOf": [
             {
@@ -153,7 +153,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
+          "title": "Error rule disabled",
           "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
@@ -171,7 +171,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
+          "title": "Warn rule disabled",
           "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",

@@ -19,7 +19,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyCommonExtensibl
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct KeyRules {
-    /// # Key empty.
+    /// # Key empty
     ///
     /// Check if the key is empty.
     ///
@@ -30,13 +30,13 @@ pub struct KeyRules {
     ///
     pub key_empty: Option<WarnRuleOptions>,
 
-    /// # Key not allowed.
+    /// # Key not allowed
     ///
     /// Check if the key is not defined in this Table.
     ///
     pub key_not_allowed: Option<ErrorRuleOptions>,
 
-    /// # Key pattern.
+    /// # Key pattern
     ///
     /// Check if the key matches the pattern in the Schema.
     ///

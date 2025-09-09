@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonExtensibleRules"
@@ -86,7 +86,7 @@
           ]
         },
         "key-empty": {
-          "title": "Key empty.",
+          "title": "Key empty",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "key-not-allowed": {
-          "title": "Key not allowed.",
+          "title": "Key not allowed",
           "description": "Check if the key is not defined in this Table.",
           "anyOf": [
             {
@@ -110,7 +110,7 @@
           ]
         },
         "key-pattern": {
-          "title": "Key pattern.",
+          "title": "Key pattern",
           "description": "Check if the key matches the pattern in the Schema.",
           "anyOf": [
             {
@@ -128,7 +128,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
+          "title": "Error rule disabled",
           "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
@@ -146,7 +146,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
+          "title": "Warn rule disabled",
           "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",

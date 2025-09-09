@@ -7,7 +7,7 @@
 //! but considering the recent trend of formatters to avoid such discussions by restricting the settings and its results,
 //! this structure is currently empty.
 
-/// # Formatter options.
+/// # Formatter options
 ///
 /// To avoid needless discussion of formatting rules,
 /// we do not currently have a configuration item for formatting.

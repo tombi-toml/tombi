@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -86,7 +86,7 @@
           ]
         },
         "float-maximum": {
-          "title": "Maximum float.",
+          "title": "Maximum float",
           "description": "Check if the float is less than or equal to the maximum.\n\n```rust\nfloat <= maximum\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "float-minimum": {
-          "title": "Minimum float.",
+          "title": "Minimum float",
           "description": "Check if the float is greater than or equal to the minimum.\n\n```rust\nfloat >= minimum\n```",
           "anyOf": [
             {
@@ -110,7 +110,7 @@
           ]
         },
         "float-exclusive-maximum": {
-          "title": "Exclusive maximum float.",
+          "title": "Exclusive maximum float",
           "description": "Check if the float is less than the maximum.\n\n```rust\nfloat < maximum\n```",
           "anyOf": [
             {
@@ -122,7 +122,7 @@
           ]
         },
         "float-exclusive-minimum": {
-          "title": "Exclusive minimum float.",
+          "title": "Exclusive minimum float",
           "description": "Check if the float is greater than the minimum.\n\n```rust\nfloat > minimum\n```",
           "anyOf": [
             {
@@ -134,7 +134,7 @@
           ]
         },
         "float-multiple-of": {
-          "title": "Multiple of float.",
+          "title": "Multiple of float",
           "description": "Check if the float is a multiple of the value.\n\n```rust\nfloat % multiple_of == 0\n```",
           "anyOf": [
             {
@@ -153,7 +153,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
+          "title": "Error rule disabled",
           "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
@@ -171,7 +171,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
+          "title": "Warn rule disabled",
           "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",

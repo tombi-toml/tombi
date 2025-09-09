@@ -79,7 +79,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<RootTableCommonRul
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct TableRules {
-    /// # Dotted keys out of order.
+    /// # Dotted keys out of order
     ///
     /// Check if dotted keys are defined out of order.
     ///
@@ -98,7 +98,7 @@ pub struct TableRules {
     /// ```
     pub dotted_keys_out_of_order: Option<WarnRuleOptions>,
 
-    /// # Maximum keys.
+    /// # Maximum keys
     ///
     /// Check if the table has more than the maximum number of keys.
     ///
@@ -108,7 +108,7 @@ pub struct TableRules {
     ///
     pub table_max_keys: Option<ErrorRuleOptions>,
 
-    /// # Minimum keys.
+    /// # Minimum keys
     ///
     /// Check if the table has less than the minimum number of keys.
     ///
@@ -118,7 +118,7 @@ pub struct TableRules {
     ///
     pub table_min_keys: Option<ErrorRuleOptions>,
 
-    /// # Key required.
+    /// # Key required
     ///
     /// Check if the key is required in this Table.
     ///
@@ -159,7 +159,7 @@ impl schemars::JsonSchema for InlineTableRules {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct RootTableRules {
-    /// # Tables out of order.
+    /// # Tables out of order
     ///
     /// Check if tables are defined out of order.
     ///

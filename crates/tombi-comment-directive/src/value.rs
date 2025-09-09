@@ -29,7 +29,7 @@ use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLev
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct TombiValueDirectiveContent<Rules> {
-    /// # Linter directive.
+    /// # Linter options
     pub lint: Option<LintOptions<Rules>>,
 }
 
@@ -51,7 +51,7 @@ where
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct LintOptions<Rules> {
-    /// # Lint rules.
+    /// # Lint rules
     pub rules: Option<Rules>,
 }
 
@@ -121,7 +121,7 @@ pub struct WithCommonExtensibleRules<Rules> {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct WarnRuleOptions {
-    /// # Warn rule disabled.
+    /// # Warn rule disabled
     ///
     /// If `true`, Warn is disabled for this value.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
@@ -134,7 +134,7 @@ pub struct WarnRuleOptions {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ErrorRuleOptions {
-    /// # Error rule disabled.
+    /// # Error rule disabled
     ///
     /// If `true`, Error is disabled for this value.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
