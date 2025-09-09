@@ -169,10 +169,10 @@ async fn extract_properties(
         .extract_if(.., |(key_value, _)| {
             if let Some(keys) = &key_value.keys() {
                 if let Some(key) = keys.keys().into_iter().next() {
-                    if let Ok(key_text) = key.try_to_raw_text(toml_version) {
-                        if schema_accessors.contains(&SchemaAccessor::Key(key_text)) {
-                            return true;
-                        }
+                    if schema_accessors
+                        .contains(&SchemaAccessor::Key(key.to_raw_text(toml_version)))
+                    {
+                        return true;
                     }
                 }
             }
@@ -200,9 +200,7 @@ async fn extract_pattern_properties(
         sorted_targets.extend(key_values_with_comma.extract_if(.., |(key_value, _)| {
             if let Some(keys) = &key_value.keys() {
                 if let Some(key) = keys.keys().into_iter().next() {
-                    if let Ok(key_text) = key.try_to_raw_text(toml_version) {
-                        return pattern.is_match(&key_text);
-                    }
+                    return pattern.is_match(&key.to_raw_text(toml_version));
                 }
             }
             false
@@ -247,13 +245,13 @@ async fn sort_targets<'a>(
                     .filter_map(|(key_value, comma)| {
                         if let Some(keys) = &key_value.keys() {
                             if let Some(key) = keys.keys().into_iter().next() {
-                                if let Ok(key_text) =
-                                    key.try_to_raw_text(schema_context.toml_version)
+                                if schema_accessor
+                                    == &SchemaAccessor::Key(
+                                        key.to_raw_text(schema_context.toml_version),
+                                    )
                                 {
-                                    if schema_accessor == &SchemaAccessor::Key(key_text) {
-                                        new_key_values_with_comma.push((key_value, comma));
-                                        return None;
-                                    }
+                                    new_key_values_with_comma.push((key_value, comma));
+                                    return None;
                                 }
                             }
                         }

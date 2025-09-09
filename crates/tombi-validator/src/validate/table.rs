@@ -164,12 +164,12 @@ async fn validate_table(
 
         let key_rules = key_rules.as_ref();
 
-        let accessor_raw_text = key.to_raw_text(schema_context.toml_version);
-        let accessor = Accessor::Key(accessor_raw_text.clone());
+        let accessor_raw_text = &key.value;
+        let accessor = Accessor::Key(accessor_raw_text.to_owned());
         let new_accessors = accessors
             .iter()
             .cloned()
-            .chain(std::iter::once(Accessor::Key(accessor_raw_text.clone())))
+            .chain(std::iter::once(Accessor::Key(accessor_raw_text.to_owned())))
             .collect_vec();
 
         let mut matched_key = false;
@@ -353,13 +353,10 @@ async fn validate_table(
     }
 
     if let Some(required) = &table_schema.required {
-        let keys = table_value
-            .keys()
-            .map(|key| key.to_raw_text(schema_context.toml_version))
-            .collect_vec();
+        let keys = table_value.keys().map(|key| &key.value).collect_vec();
 
         for required_key in required {
-            if !keys.contains(required_key) {
+            if !keys.contains(&required_key) {
                 let level = value_rules
                     .map(|rules| &rules.value)
                     .and_then(|rules| {
@@ -470,9 +467,7 @@ async fn validate_table_without_schema(
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Key(
-                        key.to_raw_text(schema_context.toml_version),
-                    )))
+                    .chain(std::iter::once(Accessor::Key(key.value.clone())))
                     .collect_vec(),
                 None,
                 schema_context,

@@ -104,7 +104,7 @@ impl GetHeaderSchemarAccessors for crate::Table {
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
+            accessors.push(Accessor::Key(key.to_raw_text(toml_version)));
             header_keys.push(key);
 
             if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
@@ -126,7 +126,7 @@ impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
+            accessors.push(Accessor::Key(key.to_raw_text(toml_version)));
             header_keys.push(key);
 
             if let Some(new_index) = array_of_tables_keys.get(&header_keys) {

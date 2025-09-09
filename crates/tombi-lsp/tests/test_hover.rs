@@ -431,6 +431,23 @@ mod hover_keys_value {
         );
     }
 
+    mod non_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn variable_placeholder(
+                r#"
+                [[dependencies.${mod_id}]]
+                modId="create█"
+                "#,
+            ) -> Ok({
+                "Keys": "dependencies.${mod_id}[0].modId",
+                "Value": "String"
+            });
+        );
+    }
+
     #[macro_export]
     macro_rules! test_hover_keys_value {
         (#[tokio::test] async fn $name:ident(

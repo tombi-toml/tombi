@@ -34,11 +34,7 @@ pub async fn table_keys_order<'a>(
                 kv.keys()
                     .map(|key| {
                         key.keys()
-                            .map(|key| {
-                                Accessor::Key(
-                                    key.try_to_raw_text(schema_context.toml_version).unwrap(),
-                                )
-                            })
+                            .map(|key| Accessor::Key(key.to_raw_text(schema_context.toml_version)))
                             .collect_vec()
                     })
                     .unwrap_or_default(),

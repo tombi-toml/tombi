@@ -9,7 +9,7 @@ pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
 use tombi_ast::{algo::ancestors_at_position, AstNode, AstToken};
 use tombi_config::TomlVersion;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::{
     CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
@@ -176,9 +176,9 @@ pub fn extract_keys_and_hint(
                 .keys()
                 .take_while(|key| key.token().unwrap().range().start <= position)
             {
-                match key.try_into_document_tree(toml_version) {
-                    Ok(Some(key)) => new_keys.push(key),
-                    _ => return None,
+                let document_tree_key = key.into_document_tree_and_errors(toml_version).tree;
+                if let Some(document_tree_key) = document_tree_key {
+                    new_keys.push(document_tree_key);
                 }
             }
             new_keys
