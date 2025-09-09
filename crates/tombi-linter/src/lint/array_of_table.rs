@@ -70,6 +70,9 @@ mod tests {
                 "#,
                 type_test_schema_path(),
             ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {
+                    key: "array-min-values".to_string()
+                },
                 tombi_validator::DiagnosticKind::ArrayMinValues {
                     min_values: 2,
                     actual: 1,

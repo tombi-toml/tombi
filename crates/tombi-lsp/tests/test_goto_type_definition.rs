@@ -357,7 +357,7 @@ mod goto_type_definition_tests {
             async fn type_test_tombi_key_array_of_table_directive(
                 r#"
                 # tombi: lint.rules.const-value.disabled█ = true
-                [[table]]
+                [[array]]
                 "#,
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
@@ -367,7 +367,7 @@ mod goto_type_definition_tests {
             #[tokio::test]
             async fn type_test_tombi_table_key_array_of_table_directive(
                 r#"
-                [[table]] # tombi: lint.rules.const-value.disabled█ = true
+                [[array]] # tombi: lint.rules.const-value.disabled█ = true
                 "#,
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
@@ -377,11 +377,11 @@ mod goto_type_definition_tests {
             #[tokio::test]
             async fn type_test_tombi_array_of_table_directive(
                 r#"
-                [[table]]
+                [[array]]
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-array-of-table-directive.json");
+            ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
         );
     }
 
