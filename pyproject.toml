@@ -7,11 +7,7 @@ version = "0.0.0-dev"  # We use git tags for versioning. This is just a placehol
 description = "🦅 TOML Toolkit 🦅 "
 readme = "python/tombi/README.md"
 requires-python = ">=3.10"
-dependencies = [
-  # tombi: lint.rules.array-min-values.disabled = true
-
-  "tombi-config>=0.0.0-dev",
-]
+dependencies = []
 
 [project.urls]
 GitHub = "https://github.com/tombi-toml/tombi"
