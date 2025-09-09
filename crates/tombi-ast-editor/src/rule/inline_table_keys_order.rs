@@ -241,7 +241,7 @@ async fn sort_targets<'a>(
         TableKeysOrder::Schema => {
             let mut new_key_values_with_comma = vec![];
             let mut key_values_with_comma = key_values_with_comma;
-            for (schema_accessor, _) in table_schema.properties.write().await.iter_mut() {
+            for (schema_accessor, _) in table_schema.properties.read().await.iter() {
                 key_values_with_comma = key_values_with_comma
                     .into_iter()
                     .filter_map(|(key_value, comma)| {
