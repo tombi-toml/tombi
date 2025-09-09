@@ -6,11 +6,11 @@ use tombi_ast::AstNode;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, GroupTableKeysOrder, OneOfSchema,
-    PropertySchema, SchemaContext, TableOrderSchema, TableSchema, ValueSchema,
+    PropertySchema, SchemaContext, TableKeysOrderSchema, TableSchema, ValueSchema,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
-use tombi_x_keyword::{TableGroup, TableKeysOrder};
+use tombi_x_keyword::{TableKeysOrder, TableKeysOrderGroup};
 
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
@@ -130,7 +130,7 @@ where
                         .all(|(accessor, _)| matches!(accessor, Accessor::Key(_)))
                     {
                         let sorted_targets = match &table_schema.keys_order {
-                            Some(TableOrderSchema::All(order)) => {
+                            Some(TableKeysOrderSchema::All(order)) => {
                                 sort_targets(
                                     new_targets_map.into_iter().collect_vec(),
                                     *order,
@@ -138,16 +138,17 @@ where
                                 )
                                 .await
                             }
-                            Some(TableOrderSchema::Groups(groups)) => {
+                            Some(TableKeysOrderSchema::Groups(groups)) => {
                                 let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
 
-                                let mut properties = if has_group(groups, TableGroup::Properties) {
-                                    extract_properties(&mut new_targets_map, table_schema).await
-                                } else {
-                                    Vec::new()
-                                };
+                                let mut properties =
+                                    if has_group(groups, TableKeysOrderGroup::Properties) {
+                                        extract_properties(&mut new_targets_map, table_schema).await
+                                    } else {
+                                        Vec::new()
+                                    };
                                 let mut pattern_properties =
-                                    if has_group(groups, TableGroup::PatternProperties) {
+                                    if has_group(groups, TableKeysOrderGroup::PatternProperties) {
                                         extract_pattern_properties(
                                             &mut new_targets_map,
                                             table_schema,
@@ -161,13 +162,13 @@ where
 
                                 for group in groups {
                                     match group.target {
-                                        TableGroup::Properties => {
+                                        TableKeysOrderGroup::Properties => {
                                             properties =
                                                 sort_targets(properties, group.order, table_schema)
                                                     .await;
                                             sorted_targets.append(&mut properties);
                                         }
-                                        TableGroup::PatternProperties => {
+                                        TableKeysOrderGroup::PatternProperties => {
                                             pattern_properties = sort_targets(
                                                 pattern_properties,
                                                 group.order,
@@ -176,7 +177,7 @@ where
                                             .await;
                                             sorted_targets.append(&mut pattern_properties);
                                         }
-                                        TableGroup::AdditionalProperties => {
+                                        TableKeysOrderGroup::AdditionalProperties => {
                                             additional_properties = sort_targets(
                                                 additional_properties,
                                                 group.order,
@@ -389,6 +390,6 @@ async fn sort_targets<T>(
     targets
 }
 
-fn has_group(sort_groups: &[GroupTableKeysOrder], group: TableGroup) -> bool {
+fn has_group(sort_groups: &[GroupTableKeysOrder], group: TableKeysOrderGroup) -> bool {
     sort_groups.iter().any(|g| g.target == group)
 }

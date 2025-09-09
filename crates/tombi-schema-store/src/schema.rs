@@ -37,7 +37,7 @@ pub use referable_schema::{is_online_url, CurrentSchema, Referable};
 pub use schema_context::SchemaContext;
 pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
-pub use table_order_schema::{GroupTableKeysOrder, TableOrderSchema};
+pub use table_order_schema::{GroupTableKeysOrder, TableKeysOrderSchema};
 pub use table_schema::TableSchema;
 pub use tombi_accessor::{SchemaAccessor, SchemaAccessors};
 pub use tombi_uri::{CatalogUri, SchemaUri};
