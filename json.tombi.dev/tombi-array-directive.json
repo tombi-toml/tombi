@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -86,7 +86,7 @@
           ]
         },
         "array-max-values": {
-          "title": "Maximum values.",
+          "title": "Maximum values",
           "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "array-min-values": {
-          "title": "Minimum values.",
+          "title": "Minimum values",
           "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
           "anyOf": [
             {
@@ -110,7 +110,7 @@
           ]
         },
         "array-unique-values": {
-          "title": "Unique values.",
+          "title": "Unique values",
           "description": "Check if the array has duplicate values.\n\n```rust\nlength(array) == length(unique(array))\n```",
           "anyOf": [
             {
@@ -129,7 +129,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
+          "title": "Error rule disabled",
           "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
@@ -147,7 +147,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
+          "title": "Warn rule disabled",
           "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",

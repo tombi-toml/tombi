@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
 pub type KeyFloatCommonRules = WithKeyTableRules<WithCommonRules<FloatRules>>;
@@ -25,7 +27,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<FloatCommonRules> 
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct FloatRules {
-    /// # Maximum float.
+    /// # Maximum float
     ///
     /// Check if the float is less than or equal to the maximum.
     ///
@@ -35,7 +37,7 @@ pub struct FloatRules {
     ///
     pub float_maximum: Option<ErrorRuleOptions>,
 
-    /// # Minimum float.
+    /// # Minimum float
     ///
     /// Check if the float is greater than or equal to the minimum.
     ///
@@ -45,7 +47,7 @@ pub struct FloatRules {
     ///
     pub float_minimum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive maximum float.
+    /// # Exclusive maximum float
     ///
     /// Check if the float is less than the maximum.
     ///
@@ -55,7 +57,7 @@ pub struct FloatRules {
     ///
     pub float_exclusive_maximum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive minimum float.
+    /// # Exclusive minimum float
     ///
     /// Check if the float is greater than the minimum.
     ///
@@ -65,7 +67,7 @@ pub struct FloatRules {
     ///
     pub float_exclusive_minimum: Option<ErrorRuleOptions>,
 
-    /// # Multiple of float.
+    /// # Multiple of float
     ///
     /// Check if the float is a multiple of the value.
     ///

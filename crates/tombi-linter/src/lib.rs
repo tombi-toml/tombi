@@ -361,18 +361,10 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::DiagnosticKind::Const {
-                    expected: "\"off\"".to_string(),
+                tombi_validator::DiagnosticKind::Enumerate {
+                    expected: vec!["\"off\"".to_string(), "\"warn\"".to_string(), "\"error\"".to_string()],
                     actual: "\"undefined\"".to_string()
                 },
-                tombi_validator::DiagnosticKind::Const {
-                    expected: "\"warn\"".to_string(),
-                    actual: "\"undefined\"".to_string()
-                },
-                tombi_validator::DiagnosticKind::Const {
-                    expected: "\"error\"".to_string(),
-                    actual: "\"undefined\"".to_string()
-                }
             ]);
         }
     }

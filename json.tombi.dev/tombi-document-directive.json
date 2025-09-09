@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "toml-version": {
-      "title": "TOML version.",
+      "title": "TOML version",
       "description": "This directive specifies the TOML version of this document, with the highest priority.",
       "anyOf": [
         {
@@ -18,7 +18,7 @@
       "default": "v1.0.0"
     },
     "format": {
-      "title": "Formatter options.",
+      "title": "Formatter options",
       "anyOf": [
         {
           "$ref": "#/definitions/FormatOptions"
@@ -29,7 +29,7 @@
       ]
     },
     "lint": {
-      "title": "Linter options.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -40,7 +40,7 @@
       ]
     },
     "schema": {
-      "title": "Schema options.",
+      "title": "Schema options",
       "anyOf": [
         {
           "$ref": "#/definitions/SchemaOptions"
@@ -54,7 +54,7 @@
   "additionalProperties": false,
   "definitions": {
     "TomlVersion": {
-      "title": "TOML version.",
+      "title": "TOML version",
       "type": "string",
       "enum": [
         "v1.0.0",
@@ -65,7 +65,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Format disabled.",
+          "title": "Format disabled",
           "description": "If `true`, formatting is disabled for this document.",
           "type": [
             "boolean",
@@ -77,7 +77,7 @@
           "default": false
         },
         "disable": {
-          "title": "Deprecated. Please use `format.disabled` instead.",
+          "title": "Format disabled",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.disabled` instead.",
           "type": [
             "boolean",
@@ -93,7 +93,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Lint disabled.",
+          "title": "Lint disabled",
           "description": "If `true`, linting is disabled for this document.",
           "type": [
             "boolean",
@@ -105,7 +105,7 @@
           "default": false
         },
         "disable": {
-          "title": "Deprecated. Please use `lint.disabled` instead.",
+          "title": "Lint disabled",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `lint.disabled` instead.",
           "type": [
             "boolean",
@@ -121,7 +121,7 @@
       "type": "object",
       "properties": {
         "strict": {
-          "title": "Enable strict schema validation.",
+          "title": "Enable strict schema validation",
           "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
           "type": [
             "boolean",

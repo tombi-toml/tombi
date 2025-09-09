@@ -7,41 +7,41 @@ use crate::BoolDefaultTrue;
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspOptions {
-    /// # Code Action Feature options.
+    /// # Code Action Feature options
     pub code_action: Option<LspCodeAction>,
 
-    /// # Completion Feature options.
+    /// # Completion Feature options
     pub completion: Option<LspCompletion>,
 
-    /// # Diagnostic Feature options.
+    /// # Diagnostic Feature options
     diagnostic: Option<LspDiagnostic>,
 
-    /// # Deprecated. Please use `lsp.diagnostic` instead.
+    /// # Diagnostic Feature options
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `lsp.diagnostic` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
     diagnostics: Option<LspDiagnostic>,
 
-    /// # Document Link Feature options.
+    /// # Document Link Feature options
     pub document_link: Option<LspDocumentLink>,
 
-    /// # Formatting Feature options.
+    /// # Formatting Feature options
     pub formatting: Option<LspFormatting>,
 
-    /// # Goto Declaration Feature options.
+    /// # Goto Declaration Feature options
     pub goto_declaration: Option<LspGotoDefinition>,
 
-    /// # Goto Definition Feature options.
+    /// # Goto Definition Feature options
     pub goto_definition: Option<LspGotoDefinition>,
 
-    /// # Goto Type Definition Feature options.
+    /// # Goto Type Definition Feature options
     pub goto_type_definition: Option<LspGotoDefinition>,
 
-    /// # Hover Feature options.
+    /// # Hover Feature options
     pub hover: Option<LspHover>,
 
-    /// # Workspace Diagnostics Feature options.
+    /// # Workspace Diagnostics Feature options
     pub workspace_diagnostic: Option<LspWorkspaceDiagnostic>,
 }
 
@@ -77,7 +77,7 @@ impl LspOptions {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspHover {
-    /// # Enable hover feature.
+    /// # Enable hover feature
     ///
     /// Whether to enable hover.
     pub enabled: Option<BoolDefaultTrue>,
@@ -89,7 +89,7 @@ pub struct LspHover {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspCodeAction {
-    /// # Enable code action feature.
+    /// # Enable code action feature
     ///
     /// Whether to enable code action.
     pub enabled: Option<BoolDefaultTrue>,
@@ -101,7 +101,7 @@ pub struct LspCodeAction {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspCompletion {
-    /// # Enable completion feature.
+    /// # Enable completion feature
     ///
     /// Whether to enable completion.
     pub enabled: Option<BoolDefaultTrue>,
@@ -113,7 +113,7 @@ pub struct LspCompletion {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspFormatting {
-    /// # Enable formatting feature.
+    /// # Enable formatting feature
     ///
     /// Whether to enable formatting.
     pub enabled: Option<BoolDefaultTrue>,
@@ -125,7 +125,7 @@ pub struct LspFormatting {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspDiagnostic {
-    /// # Enable diagnostic feature.
+    /// # Enable diagnostic feature
     ///
     /// Whether to enable diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
@@ -137,7 +137,7 @@ pub struct LspDiagnostic {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspDocumentLink {
-    /// # Enable document link feature.
+    /// # Enable document link feature
     ///
     /// Whether to enable document link.
     pub enabled: Option<BoolDefaultTrue>,
@@ -149,7 +149,7 @@ pub struct LspDocumentLink {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspGotoDefinition {
-    /// # Enable goto definition feature.
+    /// # Enable goto definition feature
     ///
     /// Whether to enable goto definition.
     pub enabled: Option<BoolDefaultTrue>,
@@ -161,7 +161,7 @@ pub struct LspGotoDefinition {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LspWorkspaceDiagnostic {
-    /// # Enable workspace diagnostic feature.
+    /// # Enable workspace diagnostic feature
     ///
     /// Whether to enable workspace diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
