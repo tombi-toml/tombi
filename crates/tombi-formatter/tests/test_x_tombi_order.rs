@@ -343,8 +343,30 @@ mod table_keys_order {
                 serde = { version = "^1.0.0", features = ["derive"] }
 
                 [features]
-                clap = ["clap/derive"]
                 default = ["clap"]
+                clap = ["clap/derive"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_default_feature(
+                r#"
+                [features]
+                wasm = ["tombi-schema-store/wasm"]
+                clap = ["dep:clap"]
+                default = ["clap", "native"]
+                native = ["tombi-schema-store/native"]
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                [features]
+                default = ["clap", "native"]
+                clap = ["dep:clap"]
+                native = ["tombi-schema-store/native"]
+                wasm = ["tombi-schema-store/wasm"]
                 "#
             )
         }
@@ -447,7 +469,7 @@ mod table_keys_order {
                 include = ["*.toml"]
                 path = "pyproject.toml"
                 "#,
-                tombi_schema_path(),
+              tombi_schema_path(),
             ) -> Ok(
                 r#"
                 [[schemas]]
@@ -928,12 +950,15 @@ mod table_keys_order {
                 let schema_store = SchemaStore::new();
 
                 if let Some(schema_path) = $schema_path {
+                    let path = tombi_uri::Uri::from_file_path(schema_path)
+                        .unwrap()
+                        .to_string();
                     // Load schemas
                     schema_store
                         .load_config_schemas(
                             &[tombi_config::Schema::Root(tombi_config::RootSchema {
                                 toml_version: None,
-                                path: schema_path.to_string_lossy().to_string(),
+                                path,
                                 include: vec!["*.toml".to_string()],
                             })],
                             None,

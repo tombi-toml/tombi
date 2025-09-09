@@ -1,16 +1,16 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashSet};
 
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaContext,
-    ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, GroupTableKeysOrder, OneOfSchema,
+    PropertySchema, SchemaContext, TableOrderSchema, TableSchema, ValueSchema,
 };
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
-use tombi_x_keyword::TableKeysOrder;
+use tombi_x_keyword::{TableGroup, TableKeysOrder};
 
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
@@ -129,44 +129,64 @@ where
                         .iter()
                         .all(|(accessor, _)| matches!(accessor, Accessor::Key(_)))
                     {
-                        let sorted_targets = match table_schema.keys_order {
-                            Some(TableKeysOrder::Ascending) => new_targets_map
-                                .into_iter()
-                                .sorted_by(|(a_accessor, _), (b_accessor, _)| {
-                                    a_accessor.partial_cmp(b_accessor).unwrap()
-                                })
-                                .map(|(accessor, targets)| (accessor.into(), targets))
-                                .collect_vec(),
-                            Some(TableKeysOrder::Descending) => new_targets_map
-                                .into_iter()
-                                .sorted_by(|(a_accessor, _), (b_accessor, _)| {
-                                    b_accessor.partial_cmp(a_accessor).unwrap()
-                                })
-                                .rev()
-                                .collect_vec(),
-                            Some(TableKeysOrder::Schema) => {
+                        let sorted_targets = match &table_schema.keys_order {
+                            Some(TableOrderSchema::All(order)) => {
+                                sort_targets(
+                                    new_targets_map.into_iter().collect_vec(),
+                                    *order,
+                                    table_schema,
+                                )
+                                .await
+                            }
+                            Some(TableOrderSchema::Groups(groups)) => {
                                 let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
 
-                                for accessor in table_schema.accessors().await {
-                                    if let Some(targets) = new_targets_map.shift_remove(&accessor) {
-                                        sorted_targets.push((accessor, targets));
+                                let mut properties = if has_group(groups, TableGroup::Properties) {
+                                    extract_properties(&mut new_targets_map, table_schema).await
+                                } else {
+                                    Vec::new()
+                                };
+                                let mut pattern_properties =
+                                    if has_group(groups, TableGroup::PatternProperties) {
+                                        extract_pattern_properties(
+                                            &mut new_targets_map,
+                                            table_schema,
+                                        )
+                                        .await
+                                    } else {
+                                        Vec::new()
+                                    };
+                                let mut additional_properties =
+                                    new_targets_map.into_iter().collect_vec();
+
+                                for group in groups {
+                                    match group.target {
+                                        TableGroup::Properties => {
+                                            properties =
+                                                sort_targets(properties, group.order, table_schema)
+                                                    .await;
+                                            sorted_targets.append(&mut properties);
+                                        }
+                                        TableGroup::PatternProperties => {
+                                            pattern_properties = sort_targets(
+                                                pattern_properties,
+                                                group.order,
+                                                table_schema,
+                                            )
+                                            .await;
+                                            sorted_targets.append(&mut pattern_properties);
+                                        }
+                                        TableGroup::AdditionalProperties => {
+                                            additional_properties = sort_targets(
+                                                additional_properties,
+                                                group.order,
+                                                table_schema,
+                                            )
+                                            .await;
+                                            sorted_targets.append(&mut additional_properties);
+                                        }
                                     }
                                 }
-                                sorted_targets.extend(new_targets_map);
-                                sorted_targets
-                            }
-                            Some(TableKeysOrder::VersionSort) => {
-                                let mut sorted_targets = new_targets_map.into_iter().collect_vec();
-                                sorted_targets.sort_by(|(a_accessor, _), (b_accessor, _)| {
-                                    match (a_accessor, b_accessor) {
-                                        (Accessor::Key(a_key), Accessor::Key(b_key)) => {
-                                            tombi_version_sort::version_sort(a_key, b_key)
-                                        }
-                                        _ => unreachable!(
-                                            "Unexpected accessor type in table keys order sorting"
-                                        ),
-                                    }
-                                });
                                 sorted_targets
                             }
                             None => new_targets_map.into_iter().collect_vec(),
@@ -299,4 +319,76 @@ where
         results
     }
     .boxed()
+}
+
+/// Extracts the properties, and sorts them by the schema
+async fn extract_properties<T>(
+    targets_map: &mut IndexMap<Accessor, Vec<(Vec<Accessor>, T)>>,
+    table_schema: &TableSchema,
+) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
+    let accessors: HashSet<_> = table_schema.accessors().await.into_iter().collect();
+    targets_map
+        .extract_if(.., |element, _| accessors.contains(element))
+        .collect()
+}
+
+/// Extracts the pattern properties, and sorts them by the schema
+async fn extract_pattern_properties<T>(
+    targets_map: &mut IndexMap<Accessor, Vec<(Vec<Accessor>, T)>>,
+    table_schema: &TableSchema,
+) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
+    let mut sorted_targets = vec![];
+    let Some(pattern_properties) = &table_schema.pattern_properties else {
+        return sorted_targets;
+    };
+    for (pattern_key, ..) in pattern_properties.write().await.iter_mut() {
+        let Ok(pattern) = regex::Regex::new(pattern_key) else {
+            tracing::warn!("Invalid regex pattern property: {}", pattern_key);
+            continue;
+        };
+        sorted_targets.extend(targets_map.extract_if(.., |key, _| {
+            key.as_key()
+                .map(|key| pattern.is_match(key))
+                .unwrap_or_default()
+        }));
+    }
+    sorted_targets
+}
+
+async fn sort_targets<T>(
+    mut targets: Vec<(Accessor, Vec<(Vec<Accessor>, T)>)>,
+    order: TableKeysOrder,
+    table_schema: &TableSchema,
+) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
+    match order {
+        TableKeysOrder::Ascending => targets.sort_by(|(a_accessor, _), (b_accessor, _)| {
+            a_accessor.partial_cmp(b_accessor).unwrap()
+        }),
+        TableKeysOrder::Descending => targets.sort_by(|(a_accessor, _), (b_accessor, _)| {
+            b_accessor.partial_cmp(a_accessor).unwrap()
+        }),
+        TableKeysOrder::Schema => {
+            let mut new_targets = vec![];
+            for accessor in table_schema.accessors().await {
+                new_targets.extend(targets.extract_if(.., |(element, ..)| *element == accessor));
+            }
+            new_targets.append(&mut targets);
+            return new_targets;
+        }
+        TableKeysOrder::VersionSort => {
+            targets.sort_by(
+                |(a_accessor, _), (b_accessor, _)| match (a_accessor, b_accessor) {
+                    (Accessor::Key(a_key), Accessor::Key(b_key)) => {
+                        tombi_version_sort::version_sort(a_key, b_key)
+                    }
+                    _ => unreachable!("Unexpected accessor type in table keys order sorting"),
+                },
+            );
+        }
+    };
+    targets
+}
+
+fn has_group(sort_groups: &[GroupTableKeysOrder], group: TableGroup) -> bool {
+    sort_groups.iter().any(|g| g.target == group)
 }

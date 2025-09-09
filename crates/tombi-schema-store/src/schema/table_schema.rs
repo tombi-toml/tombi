@@ -4,14 +4,16 @@ use ahash::AHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_json::StringNode;
-use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
+use tombi_x_keyword::{StringFormat, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
-use crate::{Accessor, Referable, SchemaProperties, SchemaStore};
+use crate::{
+    schema::table_order_schema::TableOrderSchema, Accessor, Referable, SchemaProperties,
+    SchemaStore,
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct TableSchema {
@@ -25,7 +27,7 @@ pub struct TableSchema {
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
-    pub keys_order: Option<TableKeysOrder>,
+    pub keys_order: Option<TableOrderSchema>,
     pub default: Option<tombi_json::Object>,
     pub const_value: Option<tombi_json::Object>,
     pub enumerate: Option<Vec<tombi_json::Object>>,
@@ -92,22 +94,9 @@ impl TableSchema {
                 _ => (None, None),
             };
 
-        let keys_order = match object_node.get(X_TOMBI_TABLE_KEYS_ORDER) {
-            Some(tombi_json::ValueNode::String(StringNode { value: order, .. })) => {
-                match TableKeysOrder::try_from(order.as_str()) {
-                    Ok(val) => Some(val),
-                    Err(_) => {
-                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
-                        None
-                    }
-                }
-            }
-            Some(order) => {
-                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
-                None
-            }
-            None => None,
-        };
+        let keys_order = object_node
+            .get(X_TOMBI_TABLE_KEYS_ORDER)
+            .and_then(TableOrderSchema::new);
 
         Self {
             title: object_node
