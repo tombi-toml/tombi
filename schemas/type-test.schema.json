@@ -141,7 +141,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/LiteralValue2"
-          }
+          },
+          "minItems": 1,
+          "maxItems": 10
         },
         {
           "$ref": "#/definitions/TableValue2"

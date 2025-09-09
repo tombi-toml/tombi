@@ -60,5 +60,55 @@ mod tests {
                 type_test_schema_path(),
             ) -> Ok(_);
         }
+
+        test_lint! {
+            #[test]
+            fn test_array_of_table_min_values_with_dangling_comment_directive(
+                r#"
+                [[array]]
+                # tombi: lint.rules.array-min-values.disabled = true
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::ArrayMinValues {
+                    min_values: 2,
+                    actual: 1,
+                }
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_of_table_empty_key_min_values_with_comment_directives(
+                r#"
+                #:tombi schema.strict = false
+
+                # tombi: lint.rules.array-min-values.disabled = true
+                [[array]]
+
+                # tombi: lint.rules.key-empty.disabled = true
+                [array.""]
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_of_table_empty_key_min_values_with_comment_directives2(
+                r#"
+                #:tombi schema.strict = false
+
+                # tombi: lint.rules.array-min-values.disabled = true
+                [[array]]
+
+                [array.""]
+                # tombi: lint.rules.key-empty.disabled = true
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                crate::DiagnosticKind::KeyEmpty
+            ]);
+        }
     }
 }

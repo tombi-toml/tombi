@@ -1,6 +1,6 @@
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
-    #[error("An empty quoted key is discouraged")]
+    #[error("An empty key is discouraged")]
     KeyEmpty,
     #[error("Defining dotted keys out-of-order is discouraged")]
     DottedKeysOutOfOrder,

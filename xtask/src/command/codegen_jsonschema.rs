@@ -315,7 +315,8 @@ enum LiteralValue {
     LocalDateTime(chrono::NaiveDateTime),
     LocalDate(chrono::NaiveDate),
     LocalTime(chrono::NaiveTime),
-    Array(Vec<LiteralValue2>),
+
+    Array(#[validate(length(min = 1, max = 10))] Vec<LiteralValue2>),
     Table(TableValue2),
 }
 

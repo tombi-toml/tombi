@@ -112,7 +112,13 @@ impl<'a> Linter<'a> {
             root.lint(&mut self).await;
         }
 
-        if self.diagnostics.is_empty() {
+        if self
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
+            .count()
+            == 0
+        {
             let (document_tree, errors) =
                 root.into_document_tree_and_errors(self.toml_version).into();
 

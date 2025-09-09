@@ -125,5 +125,75 @@ mod tests {
                 type_test_schema_path(),
             ) -> Ok(_);
         }
+
+        test_lint! {
+            #[test]
+            fn test_array_min_values_with_array_leading_and_key_dangling_comment_directive(
+                r#"
+                # tombi: lint.rules.array-min-values.disabled = true
+                array = [
+                    # tombi: lint.rules.key-empty.disabled = true
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_nexted_array(
+                r#"
+                array = [[
+                    # tombi: lint.rules.array-min-values.disabled = true
+                ]]
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::ArrayMinValues {
+                    min_values: 2,
+                    actual: 1,
+                }
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_nested_array_min_values_with_array_leading_and_key_dangling_comment_directive(
+                r#"
+                # tombi: lint.rules.array-min-values.disabled = true
+                array = [
+                    [
+                    # tombi: lint.rules.key-empty.disabled = true
+                    # tombi: lint.rules.array-min-values.disabled = true
+                    ]
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+            ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_nexted_array_integer_min_values_with_array_leading_and_array_dangling_comment_directive(
+                r#"
+                # tombi: lint.rules.array-min-values.disabled = true
+                array = [
+                    [
+                    # tombi: lint.rules.array-min-values.disabled = true
+
+                    # tombi: lint.rules.key-empty.disabled = true
+                    0, # tombi: lint.rules.integer-minimum.disabled = true
+                    ]
+                ]
+                "#,
+                type_test_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+            ]);
+        }
     }
 }
