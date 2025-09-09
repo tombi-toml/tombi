@@ -4,8 +4,9 @@ use tombi_comment_directive::{
     value::{
         ArrayCommonRules, ArrayOfTableCommonRules, ArrayOfTableRules, InlineTableCommonRules,
         InlineTableRules, KeyArrayOfTableCommonRules, KeyCommonExtensibleRules,
-        KeyTableCommonRules, LintOptions, RootTableCommonRules, RootTableRules, TableCommonRules,
-        TombiValueDirectiveContent, WithCommonRules, WithKeyRules, WithKeyTableRules,
+        KeyTableCommonRules, LintOptions, ParentTableCommonRules, RootTableCommonRules,
+        RootTableRules, TableCommonRules, TombiValueDirectiveContent, WithCommonExtensibleRules,
+        WithCommonRules, WithKeyRules, WithKeyTableRules,
     },
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
@@ -183,10 +184,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
                     (None, diagnostics)
                 }
             }
-            TableKind::Table
-            | TableKind::ParentTable
-            | TableKind::ParentKey
-            | TableKind::KeyValue => {
+            TableKind::Table | TableKind::ParentTable => {
                 if is_inner_comment_directives {
                     get_tombi_value_rules_and_diagnostics::<TableCommonRules>(comment_directives)
                         .await
@@ -224,6 +222,28 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
                     } else {
                         (None, diagnostics)
                     }
+                }
+            }
+            TableKind::KeyValue | TableKind::ParentKey => {
+                let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
+                    ParentTableCommonRules,
+                >(comment_directives)
+                .await;
+
+                if let Some(WithCommonExtensibleRules {
+                    common,
+                    value: table,
+                }) = rules
+                {
+                    (
+                        Some(WithCommonRules {
+                            common,
+                            value: table,
+                        }),
+                        diagnostics,
+                    )
+                } else {
+                    (None, diagnostics)
                 }
             }
             TableKind::Root => {

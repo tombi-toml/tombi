@@ -108,6 +108,9 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
             "/tombi-array-of-table-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/tombi-array-of-table-directive.json"
             )),
+            "/tombi-parent-table-directive.json" => Some(include_str!(
+                "../../../json.tombi.dev/tombi-parent-table-directive.json"
+            )),
             "/tombi-root-table-directive.json" => Some(include_str!(
                 "../../../json.tombi.dev/tombi-root-table-directive.json"
             )),

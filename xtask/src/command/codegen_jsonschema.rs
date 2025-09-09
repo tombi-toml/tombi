@@ -7,8 +7,8 @@ use tombi_comment_directive::value::{
     KeyInlineTableCommonRules, KeyIntegerCommonRules, KeyLocalDateCommonRules,
     KeyLocalDateTimeCommonRules, KeyLocalTimeCommonRules, KeyOffsetDateTimeCommonRules,
     KeyStringCommonRules, KeyTableCommonRules, LocalDateCommonRules, LocalDateTimeCommonRules,
-    LocalTimeCommonRules, OffsetDateTimeCommonRules, RootTableCommonRules, StringCommonRules,
-    TableCommonRules, TombiValueDirectiveContent,
+    LocalTimeCommonRules, OffsetDateTimeCommonRules, ParentTableCommonRules, RootTableCommonRules,
+    StringCommonRules, TableCommonRules, TombiValueDirectiveContent,
 };
 use tombi_config::TomlVersion;
 
@@ -150,6 +150,24 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-parent-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiValueDirectiveContent<ParentTableCommonRules>>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-root-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiValueDirectiveContent<RootTableCommonRules>>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
         project_root_path().join("json.tombi.dev/tombi-key-boolean-directive.json"),
         serde_json::to_string_pretty(
             &generator
@@ -254,15 +272,6 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<TombiValueDirectiveContent<KeyArrayOfTableCommonRules>>(),
-        )? + "\n",
-    )?;
-
-    std::fs::write(
-        project_root_path().join("json.tombi.dev/tombi-root-table-directive.json"),
-        serde_json::to_string_pretty(
-            &generator
-                .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<RootTableCommonRules>>(),
         )? + "\n",
     )?;
 

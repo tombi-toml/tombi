@@ -256,7 +256,7 @@ pub fn get_table_comment_directive_content_with_schema_uri(
                 }
             }
         }
-        TableKind::Table | TableKind::ParentTable | TableKind::ParentKey | TableKind::KeyValue => {
+        TableKind::Table | TableKind::ParentTable => {
             if let Some(comment_directive) = table.comment_directives() {
                 for comment_directive in comment_directive {
                     if let Some(comment_directive_context) = comment_directive.get_context(position)
@@ -282,6 +282,7 @@ pub fn get_table_comment_directive_content_with_schema_uri(
                 }
             }
         }
+        TableKind::KeyValue | TableKind::ParentKey => {}
         TableKind::Root => {
             if let Some(comment_directive) = table.inner_comment_directives() {
                 for comment_directive in comment_directive {

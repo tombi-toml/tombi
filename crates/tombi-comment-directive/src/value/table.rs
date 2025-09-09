@@ -3,8 +3,8 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ArrayRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonRules,
-    WithKeyRules,
+    ArrayRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions,
+    WithCommonExtensibleRules, WithCommonRules, WithKeyRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
@@ -19,6 +19,8 @@ pub type TableCommonRules = WithCommonRules<TableRules>;
 pub type ArrayOfTableCommonRules = WithCommonRules<ArrayOfTableRules>;
 
 pub type InlineTableCommonRules = WithCommonRules<InlineTableRules>;
+
+pub type ParentTableCommonRules = WithCommonExtensibleRules<TableRules>;
 
 pub type RootTableCommonRules = WithCommonRules<RootTableRules>;
 
@@ -56,6 +58,12 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyInlineTableComm
 impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<InlineTableCommonRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-inline-table-directive.json").unwrap()
+    }
+}
+
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ParentTableCommonRules> {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-parent-table-directive.json").unwrap()
     }
 }
 
