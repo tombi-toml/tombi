@@ -11,7 +11,7 @@ use super::{
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
 use crate::{
-    schema::table_order_schema::TableKeysOrderSpec, Accessor, Referable, SchemaProperties,
+    schema::table_keys_order_schema::TableKeysOrderSpec, Accessor, Referable, SchemaProperties,
     SchemaStore,
 };
 
