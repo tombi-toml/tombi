@@ -48,6 +48,13 @@ impl CompletionContentPriority {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommentContext {
+    DocumentDirective(tombi_ast::Comment),
+    ValueDirective(tombi_ast::Comment),
+    Normal(tombi_ast::Comment),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompletionContent {
     pub label: String,
     pub kind: CompletionKind,

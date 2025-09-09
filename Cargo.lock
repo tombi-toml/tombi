@@ -3613,6 +3613,7 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-ast",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
