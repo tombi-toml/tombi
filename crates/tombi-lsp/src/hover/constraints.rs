@@ -181,7 +181,7 @@ impl std::fmt::Display for ValueConstraints {
                 TableKeysOrderSchema::Groups(keys_order) => {
                     write!(f, "Keys Order:\n\n")?;
                     for key in keys_order.iter() {
-                        write!(f, "  {}: `{}`\n\n", key.target, key.order)?;
+                        write!(f, "  - {}: `{}`\n\n", key.target, key.order)?;
                     }
                 }
             }

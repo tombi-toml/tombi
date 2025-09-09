@@ -41,8 +41,7 @@ impl TableKeysOrderSchema {
                         return None;
                     };
 
-                    if order == TableKeysOrder::Schema && target != TableKeysOrderGroup::Properties
-                    {
+                    if order == TableKeysOrder::Schema && target != TableKeysOrderGroup::Keys {
                         tracing::warn!(
                             "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
                         );

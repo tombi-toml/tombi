@@ -50,7 +50,7 @@ pub async fn inline_table_keys_order<'a>(
         TableKeysOrderSchema::Groups(groups) => {
             let mut sorted_targets = Vec::with_capacity(key_values_with_comma.len());
 
-            let mut properties = if has_group(groups, TableKeysOrderGroup::Properties) {
+            let mut properties = if has_group(groups, TableKeysOrderGroup::Keys) {
                 extract_properties(
                     &mut key_values_with_comma,
                     &table_schema,
@@ -60,28 +60,27 @@ pub async fn inline_table_keys_order<'a>(
             } else {
                 Vec::with_capacity(0)
             };
-            let mut pattern_properties =
-                if has_group(groups, TableKeysOrderGroup::PatternProperties) {
-                    extract_pattern_properties(
-                        &mut key_values_with_comma,
-                        &table_schema,
-                        schema_context.toml_version,
-                    )
-                    .await
-                } else {
-                    Vec::with_capacity(0)
-                };
+            let mut pattern_properties = if has_group(groups, TableKeysOrderGroup::PatternKeys) {
+                extract_pattern_properties(
+                    &mut key_values_with_comma,
+                    &table_schema,
+                    schema_context.toml_version,
+                )
+                .await
+            } else {
+                Vec::with_capacity(0)
+            };
             let mut additional_properties = key_values_with_comma.into_iter().collect_vec();
 
             for group in groups {
                 match group.target {
-                    TableKeysOrderGroup::Properties => {
+                    TableKeysOrderGroup::Keys => {
                         properties =
                             sort_targets(properties, group.order, schema_context, &table_schema)
                                 .await;
                         sorted_targets.append(&mut properties);
                     }
-                    TableKeysOrderGroup::PatternProperties => {
+                    TableKeysOrderGroup::PatternKeys => {
                         pattern_properties = sort_targets(
                             pattern_properties,
                             group.order,
@@ -91,7 +90,7 @@ pub async fn inline_table_keys_order<'a>(
                         .await;
                         sorted_targets.append(&mut pattern_properties);
                     }
-                    TableKeysOrderGroup::AdditionalProperties => {
+                    TableKeysOrderGroup::AdditionalKeys => {
                         additional_properties = sort_targets(
                             additional_properties,
                             group.order,

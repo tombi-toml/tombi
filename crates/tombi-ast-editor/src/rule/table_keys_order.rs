@@ -141,14 +141,14 @@ where
                             Some(TableKeysOrderSchema::Groups(groups)) => {
                                 let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
 
-                                let mut properties =
-                                    if has_group(groups, TableKeysOrderGroup::Properties) {
-                                        extract_properties(&mut new_targets_map, table_schema).await
-                                    } else {
-                                        Vec::new()
-                                    };
+                                let mut properties = if has_group(groups, TableKeysOrderGroup::Keys)
+                                {
+                                    extract_properties(&mut new_targets_map, table_schema).await
+                                } else {
+                                    Vec::new()
+                                };
                                 let mut pattern_properties =
-                                    if has_group(groups, TableKeysOrderGroup::PatternProperties) {
+                                    if has_group(groups, TableKeysOrderGroup::PatternKeys) {
                                         extract_pattern_properties(
                                             &mut new_targets_map,
                                             table_schema,
@@ -162,13 +162,13 @@ where
 
                                 for group in groups {
                                     match group.target {
-                                        TableKeysOrderGroup::Properties => {
+                                        TableKeysOrderGroup::Keys => {
                                             properties =
                                                 sort_targets(properties, group.order, table_schema)
                                                     .await;
                                             sorted_targets.append(&mut properties);
                                         }
-                                        TableKeysOrderGroup::PatternProperties => {
+                                        TableKeysOrderGroup::PatternKeys => {
                                             pattern_properties = sort_targets(
                                                 pattern_properties,
                                                 group.order,
@@ -177,7 +177,7 @@ where
                                             .await;
                                             sorted_targets.append(&mut pattern_properties);
                                         }
-                                        TableKeysOrderGroup::AdditionalProperties => {
+                                        TableKeysOrderGroup::AdditionalKeys => {
                                             additional_properties = sort_targets(
                                                 additional_properties,
                                                 group.order,
