@@ -516,7 +516,7 @@ impl GetHoverContent for TableSchema {
         _keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
-        schema_context: &'a tombi_schema_store::SchemaContext,
+        _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             Some(HoverContent::Value(HoverValueContent {
@@ -540,9 +540,8 @@ impl GetHoverContent for TableSchema {
                     min_keys: self.min_properties,
                     // NOTE: key_patterns are output for keys, not this tables.
                     key_patterns: None,
-                    additional_keys: Some(
-                        self.allows_any_additional_properties(schema_context.strict()),
-                    ),
+                    additional_keys: self.additional_properties(),
+                    pattern_keys: self.pattern_properties.is_some(),
                     keys_order: self.keys_order.clone(),
                     ..Default::default()
                 }),

@@ -174,6 +174,11 @@ impl TableSchema {
     }
 
     #[inline]
+    pub fn additional_properties(&self) -> Option<bool> {
+        self.additional_properties
+    }
+
+    #[inline]
     pub fn allows_any_additional_properties(&self, strict: bool) -> bool {
         self.allows_additional_properties(strict) || self.pattern_properties.is_some()
     }
