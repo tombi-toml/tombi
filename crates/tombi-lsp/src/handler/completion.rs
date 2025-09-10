@@ -210,10 +210,7 @@ pub async fn handle_completion(
     }
 
     if comment_context.is_some() {
-        completion_items = completion_items
-            .into_iter()
-            .filter(|item| item.in_comment)
-            .collect();
+        completion_items.retain(|item| item.in_comment);
     }
 
     Ok(Some(completion_items))
