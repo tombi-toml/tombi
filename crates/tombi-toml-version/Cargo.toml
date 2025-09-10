@@ -12,7 +12,7 @@ schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 
 [features]
-clap = ["dep:clap"]
 default = ["clap", "serde"]
+clap = ["dep:clap"]
 jsonschema = ["dep:schemars"]
 serde = ["dep:serde"]

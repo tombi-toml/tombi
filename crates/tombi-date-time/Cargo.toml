@@ -17,6 +17,6 @@ rstest.workspace = true
 serde_json.workspace = true
 
 [features]
-chrono = ["dep:chrono"]
 default = ["chrono", "serde"]
+chrono = ["dep:chrono"]
 serde = ["dep:serde"]

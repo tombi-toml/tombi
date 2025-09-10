@@ -96,8 +96,23 @@
             }
           }
         },
-        "version": {
-          "$ref": "#/definitions/SemVerRequirement"
+        "path": {
+          "description": "Cargo supports **path dependencies** which are typically sub-crates that live within one repository.\nLet's start off by making a new crate inside of our `hello_world` package:\n\n```console\n# inside of hello_world/\n$ cargo new hello_utils\n```\n\nThis will create a new folder `hello_utils` inside of which a `Cargo.toml` and\n`src` folder are ready to be configured. In order to tell Cargo about this, open\nup `hello_world/Cargo.toml` and add `hello_utils` to your dependencies:\n\n```toml\n[dependencies]\nhello_utils = { path = \"hello_utils\" }\n```\n\nThis tells Cargo that we depend on a crate called `hello_utils` which is found\nin the `hello_utils` folder (relative to the `Cargo.toml` it's written in).",
+          "type": "string",
+          "x-taplo": {
+            "links": {
+              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-path-dependencies"
+            }
+          }
+        },
+        "git": {
+          "description": "To depend on a library located in a `git` repository, the minimum information\nyou need to specify is the location of the repository with the `git` key:\n\n```toml\n[dependencies]\nrand = { git = \"https://github.com/rust-lang-nursery/rand\" }\n```\n\nCargo will fetch the `git` repository at this location then look for a\n`Cargo.toml` for the requested crate anywhere inside the `git` repository\n(not necessarily at the root - for example, specifying a member crate name\nof a workspace and setting `git` to the repository containing the workspace).\n\nSince we haven't specified any other information, Cargo assumes that\nwe intend to use the latest commit on the main branch to build our package.\nYou can combine the `git` key with the `rev`, `tag`, or `branch` keys to\nspecify something else. Here's an example of specifying that you want to use\nthe latest commit on a branch named `next`:\n\n```toml\n[dependencies]\nrand = { git = \"https://github.com/rust-lang-nursery/rand\", branch = \"next\" }\n```\n\nSee [Git Authentication](https://doc.rust-lang.org/cargo/appendix/git-authentication.html) for help with git authentication for private repos.\n\n> **Note**: [crates.io](https://crates.io/) does not allow packages to be published with `git`\n> dependencies (`git` [dev-dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies) are ignored). See the [Multiple\n> locations](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#multiple-locations) section for a fallback alternative.\n",
+          "type": "string",
+          "x-taplo": {
+            "links": {
+              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories"
+            }
+          }
         },
         "branch": {
           "description": "Specify the Git branch to use in case of a [Git dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories).",
@@ -107,6 +122,27 @@
               "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories"
             }
           }
+        },
+        "rev": {
+          "description": "Specify the Git revision to use in case of a [Git dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choice-of-commit).\n\nThis can be a commit hash, or a named reference exposed by the remote repository. GitHub Pull Requests may be specified using the `refs/pull/ID/head` format.",
+          "type": "string",
+          "x-taplo": {
+            "links": {
+              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choice-of-commit"
+            }
+          }
+        },
+        "tag": {
+          "description": "Specify the Git tag to use in case of a [Git dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories).",
+          "type": "string",
+          "x-taplo": {
+            "links": {
+              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories"
+            }
+          }
+        },
+        "version": {
+          "$ref": "#/definitions/SemVerRequirement"
         },
         "default-features": {
           "description": "Use the default features of the dependency.",
@@ -149,15 +185,6 @@
             }
           }
         },
-        "git": {
-          "description": "To depend on a library located in a `git` repository, the minimum information\nyou need to specify is the location of the repository with the `git` key:\n\n```toml\n[dependencies]\nrand = { git = \"https://github.com/rust-lang-nursery/rand\" }\n```\n\nCargo will fetch the `git` repository at this location then look for a\n`Cargo.toml` for the requested crate anywhere inside the `git` repository\n(not necessarily at the root - for example, specifying a member crate name\nof a workspace and setting `git` to the repository containing the workspace).\n\nSince we haven't specified any other information, Cargo assumes that\nwe intend to use the latest commit on the main branch to build our package.\nYou can combine the `git` key with the `rev`, `tag`, or `branch` keys to\nspecify something else. Here's an example of specifying that you want to use\nthe latest commit on a branch named `next`:\n\n```toml\n[dependencies]\nrand = { git = \"https://github.com/rust-lang-nursery/rand\", branch = \"next\" }\n```\n\nSee [Git Authentication](https://doc.rust-lang.org/cargo/appendix/git-authentication.html) for help with git authentication for private repos.\n\n> **Note**: [crates.io](https://crates.io/) does not allow packages to be published with `git`\n> dependencies (`git` [dev-dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies) are ignored). See the [Multiple\n> locations](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#multiple-locations) section for a fallback alternative.\n",
-          "type": "string",
-          "x-taplo": {
-            "links": {
-              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories"
-            }
-          }
-        },
         "optional": {
           "description": "Mark the dependency as optional.\n\nOptional dependencies can be activated through features.",
           "type": "boolean",
@@ -173,15 +200,6 @@
           "x-taplo": {
             "links": {
               "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml"
-            }
-          }
-        },
-        "path": {
-          "description": "Cargo supports **path dependencies** which are typically sub-crates that live within one repository.\nLet's start off by making a new crate inside of our `hello_world` package:\n\n```console\n# inside of hello_world/\n$ cargo new hello_utils\n```\n\nThis will create a new folder `hello_utils` inside of which a `Cargo.toml` and\n`src` folder are ready to be configured. In order to tell Cargo about this, open\nup `hello_world/Cargo.toml` and add `hello_utils` to your dependencies:\n\n```toml\n[dependencies]\nhello_utils = { path = \"hello_utils\" }\n```\n\nThis tells Cargo that we depend on a crate called `hello_utils` which is found\nin the `hello_utils` folder (relative to the `Cargo.toml` it's written in).",
-          "type": "string",
-          "x-taplo": {
-            "links": {
-              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-path-dependencies"
             }
           }
         },
@@ -204,24 +222,6 @@
           "type": "string",
           "x-taplo": {
             "hidden": true
-          }
-        },
-        "rev": {
-          "description": "Specify the Git revision to use in case of a [Git dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choice-of-commit).\n\nThis can be a commit hash, or a named reference exposed by the remote repository. GitHub Pull Requests may be specified using the `refs/pull/ID/head` format.",
-          "type": "string",
-          "x-taplo": {
-            "links": {
-              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choice-of-commit"
-            }
-          }
-        },
-        "tag": {
-          "description": "Specify the Git tag to use in case of a [Git dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories).",
-          "type": "string",
-          "x-taplo": {
-            "links": {
-              "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories"
-            }
           }
         }
       },
