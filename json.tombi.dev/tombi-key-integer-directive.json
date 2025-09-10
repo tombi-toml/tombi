@@ -86,7 +86,7 @@
           ]
         },
         "table-max-keys": {
-          "title": "Maximum keys",
+          "title": "Max keys",
           "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "table-min-keys": {
-          "title": "Minimum keys",
+          "title": "Min keys",
           "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {

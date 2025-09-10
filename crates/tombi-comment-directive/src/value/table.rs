@@ -98,7 +98,7 @@ pub struct TableRules {
     /// ```
     pub dotted_keys_out_of_order: Option<WarnRuleOptions>,
 
-    /// # Maximum keys
+    /// # Max keys
     ///
     /// Check if the table has more than the maximum number of keys.
     ///
@@ -108,7 +108,7 @@ pub struct TableRules {
     ///
     pub table_max_keys: Option<ErrorRuleOptions>,
 
-    /// # Minimum keys
+    /// # Min keys
     ///
     /// Check if the table has less than the minimum number of keys.
     ///

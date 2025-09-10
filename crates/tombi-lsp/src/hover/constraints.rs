@@ -116,11 +116,11 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(min_length) = self.min_length {
-            write!(f, "Minimum Length: `{min_length}`\n\n")?;
+            write!(f, "Min Length: `{min_length}`\n\n")?;
         }
 
         if let Some(max_length) = self.max_length {
-            write!(f, "Maximum Length: `{max_length}`\n\n")?;
+            write!(f, "Max Length: `{max_length}`\n\n")?;
         }
 
         if let Some(format) = &self.format {
@@ -132,15 +132,15 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(min_items) = self.min_items {
-            write!(f, "Minimum Items: `{min_items}`\n\n")?;
+            write!(f, "Min Values: `{min_items}`\n\n")?;
         }
 
         if let Some(max_items) = self.max_items {
-            write!(f, "Maximum Items: `{max_items}`\n\n")?;
+            write!(f, "Max Values: `{max_items}`\n\n")?;
         }
 
         if self.unique_items.unwrap_or(false) {
-            write!(f, "Unique Items: `true`\n\n")?;
+            write!(f, "Unique Values: `true`\n\n")?;
         }
 
         if let Some(values_order) = &self.values_order {
@@ -155,11 +155,11 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(min_keys) = self.min_keys {
-            write!(f, "Minimum Keys: `{min_keys}`\n\n")?;
+            write!(f, "Min Keys: `{min_keys}`\n\n")?;
         }
 
         if let Some(max_keys) = self.max_keys {
-            write!(f, "Maximum Keys: `{max_keys}`\n\n")?;
+            write!(f, "Max Keys: `{max_keys}`\n\n")?;
         }
 
         if let Some(key_patterns) = &self.key_patterns {
