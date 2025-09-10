@@ -70,6 +70,7 @@ pub struct ValueConstraints {
     pub max_keys: Option<usize>,
     pub key_patterns: Option<Vec<String>>,
     pub additional_keys: Option<bool>,
+    pub pattern_keys: bool,
     pub keys_order: Option<TableKeysOrderSpec>,
 }
 
@@ -171,6 +172,10 @@ impl std::fmt::Display for ValueConstraints {
 
         if self.additional_keys.unwrap_or(false) {
             write!(f, "Additional Keys: `true`\n\n")?;
+        }
+
+        if self.pattern_keys {
+            write!(f, "Pattern Keys: `true`\n\n")?;
         }
 
         if let Some(keys_order) = &self.keys_order {
