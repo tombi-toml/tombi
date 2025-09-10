@@ -21,6 +21,7 @@ default-members = [
 
 [workspace.package]
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
+# tombi: lint.rules.deprecated.disabled = true
 authors = ["ya7010 <ya7010@outlook.com>"]
 edition = "2021"
 repository = "https://github.com/tombi-toml/tombi"

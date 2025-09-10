@@ -154,7 +154,10 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
         )
         .await
         .into_iter()
-        .map(|content| content.with_position(content_range.start))
+        .map(|mut content| {
+            content.in_comment = true;
+            content.with_position(content_range.start)
+        })
         .collect(),
     )
 }
