@@ -167,7 +167,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 == Some(true)
                                         {
                                             for content in &mut contents {
-                                                content.deprecated = Some(true);
+                                                if !content.in_comment {
+                                                    content.deprecated = Some(true);
+                                                }
                                             }
                                         }
 
@@ -230,7 +232,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                     == Some(true)
                                             {
                                                 for content in &mut contents {
-                                                    content.deprecated = Some(true);
+                                                    if !content.in_comment {
+                                                        content.deprecated = Some(true);
+                                                    }
                                                 }
                                             }
 
@@ -292,7 +296,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                         == Some(true)
                                                 {
                                                     for content in &mut contents {
-                                                        content.deprecated = Some(true);
+                                                        if !content.in_comment {
+                                                            content.deprecated = Some(true);
+                                                        }
                                                     }
                                                 }
 
@@ -338,7 +344,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 == Some(true)
                                         {
                                             for content in &mut contents {
-                                                content.deprecated = Some(true);
+                                                if !content.in_comment {
+                                                    content.deprecated = Some(true);
+                                                }
                                             }
                                         }
 

@@ -275,6 +275,7 @@ async fn complete_crate_version(
                     ),
                 },
                 preselect: None,
+                in_comment: false,
             })
             .collect();
         Ok(Some(items))
@@ -419,6 +420,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                     }]),
                 }),
                 preselect: None,
+                in_comment: false,
             })
             .collect();
         Ok(Some(items))
