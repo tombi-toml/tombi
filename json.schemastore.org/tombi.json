@@ -19,7 +19,8 @@
       "default": "v1.0.0"
     },
     "include": {
-      "description": "File patterns to include\n\n**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
+      "title": "File patterns to include",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
       "type": [
         "array",
         "null"
@@ -31,7 +32,8 @@
       "minItems": 1
     },
     "exclude": {
-      "description": "File patterns to exclude\n\n**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
+      "title": "File patterns to exclude",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
       "type": [
         "array",
         "null"
@@ -86,7 +88,8 @@
       ]
     },
     "server": {
-      "description": "Language Server options\n\n**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
+      "title": "Language Server options",
+      "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
       "anyOf": [
         {
           "$ref": "#/definitions/LspOptions"

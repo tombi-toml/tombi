@@ -44,7 +44,7 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
 
-    /// File patterns to include
+    /// # File patterns to include
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `files.include` instead.
@@ -52,7 +52,7 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     include: Option<Vec<String>>,
 
-    /// File patterns to exclude
+    /// # File patterns to exclude
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `files.exclude` instead.
@@ -71,7 +71,7 @@ pub struct Config {
     /// # Language Server options
     lsp: Option<LspOptions>,
 
-    /// Language Server options
+    /// # Language Server options
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `lsp` instead.
