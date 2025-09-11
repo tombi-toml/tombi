@@ -131,10 +131,18 @@ impl TombiExtension {
                 zed::Os::Windows => zed::DownloadedFileType::Zip,
                 _ => zed::DownloadedFileType::Gzip,
             };
-            zed::download_file(&asset.download_url, &binary_path, file_kind)
-                .map_err(|e| format!("failed to download file: {e}"))?;
 
-            zed::make_file_executable(&binary_path)?;
+            match platform {
+                zed::Os::Windows => {
+                    zed::download_file(&asset.download_url, &version_dir, file_kind)
+                        .map_err(|e| format!("failed to download file: {e}"))?;
+                }
+                _ => {
+                    zed::download_file(&asset.download_url, &binary_path, file_kind)
+                        .map_err(|e| format!("failed to download file: {e}"))?;
+                    zed::make_file_executable(&binary_path)?;
+                }
+            }
 
             let entries = fs::read_dir(".")
                 .map_err(|err| format!("failed to list working directory {err}"))?;
