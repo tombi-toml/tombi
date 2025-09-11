@@ -1,4 +1,4 @@
-use tombi_schema_store::TableKeysOrderSpec;
+use tombi_schema_store::XTombiTableKeysOrder;
 use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy, StringFormat};
 
 use super::display_value::DisplayValue;
@@ -71,7 +71,7 @@ pub struct ValueConstraints {
     pub key_patterns: Option<Vec<String>>,
     pub additional_keys: Option<bool>,
     pub pattern_keys: bool,
-    pub keys_order: Option<TableKeysOrderSpec>,
+    pub keys_order: Option<XTombiTableKeysOrder>,
     pub array_values_order_by: Option<ArrayValuesOrderBy>,
 }
 
@@ -181,8 +181,10 @@ impl std::fmt::Display for ValueConstraints {
 
         if let Some(keys_order) = &self.keys_order {
             match keys_order {
-                TableKeysOrderSpec::All(keys_order) => write!(f, "Keys Order: `{keys_order}`\n\n")?,
-                TableKeysOrderSpec::Groups(keys_order) => {
+                XTombiTableKeysOrder::All(keys_order) => {
+                    write!(f, "Keys Order: `{keys_order}`\n\n")?
+                }
+                XTombiTableKeysOrder::Groups(keys_order) => {
                     write!(f, "Keys Order:\n\n")?;
                     for key in keys_order.iter() {
                         write!(f, "  - {}: `{}`\n\n", key.target, key.order)?;
