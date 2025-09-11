@@ -5041,7 +5041,7 @@ dependencies = [
 
 [[package]]
 name = "zed-tombi"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "zed_extension_api",
 ]
