@@ -543,6 +543,7 @@ impl GetHoverContent for TableSchema {
                     additional_keys: self.additional_properties(),
                     pattern_keys: self.pattern_properties.is_some(),
                     keys_order: self.keys_order.clone(),
+                    array_values_order_by: self.array_values_order_by.clone(),
                     ..Default::default()
                 }),
                 schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),

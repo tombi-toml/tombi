@@ -4,7 +4,9 @@ use ahash::AHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_x_keyword::{StringFormat, X_TOMBI_TABLE_KEYS_ORDER};
+use tombi_x_keyword::{
+    ArrayValuesOrderBy, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER_BY, X_TOMBI_TABLE_KEYS_ORDER,
+};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
@@ -28,6 +30,7 @@ pub struct TableSchema {
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
     pub keys_order: Option<TableKeysOrderSpec>,
+    pub array_values_order_by: Option<ArrayValuesOrderBy>,
     pub default: Option<tombi_json::Object>,
     pub const_value: Option<tombi_json::Object>,
     pub enumerate: Option<Vec<tombi_json::Object>>,
@@ -98,6 +101,22 @@ impl TableSchema {
             .get(X_TOMBI_TABLE_KEYS_ORDER)
             .and_then(TableKeysOrderSpec::new);
 
+        let array_values_order_by = object_node
+            .get(X_TOMBI_ARRAY_VALUES_ORDER_BY)
+            .and_then(|v| {
+                if let Some(v) = v.as_str() {
+                    if let Ok(v) = ArrayValuesOrderBy::try_from(v) {
+                        Some(v)
+                    } else {
+                        tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
+                        None
+                    }
+                } else {
+                    tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v.to_string());
+                    None
+                }
+            });
+
         Self {
             title: object_node
                 .get("title")
@@ -142,6 +161,7 @@ impl TableSchema {
                 .get("maxProperties")
                 .and_then(|v| v.as_u64().map(|u| u as usize)),
             keys_order,
+            array_values_order_by,
             enumerate: object_node.get("enum").and_then(|v| v.as_array()).map(|v| {
                 v.items
                     .iter()

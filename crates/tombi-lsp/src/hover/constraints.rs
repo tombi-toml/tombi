@@ -1,5 +1,5 @@
 use tombi_schema_store::TableKeysOrderSpec;
-use tombi_x_keyword::{ArrayValuesOrder, StringFormat};
+use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy, StringFormat};
 
 use super::display_value::DisplayValue;
 
@@ -72,6 +72,7 @@ pub struct ValueConstraints {
     pub additional_keys: Option<bool>,
     pub pattern_keys: bool,
     pub keys_order: Option<TableKeysOrderSpec>,
+    pub array_values_order_by: Option<ArrayValuesOrderBy>,
 }
 
 impl std::fmt::Display for ValueConstraints {
@@ -188,6 +189,10 @@ impl std::fmt::Display for ValueConstraints {
                     }
                 }
             }
+        }
+
+        if let Some(array_values_order_by) = &self.array_values_order_by {
+            write!(f, "Array Values Order By: `{array_values_order_by}`\n\n")?;
         }
 
         Ok(())

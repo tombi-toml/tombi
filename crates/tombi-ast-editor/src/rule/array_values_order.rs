@@ -1,9 +1,10 @@
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_document_tree::TryIntoDocumentTree;
-use tombi_schema_store::{ArraySchema, SchemaContext};
+use tombi_schema_store::{ArraySchema, CurrentSchema, SchemaContext, TableSchema, ValueSchema};
 use tombi_syntax::SyntaxElement;
-use tombi_x_keyword::ArrayValuesOrder;
+use tombi_toml_version::TomlVersion;
+use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy};
 
 use crate::node::make_comma;
 
@@ -12,6 +13,7 @@ use super::array_comma_trailing_comment;
 pub async fn array_values_order<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
     array_schema: &'a ArraySchema,
+    current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a SchemaContext<'a>,
 ) -> Vec<crate::Change> {
     if values_with_comma.is_empty() {
@@ -24,6 +26,35 @@ pub async fn array_values_order<'a>(
 
     let mut changes = vec![];
 
+    let array_values_order_by = if let Some(item_schema) = &array_schema.items {
+        if let Some(current_schema) = item_schema
+            .write()
+            .await
+            .resolve(
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
+            .ok()
+            .flatten()
+        {
+            if let ValueSchema::Table(TableSchema {
+                array_values_order_by,
+                ..
+            }) = current_schema.value_schema.as_ref()
+            {
+                array_values_order_by.to_owned()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let is_last_comma = values_with_comma
         .last()
         .map(|(_, comma)| comma.is_some())
@@ -34,14 +65,17 @@ pub async fn array_values_order<'a>(
         SyntaxElement::Node(values_with_comma.last().unwrap().0.syntax().clone()),
     );
 
-    let sortable_values =
-        match SortableValues::new(values_with_comma.clone(), schema_context.toml_version) {
-            Ok(sortable_values) => sortable_values,
-            Err(warning) => {
-                tracing::debug!("{warning}");
-                return Vec::with_capacity(0);
-            }
-        };
+    let sortable_values = match SortableValues::new(
+        values_with_comma,
+        array_values_order_by.as_ref(),
+        schema_context.toml_version,
+    ) {
+        Ok(sortable_values) => sortable_values,
+        Err(warning) => {
+            tracing::warn!("{warning}");
+            return Vec::with_capacity(0);
+        }
+    };
 
     let mut sorted_values_with_comma = match values_order {
         ArrayValuesOrder::Ascending => sortable_values
@@ -113,6 +147,7 @@ pub async fn array_values_order<'a>(
     changes
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum SortableType {
     Boolean,
     Integer,
@@ -133,6 +168,56 @@ enum SortableValues {
     LocalTime(Vec<(String, tombi_ast::Value, tombi_ast::Comma)>),
 }
 
+impl SortableType {
+    fn try_new(
+        value: &tombi_ast::Value,
+        array_values_order_by: Option<&ArrayValuesOrderBy>,
+        toml_version: TomlVersion,
+    ) -> Result<Self, Warning> {
+        match value {
+            tombi_ast::Value::Boolean(_) => Ok(SortableType::Boolean),
+            tombi_ast::Value::IntegerBin(_)
+            | tombi_ast::Value::IntegerOct(_)
+            | tombi_ast::Value::IntegerDec(_)
+            | tombi_ast::Value::IntegerHex(_) => Ok(SortableType::Integer),
+            tombi_ast::Value::BasicString(_)
+            | tombi_ast::Value::LiteralString(_)
+            | tombi_ast::Value::MultiLineBasicString(_)
+            | tombi_ast::Value::MultiLineLiteralString(_) => Ok(SortableType::String),
+            tombi_ast::Value::OffsetDateTime(_) => Ok(SortableType::OffsetDateTime),
+            tombi_ast::Value::LocalDateTime(_) => Ok(SortableType::LocalDateTime),
+            tombi_ast::Value::LocalDate(_) => Ok(SortableType::LocalDate),
+            tombi_ast::Value::LocalTime(_) => Ok(SortableType::LocalTime),
+            tombi_ast::Value::InlineTable(inline_table) => {
+                if let Some(array_values_order_by) = array_values_order_by {
+                    for key_value in inline_table.key_values() {
+                        if let Some(keys) = key_value.keys() {
+                            let mut keys_iter = keys.keys().into_iter();
+                            if let Some(key) = keys_iter.next() {
+                                if key.to_raw_text(toml_version) != *array_values_order_by {
+                                    continue;
+                                }
+                            }
+                            if keys_iter.next().is_some() {
+                                continue;
+                            }
+                            if let Some(value) = &key_value.value() {
+                                return SortableType::try_new(value, None, toml_version);
+                            }
+                        }
+                    }
+                    Err(Warning::ArrayValuesOrderByKeyNotFound)
+                } else {
+                    Err(Warning::ArrayValuesOrderByRequired)
+                }
+            }
+            tombi_ast::Value::Float(_) | tombi_ast::Value::Array(_) => {
+                Err(Warning::UnsupportedTypes)
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
 enum Warning {
     #[error("Cannot sort array values because the values are empty.")]
@@ -146,33 +231,40 @@ enum Warning {
 
     #[error("Cannot sort array values because the values have different types.")]
     DifferentTypes,
+
+    #[error("Cannot sort array tables because the `x-tombi-array-values-order-by` is required.")]
+    ArrayValuesOrderByRequired,
+
+    #[error(
+        "Cannot sort array tables because the sort-key defined in `x-tombi-array-values-order-by` is not found."
+    )]
+    ArrayValuesOrderByKeyNotFound,
 }
 
 impl SortableValues {
     pub fn new(
         values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+        array_values_order_by: Option<&ArrayValuesOrderBy>,
         toml_version: tombi_toml_version::TomlVersion,
     ) -> Result<Self, Warning> {
         if values_with_comma.is_empty() {
             return Err(Warning::UnsupportedTypes);
         }
+        let mut values_with_comma_iter = values_with_comma.iter();
 
-        let sortable_type = match values_with_comma.first().unwrap().0 {
-            tombi_ast::Value::Boolean(_) => SortableType::Boolean,
-            tombi_ast::Value::IntegerBin(_)
-            | tombi_ast::Value::IntegerOct(_)
-            | tombi_ast::Value::IntegerDec(_)
-            | tombi_ast::Value::IntegerHex(_) => SortableType::Integer,
-            tombi_ast::Value::BasicString(_)
-            | tombi_ast::Value::LiteralString(_)
-            | tombi_ast::Value::MultiLineBasicString(_)
-            | tombi_ast::Value::MultiLineLiteralString(_) => SortableType::String,
-            tombi_ast::Value::OffsetDateTime(_) => SortableType::OffsetDateTime,
-            tombi_ast::Value::LocalDateTime(_) => SortableType::LocalDateTime,
-            tombi_ast::Value::LocalDate(_) => SortableType::LocalDate,
-            tombi_ast::Value::LocalTime(_) => SortableType::LocalTime,
-            _ => return Err(Warning::Empty),
+        let Some(sortable_type) = values_with_comma_iter
+            .next()
+            .map(|(value, _)| SortableType::try_new(value, array_values_order_by, toml_version))
+            .transpose()?
+        else {
+            return Err(Warning::Empty);
         };
+
+        if values_with_comma_iter.any(|(value, _)| {
+            SortableType::try_new(value, array_values_order_by, toml_version) != Ok(sortable_type)
+        }) {
+            return Err(Warning::DifferentTypes);
+        }
 
         let sortable_values = match sortable_type {
             SortableType::Boolean => {
