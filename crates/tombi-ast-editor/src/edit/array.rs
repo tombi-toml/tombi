@@ -32,6 +32,7 @@ impl crate::Edit for tombi_ast::Array {
                         array_values_order(
                             self.values_with_comma().collect_vec(),
                             array_schema,
+                            &current_schema,
                             schema_context,
                         )
                         .await,

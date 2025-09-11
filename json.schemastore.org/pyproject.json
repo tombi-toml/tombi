@@ -120,7 +120,8 @@
                 "type": "string",
                 "pattern": "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9])$"
               }
-            }
+            },
+            "x-tombi-array-values-order-by": "include-group"
           }
         ]
       }
