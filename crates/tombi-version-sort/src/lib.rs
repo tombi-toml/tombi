@@ -102,12 +102,7 @@ impl<'a> VersionChunkIter<'a> {
 
     fn check_version_operator_at(&self, pos: usize) -> Option<usize> {
         let remaining = &self.ident[pos..];
-        for &op in &[">=", "<=", "==", "!=", "~=", "~>"] {
-            if remaining.starts_with(op) {
-                return Some(pos + op.len());
-            }
-        }
-        for &op in &[">", "<", "=", "^", "~"] {
+        for &op in &[">=", "<=", "==", "!=", "~=", "~>", ">", "<", "=", "^", "~"] {
             if remaining.starts_with(op) {
                 return Some(pos + op.len());
             }
