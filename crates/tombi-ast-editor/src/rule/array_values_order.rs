@@ -1,3 +1,11 @@
+mod boolean;
+mod integer;
+mod local_date;
+mod local_date_time;
+mod local_time;
+mod offset_date_time;
+mod string;
+
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_document_tree::TryIntoDocumentTree;
@@ -10,12 +18,17 @@ use tombi_toml_version::TomlVersion;
 use tombi_validator::Validate;
 use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy, ArrayValuesOrderGroup};
 
-use crate::node::make_comma;
-
 use super::array_comma_trailing_comment;
+use boolean::create_boolean_sortable_values;
+use integer::create_integer_sortable_values;
+use local_date::create_local_date_sortable_values;
+use local_date_time::create_local_date_time_sortable_values;
+use local_time::create_local_time_sortable_values;
+use offset_date_time::create_offset_date_time_sortable_values;
+use string::create_string_sortable_values;
 
 pub async fn array_values_order<'a>(
-    mut values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+    values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
     array_schema: &'a ArraySchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a SchemaContext<'a>,
@@ -42,131 +55,24 @@ pub async fn array_values_order<'a>(
 
     let mut sorted_values_with_comma = match values_order {
         XTombiArrayValuesOrder::All(values_order) => {
-            let array_values_order_by = if let Some(item_schema) = &array_schema.items {
-                if let Some(current_schema) = item_schema
-                    .write()
-                    .await
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                    .ok()
-                    .flatten()
-                {
-                    get_array_values_order_by(&current_schema)
-                } else {
-                    return Vec::with_capacity(0);
-                }
-            } else {
-                None
-            };
-            let sortable_values = match SortableValues::try_new(
+            array_values_order_all(
                 values_with_comma,
-                array_values_order_by.as_ref(),
-                schema_context.toml_version,
-            ) {
-                Ok(sortable_values) => sortable_values,
-                Err(reason) => {
-                    tracing::debug!("{reason}");
-                    return Vec::with_capacity(0);
-                }
-            };
-            sort_array_values(sortable_values, values_order)
+                array_schema,
+                current_schema,
+                schema_context,
+                values_order,
+            )
+            .await
         }
         XTombiArrayValuesOrder::Groups(values_order_group) => {
-            let Some(item_schema) = &array_schema.items else {
-                return Vec::with_capacity(0);
-            };
-            let mut item_schema = item_schema.write().await;
-            let Some(current_schema) = item_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .ok()
-                .flatten()
-            else {
-                return Vec::with_capacity(0);
-            };
-
-            match (values_order_group, current_schema.value_schema.as_ref()) {
-                (
-                    ArrayValuesOrderGroup::OneOf(group_orders),
-                    ValueSchema::OneOf(OneOfSchema { schemas, .. }),
-                )
-                | (
-                    ArrayValuesOrderGroup::AnyOf(group_orders),
-                    ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
-                ) => {
-                    let mut sorted_values_with_comma = Vec::new();
-                    let mut schemas = schemas.write().await;
-
-                    for (group_order, schema) in group_orders.iter().zip(schemas.iter_mut()) {
-                        let mut group_values_with_comma = Vec::new();
-                        let Ok(Some(current_schema)) = schema
-                            .resolve(
-                                current_schema.schema_uri.clone(),
-                                current_schema.definitions.clone(),
-                                schema_context.store,
-                            )
-                            .await
-                        else {
-                            continue;
-                        };
-
-                        let mut i = 0;
-                        while i < values_with_comma.len() {
-                            let (value, _) = &values_with_comma[i];
-                            // check if the value is compatible with the schema
-                            if let Ok(document_tree_value) = value
-                                .clone()
-                                .try_into_document_tree(schema_context.toml_version)
-                            {
-                                if document_tree_value
-                                    .validate(&[], Some(&current_schema), schema_context)
-                                    .await
-                                    .is_ok()
-                                {
-                                    group_values_with_comma.push(values_with_comma.remove(i));
-                                } else {
-                                    i += 1;
-                                }
-                            } else {
-                                i += 1;
-                            }
-                        }
-
-                        // Sort group values
-                        if !group_values_with_comma.is_empty() {
-                            match SortableValues::try_new(
-                                group_values_with_comma.clone(),
-                                get_array_values_order_by(&current_schema).as_ref(),
-                                schema_context.toml_version,
-                            ) {
-                                Ok(sortable_values) => {
-                                    sorted_values_with_comma.append(&mut sort_array_values(
-                                        sortable_values,
-                                        group_order,
-                                    ));
-                                }
-                                Err(warning) => {
-                                    tracing::warn!("{warning}");
-                                    sorted_values_with_comma.append(&mut group_values_with_comma);
-                                }
-                            }
-                        }
-                    }
-
-                    // Append remaining values
-                    sorted_values_with_comma.append(&mut values_with_comma);
-                    sorted_values_with_comma
-                }
-                _ => return Vec::with_capacity(0),
-            }
+            array_values_order_groups(
+                values_with_comma,
+                array_schema,
+                current_schema,
+                schema_context,
+                values_order_group,
+            )
+            .await
         }
     };
 
@@ -219,6 +125,145 @@ pub async fn array_values_order<'a>(
     changes.insert(0, crate::Change::ReplaceRange { old, new });
 
     changes
+}
+
+async fn array_values_order_all<'a>(
+    values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+    array_schema: &'a ArraySchema,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a SchemaContext<'a>,
+    values_order: &ArrayValuesOrder,
+) -> Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)> {
+    let array_values_order_by = if let Some(item_schema) = &array_schema.items {
+        if let Some(current_schema) = item_schema
+            .write()
+            .await
+            .resolve(
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
+            .ok()
+            .flatten()
+        {
+            get_array_values_order_by(&current_schema)
+        } else {
+            return Vec::with_capacity(0);
+        }
+    } else {
+        None
+    };
+    let sortable_values = match SortableValues::try_new(
+        values_with_comma,
+        array_values_order_by.as_ref(),
+        schema_context.toml_version,
+    ) {
+        Ok(sortable_values) => sortable_values,
+        Err(reason) => {
+            tracing::debug!("{reason}");
+            return Vec::with_capacity(0);
+        }
+    };
+    sort_array_values(sortable_values, values_order)
+}
+
+async fn array_values_order_groups<'a>(
+    mut values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+    array_schema: &'a ArraySchema,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a SchemaContext<'a>,
+    values_order_group: &ArrayValuesOrderGroup,
+) -> Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)> {
+    let Some(item_schema) = &array_schema.items else {
+        return Vec::with_capacity(0);
+    };
+    let mut item_schema = item_schema.write().await;
+    let Some(current_schema) = item_schema
+        .resolve(
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        .ok()
+        .flatten()
+    else {
+        return Vec::with_capacity(0);
+    };
+
+    match (values_order_group, current_schema.value_schema.as_ref()) {
+        (
+            ArrayValuesOrderGroup::OneOf(group_orders),
+            ValueSchema::OneOf(OneOfSchema { schemas, .. }),
+        )
+        | (
+            ArrayValuesOrderGroup::AnyOf(group_orders),
+            ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
+        ) => {
+            let mut sorted_values_with_comma = Vec::new();
+            let mut schemas = schemas.write().await;
+
+            for (group_order, schema) in group_orders.iter().zip(schemas.iter_mut()) {
+                let mut group_values_with_comma = Vec::new();
+                let Ok(Some(current_schema)) = schema
+                    .resolve(
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                else {
+                    continue;
+                };
+
+                let mut i = 0;
+                while i < values_with_comma.len() {
+                    let (value, _) = &values_with_comma[i];
+                    // check if the value is compatible with the schema
+                    if let Ok(document_tree_value) = value
+                        .clone()
+                        .try_into_document_tree(schema_context.toml_version)
+                    {
+                        if document_tree_value
+                            .validate(&[], Some(&current_schema), schema_context)
+                            .await
+                            .is_ok()
+                        {
+                            group_values_with_comma.push(values_with_comma.remove(i));
+                        } else {
+                            i += 1;
+                        }
+                    } else {
+                        i += 1;
+                    }
+                }
+
+                // Sort group values
+                if !group_values_with_comma.is_empty() {
+                    match SortableValues::try_new(
+                        group_values_with_comma.clone(),
+                        get_array_values_order_by(&current_schema).as_ref(),
+                        schema_context.toml_version,
+                    ) {
+                        Ok(sortable_values) => {
+                            sorted_values_with_comma
+                                .append(&mut sort_array_values(sortable_values, group_order));
+                        }
+                        Err(warning) => {
+                            tracing::warn!("{warning}");
+                            sorted_values_with_comma.append(&mut group_values_with_comma);
+                        }
+                    }
+                }
+            }
+
+            // Append remaining values
+            sorted_values_with_comma.append(&mut values_with_comma);
+            sorted_values_with_comma
+        }
+        _ => Vec::with_capacity(0),
+    }
 }
 
 fn sort_array_values(
@@ -379,511 +424,41 @@ impl SortableValues {
         }
 
         let sortable_values = match sortable_type {
-            SortableType::Boolean => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::Boolean(_) => match value.syntax().to_string().as_ref() {
-                            "true" => sortable_values.push((true, value, comma)),
-                            "false" => sortable_values.push((false, value, comma)),
-                            _ => return Err(SortFailReason::Incomplete),
-                        },
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::Boolean(boolean) => {
-                                                    boolean.try_into_document_tree(toml_version)
-                                                }
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::Boolean(boolean)) =
-                                                document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                boolean.value(),
-                                                value.clone(),
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::DifferentTypes),
-                    }
-                }
-                SortableValues::Boolean(sortable_values)
-            }
-            SortableType::Integer => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::IntegerBin(integer_bin) => {
-                            if let Ok(tombi_document_tree::Value::Integer(integer)) =
-                                integer_bin.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((integer.value(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::IntegerOct(integer_oct) => {
-                            if let Ok(tombi_document_tree::Value::Integer(integer)) =
-                                integer_oct.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((integer.value(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::IntegerDec(integer_dec) => {
-                            if let Ok(tombi_document_tree::Value::Integer(integer)) =
-                                integer_dec.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((integer.value(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::IntegerHex(integer_hex) => {
-                            if let Ok(tombi_document_tree::Value::Integer(integer)) =
-                                integer_hex.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((integer.value(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::IntegerBin(integer_bin) => {
-                                                    integer_bin.try_into_document_tree(toml_version)
-                                                }
-                                                tombi_ast::Value::IntegerOct(integer_oct) => {
-                                                    integer_oct.try_into_document_tree(toml_version)
-                                                }
-                                                tombi_ast::Value::IntegerDec(integer_dec) => {
-                                                    integer_dec.try_into_document_tree(toml_version)
-                                                }
-                                                tombi_ast::Value::IntegerHex(integer_hex) => {
-                                                    integer_hex.try_into_document_tree(toml_version)
-                                                }
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::Integer(integer)) =
-                                                document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                integer.value(),
-                                                value.clone(),
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::DifferentTypes),
-                    }
-                }
-                SortableValues::Integer(sortable_values)
-            }
-            SortableType::OffsetDateTime => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::OffsetDateTime(_) => {
-                            sortable_values.push((value.syntax().to_string(), value, comma))
-                        }
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::OffsetDateTime(
-                                                    offset_date_time,
-                                                ) => offset_date_time
-                                                    .try_into_document_tree(toml_version),
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::OffsetDateTime(
-                                                offset_date_time,
-                                            )) = document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                offset_date_time.to_string(),
-                                                value,
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::DifferentTypes),
-                    }
-                }
-                SortableValues::OffsetDateTime(sortable_values)
-            }
-            SortableType::LocalDateTime => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::LocalDateTime(_) => {
-                            sortable_values.push((value.syntax().to_string(), value, comma))
-                        }
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::LocalDateTime(
-                                                    local_date_time,
-                                                ) => local_date_time
-                                                    .try_into_document_tree(toml_version),
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::LocalDateTime(
-                                                local_date_time,
-                                            )) = document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                local_date_time.to_string(),
-                                                value.clone(),
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::DifferentTypes),
-                    }
-                }
-                SortableValues::LocalDateTime(sortable_values)
-            }
-            SortableType::LocalDate => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::LocalDate(_) => {
-                            sortable_values.push((value.syntax().to_string(), value, comma))
-                        }
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::LocalDate(local_date) => {
-                                                    local_date.try_into_document_tree(toml_version)
-                                                }
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::LocalDate(
-                                                local_date,
-                                            )) = document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                local_date.to_string(),
-                                                value,
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::DifferentTypes),
-                    }
-                }
-                SortableValues::LocalDate(sortable_values)
-            }
-            SortableType::LocalTime => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::LocalTime(_) => {
-                            sortable_values.push((value.syntax().to_string(), value, comma))
-                        }
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::LocalTime(local_time) => {
-                                                    local_time.try_into_document_tree(toml_version)
-                                                }
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::LocalTime(
-                                                local_time,
-                                            )) = document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                local_time.to_string(),
-                                                value,
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::DifferentTypes),
-                    }
-                }
-                SortableValues::LocalTime(sortable_values)
-            }
-            SortableType::String => {
-                let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-                for (value, comma) in values_with_comma {
-                    let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-                    match value.clone() {
-                        tombi_ast::Value::BasicString(basic_string) => {
-                            if let Ok(tombi_document_tree::Value::String(string)) =
-                                basic_string.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((string.value().to_owned(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::LiteralString(literal_string) => {
-                            if let Ok(tombi_document_tree::Value::String(string)) =
-                                literal_string.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((string.value().to_owned(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::MultiLineBasicString(multi_line_basic_string) => {
-                            if let Ok(tombi_document_tree::Value::String(string)) =
-                                multi_line_basic_string.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((string.value().to_owned(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::MultiLineLiteralString(multi_line_literal_string) => {
-                            if let Ok(tombi_document_tree::Value::String(string)) =
-                                multi_line_literal_string.try_into_document_tree(toml_version)
-                            {
-                                sortable_values.push((string.value().to_owned(), value, comma));
-                            } else {
-                                return Err(SortFailReason::Incomplete);
-                            }
-                        }
-                        tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by = array_values_order_by
-                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
-
-                            let mut found = false;
-                            for (key_value, comma) in inline_table.key_values_with_comma() {
-                                let Some(keys) = key_value.keys() else {
-                                    continue;
-                                };
-                                let comma =
-                                    comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-
-                                let mut keys_iter = keys.keys().into_iter();
-                                if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                                    if key.to_raw_text(toml_version) == *array_values_order_by {
-                                        if let Some(inline_value) = key_value.value() {
-                                            let document_tree_value_result = match inline_value {
-                                                tombi_ast::Value::BasicString(string) => {
-                                                    string.try_into_document_tree(toml_version)
-                                                }
-                                                tombi_ast::Value::LiteralString(string) => {
-                                                    string.try_into_document_tree(toml_version)
-                                                }
-                                                tombi_ast::Value::MultiLineBasicString(string) => {
-                                                    string.try_into_document_tree(toml_version)
-                                                }
-                                                tombi_ast::Value::MultiLineLiteralString(
-                                                    string,
-                                                ) => string.try_into_document_tree(toml_version),
-                                                _ => return Err(SortFailReason::Incomplete),
-                                            };
-                                            let Ok(tombi_document_tree::Value::String(string)) =
-                                                document_tree_value_result
-                                            else {
-                                                return Err(SortFailReason::Incomplete);
-                                            };
-                                            sortable_values.push((
-                                                string.value().to_owned(),
-                                                value,
-                                                comma,
-                                            ));
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    return Err(SortFailReason::DottedKeysInlineTableNotSupported);
-                                }
-                            }
-
-                            if !found {
-                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
-                            }
-                        }
-                        _ => return Err(SortFailReason::UnsupportedTypes),
-                    }
-                }
-                SortableValues::String(sortable_values)
-            }
+            SortableType::Boolean => create_boolean_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
+            SortableType::Integer => create_integer_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
+            SortableType::OffsetDateTime => create_offset_date_time_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
+            SortableType::LocalDateTime => create_local_date_time_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
+            SortableType::LocalDate => create_local_date_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
+            SortableType::LocalTime => create_local_time_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
+            SortableType::String => create_string_sortable_values(
+                values_with_comma,
+                array_values_order_by,
+                toml_version,
+            )?,
         };
 
         Ok(sortable_values)
