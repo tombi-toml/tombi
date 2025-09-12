@@ -1,5 +1,8 @@
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::{
+    TableCommonLintRules, TableFormatRules, TombiValueDirectiveContent,
+};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
@@ -11,8 +14,17 @@ pub async fn root_table_keys_order<'a>(
     table_or_array_of_tables: Vec<tombi_ast::TableOrArrayOfTable>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
+    comment_directive: Option<TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>>,
 ) -> Vec<crate::Change> {
     if key_values.is_empty() && table_or_array_of_tables.is_empty() {
+        return Vec::with_capacity(0);
+    }
+
+    if comment_directive
+        .as_ref()
+        .and_then(|c| c.table_keys_order_disabled())
+        .unwrap_or(false)
+    {
         return Vec::with_capacity(0);
     }
 
@@ -26,6 +38,7 @@ pub async fn root_table_keys_order<'a>(
         key_values,
         current_schema,
         schema_context,
+        comment_directive,
     )
     .await;
 

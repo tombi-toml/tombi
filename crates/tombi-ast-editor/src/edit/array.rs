@@ -1,10 +1,14 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_comment_directive::value::{ArrayCommonLintRules, ArrayFormatRules};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::rule::{array_comma_trailing_comment, array_values_order};
+use crate::{
+    get_comment_directive_content,
+    rule::{array_comma_trailing_comment, array_values_order},
+};
 
 impl crate::Edit for tombi_ast::Array {
     fn edit<'a: 'b, 'b>(
@@ -16,6 +20,11 @@ impl crate::Edit for tombi_ast::Array {
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
+
+            let comment_directive = get_comment_directive_content::<
+                ArrayFormatRules,
+                ArrayCommonLintRules,
+            >(self.comment_directives());
 
             for (value, comma) in self.values_with_comma() {
                 changes.extend(array_comma_trailing_comment(
@@ -34,6 +43,7 @@ impl crate::Edit for tombi_ast::Array {
                             array_schema,
                             &current_schema,
                             schema_context,
+                            comment_directive,
                         )
                         .await,
                     );

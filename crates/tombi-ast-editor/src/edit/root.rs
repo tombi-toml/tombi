@@ -1,8 +1,9 @@
 use itertools::Itertools;
+use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::root_table_keys_order;
+use crate::{get_comment_directive_content, rule::root_table_keys_order};
 use tombi_ast::AstToken;
 
 impl crate::Edit for tombi_ast::Root {
@@ -17,6 +18,11 @@ impl crate::Edit for tombi_ast::Root {
             let mut changes = vec![];
             let mut key_values = vec![];
             let mut table_or_array_of_tables = vec![];
+
+            let comment_directive = get_comment_directive_content::<
+                TableFormatRules,
+                TableCommonLintRules,
+            >(self.comment_directives());
 
             // Move document schema/tombi comment directive to the top.
             if self
@@ -69,6 +75,7 @@ impl crate::Edit for tombi_ast::Root {
                     table_or_array_of_tables,
                     current_schema,
                     schema_context,
+                    comment_directive,
                 )
                 .await,
             );

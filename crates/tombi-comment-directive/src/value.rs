@@ -36,6 +36,100 @@ pub struct TombiValueDirectiveContent<FormatRules, LintRules> {
     pub lint: Option<LintOptions<LintRules>>,
 }
 
+impl<T> TombiValueDirectiveContent<TableFormatRules, T> {
+    #[inline]
+    pub fn table_keys_order(&self) -> Option<SortMethod> {
+        if let TombiValueDirectiveContent {
+            format:
+                Some(FormatOptions {
+                    rules:
+                        Some(TableFormatRules {
+                            table_keys_order: Some(SortOptions::Sort(sort_method)),
+                            ..
+                        }),
+                    ..
+                }),
+            ..
+        } = self
+        {
+            Some(*sort_method)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn table_keys_order_disabled(&self) -> Option<bool> {
+        if let TombiValueDirectiveContent {
+            format:
+                Some(FormatOptions {
+                    rules:
+                        Some(TableFormatRules {
+                            table_keys_order:
+                                Some(SortOptions::Disabled(SortDisabledOptions {
+                                    disabled: Some(disabled),
+                                })),
+                            ..
+                        }),
+                    ..
+                }),
+            ..
+        } = self
+        {
+            Some(*disabled)
+        } else {
+            None
+        }
+    }
+}
+
+impl<T> TombiValueDirectiveContent<ArrayFormatRules, T> {
+    #[inline]
+    pub fn array_values_order(&self) -> Option<SortMethod> {
+        if let TombiValueDirectiveContent {
+            format:
+                Some(FormatOptions {
+                    rules:
+                        Some(ArrayFormatRules {
+                            array_values_order: Some(SortOptions::Sort(sort_method)),
+                            ..
+                        }),
+                    ..
+                }),
+            ..
+        } = self
+        {
+            Some(*sort_method)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn array_values_order_disabled(&self) -> Option<bool> {
+        if let TombiValueDirectiveContent {
+            format:
+                Some(FormatOptions {
+                    rules:
+                        Some(ArrayFormatRules {
+                            array_values_order:
+                                Some(SortOptions::Disabled(SortDisabledOptions {
+                                    disabled: Some(disabled),
+                                })),
+                            ..
+                        }),
+                    ..
+                }),
+            ..
+        } = self
+        {
+            Some(*disabled)
+        } else {
+            None
+        }
+    }
+}
+
 impl<FormatRules, LintRules>
     From<TombiValueDirectiveContent<FormatRules, WithKeyTableLintRules<LintRules>>>
     for TombiValueDirectiveContent<FormatRules, LintRules>
@@ -89,19 +183,19 @@ where
 pub struct EmptyFormatRules {}
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(untagged)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub enum SortOptions {
     Sort(SortMethod),
     Disabled(SortDisabledOptions),
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub enum SortMethod {
     Ascending,
     Descending,
@@ -109,9 +203,9 @@ pub enum SortMethod {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct SortDisabledOptions {
     /// # Sort disabled
     ///
@@ -119,7 +213,7 @@ pub struct SortDisabledOptions {
     ///
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
-    disabled: Option<bool>,
+    pub disabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
@@ -173,9 +267,9 @@ pub struct WithCommonExtensibleLintRules<LintRules> {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct WarnRuleOptions {
     /// # Warn rule disabled
     ///
@@ -186,9 +280,9 @@ pub struct WarnRuleOptions {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct ErrorRuleOptions {
     /// # Error rule disabled
     ///

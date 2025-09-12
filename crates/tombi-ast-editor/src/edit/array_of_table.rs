@@ -2,11 +2,12 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_ast::GetHeaderSchemarAccessors;
+use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, CurrentSchema};
 
-use crate::{edit::get_schema, rule::table_keys_order};
+use crate::{edit::get_schema, get_comment_directive_content, rule::table_keys_order};
 
 impl crate::Edit for tombi_ast::ArrayOfTable {
     fn edit<'a: 'b, 'b>(
@@ -24,6 +25,11 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
             else {
                 return changes;
             };
+
+            let comment_directive = get_comment_directive_content::<
+                TableFormatRules,
+                TableCommonLintRules,
+            >(self.comment_directives());
 
             let mut value = &tombi_document_tree::Value::Table(
                 self.clone()
@@ -80,6 +86,7 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
                     self.key_values().collect_vec(),
                     current_schema.as_ref(),
                     schema_context,
+                    comment_directive,
                 )
                 .await,
             );

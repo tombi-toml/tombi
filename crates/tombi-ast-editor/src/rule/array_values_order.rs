@@ -8,6 +8,9 @@ mod string;
 
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::{
+    ArrayCommonLintRules, ArrayFormatRules, TombiValueDirectiveContent,
+};
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{
     AnyOfSchema, ArraySchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema, ValueSchema,
@@ -32,6 +35,7 @@ pub async fn array_values_order<'a>(
     array_schema: &'a ArraySchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a SchemaContext<'a>,
+    comment_directive: Option<TombiValueDirectiveContent<ArrayFormatRules, ArrayCommonLintRules>>,
 ) -> Vec<crate::Change> {
     if values_with_comma.is_empty() {
         return Vec::with_capacity(0);
@@ -40,6 +44,14 @@ pub async fn array_values_order<'a>(
     let Some(values_order) = &array_schema.values_order else {
         return Vec::with_capacity(0);
     };
+
+    if comment_directive
+        .as_ref()
+        .and_then(|c| c.array_values_order_disabled())
+        .unwrap_or(false)
+    {
+        return Vec::with_capacity(0);
+    }
 
     let mut changes = vec![];
 
