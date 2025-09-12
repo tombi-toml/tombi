@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::value::LocalDateTimeCommonRules;
+use tombi_comment_directive::value::LocalDateTimeCommonLintRules;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
@@ -29,11 +29,9 @@ impl GetTypeDefinition for tombi_document_tree::LocalDateTime {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<LocalDateTimeCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    LocalDateTimeCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,

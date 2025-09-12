@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_comment_directive::value::TableCommonRules;
+use tombi_comment_directive::value::TableCommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
@@ -148,7 +148,7 @@ async fn validate_table(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    value_rules: Option<&TableCommonRules>,
+    value_rules: Option<&TableCommonLintRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

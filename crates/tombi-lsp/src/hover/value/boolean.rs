@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::BooleanCommonRules;
+use tombi_comment_directive::value::BooleanCommonLintRules;
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, ValueSchema};
 
 use crate::{
@@ -27,7 +27,7 @@ impl GetHoverContent for tombi_document_tree::Boolean {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<BooleanCommonRules>(
+                get_key_table_value_comment_directive_content_and_schema_uri::<BooleanCommonLintRules>(
                     self.comment_directives(),
                     position,
                     accessors,

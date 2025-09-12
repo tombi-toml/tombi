@@ -1,12 +1,11 @@
-use tombi_comment_directive::value::FloatCommonRules;
+use tombi_comment_directive::value::FloatCommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
-    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::type_mismatch,
+    comment_directive::get_tombi_key_table_value_rules_and_diagnostics, validate::type_mismatch,
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -21,12 +20,10 @@ impl Validate for tombi_document_tree::Float {
         async move {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) =
-                    get_tombi_key_table_value_rules_and_diagnostics::<FloatCommonRules>(
-                        comment_directives,
-                        accessors,
-                    )
-                    .await;
+                let (value_rules, diagnostics) = get_tombi_key_table_value_rules_and_diagnostics::<
+                    FloatCommonLintRules,
+                >(comment_directives, accessors)
+                .await;
 
                 total_diagnostics.extend(diagnostics);
 
@@ -101,7 +98,7 @@ async fn validate_float(
     float_value: &tombi_document_tree::Float,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
-    value_rules: Option<&FloatCommonRules>,
+    value_rules: Option<&FloatCommonLintRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

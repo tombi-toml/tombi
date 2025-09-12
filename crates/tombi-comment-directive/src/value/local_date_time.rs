@@ -2,21 +2,22 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules};
+use crate::value::{TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules};
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyLocalDateTimeCommonRules = WithKeyTableRules<WithCommonRules<LocalDateTimeRules>>;
+pub type KeyLocalDateTimeCommonLintRules =
+    WithKeyTableLintRules<WithCommonLintRules<LocalDateTimeLintRules>>;
 
-pub type LocalDateTimeCommonRules = WithCommonRules<LocalDateTimeRules>;
+pub type LocalDateTimeCommonLintRules = WithCommonLintRules<LocalDateTimeLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyLocalDateTimeCommonRules> {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyLocalDateTimeCommonLintRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-date-time-directive.json")
             .unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<LocalDateTimeCommonRules> {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<LocalDateTimeCommonLintRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-date-time-directive.json").unwrap()
     }
@@ -25,6 +26,6 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<LocalDateTimeCommo
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct LocalDateTimeRules {
+pub struct LocalDateTimeLintRules {
     // No specific fields for local date time type
 }
