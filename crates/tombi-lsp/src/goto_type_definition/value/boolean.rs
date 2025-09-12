@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::value::BooleanCommonLintRules;
+use tombi_comment_directive::value::{BooleanCommonLintRules, BooleanFormatRules};
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
@@ -29,11 +29,10 @@ impl GetTypeDefinition for tombi_document_tree::Boolean {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<BooleanCommonLintRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    BooleanFormatRules,
+                    BooleanCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,

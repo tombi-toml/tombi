@@ -5,7 +5,7 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ArrayLintRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions,
+    ArrayLintRules, ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WarnRuleOptions,
     WithCommonExtensibleLintRules, WithCommonLintRules, WithKeyLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
@@ -28,56 +28,83 @@ pub type ParentTableCommonLintRules = WithCommonExtensibleLintRules<TableLintRul
 
 pub type RootTableCommonLintRules = WithCommonLintRules<RootTableLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, KeyTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<TableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyArrayOfTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, KeyArrayOfTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json")
             .unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayOfTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, ArrayOfTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-of-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyInlineTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, KeyInlineTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-inline-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<InlineTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, InlineTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-inline-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ParentTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, ParentTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-parent-table-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<RootTableCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<TableFormatRules, RootTableCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-root-table-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct TableFormatRules {
+    /// # Table keys order
+    ///
+    /// Control the sorting method of the table by keys.
+    ///
+    pub table_keys_order: Option<SortOptions>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct TableLintRules {
@@ -127,7 +154,7 @@ pub struct TableLintRules {
     pub table_key_required: Option<ErrorRuleOptions>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ArrayOfTableLintRules {
@@ -138,7 +165,7 @@ pub struct ArrayOfTableLintRules {
     pub table: TableLintRules,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct InlineTableLintRules(pub TableLintRules);
 
@@ -157,7 +184,7 @@ impl schemars::JsonSchema for InlineTableLintRules {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct RootTableLintRules {

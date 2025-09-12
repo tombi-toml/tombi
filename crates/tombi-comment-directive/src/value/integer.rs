@@ -3,27 +3,34 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules,
+    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules,
+    WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
+
+pub type IntegerFormatRules = EmptyFormatRules;
 
 pub type KeyIntegerCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<IntegerLintRules>>;
 
 pub type IntegerCommonLintRules = WithCommonLintRules<IntegerLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyIntegerCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<IntegerFormatRules, KeyIntegerCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<IntegerCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<IntegerFormatRules, IntegerCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-integer-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct IntegerLintRules {
