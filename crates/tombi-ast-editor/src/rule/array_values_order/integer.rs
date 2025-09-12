@@ -88,7 +88,7 @@ pub fn create_integer_sortable_values(
                                 else {
                                     return Err(SortFailReason::Incomplete);
                                 };
-                                sortable_values.push((integer.value(), value.clone(), comma));
+                                sortable_values.push((integer.value(), value, comma));
 
                                 found = true;
                                 break;

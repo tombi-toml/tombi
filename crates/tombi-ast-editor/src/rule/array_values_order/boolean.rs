@@ -48,7 +48,7 @@ pub fn create_boolean_sortable_values(
                                 else {
                                     return Err(SortFailReason::Incomplete);
                                 };
-                                sortable_values.push((boolean.value(), value.clone(), comma));
+                                sortable_values.push((boolean.value(), value, comma));
 
                                 found = true;
                                 break;

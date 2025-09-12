@@ -46,11 +46,7 @@ pub fn create_local_date_time_sortable_values(
                                 else {
                                     return Err(SortFailReason::Incomplete);
                                 };
-                                sortable_values.push((
-                                    local_date_time.to_string(),
-                                    value.clone(),
-                                    comma,
-                                ));
+                                sortable_values.push((local_date_time.to_string(), value, comma));
 
                                 found = true;
                                 break;
