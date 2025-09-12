@@ -28,22 +28,16 @@ impl crate::Edit for tombi_ast::Array {
 
             if let Some(current_schema) = current_schema {
                 if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
-                    if array_schema.values_order.is_some() {
-                        changes.extend(
-                            array_values_order(
-                                self.values_with_comma().collect_vec(),
-                                array_schema,
-                                &current_schema,
-                                schema_context,
-                            )
-                            .await,
-                        );
-                    }
-                } else {
-                    tracing::debug!("Not an array schema: {:?}", current_schema.value_schema);
-                }
+                    changes.extend(
+                        array_values_order(
+                            self.values_with_comma().collect_vec(),
+                            array_schema,
+                            &current_schema,
+                            schema_context,
+                        )
+                        .await,
+                    );
 
-                if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
                     if let Some(item_schema) = &array_schema.items {
                         if let Ok(Some(current_schema)) = item_schema
                             .write()
