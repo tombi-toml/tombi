@@ -182,7 +182,7 @@
             ]
           },
           "x-tombi-array-values-order": {
-            "oneOf": ["ascending", "ascending"]
+            "oneOf": ["version-sort", "version-sort"]
           },
           "x-taplo": {
             "links": {
