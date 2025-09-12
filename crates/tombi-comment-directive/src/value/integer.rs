@@ -2,10 +2,12 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyIntegerCommonRules = WithKeyRules<WithCommonRules<IntegerRules>>;
+pub type KeyIntegerCommonRules = WithKeyTableRules<WithCommonRules<IntegerRules>>;
 
 pub type IntegerCommonRules = WithCommonRules<IntegerRules>;
 
@@ -25,7 +27,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<IntegerCommonRules
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct IntegerRules {
-    /// # Maximum integer.
+    /// # Maximum integer
     ///
     /// Check if the integer is less than or equal to the maximum.
     ///
@@ -35,7 +37,7 @@ pub struct IntegerRules {
     ///
     pub integer_maximum: Option<ErrorRuleOptions>,
 
-    /// # Minimum integer.
+    /// # Minimum integer
     ///
     /// Check if the integer is greater than or equal to the minimum.
     ///
@@ -45,7 +47,7 @@ pub struct IntegerRules {
     ///
     pub integer_minimum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive maximum integer.
+    /// # Exclusive maximum integer
     ///
     /// Check if the integer is less than the maximum.
     ///
@@ -55,7 +57,7 @@ pub struct IntegerRules {
     ///
     pub integer_exclusive_maximum: Option<ErrorRuleOptions>,
 
-    /// # Exclusive minimum integer.
+    /// # Exclusive minimum integer
     ///
     /// Check if the integer is greater than the minimum.
     ///
@@ -65,7 +67,7 @@ pub struct IntegerRules {
     ///
     pub integer_exclusive_minimum: Option<ErrorRuleOptions>,
 
-    /// # Multiple of integer.
+    /// # Multiple of integer
     ///
     /// Check if the integer is a multiple of the value.
     ///

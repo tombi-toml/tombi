@@ -192,7 +192,7 @@ impl Cursor<'_> {
             ',' => Ok(Token::new(T!(,), self.pop_span_range())),
             '.' => Ok(Token::new(T!(.), self.pop_span_range())),
             '=' => Ok(Token::new(T!(=), self.pop_span_range())),
-            'A'..='Z' | 'a'..='z' | '_' | '\u{A0}'..='\u{10FFFF}' => {
+            'A'..='Z' | 'a'..='z' | '_' | '$' | '\u{A0}'..='\u{10FFFF}' => {
                 if self.is_keyword("inf") || self.is_keyword("nan") {
                     self.eat_n(2);
                     Ok(Token::new(SyntaxKind::FLOAT, self.pop_span_range()))
@@ -531,6 +531,9 @@ impl Cursor<'_> {
                 c,
                 // ASCII characters - a-z A-Z 0-9 - _
                 'A'..='Z' | 'a'..='z' | '0'..='9' | '_' | '-' |
+
+                // For variable placeholder
+                '$' | '{' | '}' |
 
                 // ==============================================
                 // TOML v1.1.0 supports Unicode for bare keys

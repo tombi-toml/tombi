@@ -7,8 +7,8 @@ use tombi_comment_directive::value::{
     KeyInlineTableCommonRules, KeyIntegerCommonRules, KeyLocalDateCommonRules,
     KeyLocalDateTimeCommonRules, KeyLocalTimeCommonRules, KeyOffsetDateTimeCommonRules,
     KeyStringCommonRules, KeyTableCommonRules, LocalDateCommonRules, LocalDateTimeCommonRules,
-    LocalTimeCommonRules, OffsetDateTimeCommonRules, RootTableCommonRules, StringCommonRules,
-    TableCommonRules, TombiValueDirectiveContent,
+    LocalTimeCommonRules, OffsetDateTimeCommonRules, ParentTableCommonRules, RootTableCommonRules,
+    StringCommonRules, TableCommonRules, TombiValueDirectiveContent,
 };
 use tombi_config::TomlVersion;
 
@@ -150,6 +150,24 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-parent-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiValueDirectiveContent<ParentTableCommonRules>>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path().join("json.tombi.dev/tombi-root-table-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiValueDirectiveContent<RootTableCommonRules>>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
         project_root_path().join("json.tombi.dev/tombi-key-boolean-directive.json"),
         serde_json::to_string_pretty(
             &generator
@@ -258,15 +276,6 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.tombi.dev/tombi-root-table-directive.json"),
-        serde_json::to_string_pretty(
-            &generator
-                .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<RootTableCommonRules>>(),
-        )? + "\n",
-    )?;
-
-    std::fs::write(
         project_root_path().join("json.tombi.dev/tombi-key-directive.json"),
         serde_json::to_string_pretty(
             &generator
@@ -339,7 +348,7 @@ enum LiteralValue2 {
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-#[schemars(extend("minProperties" = 1))]
+#[schemars(extend("minProperties" = 2))]
 struct TableValue {
     boolean: Option<bool>,
     #[validate(range(min = 1, max = 10))]
@@ -360,6 +369,7 @@ struct TableValue {
 #[allow(dead_code)]
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
+#[schemars(extend("minProperties" = 2))]
 struct TableValue2 {
     boolean: Option<bool>,
     #[validate(range(min = 1, max = 10))]

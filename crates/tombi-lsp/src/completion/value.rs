@@ -24,7 +24,6 @@ use local_time::type_hint_local_time;
 use offset_date_time::type_hint_offset_date_time;
 pub use one_of::find_one_of_completion_items;
 use string::type_hint_string;
-use tombi_config::TomlVersion;
 use tombi_future::Boxable;
 use tombi_schema_store::{
     Accessor, ArraySchema, BooleanSchema, CurrentSchema, FloatSchema, IntegerSchema,
@@ -196,19 +195,13 @@ impl FindCompletionContents for tombi_document_tree::Value {
                                 if range.end < position =>
                             {
                                 vec![CompletionContent::new_type_hint_key(
-                                    &last_key.to_raw_text(schema_context.toml_version),
+                                    &last_key.value,
                                     last_key.range(),
                                     None,
                                     completion_hint,
                                 )]
                             }
-                            _ => type_hint_value(
-                                last_key,
-                                position,
-                                schema_context.toml_version,
-                                None,
-                                completion_hint,
-                            ),
+                            _ => type_hint_value(last_key, position, None, completion_hint),
                         }
                     }
                 },
@@ -221,7 +214,6 @@ impl FindCompletionContents for tombi_document_tree::Value {
 pub fn type_hint_value(
     key: Option<&tombi_document_tree::Key>,
     position: tombi_text::Position,
-    toml_version: TomlVersion,
     schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
@@ -256,7 +248,7 @@ pub fn type_hint_value(
         };
         if need_key_hint {
             completion_contents.push(CompletionContent::new_type_hint_key(
-                &key.to_raw_text(toml_version),
+                &key.value,
                 key.range(),
                 schema_uri,
                 completion_hint,

@@ -38,13 +38,13 @@ pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "https://json.schemastore.org/tombi.json")))]
 pub struct Config {
-    /// # TOML version.
+    /// # TOML version
     ///
     /// TOML version to use if not specified in the schema and comment directive.
     #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
 
-    /// # Deprecated. Please use `files.include` instead.
+    /// # File patterns to include
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `files.include` instead.
@@ -52,7 +52,7 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     include: Option<Vec<String>>,
 
-    /// # Deprecated. Please use `files.exclude` instead.
+    /// # File patterns to exclude
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `files.exclude` instead.
@@ -62,26 +62,26 @@ pub struct Config {
 
     pub files: Option<FilesOptions>,
 
-    /// # Formatter options.
+    /// # Formatter options
     pub format: Option<FormatOptions>,
 
-    /// # Linter options.
+    /// # Linter options
     pub lint: Option<LintOptions>,
 
-    /// # Language Server Protocol options.
+    /// # Language Server options
     lsp: Option<LspOptions>,
 
-    /// # Deprecated. Please use `lsp` instead.
+    /// # Language Server options
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `lsp` instead.
     #[cfg_attr(feature = "jsonschema", deprecated)]
     server: Option<LspOptions>,
 
-    /// # Schema options.
+    /// # Schema options
     pub schema: Option<SchemaOptions>,
 
-    /// # Schema catalog items.
+    /// # Schema catalog items
     pub schemas: Option<Vec<Schema>>,
 }
 

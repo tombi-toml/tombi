@@ -33,7 +33,7 @@ mod tests {
                 "#,
                 type_test_schema_path(),
             ) -> Err([tombi_validator::DiagnosticKind::TableMinKeys {
-                min_keys: 1,
+                min_keys: 2,
                 actual: 0,
             }]);
         }
@@ -55,6 +55,7 @@ mod tests {
                 r#"
                 #:tombi schema.strict = false
 
+                # tombi: lint.rules.table-min-keys.disabled = true
                 [table.""]
                 "#,
                 type_test_schema_path(),
@@ -68,6 +69,7 @@ mod tests {
                 #:tombi schema.strict = false
 
                 # tombi: lint.rules.key-empty.disabled = true
+                # tombi: lint.rules.table-min-keys.disabled = true
                 [table.""]
                 "#,
                 type_test_schema_path(),
@@ -80,6 +82,7 @@ mod tests {
                 r#"
                 #:tombi schema.strict = false
 
+                # tombi: lint.rules.table-min-keys.disabled = true
                 [table.""] # tombi: lint.rules.key-empty.disabled = true
                 "#,
                 type_test_schema_path(),
@@ -92,6 +95,7 @@ mod tests {
                 r#"
                 #:tombi schema.strict = false
 
+                # tombi: lint.rules.table-min-keys.disabled = true
                 [table.""]
                 # tombi: lint.rules.key-empty.disabled = true
                 "#,

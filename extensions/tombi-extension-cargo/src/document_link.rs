@@ -498,7 +498,7 @@ fn document_link_for_dependency(
     registories: &RegistoryMap,
     toml_version: TomlVersion,
 ) -> Result<Option<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
-    let mut package_name = crate_key.value();
+    let mut package_name = crate_key.value.as_str();
     if let tombi_document_tree::Value::Table(table) = crate_value {
         if let Some(tombi_document_tree::Value::String(real_package)) = table.get("package") {
             package_name = real_package.value();
@@ -519,9 +519,9 @@ fn document_link_for_dependency(
                         if let Some(tombi_document_tree::Value::String(real_package_name)) =
                             table.get("package")
                         {
-                            real_package_name.value() == crate_key.value()
+                            real_package_name.value() == crate_key.value
                         } else {
-                            package_name.value() == crate_key.value()
+                            package_name.value() == crate_key.value
                         };
                     if package_name_check {
                         let Ok(mut target) =
@@ -594,7 +594,7 @@ fn get_registories(
                 if let tombi_document_tree::Value::Table(table) = value {
                     if let Some(tombi_document_tree::Value::String(index)) = table.get("index") {
                         registories.insert(
-                            name.value().into(),
+                            name.value.to_owned(),
                             Registory {
                                 index: index.value().into(),
                             },
@@ -612,7 +612,7 @@ fn get_crate_io_crate_link(
     crate_key: &tombi_document_tree::Key,
     crate_value: &tombi_document_tree::Value,
 ) -> Option<tombi_extension::DocumentLink> {
-    let mut crate_name = crate_key.value();
+    let mut crate_name = crate_key.value.as_str();
     if let tombi_document_tree::Value::Table(table) = crate_value {
         if let Some(tombi_document_tree::Value::String(real_package)) = table.get("package") {
             crate_name = real_package.value();

@@ -3,6 +3,7 @@ use itertools::Itertools;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_accessors;
+use tombi_extension::CommentContext;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
@@ -45,10 +46,16 @@ pub async fn completion(
     accessors: &[Accessor],
     toml_version: TomlVersion,
     completion_hint: Option<CompletionHint>,
+    comment_context: Option<&CommentContext>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     if !text_document_uri.path().ends_with("Cargo.toml") {
         return Ok(None);
     }
+
+    if comment_context.is_some() {
+        return Ok(None);
+    }
+
     let cargo_toml_path = std::path::Path::new(text_document_uri.path());
 
     if let Some(Accessor::Key(first)) = accessors.first() {
@@ -268,6 +275,7 @@ async fn complete_crate_version(
                     ),
                 },
                 preselect: None,
+                in_comment: false,
             })
             .collect();
         Ok(Some(items))
@@ -412,6 +420,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                     }]),
                 }),
                 preselect: None,
+                in_comment: false,
             })
             .collect();
         Ok(Some(items))
@@ -487,7 +496,7 @@ async fn fetch_local_crate_features(
         let mut features = AHashMap::new();
 
         for (feature_name, feature_deps) in features_table.key_values() {
-            let feature_name = feature_name.value().to_string();
+            let feature_name = feature_name.value.clone();
             let deps = match feature_deps {
                 tombi_document_tree::Value::Array(arr) => arr
                     .values()

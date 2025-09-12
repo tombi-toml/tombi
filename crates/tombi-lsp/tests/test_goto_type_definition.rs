@@ -383,6 +383,26 @@ mod goto_type_definition_tests {
                 type_test_schema_path(),
             ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
         );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn key_eq_value_with_comment_directive(
+                r#"
+                key = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn key1_key2_eq_value_with_comment_directive(
+                r#"
+                key1.key2 = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
+                "#,
+                type_test_schema_path(),
+            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
+        );
     }
 
     #[macro_export]

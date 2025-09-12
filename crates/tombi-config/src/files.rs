@@ -1,4 +1,4 @@
-/// # Files options.
+/// # Files options
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -6,7 +6,7 @@
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilesOptions {
-    /// # File patterns to include.
+    /// # File patterns to include
     ///
     /// The file match pattern to include in formatting and linting.
     /// Supports glob pattern.
@@ -14,7 +14,7 @@ pub struct FilesOptions {
     #[cfg_attr(feature = "serde", serde(default = "default_include_patterns"))]
     pub include: Option<Vec<String>>,
 
-    /// # File patterns to exclude.
+    /// # File patterns to exclude
     ///
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.

@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "toml-version": {
-      "title": "TOML version.",
+      "title": "TOML version",
       "description": "TOML version to use if not specified in the schema and comment directive.",
       "anyOf": [
         {
@@ -19,7 +19,7 @@
       "default": "v1.0.0"
     },
     "include": {
-      "title": "Deprecated. Please use `files.include` instead.",
+      "title": "File patterns to include",
       "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
       "type": [
         "array",
@@ -32,7 +32,7 @@
       "minItems": 1
     },
     "exclude": {
-      "title": "Deprecated. Please use `files.exclude` instead.",
+      "title": "File patterns to exclude",
       "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
       "type": [
         "array",
@@ -55,7 +55,7 @@
       ]
     },
     "format": {
-      "title": "Formatter options.",
+      "title": "Formatter options",
       "anyOf": [
         {
           "$ref": "#/definitions/FormatOptions"
@@ -66,7 +66,7 @@
       ]
     },
     "lint": {
-      "title": "Linter options.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -77,7 +77,7 @@
       ]
     },
     "lsp": {
-      "title": "Language Server Protocol options.",
+      "title": "Language Server options",
       "anyOf": [
         {
           "$ref": "#/definitions/LspOptions"
@@ -88,7 +88,7 @@
       ]
     },
     "server": {
-      "title": "Deprecated. Please use `lsp` instead.",
+      "title": "Language Server options",
       "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
       "anyOf": [
         {
@@ -101,7 +101,7 @@
       "deprecated": true
     },
     "schema": {
-      "title": "Schema options.",
+      "title": "Schema options",
       "anyOf": [
         {
           "$ref": "#/definitions/SchemaOptions"
@@ -112,7 +112,7 @@
       ]
     },
     "schemas": {
-      "title": "Schema catalog items.",
+      "title": "Schema catalog items",
       "type": [
         "array",
         "null"
@@ -127,7 +127,7 @@
   "x-tombi-table-keys-order": "schema",
   "definitions": {
     "TomlVersion": {
-      "title": "TOML version.",
+      "title": "TOML version",
       "type": "string",
       "enum": [
         "v1.0.0",
@@ -135,11 +135,11 @@
       ]
     },
     "FilesOptions": {
-      "title": "Files options.",
+      "title": "Files options",
       "type": "object",
       "properties": {
         "include": {
-          "title": "File patterns to include.",
+          "title": "File patterns to include",
           "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.",
           "type": [
             "array",
@@ -154,7 +154,7 @@
           ]
         },
         "exclude": {
-          "title": "File patterns to exclude.",
+          "title": "File patterns to exclude",
           "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.",
           "type": [
             "array",
@@ -170,7 +170,7 @@
       "x-tombi-table-keys-order": "schema"
     },
     "FormatOptions": {
-      "title": "Formatter options.",
+      "title": "Formatter options",
       "description": "To avoid needless discussion of formatting rules,\nwe do not currently have a configuration item for formatting.",
       "type": "object",
       "additionalProperties": false,
@@ -180,7 +180,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/LintRules"
@@ -198,7 +198,7 @@
       "type": "object",
       "properties": {
         "key-empty": {
-          "title": "Key empty.",
+          "title": "Key empty",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",
           "anyOf": [
             {
@@ -210,7 +210,7 @@
           ]
         },
         "dotted-keys-out-of-order": {
-          "title": "Dotted keys out of order.",
+          "title": "Dotted keys out of order",
           "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
           "anyOf": [
             {
@@ -222,7 +222,7 @@
           ]
         },
         "tables-out-of-order": {
-          "title": "Tables out of order.",
+          "title": "Tables out of order",
           "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
           "anyOf": [
             {
@@ -246,29 +246,18 @@
       ]
     },
     "SeverityLevel": {
-      "oneOf": [
-        {
-          "title": "Disable the Rule.",
-          "type": "string",
-          "const": "off"
-        },
-        {
-          "title": "Display as Warning.",
-          "type": "string",
-          "const": "warn"
-        },
-        {
-          "title": "Display as Error.",
-          "type": "string",
-          "const": "error"
-        }
+      "type": "string",
+      "enum": [
+        "off",
+        "warn",
+        "error"
       ]
     },
     "LspOptions": {
       "type": "object",
       "properties": {
         "code-action": {
-          "title": "Code Action Feature options.",
+          "title": "Code Action Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspCodeAction"
@@ -279,7 +268,7 @@
           ]
         },
         "completion": {
-          "title": "Completion Feature options.",
+          "title": "Completion Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspCompletion"
@@ -290,7 +279,7 @@
           ]
         },
         "diagnostic": {
-          "title": "Diagnostic Feature options.",
+          "title": "Diagnostic Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspDiagnostic"
@@ -301,7 +290,7 @@
           ]
         },
         "diagnostics": {
-          "title": "Deprecated. Please use `lsp.diagnostic` instead.",
+          "title": "Diagnostic Feature options",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp.diagnostic` instead.",
           "anyOf": [
             {
@@ -314,7 +303,7 @@
           "deprecated": true
         },
         "document-link": {
-          "title": "Document Link Feature options.",
+          "title": "Document Link Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspDocumentLink"
@@ -325,7 +314,7 @@
           ]
         },
         "formatting": {
-          "title": "Formatting Feature options.",
+          "title": "Formatting Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspFormatting"
@@ -336,7 +325,7 @@
           ]
         },
         "goto-declaration": {
-          "title": "Goto Declaration Feature options.",
+          "title": "Goto Declaration Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -347,7 +336,7 @@
           ]
         },
         "goto-definition": {
-          "title": "Goto Definition Feature options.",
+          "title": "Goto Definition Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -358,7 +347,7 @@
           ]
         },
         "goto-type-definition": {
-          "title": "Goto Type Definition Feature options.",
+          "title": "Goto Type Definition Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -369,7 +358,7 @@
           ]
         },
         "hover": {
-          "title": "Hover Feature options.",
+          "title": "Hover Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspHover"
@@ -380,7 +369,7 @@
           ]
         },
         "workspace-diagnostic": {
-          "title": "Workspace Diagnostics Feature options.",
+          "title": "Workspace Diagnostics Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspWorkspaceDiagnostic"
@@ -398,7 +387,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable code action feature.",
+          "title": "Enable code action feature",
           "description": "Whether to enable code action.",
           "anyOf": [
             {
@@ -420,7 +409,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable completion feature.",
+          "title": "Enable completion feature",
           "description": "Whether to enable completion.",
           "anyOf": [
             {
@@ -438,7 +427,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable diagnostic feature.",
+          "title": "Enable diagnostic feature",
           "description": "Whether to enable diagnostic.",
           "anyOf": [
             {
@@ -456,7 +445,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable document link feature.",
+          "title": "Enable document link feature",
           "description": "Whether to enable document link.",
           "anyOf": [
             {
@@ -474,7 +463,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable formatting feature.",
+          "title": "Enable formatting feature",
           "description": "Whether to enable formatting.",
           "anyOf": [
             {
@@ -492,7 +481,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable goto definition feature.",
+          "title": "Enable goto definition feature",
           "description": "Whether to enable goto definition.",
           "anyOf": [
             {
@@ -510,7 +499,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable hover feature.",
+          "title": "Enable hover feature",
           "description": "Whether to enable hover.",
           "anyOf": [
             {
@@ -528,7 +517,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable workspace diagnostic feature.",
+          "title": "Enable workspace diagnostic feature",
           "description": "Whether to enable workspace diagnostic.",
           "anyOf": [
             {
@@ -546,7 +535,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable the schema validation.",
+          "title": "Enable the schema validation",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
@@ -557,7 +546,7 @@
           ]
         },
         "strict": {
-          "title": "Enable strict schema validation.",
+          "title": "Enable strict schema validation",
           "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
           "anyOf": [
             {
@@ -569,7 +558,7 @@
           ]
         },
         "catalog": {
-          "title": "Schema catalog options.",
+          "title": "Schema catalog options",
           "anyOf": [
             {
               "$ref": "#/definitions/SchemaCatalog"
@@ -597,7 +586,7 @@
       "type": "object",
       "properties": {
         "paths": {
-          "title": "The schema catalog path/url array.",
+          "title": "The schema catalog path/url array",
           "description": "The catalog is evaluated after the schemas specified by [[schemas]].\\\nSchemas are loaded in order from the beginning of the catalog list.",
           "type": [
             "array",
@@ -622,7 +611,7 @@
       "type": "object",
       "properties": {
         "path": {
-          "title": "The schema catalog path or url.",
+          "title": "The schema catalog path or url",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `schema.catalog.paths` instead.",
           "anyOf": [
             {
@@ -665,11 +654,11 @@
       ]
     },
     "RootSchema": {
-      "title": "The schema for the root table.",
+      "title": "The schema for the root table",
       "type": "object",
       "properties": {
         "toml-version": {
-          "title": "The TOML version that the schema is available.",
+          "title": "The TOML version that the schema is available",
           "anyOf": [
             {
               "$ref": "#/definitions/TomlVersion"
@@ -680,11 +669,11 @@
           ]
         },
         "path": {
-          "title": "The schema path.",
+          "title": "The schema path",
           "type": "string"
         },
         "include": {
-          "title": "The file match pattern of the schema.",
+          "title": "The file match pattern of the schema",
           "description": "The file match pattern to include the target to apply the schema.\nSupports glob pattern.",
           "type": "array",
           "items": {
@@ -701,11 +690,11 @@
       "x-tombi-table-keys-order": "schema"
     },
     "SubSchema": {
-      "title": "The schema for the sub value.",
+      "title": "The schema for the sub value",
       "type": "object",
       "properties": {
         "root": {
-          "title": "The accessors to apply the sub schema.",
+          "title": "The accessors to apply the sub schema",
           "type": "string",
           "examples": [
             "tools.tombi",
@@ -714,11 +703,11 @@
           "minLength": 1
         },
         "path": {
-          "title": "The sub schema path.",
+          "title": "The sub schema path",
           "type": "string"
         },
         "include": {
-          "title": "The file match pattern of the sub schema.",
+          "title": "The file match pattern of the sub schema",
           "description": "The file match pattern to include the target to apply the sub schema.\nSupports glob pattern.",
           "type": "array",
           "items": {
@@ -736,16 +725,16 @@
       "x-tombi-table-keys-order": "schema"
     },
     "OldSubSchema": {
-      "title": "The schema for the old sub value.",
+      "title": "The schema for the old sub value",
       "description": "This is for backward compatibility.",
       "type": "object",
       "properties": {
         "path": {
-          "title": "The sub schema path.",
+          "title": "The sub schema path",
           "type": "string"
         },
         "include": {
-          "title": "The file match pattern of the sub schema.",
+          "title": "The file match pattern of the sub schema",
           "description": "The file match pattern to include the target to apply the sub schema.\nSupports glob pattern.",
           "type": "array",
           "items": {
@@ -754,7 +743,7 @@
           "minItems": 1
         },
         "root-keys": {
-          "title": "The keys to apply the sub schema.",
+          "title": "The keys to apply the sub schema",
           "description": "**🚧 Deprecated 🚧**\\\nPlease use `schemas[*].root` instead.",
           "type": "string",
           "deprecated": true,

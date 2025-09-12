@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -86,7 +86,7 @@
           ]
         },
         "string-max-length": {
-          "title": "Max length.",
+          "title": "Integer Max length",
           "description": "Check if the string is longer than the max length.\n\n```rust\nlength(string) <= max\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "string-min-length": {
-          "title": "Min length.",
+          "title": "Min length",
           "description": "Check if the string is shorter than the min length.\n\n```rust\nlength(string) >= min\n```",
           "anyOf": [
             {
@@ -110,7 +110,7 @@
           ]
         },
         "string-format": {
-          "title": "Format.",
+          "title": "String Format",
           "description": "Check if the string matches the format.\n\n```rust\nmatches(string, format)\n```",
           "anyOf": [
             {
@@ -122,7 +122,7 @@
           ]
         },
         "string-pattern": {
-          "title": "Pattern.",
+          "title": "String Pattern",
           "description": "Check if the string matches the pattern.\n\n```rust\nmatches(string, pattern)\n```",
           "anyOf": [
             {
@@ -141,7 +141,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
+          "title": "Error rule disabled",
           "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
@@ -159,7 +159,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
+          "title": "Warn rule disabled",
           "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",

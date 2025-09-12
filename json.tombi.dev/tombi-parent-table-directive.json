@@ -24,7 +24,7 @@
           "title": "Lint rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithCommonRules"
+              "$ref": "#/definitions/WithCommonExtensibleRules"
             },
             {
               "type": "null"
@@ -34,7 +34,7 @@
       },
       "additionalProperties": false
     },
-    "WithCommonRules": {
+    "WithCommonExtensibleRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {
@@ -85,9 +85,21 @@
             }
           ]
         },
-        "array-max-values": {
-          "title": "Max values",
-          "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
+        "dotted-keys-out-of-order": {
+          "title": "Dotted keys out of order",
+          "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WarnRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "table-max-keys": {
+          "title": "Max keys",
+          "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -97,9 +109,9 @@
             }
           ]
         },
-        "array-min-values": {
-          "title": "Min values",
-          "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
+        "table-min-keys": {
+          "title": "Min keys",
+          "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -109,9 +121,9 @@
             }
           ]
         },
-        "array-unique-values": {
-          "title": "Unique values",
-          "description": "Check if the array has duplicate values.\n\n```rust\nlength(array) == length(unique(array))\n```",
+        "table-key-required": {
+          "title": "Key required",
+          "description": "Check if the key is required in this Table.",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -122,7 +134,6 @@
           ]
         }
       },
-      "additionalProperties": false,
       "x-tombi-table-keys-order": "ascending"
     },
     "ErrorRuleOptions": {

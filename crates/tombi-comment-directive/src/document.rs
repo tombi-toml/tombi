@@ -11,19 +11,19 @@ use crate::TombiCommentDirectiveImpl;
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/tombi-document-directive.json")))]
 pub struct TombiDocumentDirectiveContent {
-    /// # TOML version.
+    /// # TOML version
     ///
     /// This directive specifies the TOML version of this document, with the highest priority.
     #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
 
-    /// # Formatter options.
+    /// # Formatter options
     pub format: Option<FormatOptions>,
 
-    /// # Linter options.
+    /// # Linter options
     pub lint: Option<LintOptions>,
 
-    /// # Schema options.
+    /// # Schema options
     pub schema: Option<SchemaOptions>,
 }
 
@@ -38,14 +38,14 @@ impl TombiCommentDirectiveImpl for TombiDocumentDirectiveContent {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct FormatOptions {
-    /// # Format disabled.
+    /// # Format disabled
     ///
     /// If `true`, formatting is disabled for this document.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 
-    /// # Deprecated. Please use `format.disabled` instead.
+    /// # Format disabled
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `format.disabled` instead.
@@ -66,14 +66,14 @@ impl FormatOptions {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct LintOptions {
-    /// # Lint disabled.
+    /// # Lint disabled
     ///
     /// If `true`, linting is disabled for this document.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
 
-    /// # Deprecated. Please use `lint.disabled` instead.
+    /// # Lint disabled
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `lint.disabled` instead.
@@ -94,7 +94,7 @@ impl LintOptions {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct SchemaOptions {
-    /// # Enable strict schema validation.
+    /// # Enable strict schema validation
     ///
     /// If `additionalProperties` is not specified in the JSON Schema,
     /// the strict mode treats it as `additionalProperties: false`,

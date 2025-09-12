@@ -11,23 +11,23 @@ use tombi_config::{
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy)]
 pub struct FormatDefinitions {
-    /// # The style of indentation.
+    /// # The style of indentation
     ///
     /// Whether to use spaces or tabs for indentation.
     #[cfg_attr(feature = "jsonschema", schemars(default = "IndentStyle::default"))]
     pub indent_style: Option<IndentStyle>,
 
-    /// # The number of spaces per indentation level.
+    /// # The number of spaces per indentation level
     #[cfg_attr(feature = "jsonschema", schemars(default = "IndentWidth::default"))]
     pub indent_width: Option<IndentWidth>,
 
-    /// # The maximum line width.
+    /// # The maximum line width
     ///
     /// The formatter will try to keep lines within this width.
     #[cfg_attr(feature = "jsonschema", schemars(default = "LineWidth::default"))]
     pub line_width: Option<LineWidth>,
 
-    /// # The type of line ending.
+    /// # The type of line ending
     ///
     /// In TOML, the line ending must be either `LF` or `CRLF`.
     ///
@@ -36,7 +36,7 @@ pub struct FormatDefinitions {
     #[cfg_attr(feature = "jsonschema", schemars(default = "LineEnding::default"))]
     pub line_ending: Option<LineEnding>,
 
-    /// # The delimiter between date and time.
+    /// # The delimiter between date and time
     ///
     /// In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.
     ///
@@ -49,7 +49,7 @@ pub struct FormatDefinitions {
     )]
     pub date_time_delimiter: Option<DateTimeDelimiter>,
 
-    /// # The preferred quote character for strings.
+    /// # The preferred quote character for strings
     pub quote_style: Option<QuoteStyle>,
 }
 

@@ -48,6 +48,13 @@ impl CompletionContentPriority {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommentContext {
+    DocumentDirective(tombi_ast::Comment),
+    ValueDirective(tombi_ast::Comment),
+    Normal(tombi_ast::Comment),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompletionContent {
     pub label: String,
     pub kind: CompletionKind,
@@ -60,6 +67,7 @@ pub struct CompletionContent {
     pub deprecated: Option<bool>,
     pub edit: Option<CompletionEdit>,
     pub preselect: Option<bool>,
+    pub in_comment: bool,
 }
 
 impl CompletionContent {
@@ -84,6 +92,7 @@ impl CompletionContent {
             edit,
             deprecated,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -108,6 +117,7 @@ impl CompletionContent {
             edit,
             deprecated,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -132,6 +142,7 @@ impl CompletionContent {
             edit,
             deprecated,
             preselect: Some(true),
+            in_comment: false,
         }
     }
 
@@ -154,6 +165,7 @@ impl CompletionContent {
             edit,
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -178,6 +190,7 @@ impl CompletionContent {
             edit,
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -200,6 +213,7 @@ impl CompletionContent {
             edit,
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -220,6 +234,7 @@ impl CompletionContent {
             edit: CompletionEdit::new_inline_table(position, completion_hint),
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -243,6 +258,7 @@ impl CompletionContent {
             edit,
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -267,6 +283,7 @@ impl CompletionContent {
             schema_uri: schema_uri.cloned(),
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -308,6 +325,7 @@ impl CompletionContent {
             schema_uri: schema_uri.cloned(),
             deprecated,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -341,6 +359,7 @@ impl CompletionContent {
             schema_uri: schema_uri.cloned(),
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -366,6 +385,7 @@ impl CompletionContent {
             schema_uri: schema_uri.cloned(),
             deprecated,
             preselect: None,
+            in_comment: false,
         }
     }
 
@@ -388,6 +408,7 @@ impl CompletionContent {
                 schema_uri: schema_uri.cloned(),
                 deprecated: None,
                 preselect: None,
+                in_comment: false,
             })
             .collect()
     }
@@ -420,6 +441,7 @@ impl CompletionContent {
             schema_uri: None,
             deprecated: None,
             preselect: None,
+            in_comment: false,
         }
     }
 

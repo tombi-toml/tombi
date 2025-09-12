@@ -2,10 +2,12 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyStringCommonRules = WithKeyRules<WithCommonRules<StringRules>>;
+pub type KeyStringCommonRules = WithKeyTableRules<WithCommonRules<StringRules>>;
 
 pub type StringCommonRules = WithCommonRules<StringRules>;
 
@@ -25,7 +27,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<StringCommonRules>
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct StringRules {
-    /// # Max length.
+    /// # Integer Max length
     ///
     /// Check if the string is longer than the max length.
     ///
@@ -35,7 +37,7 @@ pub struct StringRules {
     ///
     pub string_max_length: Option<ErrorRuleOptions>,
 
-    /// # Min length.
+    /// # Min length
     ///
     /// Check if the string is shorter than the min length.
     ///
@@ -45,7 +47,7 @@ pub struct StringRules {
     ///
     pub string_min_length: Option<ErrorRuleOptions>,
 
-    /// # Format.
+    /// # String Format
     ///
     /// Check if the string matches the format.
     ///
@@ -55,7 +57,7 @@ pub struct StringRules {
     ///
     pub string_format: Option<ErrorRuleOptions>,
 
-    /// # Pattern.
+    /// # String Pattern
     ///
     /// Check if the string matches the pattern.
     ///

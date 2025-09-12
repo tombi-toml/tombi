@@ -224,7 +224,7 @@ fn document_link_for_member_pyproject_toml(
     {
         if is_workspace.value() {
             if let Some((member_project_toml_path, _)) = find_member_project_toml(
-                package_name_key.value(),
+                &package_name_key.value,
                 &workspace_pyproject_toml_document_tree,
                 &workspace_pyproject_toml_path,
                 toml_version,

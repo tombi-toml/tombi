@@ -9,9 +9,9 @@ pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
 use tombi_ast::{algo::ancestors_at_position, AstNode, AstToken};
 use tombi_config::TomlVersion;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::{
-    CommaHint, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
+    CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
 };
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
@@ -21,42 +21,60 @@ use tombi_schema_store::{
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
-pub fn extract_keys_and_hint(
+pub fn get_comment_context(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
-    toml_version: TomlVersion,
-) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
-    let mut keys: Vec<tombi_document_tree::Key> = vec![];
-    let mut completion_hint = None;
-    let mut is_tombi_value_comment_directive = false;
+) -> Option<CommentContext> {
+    if let Some(comments) = root.get_document_header_comments() {
+        for comment in comments {
+            if comment.syntax().range().contains(position)
+                && comment.syntax().text()[1..].trim_start().starts_with(":")
+            {
+                return Some(CommentContext::DocumentDirective(comment));
+            }
+        }
+    }
 
     match root.syntax().token_at_position(position) {
         TokenAtOffset::Single(token) if token.kind() == SyntaxKind::COMMENT => {
             if let Some(comment) = tombi_ast::Comment::cast(token) {
-                if comment.get_tombi_value_directive().is_none() {
-                    return None;
-                }
-                is_tombi_value_comment_directive = true;
+                return _get_comment_context(comment);
             }
         }
         TokenAtOffset::Between(token1, token2)
             if token1.kind() == SyntaxKind::COMMENT || token2.kind() == SyntaxKind::COMMENT =>
         {
             if let Some(comment) = tombi_ast::Comment::cast(token1) {
-                if comment.get_tombi_value_directive().is_none() {
-                    return None;
-                }
-                is_tombi_value_comment_directive = true;
+                return _get_comment_context(comment);
             }
             if let Some(comment) = tombi_ast::Comment::cast(token2) {
-                if comment.get_tombi_value_directive().is_none() {
-                    return None;
-                }
-                is_tombi_value_comment_directive = true;
+                return _get_comment_context(comment);
             }
         }
         _ => {}
     }
+
+    None
+}
+
+fn _get_comment_context(comment: tombi_ast::Comment) -> Option<CommentContext> {
+    if comment.get_tombi_value_directive().is_some() {
+        return Some(CommentContext::ValueDirective(comment));
+    } else {
+        return Some(CommentContext::Normal(comment));
+    }
+}
+
+pub fn extract_keys_and_hint(
+    root: &tombi_ast::Root,
+    position: tombi_text::Position,
+    toml_version: TomlVersion,
+    comment_context: Option<&CommentContext>,
+) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
+    let mut keys: Vec<tombi_document_tree::Key> = vec![];
+    let mut completion_hint = None;
+    let is_tombi_value_comment_directive =
+        matches!(comment_context, Some(CommentContext::ValueDirective(_)));
 
     for (index, node) in ancestors_at_position(root.syntax(), position).enumerate() {
         let ast_keys = if tombi_ast::Keys::cast(node.to_owned()).is_some() {
@@ -158,9 +176,9 @@ pub fn extract_keys_and_hint(
                 .keys()
                 .take_while(|key| key.token().unwrap().range().start <= position)
             {
-                match key.try_into_document_tree(toml_version) {
-                    Ok(Some(key)) => new_keys.push(key),
-                    _ => return None,
+                let document_tree_key = key.into_document_tree_and_errors(toml_version).tree;
+                if let Some(document_tree_key) = document_tree_key {
+                    new_keys.push(document_tree_key);
                 }
             }
             new_keys

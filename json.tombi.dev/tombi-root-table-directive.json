@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "lint": {
-      "title": "Linter directive.",
+      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -21,7 +21,7 @@
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules.",
+          "title": "Lint rules",
           "anyOf": [
             {
               "$ref": "#/definitions/WithCommonRules"
@@ -86,7 +86,7 @@
           ]
         },
         "tables-out-of-order": {
-          "title": "Tables out of order.",
+          "title": "Tables out of order",
           "description": "Check if tables are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\n[fruit.apple]\n[animal]\n[fruit.orange]\n\n# RECOMMENDED\n[fruit.apple]\n[fruit.orange]\n[animal]\n```",
           "anyOf": [
             {
@@ -98,7 +98,7 @@
           ]
         },
         "dotted-keys-out-of-order": {
-          "title": "Dotted keys out of order.",
+          "title": "Dotted keys out of order",
           "description": "Check if dotted keys are defined out of order.\n\n```toml\n# VALID BUT DISCOURAGED\napple.type = \"fruit\"\norange.type = \"fruit\"\napple.skin = \"thin\"\norange.skin = \"thick\"\n\n# RECOMMENDED\napple.type = \"fruit\"\napple.skin = \"thin\"\norange.type = \"fruit\"\norange.skin = \"thick\"\n```",
           "anyOf": [
             {
@@ -110,7 +110,7 @@
           ]
         },
         "table-max-keys": {
-          "title": "Maximum keys.",
+          "title": "Max keys",
           "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
@@ -122,7 +122,7 @@
           ]
         },
         "table-min-keys": {
-          "title": "Minimum keys.",
+          "title": "Min keys",
           "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {
@@ -134,7 +134,7 @@
           ]
         },
         "table-key-required": {
-          "title": "Key required.",
+          "title": "Key required",
           "description": "Check if the key is required in this Table.",
           "anyOf": [
             {
@@ -153,7 +153,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Error rule disabled.",
+          "title": "Error rule disabled",
           "description": "If `true`, Error is disabled for this value.",
           "type": [
             "boolean",
@@ -171,7 +171,7 @@
       "type": "object",
       "properties": {
         "disabled": {
-          "title": "Warn rule disabled.",
+          "title": "Warn rule disabled",
           "description": "If `true`, Warn is disabled for this value.",
           "type": [
             "boolean",

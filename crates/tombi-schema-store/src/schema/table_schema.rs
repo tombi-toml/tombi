@@ -4,14 +4,77 @@ use ahash::AHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_json::StringNode;
-use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
+use tombi_x_keyword::{
+    ArrayValuesOrderBy, StringFormat, TableKeysOrder, TableKeysOrderGroup,
+    X_TOMBI_ARRAY_VALUES_ORDER_BY, X_TOMBI_TABLE_KEYS_ORDER,
+};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
 use crate::{Accessor, Referable, SchemaProperties, SchemaStore};
+
+use tombi_json::StringNode;
+
+#[derive(Debug, Clone)]
+pub enum XTombiTableKeysOrder {
+    All(TableKeysOrder),
+    Groups(Vec<GroupTableKeysOrder>),
+}
+
+#[derive(Debug, Clone)]
+pub struct GroupTableKeysOrder {
+    pub target: TableKeysOrderGroup,
+    pub order: TableKeysOrder,
+}
+
+impl XTombiTableKeysOrder {
+    pub fn new(value_node: &tombi_json::ValueNode) -> Option<Self> {
+        match value_node {
+            tombi_json::ValueNode::String(StringNode { value: order, .. }) => {
+                match TableKeysOrder::try_from(order.as_str()) {
+                    Ok(val) => Some(XTombiTableKeysOrder::All(val)),
+                    Err(_) => {
+                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
+                        None
+                    }
+                }
+            }
+            tombi_json::ValueNode::Object(object_node) => {
+                let mut sort_orders = vec![];
+                for (group_name, order) in &object_node.properties {
+                    let Ok(target) = TableKeysOrderGroup::try_from(group_name.value.as_str())
+                    else {
+                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER} group: {group_name}");
+                        return None;
+                    };
+
+                    let Some(Ok(order)) = order.as_str().map(TableKeysOrder::try_from) else {
+                        tracing::warn!(
+                            "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
+                        );
+                        return None;
+                    };
+
+                    if order == TableKeysOrder::Schema && target != TableKeysOrderGroup::Keys {
+                        tracing::warn!(
+                            "Invalid {X_TOMBI_TABLE_KEYS_ORDER} {group_name} group: {order}"
+                        );
+                        return None;
+                    }
+
+                    sort_orders.push(GroupTableKeysOrder { target, order });
+                }
+                Some(Self::Groups(sort_orders))
+            }
+            order => {
+                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
+                None
+            }
+        }
+    }
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct TableSchema {
@@ -25,7 +88,8 @@ pub struct TableSchema {
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
-    pub keys_order: Option<TableKeysOrder>,
+    pub keys_order: Option<XTombiTableKeysOrder>,
+    pub array_values_order_by: Option<ArrayValuesOrderBy>,
     pub default: Option<tombi_json::Object>,
     pub const_value: Option<tombi_json::Object>,
     pub enumerate: Option<Vec<tombi_json::Object>>,
@@ -92,22 +156,25 @@ impl TableSchema {
                 _ => (None, None),
             };
 
-        let keys_order = match object_node.get(X_TOMBI_TABLE_KEYS_ORDER) {
-            Some(tombi_json::ValueNode::String(StringNode { value: order, .. })) => {
-                match TableKeysOrder::try_from(order.as_str()) {
-                    Ok(val) => Some(val),
-                    Err(_) => {
-                        tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {order}");
+        let keys_order = object_node
+            .get(X_TOMBI_TABLE_KEYS_ORDER)
+            .and_then(XTombiTableKeysOrder::new);
+
+        let array_values_order_by = object_node
+            .get(X_TOMBI_ARRAY_VALUES_ORDER_BY)
+            .and_then(|v| {
+                if let Some(v) = v.as_str() {
+                    if let Ok(v) = ArrayValuesOrderBy::try_from(v) {
+                        Some(v)
+                    } else {
+                        tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
                         None
                     }
+                } else {
+                    tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v.to_string());
+                    None
                 }
-            }
-            Some(order) => {
-                tracing::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
-                None
-            }
-            None => None,
-        };
+            });
 
         Self {
             title: object_node
@@ -153,6 +220,7 @@ impl TableSchema {
                 .get("maxProperties")
                 .and_then(|v| v.as_u64().map(|u| u as usize)),
             keys_order,
+            array_values_order_by,
             enumerate: object_node.get("enum").and_then(|v| v.as_array()).map(|v| {
                 v.items
                     .iter()
@@ -182,6 +250,11 @@ impl TableSchema {
 
     pub fn value_type(&self) -> crate::ValueType {
         crate::ValueType::Table
+    }
+
+    #[inline]
+    pub fn additional_properties(&self) -> Option<bool> {
+        self.additional_properties
     }
 
     #[inline]

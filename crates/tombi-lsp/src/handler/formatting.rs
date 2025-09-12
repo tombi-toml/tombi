@@ -94,11 +94,11 @@ pub async fn handle_formatting(
     .format(&document_source.text)
     .await
     {
-        Ok(new_text) => {
-            if new_text != document_source.text {
+        Ok(formatted) => {
+            if document_source.text != formatted {
                 let edits =
-                    compute_text_edits(&document_source.text, &new_text, &formatter_definitions);
-                document_source.text = new_text.clone();
+                    compute_text_edits(&document_source.text, &formatted, &formatter_definitions);
+                document_source.text = formatted.clone();
 
                 return Ok(Some(edits));
             } else {

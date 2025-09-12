@@ -3454,6 +3454,7 @@ dependencies = [
 name = "tombi-ast-editor"
 version = "0.0.0-dev"
 dependencies = [
+ "ahash",
  "indexmap",
  "itertools 0.14.0",
  "regex",
@@ -3613,6 +3614,7 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
+ "tombi-ast",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -5039,7 +5041,7 @@ dependencies = [
 
 [[package]]
 name = "zed-tombi"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "zed_extension_api",
 ]

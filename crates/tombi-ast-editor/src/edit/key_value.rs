@@ -24,11 +24,7 @@ impl crate::Edit for tombi_ast::KeyValue {
 
             let keys_accessors = keys
                 .keys()
-                .filter_map(|key| {
-                    key.try_to_raw_text(schema_context.toml_version)
-                        .ok()
-                        .map(Accessor::Key)
-                })
+                .map(|key| Accessor::Key(key.to_raw_text(schema_context.toml_version)))
                 .collect_vec();
 
             if let Some(current_schema) = current_schema {

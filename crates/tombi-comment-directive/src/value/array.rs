@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
-use crate::value::{ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyRules};
+use crate::value::{
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+};
 use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
 
-pub type ArrayKeyCommonRules = WithKeyRules<WithCommonRules<ArrayRules>>;
+pub type ArrayKeyCommonRules = WithKeyTableRules<WithCommonRules<ArrayRules>>;
 
 pub type ArrayCommonRules = WithCommonRules<ArrayRules>;
 
@@ -24,7 +26,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonRules> 
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ArrayRules {
-    /// # Maximum values.
+    /// # Max values
     ///
     /// Check if the array has more than the maximum number of values.
     ///
@@ -34,7 +36,7 @@ pub struct ArrayRules {
     ///
     pub array_max_values: Option<ErrorRuleOptions>,
 
-    /// # Minimum values.
+    /// # Min values
     ///
     /// Check if the array has less than the minimum number of values.
     ///
@@ -44,7 +46,7 @@ pub struct ArrayRules {
     ///
     pub array_min_values: Option<ErrorRuleOptions>,
 
-    /// # Unique values.
+    /// # Unique values
     ///
     /// Check if the array has duplicate values.
     ///

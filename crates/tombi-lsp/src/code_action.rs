@@ -70,7 +70,7 @@ pub fn dot_keys_to_inline_table_code_action(
                                 new_text: format!(
                                     "{} = {{ {}{}",
                                     parent_key,
-                                    key.value(),
+                                    key.value,
                                     if table.kind() == TableKind::KeyValue {
                                         " = "
                                     } else {

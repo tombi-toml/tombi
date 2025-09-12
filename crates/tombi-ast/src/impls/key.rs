@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use itertools::{EitherOrBoth, Itertools};
 use tombi_toml_version::TomlVersion;
 
-use crate::AstChildren;
+use crate::{AstChildren, AstNode};
 
 impl crate::Key {
     pub fn token(&self) -> Option<tombi_syntax::SyntaxToken> {
@@ -12,6 +12,11 @@ impl crate::Key {
             Self::BasicString(key) => key.token(),
             Self::LiteralString(key) => key.token(),
         }
+    }
+
+    pub fn to_raw_text(&self, toml_version: TomlVersion) -> String {
+        self.try_to_raw_text(toml_version)
+            .unwrap_or_else(|_| self.syntax().text().to_string())
     }
 
     pub fn try_to_raw_text(

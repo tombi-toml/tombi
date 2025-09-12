@@ -29,16 +29,16 @@ use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLev
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct TombiValueDirectiveContent<Rules> {
-    /// # Linter directive.
+    /// # Linter options
     pub lint: Option<LintOptions<Rules>>,
 }
 
-impl<Rules> From<TombiValueDirectiveContent<WithKeyRules<Rules>>>
+impl<Rules> From<TombiValueDirectiveContent<WithKeyTableRules<Rules>>>
     for TombiValueDirectiveContent<Rules>
 where
-    Rules: From<WithKeyRules<Rules>> + serde::de::DeserializeOwned + serde::Serialize,
+    Rules: From<WithKeyTableRules<Rules>> + serde::de::DeserializeOwned + serde::Serialize,
 {
-    fn from(value: TombiValueDirectiveContent<WithKeyRules<Rules>>) -> Self {
+    fn from(value: TombiValueDirectiveContent<WithKeyTableRules<Rules>>) -> Self {
         Self {
             lint: value.lint.map(|lint| lint.into()),
         }
@@ -51,15 +51,15 @@ where
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct LintOptions<Rules> {
-    /// # Lint rules.
+    /// # Lint rules
     pub rules: Option<Rules>,
 }
 
-impl<Rules> From<LintOptions<WithKeyRules<Rules>>> for LintOptions<Rules>
+impl<Rules> From<LintOptions<WithKeyTableRules<Rules>>> for LintOptions<Rules>
 where
-    Rules: serde::de::DeserializeOwned + serde::Serialize + From<WithKeyRules<Rules>>,
+    Rules: serde::de::DeserializeOwned + serde::Serialize + From<WithKeyTableRules<Rules>>,
 {
-    fn from(value: LintOptions<WithKeyRules<Rules>>) -> Self {
+    fn from(value: LintOptions<WithKeyTableRules<Rules>>) -> Self {
         Self {
             rules: value.rules.map(|rules| rules.into()),
         }
@@ -73,6 +73,21 @@ where
 pub struct WithKeyRules<Rules> {
     #[serde(flatten)]
     pub key: KeyRules,
+
+    #[serde(flatten)]
+    pub value: Rules,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct WithKeyTableRules<Rules> {
+    #[serde(flatten)]
+    pub key: KeyRules,
+
+    #[serde(flatten)]
+    pub table: TableRules,
 
     #[serde(flatten)]
     pub value: Rules,
@@ -106,7 +121,7 @@ pub struct WithCommonExtensibleRules<Rules> {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct WarnRuleOptions {
-    /// # Warn rule disabled.
+    /// # Warn rule disabled
     ///
     /// If `true`, Warn is disabled for this value.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
@@ -119,7 +134,7 @@ pub struct WarnRuleOptions {
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ErrorRuleOptions {
-    /// # Error rule disabled.
+    /// # Error rule disabled
     ///
     /// If `true`, Error is disabled for this value.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
