@@ -210,12 +210,12 @@ mod table_keys_order {
                   { include-group = "stub" },
                   "pytest>=8.3.3",
                   { include-group = "ci" },
-                  "ruff>=0.7.4"
-                ],
+                  "ruff>=0.7.4",
+                ]
                 ci = [
+                  "ruff>=0.7.4",
                   "pytest-ci>=0.0.0",
-                  "ruff>=0.7.4"
-                ],
+                ]
                 stub = [
                   "pytest-stub>=1.1.0",
                 ]
@@ -235,11 +235,11 @@ mod table_keys_order {
                   "ruff>=0.7.4",
                   { include-group = "ci" },
                   { include-group = "stub" },
-                ],
+                ]
                 ci = [
                   "pytest-ci>=0.0.0",
-                  "ruff>=0.7.4"
-                ],
+                  "ruff>=0.7.4",
+                ]
                 stub = [
                   "pytest-stub>=1.1.0",
                 ]

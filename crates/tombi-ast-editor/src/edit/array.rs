@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_document_tree::TryIntoDocumentTree;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
@@ -28,28 +27,17 @@ impl crate::Edit for tombi_ast::Array {
             }
 
             if let Some(current_schema) = current_schema {
-                tracing::debug!("Current schema: {:?}", current_schema.value_schema);
                 if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
-                    tracing::debug!("Array schema values_order: {:?}", array_schema.values_order);
-                    if let Some(values_order) = &array_schema.values_order {
-                        tracing::debug!("Processing array values order: {:?}", values_order);
-                        if let Ok(array_value) = self
-                            .clone()
-                            .try_into_document_tree(schema_context.toml_version)
-                        {
-                            changes.extend(
-                                array_values_order(
-                                    &array_value,
-                                    self.values_with_comma().collect_vec(),
-                                    array_schema,
-                                    &current_schema,
-                                    schema_context,
-                                )
-                                .await,
-                            );
-                        }
-                    } else {
-                        tracing::debug!("No values_order found in array schema");
+                    if array_schema.values_order.is_some() {
+                        changes.extend(
+                            array_values_order(
+                                self.values_with_comma().collect_vec(),
+                                array_schema,
+                                &current_schema,
+                                schema_context,
+                            )
+                            .await,
+                        );
                     }
                 } else {
                     tracing::debug!("Not an array schema: {:?}", current_schema.value_schema);
