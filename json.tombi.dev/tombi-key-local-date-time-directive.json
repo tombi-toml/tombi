@@ -24,7 +24,7 @@
           "title": "Lint rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyTableRules"
+              "$ref": "#/definitions/WithKeyTableLintRules"
             },
             {
               "type": "null"
@@ -34,7 +34,7 @@
       },
       "additionalProperties": false
     },
-    "WithKeyTableRules": {
+    "WithKeyTableLintRules": {
       "type": "object",
       "properties": {
         "key-empty": {

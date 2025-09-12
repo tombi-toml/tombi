@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::value::OffsetDateTimeCommonRules;
+use tombi_comment_directive::value::OffsetDateTimeCommonLintRules;
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
@@ -29,11 +29,9 @@ impl GetTypeDefinition for tombi_document_tree::OffsetDateTime {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<OffsetDateTimeCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    OffsetDateTimeCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,

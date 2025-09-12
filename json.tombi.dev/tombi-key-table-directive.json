@@ -24,7 +24,7 @@
           "title": "Lint rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyRules"
+              "$ref": "#/definitions/WithKeyLintRules"
             },
             {
               "type": "null"
@@ -34,7 +34,7 @@
       },
       "additionalProperties": false
     },
-    "WithKeyRules": {
+    "WithKeyLintRules": {
       "type": "object",
       "properties": {
         "key-empty": {

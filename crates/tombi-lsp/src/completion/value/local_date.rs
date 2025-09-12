@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::LocalDateCommonRules;
+use tombi_comment_directive::value::LocalDateCommonLintRules;
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateSchema, SchemaUri};
@@ -30,7 +30,7 @@ impl FindCompletionContents for tombi_document_tree::LocalDate {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<LocalDateCommonRules>(
+                get_key_table_value_comment_directive_content_and_schema_uri::<LocalDateCommonLintRules>(
                     self.comment_directives(),
                     position,
                     accessors,

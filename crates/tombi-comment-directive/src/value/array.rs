@@ -1,22 +1,22 @@
 use std::str::FromStr;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
 
-pub type ArrayKeyCommonRules = WithKeyTableRules<WithCommonRules<ArrayRules>>;
+pub type ArrayKeyCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<ArrayLintRules>>;
 
-pub type ArrayCommonRules = WithCommonRules<ArrayRules>;
+pub type ArrayCommonLintRules = WithCommonLintRules<ArrayLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayKeyCommonRules> {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayKeyCommonLintRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonRules> {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonLintRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }
@@ -25,7 +25,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonRules> 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct ArrayRules {
+pub struct ArrayLintRules {
     /// # Max values
     ///
     /// Check if the array has more than the maximum number of values.
