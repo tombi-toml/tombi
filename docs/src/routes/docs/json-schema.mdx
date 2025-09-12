@@ -43,7 +43,7 @@ Available sorting strategies:
 The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
 </Note>
 
-By specifying objects instead of strings, you can individually define sorting methods for the different groups: `properties`, `additionalProperties`, and `patternProperties`.
+By specifying object instead of string, you can individually define sorting methods for the different groups: `properties`, `additionalProperties`, and `patternProperties`.
 
 ```json
 {
@@ -73,6 +73,80 @@ Available sorting strategies:
 <Note>
 The `version-sort` strategy is based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting).
 </Note>
+
+By specifying object instead of string, you can individually define sorting methods for the different groups: `oneOf`, `anyOf`.
+
+The following example, sorts the first schema of oneOf with `version-sort`, and the second schema with `ascending` after that.
+
+```json
+{
+  "type": "array",
+  "items": {
+    "oneOf": [
+      { "type": "string" },
+      { "type": "number" }
+    ]
+  },
+  "x-tombi-array-values-order": {
+    "oneOf": [
+      "version-sort",
+      "ascending"
+    ]
+  }
+}
+```
+
+The following is the sorting result.
+
+```toml
+# Before
+key = [1, "2", 3, "4"]
+
+# After
+key = ["2", "4", 1, 3]
+```
+
+
+### x-tombi-array-values-order-by
+
+This key specifies which key to use as the sorting key when the array element is a table.
+
+```json
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "age": {
+        "type": "number"
+      }
+    },
+    "x-tombi-array-values-order-by": "name"
+  },
+  "x-tombi-array-values-order": "ascending"
+}
+```
+
+The following is the sorting result.
+
+```toml
+# Before
+key = [
+  { name = "Bob", age = 30 },
+  { name = "Charlie", age = 25 },
+  { name = "Alice", age = 20 },
+]
+
+# After
+key = [
+  { name = "Alice", age = 20 },
+  { name = "Bob", age = 30 },
+  { name = "Charlie", age = 25 },
+]
+```
 
 ## Linting
 ### Strict Mode
