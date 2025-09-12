@@ -614,6 +614,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "format",
                 "lint",
             ]);
         }

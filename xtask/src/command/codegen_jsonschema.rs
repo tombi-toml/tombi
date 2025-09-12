@@ -1,16 +1,18 @@
 use schemars::{generate::SchemaSettings, SchemaGenerator};
 use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_comment_directive::value::{
-    ArrayCommonLintRules, ArrayKeyCommonLintRules, ArrayOfTableCommonLintRules,
-    BooleanCommonLintRules, FloatCommonLintRules, InlineTableCommonLintRules,
-    IntegerCommonLintRules, KeyArrayOfTableCommonLintRules, KeyBooleanCommonLintRules,
-    KeyCommonExtensibleLintRules, KeyFloatCommonLintRules, KeyInlineTableCommonLintRules,
-    KeyIntegerCommonLintRules, KeyLocalDateCommonLintRules, KeyLocalDateTimeCommonLintRules,
-    KeyLocalTimeCommonLintRules, KeyOffsetDateTimeCommonLintRules, KeyStringCommonLintRules,
-    KeyTableCommonLintRules, LocalDateCommonLintRules, LocalDateTimeCommonLintRules,
-    LocalTimeCommonLintRules, OffsetDateTimeCommonLintRules, ParentTableCommonLintRules,
-    RootTableCommonLintRules, StringCommonLintRules, TableCommonLintRules,
-    TombiValueDirectiveContent,
+    ArrayCommonLintRules, ArrayFormatRules, ArrayKeyCommonLintRules, ArrayOfTableCommonLintRules,
+    BooleanCommonLintRules, BooleanFormatRules, FloatCommonLintRules, FloatFormatRules,
+    InlineTableCommonLintRules, IntegerCommonLintRules, IntegerFormatRules,
+    KeyArrayOfTableCommonLintRules, KeyBooleanCommonLintRules, KeyCommonExtensibleLintRules,
+    KeyFloatCommonLintRules, KeyInlineTableCommonLintRules, KeyIntegerCommonLintRules,
+    KeyLocalDateCommonLintRules, KeyLocalDateTimeCommonLintRules, KeyLocalTimeCommonLintRules,
+    KeyOffsetDateTimeCommonLintRules, KeyStringCommonLintRules, KeyTableCommonLintRules,
+    LocalDateCommonLintRules, LocalDateFormatRules, LocalDateTimeCommonLintRules,
+    LocalDateTimeFormatRules, LocalTimeCommonLintRules, LocalTimeFormatRules,
+    OffsetDateTimeCommonLintRules, OffsetDateTimeFormatRules, ParentTableCommonLintRules,
+    RootTableCommonLintRules, StringCommonLintRules, StringFormatRules, TableCommonLintRules,
+    TableFormatRules, TombiValueDirectiveContent,
 };
 use tombi_config::TomlVersion;
 
@@ -48,7 +50,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<BooleanCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<BooleanFormatRules, BooleanCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -57,7 +59,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<IntegerCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<IntegerFormatRules, IntegerCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -66,7 +68,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<FloatCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<FloatFormatRules, FloatCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -75,7 +77,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<StringCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<StringFormatRules, StringCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -84,8 +86,10 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<OffsetDateTimeCommonLintRules>>(
-                ),
+                .into_root_schema_for::<TombiValueDirectiveContent<
+                    OffsetDateTimeFormatRules,
+                    OffsetDateTimeCommonLintRules,
+                >>(),
         )? + "\n",
     )?;
 
@@ -94,7 +98,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateTimeCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateTimeFormatRules, LocalDateTimeCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -103,7 +107,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateFormatRules, LocalDateCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -112,7 +116,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<LocalTimeCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalTimeFormatRules, LocalTimeCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -121,7 +125,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<ArrayCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<ArrayFormatRules, ArrayCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -130,7 +134,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<InlineTableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, InlineTableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -139,7 +143,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<TableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -148,7 +152,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<ArrayOfTableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, ArrayOfTableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -157,7 +161,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<ParentTableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, ParentTableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -166,7 +170,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<RootTableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, RootTableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -175,7 +179,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyBooleanCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<BooleanFormatRules, KeyBooleanCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -184,7 +188,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyIntegerCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<IntegerFormatRules, KeyIntegerCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -193,7 +197,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyFloatCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<FloatFormatRules, KeyFloatCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -202,7 +206,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyStringCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<StringFormatRules, KeyStringCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -211,7 +215,10 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyOffsetDateTimeCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<
+                    OffsetDateTimeFormatRules,
+                    KeyOffsetDateTimeCommonLintRules,
+                >>(),
         )? + "\n",
     )?;
 
@@ -220,7 +227,10 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyLocalDateTimeCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<
+                    LocalDateTimeFormatRules,
+                    KeyLocalDateTimeCommonLintRules,
+                >>(),
         )? + "\n",
     )?;
 
@@ -229,7 +239,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyLocalDateCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalDateFormatRules, KeyLocalDateCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -238,7 +248,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyLocalTimeCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<LocalTimeFormatRules, KeyLocalTimeCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -247,7 +257,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<ArrayKeyCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<ArrayFormatRules, ArrayKeyCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -256,7 +266,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyInlineTableCommonLintRules>>(
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, KeyInlineTableCommonLintRules>>(
                 ),
         )? + "\n",
     )?;
@@ -266,7 +276,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyTableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, KeyTableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -275,7 +285,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyArrayOfTableCommonLintRules>>(
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, KeyArrayOfTableCommonLintRules>>(
                 ),
         )? + "\n",
     )?;
@@ -285,7 +295,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<KeyCommonExtensibleLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, KeyCommonExtensibleLintRules>>(),
         )? + "\n",
     )?;
 

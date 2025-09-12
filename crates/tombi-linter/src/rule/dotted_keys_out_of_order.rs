@@ -1,7 +1,7 @@
 use crate::Rule;
 use ahash::AHashMap;
 use itertools::Itertools;
-use tombi_comment_directive::value::TableCommonLintRules;
+use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
 use tombi_config::SeverityLevel;
 use tombi_severity_level::SeverityLevelDefaultWarn;
 use tombi_validator::comment_directive::get_tombi_key_value_rules_and_diagnostics;
@@ -37,27 +37,28 @@ async fn check_dotted_keys_out_of_order(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let level = get_tombi_key_value_rules_and_diagnostics::<TableCommonLintRules>(
-        &comment_directives.collect_vec(),
-        &[],
-    )
-    .await
-    .0
-    .as_ref()
-    .map(|rules| &rules.value)
-    .and_then(|rules| {
-        rules
-            .dotted_keys_out_of_order
-            .as_ref()
-            .map(SeverityLevelDefaultWarn::from)
-    })
-    .unwrap_or_else(|| {
-        l.options()
-            .rules
-            .as_ref()
-            .and_then(|rules| rules.dotted_keys_out_of_order)
-            .unwrap_or_default()
-    });
+    let level =
+        get_tombi_key_value_rules_and_diagnostics::<TableFormatRules, TableCommonLintRules>(
+            &comment_directives.collect_vec(),
+            &[],
+        )
+        .await
+        .0
+        .as_ref()
+        .map(|rules| &rules.value)
+        .and_then(|rules| {
+            rules
+                .dotted_keys_out_of_order
+                .as_ref()
+                .map(SeverityLevelDefaultWarn::from)
+        })
+        .unwrap_or_else(|| {
+            l.options()
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.dotted_keys_out_of_order)
+                .unwrap_or_default()
+        });
 
     if level == SeverityLevel::Off {
         return;

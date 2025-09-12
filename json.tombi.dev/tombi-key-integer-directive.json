@@ -3,6 +3,17 @@
   "title": "TombiValueDirectiveContent",
   "type": "object",
   "properties": {
+    "format": {
+      "title": "Formatter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "lint": {
       "title": "Linter options",
       "anyOf": [
@@ -17,6 +28,26 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "FormatOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/EmptyFormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "EmptyFormatRules": {
+      "type": "object"
+    },
     "LintOptions": {
       "type": "object",
       "properties": {

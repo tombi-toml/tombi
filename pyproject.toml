@@ -9,6 +9,7 @@ readme = "python/tombi/README.md"
 requires-python = ">=3.10"
 dependencies = []
 
+# tombi: format.rules.table-keys-order.disabled = true
 [project.urls]
 GitHub = "https://github.com/tombi-toml/tombi"
 

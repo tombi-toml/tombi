@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules,
+    ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WithCommonLintRules,
+    WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
@@ -10,19 +11,34 @@ pub type ArrayKeyCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<Arr
 
 pub type ArrayCommonLintRules = WithCommonLintRules<ArrayLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayKeyCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<ArrayFormatRules, ArrayKeyCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<ArrayCommonLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<ArrayFormatRules, ArrayCommonLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct ArrayFormatRules {
+    /// # Array values order
+    ///
+    /// Control the sorting method of the array.
+    ///
+    pub array_values_order: Option<SortOptions>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct ArrayLintRules {

@@ -3,19 +3,24 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonExtensibleLintRules,
+    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions,
+    WithCommonExtensibleLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
+pub type KeyFormatRules = EmptyFormatRules;
+
 pub type KeyCommonExtensibleLintRules = WithCommonExtensibleLintRules<KeyLinkRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyCommonExtensibleLintRules> {
+impl TombiCommentDirectiveImpl
+    for TombiValueDirectiveContent<KeyFormatRules, KeyCommonExtensibleLintRules>
+{
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct KeyLinkRules {
