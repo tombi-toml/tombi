@@ -197,6 +197,58 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_dependency_groups_multiple_lines_include_group_with_comment(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  { include-group = "stub" },
+                  "pytest>=8.3.3",
+                  { include-group = "ci" },
+                  "ruff>=0.7.4",
+                ]
+                ci = [
+                  "ruff>=0.7.4",
+                  "pytest-ci>=0.0.0",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  "pytest>=8.3.3",
+                  "ruff>=0.7.4",
+                  { include-group = "ci" },
+                  { include-group = "stub" },
+                ]
+                ci = [
+                  "pytest-ci>=0.0.0",
+                  "ruff>=0.7.4",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_tool_poetry_dependencies(
                 r#"
                 [project]

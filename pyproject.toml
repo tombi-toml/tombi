@@ -14,16 +14,18 @@ GitHub = "https://github.com/tombi-toml/tombi"
 
 [dependency-groups]
 dev = [
-  { include-group = "stub" },
   "pytest>=8.3.3",
   "ruff>=0.7.4",
+  { include-group = "stub" },
 ]
 stub = [
   "pytest-stub>=1.1.0",
 ]
 
 [build-system]
-requires = ["maturin>=1.5,<2.0"]
+requires = [
+  "maturin>=1.5,<2.0",
+]
 build-backend = "maturin"
 
 [tool.maturin]

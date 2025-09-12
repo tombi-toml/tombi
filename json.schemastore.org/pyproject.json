@@ -105,7 +105,9 @@
       "description": "Each list item should be either:\n- [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/), or\n- table with a single key `include-group` which specifies another group name to include into this one",
       "markdownDescription": "Each list item should be either:\n- [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/), or\n- table with a single key `include-group` which specifies another group name to include into this one",
       "x-intellij-html-description": "<p>Each list item should be either:</p><ul><li><a href=\"https://packaging.python.org/en/latest/specifications/dependency-specifiers/\">dependency specifiers</a>, or</li><li>table with a single key <code>include-group</code> which specifies another group name to include into this one</li></ul>",
-      "x-tombi-array-values-order": "version-sort",
+      "x-tombi-array-values-order": {
+        "oneOf": ["version-sort", "ascending"]
+      },
       "uniqueItems": true,
       "items": {
         "oneOf": [

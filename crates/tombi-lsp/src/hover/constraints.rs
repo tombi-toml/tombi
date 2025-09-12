@@ -1,5 +1,5 @@
-use tombi_schema_store::XTombiTableKeysOrder;
-use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy, StringFormat};
+use tombi_schema_store::{XTombiArrayValuesOrder, XTombiTableKeysOrder};
+use tombi_x_keyword::{ArrayValuesOrderBy, ArrayValuesOrderGroup, StringFormat};
 
 use super::display_value::DisplayValue;
 
@@ -62,7 +62,7 @@ pub struct ValueConstraints {
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
     pub unique_items: Option<bool>,
-    pub values_order: Option<ArrayValuesOrder>,
+    pub values_order: Option<XTombiArrayValuesOrder>,
 
     // Table
     pub required_keys: Option<Vec<String>>,
@@ -146,7 +146,25 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(values_order) = &self.values_order {
-            write!(f, "Values Order: `{values_order}`\n\n")?;
+            match values_order {
+                XTombiArrayValuesOrder::All(values_order) => {
+                    write!(f, "Values Order: `{values_order}`\n\n")?
+                }
+                XTombiArrayValuesOrder::Groups(values_order) => match values_order {
+                    ArrayValuesOrderGroup::OneOf(values_order) => {
+                        write!(f, "Values Order: `oneOf`\n\n")?;
+                        for value in values_order.iter() {
+                            write!(f, "  - `{value}`\n\n")?;
+                        }
+                    }
+                    ArrayValuesOrderGroup::AnyOf(values_order) => {
+                        write!(f, "Values Order: `anyOf`\n\n")?;
+                        for value in values_order.iter() {
+                            write!(f, "  - `{value}`\n\n")?;
+                        }
+                    }
+                },
+            }
         }
 
         if let Some(required_keys) = &self.required_keys {

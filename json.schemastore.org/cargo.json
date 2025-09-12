@@ -167,7 +167,6 @@
           "uniqueItems": true,
           "items": {
             "description": "List of features to activate in the dependency.",
-            "type": "string",
             "x-taplo": {
               "links": {
                 "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features"
@@ -176,9 +175,15 @@
               "crates": {
                 "schemas": "feature"
               }
-            }
+            },
+            "oneOf": [
+              { "type": "string", "pattern": "default" },
+              { "type": "string" }
+            ]
           },
-          "x-tombi-array-values-order": "version-sort",
+          "x-tombi-array-values-order": {
+            "oneOf": ["version-sort", "version-sort"]
+          },
           "x-taplo": {
             "links": {
               "key": "https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features"
@@ -2157,7 +2162,7 @@
           "x-taplo": {
             "links": {
               "key": "https://doc.rust-lang.org/cargo/reference/features.html#the-default-feature"
-          }
+            }
           }
         }
       },

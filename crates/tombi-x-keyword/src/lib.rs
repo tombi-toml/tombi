@@ -108,30 +108,30 @@ impl<'a> TryFrom<&'a str> for TableKeysOrder {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-pub enum TableKeysOrderGroup {
+pub enum TableKeysOrderGroupKind {
     Keys,
     AdditionalKeys,
     PatternKeys,
 }
 
-impl std::fmt::Display for TableKeysOrderGroup {
+impl std::fmt::Display for TableKeysOrderGroupKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TableKeysOrderGroup::Keys => write!(f, "Keys"),
-            TableKeysOrderGroup::AdditionalKeys => write!(f, "Additional Keys"),
-            TableKeysOrderGroup::PatternKeys => write!(f, "Pattern Keys"),
+            TableKeysOrderGroupKind::Keys => write!(f, "Keys"),
+            TableKeysOrderGroupKind::AdditionalKeys => write!(f, "Additional Keys"),
+            TableKeysOrderGroupKind::PatternKeys => write!(f, "Pattern Keys"),
         }
     }
 }
 
-impl<'a> TryFrom<&'a str> for TableKeysOrderGroup {
+impl<'a> TryFrom<&'a str> for TableKeysOrderGroupKind {
     type Error = &'a str;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         match value {
-            "properties" => Ok(TableKeysOrderGroup::Keys),
-            "additionalProperties" => Ok(TableKeysOrderGroup::AdditionalKeys),
-            "patternProperties" => Ok(TableKeysOrderGroup::PatternKeys),
+            "properties" => Ok(TableKeysOrderGroupKind::Keys),
+            "additionalProperties" => Ok(TableKeysOrderGroupKind::AdditionalKeys),
+            "patternProperties" => Ok(TableKeysOrderGroupKind::PatternKeys),
             _ => Err("Invalid table group"),
         }
     }
