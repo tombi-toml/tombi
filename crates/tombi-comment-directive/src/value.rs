@@ -274,6 +274,7 @@ pub struct WarnRuleOptions {
     /// # Warn rule disabled
     ///
     /// If `true`, Warn is disabled for this value.
+    ///
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
@@ -287,6 +288,7 @@ pub struct ErrorRuleOptions {
     /// # Error rule disabled
     ///
     /// If `true`, Error is disabled for this value.
+    ///
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
     disabled: Option<bool>,
