@@ -53,21 +53,38 @@ impl<'a> VersionChunkIter<'a> {
     fn parse_str_chunk(&mut self, chars: std::str::CharIndices<'a>) -> Option<VersionChunk<'a>> {
         let mut end = self.start;
         let mut is_end_of_chunk = false;
+        let mut version_op_pos = None;
 
         for (idx, c) in chars {
             end = self.start + idx;
 
-            if c == '_' {
+            if c == '_' || c == '-' {
                 is_end_of_chunk = true;
                 break;
             }
 
             if !c.is_ascii_digit() {
+                // Check if we've found a version operator at this position
+                if let Some(op_end) = self.check_version_operator_at(self.start + idx) {
+                    version_op_pos = Some(self.start + idx);
+                    end = op_end;
+                    is_end_of_chunk = true;
+                    break;
+                }
                 continue;
             }
 
             is_end_of_chunk = true;
             break;
+        }
+
+        // If we found a version operator, return the string part first
+        if let Some(op_pos) = version_op_pos {
+            let str_part = &self.ident[self.start..op_pos];
+            self.start = op_pos;
+            if !str_part.is_empty() {
+                return Some(VersionChunk::Str(str_part));
+            }
         }
 
         let source = if is_end_of_chunk {
@@ -81,6 +98,21 @@ impl<'a> VersionChunkIter<'a> {
         };
 
         Some(VersionChunk::Str(source))
+    }
+
+    fn check_version_operator_at(&self, pos: usize) -> Option<usize> {
+        let remaining = &self.ident[pos..];
+        for &op in &[">=", "<=", "==", "!=", "~=", "~>"] {
+            if remaining.starts_with(op) {
+                return Some(pos + op.len());
+            }
+        }
+        for &op in &[">", "<", "=", "^", "~"] {
+            if remaining.starts_with(op) {
+                return Some(pos + op.len());
+            }
+        }
+        None
     }
 }
 
@@ -96,8 +128,20 @@ impl<'a> Iterator for VersionChunkIter<'a> {
             return Some(VersionChunk::Underscore);
         }
 
+        if next == '-' {
+            self.start += next.len_utf8();
+            return Some(VersionChunk::Hyphen);
+        }
+
         if next.is_ascii_digit() {
             return self.parse_numeric_chunk(chars);
+        }
+
+        // Check for version operators at the current position
+        if let Some(op_end) = self.check_version_operator_at(self.start) {
+            let op = &self.ident[self.start..op_end];
+            self.start = op_end;
+            return Some(VersionChunk::VersionOp(op));
         }
 
         self.parse_str_chunk(chars)
@@ -107,8 +151,12 @@ impl<'a> Iterator for VersionChunkIter<'a> {
 /// Represents a chunk in the version-sort algorithm
 #[derive(Debug, PartialEq, Eq)]
 enum VersionChunk<'a> {
-    /// A single `_` in an identifier. Underscores are sorted before all other characters.
+    /// A single `_` in an identifier. Underscores are sorted before other characters except version operators.
     Underscore,
+    /// A single `-` in an identifier. Hyphens are sorted before other characters except version operators.
+    Hyphen,
+    /// A version comparison operator (>=, <=, >, <, =, ==, !=, ~=, etc.)
+    VersionOp(&'a str),
     /// A &str chunk in the version sort.
     Str(&'a str),
     /// A numeric chunk in the version sort. Keeps track of the numeric value and leading zeros.
@@ -140,11 +188,26 @@ pub fn version_sort(a: &str, b: &str) -> std::cmp::Ordering {
             EitherOrBoth::Left(_) => return std::cmp::Ordering::Greater,
             EitherOrBoth::Right(_) => return std::cmp::Ordering::Less,
             EitherOrBoth::Both(a, b) => match (a, b) {
-                (VersionChunk::Underscore, VersionChunk::Underscore) => {
+                // Version operators have highest priority
+                (VersionChunk::VersionOp(ca), VersionChunk::VersionOp(cb)) => match ca.cmp(cb) {
+                    std::cmp::Ordering::Equal => continue,
+                    order => return order,
+                },
+                (VersionChunk::VersionOp(_), _) => return std::cmp::Ordering::Less,
+                (_, VersionChunk::VersionOp(_)) => return std::cmp::Ordering::Greater,
+                // Underscores and hyphens have second highest priority
+                (
+                    VersionChunk::Underscore | VersionChunk::Hyphen,
+                    VersionChunk::Underscore | VersionChunk::Hyphen,
+                ) => {
                     continue;
                 }
-                (VersionChunk::Underscore, _) => return std::cmp::Ordering::Less,
-                (_, VersionChunk::Underscore) => return std::cmp::Ordering::Greater,
+                (VersionChunk::Underscore | VersionChunk::Hyphen, _) => {
+                    return std::cmp::Ordering::Less
+                }
+                (_, VersionChunk::Underscore | VersionChunk::Hyphen) => {
+                    return std::cmp::Ordering::Greater
+                }
                 (VersionChunk::Str(ca), VersionChunk::Str(cb))
                 | (VersionChunk::Str(ca), VersionChunk::Number { source: cb, .. })
                 | (VersionChunk::Number { source: ca, .. }, VersionChunk::Str(cb)) => {
@@ -284,6 +347,58 @@ mod test {
         // '๙' = U+0E59 THAI DIGIT NINE, General Category Nd
         let mut iter = VersionChunkIter::new("x๙v");
         assert_eq!(iter.next(), Some(VersionChunk::Str("x๙v")));
+
+        // Test hyphen parsing
+        let mut iter = VersionChunkIter::new("pydantic-settings");
+        assert_eq!(iter.next(), Some(VersionChunk::Str("pydantic")));
+        assert_eq!(iter.next(), Some(VersionChunk::Hyphen));
+        assert_eq!(iter.next(), Some(VersionChunk::Str("settings")));
+        assert_eq!(iter.next(), None);
+
+        let mut iter = VersionChunkIter::new("test-123");
+        assert_eq!(iter.next(), Some(VersionChunk::Str("test")));
+        assert_eq!(iter.next(), Some(VersionChunk::Hyphen));
+        assert_eq!(
+            iter.next(),
+            Some(VersionChunk::Number {
+                value: 123,
+                zeros: 0,
+                source: "123"
+            })
+        );
+        assert_eq!(iter.next(), None);
+
+        // Test version operator parsing
+        let mut iter = VersionChunkIter::new("pydantic>=0.1.0");
+        assert_eq!(iter.next(), Some(VersionChunk::Str("pydantic")));
+        assert_eq!(iter.next(), Some(VersionChunk::VersionOp(">=")));
+        assert_eq!(
+            iter.next(),
+            Some(VersionChunk::Number {
+                value: 0,
+                zeros: 1,
+                source: "0"
+            })
+        );
+        assert_eq!(iter.next(), Some(VersionChunk::Str(".")));
+        assert_eq!(
+            iter.next(),
+            Some(VersionChunk::Number {
+                value: 1,
+                zeros: 0,
+                source: "1"
+            })
+        );
+        assert_eq!(iter.next(), Some(VersionChunk::Str(".")));
+        assert_eq!(
+            iter.next(),
+            Some(VersionChunk::Number {
+                value: 0,
+                zeros: 1,
+                source: "0"
+            })
+        );
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
@@ -351,6 +466,22 @@ mod test {
 
         let mut input = vec!["A", "AA", "B", "a", "aA", "aa", "b"];
         let expected = vec!["A", "AA", "B", "a", "aA", "aa", "b"];
+        input.sort_by(|a, b| version_sort(a, b));
+        assert_eq!(input, expected);
+
+        // Test priority order: version operators > hyphens/underscores > regular strings
+        let mut input = vec!["pydantic-settings", "pydantic>=0.1.0", "pydantic_extra"];
+        let expected = vec!["pydantic>=0.1.0", "pydantic_extra", "pydantic-settings"];
+        input.sort_by(|a, b| version_sort(a, b));
+        assert_eq!(input, expected);
+
+        let mut input = vec!["test-1", "test_1", "test1"];
+        let expected = vec!["test-1", "test_1", "test1"];
+        input.sort_by(|a, b| version_sort(a, b));
+        assert_eq!(input, expected);
+
+        let mut input = vec!["a-b", "a_b", "ab"];
+        let expected = vec!["a-b", "a_b", "ab"];
         input.sort_by(|a, b| version_sort(a, b));
         assert_eq!(input, expected);
 
