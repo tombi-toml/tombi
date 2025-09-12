@@ -4016,6 +4016,7 @@ name = "tombi-version-sort"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "pretty_assertions",
 ]
 
 [[package]]
