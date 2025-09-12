@@ -105,7 +105,6 @@ pub async fn array_values_order<'a>(
                     let mut sorted_values_with_comma = Vec::new();
                     let mut schemas = schemas.write().await;
 
-                    // group_orders と schemas を zip でループして、それぞれの schema の validate が満たされた値ごとにグループ化
                     for (group_order, schema) in group_orders.iter().zip(schemas.iter_mut()) {
                         let mut group_values_with_comma = Vec::new();
                         let Ok(Some(current_schema)) = schema
@@ -122,7 +121,7 @@ pub async fn array_values_order<'a>(
                         let mut i = 0;
                         while i < values_with_comma.len() {
                             let (value, _) = &values_with_comma[i];
-                            // 値がスキーマに適合するかチェック
+                            // check if the value is compatible with the schema
                             if let Ok(document_tree_value) = value
                                 .clone()
                                 .try_into_document_tree(schema_context.toml_version)
@@ -141,7 +140,7 @@ pub async fn array_values_order<'a>(
                             }
                         }
 
-                        // グループ内の値をソート
+                        // Sort group values
                         if !group_values_with_comma.is_empty() {
                             match SortableValues::try_new(
                                 group_values_with_comma.clone(),
@@ -156,7 +155,6 @@ pub async fn array_values_order<'a>(
                                 }
                                 Err(warning) => {
                                     tracing::warn!("{warning}");
-                                    // ソートに失敗した場合は元の順序で追加
                                     sorted_values_with_comma.append(&mut group_values_with_comma);
                                 }
                             }
@@ -312,11 +310,14 @@ impl SortableType {
                                     continue;
                                 }
                             }
+                            // dotted keys is not supported
                             if keys_iter.next().is_some() {
-                                continue;
+                                return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                             }
                             if let Some(value) = &key_value.value() {
                                 return SortableType::try_new(value, None, toml_version);
+                            } else {
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                     }
@@ -340,7 +341,7 @@ enum SortFailReason {
     #[error("Cannot sort array values because the values are incomplete.")]
     Incomplete,
 
-    #[error("Cannot sort array values because the values only support the following types: [Boolean, Integer, String, OffsetDateTime, LocalDateTime, LocalDate, LocalTime]")]
+    #[error("Cannot sort array values because the values only support the following types: [Boolean, Integer, String, OffsetDateTime, LocalDateTime, LocalDate, LocalTime, InlineTable(need `x-tombi-array-values-order-by`)]")]
     UnsupportedTypes,
 
     #[error("Cannot sort array values because the values have different types.")]
@@ -353,6 +354,9 @@ enum SortFailReason {
         "Cannot sort array tables because the sort-key defined in `x-tombi-array-values-order-by` is not found."
     )]
     ArrayValuesOrderByKeyNotFound,
+
+    #[error("Cannot sort array values because the values have dotted keys inline table.")]
+    DottedKeysInlineTableNotSupported,
 }
 
 impl SortableValues {
