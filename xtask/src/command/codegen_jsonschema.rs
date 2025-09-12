@@ -152,7 +152,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules,ArrayOfTableCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<TableFormatRules, ArrayOfTableCommonLintRules>>(),
         )? + "\n",
     )?;
 
@@ -179,7 +179,7 @@ pub fn run() -> Result<(), anyhow::Error> {
         serde_json::to_string_pretty(
             &generator
                 .clone()
-                .into_root_schema_for::<TombiValueDirectiveContent<BooleanFormatRules,KeyBooleanCommonLintRules>>(),
+                .into_root_schema_for::<TombiValueDirectiveContent<BooleanFormatRules, KeyBooleanCommonLintRules>>(),
         )? + "\n",
     )?;
 
