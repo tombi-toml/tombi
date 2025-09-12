@@ -3,21 +3,21 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyFloatCommonRules = WithKeyTableRules<WithCommonRules<FloatRules>>;
+pub type KeyFloatCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<FloatLintRules>>;
 
-pub type FloatCommonRules = WithCommonRules<FloatRules>;
+pub type FloatCommonLintRules = WithCommonLintRules<FloatLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyFloatCommonRules> {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyFloatCommonLintRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-float-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<FloatCommonRules> {
+impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<FloatCommonLintRules> {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-float-directive.json").unwrap()
     }
@@ -26,7 +26,7 @@ impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<FloatCommonRules> 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct FloatRules {
+pub struct FloatLintRules {
     /// # Maximum float
     ///
     /// Check if the float is less than or equal to the maximum.

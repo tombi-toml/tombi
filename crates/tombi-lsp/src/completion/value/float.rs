@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::FloatCommonRules;
+use tombi_comment_directive::value::FloatCommonLintRules;
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, SchemaUri};
@@ -30,7 +30,7 @@ impl FindCompletionContents for tombi_document_tree::Float {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<FloatCommonRules>(
+                get_key_table_value_comment_directive_content_and_schema_uri::<FloatCommonLintRules>(
                     self.comment_directives(),
                     position,
                     accessors,

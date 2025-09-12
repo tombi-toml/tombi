@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::LocalDateTimeCommonRules;
+use tombi_comment_directive::value::LocalDateTimeCommonLintRules;
 use tombi_document_tree::{LocalDateTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
@@ -21,7 +21,7 @@ impl Validate for LocalDateTime {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) = get_tombi_key_table_value_rules_and_diagnostics::<
-                    LocalDateTimeCommonRules,
+                    LocalDateTimeCommonLintRules,
                 >(comment_directives, accessors)
                 .await;
 
@@ -104,7 +104,7 @@ async fn validate_local_date_time(
     local_date_time_value: &LocalDateTime,
     accessors: &[tombi_schema_store::Accessor],
     local_date_time_schema: &tombi_schema_store::LocalDateTimeSchema,
-    value_rules: Option<&LocalDateTimeCommonRules>,
+    value_rules: Option<&LocalDateTimeCommonLintRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
     let value_string = local_date_time_value.value().to_string();

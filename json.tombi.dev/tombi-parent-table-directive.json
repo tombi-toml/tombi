@@ -24,7 +24,7 @@
           "title": "Lint rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithCommonExtensibleRules"
+              "$ref": "#/definitions/WithCommonExtensibleLintRules"
             },
             {
               "type": "null"
@@ -34,7 +34,7 @@
       },
       "additionalProperties": false
     },
-    "WithCommonExtensibleRules": {
+    "WithCommonExtensibleLintRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {
