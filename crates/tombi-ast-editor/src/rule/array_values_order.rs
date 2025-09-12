@@ -62,14 +62,14 @@ pub async fn array_values_order<'a>(
             } else {
                 None
             };
-            let sortable_values = match SortableValues::new(
+            let sortable_values = match SortableValues::try_new(
                 values_with_comma,
                 array_values_order_by.as_ref(),
                 schema_context.toml_version,
             ) {
                 Ok(sortable_values) => sortable_values,
-                Err(warning) => {
-                    tracing::warn!("{warning}");
+                Err(reason) => {
+                    tracing::debug!("{reason}");
                     return Vec::with_capacity(0);
                 }
             };
@@ -143,7 +143,7 @@ pub async fn array_values_order<'a>(
 
                         // グループ内の値をソート
                         if !group_values_with_comma.is_empty() {
-                            match SortableValues::new(
+                            match SortableValues::try_new(
                                 group_values_with_comma.clone(),
                                 get_array_values_order_by(&current_schema).as_ref(),
                                 schema_context.toml_version,
@@ -163,7 +163,7 @@ pub async fn array_values_order<'a>(
                         }
                     }
 
-                    // どのスキーマにも適合しなかった残りの値を最後に追加
+                    // Append remaining values
                     sorted_values_with_comma.append(&mut values_with_comma);
                     sorted_values_with_comma
                 }
@@ -287,7 +287,7 @@ impl SortableType {
         value: &tombi_ast::Value,
         array_values_order_by: Option<&ArrayValuesOrderBy>,
         toml_version: TomlVersion,
-    ) -> Result<Self, Warning> {
+    ) -> Result<Self, SortFailReason> {
         match value {
             tombi_ast::Value::Boolean(_) => Ok(SortableType::Boolean),
             tombi_ast::Value::IntegerBin(_)
@@ -320,20 +320,20 @@ impl SortableType {
                             }
                         }
                     }
-                    Err(Warning::ArrayValuesOrderByKeyNotFound)
+                    Err(SortFailReason::ArrayValuesOrderByKeyNotFound)
                 } else {
-                    Err(Warning::ArrayValuesOrderByRequired)
+                    Err(SortFailReason::ArrayValuesOrderByRequired)
                 }
             }
             tombi_ast::Value::Float(_) | tombi_ast::Value::Array(_) => {
-                Err(Warning::UnsupportedTypes)
+                Err(SortFailReason::UnsupportedTypes)
             }
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
-enum Warning {
+enum SortFailReason {
     #[error("Cannot sort array values because the values are empty.")]
     Empty,
 
@@ -356,13 +356,13 @@ enum Warning {
 }
 
 impl SortableValues {
-    pub fn new(
+    pub fn try_new(
         values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
         array_values_order_by: Option<&ArrayValuesOrderBy>,
         toml_version: tombi_toml_version::TomlVersion,
-    ) -> Result<Self, Warning> {
+    ) -> Result<Self, SortFailReason> {
         if values_with_comma.is_empty() {
-            return Err(Warning::UnsupportedTypes);
+            return Err(SortFailReason::Empty);
         }
         let mut values_with_comma_iter = values_with_comma.iter();
 
@@ -371,13 +371,13 @@ impl SortableValues {
             .map(|(value, _)| SortableType::try_new(value, array_values_order_by, toml_version))
             .transpose()?
         else {
-            return Err(Warning::Empty);
+            return Err(SortFailReason::Empty);
         };
 
         if values_with_comma_iter.any(|(value, _)| {
             SortableType::try_new(value, array_values_order_by, toml_version) != Ok(sortable_type)
         }) {
-            return Err(Warning::DifferentTypes);
+            return Err(SortFailReason::DifferentTypes);
         }
 
         let sortable_values = match sortable_type {
@@ -389,10 +389,10 @@ impl SortableValues {
                         match value.syntax().to_string().as_ref() {
                             "true" => sortable_values.push((true, value, comma)),
                             "false" => sortable_values.push((false, value, comma)),
-                            _ => return Err(Warning::Incomplete),
+                            _ => return Err(SortFailReason::Incomplete),
                         }
                     } else {
-                        return Err(Warning::DifferentTypes);
+                        return Err(SortFailReason::DifferentTypes);
                     }
                 }
                 SortableValues::Boolean(sortable_values)
@@ -408,7 +408,7 @@ impl SortableValues {
                             {
                                 sortable_values.push((integer.value(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::IntegerOct(integer_oct) => {
@@ -417,7 +417,7 @@ impl SortableValues {
                             {
                                 sortable_values.push((integer.value(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::IntegerDec(integer_dec) => {
@@ -426,7 +426,7 @@ impl SortableValues {
                             {
                                 sortable_values.push((integer.value(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::IntegerHex(integer_hex) => {
@@ -435,10 +435,10 @@ impl SortableValues {
                             {
                                 sortable_values.push((integer.value(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
-                        _ => return Err(Warning::DifferentTypes),
+                        _ => return Err(SortFailReason::DifferentTypes),
                     }
                 }
                 SortableValues::Integer(sortable_values)
@@ -454,7 +454,7 @@ impl SortableValues {
                             {
                                 sortable_values.push((string.value().to_owned(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::LiteralString(literal_string) => {
@@ -463,7 +463,7 @@ impl SortableValues {
                             {
                                 sortable_values.push((string.value().to_owned(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::MultiLineBasicString(multi_line_basic_string) => {
@@ -472,7 +472,7 @@ impl SortableValues {
                             {
                                 sortable_values.push((string.value().to_owned(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::MultiLineLiteralString(multi_line_literal_string) => {
@@ -481,18 +481,18 @@ impl SortableValues {
                             {
                                 sortable_values.push((string.value().to_owned(), value, comma));
                             } else {
-                                return Err(Warning::Incomplete);
+                                return Err(SortFailReason::Incomplete);
                             }
                         }
                         tombi_ast::Value::InlineTable(inline_table) => {
-                            let array_values_order_by =
-                                array_values_order_by.ok_or(Warning::ArrayValuesOrderByRequired)?;
+                            let array_values_order_by = array_values_order_by
+                                .ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
 
                             let mut found = false;
                             for key_value in inline_table.key_values() {
                                 let keys = key_value
                                     .keys()
-                                    .ok_or(Warning::ArrayValuesOrderByKeyNotFound)?;
+                                    .ok_or(SortFailReason::ArrayValuesOrderByKeyNotFound)?;
                                 let mut keys_iter = keys.keys().into_iter();
 
                                 if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
@@ -517,10 +517,10 @@ impl SortableValues {
                             }
 
                             if !found {
-                                return Err(Warning::ArrayValuesOrderByKeyNotFound);
+                                return Err(SortFailReason::ArrayValuesOrderByKeyNotFound);
                             }
                         }
-                        _ => return Err(Warning::UnsupportedTypes),
+                        _ => return Err(SortFailReason::UnsupportedTypes),
                     }
                 }
                 SortableValues::String(sortable_values)
@@ -532,7 +532,7 @@ impl SortableValues {
                     if let tombi_ast::Value::OffsetDateTime(_) = value {
                         sortable_values.push((value.syntax().to_string(), value, comma));
                     } else {
-                        return Err(Warning::DifferentTypes);
+                        return Err(SortFailReason::DifferentTypes);
                     }
                 }
                 SortableValues::OffsetDateTime(sortable_values)
@@ -544,7 +544,7 @@ impl SortableValues {
                     if let tombi_ast::Value::LocalDateTime(_) = value {
                         sortable_values.push((value.syntax().to_string(), value, comma));
                     } else {
-                        return Err(Warning::DifferentTypes);
+                        return Err(SortFailReason::DifferentTypes);
                     }
                 }
                 SortableValues::LocalDateTime(sortable_values)
@@ -556,7 +556,7 @@ impl SortableValues {
                     if let tombi_ast::Value::LocalDate(_) = value {
                         sortable_values.push((value.syntax().to_string(), value, comma));
                     } else {
-                        return Err(Warning::DifferentTypes);
+                        return Err(SortFailReason::DifferentTypes);
                     }
                 }
                 SortableValues::LocalDate(sortable_values)
@@ -568,7 +568,7 @@ impl SortableValues {
                     if let tombi_ast::Value::LocalTime(_) = value {
                         sortable_values.push((value.syntax().to_string(), value, comma));
                     } else {
-                        return Err(Warning::DifferentTypes);
+                        return Err(SortFailReason::DifferentTypes);
                     }
                 }
                 SortableValues::LocalTime(sortable_values)
