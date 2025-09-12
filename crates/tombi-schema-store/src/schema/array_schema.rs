@@ -150,9 +150,12 @@ impl XTombiArrayValuesOrder {
                             if let Some(group_orders) = group_orders.as_array() {
                                 let mut orders = vec![];
                                 for order in &group_orders.items {
-                                    match ArrayValuesOrder::try_from(order.as_str().unwrap()) {
-                                        Ok(val) => orders.push(val),
-                                        Err(_) => {
+                                    match order
+                                        .as_str()
+                                        .and_then(|v| ArrayValuesOrder::try_from(v).ok())
+                                    {
+                                        Some(val) => orders.push(val),
+                                        None => {
                                             tracing::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders.to_string()
@@ -169,9 +172,12 @@ impl XTombiArrayValuesOrder {
                             if let Some(group_orders) = group_orders.as_array() {
                                 let mut orders = vec![];
                                 for order in &group_orders.items {
-                                    match ArrayValuesOrder::try_from(order.as_str().unwrap()) {
-                                        Ok(val) => orders.push(val),
-                                        Err(_) => {
+                                    match order
+                                        .as_str()
+                                        .and_then(|v| ArrayValuesOrder::try_from(v).ok())
+                                    {
+                                        Some(val) => orders.push(val),
+                                        None => {
                                             tracing::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders.to_string()
