@@ -377,6 +377,34 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_cargo_package_with_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_dependencies_and_features(
                 r#"
                 [features]
@@ -453,6 +481,31 @@ mod table_keys_order {
                 serde = { version = "^1.0.0", features = [
                   "derive",
                   "std",
+                ] }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_dependencies_trailing_comma_with_comment_directive(
+                r#"
+                [dependencies]
+                serde = { features = [
+                  # tombi: format.rules.array-values-order.disabled = true
+
+                  "std", "derive",
+                ], version = "^1.0.0" }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                serde = { version = "^1.0.0", features = [
+                  # tombi: format.rules.array-values-order.disabled = true
+
+                  "std",
+                  "derive",
                 ] }
                 "#
             )
