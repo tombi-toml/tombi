@@ -7,7 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-ahash.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
