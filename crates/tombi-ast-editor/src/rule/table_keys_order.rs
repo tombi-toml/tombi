@@ -390,7 +390,6 @@ fn get_table_keys_order(
             if let Some(current_schema) = current_schema {
                 if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
                     return table_schema.keys_order.clone();
-                } else {
                 }
             }
             None
