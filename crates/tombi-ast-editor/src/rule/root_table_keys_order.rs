@@ -28,6 +28,10 @@ pub async fn root_table_keys_order<'a>(
         return Vec::with_capacity(0);
     }
 
+    let order = comment_directive
+        .as_ref()
+        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
+
     let mut changes = table_keys_order(
         &tombi_document_tree::Value::Table(
             key_values
@@ -79,6 +83,7 @@ pub async fn root_table_keys_order<'a>(
         targets,
         current_schema,
         schema_context,
+        order,
     )
     .await
     .into_iter()

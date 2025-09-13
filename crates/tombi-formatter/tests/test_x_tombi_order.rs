@@ -377,7 +377,7 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
-            async fn test_cargo_package_with_comment_directive(
+            async fn test_cargo_package_with_disabled_comment_directive(
                 r#"
                 # tombi: format.rules.table-keys-order.disabled = true
                 [package]
@@ -397,6 +397,34 @@ mod table_keys_order {
                 authors = { workspace = true }
                 edition = { workspace = true }
                 license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_package_with_ascending_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                [package]
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                name = "toml-version"
                 repository = { workspace = true }
                 version = { workspace = true }
                 "#

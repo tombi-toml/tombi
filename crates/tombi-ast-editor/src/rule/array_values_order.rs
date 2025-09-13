@@ -41,10 +41,6 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let Some(values_order) = &array_schema.values_order else {
-        return Vec::with_capacity(0);
-    };
-
     if comment_directive
         .as_ref()
         .and_then(|c| c.array_values_order_disabled())
@@ -52,6 +48,17 @@ pub async fn array_values_order<'a>(
     {
         return Vec::with_capacity(0);
     }
+
+    let Some(values_order) = comment_directive
+        .as_ref()
+        .and_then(|c| {
+            c.array_values_order()
+                .map(|sort_method| XTombiArrayValuesOrder::All(sort_method.into()))
+        })
+        .or_else(|| array_schema.values_order.clone())
+    else {
+        return Vec::with_capacity(0);
+    };
 
     let mut changes = vec![];
 
@@ -65,7 +72,7 @@ pub async fn array_values_order<'a>(
         SyntaxElement::Node(values_with_comma.last().unwrap().0.syntax().clone()),
     );
 
-    let mut sorted_values_with_comma = match values_order {
+    let mut sorted_values_with_comma = match &values_order {
         XTombiArrayValuesOrder::All(values_order) => {
             array_values_order_all(
                 values_with_comma,
