@@ -31,8 +31,8 @@ build-backend = "maturin"
 [tool.maturin]
 bindings = "bin"
 include = [
-  { path = "json.schemastore.org/**/*.json", format = "sdist" },
-  { path = "json.tombi.dev/**/*.json", format = "sdist" },
+  { format = "sdist", path = "json.schemastore.org/**/*.json" },
+  { format = "sdist", path = "json.tombi.dev/**/*.json" },
 ]
 manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"
