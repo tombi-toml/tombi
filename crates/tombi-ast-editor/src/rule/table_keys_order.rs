@@ -154,7 +154,7 @@ where
                                     if has_group(groups, TableKeysOrderGroupKind::Keys) {
                                         extract_properties(&mut new_targets_map, table_schema).await
                                     } else {
-                                        Vec::new()
+                                        Vec::with_capacity(0)
                                     };
                                 let mut pattern_properties =
                                     if has_group(groups, TableKeysOrderGroupKind::PatternKeys) {
@@ -164,7 +164,7 @@ where
                                         )
                                         .await
                                     } else {
-                                        Vec::new()
+                                        Vec::with_capacity(0)
                                     };
                                 let mut additional_properties =
                                     new_targets_map.into_iter().collect_vec();
