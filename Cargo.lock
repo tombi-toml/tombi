@@ -3807,6 +3807,7 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree",
