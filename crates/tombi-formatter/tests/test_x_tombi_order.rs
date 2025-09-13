@@ -648,6 +648,42 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_comment_directive_sort(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                [aaa]
+                key1 = "value1"
+
+                [bbb]
+                key2 = "value2"
+
+                [ccc]
+                key3 = "value3"
+
+                [ccc.ddd]
+                key4 = "value4"
+                "#,
+            ) -> Ok(r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                [ccc]
+                key3 = "value3"
+
+                [ccc.ddd]
+                key4 = "value4"
+
+                [bbb]
+                key2 = "value2"
+
+                [aaa]
+                key1 = "value1"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_array_of_tables(
                 r#"
                 [[aaa]]

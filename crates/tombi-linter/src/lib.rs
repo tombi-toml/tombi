@@ -426,6 +426,37 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_empty_document_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_key_value_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                key = "value"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_table_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                [aaa]
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_table_warning_empty(
                 r#"
                 [aaa]
