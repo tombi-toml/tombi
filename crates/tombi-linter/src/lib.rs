@@ -550,6 +550,24 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_dotted_keys_out_of_order_with_comment_directive_table_keys_order_disabled_eq_true(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+
+                apple.type = "fruit"
+                orange.type = "fruit"
+
+                apple.skin = "thin"
+                orange.skin = "thick"
+
+                apple.color = "red"
+                orange.color = "orange"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_schema_uri(
                 r#"
                 #:schema https://json.schemastore.org/tombi.json

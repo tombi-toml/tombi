@@ -36,7 +36,33 @@ pub struct TombiValueDirectiveContent<FormatRules, LintRules> {
     pub lint: Option<LintOptions<LintRules>>,
 }
 
-impl<T> TombiValueDirectiveContent<TableFormatRules, T> {
+impl<FormatRules, LintRules> TombiValueDirectiveContent<FormatRules, LintRules> {
+    pub fn format_rules(&self) -> Option<&FormatRules> {
+        if let TombiValueDirectiveContent {
+            format: Some(FormatOptions { rules: Some(rules) }),
+            ..
+        } = self
+        {
+            Some(rules)
+        } else {
+            None
+        }
+    }
+
+    pub fn lint_rules(&self) -> Option<&LintRules> {
+        if let TombiValueDirectiveContent {
+            lint: Some(LintOptions { rules: Some(rules) }),
+            ..
+        } = self
+        {
+            Some(rules)
+        } else {
+            None
+        }
+    }
+}
+
+impl<LintRules> TombiValueDirectiveContent<TableFormatRules, LintRules> {
     #[inline]
     pub fn table_keys_order(&self) -> Option<SortMethod> {
         if let TombiValueDirectiveContent {
@@ -83,7 +109,7 @@ impl<T> TombiValueDirectiveContent<TableFormatRules, T> {
     }
 }
 
-impl<T> TombiValueDirectiveContent<ArrayFormatRules, T> {
+impl<LintRules> TombiValueDirectiveContent<ArrayFormatRules, LintRules> {
     #[inline]
     pub fn array_values_order(&self) -> Option<SortMethod> {
         if let TombiValueDirectiveContent {

@@ -3458,11 +3458,10 @@ dependencies = [
  "indexmap",
  "itertools 0.14.0",
  "regex",
- "serde",
  "thiserror 2.0.12",
  "tombi-ast",
  "tombi-comment-directive",
- "tombi-document",
+ "tombi-comment-directive-serde",
  "tombi-document-tree",
  "tombi-future",
  "tombi-parser",
@@ -3522,6 +3521,18 @@ dependencies = [
  "tombi-toml-version",
  "tombi-uri",
  "tombi-x-keyword",
+]
+
+[[package]]
+name = "tombi-comment-directive-serde"
+version = "0.0.0-dev"
+dependencies = [
+ "serde",
+ "tombi-ast",
+ "tombi-comment-directive",
+ "tombi-document",
+ "tombi-document-tree",
+ "tombi-parser",
 ]
 
 [[package]]
@@ -3796,6 +3807,7 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree",

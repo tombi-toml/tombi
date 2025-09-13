@@ -1,12 +1,10 @@
 use itertools::Itertools;
 use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 
-use crate::{
-    get_comment_directive_content,
-    rule::{inline_table_comma_trailing_comment, table_keys_order},
-};
+use crate::rule::{inline_table_comma_trailing_comment, table_keys_order};
 
 impl crate::Edit for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
