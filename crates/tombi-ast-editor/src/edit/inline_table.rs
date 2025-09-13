@@ -36,20 +36,12 @@ impl crate::Edit for tombi_ast::InlineTable {
                 ));
                 changes.extend(
                     key_value
-                        .edit(accessors, source_path, None, schema_context)
+                        .edit(accessors, source_path, current_schema, schema_context)
                         .await,
                 );
             }
 
             if let Some(current_schema) = current_schema {
-                for key_value in self.key_values() {
-                    changes.extend(
-                        key_value
-                            .edit(accessors, source_path, Some(current_schema), schema_context)
-                            .await,
-                    );
-                }
-
                 changes.extend(
                     table_keys_order(
                         value,
