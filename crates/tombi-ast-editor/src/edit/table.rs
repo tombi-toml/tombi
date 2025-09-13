@@ -3,11 +3,12 @@ use std::borrow::Cow;
 use itertools::Itertools;
 use tombi_ast::GetHeaderSchemarAccessors;
 use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::Accessor;
 
-use crate::{edit::get_schema, get_comment_directive_content, rule::table_keys_order};
+use crate::{edit::get_schema, rule::table_keys_order};
 
 impl crate::Edit for tombi_ast::Table {
     fn edit<'a: 'b, 'b>(

@@ -1,9 +1,10 @@
 use itertools::Itertools;
 use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_syntax::SyntaxElement;
 
-use crate::{get_comment_directive_content, rule::root_table_keys_order};
+use crate::rule::root_table_keys_order;
 use tombi_ast::AstToken;
 
 impl crate::Edit for tombi_ast::Root {
