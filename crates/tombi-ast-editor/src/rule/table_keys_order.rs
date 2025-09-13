@@ -127,12 +127,12 @@ where
         let mut results = Vec::with_capacity(targets.len());
         let mut sort_targets_map = IndexMap::new();
 
-        for (schema_accessors, target) in targets {
-            if let Some(accessor) = schema_accessors.first() {
+        for (accessors, target) in targets {
+            if let Some(accessor) = accessors.first() {
                 sort_targets_map
                     .entry(accessor.clone())
                     .or_insert_with(Vec::new)
-                    .push((schema_accessors[1..].to_vec(), target));
+                    .push((accessors[1..].to_vec(), target));
             } else {
                 results.push(target);
             }
@@ -246,11 +246,7 @@ where
 
                 results
             }
-            tombi_document_tree::Value::Array(array)
-                if sort_targets_map
-                    .iter()
-                    .all(|(accessor, _)| matches!(accessor, Accessor::Index(_))) =>
-            {
+            tombi_document_tree::Value::Array(array) => {
                 if let Some(current_schema) = current_schema {
                     if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
                         if let Some(referable_schema) = &array_schema.items {
@@ -265,11 +261,17 @@ where
                                 .await
                                 .inspect_err(|err| tracing::warn!("{err}"))
                             {
-                                for (value, (_, targets)) in array.iter().zip(sort_targets_map) {
+                                for (index, (value, (_, targets))) in
+                                    array.iter().zip(sort_targets_map).enumerate()
+                                {
                                     results.extend(
                                         sorted_accessors(
                                             value,
-                                            accessors,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(Accessor::Index(index)))
+                                                .collect_vec(),
                                             targets,
                                             Some(&current_schema),
                                             schema_context,
@@ -284,10 +286,22 @@ where
                     }
                 };
 
-                for (value, (_, targets)) in array.iter().zip(sort_targets_map) {
+                for (index, (value, (_, targets))) in array.iter().zip(sort_targets_map).enumerate()
+                {
                     results.extend(
-                        sorted_accessors(value, accessors, targets, None, schema_context, order)
-                            .await,
+                        sorted_accessors(
+                            value,
+                            &accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(Accessor::Index(index)))
+                                .collect_vec(),
+                            targets,
+                            None,
+                            schema_context,
+                            order,
+                        )
+                        .await,
                     );
                 }
                 results

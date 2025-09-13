@@ -645,6 +645,32 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_of_tables(
+                r#"
+                [[aaa]]
+                key1 = "value1"
+                key2 = "value2"
+
+                [[aaa]]
+                key1 = "value3"
+                key2 = "value4"
+
+                [aaa.key3]
+                key4 = "value5"
+
+                [[aaa]]
+                key1 = "value6"
+                key2 = "value7"
+
+                [[aaa]]
+                key1 = "value8"
+                key2 = "value9"
+                "#,
+            ) -> Ok(_)
+        }
     }
 
     mod file_schema {
@@ -1043,11 +1069,35 @@ mod table_keys_order {
             async fn $name:ident(
                 $source:expr,
                 $schema_path:expr$(,)?
+            ) -> Ok(_)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name($source, Some($schema_path)) -> Ok($source)
+            }
+        };
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                $schema_path:expr$(,)?
             ) -> Ok($expected:expr$(,)?)
         ) => {
             test_format! {
                 #[tokio::test]
                 async fn _$name($source, Some($schema_path)) -> Ok($expected)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+            ) -> Ok(_)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name($source, Option::<&std::path::Path>::None) -> Ok($source)
             }
         };
 

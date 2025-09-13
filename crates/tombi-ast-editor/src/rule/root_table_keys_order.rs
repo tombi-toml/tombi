@@ -1,10 +1,10 @@
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, GetHeaderSchemarAccessors};
 use tombi_comment_directive::value::{
     TableCommonLintRules, TableFormatRules, TombiValueDirectiveContent,
 };
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
+use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
 
 use crate::rule::table_keys_order::{sorted_accessors, table_keys_order};
@@ -61,12 +61,7 @@ pub async fn root_table_keys_order<'a>(
         .map(|table| {
             (
                 table
-                    .header()
-                    .map(|key| {
-                        key.keys()
-                            .map(|key| Accessor::Key(key.to_raw_text(schema_context.toml_version)))
-                            .collect_vec()
-                    })
+                    .get_header_accessor(schema_context.toml_version)
                     .unwrap_or_default(),
                 table,
             )
