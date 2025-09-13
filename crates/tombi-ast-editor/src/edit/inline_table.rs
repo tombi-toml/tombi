@@ -1,8 +1,12 @@
 use itertools::Itertools;
+use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 
-use crate::rule::{inline_table_comma_trailing_comment, inline_table_keys_order};
+use crate::{
+    get_comment_directive_content,
+    rule::{inline_table_comma_trailing_comment, inline_table_keys_order},
+};
 
 impl crate::Edit for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
@@ -14,6 +18,11 @@ impl crate::Edit for tombi_ast::InlineTable {
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
+
+            let comment_directive = get_comment_directive_content::<
+                TableFormatRules,
+                TableCommonLintRules,
+            >(self.comment_directives());
 
             for (key_value, comma) in self.key_values_with_comma() {
                 changes.extend(inline_table_comma_trailing_comment(
@@ -34,6 +43,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                             self.key_values_with_comma().collect_vec(),
                             table_schema,
                             schema_context,
+                            comment_directive,
                         )
                         .await,
                     );

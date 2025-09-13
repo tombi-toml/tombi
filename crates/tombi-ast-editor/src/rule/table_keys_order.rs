@@ -3,6 +3,9 @@ use std::{borrow::Cow, collections::HashSet};
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::{
+    TableCommonLintRules, TableFormatRules, TombiValueDirectiveContent,
+};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaContext,
@@ -17,8 +20,17 @@ pub async fn table_keys_order<'a>(
     key_values: Vec<tombi_ast::KeyValue>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
+    comment_directive: Option<TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>>,
 ) -> Vec<crate::Change> {
     if key_values.is_empty() {
+        return Vec::with_capacity(0);
+    }
+
+    if comment_directive
+        .as_ref()
+        .and_then(|c| c.table_keys_order_disabled())
+        .unwrap_or(false)
+    {
         return Vec::with_capacity(0);
     }
 

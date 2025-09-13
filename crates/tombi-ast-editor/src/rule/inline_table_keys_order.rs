@@ -4,6 +4,9 @@ use crate::rule::inline_table_comma_trailing_comment;
 use ahash::HashSet;
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::{
+    TableCommonLintRules, TableFormatRules, TombiValueDirectiveContent,
+};
 use tombi_schema_store::{
     SchemaAccessor, SchemaContext, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder,
 };
@@ -16,6 +19,7 @@ pub async fn inline_table_keys_order<'a>(
     mut key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     table_schema: &'a TableSchema,
     schema_context: &'a SchemaContext<'a>,
+    comment_directive: Option<TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>>,
 ) -> Vec<crate::Change> {
     if key_values_with_comma.is_empty() {
         return Vec::with_capacity(0);
@@ -24,6 +28,14 @@ pub async fn inline_table_keys_order<'a>(
     let Some(keys_order) = &table_schema.keys_order else {
         return Vec::with_capacity(0);
     };
+
+    if comment_directive
+        .as_ref()
+        .and_then(|c| c.table_keys_order_disabled())
+        .unwrap_or(false)
+    {
+        return Vec::with_capacity(0);
+    }
 
     let mut changes = vec![];
 

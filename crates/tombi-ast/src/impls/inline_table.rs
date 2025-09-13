@@ -5,6 +5,7 @@ use tombi_toml_version::TomlVersion;
 use crate::{support, AstNode, TombiValueCommentDirective};
 
 impl crate::InlineTable {
+    #[inline]
     pub fn inner_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
         support::node::begin_dangling_comments(
             self.syntax()
@@ -14,6 +15,7 @@ impl crate::InlineTable {
         )
     }
 
+    #[inline]
     pub fn inner_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
         support::node::end_dangling_comments(
             self.syntax()
@@ -33,7 +35,6 @@ impl crate::InlineTable {
         )
     }
 
-    #[inline]
     pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
         let mut comment_directives = vec![];
 
@@ -65,6 +66,7 @@ impl crate::InlineTable {
         comment_directives.into_iter()
     }
 
+    #[inline]
     pub fn key_values_with_comma(
         &self,
     ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
@@ -77,6 +79,7 @@ impl crate::InlineTable {
             })
     }
 
+    #[inline]
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
         match toml_version {
             TomlVersion::V1_0_0 => false,
@@ -89,6 +92,7 @@ impl crate::InlineTable {
         }
     }
 
+    #[inline]
     pub fn has_trailing_comma_after_last_value(&self) -> bool {
         self.syntax()
             .children_with_tokens()
@@ -101,6 +105,7 @@ impl crate::InlineTable {
             .is_some_and(|it| it.kind() == T!(,))
     }
 
+    #[inline]
     pub fn has_multiline_values(&self, toml_version: TomlVersion) -> bool {
         self.key_values().any(|key_value| {
             key_value.value().is_some_and(|value| match value {
