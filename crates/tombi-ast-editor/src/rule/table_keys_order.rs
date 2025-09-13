@@ -1,4 +1,5 @@
-use std::{borrow::Cow, collections::HashSet};
+use ahash::HashSet;
+use std::borrow::Cow;
 
 use indexmap::IndexMap;
 use itertools::Itertools;
