@@ -3462,7 +3462,6 @@ dependencies = [
  "thiserror 2.0.12",
  "tombi-ast",
  "tombi-comment-directive",
- "tombi-comment-directive-store",
  "tombi-document",
  "tombi-document-tree",
  "tombi-future",
