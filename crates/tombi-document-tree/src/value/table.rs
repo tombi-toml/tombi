@@ -560,8 +560,11 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
             }
         }
 
-        let array_of_table_keys =
-            get_array_of_tables_keys(self.array_of_tables_keys(), toml_version, &mut errors);
+        let array_of_table_keys = get_array_of_tables_keys(
+            self.array_of_tables_keys(toml_version),
+            toml_version,
+            &mut errors,
+        );
 
         let mut is_array_of_table = false;
         while let Some(mut key) = header_keys.pop() {

@@ -158,17 +158,20 @@ impl crate::Table {
             })
     }
 
-    pub fn array_of_tables_keys(&self) -> impl Iterator<Item = AstChildren<crate::Key>> + '_ {
+    pub fn array_of_tables_keys(
+        &self,
+        toml_version: TomlVersion,
+    ) -> impl Iterator<Item = AstChildren<crate::Key>> + '_ {
         support::node::prev_siblings_nodes(self)
             .filter_map(|node: ArrayOfTable| node.header().map(|header| header.keys()))
-            .take_while(|keys| {
+            .take_while(move |keys| {
                 match (
                     self.header().and_then(|header| header.keys().next()),
                     keys.clone().next(),
                 ) {
                     (Some(a), Some(b)) => match (
-                        a.try_to_raw_text(TomlVersion::latest()),
-                        b.try_to_raw_text(TomlVersion::latest()),
+                        a.try_to_raw_text(toml_version),
+                        b.try_to_raw_text(toml_version),
                     ) {
                         (Ok(a), Ok(b)) => a == b,
                         _ => false,

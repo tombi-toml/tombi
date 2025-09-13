@@ -202,6 +202,26 @@ pub enum SortMethod {
     VersionSort,
 }
 
+impl Into<tombi_x_keyword::TableKeysOrder> for SortMethod {
+    fn into(self) -> tombi_x_keyword::TableKeysOrder {
+        match self {
+            SortMethod::Ascending => tombi_x_keyword::TableKeysOrder::Ascending,
+            SortMethod::Descending => tombi_x_keyword::TableKeysOrder::Descending,
+            SortMethod::VersionSort => tombi_x_keyword::TableKeysOrder::VersionSort,
+        }
+    }
+}
+
+impl Into<tombi_x_keyword::ArrayValuesOrder> for SortMethod {
+    fn into(self) -> tombi_x_keyword::ArrayValuesOrder {
+        match self {
+            SortMethod::Ascending => tombi_x_keyword::ArrayValuesOrder::Ascending,
+            SortMethod::Descending => tombi_x_keyword::ArrayValuesOrder::Descending,
+            SortMethod::VersionSort => tombi_x_keyword::ArrayValuesOrder::VersionSort,
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]

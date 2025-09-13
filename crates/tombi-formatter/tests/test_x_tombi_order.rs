@@ -377,7 +377,7 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
-            async fn test_cargo_package_with_comment_directive(
+            async fn test_cargo_package_with_disabled_comment_directive(
                 r#"
                 # tombi: format.rules.table-keys-order.disabled = true
                 [package]
@@ -397,6 +397,34 @@ mod table_keys_order {
                 authors = { workspace = true }
                 edition = { workspace = true }
                 license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_package_with_ascending_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                [package]
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                name = "toml-version"
                 repository = { workspace = true }
                 version = { workspace = true }
                 "#
@@ -616,6 +644,32 @@ mod table_keys_order {
                 key4 = "value4"
                 "#
             )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_of_tables(
+                r#"
+                [[aaa]]
+                key1 = "value1"
+                key2 = "value2"
+
+                [[aaa]]
+                key1 = "value3"
+                key2 = "value4"
+
+                [aaa.key3]
+                key4 = "value5"
+
+                [[aaa]]
+                key1 = "value6"
+                key2 = "value7"
+
+                [[aaa]]
+                key1 = "value8"
+                key2 = "value9"
+                "#,
+            ) -> Ok(_)
         }
     }
 
@@ -1015,11 +1069,35 @@ mod table_keys_order {
             async fn $name:ident(
                 $source:expr,
                 $schema_path:expr$(,)?
+            ) -> Ok(_)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name($source, Some($schema_path)) -> Ok($source)
+            }
+        };
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                $schema_path:expr$(,)?
             ) -> Ok($expected:expr$(,)?)
         ) => {
             test_format! {
                 #[tokio::test]
                 async fn _$name($source, Some($schema_path)) -> Ok($expected)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+            ) -> Ok(_)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name($source, Option::<&std::path::Path>::None) -> Ok($source)
             }
         };
 
