@@ -20,22 +20,6 @@ impl crate::Edit for tombi_ast::InlineTable {
         async move {
             let mut changes = vec![];
 
-            let comment_directive =
-                get_comment_directive_content::<TableFormatRules, TableCommonLintRules>(
-                    if let Some(key_value) = self
-                        .syntax()
-                        .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
-                    {
-                        key_value
-                            .comment_directives()
-                            .chain(self.comment_directives())
-                            .collect_vec()
-                    } else {
-                        self.comment_directives().collect_vec()
-                    },
-                );
-
             let value = &self
                 .clone()
                 .into_document_tree_and_errors(schema_context.toml_version)
@@ -52,6 +36,22 @@ impl crate::Edit for tombi_ast::InlineTable {
                         .await,
                 );
             }
+
+            let comment_directive =
+                get_comment_directive_content::<TableFormatRules, TableCommonLintRules>(
+                    if let Some(key_value) = self
+                        .syntax()
+                        .parent()
+                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                    {
+                        key_value
+                            .comment_directives()
+                            .chain(self.comment_directives())
+                            .collect_vec()
+                    } else {
+                        self.comment_directives().collect_vec()
+                    },
+                );
 
             changes.extend(
                 inline_table_keys_order(

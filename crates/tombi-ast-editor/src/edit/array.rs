@@ -22,22 +22,6 @@ impl crate::Edit for tombi_ast::Array {
         async move {
             let mut changes = vec![];
 
-            let comment_directive =
-                get_comment_directive_content::<ArrayFormatRules, ArrayCommonLintRules>(
-                    if let Some(key_value) = self
-                        .syntax()
-                        .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
-                    {
-                        key_value
-                            .comment_directives()
-                            .chain(self.comment_directives())
-                            .collect_vec()
-                    } else {
-                        self.comment_directives().collect_vec()
-                    },
-                );
-
             let mut use_item_schema = false;
             if let Some(current_schema) = current_schema {
                 if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
@@ -78,6 +62,22 @@ impl crate::Edit for tombi_ast::Array {
                     changes.extend(value.edit(&[], source_path, None, schema_context).await);
                 }
             }
+
+            let comment_directive =
+                get_comment_directive_content::<ArrayFormatRules, ArrayCommonLintRules>(
+                    if let Some(key_value) = self
+                        .syntax()
+                        .parent()
+                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                    {
+                        key_value
+                            .comment_directives()
+                            .chain(self.comment_directives())
+                            .collect_vec()
+                    } else {
+                        self.comment_directives().collect_vec()
+                    },
+                );
 
             changes.extend(
                 array_values_order(
