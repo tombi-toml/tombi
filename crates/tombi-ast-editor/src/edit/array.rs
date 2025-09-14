@@ -5,14 +5,14 @@ use tombi_ast::AstNode;
 use tombi_comment_directive::value::{ArrayCommonLintRules, ArrayFormatRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{Accessor, ValueSchema};
+use tombi_schema_store::ValueSchema;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};
 
 impl crate::Edit for tombi_ast::Array {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::Accessor],
+        _accessors: &'a [tombi_schema_store::Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -54,17 +54,13 @@ impl crate::Edit for tombi_ast::Array {
                             .inspect_err(|err| tracing::warn!("{err}"))
                         {
                             use_item_schema = true;
-                            for (index, (value, comma)) in self.values_with_comma().enumerate() {
+                            for (value, comma) in self.values_with_comma() {
                                 changes
                                     .extend(array_comma_trailing_comment(&value, comma.as_ref()));
                                 changes.extend(
                                     value
                                         .edit(
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(Accessor::Index(index)))
-                                                .collect_vec(),
+                                            &[],
                                             source_path,
                                             Some(&current_schema),
                                             schema_context,
@@ -79,11 +75,7 @@ impl crate::Edit for tombi_ast::Array {
             if !use_item_schema {
                 for (value, comma) in self.values_with_comma() {
                     changes.extend(array_comma_trailing_comment(&value, comma.as_ref()));
-                    changes.extend(
-                        value
-                            .edit(accessors, source_path, None, schema_context)
-                            .await,
-                    );
+                    changes.extend(value.edit(&[], source_path, None, schema_context).await);
                 }
             }
 
