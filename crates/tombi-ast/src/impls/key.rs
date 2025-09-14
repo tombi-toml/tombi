@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use itertools::{EitherOrBoth, Itertools};
+use tombi_accessor::Accessor;
 use tombi_toml_version::TomlVersion;
 
 use crate::{AstChildren, AstNode};
@@ -12,6 +13,10 @@ impl crate::Key {
             Self::BasicString(key) => key.token(),
             Self::LiteralString(key) => key.token(),
         }
+    }
+
+    pub fn accessor(&self, toml_version: TomlVersion) -> Accessor {
+        Accessor::Key(self.to_raw_text(toml_version))
     }
 
     pub fn to_raw_text(&self, toml_version: TomlVersion) -> String {
@@ -52,6 +57,14 @@ impl PartialOrd for crate::Key {
             (Ok(a), Ok(b)) => Some(a.cmp(&b)),
             _ => None,
         }
+    }
+}
+
+impl crate::Keys {
+    pub fn accessors(&self, toml_version: TomlVersion) -> Vec<Accessor> {
+        self.keys()
+            .map(|key| key.accessor(toml_version))
+            .collect_vec()
     }
 }
 

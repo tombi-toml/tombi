@@ -13,7 +13,7 @@ use tombi_comment_directive::value::{
 };
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{
-    AnyOfSchema, ArraySchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema, ValueSchema,
+    AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema, ValueSchema,
     XTombiArrayValuesOrder,
 };
 use tombi_syntax::SyntaxElement;
@@ -21,7 +21,6 @@ use tombi_toml_version::TomlVersion;
 use tombi_validator::Validate;
 use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy, ArrayValuesOrderGroup};
 
-use super::array_comma_trailing_comment;
 use boolean::create_boolean_sortable_values;
 use integer::create_integer_sortable_values;
 use local_date::create_local_date_sortable_values;
@@ -30,10 +29,11 @@ use local_time::create_local_time_sortable_values;
 use offset_date_time::create_offset_date_time_sortable_values;
 use string::create_string_sortable_values;
 
+use crate::rule::array_comma_trailing_comment;
+
 pub async fn array_values_order<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_schema: &'a ArraySchema,
-    current_schema: &'a CurrentSchema<'a>,
+    current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     comment_directive: Option<TombiValueDirectiveContent<ArrayFormatRules, ArrayCommonLintRules>>,
 ) -> Vec<crate::Change> {
@@ -49,14 +49,23 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     }
 
-    let Some(values_order) = comment_directive
+    let order: Option<ArrayValuesOrder> = comment_directive
         .as_ref()
-        .and_then(|c| {
-            c.array_values_order()
-                .map(|sort_method| XTombiArrayValuesOrder::All(sort_method.into()))
-        })
-        .or_else(|| array_schema.values_order.clone())
-    else {
+        .and_then(|comment_directive| comment_directive.array_values_order().map(Into::into));
+
+    let values_order = match order {
+        Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
+        None => {
+            if let Some(ValueSchema::Array(array_schema)) =
+                current_schema.map(|current_schema| current_schema.value_schema.as_ref())
+            {
+                array_schema.values_order.clone()
+            } else {
+                None
+            }
+        }
+    };
+    let Some(values_order) = values_order else {
         return Vec::with_capacity(0);
     };
 
@@ -72,11 +81,10 @@ pub async fn array_values_order<'a>(
         SyntaxElement::Node(values_with_comma.last().unwrap().0.syntax().clone()),
     );
 
-    let mut sorted_values_with_comma = match &values_order {
+    let sorted_values_with_comma = match values_order {
         XTombiArrayValuesOrder::All(values_order) => {
-            array_values_order_all(
+            sort_array_values_order_all(
                 values_with_comma,
-                array_schema,
                 current_schema,
                 schema_context,
                 values_order,
@@ -84,9 +92,8 @@ pub async fn array_values_order<'a>(
             .await
         }
         XTombiArrayValuesOrder::Groups(values_order_group) => {
-            array_values_order_groups(
+            sort_array_values_order_groups(
                 values_with_comma,
-                array_schema,
                 current_schema,
                 schema_context,
                 values_order_group,
@@ -95,11 +102,15 @@ pub async fn array_values_order<'a>(
         }
     };
 
+    let Some(mut sorted_values_with_comma) = sorted_values_with_comma else {
+        return Vec::with_capacity(0);
+    };
+
     if let Some((_, comma)) = sorted_values_with_comma.last_mut() {
         if !is_last_comma {
-            if let Some(last_comma) = comma {
-                if last_comma.trailing_comment().is_none()
-                    && last_comma.leading_comments().next().is_none()
+            if let Some(new_last_comma) = comma {
+                if new_last_comma.trailing_comment().is_none()
+                    && new_last_comma.leading_comments().next().is_none()
                 {
                     *comma = None;
                 }
@@ -108,71 +119,42 @@ pub async fn array_values_order<'a>(
     }
 
     for (value, comma) in &sorted_values_with_comma {
-        changes.extend(array_comma_trailing_comment(
-            value,
-            comma.as_ref(),
-            schema_context,
-        ));
+        changes.extend(array_comma_trailing_comment(value, comma.as_ref()));
     }
 
     let new = sorted_values_with_comma
         .iter()
         .flat_map(|(value, comma)| {
             if let Some(comma) = comma {
-                vec![
-                    SyntaxElement::Node(value.syntax().clone()),
-                    SyntaxElement::Node(comma.syntax().clone()),
-                ]
+                if !is_last_comma
+                    && comma.leading_comments().next().is_none()
+                    && comma.trailing_comment().is_none()
+                {
+                    vec![SyntaxElement::Node(value.syntax().clone())]
+                } else {
+                    vec![
+                        SyntaxElement::Node(value.syntax().clone()),
+                        SyntaxElement::Node(comma.syntax().clone()),
+                    ]
+                }
             } else {
                 vec![SyntaxElement::Node(value.syntax().clone())]
             }
         })
         .collect_vec();
 
-    if !is_last_comma {
-        if let Some(tombi_syntax::SyntaxElement::Node(node)) = new.last() {
-            if let Some(comma) = tombi_ast::Comma::cast(node.clone()) {
-                if comma.trailing_comment().is_none() && comma.leading_comments().next().is_none() {
-                    changes.push(crate::Change::Remove {
-                        target: SyntaxElement::Node(comma.syntax().clone()),
-                    });
-                }
-            }
-        }
-    }
-
     changes.insert(0, crate::Change::ReplaceRange { old, new });
 
     changes
 }
 
-async fn array_values_order_all<'a>(
+async fn sort_array_values_order_all<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_schema: &'a ArraySchema,
-    current_schema: &'a CurrentSchema<'a>,
+    current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    values_order: &ArrayValuesOrder,
-) -> Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)> {
-    let array_values_order_by = if let Some(item_schema) = &array_schema.items {
-        if let Some(current_schema) = item_schema
-            .write()
-            .await
-            .resolve(
-                current_schema.schema_uri.clone(),
-                current_schema.definitions.clone(),
-                schema_context.store,
-            )
-            .await
-            .ok()
-            .flatten()
-        {
-            get_array_values_order_by(&current_schema)
-        } else {
-            return Vec::with_capacity(0);
-        }
-    } else {
-        None
-    };
+    order: ArrayValuesOrder,
+) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
+    let array_values_order_by = get_array_values_order_by(current_schema, schema_context).await;
     let sortable_values = match SortableValues::try_new(
         values_with_comma,
         array_values_order_by.as_ref(),
@@ -181,21 +163,26 @@ async fn array_values_order_all<'a>(
         Ok(sortable_values) => sortable_values,
         Err(reason) => {
             tracing::debug!("{reason}");
-            return Vec::with_capacity(0);
+            return None;
         }
     };
-    sort_array_values(sortable_values, values_order)
+    Some(sort_array_values(sortable_values, order))
 }
 
-async fn array_values_order_groups<'a>(
+async fn sort_array_values_order_groups<'a>(
     mut values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_schema: &'a ArraySchema,
-    current_schema: &'a CurrentSchema<'a>,
+    current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    values_order_group: &ArrayValuesOrderGroup,
-) -> Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)> {
+    values_order_group: ArrayValuesOrderGroup,
+) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
+    let Some(current_schema) = current_schema else {
+        return None;
+    };
+    let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() else {
+        return None;
+    };
     let Some(item_schema) = &array_schema.items else {
-        return Vec::with_capacity(0);
+        return None;
     };
     let mut item_schema = item_schema.write().await;
     let Some(current_schema) = item_schema
@@ -208,7 +195,7 @@ async fn array_values_order_groups<'a>(
         .ok()
         .flatten()
     else {
-        return Vec::with_capacity(0);
+        return None;
     };
 
     match (values_order_group, current_schema.value_schema.as_ref()) {
@@ -220,7 +207,7 @@ async fn array_values_order_groups<'a>(
             ArrayValuesOrderGroup::AnyOf(group_orders),
             ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
         ) => {
-            let mut sorted_values_with_comma = Vec::new();
+            let mut sorted_values_with_comma = Vec::with_capacity(values_with_comma.len());
             let mut schemas = schemas.write().await;
 
             for (group_order, schema) in group_orders.iter().zip(schemas.iter_mut()) {
@@ -262,12 +249,12 @@ async fn array_values_order_groups<'a>(
                 if !group_values_with_comma.is_empty() {
                     match SortableValues::try_new(
                         group_values_with_comma.clone(),
-                        get_array_values_order_by(&current_schema).as_ref(),
+                        get_array_values_order_by_from_item_schema(&current_schema).as_ref(),
                         schema_context.toml_version,
                     ) {
                         Ok(sortable_values) => {
                             sorted_values_with_comma
-                                .append(&mut sort_array_values(sortable_values, group_order));
+                                .append(&mut sort_array_values(sortable_values, *group_order));
                         }
                         Err(warning) => {
                             tracing::warn!("{warning}");
@@ -279,15 +266,15 @@ async fn array_values_order_groups<'a>(
 
             // Append remaining values
             sorted_values_with_comma.append(&mut values_with_comma);
-            sorted_values_with_comma
+            Some(sorted_values_with_comma)
         }
-        _ => Vec::with_capacity(0),
+        _ => None,
     }
 }
 
 fn sort_array_values(
     sortable_values: SortableValues,
-    values_order: &ArrayValuesOrder,
+    values_order: ArrayValuesOrder,
 ) -> Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)> {
     match values_order {
         ArrayValuesOrder::Ascending => sortable_values
@@ -309,17 +296,45 @@ fn sort_array_values(
     }
 }
 
-fn get_array_values_order_by<'a>(
-    current_schema: &'a CurrentSchema<'a>,
+async fn get_array_values_order_by<'a>(
+    current_schema: Option<&'a CurrentSchema<'a>>,
+    schema_context: &'a SchemaContext<'a>,
 ) -> Option<ArrayValuesOrderBy> {
-    if let ValueSchema::Table(TableSchema {
-        array_values_order_by,
-        ..
-    }) = current_schema.value_schema.as_ref()
-    {
-        array_values_order_by.to_owned()
-    } else {
-        None
+    if let Some(current_schema) = current_schema {
+        match current_schema.value_schema.as_ref() {
+            ValueSchema::Array(array_schema) => {
+                if let Some(item_schema) = &array_schema.items {
+                    if let Some(current_schema) = item_schema
+                        .write()
+                        .await
+                        .resolve(
+                            current_schema.schema_uri.clone(),
+                            current_schema.definitions.clone(),
+                            schema_context.store,
+                        )
+                        .await
+                        .ok()
+                        .flatten()
+                    {
+                        return get_array_values_order_by_from_item_schema(&current_schema);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn get_array_values_order_by_from_item_schema<'a>(
+    item_schema: &'a CurrentSchema<'a>,
+) -> Option<ArrayValuesOrderBy> {
+    match item_schema.value_schema.as_ref() {
+        ValueSchema::Table(TableSchema {
+            array_values_order_by,
+            ..
+        }) => array_values_order_by.to_owned(),
+        _ => None,
     }
 }
 
@@ -397,7 +412,7 @@ impl SortableType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 enum SortFailReason {
     #[error("Cannot sort array values because the values are incomplete.")]
     Incomplete,

@@ -22,6 +22,7 @@ impl crate::Edit for tombi_ast::Table {
 
         async move {
             let mut changes = vec![];
+
             let Some(header_accessors) = self.get_header_accessor(schema_context.toml_version)
             else {
                 return changes;

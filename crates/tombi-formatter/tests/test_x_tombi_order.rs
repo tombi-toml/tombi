@@ -705,7 +705,192 @@ mod table_keys_order {
                 key1 = "value8"
                 key2 = "value9"
                 "#,
-            ) -> Ok(_)
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_leading_comment_directive(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [
+
+                  5, 4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [3, 4, 5]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_inner_comment_directive(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  5, 4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  3,
+                  4,
+                  5,
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_trailing_comment_directive(
+                r#"
+                key = [
+
+                  5, 4, 3,
+                ]  # tombi: format.rules.array-values-order = "ascending"
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  3,
+                  4,
+                  5,
+                ]  # tombi: format.rules.array-values-order = "ascending"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_inner_comment_directive_with_trailing_comment(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  # leading comment1
+                  5 # trailing comment1
+
+                  # leading comment2
+                  , # trailing comment2
+                  4, # trailing comment3
+                  3 # trailing comment4
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  3,  # trailing comment4
+                  4,  # trailing comment3
+                  # leading comment1
+                  5  # trailing comment1
+                  # leading comment2
+                  ,  # trailing comment2
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_leading_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                key = { key5 = 5, key4 = 4, key3 = 3 }
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                key = { key3 = 3, key4 = 4, key5 = 5 }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_inner_comment_directive(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  key5 = 5, key4 = 4, key3 = 3
+                }
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+            ) -> Ok(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  key3 = 3,
+                  key4 = 4,
+                  key5 = 5,
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_trailing_comment_directive(
+                r#"
+                key = {
+                  key5 = 5, key4 = 4, key3 = 3,
+                }  # tombi: format.rules.table-keys-order = "ascending"
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+            ) -> Ok(
+                r#"
+                key = {
+                  key3 = 3,
+                  key4 = 4,
+                  key5 = 5,
+                }  # tombi: format.rules.table-keys-order = "ascending"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_inner_comment_directive_with_trailing_comment(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  # leading comment1
+                  key5 = 5 # trailing comment1
+
+                  # leading comment2
+                  , # trailing comment2
+                  key4 = 4, # trailing comment3
+                  key3 = 3 # trailing comment4
+                }
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+            ) -> Ok(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  key3 = 3,  # trailing comment4
+                  key4 = 4,  # trailing comment3
+                  # leading comment1
+                  key5 = 5  # trailing comment1
+                  # leading comment2
+                  ,  # trailing comment2
+                }
+                "#
+            )
         }
     }
 
@@ -1104,14 +1289,89 @@ mod table_keys_order {
             #[tokio::test]
             async fn $name:ident(
                 $source:expr,
+                TomlVersion($toml_version:expr),
                 $schema_path:expr$(,)?
-            ) -> Ok(_)
+            ) -> Ok(source)
         ) => {
             test_format! {
                 #[tokio::test]
-                async fn _$name($source, Some($schema_path)) -> Ok($source)
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Some($schema_path),
+                ) -> Ok($source)
             }
         };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                TomlVersion($toml_version:expr),
+            ) -> Ok(source)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($source)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                $schema_path:expr$(,)?
+            ) -> Ok(source)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Some($schema_path),
+                ) -> Ok($source)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                TomlVersion($toml_version:expr),
+                $schema_path:expr$(,)?
+            ) -> Ok($expected:expr$(,)?)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Some($schema_path),
+                ) -> Ok($expected)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                TomlVersion($toml_version:expr),
+            ) -> Ok($expected:expr$(,)?)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($expected)
+            }
+        };
+
         (
             #[tokio::test]
             async fn $name:ident(
@@ -1121,7 +1381,11 @@ mod table_keys_order {
         ) => {
             test_format! {
                 #[tokio::test]
-                async fn _$name($source, Some($schema_path)) -> Ok($expected)
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Some($schema_path),
+                ) -> Ok($expected)
             }
         };
 
@@ -1129,11 +1393,15 @@ mod table_keys_order {
             #[tokio::test]
             async fn $name:ident(
                 $source:expr,
-            ) -> Ok(_)
+            ) -> Ok(source)
         ) => {
             test_format! {
                 #[tokio::test]
-                async fn _$name($source, Option::<&std::path::Path>::None) -> Ok($source)
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($source)
             }
         };
 
@@ -1145,7 +1413,11 @@ mod table_keys_order {
         ) => {
             test_format! {
                 #[tokio::test]
-                async fn _$name($source, Option::<&std::path::Path>::None) -> Ok($expected)
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($expected)
             }
         };
 
@@ -1153,7 +1425,8 @@ mod table_keys_order {
             #[tokio::test]
             async fn _$name:ident(
                 $source:expr,
-                $schema_path:expr$(,)?
+                $toml_version:expr,
+                $schema_path:expr,
             ) -> Ok($expected:expr$(,)?)
         ) => {
             #[tokio::test]
@@ -1190,7 +1463,7 @@ mod table_keys_order {
                 let format_options = FormatOptions::default();
                 let source_path = tombi_test_lib::project_root_path().join("test.toml");
                 let formatter = Formatter::new(
-                    TomlVersion::default(),
+                    $toml_version,
                     format_definitions,
                     &format_options,
                     Some(itertools::Either::Right(source_path.as_path())),

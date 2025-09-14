@@ -10,7 +10,7 @@ use super::get_schema;
 impl crate::Edit for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::Accessor],
+        accessors: &'a [tombi_schema_store::Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -44,7 +44,11 @@ impl crate::Edit for tombi_ast::KeyValue {
                         changes.extend(
                             value
                                 .edit(
-                                    &[],
+                                    &accessors
+                                        .iter()
+                                        .cloned()
+                                        .chain(keys_accessors.into_iter())
+                                        .collect_vec(),
                                     source_path,
                                     Some(&CurrentSchema {
                                         value_schema: Cow::Owned(value_schema),

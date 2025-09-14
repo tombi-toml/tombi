@@ -72,10 +72,10 @@ impl crate::InlineTable {
     ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
         self.key_values()
             .zip_longest(support::node::children::<crate::Comma>(self.syntax()))
-            .map(|value_with_comma| match value_with_comma {
-                itertools::EitherOrBoth::Both(value, comma) => (value, Some(comma)),
-                itertools::EitherOrBoth::Left(value) => (value, None),
-                itertools::EitherOrBoth::Right(_) => unreachable!(),
+            .filter_map(|value_with_comma| match value_with_comma {
+                itertools::EitherOrBoth::Both(value, comma) => Some((value, Some(comma))),
+                itertools::EitherOrBoth::Left(value) => Some((value, None)),
+                itertools::EitherOrBoth::Right(_) => None,
             })
     }
 
