@@ -83,7 +83,7 @@ pub async fn array_values_order<'a>(
 
     let sorted_values_with_comma = match values_order {
         XTombiArrayValuesOrder::All(values_order) => {
-            sort_array_values_order_all(
+            get_sorted_values_order_all(
                 values_with_comma,
                 current_schema,
                 schema_context,
@@ -92,7 +92,7 @@ pub async fn array_values_order<'a>(
             .await
         }
         XTombiArrayValuesOrder::Groups(values_order_group) => {
-            sort_array_values_order_groups(
+            get_sorted_values_order_groups(
                 values_with_comma,
                 current_schema,
                 schema_context,
@@ -148,7 +148,7 @@ pub async fn array_values_order<'a>(
     changes
 }
 
-async fn sort_array_values_order_all<'a>(
+async fn get_sorted_values_order_all<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -169,7 +169,7 @@ async fn sort_array_values_order_all<'a>(
     Some(sort_array_values(sortable_values, order))
 }
 
-async fn sort_array_values_order_groups<'a>(
+async fn get_sorted_values_order_groups<'a>(
     mut values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
