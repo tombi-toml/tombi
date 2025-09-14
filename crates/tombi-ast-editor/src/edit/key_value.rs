@@ -1,16 +1,16 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, CurrentSchema};
 
-use super::get_schema;
+use super::get_value_schema;
 
 impl crate::Edit for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::Accessor],
+        _accessors: &'a [tombi_schema_store::Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -27,14 +27,16 @@ impl crate::Edit for tombi_ast::KeyValue {
                 .map(|key| Accessor::Key(key.to_raw_text(schema_context.toml_version)))
                 .collect_vec();
 
+            let document_tree_value = tombi_document_tree::Value::Table(
+                self.clone()
+                    .into_document_tree_and_errors(schema_context.toml_version)
+                    .tree,
+            );
+
             if let Some(current_schema) = current_schema {
-                if let Some(value_schema) = get_schema(
-                    &tombi_document_tree::Value::Table(
-                        self.clone()
-                            .try_into_document_tree(schema_context.toml_version)
-                            .unwrap(),
-                    ),
-                    &keys_accessors.clone(),
+                if let Some(value_schema) = get_value_schema(
+                    &document_tree_value,
+                    &keys_accessors,
                     current_schema,
                     schema_context,
                 )
@@ -44,11 +46,7 @@ impl crate::Edit for tombi_ast::KeyValue {
                         changes.extend(
                             value
                                 .edit(
-                                    &accessors
-                                        .iter()
-                                        .cloned()
-                                        .chain(keys_accessors.into_iter())
-                                        .collect_vec(),
+                                    &[],
                                     source_path,
                                     Some(&CurrentSchema {
                                         value_schema: Cow::Owned(value_schema),
