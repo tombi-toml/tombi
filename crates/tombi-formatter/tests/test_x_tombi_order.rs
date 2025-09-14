@@ -316,6 +316,28 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_maturin_include(
+                r#"
+                [tool.maturin]
+                include = [
+                  { path = "json.schemastore.org/**/*.json", format = "sdist" },
+                  { path = "json.tombi.dev/**/*.json", format = "sdist" },
+                ]
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [tool.maturin]
+                include = [
+                  { format = "sdist", path = "json.schemastore.org/**/*.json" },
+                  { format = "sdist", path = "json.tombi.dev/**/*.json" },
+                ]
+                "#
+            )
+        }
     }
 
     mod cargo {
