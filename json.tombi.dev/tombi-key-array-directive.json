@@ -35,7 +35,7 @@
           "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/ArrayFormatRules"
+              "$ref": "#/definitions/WithCommonFormatRules"
             },
             {
               "type": "null"
@@ -45,7 +45,7 @@
       },
       "additionalProperties": false
     },
-    "ArrayFormatRules": {
+    "WithCommonFormatRules": {
       "type": "object",
       "properties": {
         "array-values-order": {
@@ -60,7 +60,9 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "SortOptions": {
       "anyOf": [
