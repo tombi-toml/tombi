@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::{FloatCommonLintRules, FloatFormatRules};
+use tombi_comment_directive::value::{FloatCommonFormatRules, FloatCommonLintRules};
 use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, ValueSchema};
 
 use crate::{
@@ -28,7 +28,7 @@ impl GetHoverContent for tombi_document_tree::Float {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_key_table_value_comment_directive_content_and_schema_uri::<
-                    FloatFormatRules,
+                    FloatCommonFormatRules,
                     FloatCommonLintRules,
                 >(self.comment_directives(), position, accessors)
             {

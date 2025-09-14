@@ -1,4 +1,6 @@
-use tombi_comment_directive::value::{LocalDateTimeCommonLintRules, LocalDateTimeFormatRules};
+use tombi_comment_directive::value::{
+    LocalDateTimeCommonFormatRules, LocalDateTimeCommonLintRules,
+};
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, ValueSchema};
 
 use crate::{
@@ -28,7 +30,7 @@ impl GetHoverContent for tombi_document_tree::LocalDateTime {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_key_table_value_comment_directive_content_and_schema_uri::<
-                    LocalDateTimeFormatRules,
+                    LocalDateTimeCommonFormatRules,
                     LocalDateTimeCommonLintRules,
                 >(self.comment_directives(), position, accessors)
             {

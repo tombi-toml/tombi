@@ -1,4 +1,6 @@
-use tombi_comment_directive::value::{OffsetDateTimeCommonLintRules, OffsetDateTimeFormatRules};
+use tombi_comment_directive::value::{
+    OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules,
+};
 use tombi_document_tree::{OffsetDateTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
@@ -21,7 +23,7 @@ impl Validate for OffsetDateTime {
             let mut total_diagnostics = vec![];
             let value_rules = if let Some(comment_directives) = self.comment_directives() {
                 let (value_rules, diagnostics) = get_tombi_key_table_value_rules_and_diagnostics::<
-                    OffsetDateTimeFormatRules,
+                    OffsetDateTimeCommonFormatRules,
                     OffsetDateTimeCommonLintRules,
                 >(comment_directives, accessors)
                 .await;

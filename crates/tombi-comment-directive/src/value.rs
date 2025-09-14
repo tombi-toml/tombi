@@ -10,6 +10,8 @@ mod offset_date_time;
 mod string;
 mod table;
 
+use std::ops::Deref;
+
 pub use array::*;
 pub use boolean::*;
 pub use float::*;
@@ -62,15 +64,19 @@ impl<FormatRules, LintRules> TombiValueDirectiveContent<FormatRules, LintRules> 
     }
 }
 
-impl<LintRules> TombiValueDirectiveContent<TableFormatRules, LintRules> {
+impl<LintRules> TombiValueDirectiveContent<TableCommonFormatRules, LintRules> {
     #[inline]
     pub fn table_keys_order(&self) -> Option<SortMethod> {
         if let TombiValueDirectiveContent {
             format:
                 Some(FormatOptions {
                     rules:
-                        Some(TableFormatRules {
-                            table_keys_order: Some(SortOptions::Sort(sort_method)),
+                        Some(TableCommonFormatRules {
+                            value:
+                                TableFormatRules {
+                                    table_keys_order: Some(SortOptions::Sort(sort_method)),
+                                    ..
+                                },
                             ..
                         }),
                     ..
@@ -90,11 +96,15 @@ impl<LintRules> TombiValueDirectiveContent<TableFormatRules, LintRules> {
             format:
                 Some(FormatOptions {
                     rules:
-                        Some(TableFormatRules {
-                            table_keys_order:
-                                Some(SortOptions::Disabled(SortDisabledOptions {
-                                    disabled: Some(disabled),
-                                })),
+                        Some(TableCommonFormatRules {
+                            value:
+                                TableFormatRules {
+                                    table_keys_order:
+                                        Some(SortOptions::Disabled(SortDisabledOptions {
+                                            disabled: Some(disabled),
+                                        })),
+                                    ..
+                                },
                             ..
                         }),
                     ..
@@ -109,15 +119,19 @@ impl<LintRules> TombiValueDirectiveContent<TableFormatRules, LintRules> {
     }
 }
 
-impl<LintRules> TombiValueDirectiveContent<ArrayFormatRules, LintRules> {
+impl<LintRules> TombiValueDirectiveContent<ArrayCommonFormatRules, LintRules> {
     #[inline]
     pub fn array_values_order(&self) -> Option<SortMethod> {
         if let TombiValueDirectiveContent {
             format:
                 Some(FormatOptions {
                     rules:
-                        Some(ArrayFormatRules {
-                            array_values_order: Some(SortOptions::Sort(sort_method)),
+                        Some(WithCommonFormatRules {
+                            value:
+                                ArrayFormatRules {
+                                    array_values_order: Some(SortOptions::Sort(sort_method)),
+                                    ..
+                                },
                             ..
                         }),
                     ..
@@ -137,11 +151,15 @@ impl<LintRules> TombiValueDirectiveContent<ArrayFormatRules, LintRules> {
             format:
                 Some(FormatOptions {
                     rules:
-                        Some(ArrayFormatRules {
-                            array_values_order:
-                                Some(SortOptions::Disabled(SortDisabledOptions {
-                                    disabled: Some(disabled),
-                                })),
+                        Some(WithCommonFormatRules {
+                            value:
+                                ArrayFormatRules {
+                                    array_values_order:
+                                        Some(SortOptions::Disabled(SortDisabledOptions {
+                                            disabled: Some(disabled),
+                                        })),
+                                    ..
+                                },
                             ..
                         }),
                     ..
@@ -207,6 +225,30 @@ where
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct EmptyFormatRules {}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub struct CommonFormatRules {}
+
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct WithCommonFormatRules<FormatRules> {
+    #[serde(flatten)]
+    pub common: CommonFormatRules,
+
+    #[serde(flatten)]
+    pub value: FormatRules,
+}
+
+impl<FormatRules> Deref for WithCommonFormatRules<FormatRules> {
+    type Target = FormatRules;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
 #[serde(untagged)]

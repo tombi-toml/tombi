@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
+use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_syntax::SyntaxElement;
@@ -21,7 +21,7 @@ impl crate::Edit for tombi_ast::Root {
             let mut table_or_array_of_tables = vec![];
 
             let comment_directive = get_comment_directive_content::<
-                TableFormatRules,
+                TableCommonFormatRules,
                 TableCommonLintRules,
             >(self.comment_directives());
 

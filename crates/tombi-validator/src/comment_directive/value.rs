@@ -2,13 +2,13 @@ use itertools::Itertools;
 use serde::Deserialize;
 use tombi_comment_directive::{
     value::{
-        ArrayCommonLintRules, ArrayFormatRules, ArrayOfTableCommonLintRules, ArrayOfTableLintRules,
-        EmptyFormatRules, InlineTableCommonLintRules, InlineTableLintRules,
-        KeyArrayOfTableCommonLintRules, KeyCommonExtensibleLintRules, KeyTableCommonLintRules,
-        LintOptions, ParentTableCommonLintRules, RootTableCommonLintRules, RootTableLintRules,
-        TableCommonLintRules, TableFormatRules, TombiValueDirectiveContent,
-        WithCommonExtensibleLintRules, WithCommonLintRules, WithKeyLintRules,
-        WithKeyTableLintRules,
+        ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonLintRules,
+        ArrayOfTableLintRules, InlineTableCommonLintRules, InlineTableLintRules,
+        KeyArrayOfTableCommonLintRules, KeyCommonExtensibleLintRules, KeyFormatRules,
+        KeyTableCommonLintRules, LintOptions, ParentTableCommonLintRules, RootTableCommonLintRules,
+        RootTableLintRules, TableCommonFormatRules, TableCommonLintRules,
+        TombiValueDirectiveContent, WithCommonExtensibleLintRules, WithCommonLintRules,
+        WithKeyLintRules, WithKeyTableLintRules,
     },
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
@@ -69,13 +69,14 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
         match array.kind() {
             ArrayKind::Array => {
                 let (rules, diagnostics) = if is_inner_comment_directives {
-                    get_tombi_value_rules_and_diagnostics::<ArrayFormatRules, ArrayCommonLintRules>(
-                        comment_directives,
-                    )
+                    get_tombi_value_rules_and_diagnostics::<
+                        ArrayCommonFormatRules,
+                        ArrayCommonLintRules,
+                    >(comment_directives)
                     .await
                 } else {
                     get_tombi_key_table_value_rules_and_diagnostics::<
-                        ArrayFormatRules,
+                        ArrayCommonFormatRules,
                         ArrayCommonLintRules,
                     >(comment_directives, accessors)
                     .await
@@ -88,7 +89,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
             }
             ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
                 let (rules, diagnostics) = get_tombi_key_value_rules_and_diagnostics::<
-                    TableFormatRules,
+                    TableCommonFormatRules,
                     ArrayOfTableCommonLintRules,
                 >(comment_directives, accessors)
                 .await;
@@ -184,7 +185,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
         match table.kind() {
             TableKind::InlineTable { .. } => {
                 let (rules, diagnostics) = get_tombi_key_value_rules_and_diagnostics::<
-                    TableFormatRules,
+                    TableCommonFormatRules,
                     InlineTableCommonLintRules,
                 >(comment_directives, accessors)
                 .await;
@@ -206,13 +207,14 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
             }
             TableKind::Table | TableKind::ParentTable => {
                 if is_inner_comment_directives {
-                    get_tombi_value_rules_and_diagnostics::<TableFormatRules, TableCommonLintRules>(
-                        comment_directives,
-                    )
+                    get_tombi_value_rules_and_diagnostics::<
+                        TableCommonFormatRules,
+                        TableCommonLintRules,
+                    >(comment_directives)
                     .await
                 } else if matches!(accessors.last(), Some(Accessor::Index(_))) {
                     let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                        TableFormatRules,
+                        TableCommonFormatRules,
                         KeyArrayOfTableCommonLintRules,
                     >(comment_directives)
                     .await;
@@ -237,7 +239,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
                     }
                 } else {
                     let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                        TableFormatRules,
+                        TableCommonFormatRules,
                         KeyTableCommonLintRules,
                     >(comment_directives)
                     .await;
@@ -250,7 +252,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
             }
             TableKind::KeyValue | TableKind::ParentKey => {
                 let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                    TableFormatRules,
+                    TableCommonFormatRules,
                     ParentTableCommonLintRules,
                 >(comment_directives)
                 .await;
@@ -273,7 +275,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
             }
             TableKind::Root => {
                 let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                    TableFormatRules,
+                    TableCommonFormatRules,
                     RootTableCommonLintRules,
                 >(comment_directives)
                 .await;
@@ -357,7 +359,7 @@ pub async fn get_tombi_key_rules_and_diagnostics(
     Option<KeyCommonExtensibleLintRules>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
-    get_tombi_value_rules_and_diagnostics::<EmptyFormatRules, KeyCommonExtensibleLintRules>(
+    get_tombi_value_rules_and_diagnostics::<KeyFormatRules, KeyCommonExtensibleLintRules>(
         comment_directives,
     )
     .await

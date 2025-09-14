@@ -6,9 +6,11 @@ use tombi_uri::SchemaUri;
 
 use crate::value::{
     ArrayLintRules, ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WarnRuleOptions,
-    WithCommonExtensibleLintRules, WithCommonLintRules, WithKeyLintRules,
+    WithCommonExtensibleLintRules, WithCommonFormatRules, WithCommonLintRules, WithKeyLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
+
+pub type TableCommonFormatRules = WithCommonFormatRules<TableFormatRules>;
 
 pub type KeyTableCommonLintRules = WithKeyLintRules<WithCommonLintRules<TableLintRules>>;
 
@@ -29,7 +31,7 @@ pub type ParentTableCommonLintRules = WithCommonExtensibleLintRules<TableLintRul
 pub type RootTableCommonLintRules = WithCommonLintRules<RootTableLintRules>;
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, KeyTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, KeyTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-table-directive.json").unwrap()
@@ -37,7 +39,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, TableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-table-directive.json").unwrap()
@@ -45,7 +47,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, KeyArrayOfTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, KeyArrayOfTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json")
@@ -54,7 +56,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, ArrayOfTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, ArrayOfTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-of-table-directive.json").unwrap()
@@ -62,7 +64,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, KeyInlineTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, KeyInlineTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-inline-table-directive.json").unwrap()
@@ -70,7 +72,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, InlineTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, InlineTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-inline-table-directive.json").unwrap()
@@ -78,7 +80,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, ParentTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, ParentTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-parent-table-directive.json").unwrap()
@@ -86,7 +88,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<TableFormatRules, RootTableCommonLintRules>
+    for TombiValueDirectiveContent<TableCommonFormatRules, RootTableCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-root-table-directive.json").unwrap()

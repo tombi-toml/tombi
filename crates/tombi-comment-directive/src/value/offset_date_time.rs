@@ -3,11 +3,14 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    EmptyFormatRules, TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules,
+    EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
+    WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
 pub type OffsetDateTimeFormatRules = EmptyFormatRules;
+
+pub type OffsetDateTimeCommonFormatRules = WithCommonFormatRules<OffsetDateTimeFormatRules>;
 
 pub type KeyOffsetDateTimeCommonLintRules =
     WithKeyTableLintRules<WithCommonLintRules<OffsetDateTimeLintRules>>;
@@ -15,7 +18,10 @@ pub type KeyOffsetDateTimeCommonLintRules =
 pub type OffsetDateTimeCommonLintRules = WithCommonLintRules<OffsetDateTimeLintRules>;
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<OffsetDateTimeFormatRules, KeyOffsetDateTimeCommonLintRules>
+    for TombiValueDirectiveContent<
+        OffsetDateTimeCommonFormatRules,
+        KeyOffsetDateTimeCommonLintRules,
+    >
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-offset-date-time-directive.json")
@@ -24,7 +30,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<OffsetDateTimeFormatRules, OffsetDateTimeCommonLintRules>
+    for TombiValueDirectiveContent<OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-offset-date-time-directive.json").unwrap()

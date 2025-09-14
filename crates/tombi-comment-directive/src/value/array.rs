@@ -1,18 +1,20 @@
 use std::str::FromStr;
 
 use crate::value::{
-    ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WithCommonLintRules,
-    WithKeyTableLintRules,
+    ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WithCommonFormatRules,
+    WithCommonLintRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
+
+pub type ArrayCommonFormatRules = WithCommonFormatRules<ArrayFormatRules>;
 
 pub type ArrayKeyCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<ArrayLintRules>>;
 
 pub type ArrayCommonLintRules = WithCommonLintRules<ArrayLintRules>;
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<ArrayFormatRules, ArrayKeyCommonLintRules>
+    for TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayKeyCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
@@ -20,7 +22,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<ArrayFormatRules, ArrayCommonLintRules>
+    for TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()

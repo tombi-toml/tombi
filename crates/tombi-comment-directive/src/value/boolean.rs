@@ -3,18 +3,21 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    EmptyFormatRules, TombiValueDirectiveContent, WithCommonLintRules, WithKeyTableLintRules,
+    EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
+    WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
 pub type BooleanFormatRules = EmptyFormatRules;
+
+pub type BooleanCommonFormatRules = WithCommonFormatRules<BooleanFormatRules>;
 
 pub type KeyBooleanCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<BooleanLintRules>>;
 
 pub type BooleanCommonLintRules = WithCommonLintRules<BooleanLintRules>;
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<BooleanFormatRules, KeyBooleanCommonLintRules>
+    for TombiValueDirectiveContent<BooleanCommonFormatRules, KeyBooleanCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-boolean-directive.json").unwrap()
@@ -22,7 +25,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<BooleanFormatRules, BooleanCommonLintRules>
+    for TombiValueDirectiveContent<BooleanCommonFormatRules, BooleanCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-boolean-directive.json").unwrap()

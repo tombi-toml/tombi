@@ -3,19 +3,21 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules,
-    WithKeyTableLintRules,
+    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonFormatRules,
+    WithCommonLintRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
 pub type IntegerFormatRules = EmptyFormatRules;
+
+pub type IntegerCommonFormatRules = WithCommonFormatRules<IntegerFormatRules>;
 
 pub type KeyIntegerCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<IntegerLintRules>>;
 
 pub type IntegerCommonLintRules = WithCommonLintRules<IntegerLintRules>;
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<IntegerFormatRules, KeyIntegerCommonLintRules>
+    for TombiValueDirectiveContent<IntegerCommonFormatRules, KeyIntegerCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
@@ -23,7 +25,7 @@ impl TombiCommentDirectiveImpl
 }
 
 impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<IntegerFormatRules, IntegerCommonLintRules>
+    for TombiValueDirectiveContent<IntegerCommonFormatRules, IntegerCommonLintRules>
 {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-integer-directive.json").unwrap()
