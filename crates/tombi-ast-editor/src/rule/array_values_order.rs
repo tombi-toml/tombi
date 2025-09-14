@@ -130,29 +130,22 @@ pub async fn array_values_order<'a>(
         .iter()
         .flat_map(|(value, comma)| {
             if let Some(comma) = comma {
-                vec![
-                    SyntaxElement::Node(value.syntax().clone()),
-                    SyntaxElement::Node(comma.syntax().clone()),
-                ]
+                if !is_last_comma
+                    && comma.leading_comments().next().is_none()
+                    && comma.trailing_comment().is_none()
+                {
+                    vec![SyntaxElement::Node(value.syntax().clone())]
+                } else {
+                    vec![
+                        SyntaxElement::Node(value.syntax().clone()),
+                        SyntaxElement::Node(comma.syntax().clone()),
+                    ]
+                }
             } else {
                 vec![SyntaxElement::Node(value.syntax().clone())]
             }
         })
         .collect_vec();
-
-    if !is_last_comma {
-        if let Some(tombi_syntax::SyntaxElement::Node(node)) = new.last() {
-            if let Some(new_last_comma) = tombi_ast::Comma::cast(node.clone()) {
-                if new_last_comma.trailing_comment().is_none()
-                    && new_last_comma.leading_comments().next().is_none()
-                {
-                    changes.push(crate::Change::Remove {
-                        target: SyntaxElement::Node(new_last_comma.syntax().clone()),
-                    });
-                }
-            }
-        }
-    }
 
     changes.insert(0, crate::Change::ReplaceRange { old, new });
 

@@ -748,6 +748,56 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_trailing_comment_directive(
+                r#"
+                key = [
+
+                  5, 4, 3,
+                ]  # tombi: format.rules.array-values-order = "ascending"
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  3,
+                  4,
+                  5,
+                ]  # tombi: format.rules.array-values-order = "ascending"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_inner_comment_directive_with_trailing_comment(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  5 # trailing comment1
+
+                  # leading comment1
+                  , # trailing comment2
+                  4, # trailing comment3
+                  3 # trailing comment4
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  3,  # trailing comment4
+                  4,  # trailing comment3
+                  5  # trailing comment1
+                  # leading comment1
+                  ,  # trailing comment2
+                ]
+                "#
+            )
+        }
     }
 
     mod file_schema {
