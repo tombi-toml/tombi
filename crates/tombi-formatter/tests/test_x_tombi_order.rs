@@ -776,9 +776,10 @@ mod table_keys_order {
                 key = [
                   # tombi: format.rules.array-values-order = "ascending"
 
+                  # leading comment1
                   5 # trailing comment1
 
-                  # leading comment1
+                  # leading comment2
                   , # trailing comment2
                   4, # trailing comment3
                   3 # trailing comment4
@@ -791,8 +792,9 @@ mod table_keys_order {
 
                   3,  # trailing comment4
                   4,  # trailing comment3
-                  5  # trailing comment1
                   # leading comment1
+                  5  # trailing comment1
+                  # leading comment2
                   ,  # trailing comment2
                 ]
                 "#
