@@ -6,7 +6,7 @@ pub const X_TOMBI_ARRAY_VALUES_ORDER_BY: &str = "x-tombi-array-values-order-by";
 pub const X_TOMBI_TABLE_KEYS_ORDER: &str = "x-tombi-table-keys-order";
 pub const X_TOMBI_STRING_FORMATS: &str = "x-tombi-string-formats";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum ArrayValuesOrder {

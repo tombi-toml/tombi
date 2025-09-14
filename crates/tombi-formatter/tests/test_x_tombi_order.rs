@@ -707,6 +707,47 @@ mod table_keys_order {
                 "#,
             ) -> Ok(_)
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_leading_comment_directive(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [
+
+                  5, 4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [3, 4, 5]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_inner_comment_directive(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  5, 4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  3,
+                  4,
+                  5,
+                ]
+                "#
+            )
+        }
     }
 
     mod file_schema {
