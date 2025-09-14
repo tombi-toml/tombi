@@ -6,7 +6,7 @@ use tombi_comment_directive::value::{
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::{inline_table_comma_trailing_comment, table_keys_order::sorted_accessors};
+use crate::rule::{inline_table_comma_trailing_comment, table_keys_order::get_sorted_accessors};
 
 pub async fn inline_table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
@@ -43,7 +43,7 @@ pub async fn inline_table_keys_order<'a>(
         SyntaxElement::Node(key_values_with_comma.last().unwrap().0.syntax().clone()),
     );
 
-    let mut sorted_key_values_with_comma = sorted_accessors(
+    let Some(mut sorted_key_values_with_comma) = get_sorted_accessors(
         value,
         &[],
         key_values_with_comma
@@ -60,7 +60,10 @@ pub async fn inline_table_keys_order<'a>(
         schema_context,
         order,
     )
-    .await;
+    .await
+    else {
+        return Vec::with_capacity(0);
+    };
 
     if let Some((_, comma)) = sorted_key_values_with_comma.last_mut() {
         if !is_last_comma {

@@ -7,7 +7,7 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
 
-use crate::rule::table_keys_order::{sorted_accessors, table_keys_order};
+use crate::rule::table_keys_order::{get_sorted_accessors, table_keys_order};
 
 pub async fn root_table_keys_order<'a>(
     key_values: Vec<tombi_ast::KeyValue>,
@@ -55,35 +55,38 @@ pub async fn root_table_keys_order<'a>(
         SyntaxElement::Node(table_or_array_of_tables.last().unwrap().syntax().clone()),
     );
 
-    let targets = table_or_array_of_tables
-        .clone()
-        .into_iter()
-        .map(|table| {
-            (
-                table
-                    .get_header_accessor(schema_context.toml_version)
-                    .unwrap_or_default(),
-                table,
-            )
-        })
-        .collect_vec();
-
-    let new = sorted_accessors(
+    let Some(sorted_table) = get_sorted_accessors(
         &tombi_document_tree::Value::Table(
             table_or_array_of_tables
+                .clone()
                 .into_document_tree_and_errors(schema_context.toml_version)
                 .tree,
         ),
         &[],
-        targets,
+        table_or_array_of_tables
+            .into_iter()
+            .map(|table| {
+                (
+                    table
+                        .get_header_accessor(schema_context.toml_version)
+                        .unwrap_or_default(),
+                    table,
+                )
+            })
+            .collect_vec(),
         current_schema,
         schema_context,
         order,
     )
     .await
-    .into_iter()
-    .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
-    .collect_vec();
+    else {
+        return Vec::with_capacity(0);
+    };
+
+    let new = sorted_table
+        .into_iter()
+        .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
+        .collect_vec();
 
     changes.push(crate::Change::ReplaceRange { old, new });
 

@@ -44,7 +44,7 @@ pub async fn table_keys_order<'a>(
         SyntaxElement::Node(key_values.last().unwrap().syntax().clone()),
     );
 
-    let sorted_key_values = sorted_accessors(
+    let Some(sorted_key_values) = get_sorted_accessors(
         value,
         &[],
         key_values
@@ -61,7 +61,10 @@ pub async fn table_keys_order<'a>(
         schema_context,
         order,
     )
-    .await;
+    .await
+    else {
+        return Vec::with_capacity(0);
+    };
 
     let new = sorted_key_values
         .into_iter()
@@ -71,14 +74,14 @@ pub async fn table_keys_order<'a>(
     vec![crate::Change::ReplaceRange { old, new }]
 }
 
-pub fn sorted_accessors<'a: 'b, 'b, T>(
+pub fn get_sorted_accessors<'a: 'b, 'b, T>(
     value: &'a tombi_document_tree::Value,
     accessors: &'a [tombi_schema_store::Accessor],
     targets: Vec<(Vec<tombi_schema_store::Accessor>, T)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     order: Option<TableKeysOrder>,
-) -> BoxFuture<'b, Vec<T>>
+) -> BoxFuture<'b, Option<Vec<T>>>
 where
     T: Send + Clone + std::fmt::Debug + 'b,
 {
@@ -108,7 +111,7 @@ where
                                 .await
                                 .is_ok()
                             {
-                                return sorted_accessors(
+                                return get_sorted_accessors(
                                     value,
                                     accessors,
                                     targets.clone(),
@@ -120,7 +123,7 @@ where
                             }
                         }
                     }
-                    return targets.into_iter().map(|(_, target)| target).collect_vec();
+                    return None;
                 }
                 _ => {}
             }
@@ -177,7 +180,7 @@ where
                                     .inspect_err(|err| tracing::warn!("{err}"))
                                 {
                                     results.extend(
-                                        sorted_accessors(
+                                        get_sorted_accessors(
                                             value,
                                             &accessors
                                                 .iter()
@@ -189,7 +192,7 @@ where
                                             schema_context,
                                             order,
                                         )
-                                        .await,
+                                        .await?,
                                     );
                                     continue;
                                 }
@@ -209,7 +212,7 @@ where
                                     .inspect_err(|err| tracing::warn!("{err}"))
                                 {
                                     results.extend(
-                                        sorted_accessors(
+                                        get_sorted_accessors(
                                             value,
                                             &accessors
                                                 .iter()
@@ -221,7 +224,7 @@ where
                                             schema_context,
                                             order,
                                         )
-                                        .await,
+                                        .await?,
                                     );
                                     continue;
                                 }
@@ -230,7 +233,7 @@ where
                     }
 
                     results.extend(
-                        sorted_accessors(
+                        get_sorted_accessors(
                             value,
                             &accessors
                                 .iter()
@@ -242,11 +245,11 @@ where
                             schema_context,
                             order,
                         )
-                        .await,
+                        .await?,
                     );
                 }
 
-                results
+                Some(results)
             }
             tombi_document_tree::Value::Array(array) => {
                 if let Some(current_schema) = current_schema {
@@ -267,7 +270,7 @@ where
                                     array.iter().zip(sort_targets_map).enumerate()
                                 {
                                     results.extend(
-                                        sorted_accessors(
+                                        get_sorted_accessors(
                                             value,
                                             &accessors
                                                 .iter()
@@ -279,10 +282,10 @@ where
                                             schema_context,
                                             order,
                                         )
-                                        .await,
+                                        .await?,
                                     );
                                 }
-                                return results;
+                                return Some(results);
                             }
                         }
                     }
@@ -291,7 +294,7 @@ where
                 for (index, (value, (_, targets))) in array.iter().zip(sort_targets_map).enumerate()
                 {
                     results.extend(
-                        sorted_accessors(
+                        get_sorted_accessors(
                             value,
                             &accessors
                                 .iter()
@@ -303,17 +306,17 @@ where
                             schema_context,
                             order,
                         )
-                        .await,
+                        .await?,
                     );
                 }
-                results
+                Some(results)
             }
             _ => {
                 for (_, targets) in sort_targets_map {
                     results.extend(targets.into_iter().map(|(_, target)| target));
                 }
 
-                results
+                Some(results)
             }
         }
     }
