@@ -705,7 +705,7 @@ mod table_keys_order {
                 key1 = "value8"
                 key2 = "value9"
                 "#,
-            ) -> Ok(_)
+            ) -> Ok(source)
         }
 
         test_format! {
@@ -1198,7 +1198,7 @@ mod table_keys_order {
             async fn $name:ident(
                 $source:expr,
                 $schema_path:expr$(,)?
-            ) -> Ok(_)
+            ) -> Ok(source)
         ) => {
             test_format! {
                 #[tokio::test]
@@ -1222,7 +1222,7 @@ mod table_keys_order {
             #[tokio::test]
             async fn $name:ident(
                 $source:expr,
-            ) -> Ok(_)
+            ) -> Ok(source)
         ) => {
             test_format! {
                 #[tokio::test]

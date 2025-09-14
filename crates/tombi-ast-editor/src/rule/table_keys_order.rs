@@ -44,24 +44,26 @@ pub async fn table_keys_order<'a>(
         SyntaxElement::Node(key_values.last().unwrap().syntax().clone()),
     );
 
-    let targets = key_values
-        .into_iter()
-        .map(|kv| {
-            (
-                kv.keys()
-                    .map(|key| {
-                        key.keys()
-                            .map(|key| Accessor::Key(key.to_raw_text(schema_context.toml_version)))
-                            .collect_vec()
-                    })
-                    .unwrap_or_default(),
-                kv,
-            )
-        })
-        .collect_vec();
+    let sorted_key_values = sorted_accessors(
+        value,
+        &[],
+        key_values
+            .into_iter()
+            .map(|kv| {
+                (
+                    kv.get_accessors(schema_context.toml_version)
+                        .unwrap_or_default(),
+                    kv,
+                )
+            })
+            .collect_vec(),
+        current_schema,
+        schema_context,
+        order,
+    )
+    .await;
 
-    let new = sorted_accessors(value, &[], targets, current_schema, schema_context, order)
-        .await
+    let new = sorted_key_values
         .into_iter()
         .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
         .collect_vec();

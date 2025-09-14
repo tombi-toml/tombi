@@ -17,6 +17,8 @@ impl crate::Edit for tombi_ast::Array {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
+        tracing::trace!("current_schema = {:?}", current_schema);
+
         async move {
             let mut changes = vec![];
 
@@ -53,11 +55,8 @@ impl crate::Edit for tombi_ast::Array {
                         {
                             use_item_schema = true;
                             for (index, (value, comma)) in self.values_with_comma().enumerate() {
-                                changes.extend(array_comma_trailing_comment(
-                                    &value,
-                                    comma.as_ref(),
-                                    schema_context,
-                                ));
+                                changes
+                                    .extend(array_comma_trailing_comment(&value, comma.as_ref()));
                                 changes.extend(
                                     value
                                         .edit(
@@ -79,11 +78,7 @@ impl crate::Edit for tombi_ast::Array {
             }
             if !use_item_schema {
                 for (value, comma) in self.values_with_comma() {
-                    changes.extend(array_comma_trailing_comment(
-                        &value,
-                        comma.as_ref(),
-                        schema_context,
-                    ));
+                    changes.extend(array_comma_trailing_comment(&value, comma.as_ref()));
                     changes.extend(
                         value
                             .edit(accessors, source_path, None, schema_context)

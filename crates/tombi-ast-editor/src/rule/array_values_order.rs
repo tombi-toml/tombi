@@ -119,11 +119,7 @@ pub async fn array_values_order<'a>(
     }
 
     for (value, comma) in &sorted_values_with_comma {
-        changes.extend(array_comma_trailing_comment(
-            value,
-            comma.as_ref(),
-            schema_context,
-        ));
+        changes.extend(array_comma_trailing_comment(value, comma.as_ref()));
     }
 
     let new = sorted_values_with_comma
