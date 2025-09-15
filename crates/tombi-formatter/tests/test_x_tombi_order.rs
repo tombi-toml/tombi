@@ -685,12 +685,18 @@ mod table_keys_order {
 
                 [ccc.ddd]
                 key4 = "value4"
+
+                [ccc.eee]
+                key5 = "value5"
                 "#,
             ) -> Ok(r#"
                 # tombi: format.rules.table-keys-order = "descending"
 
                 [ccc]
                 key3 = "value3"
+
+                [ccc.eee]
+                key5 = "value5"
 
                 [ccc.ddd]
                 key4 = "value4"
