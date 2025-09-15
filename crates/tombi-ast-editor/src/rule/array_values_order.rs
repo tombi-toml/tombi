@@ -9,7 +9,7 @@ mod string;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::{
-    ArrayCommonLintRules, ArrayFormatRules, TombiValueDirectiveContent,
+    ArrayCommonFormatRules, ArrayCommonLintRules, TombiValueDirectiveContent,
 };
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{
@@ -35,7 +35,9 @@ pub async fn array_values_order<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    comment_directive: Option<TombiValueDirectiveContent<ArrayFormatRules, ArrayCommonLintRules>>,
+    comment_directive: Option<
+        TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>,
+    >,
 ) -> Vec<crate::Change> {
     if values_with_comma.is_empty() {
         return Vec::with_capacity(0);

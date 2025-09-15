@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use tombi_ast::AstNode;
-use tombi_comment_directive::value::{RootTableCommonLintRules, TableFormatRules};
+use tombi_comment_directive::value::{RootTableCommonLintRules, TableCommonFormatRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_config::SeverityLevel;
 use tombi_severity_level::SeverityLevelDefaultWarn;
@@ -12,7 +12,7 @@ pub struct TablesOutOfOrderRule;
 impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
     async fn check(node: &tombi_ast::Root, l: &mut crate::Linter<'_>) {
         let comment_directive = get_comment_directive_content::<
-            TableFormatRules,
+            TableCommonFormatRules,
             RootTableCommonLintRules,
         >(node.comment_directives());
 

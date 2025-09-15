@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use tombi_comment_directive::value::{IntegerCommonLintRules, IntegerFormatRules};
+use tombi_comment_directive::value::{IntegerCommonFormatRules, IntegerCommonLintRules};
 use tombi_future::Boxable;
 use tombi_schema_store::ValueSchema;
 
@@ -30,7 +30,7 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_key_table_value_comment_directive_content_and_schema_uri::<
-                    IntegerFormatRules,
+                    IntegerCommonFormatRules,
                     IntegerCommonLintRules,
                 >(self.comment_directives(), position, accessors)
             {

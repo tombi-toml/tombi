@@ -1,6 +1,6 @@
 use crate::Rule;
 use ahash::AHashMap;
-use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
+use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_config::SeverityLevel;
 use tombi_severity_level::SeverityLevelDefaultWarn;
@@ -36,8 +36,10 @@ async fn check_dotted_keys_out_of_order(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let comment_directive =
-        get_comment_directive_content::<TableFormatRules, TableCommonLintRules>(comment_directives);
+    let comment_directive = get_comment_directive_content::<
+        TableCommonFormatRules,
+        TableCommonLintRules,
+    >(comment_directives);
 
     if comment_directive
         .as_ref()

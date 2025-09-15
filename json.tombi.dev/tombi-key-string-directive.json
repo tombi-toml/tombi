@@ -35,7 +35,7 @@
           "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/EmptyFormatRules"
+              "$ref": "#/definitions/WithKeyFormatRules"
             },
             {
               "type": "null"
@@ -45,8 +45,10 @@
       },
       "additionalProperties": false
     },
-    "EmptyFormatRules": {
-      "type": "object"
+    "WithKeyFormatRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "LintOptions": {
       "type": "object",

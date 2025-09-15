@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use tombi_ast::AstNode;
-use tombi_comment_directive::value::{TableCommonLintRules, TableFormatRules};
+use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
@@ -38,7 +38,7 @@ impl crate::Edit for tombi_ast::InlineTable {
             }
 
             let comment_directive =
-                get_comment_directive_content::<TableFormatRules, TableCommonLintRules>(
+                get_comment_directive_content::<TableCommonFormatRules, TableCommonLintRules>(
                     if let Some(key_value) = self
                         .syntax()
                         .parent()

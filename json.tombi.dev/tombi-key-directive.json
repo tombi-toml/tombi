@@ -35,7 +35,7 @@
           "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/TableFormatRules"
+              "$ref": "#/definitions/EmptyFormatRules"
             },
             {
               "type": "null"
@@ -45,58 +45,8 @@
       },
       "additionalProperties": false
     },
-    "TableFormatRules": {
-      "type": "object",
-      "properties": {
-        "table-keys-order": {
-          "title": "Table keys order",
-          "description": "Control the sorting method of the table by keys.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/SortOptions"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      }
-    },
-    "SortOptions": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/SortMethod"
-        },
-        {
-          "$ref": "#/definitions/SortDisabledOptions"
-        }
-      ]
-    },
-    "SortMethod": {
-      "type": "string",
-      "enum": [
-        "ascending",
-        "descending",
-        "version-sort"
-      ]
-    },
-    "SortDisabledOptions": {
-      "type": "object",
-      "properties": {
-        "disabled": {
-          "title": "Sort disabled",
-          "description": "If `true`, Sort is disabled for this value.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "enum": [
-            true
-          ],
-          "default": false
-        }
-      },
-      "additionalProperties": false
+    "EmptyFormatRules": {
+      "type": "object"
     },
     "LintOptions": {
       "type": "object",

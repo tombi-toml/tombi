@@ -3,30 +3,34 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonLintRules,
-    WithKeyTableLintRules,
+    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonFormatRules,
+    WithCommonLintRules, WithKeyFormatRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
 pub type StringFormatRules = EmptyFormatRules;
 
-pub type KeyStringCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<StringLintRules>>;
-
+pub type StringCommonFormatRules = WithCommonFormatRules<StringFormatRules>;
 pub type StringCommonLintRules = WithCommonLintRules<StringLintRules>;
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<StringFormatRules, KeyStringCommonLintRules>
-{
+pub type KeyStringCommonFormatRules = WithKeyFormatRules<StringCommonFormatRules>;
+pub type KeyStringCommonLintRules = WithKeyTableLintRules<StringCommonLintRules>;
+
+pub type TombiStringDirectiveContent =
+    TombiValueDirectiveContent<StringCommonFormatRules, StringCommonLintRules>;
+
+pub type TombiKeyStringDirectiveContent =
+    TombiValueDirectiveContent<KeyStringCommonFormatRules, KeyStringCommonLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiStringDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<StringFormatRules, StringCommonLintRules>
-{
+impl TombiCommentDirectiveImpl for TombiKeyStringDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
     }
 }
 

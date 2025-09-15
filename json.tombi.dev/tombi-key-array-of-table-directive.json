@@ -35,7 +35,7 @@
           "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/TableFormatRules"
+              "$ref": "#/definitions/WithKeyFormatRules"
             },
             {
               "type": "null"
@@ -45,7 +45,7 @@
       },
       "additionalProperties": false
     },
-    "TableFormatRules": {
+    "WithKeyFormatRules": {
       "type": "object",
       "properties": {
         "table-keys-order": {
@@ -60,7 +60,9 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
     },
     "SortOptions": {
       "anyOf": [

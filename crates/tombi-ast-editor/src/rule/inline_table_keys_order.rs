@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::{
-    TableCommonLintRules, TableFormatRules, TombiValueDirectiveContent,
+    TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
 };
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_syntax::SyntaxElement;
@@ -13,7 +13,9 @@ pub async fn inline_table_keys_order<'a>(
     key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-    comment_directive: Option<TombiValueDirectiveContent<TableFormatRules, TableCommonLintRules>>,
+    comment_directive: Option<
+        TombiValueDirectiveContent<TableCommonFormatRules, TableCommonLintRules>,
+    >,
 ) -> Vec<crate::Change> {
     if key_values_with_comma.is_empty() {
         return Vec::with_capacity(0);

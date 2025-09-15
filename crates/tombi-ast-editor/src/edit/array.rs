@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_ast::AstNode;
-use tombi_comment_directive::value::{ArrayCommonLintRules, ArrayFormatRules};
+use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
@@ -106,7 +106,7 @@ impl crate::Edit for tombi_ast::Array {
             }
 
             let comment_directive =
-                get_comment_directive_content::<ArrayFormatRules, ArrayCommonLintRules>(
+                get_comment_directive_content::<ArrayCommonFormatRules, ArrayCommonLintRules>(
                     if let Some(key_value) = self
                         .syntax()
                         .parent()
