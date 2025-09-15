@@ -10,8 +10,6 @@ mod offset_date_time;
 mod string;
 mod table;
 
-use std::ops::Deref;
-
 pub use array::*;
 pub use boolean::*;
 pub use float::*;
@@ -252,14 +250,6 @@ pub struct WithKeyFormatRules<FormatRules> {
 
     #[serde(flatten)]
     pub value: FormatRules,
-}
-
-impl<FormatRules> Deref for WithCommonFormatRules<FormatRules> {
-    type Target = FormatRules;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize)]
