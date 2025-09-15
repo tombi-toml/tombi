@@ -35,7 +35,7 @@
           "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithCommonFormatRules"
+              "$ref": "#/definitions/WithKeyFormatRules"
             },
             {
               "type": "null"
@@ -45,7 +45,7 @@
       },
       "additionalProperties": false
     },
-    "WithCommonFormatRules": {
+    "WithKeyFormatRules": {
       "type": "object",
       "properties": {
         "array-values-order": {

@@ -4,32 +4,33 @@ use tombi_uri::SchemaUri;
 
 use crate::value::{
     EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
-    WithKeyTableLintRules,
+    WithKeyFormatRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
 pub type LocalDateFormatRules = EmptyFormatRules;
 
 pub type LocalDateCommonFormatRules = WithCommonFormatRules<LocalDateFormatRules>;
-
-pub type KeyLocalDateCommonLintRules =
-    WithKeyTableLintRules<WithCommonLintRules<LocalDateLintRules>>;
-
 pub type LocalDateCommonLintRules = WithCommonLintRules<LocalDateLintRules>;
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<LocalDateCommonFormatRules, KeyLocalDateCommonLintRules>
-{
+pub type KeyLocalDateCommonFormatRules = WithKeyFormatRules<LocalDateCommonFormatRules>;
+pub type KeyLocalDateCommonLintRules = WithKeyTableLintRules<LocalDateCommonLintRules>;
+
+pub type TombiLocalDateDirectiveContent =
+    TombiValueDirectiveContent<LocalDateCommonFormatRules, LocalDateCommonLintRules>;
+
+pub type TombiKeyLocalDateDirectiveContent =
+    TombiValueDirectiveContent<KeyLocalDateCommonFormatRules, KeyLocalDateCommonLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiLocalDateDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-date-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-date-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<LocalDateCommonFormatRules, LocalDateCommonLintRules>
-{
+impl TombiCommentDirectiveImpl for TombiKeyLocalDateDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-date-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-date-directive.json").unwrap()
     }
 }
 

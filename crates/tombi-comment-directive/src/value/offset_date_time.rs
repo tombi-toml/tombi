@@ -4,36 +4,36 @@ use tombi_uri::SchemaUri;
 
 use crate::value::{
     EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
-    WithKeyTableLintRules,
+    WithKeyFormatRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
 pub type OffsetDateTimeFormatRules = EmptyFormatRules;
 
 pub type OffsetDateTimeCommonFormatRules = WithCommonFormatRules<OffsetDateTimeFormatRules>;
-
-pub type KeyOffsetDateTimeCommonLintRules =
-    WithKeyTableLintRules<WithCommonLintRules<OffsetDateTimeLintRules>>;
-
 pub type OffsetDateTimeCommonLintRules = WithCommonLintRules<OffsetDateTimeLintRules>;
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<
-        OffsetDateTimeCommonFormatRules,
-        KeyOffsetDateTimeCommonLintRules,
-    >
-{
+pub type KeyOffsetDateTimeCommonFormatRules = WithKeyFormatRules<OffsetDateTimeCommonFormatRules>;
+pub type KeyOffsetDateTimeCommonLintRules = WithKeyTableLintRules<OffsetDateTimeCommonLintRules>;
+
+pub type TombiOffsetDateTimeDirectiveContent =
+    TombiValueDirectiveContent<OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules>;
+
+pub type TombiKeyOffsetDateTimeDirectiveContent = TombiValueDirectiveContent<
+    KeyOffsetDateTimeCommonFormatRules,
+    KeyOffsetDateTimeCommonLintRules,
+>;
+
+impl TombiCommentDirectiveImpl for TombiOffsetDateTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-offset-date-time-directive.json")
-            .unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-offset-date-time-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules>
-{
+impl TombiCommentDirectiveImpl for TombiKeyOffsetDateTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-offset-date-time-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-offset-date-time-directive.json")
+            .unwrap()
     }
 }
 

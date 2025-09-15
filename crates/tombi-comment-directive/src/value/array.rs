@@ -2,30 +2,32 @@ use std::str::FromStr;
 
 use crate::value::{
     ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WithCommonFormatRules,
-    WithCommonLintRules, WithKeyTableLintRules,
+    WithCommonLintRules, WithKeyFormatRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
 
 pub type ArrayCommonFormatRules = WithCommonFormatRules<ArrayFormatRules>;
-
-pub type ArrayKeyCommonLintRules = WithKeyTableLintRules<WithCommonLintRules<ArrayLintRules>>;
-
 pub type ArrayCommonLintRules = WithCommonLintRules<ArrayLintRules>;
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayKeyCommonLintRules>
-{
+pub type KeyArrayCommonFormatRules = WithKeyFormatRules<ArrayCommonFormatRules>;
+pub type KeyArrayCommonLintRules = WithKeyTableLintRules<ArrayCommonLintRules>;
+
+pub type TombiKeyArrayDirectiveContent =
+    TombiValueDirectiveContent<KeyArrayCommonFormatRules, KeyArrayCommonLintRules>;
+
+pub type TombiArrayDirectiveContent =
+    TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiArrayDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
     }
 }
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>
-{
+impl TombiCommentDirectiveImpl for TombiKeyArrayDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-array-directive.json").unwrap()
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-array-directive.json").unwrap()
     }
 }
 

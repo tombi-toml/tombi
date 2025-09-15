@@ -242,6 +242,18 @@ pub struct WithCommonFormatRules<FormatRules> {
     pub value: FormatRules,
 }
 
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
+pub struct WithKeyFormatRules<FormatRules> {
+    #[serde(flatten)]
+    pub key: KeyFormatRules,
+
+    #[serde(flatten)]
+    pub value: FormatRules,
+}
+
 impl<FormatRules> Deref for WithCommonFormatRules<FormatRules> {
     type Target = FormatRules;
 

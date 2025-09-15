@@ -12,9 +12,10 @@ pub type KeyFormatRules = EmptyFormatRules;
 
 pub type KeyCommonExtensibleLintRules = WithCommonExtensibleLintRules<KeyLinkRules>;
 
-impl TombiCommentDirectiveImpl
-    for TombiValueDirectiveContent<KeyFormatRules, KeyCommonExtensibleLintRules>
-{
+pub type TombiKeyDirectiveContent =
+    TombiValueDirectiveContent<KeyFormatRules, KeyCommonExtensibleLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }

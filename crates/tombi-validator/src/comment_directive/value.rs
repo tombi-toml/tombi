@@ -2,13 +2,14 @@ use itertools::Itertools;
 use serde::Deserialize;
 use tombi_comment_directive::{
     value::{
-        ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonLintRules,
-        ArrayOfTableLintRules, InlineTableCommonLintRules, InlineTableLintRules,
+        ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules,
+        ArrayOfTableCommonLintRules, ArrayOfTableLintRules, InlineTableCommonFormatRules,
+        InlineTableCommonLintRules, InlineTableLintRules, KeyArrayOfTableCommonFormatRules,
         KeyArrayOfTableCommonLintRules, KeyCommonExtensibleLintRules, KeyFormatRules,
-        KeyTableCommonLintRules, LintOptions, ParentTableCommonLintRules, RootTableCommonLintRules,
-        RootTableLintRules, TableCommonFormatRules, TableCommonLintRules,
+        KeyTableCommonFormatRules, KeyTableCommonLintRules, LintOptions, ParentTableCommonLintRules,
+        RootTableCommonLintRules, RootTableLintRules, TableCommonFormatRules, TableCommonLintRules,
         TombiValueDirectiveContent, WithCommonExtensibleLintRules, WithCommonLintRules,
-        WithKeyLintRules, WithKeyTableLintRules,
+        WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
     },
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
@@ -89,7 +90,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
             }
             ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
                 let (rules, diagnostics) = get_tombi_key_value_rules_and_diagnostics::<
-                    TableCommonFormatRules,
+                    ArrayOfTableCommonFormatRules,
                     ArrayOfTableCommonLintRules,
                 >(comment_directives, accessors)
                 .await;
@@ -185,7 +186,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
         match table.kind() {
             TableKind::InlineTable { .. } => {
                 let (rules, diagnostics) = get_tombi_key_value_rules_and_diagnostics::<
-                    TableCommonFormatRules,
+                    InlineTableCommonFormatRules,
                     InlineTableCommonLintRules,
                 >(comment_directives, accessors)
                 .await;
@@ -214,7 +215,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
                     .await
                 } else if matches!(accessors.last(), Some(Accessor::Index(_))) {
                     let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                        TableCommonFormatRules,
+                        KeyArrayOfTableCommonFormatRules,
                         KeyArrayOfTableCommonLintRules,
                     >(comment_directives)
                     .await;
@@ -239,7 +240,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
                     }
                 } else {
                     let (rules, diagnostics) = get_tombi_value_rules_and_diagnostics::<
-                        TableCommonFormatRules,
+                        KeyTableCommonFormatRules,
                         KeyTableCommonLintRules,
                     >(comment_directives)
                     .await;
@@ -395,13 +396,14 @@ where
     FormatRules: serde::de::DeserializeOwned,
     LintRules: serde::de::DeserializeOwned,
     TombiValueDirectiveContent<FormatRules, LintRules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<FormatRules, WithKeyLintRules<LintRules>>: TombiCommentDirectiveImpl,
+    TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyLintRules<LintRules>>:
+        TombiCommentDirectiveImpl,
 {
     if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last() {
         get_tombi_value_rules_and_diagnostics(comment_directives).await
     } else {
         let (comment_directive, diagnostics) = get_tombi_value_comment_directive_and_diagnostics::<
-            FormatRules,
+            WithKeyFormatRules<FormatRules>,
             WithKeyLintRules<LintRules>,
         >(comment_directives)
         .await;
@@ -426,14 +428,14 @@ where
     FormatRules: serde::de::DeserializeOwned,
     LintRules: serde::de::DeserializeOwned,
     TombiValueDirectiveContent<FormatRules, LintRules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<FormatRules, WithKeyTableLintRules<LintRules>>:
+    TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyTableLintRules<LintRules>>:
         TombiCommentDirectiveImpl,
 {
     if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last() {
         get_tombi_value_rules_and_diagnostics(comment_directives).await
     } else {
         let (comment_directive, diagnostics) = get_tombi_value_comment_directive_and_diagnostics::<
-            FormatRules,
+            WithKeyFormatRules<FormatRules>,
             WithKeyTableLintRules<LintRules>,
         >(comment_directives)
         .await;
