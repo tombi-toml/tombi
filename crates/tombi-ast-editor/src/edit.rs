@@ -15,11 +15,23 @@ mod root;
 mod table;
 mod value;
 
-pub trait Edit {
+pub trait Edit<T> {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        accessors: &'a [tombi_schema_store::Accessor],
+        node: &'a T,
+        accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
+        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    ) -> BoxFuture<'b, Vec<crate::Change>>;
+}
+
+pub trait EditRecursive {
+    fn edit_recursive<'a: 'b, 'b>(
+        &'a self,
+        node: &'a tombi_document_tree::Value,
+        key_accessors: &'a [Accessor],
+        accessors: &'a [Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>>;

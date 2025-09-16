@@ -4,13 +4,15 @@ use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRule
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_schema_store::Accessor;
 
 use crate::rule::{inline_table_comma_trailing_comment, inline_table_keys_order};
 
-impl crate::Edit for tombi_ast::InlineTable {
+impl crate::Edit<tombi_document_tree::Table> for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::Accessor],
+        node: &'a tombi_document_tree::Table,
+        accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -32,7 +34,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                 ));
                 changes.extend(
                     key_value
-                        .edit(&[], source_path, current_schema, schema_context)
+                        .edit(node, accessors, source_path, current_schema, schema_context)
                         .await,
                 );
             }

@@ -10,10 +10,11 @@ use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::{edit::get_value_schema, rule::table_keys_order};
 
-impl crate::Edit for tombi_ast::ArrayOfTable {
+impl crate::Edit<tombi_document_tree::Table> for tombi_ast::ArrayOfTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::Accessor],
+        node: &'a tombi_document_tree::Table,
+        _accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -71,7 +72,13 @@ impl crate::Edit for tombi_ast::ArrayOfTable {
             for key_value in self.key_values() {
                 changes.extend(
                     key_value
-                        .edit(&[], source_path, current_schema.as_ref(), schema_context)
+                        .edit(
+                            node,
+                            &[],
+                            source_path,
+                            current_schema.as_ref(),
+                            schema_context,
+                        )
                         .await,
                 );
             }

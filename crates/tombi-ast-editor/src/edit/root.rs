@@ -2,15 +2,17 @@ use itertools::Itertools;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_schema_store::Accessor;
 use tombi_syntax::SyntaxElement;
 
 use crate::rule::root_table_keys_order;
 use tombi_ast::AstToken;
 
-impl crate::Edit for tombi_ast::Root {
+impl crate::Edit<tombi_document_tree::DocumentTree> for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::Accessor],
+        node: &'a tombi_document_tree::DocumentTree,
+        _accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
@@ -19,11 +21,6 @@ impl crate::Edit for tombi_ast::Root {
             let mut changes = vec![];
             let mut key_values = vec![];
             let mut table_or_array_of_tables = vec![];
-
-            let comment_directive = get_comment_directive_content::<
-                TableCommonFormatRules,
-                TableCommonLintRules,
-            >(self.comment_directives());
 
             // Move document schema/tombi comment directive to the top.
             if self
@@ -44,7 +41,7 @@ impl crate::Edit for tombi_ast::Root {
             for key_value in self.key_values() {
                 changes.extend(
                     key_value
-                        .edit(&[], source_path, current_schema, schema_context)
+                        .edit(node, &[], source_path, current_schema, schema_context)
                         .await,
                 );
                 key_values.push(key_value);
@@ -55,20 +52,25 @@ impl crate::Edit for tombi_ast::Root {
                     tombi_ast::TableOrArrayOfTable::Table(table) => {
                         changes.extend(
                             table
-                                .edit(&[], source_path, current_schema, schema_context)
+                                .edit(node, &[], source_path, current_schema, schema_context)
                                 .await,
                         );
                     }
                     tombi_ast::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
                         changes.extend(
                             array_of_table
-                                .edit(&[], source_path, current_schema, schema_context)
+                                .edit(node, &[], source_path, current_schema, schema_context)
                                 .await,
                         );
                     }
                 };
                 table_or_array_of_tables.push(table_or_array_of_table);
             }
+
+            let comment_directive = get_comment_directive_content::<
+                TableCommonFormatRules,
+                TableCommonLintRules,
+            >(self.comment_directives());
 
             changes.extend(
                 root_table_keys_order(
