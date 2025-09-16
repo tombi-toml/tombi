@@ -642,6 +642,12 @@ mod table_keys_order {
             #[tokio::test]
             async fn test_header_order(
                 r#"
+                key2.key3 = "value1"
+                key1 = "value2"
+                key2.key4 = "value3"
+                key4 = "value4"
+                key5 = "value5"
+
                 [aaa]
                 key1 = "value1"
                 key2 = "value2"
@@ -654,6 +660,12 @@ mod table_keys_order {
                 key5 = "value5"
                 "#,
             ) -> Ok(r#"
+                key2.key3 = "value1"
+                key2.key4 = "value3"
+                key1 = "value2"
+                key4 = "value4"
+                key5 = "value5"
+
                 [aaa]
                 key1 = "value1"
                 key2 = "value2"
@@ -674,6 +686,12 @@ mod table_keys_order {
                 r#"
                 # tombi: format.rules.table-keys-order = "descending"
 
+                key2.key3 = "value1"
+                key1 = "value2"
+                key2.key4 = "value3"
+                key4 = "value4"
+                key5 = "value5"
+
                 [aaa]
                 key1 = "value1"
 
@@ -691,6 +709,12 @@ mod table_keys_order {
                 "#,
             ) -> Ok(r#"
                 # tombi: format.rules.table-keys-order = "descending"
+
+                key5 = "value5"
+                key4 = "value4"
+                key2.key4 = "value3"
+                key2.key3 = "value1"
+                key1 = "value2"
 
                 [ccc]
                 key3 = "value3"
