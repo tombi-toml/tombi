@@ -89,6 +89,7 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
         command::TomlCommand::Format(args) => command::format::run(args, offline, no_cache),
         command::TomlCommand::Lint(args) => command::lint::run(args, offline, no_cache),
         command::TomlCommand::Lsp(args) => command::lsp::run(args, offline, no_cache),
+        command::TomlCommand::Completion(args) => command::completion::run(args),
     }
 }
 
