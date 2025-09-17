@@ -25,7 +25,10 @@ pub struct TableSchema {
     pub properties: SchemaProperties,
     pub pattern_properties: Option<SchemaPatternProperties>,
     additional_properties: Option<bool>,
-    pub additional_property_schema: Option<(tombi_text::Range, SchemaItem)>,
+    pub additional_property_schema: Option<(
+        tombi_text::Range, // JSON Schema property name range (for GoToTypeDefinition)
+        SchemaItem,
+    )>,
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
