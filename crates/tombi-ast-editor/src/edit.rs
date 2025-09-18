@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
@@ -26,15 +26,16 @@ pub trait Edit<T> {
     ) -> BoxFuture<'b, Vec<crate::Change>>;
 }
 
+#[allow(dead_code)]
 pub trait EditRecursive {
     fn edit_recursive<'a: 'b, 'b>(
         &'a self,
-        // edit_fn: impl FnOnce(&'a tombi_document_tree::Value) -> BoxFuture<'b, Vec<crate::Change>>
-        //     + std::marker::Send
-        //     + 'b,
+        edit_fn: impl FnOnce(&'a tombi_document_tree::Value) -> BoxFuture<'b, Vec<crate::Change>>
+            + std::marker::Send
+            + 'b,
         key_accessors: &'a [Accessor],
-        accessors: &'a [Accessor],
-        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        accessors: Arc<[Accessor]>,
+        current_schema: Option<tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>>;
 }
