@@ -28,13 +28,6 @@ fn into_owned_current_schema(current_schema: CurrentSchema<'_>) -> CurrentSchema
     }
 }
 
-#[allow(dead_code)]
-fn extend_accessors(base: &Arc<[Accessor]>, accessor: Accessor) -> Arc<[Accessor]> {
-    let mut next = base.as_ref().to_vec();
-    next.push(accessor);
-    Arc::from(next.into_boxed_slice())
-}
-
 impl crate::Edit<tombi_document_tree::Table> for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
@@ -151,8 +144,9 @@ impl EditRecursive for tombi_document_tree::Value {
 
             match (key_accessors.as_ref().first(), self) {
                 (Some(Accessor::Key(key_str)), tombi_document_tree::Value::Table(table)) => {
-                    let next_accessors =
-                        extend_accessors(&accessors, Accessor::Key(key_str.to_owned()));
+                    let mut next_accessors = accessors.as_ref().to_vec();
+                    next_accessors.push(Accessor::Key(key_str.to_owned()));
+                    let next_accessors = Arc::from(next_accessors.into_boxed_slice());
 
                     table
                         .edit_recursive(
@@ -165,7 +159,9 @@ impl EditRecursive for tombi_document_tree::Value {
                         .await
                 }
                 (Some(Accessor::Index(index)), tombi_document_tree::Value::Array(array)) => {
-                    let next_accessors = extend_accessors(&accessors, Accessor::Index(*index));
+                    let mut next_accessors = accessors.as_ref().to_vec();
+                    next_accessors.push(Accessor::Index(*index));
+                    let next_accessors = Arc::from(next_accessors.into_boxed_slice());
 
                     array
                         .edit_recursive(
