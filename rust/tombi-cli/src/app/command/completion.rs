@@ -1,16 +1,12 @@
+use std::io;
+
 use clap::CommandFactory;
 
-/// Generate shell completion.
-#[derive(clap::Args, Debug)]
-pub struct Args {
-    /// Shell to generate completion for
-    #[arg(value_enum)]
-    shell: clap_complete::Shell,
-}
+use crate::args::{Args, CompletionArgs};
 
-pub fn run(args: Args) -> Result<(), crate::Error> {
-    let mut cmd = crate::app::Args::command();
+pub fn run(args: CompletionArgs) -> Result<(), crate::Error> {
+    let mut cmd = Args::command();
     let name = cmd.get_name().to_string();
-    clap_complete::generate(args.shell, &mut cmd, name, &mut std::io::stdout());
+    clap_complete::generate(args.shell, &mut cmd, name, &mut io::stdout());
     Ok(())
 }

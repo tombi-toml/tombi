@@ -4,34 +4,10 @@ use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{FileInputType, FileSearch};
 
-use crate::app::CommonArgs;
-
-/// Format TOML files.
-#[derive(clap::Args, Debug)]
-pub struct Args {
-    /// List of files or directories to format
-    ///
-    /// If the only argument is "-", the standard input will be used
-    ///
-    /// [default: if "tombi.toml" exists, format project directory, otherwise format current directory]
-    files: Vec<String>,
-
-    /// Check only and don't overwrite files.
-    #[arg(long, default_value_t = false)]
-    check: bool,
-
-    /// Filename to use when reading from stdin
-    ///
-    /// This is useful for determining which JSON Schema should be applied, for more rich formatting.
-    #[arg(long)]
-    stdin_filename: Option<String>,
-
-    #[command(flatten)]
-    common: CommonArgs,
-}
+use crate::args::FormatArgs;
 
 #[tracing::instrument(level = "debug", skip_all)]
-pub fn run(args: Args) -> Result<(), crate::Error> {
+pub fn run(args: FormatArgs) -> Result<(), crate::Error> {
     let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty) {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
@@ -73,7 +49,7 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
 }
 
 fn inner_run<P>(
-    args: Args,
+    args: FormatArgs,
     mut printer: P,
 ) -> Result<(usize, usize, usize), Box<dyn std::error::Error>>
 where

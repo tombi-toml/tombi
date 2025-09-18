@@ -3,30 +3,10 @@ use tombi_config::{LintOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
 use tombi_glob::FileSearch;
 
-use crate::app::CommonArgs;
-
-/// Lint TOML files.
-#[derive(clap::Args, Debug)]
-pub struct Args {
-    /// List of files or directories to lint
-    ///
-    /// If the only argument is "-", the standard input will be used
-    ///
-    /// [default: if "tombi.toml" exists, lint project directory, otherwise lint current directory]
-    files: Vec<String>,
-
-    /// Filename to use when reading from stdin
-    ///
-    /// This is useful for determining which JSON Schema should be applied, for more rich linting.
-    #[arg(long)]
-    stdin_filename: Option<String>,
-
-    #[command(flatten)]
-    common: CommonArgs,
-}
+use crate::args::LintArgs;
 
 #[tracing::instrument(level = "debug", skip_all)]
-pub fn run(args: Args) -> Result<(), crate::Error> {
+pub fn run(args: LintArgs) -> Result<(), crate::Error> {
     let (success_num, error_num) = match inner_run(args, Pretty) {
         Ok((success_num, error_num)) => (success_num, error_num),
         Err(error) => {
@@ -58,7 +38,10 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
     Ok(())
 }
 
-fn inner_run<P>(args: Args, mut printer: P) -> Result<(usize, usize), Box<dyn std::error::Error>>
+fn inner_run<P>(
+    args: LintArgs,
+    mut printer: P,
+) -> Result<(usize, usize), Box<dyn std::error::Error>>
 where
     Diagnostic: Print<P>,
     crate::Error: Print<P>,
