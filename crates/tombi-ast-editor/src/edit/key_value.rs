@@ -13,21 +13,6 @@ use crate::edit::EditRecursive;
 
 use super::get_value_schema;
 
-#[allow(dead_code)]
-fn into_owned_current_schema(current_schema: CurrentSchema<'_>) -> CurrentSchema<'static> {
-    let CurrentSchema {
-        value_schema,
-        schema_uri,
-        definitions,
-    } = current_schema;
-
-    CurrentSchema {
-        value_schema: Cow::Owned(value_schema.into_owned()),
-        schema_uri: Cow::Owned(schema_uri.into_owned()),
-        definitions: Cow::Owned(definitions.into_owned()),
-    }
-}
-
 impl crate::Edit<tombi_document_tree::Table> for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
@@ -226,7 +211,7 @@ impl EditRecursive for tombi_document_tree::Table {
                                     )
                                     .await
                                 {
-                                    Some(into_owned_current_schema(current_schema))
+                                    Some(current_schema.into_owned())
                                 } else {
                                     None
                                 }
@@ -283,8 +268,7 @@ impl EditRecursive for tombi_document_tree::Table {
                                             )
                                             .await
                                         {
-                                            resolved =
-                                                Some(into_owned_current_schema(current_schema));
+                                            resolved = Some(current_schema.into_owned());
                                             break;
                                         }
                                     }
@@ -324,7 +308,7 @@ impl EditRecursive for tombi_document_tree::Table {
                                     )
                                     .await
                                 {
-                                    Some(into_owned_current_schema(current_schema))
+                                    Some(current_schema.into_owned())
                                 } else {
                                     None
                                 }
@@ -355,7 +339,7 @@ impl EditRecursive for tombi_document_tree::Table {
                                 )
                                 .await
                             {
-                                let current_schema = into_owned_current_schema(current_schema);
+                                let current_schema = current_schema.into_owned();
                                 if self
                                     .validate(
                                         accessors.as_ref(),
@@ -430,7 +414,7 @@ impl EditRecursive for tombi_document_tree::Array {
                                     )
                                     .await
                                 {
-                                    Some(into_owned_current_schema(current_schema))
+                                    Some(current_schema.into_owned())
                                 } else {
                                     None
                                 }
@@ -461,7 +445,7 @@ impl EditRecursive for tombi_document_tree::Array {
                                 )
                                 .await
                             {
-                                let current_schema = into_owned_current_schema(current_schema);
+                                let current_schema = current_schema.into_owned();
 
                                 if self
                                     .validate(
@@ -477,7 +461,7 @@ impl EditRecursive for tombi_document_tree::Array {
                                             edit_fn,
                                             key_accessors,
                                             accessors,
-                                            Some(into_owned_current_schema(current_schema)),
+                                            Some(current_schema.into_owned()),
                                             schema_context,
                                         )
                                         .await;
