@@ -94,7 +94,14 @@ impl Sub<Position> for Position {
 
     #[inline]
     fn sub(self, rhs: Position) -> Self::Output {
-        assert!(rhs <= self);
+        if rhs > self {
+            tracing::warn!(
+                "Invalid tombi_text::Position: rhs: {:?} > self: {:?}",
+                rhs,
+                self
+            );
+            return RelativePosition { line: 0, column: 0 };
+        }
         let line = self.line - rhs.line;
         let column = if line == 0 {
             self.column - rhs.column
