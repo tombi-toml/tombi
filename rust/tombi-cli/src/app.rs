@@ -21,18 +21,6 @@ pub struct Args {
     #[command(subcommand)]
     pub subcommand: command::TomlCommand,
 
-    /// Disable network access
-    ///
-    /// Don't fetch from remote and use local schemas cache.
-    #[clap(long, global = true, env("TOMBI_OFFLINE"))]
-    offline: bool,
-
-    /// Do not use cache
-    ///
-    /// Fetch the latest data from remote and save it to the cache
-    #[clap(long, global = true, env("TOMBI_NO_CACHE"))]
-    no_cache: bool,
-
     #[command(flatten)]
     verbose: Verbosity<InfoLevel>,
 }
@@ -46,6 +34,21 @@ where
     fn from(value: I) -> Self {
         Self::parse_from(value)
     }
+}
+
+#[derive(clap::Args, Debug)]
+struct CommonArgs {
+    /// Disable network access
+    ///
+    /// Don't fetch from remote and use local schemas cache.
+    #[clap(long, global = true, env("TOMBI_OFFLINE"))]
+    offline: bool,
+
+    /// Do not use cache
+    ///
+    /// Fetch the latest data from remote and save it to the cache
+    #[clap(long, global = true, env("TOMBI_NO_CACHE"))]
+    no_cache: bool,
 }
 
 /// Convert [`clap_verbosity_flag::log::LevelFilter`] to [`tracing_subscriber::filter::LevelFilter`]
@@ -83,12 +86,10 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
         )
         .init();
 
-    let offline = args.offline;
-    let no_cache = args.no_cache;
     match args.subcommand {
-        command::TomlCommand::Format(args) => command::format::run(args, offline, no_cache),
-        command::TomlCommand::Lint(args) => command::lint::run(args, offline, no_cache),
-        command::TomlCommand::Lsp(args) => command::lsp::run(args, offline, no_cache),
+        command::TomlCommand::Format(args) => command::format::run(args),
+        command::TomlCommand::Lint(args) => command::lint::run(args),
+        command::TomlCommand::Lsp(args) => command::lsp::run(args),
         command::TomlCommand::Completion(args) => command::completion::run(args),
     }
 }

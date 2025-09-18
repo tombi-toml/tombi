@@ -4,6 +4,8 @@ use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{FileInputType, FileSearch};
 
+use crate::app::CommonArgs;
+
 /// Format TOML files.
 #[derive(clap::Args, Debug)]
 pub struct Args {
@@ -23,12 +25,14 @@ pub struct Args {
     /// This is useful for determining which JSON Schema should be applied, for more rich formatting.
     #[arg(long)]
     stdin_filename: Option<String>,
+
+    #[command(flatten)]
+    common: CommonArgs,
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
-pub fn run(args: Args, offline: bool, no_cache: bool) -> Result<(), crate::Error> {
-    let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty, offline, no_cache)
-    {
+pub fn run(args: Args) -> Result<(), crate::Error> {
+    let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty) {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
             tracing::error!("{}", error);
@@ -71,8 +75,6 @@ pub fn run(args: Args, offline: bool, no_cache: bool) -> Result<(), crate::Error
 fn inner_run<P>(
     args: Args,
     mut printer: P,
-    offline: bool,
-    no_cache: bool,
 ) -> Result<(usize, usize, usize), Box<dyn std::error::Error>>
 where
     Diagnostic: Print<P>,
@@ -94,10 +96,10 @@ where
     let schema_options = config.schema.as_ref();
     let schema_store =
         tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
-            offline: offline.then_some(true),
+            offline: args.common.offline.then_some(true),
             strict: schema_options.and_then(|schema_options| schema_options.strict()),
             cache: Some(tombi_cache::Options {
-                no_cache: no_cache.then_some(true),
+                no_cache: args.common.no_cache.then_some(true),
                 ..Default::default()
             }),
         });
