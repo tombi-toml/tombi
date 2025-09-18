@@ -27,7 +27,7 @@ pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
 
 /// # Tombi
 ///
-/// **Tombi** (鳶) is a toolkit for TOML; providing a formatter/linter and language server.
+/// **Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.
 /// See the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
