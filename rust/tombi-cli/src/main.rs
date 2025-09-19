@@ -1,4 +1,5 @@
 mod app;
+mod args;
 mod error;
 
 pub use error::Error;

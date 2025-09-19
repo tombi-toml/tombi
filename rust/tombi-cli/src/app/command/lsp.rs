@@ -1,14 +1,6 @@
-use crate::app::CommonArgs;
+use crate::args::LspArgs;
 
-/// Run TOML Language Server.
-#[derive(Debug, clap::Args)]
-pub struct Args {
-    #[command(flatten)]
-    common: CommonArgs,
-}
-
-pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
-    let args: Args = args.into();
+pub fn run(args: LspArgs) -> Result<(), crate::Error> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
