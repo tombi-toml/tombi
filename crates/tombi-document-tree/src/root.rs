@@ -47,7 +47,7 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
 
             {
                 let mut inner_comment_directives = vec![];
-                if self.items().next().is_none() {
+                if !matches!(self.items().next(), Some(tombi_ast::RootItem::KeyValue(_))) {
                     for comments in self.key_values_dangling_comments() {
                         for comment in comments {
                             if let Err(error) = crate::support::comment::try_new_comment(&comment) {

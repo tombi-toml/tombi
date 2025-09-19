@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use ahash::AHashSet;
 use itertools::Itertools;
-use tombi_comment_directive::value::ArrayCommonRules;
+use tombi_comment_directive::value::ArrayCommonLintRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
@@ -144,7 +144,7 @@ async fn validate_array(
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    value_rules: Option<&ArrayCommonRules>,
+    value_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let mut diagnostics = vec![];
 

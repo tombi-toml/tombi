@@ -3,6 +3,17 @@
   "title": "TombiValueDirectiveContent",
   "type": "object",
   "properties": {
+    "format": {
+      "title": "Formatter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "lint": {
       "title": "Linter options",
       "anyOf": [
@@ -17,14 +28,14 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "LintOptions": {
+    "FormatOptions": {
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules",
+          "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyRules"
+              "$ref": "#/definitions/WithKeyFormatRules"
             },
             {
               "type": "null"
@@ -34,7 +45,79 @@
       },
       "additionalProperties": false
     },
-    "WithKeyRules": {
+    "WithKeyFormatRules": {
+      "type": "object",
+      "properties": {
+        "table-keys-order": {
+          "title": "Table keys order",
+          "description": "Control the sorting method of the table by keys.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SortOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "SortOptions": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SortMethod"
+        },
+        {
+          "$ref": "#/definitions/SortDisabledOptions"
+        }
+      ]
+    },
+    "SortMethod": {
+      "type": "string",
+      "enum": [
+        "ascending",
+        "descending",
+        "version-sort"
+      ]
+    },
+    "SortDisabledOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Sort disabled",
+          "description": "If `true`, Sort is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "LintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WithKeyLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "WithKeyLintRules": {
       "type": "object",
       "properties": {
         "key-empty": {

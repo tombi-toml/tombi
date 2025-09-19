@@ -1,6 +1,9 @@
+use std::borrow::Cow;
+
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, PropertySchema, SchemaAccessor, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, DocumentSchema, OneOfSchema, PropertySchema,
+    SchemaAccessor, ValueSchema,
 };
 use tombi_validator::Validate;
 
@@ -22,7 +25,7 @@ pub trait Edit {
     ) -> BoxFuture<'b, Vec<crate::Change>>;
 }
 
-async fn get_schema<'a: 'b, 'b>(
+async fn get_value_schema<'a: 'b, 'b>(
     value: &'a tombi_document_tree::Value,
     accessors: &'a [tombi_schema_store::Accessor],
     current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
@@ -35,6 +38,28 @@ async fn get_schema<'a: 'b, 'b>(
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Option<ValueSchema>> {
         async move {
+            if let Some(Ok(DocumentSchema {
+                value_schema: Some(value_schema),
+                schema_uri,
+                definitions,
+                ..
+            })) = schema_context
+                .get_subschema(accessors, Some(current_schema))
+                .await
+            {
+                return inner_get_schema(
+                    value,
+                    accessors,
+                    &CurrentSchema {
+                        value_schema: Cow::Borrowed(&value_schema),
+                        schema_uri: Cow::Borrowed(&schema_uri),
+                        definitions: Cow::Borrowed(&definitions),
+                    },
+                    schema_context,
+                )
+                .await;
+            }
+
             match current_schema.value_schema.as_ref() {
                 ValueSchema::Table(_) | ValueSchema::Array(_) => {}
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
@@ -61,7 +86,11 @@ async fn get_schema<'a: 'b, 'b>(
 
                     return None;
                 }
-                _ => return None,
+                _ => {
+                    if !accessors.is_empty() {
+                        return None;
+                    }
+                }
             }
 
             if accessors.is_empty() {

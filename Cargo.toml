@@ -80,6 +80,7 @@ tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
 tombi-comment-directive = { path = "crates/tombi-comment-directive" }
+tombi-comment-directive-serde = { path = "crates/tombi-comment-directive-serde" }
 tombi-comment-directive-store = { path = "crates/tombi-comment-directive-store" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }

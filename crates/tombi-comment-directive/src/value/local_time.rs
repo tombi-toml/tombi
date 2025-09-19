@@ -2,28 +2,41 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
-use crate::value::{TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules};
+use crate::value::{
+    EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
+    WithKeyFormatRules, WithKeyTableLintRules,
+};
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyLocalTimeCommonRules = WithKeyTableRules<WithCommonRules<LocalTimeRules>>;
+pub type LocalTimeFormatRules = EmptyFormatRules;
 
-pub type LocalTimeCommonRules = WithCommonRules<LocalTimeRules>;
+pub type LocalTimeCommonFormatRules = WithCommonFormatRules<LocalTimeFormatRules>;
+pub type LocalTimeCommonLintRules = WithCommonLintRules<LocalTimeLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyLocalTimeCommonRules> {
-    fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-time-directive.json").unwrap()
-    }
-}
+pub type KeyLocalTimeCommonFormatRules = WithKeyFormatRules<LocalTimeCommonFormatRules>;
+pub type KeyLocalTimeCommonLintRules = WithKeyTableLintRules<LocalTimeCommonLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<LocalTimeCommonRules> {
+pub type TombiLocalTimeDirectiveContent =
+    TombiValueDirectiveContent<LocalTimeCommonFormatRules, LocalTimeCommonLintRules>;
+
+pub type TombiKeyLocalTimeDirectiveContent =
+    TombiValueDirectiveContent<KeyLocalTimeCommonFormatRules, KeyLocalTimeCommonLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiLocalTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-time-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+impl TombiCommentDirectiveImpl for TombiKeyLocalTimeDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-time-directive.json").unwrap()
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct LocalTimeRules {
+pub struct LocalTimeLintRules {
     // No specific fields for local time type
 }

@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::LocalTimeCommonRules;
+use tombi_comment_directive::value::{LocalTimeCommonFormatRules, LocalTimeCommonLintRules};
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalTimeSchema, SchemaUri};
@@ -30,11 +30,10 @@ impl FindCompletionContents for tombi_document_tree::LocalTime {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<LocalTimeCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    LocalTimeCommonFormatRules,
+                    LocalTimeCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,

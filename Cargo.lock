@@ -588,6 +588,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap_complete"
+version = "4.5.58"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75bf0b32ad2e152de789bb635ea4d3078f6b838ad7974143e99b99f45a04af4a"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "clap_derive"
 version = "4.5.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3460,6 +3469,8 @@ dependencies = [
  "regex",
  "thiserror 2.0.12",
  "tombi-ast",
+ "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-document-tree",
  "tombi-future",
  "tombi-parser",
@@ -3489,6 +3500,7 @@ version = "0.0.0-dev"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
+ "clap_complete",
  "itertools 0.14.0",
  "nu-ansi-term 0.50.1",
  "regex",
@@ -3519,6 +3531,18 @@ dependencies = [
  "tombi-toml-version",
  "tombi-uri",
  "tombi-x-keyword",
+]
+
+[[package]]
+name = "tombi-comment-directive-serde"
+version = "0.0.0-dev"
+dependencies = [
+ "serde",
+ "tombi-ast",
+ "tombi-comment-directive",
+ "tombi-document",
+ "tombi-document-tree",
+ "tombi-parser",
 ]
 
 [[package]]
@@ -3793,6 +3817,7 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree",

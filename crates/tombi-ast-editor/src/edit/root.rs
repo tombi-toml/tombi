@@ -1,4 +1,6 @@
 use itertools::Itertools;
+use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_syntax::SyntaxElement;
 
@@ -18,20 +20,25 @@ impl crate::Edit for tombi_ast::Root {
             let mut key_values = vec![];
             let mut table_or_array_of_tables = vec![];
 
+            let comment_directive = get_comment_directive_content::<
+                TableCommonFormatRules,
+                TableCommonLintRules,
+            >(self.comment_directives());
+
             // Move document schema/tombi comment directive to the top.
             if self
                 .schema_document_comment_directive(source_path)
                 .is_some()
                 || !self.tombi_document_comment_directives().is_empty()
             {
-                changes.push(crate::Change::AppendTop {
-                    new: self
-                        .get_document_header_comments()
-                        .unwrap()
-                        .into_iter()
-                        .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
-                        .collect_vec(),
-                });
+                if let Some(document_header_comments) = self.get_document_header_comments() {
+                    changes.push(crate::Change::AppendTop {
+                        new: document_header_comments
+                            .into_iter()
+                            .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
+                            .collect_vec(),
+                    });
+                }
             }
 
             for key_value in self.key_values() {
@@ -69,6 +76,7 @@ impl crate::Edit for tombi_ast::Root {
                     table_or_array_of_tables,
                     current_schema,
                     schema_context,
+                    comment_directive,
                 )
                 .await,
             );

@@ -34,9 +34,9 @@ impl TombiCommentDirectiveImpl for TombiDocumentDirectiveContent {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct FormatOptions {
     /// # Format disabled
     ///
@@ -62,9 +62,9 @@ impl FormatOptions {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct LintOptions {
     /// # Lint disabled
     ///
@@ -90,9 +90,9 @@ impl LintOptions {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
 pub struct SchemaOptions {
     /// # Enable strict schema validation
     ///

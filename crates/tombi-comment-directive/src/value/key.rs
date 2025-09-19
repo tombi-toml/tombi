@@ -3,22 +3,28 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions, WithCommonExtensibleRules,
+    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WarnRuleOptions,
+    WithCommonExtensibleLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyCommonExtensibleRules = WithCommonExtensibleRules<KeyRules>;
+pub type KeyFormatRules = EmptyFormatRules;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyCommonExtensibleRules> {
+pub type KeyCommonExtensibleLintRules = WithCommonExtensibleLintRules<KeyLinkRules>;
+
+pub type TombiKeyDirectiveContent =
+    TombiValueDirectiveContent<KeyFormatRules, KeyCommonExtensibleLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct KeyRules {
+pub struct KeyLinkRules {
     /// # Key empty
     ///
     /// Check if the key is empty.

@@ -36,7 +36,7 @@ impl crate::Root {
 
     pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
         let mut inner_comment_directives = vec![];
-        if self.items().next().is_none() {
+        if !matches!(self.items().next(), Some(crate::RootItem::KeyValue(_))) {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {

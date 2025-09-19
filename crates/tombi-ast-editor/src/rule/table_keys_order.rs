@@ -1,8 +1,12 @@
-use std::{borrow::Cow, collections::HashSet};
+use ahash::HashSet;
+use std::borrow::Cow;
 
 use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::{
+    TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
+};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaContext,
@@ -17,34 +21,54 @@ pub async fn table_keys_order<'a>(
     key_values: Vec<tombi_ast::KeyValue>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
+    comment_directive: Option<
+        TombiValueDirectiveContent<TableCommonFormatRules, TableCommonLintRules>,
+    >,
 ) -> Vec<crate::Change> {
     if key_values.is_empty() {
         return Vec::with_capacity(0);
     }
+
+    if comment_directive
+        .as_ref()
+        .and_then(|c| c.table_keys_order_disabled())
+        .unwrap_or(false)
+    {
+        return Vec::with_capacity(0);
+    }
+
+    let order = comment_directive
+        .as_ref()
+        .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
     let old = std::ops::RangeInclusive::new(
         SyntaxElement::Node(key_values.first().unwrap().syntax().clone()),
         SyntaxElement::Node(key_values.last().unwrap().syntax().clone()),
     );
 
-    let targets = key_values
-        .into_iter()
-        .map(|kv| {
-            (
-                kv.keys()
-                    .map(|key| {
-                        key.keys()
-                            .map(|key| Accessor::Key(key.to_raw_text(schema_context.toml_version)))
-                            .collect_vec()
-                    })
-                    .unwrap_or_default(),
-                kv,
-            )
-        })
-        .collect_vec();
+    let Some(sorted_key_values) = get_sorted_accessors(
+        value,
+        &[],
+        key_values
+            .into_iter()
+            .map(|kv| {
+                (
+                    kv.get_accessors(schema_context.toml_version)
+                        .unwrap_or_default(),
+                    kv,
+                )
+            })
+            .collect_vec(),
+        current_schema,
+        schema_context,
+        order,
+    )
+    .await
+    else {
+        return Vec::with_capacity(0);
+    };
 
-    let new = sorted_accessors(value, &[], targets, current_schema, schema_context)
-        .await
+    let new = sorted_key_values
         .into_iter()
         .map(|kv| SyntaxElement::Node(kv.syntax().clone()))
         .collect_vec();
@@ -52,13 +76,14 @@ pub async fn table_keys_order<'a>(
     vec![crate::Change::ReplaceRange { old, new }]
 }
 
-pub fn sorted_accessors<'a: 'b, 'b, T>(
+pub fn get_sorted_accessors<'a: 'b, 'b, T>(
     value: &'a tombi_document_tree::Value,
     accessors: &'a [tombi_schema_store::Accessor],
     targets: Vec<(Vec<tombi_schema_store::Accessor>, T)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-) -> BoxFuture<'b, Vec<T>>
+    order: Option<TableKeysOrder>,
+) -> BoxFuture<'b, Option<Vec<T>>>
 where
     T: Send + Clone + std::fmt::Debug + 'b,
 {
@@ -88,187 +113,149 @@ where
                                 .await
                                 .is_ok()
                             {
-                                return sorted_accessors(
+                                return get_sorted_accessors(
                                     value,
                                     accessors,
                                     targets.clone(),
                                     Some(&current_schema),
                                     schema_context,
+                                    order,
                                 )
                                 .await;
                             }
                         }
                     }
-                    return targets.into_iter().map(|(_, target)| target).collect_vec();
+                    return None;
                 }
                 _ => {}
             }
         }
 
         let mut results = Vec::with_capacity(targets.len());
-        let mut new_targets_map = IndexMap::new();
-        for (schema_accessors, target) in targets {
-            if let Some(accessor) = schema_accessors.first() {
-                new_targets_map
+        let mut sort_targets_map = IndexMap::new();
+
+        for (accessors, target) in targets {
+            if let Some(accessor) = accessors.first() {
+                sort_targets_map
                     .entry(accessor.clone())
                     .or_insert_with(Vec::new)
-                    .push((schema_accessors[1..].to_vec(), target));
+                    .push((accessors[1..].to_vec(), target));
             } else {
                 results.push(target);
             }
         }
 
-        if let Some(current_schema) = current_schema {
-            match (value, current_schema.value_schema.as_ref()) {
-                (tombi_document_tree::Value::Table(table), ValueSchema::Table(table_schema)) => {
-                    if new_targets_map
-                        .iter()
-                        .all(|(accessor, _)| matches!(accessor, Accessor::Key(_)))
-                    {
-                        let sorted_targets = match &table_schema.keys_order {
-                            Some(XTombiTableKeysOrder::All(order)) => {
-                                sort_targets(
-                                    new_targets_map.into_iter().collect_vec(),
-                                    *order,
-                                    table_schema,
-                                )
-                                .await
-                            }
-                            Some(XTombiTableKeysOrder::Groups(groups)) => {
-                                let mut sorted_targets = Vec::with_capacity(new_targets_map.len());
+        match value {
+            tombi_document_tree::Value::Table(table)
+                if sort_targets_map
+                    .iter()
+                    .all(|(accessor, _)| matches!(accessor, Accessor::Key(_))) =>
+            {
+                let table_order = get_table_keys_order(order, current_schema);
+                let table_schema = current_schema.and_then(|current_schema| {
+                    if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
+                        Some(table_schema)
+                    } else {
+                        None
+                    }
+                });
 
-                                let mut properties =
-                                    if has_group(groups, TableKeysOrderGroupKind::Keys) {
-                                        extract_properties(&mut new_targets_map, table_schema).await
-                                    } else {
-                                        Vec::new()
-                                    };
-                                let mut pattern_properties =
-                                    if has_group(groups, TableKeysOrderGroupKind::PatternKeys) {
-                                        extract_pattern_properties(
-                                            &mut new_targets_map,
-                                            table_schema,
-                                        )
-                                        .await
-                                    } else {
-                                        Vec::new()
-                                    };
-                                let mut additional_properties =
-                                    new_targets_map.into_iter().collect_vec();
+                let sorted_targets =
+                    sort_table_targets(sort_targets_map, table_schema, table_order.as_ref()).await;
 
-                                for group in groups {
-                                    match group.target {
-                                        TableKeysOrderGroupKind::Keys => {
-                                            properties =
-                                                sort_targets(properties, group.order, table_schema)
-                                                    .await;
-                                            sorted_targets.append(&mut properties);
-                                        }
-                                        TableKeysOrderGroupKind::PatternKeys => {
-                                            pattern_properties = sort_targets(
-                                                pattern_properties,
-                                                group.order,
-                                                table_schema,
-                                            )
-                                            .await;
-                                            sorted_targets.append(&mut pattern_properties);
-                                        }
-                                        TableKeysOrderGroupKind::AdditionalKeys => {
-                                            additional_properties = sort_targets(
-                                                additional_properties,
-                                                group.order,
-                                                table_schema,
-                                            )
-                                            .await;
-                                            sorted_targets.append(&mut additional_properties);
-                                        }
-                                    }
-                                }
-                                sorted_targets
-                            }
-                            None => new_targets_map.into_iter().collect_vec(),
-                        };
-
-                        for (accessor, targets) in sorted_targets {
-                            if let Some(value) = table.get(&accessor.to_string()) {
-                                if let Some(PropertySchema {
-                                    property_schema, ..
-                                }) = table_schema.properties.write().await.get_mut(&accessor)
+                for (accessor, targets) in sorted_targets {
+                    if let Some(value) = table.get(&accessor.to_string()) {
+                        if let (Some(current_schema), Some(table_schema)) =
+                            (current_schema, table_schema)
+                        {
+                            if let Some(PropertySchema {
+                                property_schema, ..
+                            }) = table_schema.properties.write().await.get_mut(&accessor)
+                            {
+                                if let Ok(Some(current_schema)) = property_schema
+                                    .resolve(
+                                        current_schema.schema_uri.clone(),
+                                        current_schema.definitions.clone(),
+                                        schema_context.store,
+                                    )
+                                    .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
                                 {
-                                    if let Ok(Some(current_schema)) = property_schema
-                                        .resolve(
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
+                                    results.extend(
+                                        get_sorted_accessors(
+                                            value,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor))
+                                                .collect_vec(),
+                                            targets,
+                                            Some(&current_schema),
+                                            schema_context,
+                                            order,
                                         )
-                                        .await
-                                        .inspect_err(|err| tracing::warn!("{err}"))
-                                    {
-                                        results.extend(
-                                            sorted_accessors(
-                                                value,
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor))
-                                                    .collect_vec(),
-                                                targets,
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await,
-                                        );
-                                    } else {
-                                        results
-                                            .extend(targets.into_iter().map(|(_, target)| target));
-                                    }
-                                } else if let Some((_, referable_schema)) =
-                                    &table_schema.additional_property_schema
-                                {
-                                    if let Ok(Some(current_schema)) = referable_schema
-                                        .write()
-                                        .await
-                                        .resolve(
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
-                                        )
-                                        .await
-                                        .inspect_err(|err| tracing::warn!("{err}"))
-                                    {
-                                        results.extend(
-                                            sorted_accessors(
-                                                value,
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor))
-                                                    .collect_vec(),
-                                                targets,
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await,
-                                        );
-                                    } else {
-                                        results
-                                            .extend(targets.into_iter().map(|(_, target)| target));
-                                    }
-                                } else {
-                                    results.extend(targets.into_iter().map(|(_, target)| target));
+                                        .await?,
+                                    );
+                                    continue;
                                 }
-                            } else {
-                                results.extend(targets.into_iter().map(|(_, target)| target));
+                            }
+                            if let Some((_, referable_schema)) =
+                                &table_schema.additional_property_schema
+                            {
+                                if let Ok(Some(current_schema)) = referable_schema
+                                    .write()
+                                    .await
+                                    .resolve(
+                                        current_schema.schema_uri.clone(),
+                                        current_schema.definitions.clone(),
+                                        schema_context.store,
+                                    )
+                                    .await
+                                    .inspect_err(|err| tracing::warn!("{err}"))
+                                {
+                                    results.extend(
+                                        get_sorted_accessors(
+                                            value,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor))
+                                                .collect_vec(),
+                                            targets,
+                                            Some(&current_schema),
+                                            schema_context,
+                                            order,
+                                        )
+                                        .await?,
+                                    );
+                                    continue;
+                                }
                             }
                         }
-                        return results;
                     }
+
+                    results.extend(
+                        get_sorted_accessors(
+                            value,
+                            &accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(accessor))
+                                .collect_vec(),
+                            targets,
+                            None,
+                            schema_context,
+                            order,
+                        )
+                        .await?,
+                    );
                 }
-                (tombi_document_tree::Value::Array(array), ValueSchema::Array(array_schema)) => {
-                    if new_targets_map
-                        .iter()
-                        .all(|(accessor, _)| matches!(accessor, Accessor::Index(_)))
-                    {
+
+                Some(results)
+            }
+            tombi_document_tree::Value::Array(array) => {
+                if let Some(current_schema) = current_schema {
+                    if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
                         if let Some(referable_schema) = &array_schema.items {
                             if let Ok(Some(current_schema)) = referable_schema
                                 .write()
@@ -281,39 +268,59 @@ where
                                 .await
                                 .inspect_err(|err| tracing::warn!("{err}"))
                             {
-                                for (value, (_, targets)) in array.iter().zip(new_targets_map) {
+                                for (index, (value, (_, targets))) in
+                                    array.iter().zip(sort_targets_map).enumerate()
+                                {
                                     results.extend(
-                                        sorted_accessors(
+                                        get_sorted_accessors(
                                             value,
-                                            accessors,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(Accessor::Index(index)))
+                                                .collect_vec(),
                                             targets,
                                             Some(&current_schema),
                                             schema_context,
+                                            order,
                                         )
-                                        .await,
+                                        .await?,
                                     );
                                 }
-                            } else {
-                                for targets in
-                                    new_targets_map.into_iter().map(|(_, targets)| targets)
-                                {
-                                    results.extend(targets.into_iter().map(|(_, target)| target));
-                                }
+                                return Some(results);
                             }
                         }
-
-                        return results;
                     }
+                };
+
+                for (index, (value, (_, targets))) in array.iter().zip(sort_targets_map).enumerate()
+                {
+                    results.extend(
+                        get_sorted_accessors(
+                            value,
+                            &accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(Accessor::Index(index)))
+                                .collect_vec(),
+                            targets,
+                            None,
+                            schema_context,
+                            order,
+                        )
+                        .await?,
+                    );
                 }
-                _ => {}
+                Some(results)
+            }
+            _ => {
+                for (_, targets) in sort_targets_map {
+                    results.extend(targets.into_iter().map(|(_, target)| target));
+                }
+
+                Some(results)
             }
         }
-
-        for (_, targets) in new_targets_map {
-            results.extend(targets.into_iter().map(|(_, target)| target));
-        }
-
-        results
     }
     .boxed()
 }
@@ -355,7 +362,7 @@ async fn extract_pattern_properties<T>(
 async fn sort_targets<T>(
     mut targets: Vec<(Accessor, Vec<(Vec<Accessor>, T)>)>,
     order: TableKeysOrder,
-    table_schema: &TableSchema,
+    table_schema: Option<&TableSchema>,
 ) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
     match order {
         TableKeysOrder::Ascending => targets.sort_by(|(a_accessor, _), (b_accessor, _)| {
@@ -365,6 +372,10 @@ async fn sort_targets<T>(
             b_accessor.partial_cmp(a_accessor).unwrap()
         }),
         TableKeysOrder::Schema => {
+            let Some(table_schema) = table_schema else {
+                tracing::debug!("Table schema is not available, skipping schema sort");
+                return targets;
+            };
             let mut new_targets = vec![];
             for accessor in table_schema.accessors().await {
                 new_targets.extend(targets.extract_if(.., |(element, ..)| *element == accessor));
@@ -388,4 +399,79 @@ async fn sort_targets<T>(
 
 fn has_group(sort_groups: &[TableKeysOrderGroup], group: TableKeysOrderGroupKind) -> bool {
     sort_groups.iter().any(|g| g.target == group)
+}
+
+fn get_table_keys_order(
+    order: Option<TableKeysOrder>,
+    current_schema: Option<&CurrentSchema>,
+) -> Option<XTombiTableKeysOrder> {
+    match order {
+        Some(order) => Some(XTombiTableKeysOrder::All(order)),
+        None => {
+            if let Some(current_schema) = current_schema {
+                if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
+                    return table_schema.keys_order.clone();
+                }
+            }
+            None
+        }
+    }
+}
+
+async fn sort_table_targets<T>(
+    mut sort_targets_map: IndexMap<Accessor, Vec<(Vec<Accessor>, T)>>,
+    table_schema: Option<&TableSchema>,
+    order: Option<&XTombiTableKeysOrder>,
+) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
+    match (order, table_schema) {
+        (Some(XTombiTableKeysOrder::All(order)), _) => {
+            return sort_targets(
+                sort_targets_map.into_iter().collect_vec(),
+                *order,
+                table_schema,
+            )
+            .await
+        }
+        (Some(XTombiTableKeysOrder::Groups(groups)), Some(table_schema)) => {
+            let mut sorted_targets = Vec::with_capacity(sort_targets_map.len());
+
+            let mut properties = if has_group(groups, TableKeysOrderGroupKind::Keys) {
+                extract_properties(&mut sort_targets_map, table_schema).await
+            } else {
+                Vec::with_capacity(0)
+            };
+            let mut pattern_properties = if has_group(groups, TableKeysOrderGroupKind::PatternKeys)
+            {
+                extract_pattern_properties(&mut sort_targets_map, table_schema).await
+            } else {
+                Vec::with_capacity(0)
+            };
+            let mut additional_properties = sort_targets_map.into_iter().collect_vec();
+
+            for group in groups {
+                match group.target {
+                    TableKeysOrderGroupKind::Keys => {
+                        properties =
+                            sort_targets(properties, group.order, Some(table_schema)).await;
+                        sorted_targets.append(&mut properties);
+                    }
+                    TableKeysOrderGroupKind::PatternKeys => {
+                        pattern_properties =
+                            sort_targets(pattern_properties, group.order, Some(table_schema)).await;
+                        sorted_targets.append(&mut pattern_properties);
+                    }
+                    TableKeysOrderGroupKind::AdditionalKeys => {
+                        additional_properties =
+                            sort_targets(additional_properties, group.order, Some(table_schema))
+                                .await;
+                        sorted_targets.append(&mut additional_properties);
+                    }
+                }
+            }
+            return sorted_targets;
+        }
+        _ => {}
+    }
+
+    sort_targets_map.into_iter().collect_vec()
 }

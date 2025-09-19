@@ -3,6 +3,17 @@
   "title": "TombiValueDirectiveContent",
   "type": "object",
   "properties": {
+    "format": {
+      "title": "Formatter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "lint": {
       "title": "Linter options",
       "anyOf": [
@@ -17,14 +28,14 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "LintOptions": {
+    "FormatOptions": {
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules",
+          "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithCommonExtensibleRules"
+              "$ref": "#/definitions/EmptyFormatRules"
             },
             {
               "type": "null"
@@ -34,7 +45,27 @@
       },
       "additionalProperties": false
     },
-    "WithCommonExtensibleRules": {
+    "EmptyFormatRules": {
+      "type": "object"
+    },
+    "LintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WithCommonExtensibleLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "WithCommonExtensibleLintRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {

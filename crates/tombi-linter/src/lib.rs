@@ -426,6 +426,37 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_empty_document_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_key_value_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                key = "value"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_table_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                [aaa]
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_table_warning_empty(
                 r#"
                 [aaa]
@@ -515,6 +546,24 @@ mod tests {
                 crate::DiagnosticKind::DottedKeysOutOfOrder,
                 crate::DiagnosticKind::DottedKeysOutOfOrder
             ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_dotted_keys_out_of_order_with_comment_directive_table_keys_order_disabled_eq_true(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+
+                apple.type = "fruit"
+                orange.type = "fruit"
+
+                apple.skin = "thin"
+                orange.skin = "thick"
+
+                apple.color = "red"
+                orange.color = "orange"
+                "#,
+            ) -> Ok(_);
         }
 
         test_lint! {
