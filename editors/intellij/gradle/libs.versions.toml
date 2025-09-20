@@ -1,12 +1,12 @@
 [versions]
 # libraries
-annotations = "26.0.2"
+annotations = "26.0.2-1"
 junit = "4.13.2"
 # plugins
 changelog = "2.4.0"
-intelliJPlatform = "2.7.2"
-kotlin = "2.2.10"
-kover = "0.9.1"
+intelliJPlatform = "2.9.0"
+kotlin = "2.2.20"
+kover = "0.9.2"
 qodana = "2025.2.1"
 
 [libraries.annotations]
