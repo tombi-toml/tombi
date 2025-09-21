@@ -252,9 +252,17 @@
               "key": "https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-lints-section"
             }
           }
+        },
+        "check-cfg": {
+          "description": "A list of `cfg` expressions that this lint should check for.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "examples": ["cfg(foo)"]
         }
       },
-      "x-tombi-table-keys-order": "version-sort"
+      "x-tombi-table-keys-order": "schema"
     },
     "Edition": {
       "title": "Edition",
