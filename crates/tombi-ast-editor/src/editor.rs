@@ -51,7 +51,7 @@ impl<'a> Editor<'a> {
 
         let changes = new_root
             .edit(
-                &document_tree,
+                &document_tree.into(),
                 &[],
                 self.source_path,
                 current_schema.as_ref(),

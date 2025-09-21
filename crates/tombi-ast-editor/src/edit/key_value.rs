@@ -1,7 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
 use itertools::Itertools;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, DocumentSchema, OneOfSchema, PropertySchema,
@@ -11,81 +10,59 @@ use tombi_validator::Validate;
 
 use crate::edit::EditRecursive;
 
-use super::get_value_schema;
-
-impl crate::Edit<tombi_document_tree::Table> for tombi_ast::KeyValue {
+impl crate::Edit<tombi_document_tree::Value> for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        node: &'a tombi_document_tree::Table,
+        node: &'a tombi_document_tree::Value,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
+            tracing::trace!("node = {:?}", node);
+            tracing::trace!("accessors = {:?}", accessors);
+            tracing::trace!("current_schema = {:?}", current_schema);
+
             let Some(keys_accessors) = self.get_accessors(schema_context.toml_version) else {
                 return Vec::with_capacity(0);
             };
 
-            let accessors = accessors
+            let key_accessors = accessors
                 .iter()
                 .cloned()
                 .chain(keys_accessors)
                 .collect_vec();
 
-            let mut changes = vec![];
+            node.edit_recursive(
+                |node, accessors, current_schema| {
+                    async move {
+                        tracing::trace!("node = {:?}", node);
+                        tracing::trace!("accessors = {:?}", accessors);
+                        tracing::trace!("current_schema = {:?}", current_schema);
 
-            let document_tree_value = tombi_document_tree::Value::Table(
-                self.clone()
-                    .into_document_tree_and_errors(schema_context.toml_version)
-                    .tree,
-            );
-
-            if let Some(current_schema) = current_schema {
-                if let Some(value_schema) = get_value_schema(
-                    &document_tree_value,
-                    &accessors,
-                    current_schema,
-                    schema_context,
-                )
-                .await
-                {
-                    if let Some(value) = self.value() {
-                        changes.extend(
+                        if let Some(value) = self.value() {
                             value
                                 .edit(
-                                    &tombi_document_tree::Value::Table(node.clone()),
+                                    node,
                                     &accessors,
                                     source_path,
-                                    Some(&CurrentSchema {
-                                        value_schema: Cow::Owned(value_schema),
-                                        schema_uri: current_schema.schema_uri.clone(),
-                                        definitions: current_schema.definitions.clone(),
-                                    }),
+                                    current_schema.as_ref(),
                                     schema_context,
                                 )
-                                .await,
-                        );
-                        return changes;
+                                .await
+                        } else {
+                            Vec::with_capacity(0)
+                        }
                     }
-                }
-            }
-
-            if let Some(value) = self.value() {
-                changes.extend(
-                    value
-                        .edit(
-                            &tombi_document_tree::Value::Table(node.clone()),
-                            &accessors,
-                            source_path,
-                            None,
-                            schema_context,
-                        )
-                        .await,
-                );
-            }
-
-            changes
+                    .boxed()
+                },
+                &key_accessors,
+                Arc::from(accessors.to_vec()),
+                current_schema.map(|current_schema| current_schema.clone()),
+                schema_context,
+            )
+            .await
         }
         .boxed()
     }
@@ -94,7 +71,11 @@ impl crate::Edit<tombi_document_tree::Table> for tombi_ast::KeyValue {
 impl EditRecursive for tombi_document_tree::Value {
     fn edit_recursive<'a: 'b, 'b>(
         &'a self,
-        edit_fn: impl FnOnce(&'a tombi_document_tree::Value) -> BoxFuture<'b, Vec<crate::Change>>
+        edit_fn: impl FnOnce(
+                &'a tombi_document_tree::Value,
+                Arc<[Accessor]>,
+                Option<tombi_schema_store::CurrentSchema<'a>>,
+            ) -> BoxFuture<'b, Vec<crate::Change>>
             + std::marker::Send
             + 'b,
         key_accessors: &'a [Accessor],
@@ -133,32 +114,40 @@ impl EditRecursive for tombi_document_tree::Value {
                     next_accessors.push(Accessor::Key(key_str.to_owned()));
                     let next_accessors = Arc::from(next_accessors.into_boxed_slice());
 
-                    table
-                        .edit_recursive(
-                            edit_fn,
-                            &key_accessors[1..],
-                            next_accessors,
-                            current_schema,
-                            schema_context,
-                        )
-                        .await
+                    if key_accessors.len() == 1 {
+                        edit_fn(self, accessors, current_schema).await
+                    } else {
+                        table
+                            .edit_recursive(
+                                edit_fn,
+                                &key_accessors[1..],
+                                next_accessors,
+                                current_schema,
+                                schema_context,
+                            )
+                            .await
+                    }
                 }
                 (Some(Accessor::Index(index)), tombi_document_tree::Value::Array(array)) => {
                     let mut next_accessors = accessors.as_ref().to_vec();
                     next_accessors.push(Accessor::Index(*index));
                     let next_accessors = Arc::from(next_accessors.into_boxed_slice());
 
-                    array
-                        .edit_recursive(
-                            edit_fn,
-                            &key_accessors[1..],
-                            next_accessors,
-                            current_schema,
-                            schema_context,
-                        )
-                        .await
+                    if key_accessors.len() == 1 {
+                        edit_fn(self, accessors, current_schema).await
+                    } else {
+                        array
+                            .edit_recursive(
+                                edit_fn,
+                                &key_accessors[1..],
+                                next_accessors,
+                                current_schema,
+                                schema_context,
+                            )
+                            .await
+                    }
                 }
-                (None, _) => Vec::with_capacity(0),
+                (None, _) => edit_fn(self, accessors, current_schema).await,
                 _ => Vec::with_capacity(0),
             }
         }
@@ -169,7 +158,11 @@ impl EditRecursive for tombi_document_tree::Value {
 impl EditRecursive for tombi_document_tree::Table {
     fn edit_recursive<'a: 'b, 'b>(
         &'a self,
-        edit_fn: impl FnOnce(&'a tombi_document_tree::Value) -> BoxFuture<'b, Vec<crate::Change>>
+        edit_fn: impl FnOnce(
+                &'a tombi_document_tree::Value,
+                Arc<[Accessor]>,
+                Option<tombi_schema_store::CurrentSchema<'a>>,
+            ) -> BoxFuture<'b, Vec<crate::Change>>
             + std::marker::Send
             + 'b,
         key_accessors: &'a [Accessor],
@@ -179,7 +172,7 @@ impl EditRecursive for tombi_document_tree::Table {
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let Some(Accessor::Key(accessor_str)) = key_accessors.as_ref().first() else {
-                return Vec::with_capacity(0);
+                unreachable!("key_accessors is empty");
             };
             let Some(value) = self.get(accessor_str) else {
                 return Vec::with_capacity(0);
@@ -377,7 +370,11 @@ impl EditRecursive for tombi_document_tree::Table {
 impl EditRecursive for tombi_document_tree::Array {
     fn edit_recursive<'a: 'b, 'b>(
         &'a self,
-        edit_fn: impl FnOnce(&'a tombi_document_tree::Value) -> BoxFuture<'b, Vec<crate::Change>>
+        edit_fn: impl FnOnce(
+                &'a tombi_document_tree::Value,
+                Arc<[Accessor]>,
+                Option<tombi_schema_store::CurrentSchema<'a>>,
+            ) -> BoxFuture<'b, Vec<crate::Change>>
             + std::marker::Send
             + 'b,
         key_accessors: &'a [Accessor],

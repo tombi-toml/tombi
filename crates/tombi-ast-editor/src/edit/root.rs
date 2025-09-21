@@ -8,10 +8,10 @@ use tombi_syntax::SyntaxElement;
 use crate::rule::root_table_keys_order;
 use tombi_ast::AstToken;
 
-impl crate::Edit<tombi_document_tree::DocumentTree> for tombi_ast::Root {
+impl crate::Edit<tombi_document_tree::Value> for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        node: &'a tombi_document_tree::DocumentTree,
+        node: &'a tombi_document_tree::Value,
         _accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
@@ -41,7 +41,13 @@ impl crate::Edit<tombi_document_tree::DocumentTree> for tombi_ast::Root {
             for key_value in self.key_values() {
                 changes.extend(
                     key_value
-                        .edit(node, &[], source_path, current_schema, schema_context)
+                        .edit(
+                            node.into(),
+                            &[],
+                            source_path,
+                            current_schema,
+                            schema_context,
+                        )
                         .await,
                 );
                 key_values.push(key_value);

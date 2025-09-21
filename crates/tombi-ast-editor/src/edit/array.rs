@@ -20,6 +20,8 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
+        tracing::trace!("node = {:?}", node);
+        tracing::trace!("accessors = {:?}", accessors);
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {

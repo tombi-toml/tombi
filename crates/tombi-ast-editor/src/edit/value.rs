@@ -20,8 +20,8 @@ impl crate::Edit<tombi_document_tree::Value> for tombi_ast::Value {
                 }
                 (
                     tombi_ast::Value::InlineTable(inline_table),
-                    tombi_document_tree::Value::Table(node),
-                ) if matches!(node.kind(), TableKind::InlineTable { .. }) => {
+                    tombi_document_tree::Value::Table(table),
+                ) if matches!(table.kind(), TableKind::InlineTable { .. }) => {
                     inline_table
                         .edit(node, accessors, source_path, current_schema, schema_context)
                         .await
