@@ -4,17 +4,16 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, AllOfSchema, AnyOfSchema, OneOfSchema, ValueSchema};
 use tombi_validator::Validate;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};
 
-impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
+impl crate::Edit for tombi_ast::Array {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        node: &'a tombi_document_tree::Array,
+        node: &'a tombi_document_tree::Value,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
@@ -25,6 +24,10 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
+            let tombi_document_tree::Value::Array(array_node) = node else {
+                return Vec::with_capacity(0);
+            };
+
             let mut changes = vec![];
 
             let mut use_item_schema = false;
@@ -44,8 +47,10 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
                                 .inspect_err(|err| tracing::warn!("{err}"))
                             {
                                 use_item_schema = true;
-                                for (index, ((value, comma), node)) in
-                                    self.values_with_comma().zip(node.values()).enumerate()
+                                for (index, ((value, comma), value_node)) in self
+                                    .values_with_comma()
+                                    .zip(array_node.values())
+                                    .enumerate()
                                 {
                                     changes.extend(array_comma_trailing_comment(
                                         &value,
@@ -54,7 +59,7 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
                                     changes.extend(
                                         value
                                             .edit(
-                                                node,
+                                                value_node,
                                                 &accessors
                                                     .iter()
                                                     .cloned()
@@ -73,11 +78,6 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
                     ValueSchema::AllOf(AllOfSchema { schemas, .. })
                     | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                     | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                        let value = &self
-                            .clone()
-                            .into_document_tree_and_errors(schema_context.toml_version)
-                            .tree;
-
                         for referable_schema in schemas.write().await.iter_mut() {
                             if let Ok(Some(current_schema)) = referable_schema
                                 .resolve(
@@ -88,7 +88,7 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
                                 .await
                                 .inspect_err(|err| tracing::warn!("{err}"))
                             {
-                                if value
+                                if node
                                     .validate(&[], Some(&current_schema), schema_context)
                                     .await
                                     .is_ok()
@@ -110,14 +110,16 @@ impl crate::Edit<tombi_document_tree::Array> for tombi_ast::Array {
                 }
             }
             if !use_item_schema {
-                for (index, ((value, comma), node)) in
-                    self.values_with_comma().zip(node.values()).enumerate()
+                for (index, ((value, comma), value_node)) in self
+                    .values_with_comma()
+                    .zip(array_node.values())
+                    .enumerate()
                 {
                     changes.extend(array_comma_trailing_comment(&value, comma.as_ref()));
                     changes.extend(
                         value
                             .edit(
-                                node,
+                                value_node,
                                 &accessors
                                     .iter()
                                     .cloned()

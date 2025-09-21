@@ -11,10 +11,10 @@ mod root;
 mod table;
 mod value;
 
-pub trait Edit<T> {
+pub trait Edit {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        node: &'a T,
+        node: &'a tombi_document_tree::Value,
         accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,

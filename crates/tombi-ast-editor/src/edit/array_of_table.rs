@@ -9,7 +9,7 @@ use tombi_schema_store::Accessor;
 
 use crate::{edit::EditRecursive, rule::table_keys_order};
 
-impl crate::Edit<tombi_document_tree::Value> for tombi_ast::ArrayOfTable {
+impl crate::Edit for tombi_ast::ArrayOfTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
         node: &'a tombi_document_tree::Value,

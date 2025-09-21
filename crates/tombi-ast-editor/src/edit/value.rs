@@ -2,7 +2,7 @@ use tombi_document_tree::TableKind;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::Accessor;
 
-impl crate::Edit<tombi_document_tree::Value> for tombi_ast::Value {
+impl crate::Edit for tombi_ast::Value {
     fn edit<'a: 'b, 'b>(
         &'a self,
         node: &'a tombi_document_tree::Value,
@@ -13,7 +13,7 @@ impl crate::Edit<tombi_document_tree::Value> for tombi_ast::Value {
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             match (self, node) {
-                (tombi_ast::Value::Array(array), tombi_document_tree::Value::Array(node)) => {
+                (tombi_ast::Value::Array(array), tombi_document_tree::Value::Array(_)) => {
                     array
                         .edit(node, accessors, source_path, current_schema, schema_context)
                         .await

@@ -8,7 +8,7 @@ use tombi_syntax::SyntaxElement;
 use crate::rule::root_table_keys_order;
 use tombi_ast::AstToken;
 
-impl crate::Edit<tombi_document_tree::Value> for tombi_ast::Root {
+impl crate::Edit for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
         &'a self,
         node: &'a tombi_document_tree::Value,

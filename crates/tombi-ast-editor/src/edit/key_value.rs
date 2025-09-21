@@ -10,7 +10,7 @@ use tombi_validator::Validate;
 
 use crate::edit::EditRecursive;
 
-impl crate::Edit<tombi_document_tree::Value> for tombi_ast::KeyValue {
+impl crate::Edit for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
         node: &'a tombi_document_tree::Value,

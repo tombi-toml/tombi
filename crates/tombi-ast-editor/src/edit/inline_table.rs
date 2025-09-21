@@ -8,7 +8,7 @@ use tombi_schema_store::Accessor;
 
 use crate::rule::{inline_table_comma_trailing_comment, inline_table_keys_order};
 
-impl crate::Edit<tombi_document_tree::Value> for tombi_ast::InlineTable {
+impl crate::Edit for tombi_ast::InlineTable {
     fn edit<'a: 'b, 'b>(
         &'a self,
         node: &'a tombi_document_tree::Value,
