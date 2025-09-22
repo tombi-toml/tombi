@@ -415,6 +415,19 @@ mod tests {
 
         test_lint! {
             #[test]
+            // Ref: https://github.com/tombi-toml/tombi/issues/1031
+            fn test_error_report_case1(
+                r#"
+                [job]
+                name = "foo"
+                prod.cpu = 10
+                prod.autoscale = { min = 10, max = 20 }
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_warning_empty(
                 r#"
                 "" = 1

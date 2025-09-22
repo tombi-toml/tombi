@@ -108,11 +108,15 @@ impl GetHeaderSchemarAccessors for crate::Table {
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.to_raw_text(toml_version)));
-            header_keys.push(key.to_raw_text(toml_version));
+            let key_text = key.to_raw_text(toml_version);
+            accessors.push(Accessor::Key(key_text.clone()));
+            header_keys.push(key_text);
 
-            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-                accessors.push(Accessor::Index(*new_index));
+            if let Some(index) = array_of_tables_keys
+                .get(&header_keys)
+                .map(|count| count - 1)
+            {
+                accessors.push(Accessor::Index(index));
             }
         }
 
@@ -134,11 +138,15 @@ impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.to_raw_text(toml_version)));
-            header_keys.push(key.to_raw_text(toml_version));
+            let key_text = key.to_raw_text(toml_version);
+            accessors.push(Accessor::Key(key_text.clone()));
+            header_keys.push(key_text);
 
-            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-                accessors.push(Accessor::Index(*new_index));
+            if let Some(index) = array_of_tables_keys
+                .get(&header_keys)
+                .map(|count| count - 1)
+            {
+                accessors.push(Accessor::Index(index));
             }
         }
 
