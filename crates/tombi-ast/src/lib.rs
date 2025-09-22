@@ -112,11 +112,11 @@ impl GetHeaderSchemarAccessors for crate::Table {
             accessors.push(Accessor::Key(key_text.clone()));
             header_keys.push(key_text);
 
-            if let Some(new_index) = array_of_tables_keys
+            if let Some(index) = array_of_tables_keys
                 .get(&header_keys)
                 .map(|count| count - 1)
             {
-                accessors.push(Accessor::Index(new_index));
+                accessors.push(Accessor::Index(index));
             }
         }
 
@@ -142,11 +142,11 @@ impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
             accessors.push(Accessor::Key(key_text.clone()));
             header_keys.push(key_text);
 
-            if let Some(new_index) = array_of_tables_keys
+            if let Some(index) = array_of_tables_keys
                 .get(&header_keys)
                 .map(|count| count - 1)
             {
-                accessors.push(Accessor::Index(new_index));
+                accessors.push(Accessor::Index(index));
             }
         }
 
