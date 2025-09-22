@@ -635,6 +635,61 @@ mod table_keys_order {
         }
     }
 
+    mod type_test {
+        use tombi_test_lib::type_test_schema_path;
+
+        use super::test_format;
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_sort(
+                r#"
+                [[array]]
+                integer = 1
+
+                [[array]]
+                integer = 2
+
+                [array.table]
+                key = "value"
+
+                [[array]]
+                integer = 3
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_nested_array_sort(
+                r#"
+                [[array1]]
+                integer = 1
+
+                [[array1]]
+                integer = 2
+
+                [array1.table1]
+                key1 = "2"
+
+                [[array1.table1.array2]]
+                key2 = "1"
+
+                [[array1.table1.array2]]
+                key2 = "2"
+
+                [array1.table1.array2.table2]
+                key3 = "1"
+
+                [[array1]]
+                integer = 3
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(source)
+        }
+    }
+
     mod non_schema {
         use super::test_format;
 
