@@ -214,39 +214,43 @@ impl Table {
 
     pub fn merge(&mut self, other: Self) -> Result<(), Vec<crate::Error>> {
         use TableKind::*;
+
         let mut errors = vec![];
 
-        let is_conflict = match (self.kind, other.kind) {
+        let mut is_conflict = false;
+        match (self.kind, other.kind) {
             (KeyValue, KeyValue) => {
-                match self
-                    .key_values
-                    .values()
-                    .zip(other.key_values.values())
-                    .next()
-                {
-                    Some((Value::Table(table1), _)) => {
-                        matches!(table1.kind(), TableKind::InlineTable { .. })
+                for (self_key, self_value) in self.key_values() {
+                    if let Some(other_value) = other.key_values.get(self_key) {
+                        if match (self_value, other_value) {
+                            (Value::Table(table1), _) => {
+                                matches!(table1.kind(), TableKind::InlineTable { .. })
+                            }
+                            (_, Value::Table(table2)) => {
+                                matches!(table2.kind(), TableKind::InlineTable { .. })
+                            }
+                            _ => false,
+                        } {
+                            is_conflict = true;
+                            break;
+                        }
                     }
-                    Some((_, Value::Table(table2))) => {
-                        matches!(table2.kind(), TableKind::InlineTable { .. })
-                    }
-                    Some(_) => false,
-                    None => unreachable!("KeyValue must have one value."),
                 }
             }
             (Table | InlineTable { .. } | KeyValue, Table | InlineTable { .. })
             | (InlineTable { .. }, ParentTable | ParentKey | KeyValue)
-            | (ParentTable, ParentKey) => true,
+            | (ParentTable, ParentKey) => {
+                is_conflict = true;
+            }
             (ParentTable, Table | InlineTable { .. }) => {
                 self.kind = other.kind;
-                false
             }
             (ParentKey, Table | InlineTable { .. }) => {
                 self.kind = other.kind;
-                true
+                is_conflict = true;
             }
-            _ => false,
-        };
+            _ => {}
+        }
 
         if is_conflict {
             errors.push(crate::Error::ConflictTable {
