@@ -1,7 +1,10 @@
+import { Note } from "~/components/Highlight";
+
 # Formatter Overview
 
 Tombi's formatter ensures consistent styling of your TOML files by automatically applying formatting rules.
 
-Tombi's formatter is inspired by [Black](https://black.readthedocs.io/en/stable/index.html).  
-The current policy is more strict, and there is no line-width specification.  
-The default line width is 80 characters.
+Tombi is an uncompromising code formatter inspired by [Black](https://black.readthedocs.io/en/stable/index.html).
+The current policy is more strict, and there is no line-width specification. The default line width is 80 characters.
+
+Furthermore, it features automatic sorting via JSON Schema metadata to maintain consistent order across all projects.
