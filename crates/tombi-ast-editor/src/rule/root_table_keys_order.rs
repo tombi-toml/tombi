@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_ast::{AstNode, GetHeaderSchemarAccessors};
+use tombi_ast::{AstNode, GetHeaderAccessors};
 use tombi_comment_directive::value::{
     TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
 };
@@ -70,7 +70,7 @@ pub async fn root_table_keys_order<'a>(
             .map(|table| {
                 (
                     table
-                        .get_header_accessor(schema_context.toml_version)
+                        .get_header_accessors(schema_context.toml_version)
                         .unwrap_or_default(),
                     table,
                 )

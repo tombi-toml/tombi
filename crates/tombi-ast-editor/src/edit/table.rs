@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use tombi_ast::GetHeaderSchemarAccessors;
+use tombi_ast::GetHeaderAccessors;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
@@ -21,7 +21,7 @@ impl crate::Edit for tombi_ast::Table {
         tracing::trace!("current_schema = {:?}", current_schema);
 
         async move {
-            let Some(header_accessors) = self.get_header_accessor(schema_context.toml_version)
+            let Some(header_accessors) = self.get_header_accessors(schema_context.toml_version)
             else {
                 return Vec::with_capacity(0);
             };
