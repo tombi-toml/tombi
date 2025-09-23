@@ -1,5 +1,5 @@
 use tombi_ast::AstNode;
-use tombi_schema_store::{CurrentSchema, SchemaContext};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 
 use crate::{
     node::make_comma,
@@ -8,9 +8,10 @@ use crate::{
     },
 };
 
-pub fn create_local_time_sortable_values<'a>(
+pub async fn create_local_time_sortable_values<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
     value_nodes: &'a [&'a tombi_document_tree::Value],
+    accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
 ) -> Result<SortableValues, SortFailReason> {
@@ -26,8 +27,13 @@ pub fn create_local_time_sortable_values<'a>(
                 tombi_ast::Value::InlineTable(inline_table),
                 tombi_document_tree::Value::Table(table_node),
             ) => {
-                let array_values_order_by =
-                    try_array_values_order_by_from_item_schema(current_schema)?;
+                let array_values_order_by = try_array_values_order_by_from_item_schema(
+                    table_node,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?;
 
                 let mut found = false;
                 for (key_value, comma) in inline_table.key_values_with_comma() {

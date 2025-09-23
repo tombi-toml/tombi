@@ -30,7 +30,7 @@ impl crate::Edit for tombi_ast::Array {
                 return Vec::with_capacity(0);
             };
 
-            if let Some(current_schema) = current_schema {
+            let array_schema_values_order = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::AllOf(AllOfSchema { schemas, .. })
                     | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
@@ -66,85 +66,85 @@ impl crate::Edit for tombi_ast::Array {
                                 }
                             }
                         }
+                        None
                     }
-                    _ => {}
+                    ValueSchema::Array(array_schema) => array_schema.values_order.clone(),
+                    _ => None,
                 }
-            }
+            } else {
+                None
+            };
 
-            let mut changes = vec![];
+            edit_item(
+                array_node,
+                |node, accessors, current_schema| {
+                    async move {
+                        tracing::trace!("node = {:?}", node);
+                        tracing::trace!("accessors = {:?}", accessors);
+                        tracing::trace!("current_schema = {:?}", current_schema);
 
-            changes.extend(
-                edit_item(
-                    array_node,
-                    |node, accessors, current_schema| {
-                        async move {
-                            tracing::trace!("node = {:?}", node);
-                            tracing::trace!("accessors = {:?}", accessors);
-                            tracing::trace!("current_schema = {:?}", current_schema);
-
-                            let mut changes = vec![];
-                            for (index, ((value, comma), value_node)) in
-                                self.values_with_comma().zip(node.values()).enumerate()
-                            {
-                                changes
-                                    .extend(array_comma_trailing_comment(&value, comma.as_ref()));
-                                changes.extend(
-                                    value
-                                        .edit(
-                                            value_node,
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(Accessor::Index(index)))
-                                                .collect_vec(),
-                                            source_path,
-                                            current_schema.as_ref(),
-                                            schema_context,
-                                        )
-                                        .await,
-                                );
-                            }
-
-                            changes
+                        let mut changes = vec![];
+                        for (index, ((value, comma), value_node)) in
+                            self.values_with_comma().zip(node.values()).enumerate()
+                        {
+                            changes.extend(array_comma_trailing_comment(&value, comma.as_ref()));
+                            changes.extend(
+                                value
+                                    .edit(
+                                        value_node,
+                                        &accessors
+                                            .iter()
+                                            .cloned()
+                                            .chain(std::iter::once(Accessor::Index(index)))
+                                            .collect_vec(),
+                                        source_path,
+                                        current_schema.as_ref(),
+                                        schema_context,
+                                    )
+                                    .await,
+                            );
                         }
-                        .boxed()
-                    },
-                    Arc::from(accessors.to_vec()),
-                    current_schema.cloned(),
-                    schema_context,
-                )
-                .await,
-            );
 
-            let comment_directive =
-                get_comment_directive_content::<ArrayCommonFormatRules, ArrayCommonLintRules>(
-                    if let Some(key_value) = self
-                        .syntax()
-                        .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
-                    {
-                        key_value
-                            .comment_directives()
-                            .chain(self.comment_directives())
-                            .collect_vec()
-                    } else {
-                        self.comment_directives().collect_vec()
-                    },
-                );
+                        let comment_directive = get_comment_directive_content::<
+                            ArrayCommonFormatRules,
+                            ArrayCommonLintRules,
+                        >(
+                            if let Some(key_value) = self
+                                .syntax()
+                                .parent()
+                                .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                            {
+                                key_value
+                                    .comment_directives()
+                                    .chain(self.comment_directives())
+                                    .collect_vec()
+                            } else {
+                                self.comment_directives().collect_vec()
+                            },
+                        );
 
-            changes.extend(
-                array_values_order(
-                    self.values_with_comma().collect_vec(),
-                    &array_node,
-                    &accessors,
-                    current_schema,
-                    schema_context,
-                    comment_directive,
-                )
-                .await,
-            );
+                        changes.extend(
+                            array_values_order(
+                                self.values_with_comma().collect_vec(),
+                                &array_node,
+                                &accessors,
+                                current_schema.as_ref(),
+                                schema_context,
+                                array_schema_values_order,
+                                comment_directive,
+                            )
+                            .await,
+                        );
 
-            changes
+                        changes
+                    }
+                    .boxed()
+                },
+                Arc::from(accessors.to_vec()),
+                current_schema.cloned(),
+                schema_context,
+            )
+            .await
         }
         .boxed()
     }
