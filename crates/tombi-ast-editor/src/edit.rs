@@ -27,7 +27,7 @@ pub trait Edit {
 }
 
 fn edit_recursive<'a: 'b, 'b>(
-    value: &'a tombi_document_tree::Value,
+    node: &'a tombi_document_tree::Value,
     edit_fn: impl FnOnce(
             &'a tombi_document_tree::Value,
             Arc<[Accessor]>,
@@ -51,7 +51,7 @@ fn edit_recursive<'a: 'b, 'b>(
             .await
         {
             return edit_recursive(
-                value,
+                node,
                 edit_fn,
                 key_accessors,
                 accessors,
@@ -80,13 +80,13 @@ fn edit_recursive<'a: 'b, 'b>(
                             .await
                         {
                             let current_schema = current_schema.into_owned();
-                            if value
+                            if node
                                 .validate(accessors.as_ref(), Some(&current_schema), schema_context)
                                 .await
                                 .is_ok()
                             {
                                 return edit_recursive(
-                                    value,
+                                    node,
                                     edit_fn,
                                     key_accessors,
                                     accessors,
@@ -102,7 +102,7 @@ fn edit_recursive<'a: 'b, 'b>(
             }
         }
 
-        let (accessors, value) = match (key_accessors.as_ref().first(), value) {
+        let (accessors, value) = match (key_accessors.as_ref().first(), node) {
             (Some(Accessor::Key(key_str)), tombi_document_tree::Value::Table(table)) => {
                 let mut accessors = accessors.as_ref().to_vec();
                 accessors.push(Accessor::Key(key_str.to_owned()));
@@ -125,7 +125,7 @@ fn edit_recursive<'a: 'b, 'b>(
 
                 (accessors, value)
             }
-            (None, _) => return edit_fn(value, accessors, current_schema).await,
+            (None, _) => return edit_fn(node, accessors, current_schema).await,
             _ => return Vec::with_capacity(0),
         };
 
