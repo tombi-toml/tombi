@@ -11,13 +11,12 @@ use tombi_ast::AstNode;
 use tombi_comment_directive::value::{
     ArrayCommonFormatRules, ArrayCommonLintRules, TombiValueDirectiveContent,
 };
-use tombi_document_tree::TryIntoDocumentTree;
+use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema, ValueSchema,
-    XTombiArrayValuesOrder,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext, TableSchema,
+    ValueSchema, XTombiArrayValuesOrder,
 };
 use tombi_syntax::SyntaxElement;
-use tombi_toml_version::TomlVersion;
 use tombi_validator::Validate;
 use tombi_x_keyword::{ArrayValuesOrder, ArrayValuesOrderBy, ArrayValuesOrderGroup};
 
@@ -33,8 +32,11 @@ use crate::rule::array_comma_trailing_comment;
 
 pub async fn array_values_order<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+    array_node: &'a tombi_document_tree::Array,
+    accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
+    array_schema_values_order: Option<XTombiArrayValuesOrder>,
     comment_directive: Option<
         TombiValueDirectiveContent<ArrayCommonFormatRules, ArrayCommonLintRules>,
     >,
@@ -57,16 +59,9 @@ pub async fn array_values_order<'a>(
 
     let values_order = match order {
         Some(values_order) => Some(XTombiArrayValuesOrder::All(values_order)),
-        None => {
-            if let Some(ValueSchema::Array(array_schema)) =
-                current_schema.map(|current_schema| current_schema.value_schema.as_ref())
-            {
-                array_schema.values_order.clone()
-            } else {
-                None
-            }
-        }
+        None => array_schema_values_order,
     };
+
     let Some(values_order) = values_order else {
         return Vec::with_capacity(0);
     };
@@ -87,6 +82,8 @@ pub async fn array_values_order<'a>(
         XTombiArrayValuesOrder::All(values_order) => {
             get_sorted_values_order_all(
                 values_with_comma,
+                array_node,
+                accessors,
                 current_schema,
                 schema_context,
                 values_order,
@@ -96,6 +93,8 @@ pub async fn array_values_order<'a>(
         XTombiArrayValuesOrder::Groups(values_order_group) => {
             get_sorted_values_order_groups(
                 values_with_comma,
+                array_node.values().into_iter().collect_vec(),
+                accessors,
                 current_schema,
                 schema_context,
                 values_order_group,
@@ -152,16 +151,21 @@ pub async fn array_values_order<'a>(
 
 async fn get_sorted_values_order_all<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+    array_node: &'a tombi_document_tree::Array,
+    accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     order: ArrayValuesOrder,
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
-    let array_values_order_by = get_array_values_order_by(current_schema, schema_context).await;
     let sortable_values = match SortableValues::try_new(
         values_with_comma,
-        array_values_order_by.as_ref(),
-        schema_context.toml_version,
-    ) {
+        &array_node.values().into_iter().collect_vec(),
+        accessors,
+        current_schema,
+        schema_context,
+    )
+    .await
+    {
         Ok(sortable_values) => sortable_values,
         Err(reason) => {
             tracing::debug!("{reason}");
@@ -173,30 +177,13 @@ async fn get_sorted_values_order_all<'a>(
 
 async fn get_sorted_values_order_groups<'a>(
     mut values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
+    mut value_nodes: Vec<&'a tombi_document_tree::Value>,
+    accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     values_order_group: ArrayValuesOrderGroup,
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
     let Some(current_schema) = current_schema else {
-        return None;
-    };
-    let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() else {
-        return None;
-    };
-    let Some(item_schema) = &array_schema.items else {
-        return None;
-    };
-    let mut item_schema = item_schema.write().await;
-    let Some(current_schema) = item_schema
-        .resolve(
-            current_schema.schema_uri.clone(),
-            current_schema.definitions.clone(),
-            schema_context.store,
-        )
-        .await
-        .ok()
-        .flatten()
-    else {
         return None;
     };
 
@@ -214,6 +201,7 @@ async fn get_sorted_values_order_groups<'a>(
 
             for (group_order, schema) in group_orders.iter().zip(schemas.iter_mut()) {
                 let mut group_values_with_comma = Vec::new();
+                let mut group_value_nodes = Vec::new();
                 let Ok(Some(current_schema)) = schema
                     .resolve(
                         current_schema.schema_uri.clone(),
@@ -227,21 +215,14 @@ async fn get_sorted_values_order_groups<'a>(
 
                 let mut i = 0;
                 while i < values_with_comma.len() {
-                    let (value, _) = &values_with_comma[i];
                     // check if the value is compatible with the schema
-                    if let Ok(document_tree_value) = value
-                        .clone()
-                        .try_into_document_tree(schema_context.toml_version)
+                    if value_nodes[i]
+                        .validate(&[], Some(&current_schema), schema_context)
+                        .await
+                        .is_ok()
                     {
-                        if document_tree_value
-                            .validate(&[], Some(&current_schema), schema_context)
-                            .await
-                            .is_ok()
-                        {
-                            group_values_with_comma.push(values_with_comma.remove(i));
-                        } else {
-                            i += 1;
-                        }
+                        group_values_with_comma.push(values_with_comma.remove(i));
+                        group_value_nodes.push(value_nodes.remove(i));
                     } else {
                         i += 1;
                     }
@@ -251,9 +232,13 @@ async fn get_sorted_values_order_groups<'a>(
                 if !group_values_with_comma.is_empty() {
                     match SortableValues::try_new(
                         group_values_with_comma.clone(),
-                        get_array_values_order_by_from_item_schema(&current_schema).as_ref(),
-                        schema_context.toml_version,
-                    ) {
+                        group_value_nodes.as_slice(),
+                        accessors,
+                        Some(&current_schema),
+                        schema_context,
+                    )
+                    .await
+                    {
                         Ok(sortable_values) => {
                             sorted_values_with_comma
                                 .append(&mut sort_array_values(sortable_values, *group_order));
@@ -298,46 +283,56 @@ fn sort_array_values(
     }
 }
 
-async fn get_array_values_order_by<'a>(
+fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
+    table_node: &'a tombi_document_tree::Table,
+    accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
-) -> Option<ArrayValuesOrderBy> {
-    if let Some(current_schema) = current_schema {
-        match current_schema.value_schema.as_ref() {
-            ValueSchema::Array(array_schema) => {
-                if let Some(item_schema) = &array_schema.items {
-                    if let Some(current_schema) = item_schema
-                        .write()
-                        .await
-                        .resolve(
-                            current_schema.schema_uri.clone(),
-                            current_schema.definitions.clone(),
-                            schema_context.store,
-                        )
-                        .await
-                        .ok()
-                        .flatten()
-                    {
-                        return get_array_values_order_by_from_item_schema(&current_schema);
+) -> BoxFuture<'b, Result<ArrayValuesOrderBy, SortFailReason>> {
+    async move {
+        if let Some(current_schema) = current_schema {
+            match current_schema.value_schema.as_ref() {
+                ValueSchema::Table(TableSchema {
+                    array_values_order_by: Some(array_values_order_by),
+                    ..
+                }) => {
+                    return Ok(array_values_order_by.to_owned());
+                }
+                ValueSchema::AllOf(AllOfSchema { schemas, .. })
+                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+                | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+                    for schema in schemas.write().await.iter_mut() {
+                        if let Ok(Some(current_schema)) = schema
+                            .resolve(
+                                current_schema.schema_uri.clone(),
+                                current_schema.definitions.clone(),
+                                schema_context.store,
+                            )
+                            .await
+                        {
+                            if table_node
+                                .validate(accessors, Some(&current_schema), schema_context)
+                                .await
+                                .is_ok()
+                            {
+                                return try_array_values_order_by_from_item_schema(
+                                    table_node,
+                                    accessors,
+                                    Some(&current_schema),
+                                    schema_context,
+                                )
+                                .await;
+                            }
+                        }
                     }
                 }
+                _ => {}
             }
-            _ => {}
         }
-    }
-    None
-}
 
-fn get_array_values_order_by_from_item_schema<'a>(
-    item_schema: &'a CurrentSchema<'a>,
-) -> Option<ArrayValuesOrderBy> {
-    match item_schema.value_schema.as_ref() {
-        ValueSchema::Table(TableSchema {
-            array_values_order_by,
-            ..
-        }) => array_values_order_by.to_owned(),
-        _ => None,
+        Err(SortFailReason::ArrayValuesOrderByRequired)
     }
+    .boxed()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -362,55 +357,100 @@ enum SortableValues {
 }
 
 impl SortableType {
-    fn try_new(
-        value: &tombi_ast::Value,
-        array_values_order_by: Option<&ArrayValuesOrderBy>,
-        toml_version: TomlVersion,
-    ) -> Result<Self, SortFailReason> {
-        match value {
-            tombi_ast::Value::Boolean(_) => Ok(SortableType::Boolean),
-            tombi_ast::Value::IntegerBin(_)
-            | tombi_ast::Value::IntegerOct(_)
-            | tombi_ast::Value::IntegerDec(_)
-            | tombi_ast::Value::IntegerHex(_) => Ok(SortableType::Integer),
-            tombi_ast::Value::BasicString(_)
-            | tombi_ast::Value::LiteralString(_)
-            | tombi_ast::Value::MultiLineBasicString(_)
-            | tombi_ast::Value::MultiLineLiteralString(_) => Ok(SortableType::String),
-            tombi_ast::Value::OffsetDateTime(_) => Ok(SortableType::OffsetDateTime),
-            tombi_ast::Value::LocalDateTime(_) => Ok(SortableType::LocalDateTime),
-            tombi_ast::Value::LocalDate(_) => Ok(SortableType::LocalDate),
-            tombi_ast::Value::LocalTime(_) => Ok(SortableType::LocalTime),
-            tombi_ast::Value::InlineTable(inline_table) => {
-                if let Some(array_values_order_by) = array_values_order_by {
+    fn try_new<'a: 'b, 'b>(
+        value: &'a tombi_ast::Value,
+        value_node: &'a tombi_document_tree::Value,
+        accessors: &'a [Accessor],
+        current_schema: Option<&'a CurrentSchema<'a>>,
+        schema_context: &'a SchemaContext<'a>,
+    ) -> BoxFuture<'b, Result<Self, SortFailReason>> {
+        async move {
+            match (value, value_node) {
+                (tombi_ast::Value::Boolean(_), tombi_document_tree::Value::Boolean(_)) => {
+                    Ok(SortableType::Boolean)
+                }
+                (
+                    tombi_ast::Value::IntegerBin(_)
+                    | tombi_ast::Value::IntegerOct(_)
+                    | tombi_ast::Value::IntegerDec(_)
+                    | tombi_ast::Value::IntegerHex(_),
+                    tombi_document_tree::Value::Integer(_),
+                ) => Ok(SortableType::Integer),
+                (
+                    tombi_ast::Value::BasicString(_)
+                    | tombi_ast::Value::LiteralString(_)
+                    | tombi_ast::Value::MultiLineBasicString(_)
+                    | tombi_ast::Value::MultiLineLiteralString(_),
+                    tombi_document_tree::Value::String(_),
+                ) => Ok(SortableType::String),
+                (
+                    tombi_ast::Value::OffsetDateTime(_),
+                    tombi_document_tree::Value::OffsetDateTime(_),
+                ) => Ok(SortableType::OffsetDateTime),
+                (
+                    tombi_ast::Value::LocalDateTime(_),
+                    tombi_document_tree::Value::LocalDateTime(_),
+                ) => Ok(SortableType::LocalDateTime),
+                (tombi_ast::Value::LocalDate(_), tombi_document_tree::Value::LocalDate(_)) => {
+                    Ok(SortableType::LocalDate)
+                }
+                (tombi_ast::Value::LocalTime(_), tombi_document_tree::Value::LocalTime(_)) => {
+                    Ok(SortableType::LocalTime)
+                }
+                (
+                    tombi_ast::Value::InlineTable(inline_table),
+                    tombi_document_tree::Value::Table(table_node),
+                ) => {
+                    let array_values_order_by = try_array_values_order_by_from_item_schema(
+                        table_node,
+                        accessors,
+                        current_schema,
+                        schema_context,
+                    )
+                    .await?;
+
                     for key_value in inline_table.key_values() {
                         if let Some(keys) = key_value.keys() {
                             let mut keys_iter = keys.keys().into_iter();
-                            if let Some(key) = keys_iter.next() {
-                                if key.to_raw_text(toml_version) != *array_values_order_by {
-                                    continue;
-                                }
+                            let Some(key_text) = keys_iter
+                                .next()
+                                .map(|key| key.to_raw_text(schema_context.toml_version))
+                            else {
+                                continue;
+                            };
+                            if key_text != array_values_order_by {
+                                continue;
                             }
                             // dotted keys is not supported
                             if keys_iter.next().is_some() {
                                 return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                             }
-                            if let Some(value) = &key_value.value() {
-                                return SortableType::try_new(value, None, toml_version);
+                            if let (Some(value), Some(value_node)) =
+                                (&key_value.value(), table_node.get(&key_text))
+                            {
+                                return SortableType::try_new(
+                                    value,
+                                    value_node,
+                                    accessors,
+                                    current_schema,
+                                    schema_context,
+                                )
+                                .await;
                             } else {
                                 return Err(SortFailReason::Incomplete);
                             }
                         }
                     }
                     Err(SortFailReason::ArrayValuesOrderByKeyNotFound)
-                } else {
-                    Err(SortFailReason::ArrayValuesOrderByRequired)
                 }
-            }
-            tombi_ast::Value::Float(_) | tombi_ast::Value::Array(_) => {
-                Err(SortFailReason::UnsupportedTypes)
+                (tombi_ast::Value::Float(_), tombi_document_tree::Value::Float(_))
+                | (tombi_ast::Value::Array(_), tombi_document_tree::Value::Array(_)) => {
+                    Err(SortFailReason::UnsupportedTypes)
+                }
+                _ => Err(SortFailReason::UnsupportedTypes),
             }
         }
+        .boxed()
     }
 }
 
@@ -438,63 +478,125 @@ enum SortFailReason {
 }
 
 impl SortableValues {
-    pub fn try_new(
+    pub async fn try_new<'a>(
         values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-        array_values_order_by: Option<&ArrayValuesOrderBy>,
-        toml_version: tombi_toml_version::TomlVersion,
+        value_nodes: &'a [&'a tombi_document_tree::Value],
+        accessors: &'a [Accessor],
+        current_schema: Option<&'a CurrentSchema<'a>>,
+        schema_context: &'a SchemaContext<'a>,
     ) -> Result<Self, SortFailReason> {
-        let mut values_with_comma_iter = values_with_comma.iter();
+        let mut values_with_comma_iter = values_with_comma.iter().zip(value_nodes).enumerate();
 
-        let Some(sortable_type) = values_with_comma_iter
-            .next()
-            .map(|(value, _)| SortableType::try_new(value, array_values_order_by, toml_version))
-            .transpose()?
-        else {
-            unreachable!("values_with_comma is not empty");
-        };
+        let sortable_type =
+            if let Some((index, ((value, _), value_node))) = values_with_comma_iter.next() {
+                SortableType::try_new(
+                    value,
+                    value_node,
+                    &accessors
+                        .iter()
+                        .cloned()
+                        .chain(std::iter::once(Accessor::Index(index)))
+                        .collect_vec(),
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            } else {
+                unreachable!("values_with_comma is not empty");
+            };
 
-        if values_with_comma_iter.any(|(value, _)| {
-            SortableType::try_new(value, array_values_order_by, toml_version) != Ok(sortable_type)
-        }) {
-            return Err(SortFailReason::DifferentTypes);
+        for (index, ((value, _), value_node)) in values_with_comma_iter {
+            if SortableType::try_new(
+                value,
+                value_node,
+                &accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(Accessor::Index(index)))
+                    .collect_vec(),
+                current_schema,
+                schema_context,
+            )
+            .await
+                != Ok(sortable_type)
+            {
+                return Err(SortFailReason::DifferentTypes);
+            }
         }
 
         let sortable_values = match sortable_type {
-            SortableType::Boolean => create_boolean_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
-            SortableType::Integer => create_integer_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
-            SortableType::OffsetDateTime => create_offset_date_time_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
-            SortableType::LocalDateTime => create_local_date_time_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
-            SortableType::LocalDate => create_local_date_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
-            SortableType::LocalTime => create_local_time_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
-            SortableType::String => create_string_sortable_values(
-                values_with_comma,
-                array_values_order_by,
-                toml_version,
-            )?,
+            SortableType::Boolean => {
+                create_boolean_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
+            SortableType::Integer => {
+                create_integer_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
+            SortableType::OffsetDateTime => {
+                create_offset_date_time_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
+            SortableType::LocalDateTime => {
+                create_local_date_time_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
+            SortableType::LocalDate => {
+                create_local_date_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
+
+            SortableType::LocalTime => {
+                create_local_time_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
+
+            SortableType::String => {
+                create_string_sortable_values(
+                    values_with_comma,
+                    value_nodes,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?
+            }
         };
 
         Ok(sortable_values)

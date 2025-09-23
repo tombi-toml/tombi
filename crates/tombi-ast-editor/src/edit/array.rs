@@ -30,78 +30,121 @@ impl crate::Edit for tombi_ast::Array {
                 return Vec::with_capacity(0);
             };
 
-            let mut changes = vec![];
-
-            changes.extend(
-                edit_item(
-                    array_node,
-                    |node, accessors, current_schema| {
-                        async move {
-                            tracing::trace!("node = {:?}", node);
-                            tracing::trace!("accessors = {:?}", accessors);
-                            tracing::trace!("current_schema = {:?}", current_schema);
-
-                            let mut changes = vec![];
-                            for (index, ((value, comma), value_node)) in
-                                self.values_with_comma().zip(node.values()).enumerate()
+            let array_schema_values_order = if let Some(current_schema) = current_schema {
+                match current_schema.value_schema.as_ref() {
+                    ValueSchema::AllOf(AllOfSchema { schemas, .. })
+                    | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+                    | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+                        for referable_schema in schemas.write().await.iter_mut() {
+                            if let Ok(Some(current_schema)) = referable_schema
+                                .resolve(
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
+                                .inspect_err(|err| tracing::warn!("{err}"))
                             {
-                                changes
-                                    .extend(array_comma_trailing_comment(&value, comma.as_ref()));
-                                changes.extend(
-                                    value
+                                if array_node
+                                    .validate(
+                                        accessors.as_ref(),
+                                        Some(&current_schema),
+                                        schema_context,
+                                    )
+                                    .await
+                                    .is_ok()
+                                {
+                                    return self
                                         .edit(
-                                            value_node,
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(Accessor::Index(index)))
-                                                .collect_vec(),
+                                            node,
+                                            accessors,
                                             source_path,
-                                            current_schema.as_ref(),
+                                            Some(&current_schema),
                                             schema_context,
                                         )
-                                        .await,
-                                );
+                                        .await;
+                                }
                             }
-
-                            changes
                         }
-                        .boxed()
-                    },
-                    Arc::from(accessors.to_vec()),
-                    current_schema.cloned(),
-                    schema_context,
-                )
-                .await,
-            );
+                        None
+                    }
+                    ValueSchema::Array(array_schema) => array_schema.values_order.clone(),
+                    _ => None,
+                }
+            } else {
+                None
+            };
 
-            let comment_directive =
-                get_comment_directive_content::<ArrayCommonFormatRules, ArrayCommonLintRules>(
-                    if let Some(key_value) = self
-                        .syntax()
-                        .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
-                    {
-                        key_value
-                            .comment_directives()
-                            .chain(self.comment_directives())
-                            .collect_vec()
-                    } else {
-                        self.comment_directives().collect_vec()
-                    },
-                );
+            edit_item(
+                array_node,
+                |node, accessors, current_schema| {
+                    async move {
+                        tracing::trace!("node = {:?}", node);
+                        tracing::trace!("accessors = {:?}", accessors);
+                        tracing::trace!("current_schema = {:?}", current_schema);
 
-            changes.extend(
-                array_values_order(
-                    self.values_with_comma().collect_vec(),
-                    current_schema,
-                    schema_context,
-                    comment_directive,
-                )
-                .await,
-            );
+                        let mut changes = vec![];
+                        for (index, ((value, comma), value_node)) in
+                            self.values_with_comma().zip(node.values()).enumerate()
+                        {
+                            changes.extend(array_comma_trailing_comment(&value, comma.as_ref()));
+                            changes.extend(
+                                value
+                                    .edit(
+                                        value_node,
+                                        &accessors
+                                            .iter()
+                                            .cloned()
+                                            .chain(std::iter::once(Accessor::Index(index)))
+                                            .collect_vec(),
+                                        source_path,
+                                        current_schema.as_ref(),
+                                        schema_context,
+                                    )
+                                    .await,
+                            );
+                        }
 
-            changes
+                        let comment_directive = get_comment_directive_content::<
+                            ArrayCommonFormatRules,
+                            ArrayCommonLintRules,
+                        >(
+                            if let Some(key_value) = self
+                                .syntax()
+                                .parent()
+                                .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                            {
+                                key_value
+                                    .comment_directives()
+                                    .chain(self.comment_directives())
+                                    .collect_vec()
+                            } else {
+                                self.comment_directives().collect_vec()
+                            },
+                        );
+
+                        changes.extend(
+                            array_values_order(
+                                self.values_with_comma().collect_vec(),
+                                &array_node,
+                                &accessors,
+                                current_schema.as_ref(),
+                                schema_context,
+                                array_schema_values_order,
+                                comment_directive,
+                            )
+                            .await,
+                        );
+
+                        changes
+                    }
+                    .boxed()
+                },
+                Arc::from(accessors.to_vec()),
+                current_schema.cloned(),
+                schema_context,
+            )
+            .await
         }
         .boxed()
     }

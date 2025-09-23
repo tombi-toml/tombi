@@ -1,61 +1,44 @@
 use tombi_ast::AstNode;
-use tombi_document_tree::TryIntoDocumentTree;
-use tombi_toml_version::TomlVersion;
-use tombi_x_keyword::ArrayValuesOrderBy;
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 
 use crate::{
     node::make_comma,
-    rule::array_values_order::{SortFailReason, SortableValues},
+    rule::array_values_order::{
+        try_array_values_order_by_from_item_schema, SortFailReason, SortableValues,
+    },
 };
 
-pub fn create_string_sortable_values(
+pub async fn create_string_sortable_values<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_values_order_by: Option<&ArrayValuesOrderBy>,
-    toml_version: TomlVersion,
+    value_nodes: &'a [&'a tombi_document_tree::Value],
+    accessors: &'a [Accessor],
+    current_schema: Option<&'a CurrentSchema<'a>>,
+    schema_context: &'a SchemaContext<'a>,
 ) -> Result<SortableValues, SortFailReason> {
     let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-    for (value, comma) in values_with_comma {
+    for ((value, comma), value_node) in values_with_comma.into_iter().zip(value_nodes) {
         let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-        match value.clone() {
-            tombi_ast::Value::BasicString(basic_string) => {
-                if let Ok(tombi_document_tree::Value::String(string)) =
-                    basic_string.try_into_document_tree(toml_version)
-                {
-                    sortable_values.push((string.value().to_owned(), value, comma));
-                } else {
-                    return Err(SortFailReason::Incomplete);
-                }
+        match (value.clone(), value_node) {
+            (
+                tombi_ast::Value::BasicString(_)
+                | tombi_ast::Value::LiteralString(_)
+                | tombi_ast::Value::MultiLineBasicString(_)
+                | tombi_ast::Value::MultiLineLiteralString(_),
+                tombi_document_tree::Value::String(string),
+            ) => {
+                sortable_values.push((string.value().to_owned(), value, comma));
             }
-            tombi_ast::Value::LiteralString(literal_string) => {
-                if let Ok(tombi_document_tree::Value::String(string)) =
-                    literal_string.try_into_document_tree(toml_version)
-                {
-                    sortable_values.push((string.value().to_owned(), value, comma));
-                } else {
-                    return Err(SortFailReason::Incomplete);
-                }
-            }
-            tombi_ast::Value::MultiLineBasicString(multi_line_basic_string) => {
-                if let Ok(tombi_document_tree::Value::String(string)) =
-                    multi_line_basic_string.try_into_document_tree(toml_version)
-                {
-                    sortable_values.push((string.value().to_owned(), value, comma));
-                } else {
-                    return Err(SortFailReason::Incomplete);
-                }
-            }
-            tombi_ast::Value::MultiLineLiteralString(multi_line_literal_string) => {
-                if let Ok(tombi_document_tree::Value::String(string)) =
-                    multi_line_literal_string.try_into_document_tree(toml_version)
-                {
-                    sortable_values.push((string.value().to_owned(), value, comma));
-                } else {
-                    return Err(SortFailReason::Incomplete);
-                }
-            }
-            tombi_ast::Value::InlineTable(inline_table) => {
-                let array_values_order_by =
-                    array_values_order_by.ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
+            (
+                tombi_ast::Value::InlineTable(inline_table),
+                tombi_document_tree::Value::Table(table_node),
+            ) => {
+                let array_values_order_by = try_array_values_order_by_from_item_schema(
+                    table_node,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?;
 
                 let mut found = false;
                 for (key_value, comma) in inline_table.key_values_with_comma() {
@@ -66,28 +49,11 @@ pub fn create_string_sortable_values(
 
                     let mut keys_iter = keys.keys().into_iter();
                     if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                        if key.to_raw_text(toml_version) == *array_values_order_by {
-                            if let Some(inline_value) = key_value.value() {
-                                let document_tree_value_result = match inline_value {
-                                    tombi_ast::Value::BasicString(string) => {
-                                        string.try_into_document_tree(toml_version)
-                                    }
-                                    tombi_ast::Value::LiteralString(string) => {
-                                        string.try_into_document_tree(toml_version)
-                                    }
-                                    tombi_ast::Value::MultiLineBasicString(string) => {
-                                        string.try_into_document_tree(toml_version)
-                                    }
-                                    tombi_ast::Value::MultiLineLiteralString(string) => {
-                                        string.try_into_document_tree(toml_version)
-                                    }
-                                    _ => return Err(SortFailReason::Incomplete),
-                                };
-                                let Ok(tombi_document_tree::Value::String(string)) =
-                                    document_tree_value_result
-                                else {
-                                    return Err(SortFailReason::Incomplete);
-                                };
+                        let key_text = key.to_raw_text(schema_context.toml_version);
+                        if key_text == array_values_order_by {
+                            if let Some(tombi_document_tree::Value::String(string)) =
+                                table_node.get(&key_text)
+                            {
                                 sortable_values.push((string.value().to_owned(), value, comma));
 
                                 found = true;
