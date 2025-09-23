@@ -1,6 +1,5 @@
 use std::{borrow::Cow, sync::Arc};
 
-use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, DocumentSchema, OneOfSchema, PropertySchema,
@@ -24,15 +23,9 @@ impl crate::Edit for tombi_ast::KeyValue {
             tracing::trace!("accessors = {:?}", accessors);
             tracing::trace!("current_schema = {:?}", current_schema);
 
-            let Some(keys_accessors) = self.get_accessors(schema_context.toml_version) else {
+            let Some(key_accessors) = self.get_accessors(schema_context.toml_version) else {
                 return Vec::with_capacity(0);
             };
-
-            let key_accessors = accessors
-                .iter()
-                .cloned()
-                .chain(keys_accessors)
-                .collect_vec();
 
             node.edit_recursive(
                 |node, accessors, current_schema| {
@@ -108,44 +101,77 @@ impl EditRecursive for tombi_document_tree::Value {
                     .await;
             }
 
+            if let Some(current_schema) = current_schema.as_ref() {
+                match current_schema.value_schema.as_ref() {
+                    ValueSchema::AllOf(AllOfSchema { schemas, .. })
+                    | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
+                    | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
+                        for referable_schema in schemas.write().await.iter_mut() {
+                            if let Ok(Some(current_schema)) = referable_schema
+                                .resolve(
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
+                            {
+                                let current_schema = current_schema.into_owned();
+                                if self
+                                    .validate(
+                                        accessors.as_ref(),
+                                        Some(&current_schema),
+                                        schema_context,
+                                    )
+                                    .await
+                                    .is_ok()
+                                {
+                                    return self
+                                        .edit_recursive(
+                                            edit_fn,
+                                            key_accessors,
+                                            accessors,
+                                            Some(current_schema),
+                                            schema_context,
+                                        )
+                                        .await;
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
             match (key_accessors.as_ref().first(), self) {
                 (Some(Accessor::Key(key_str)), tombi_document_tree::Value::Table(table)) => {
                     let mut next_accessors = accessors.as_ref().to_vec();
                     next_accessors.push(Accessor::Key(key_str.to_owned()));
                     let next_accessors = Arc::from(next_accessors.into_boxed_slice());
 
-                    if key_accessors.len() == 1 {
-                        edit_fn(self, accessors, current_schema).await
-                    } else {
-                        table
-                            .edit_recursive(
-                                edit_fn,
-                                &key_accessors[1..],
-                                next_accessors,
-                                current_schema,
-                                schema_context,
-                            )
-                            .await
-                    }
+                    table
+                        .edit_recursive(
+                            edit_fn,
+                            &key_accessors[1..],
+                            next_accessors,
+                            current_schema,
+                            schema_context,
+                        )
+                        .await
                 }
                 (Some(Accessor::Index(index)), tombi_document_tree::Value::Array(array)) => {
                     let mut next_accessors = accessors.as_ref().to_vec();
                     next_accessors.push(Accessor::Index(*index));
                     let next_accessors = Arc::from(next_accessors.into_boxed_slice());
 
-                    if key_accessors.len() == 1 {
-                        edit_fn(self, accessors, current_schema).await
-                    } else {
-                        array
-                            .edit_recursive(
-                                edit_fn,
-                                &key_accessors[1..],
-                                next_accessors,
-                                current_schema,
-                                schema_context,
-                            )
-                            .await
-                    }
+                    array
+                        .edit_recursive(
+                            edit_fn,
+                            &key_accessors[1..],
+                            next_accessors,
+                            current_schema,
+                            schema_context,
+                        )
+                        .await
                 }
                 (None, _) => edit_fn(self, accessors, current_schema).await,
                 _ => Vec::with_capacity(0),
@@ -171,8 +197,8 @@ impl EditRecursive for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
-            let Some(Accessor::Key(accessor_str)) = key_accessors.as_ref().first() else {
-                unreachable!("key_accessors is empty");
+            let Some(Accessor::Key(accessor_str)) = accessors.as_ref().last() else {
+                unreachable!("last accessor is not a key");
             };
             let Some(value) = self.get(accessor_str) else {
                 return Vec::with_capacity(0);
@@ -184,184 +210,15 @@ impl EditRecursive for tombi_document_tree::Table {
                 definitions: current_schema.definitions.to_owned(),
             });
 
-            if let Some(current_schema_ref) = current_schema.as_ref() {
-                match current_schema_ref.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => {
-                        let key_accessor = SchemaAccessor::Key(accessor_str.to_owned());
-
-                        let resolved_schema = {
-                            let mut properties = table_schema.properties.write().await;
-
-                            if let Some(PropertySchema {
-                                property_schema, ..
-                            }) = properties.get_mut(&key_accessor)
-                            {
-                                if let Ok(Some(current_schema)) = property_schema
-                                    .resolve(
-                                        current_schema_ref.schema_uri.clone(),
-                                        current_schema_ref.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
-                                {
-                                    Some(current_schema.into_owned())
-                                } else {
-                                    None
-                                }
-                            } else {
-                                None
-                            }
-                        };
-
-                        if let Some(resolved_schema) = resolved_schema {
-                            return value
-                                .edit_recursive(
-                                    edit_fn,
-                                    key_accessors,
-                                    accessors,
-                                    Some(resolved_schema),
-                                    schema_context,
-                                )
-                                .await;
-                        }
-
-                        if let Some(pattern_properties) = &table_schema.pattern_properties {
-                            let resolved_schema = {
-                                let mut pattern_properties = pattern_properties.write().await;
-                                let mut resolved = None;
-
-                                for (
-                                    property_key,
-                                    PropertySchema {
-                                        property_schema, ..
-                                    },
-                                ) in pattern_properties.iter_mut()
-                                {
-                                    let pattern = match regex::Regex::new(property_key) {
-                                        Ok(pattern) => pattern,
-                                        Err(_) => {
-                                            tracing::warn!(
-                                                "Invalid regex pattern property: {}",
-                                                property_key
-                                            );
-                                            continue;
-                                        }
-                                    };
-
-                                    if pattern.is_match(accessor_str) {
-                                        tracing::trace!(
-                                            "pattern_property_schema = {:?}",
-                                            &property_schema
-                                        );
-                                        if let Ok(Some(current_schema)) = property_schema
-                                            .resolve(
-                                                current_schema_ref.schema_uri.clone(),
-                                                current_schema_ref.definitions.clone(),
-                                                schema_context.store,
-                                            )
-                                            .await
-                                        {
-                                            resolved = Some(current_schema.into_owned());
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                resolved
-                            };
-
-                            if let Some(resolved_schema) = resolved_schema {
-                                return value
-                                    .edit_recursive(
-                                        edit_fn,
-                                        key_accessors,
-                                        accessors,
-                                        Some(resolved_schema),
-                                        schema_context,
-                                    )
-                                    .await;
-                            }
-                        }
-
-                        if let Some((_, referable_additional_property_schema)) =
-                            &table_schema.additional_property_schema
-                        {
-                            tracing::trace!(
-                                "additional_property_schema = {:?}",
-                                referable_additional_property_schema
-                            );
-
-                            let resolved_schema = {
-                                let mut schema = referable_additional_property_schema.write().await;
-                                if let Ok(Some(current_schema)) = schema
-                                    .resolve(
-                                        current_schema_ref.schema_uri.clone(),
-                                        current_schema_ref.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
-                                {
-                                    Some(current_schema.into_owned())
-                                } else {
-                                    None
-                                }
-                            };
-
-                            if let Some(resolved_schema) = resolved_schema {
-                                return value
-                                    .edit_recursive(
-                                        edit_fn,
-                                        key_accessors,
-                                        accessors,
-                                        Some(resolved_schema),
-                                        schema_context,
-                                    )
-                                    .await;
-                            }
-                        }
-                    }
-                    ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                    | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                    | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                        for referable_schema in schemas.write().await.iter_mut() {
-                            if let Ok(Some(current_schema)) = referable_schema
-                                .resolve(
-                                    current_schema_ref.schema_uri.clone(),
-                                    current_schema_ref.definitions.clone(),
-                                    schema_context.store,
-                                )
-                                .await
-                            {
-                                let current_schema = current_schema.into_owned();
-                                if self
-                                    .validate(
-                                        accessors.as_ref(),
-                                        Some(&current_schema),
-                                        schema_context,
-                                    )
-                                    .await
-                                    .is_ok()
-                                {
-                                    return value
-                                        .edit_recursive(
-                                            edit_fn,
-                                            key_accessors,
-                                            accessors,
-                                            Some(current_schema),
-                                            schema_context,
-                                        )
-                                        .await;
-                                }
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            value
-                .edit_recursive(edit_fn, key_accessors, accessors, None, schema_context)
-                .await
+            edit_recursive(
+                value,
+                edit_fn,
+                key_accessors,
+                accessors,
+                current_schema,
+                schema_context,
+            )
+            .await
         }
         .boxed()
     }
@@ -383,8 +240,8 @@ impl EditRecursive for tombi_document_tree::Array {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
-            let Some(Accessor::Index(index)) = key_accessors.as_ref().first() else {
-                return Vec::with_capacity(0);
+            let Some(Accessor::Index(index)) = accessors.as_ref().last() else {
+                unreachable!("last accessor is not an index");
             };
             let Some(value) = self.get(*index) else {
                 return Vec::with_capacity(0);
@@ -396,45 +253,153 @@ impl EditRecursive for tombi_document_tree::Array {
                 definitions: current_schema.definitions.to_owned(),
             });
 
-            if let Some(current_schema_ref) = current_schema.as_ref() {
-                match current_schema_ref.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => {
-                        if let Some(items) = &array_schema.items {
-                            let resolved_schema = {
-                                let mut item_schema = items.write().await;
+            edit_recursive(
+                value,
+                edit_fn,
+                key_accessors,
+                accessors,
+                current_schema,
+                schema_context,
+            )
+            .await
+        }
+        .boxed()
+    }
+}
 
-                                if let Ok(Some(current_schema)) = item_schema
-                                    .resolve(
-                                        current_schema_ref.schema_uri.clone(),
-                                        current_schema_ref.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
-                                {
-                                    Some(current_schema.into_owned())
-                                } else {
-                                    None
-                                }
-                            };
+fn edit_recursive<'a: 'b, 'b>(
+    value: &'a tombi_document_tree::Value,
+    edit_fn: impl FnOnce(
+            &'a tombi_document_tree::Value,
+            Arc<[Accessor]>,
+            Option<tombi_schema_store::CurrentSchema<'a>>,
+        ) -> BoxFuture<'b, Vec<crate::Change>>
+        + std::marker::Send
+        + 'b,
+    key_accessors: &'a [Accessor],
+    accessors: Arc<[Accessor]>,
+    current_schema: Option<tombi_schema_store::CurrentSchema<'a>>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> BoxFuture<'b, Vec<crate::Change>> {
+    async move {
+        if let Some(current_schema_ref) = current_schema.as_ref() {
+            if let Some(current_schema) = current_schema.as_ref() {
+                match current_schema.value_schema.as_ref() {
+                    ValueSchema::Table(table_schema) => {
+                        let Some(Accessor::Key(key_text)) = accessors.as_ref().last() else {
+                            unreachable!("last accessor is not a key");
+                        };
+                        let key_schema_accessor = SchemaAccessor::Key(key_text.to_owned());
 
-                            if let Some(resolved_schema) = resolved_schema {
+                        if let Some(PropertySchema {
+                            property_schema, ..
+                        }) = table_schema
+                            .properties
+                            .write()
+                            .await
+                            .get_mut(&key_schema_accessor)
+                        {
+                            if let Ok(Some(current_schema)) = property_schema
+                                .resolve(
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
+                            {
                                 return value
                                     .edit_recursive(
                                         edit_fn,
                                         key_accessors,
                                         accessors,
-                                        Some(resolved_schema),
+                                        Some(current_schema.into_owned()),
                                         schema_context,
                                     )
                                     .await;
                             }
                         }
+
+                        if let Some(pattern_properties) = &table_schema.pattern_properties {
+                            for (
+                                property_key,
+                                PropertySchema {
+                                    property_schema, ..
+                                },
+                            ) in pattern_properties.write().await.iter_mut()
+                            {
+                                let pattern = match regex::Regex::new(property_key) {
+                                    Ok(pattern) => pattern,
+                                    Err(_) => {
+                                        tracing::warn!(
+                                            "Invalid regex pattern property: {}",
+                                            property_key
+                                        );
+                                        continue;
+                                    }
+                                };
+
+                                if pattern.is_match(key_text) {
+                                    tracing::trace!(
+                                        "pattern_property_schema = {:?}",
+                                        &property_schema
+                                    );
+                                    if let Ok(Some(current_schema)) = property_schema
+                                        .resolve(
+                                            current_schema.schema_uri.clone(),
+                                            current_schema.definitions.clone(),
+                                            schema_context.store,
+                                        )
+                                        .await
+                                    {
+                                        return value
+                                            .edit_recursive(
+                                                edit_fn,
+                                                key_accessors,
+                                                accessors,
+                                                Some(current_schema.into_owned()),
+                                                schema_context,
+                                            )
+                                            .await;
+                                    }
+                                }
+                            }
+                        }
+
+                        if let Some((_, referable_additional_property_schema)) =
+                            &table_schema.additional_property_schema
+                        {
+                            tracing::trace!(
+                                "additional_property_schema = {:?}",
+                                referable_additional_property_schema
+                            );
+
+                            if let Ok(Some(current_schema)) = referable_additional_property_schema
+                                .write()
+                                .await
+                                .resolve(
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
+                            {
+                                return value
+                                    .edit_recursive(
+                                        edit_fn,
+                                        key_accessors,
+                                        accessors,
+                                        Some(current_schema.into_owned()),
+                                        schema_context,
+                                    )
+                                    .await;
+                            };
+                        }
                     }
-                    ValueSchema::AllOf(AllOfSchema { schemas, .. })
-                    | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                    | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                        for referable_schema in schemas.write().await.iter_mut() {
-                            if let Ok(Some(current_schema)) = referable_schema
+                    ValueSchema::Array(array_schema) => {
+                        if let Some(items) = &array_schema.items {
+                            let mut item_schema = items.write().await;
+
+                            if let Ok(Some(current_schema)) = item_schema
                                 .resolve(
                                     current_schema_ref.schema_uri.clone(),
                                     current_schema_ref.definitions.clone(),
@@ -442,38 +407,26 @@ impl EditRecursive for tombi_document_tree::Array {
                                 )
                                 .await
                             {
-                                let current_schema = current_schema.into_owned();
-
-                                if self
-                                    .validate(
-                                        accessors.as_ref(),
-                                        Some(&current_schema),
+                                return value
+                                    .edit_recursive(
+                                        edit_fn,
+                                        key_accessors,
+                                        accessors,
+                                        Some(current_schema.into_owned()),
                                         schema_context,
                                     )
-                                    .await
-                                    .is_ok()
-                                {
-                                    return value
-                                        .edit_recursive(
-                                            edit_fn,
-                                            key_accessors,
-                                            accessors,
-                                            Some(current_schema.into_owned()),
-                                            schema_context,
-                                        )
-                                        .await;
-                                }
-                            }
+                                    .await;
+                            };
                         }
                     }
                     _ => {}
                 }
             }
-
-            value
-                .edit_recursive(edit_fn, key_accessors, accessors, None, schema_context)
-                .await
         }
-        .boxed()
+
+        value
+            .edit_recursive(edit_fn, key_accessors, accessors, None, schema_context)
+            .await
     }
+    .boxed()
 }

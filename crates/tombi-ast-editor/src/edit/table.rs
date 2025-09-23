@@ -34,9 +34,9 @@ impl crate::Edit for tombi_ast::Table {
             node.edit_recursive(
                 |node, accessors, current_schema| {
                     async move {
-                        tracing::trace!("node = {:?}", node);
+                        tracing::trace!("node = {:#?}", node);
                         tracing::trace!("accessors = {:?}", accessors);
-                        tracing::trace!("current_schema = {:?}", current_schema);
+                        tracing::trace!("current_schema = {:#?}", current_schema);
 
                         let mut changes = vec![];
                         for key_value in self.key_values() {
