@@ -36,34 +36,26 @@ impl Validate for tombi_document_tree::Table {
                 total_diagnostics.extend(diagnostics);
             }
 
-            if let Some(sub_schema_uri) = schema_context
-                .sub_schema_uri_map
-                .and_then(|map| map.get(&accessors.into_iter().map(Into::into).collect_vec()))
+            if let Some(Ok(DocumentSchema {
+                value_schema: Some(value_schema),
+                schema_uri,
+                definitions,
+                ..
+            })) = schema_context
+                .get_subschema(accessors, current_schema)
+                .await
             {
-                if current_schema.map(|schema| schema.schema_uri.as_ref()) != Some(sub_schema_uri) {
-                    if let Ok(Some(DocumentSchema {
-                        value_schema: Some(value_schema),
-                        schema_uri,
-                        definitions,
-                        ..
-                    })) = schema_context
-                        .store
-                        .try_get_document_schema(sub_schema_uri)
-                        .await
-                    {
-                        return self
-                            .validate(
-                                accessors,
-                                Some(&CurrentSchema {
-                                    value_schema: Cow::Borrowed(&value_schema),
-                                    schema_uri: Cow::Borrowed(&schema_uri),
-                                    definitions: Cow::Borrowed(&definitions),
-                                }),
-                                schema_context,
-                            )
-                            .await;
-                    }
-                }
+                return self
+                    .validate(
+                        accessors,
+                        Some(&CurrentSchema {
+                            value_schema: Cow::Borrowed(&value_schema),
+                            schema_uri: Cow::Borrowed(&schema_uri),
+                            definitions: Cow::Borrowed(&definitions),
+                        }),
+                        schema_context,
+                    )
+                    .await;
             }
 
             if let Some(current_schema) = current_schema {
