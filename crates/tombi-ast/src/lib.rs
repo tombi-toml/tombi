@@ -90,12 +90,12 @@ impl<N: AstNode> Iterator for AstChildren<N> {
     }
 }
 
-pub trait GetHeaderSchemarAccessors {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>>;
+pub trait GetHeaderAccessors {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>>;
 }
 
-impl GetHeaderSchemarAccessors for crate::Table {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
+impl GetHeaderAccessors for crate::Table {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
             .array_of_tables_keys(toml_version)
             .map(|keys| {
@@ -124,8 +124,8 @@ impl GetHeaderSchemarAccessors for crate::Table {
     }
 }
 
-impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
+impl GetHeaderAccessors for crate::ArrayOfTable {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
             .array_of_tables_keys()
             .map(|keys| {
@@ -158,12 +158,12 @@ impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
     }
 }
 
-impl GetHeaderSchemarAccessors for crate::TableOrArrayOfTable {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
+impl GetHeaderAccessors for crate::TableOrArrayOfTable {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         match self {
-            crate::TableOrArrayOfTable::Table(table) => table.get_header_accessor(toml_version),
+            crate::TableOrArrayOfTable::Table(table) => table.get_header_accessors(toml_version),
             crate::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
-                array_of_table.get_header_accessor(toml_version)
+                array_of_table.get_header_accessors(toml_version)
             }
         }
     }
