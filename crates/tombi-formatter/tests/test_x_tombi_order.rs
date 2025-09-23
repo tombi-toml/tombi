@@ -197,7 +197,7 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
-            async fn test_dependency_groups_multiple_lines_include_group_with_comment(
+            async fn test_dependency_groups_multiple_lines_include_group(
                 r#"
                 [project]
                 name = "tombi"
