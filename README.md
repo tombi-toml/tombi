@@ -30,6 +30,16 @@
 <br>
 
 <div align="center">
+<h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
+<strong>Quick Start</strong>
+</h2>
+
+To quickly try out Tombi's formatter, you can run:
+
+<code style="display: block; white-space: pre-wrap;">    uvx tombi format    </code>
+</div>
+
+<div align="center">
     <h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
         <strong>Support</strong>
     </h2>
