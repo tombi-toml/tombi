@@ -2,7 +2,6 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::Accessor;
 
@@ -22,27 +21,6 @@ impl crate::Edit for tombi_ast::InlineTable {
         async move {
             let mut changes = vec![];
 
-            let value = &self
-                .clone()
-                .into_document_tree_and_errors(schema_context.toml_version)
-                .tree;
-
-            let comment_directive =
-                get_comment_directive_content::<TableCommonFormatRules, TableCommonLintRules>(
-                    if let Some(key_value) = self
-                        .syntax()
-                        .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
-                    {
-                        key_value
-                            .comment_directives()
-                            .chain(self.comment_directives())
-                            .collect_vec()
-                    } else {
-                        self.comment_directives().collect_vec()
-                    },
-                );
-
             for (key_value, comma) in self.key_values_with_comma() {
                 changes.extend(inline_table_comma_trailing_comment(
                     &key_value,
@@ -61,9 +39,25 @@ impl crate::Edit for tombi_ast::InlineTable {
                 );
             }
 
+            let comment_directive =
+                get_comment_directive_content::<TableCommonFormatRules, TableCommonLintRules>(
+                    if let Some(key_value) = self
+                        .syntax()
+                        .parent()
+                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                    {
+                        key_value
+                            .comment_directives()
+                            .chain(self.comment_directives())
+                            .collect_vec()
+                    } else {
+                        self.comment_directives().collect_vec()
+                    },
+                );
+
             changes.extend(
                 inline_table_keys_order(
-                    value,
+                    node,
                     self.key_values_with_comma().collect_vec(),
                     current_schema,
                     schema_context,
