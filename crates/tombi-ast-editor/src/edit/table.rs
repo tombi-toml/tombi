@@ -70,7 +70,7 @@ impl crate::Edit for tombi_ast::Table {
                 },
                 &header_accessors,
                 Arc::from(accessors.to_vec()),
-                current_schema.map(|current_schema| current_schema.clone()),
+                current_schema.cloned(),
                 schema_context,
             )
             .await
