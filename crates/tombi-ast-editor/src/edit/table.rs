@@ -7,7 +7,7 @@ use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::Accessor;
 
-use crate::{edit::EditRecursive, rule::table_keys_order};
+use crate::{edit::edit_recursive, rule::table_keys_order};
 
 impl crate::Edit for tombi_ast::Table {
     fn edit<'a: 'b, 'b>(
@@ -31,7 +31,8 @@ impl crate::Edit for tombi_ast::Table {
                 TableCommonLintRules,
             >(self.comment_directives());
 
-            node.edit_recursive(
+            edit_recursive(
+                node,
                 |node, accessors, current_schema| {
                     async move {
                         tracing::trace!("node = {:#?}", node);
