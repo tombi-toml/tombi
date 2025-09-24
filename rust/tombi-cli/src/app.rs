@@ -1,13 +1,15 @@
 mod command;
+mod options;
 mod tracing_formatter;
 
 use clap::{
     builder::styling::{AnsiColor, Color, Style},
     Parser,
 };
-use clap_verbosity_flag::{log, InfoLevel, Verbosity};
 use tracing_formatter::TombiFormatter;
 use tracing_subscriber::prelude::*;
+
+use crate::app::options::Verbosity;
 
 #[derive(clap::Parser)]
 #[command(
@@ -22,7 +24,7 @@ pub struct Args {
     pub subcommand: command::TomlCommand,
 
     #[command(flatten)]
-    verbose: Verbosity<InfoLevel>,
+    verbose: Verbosity,
 }
 
 impl<I, T> From<I> for Args
@@ -51,37 +53,20 @@ struct CommonArgs {
     no_cache: bool,
 }
 
-/// Convert [`clap_verbosity_flag::log::LevelFilter`] to [`tracing_subscriber::filter::LevelFilter`]
-fn convert_log_level_filter(level: log::LevelFilter) -> tracing_subscriber::filter::LevelFilter {
-    match level {
-        log::LevelFilter::Off => tracing_subscriber::filter::LevelFilter::OFF,
-        log::LevelFilter::Error => tracing_subscriber::filter::LevelFilter::ERROR,
-        log::LevelFilter::Warn => tracing_subscriber::filter::LevelFilter::WARN,
-        log::LevelFilter::Info => tracing_subscriber::filter::LevelFilter::INFO,
-        log::LevelFilter::Debug => tracing_subscriber::filter::LevelFilter::DEBUG,
-        log::LevelFilter::Trace => tracing_subscriber::filter::LevelFilter::TRACE,
-    }
-}
-
 pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     let args: Args = args.into();
+    let log_level_filter = args.verbose.log_level_filter();
     tracing_subscriber::registry()
         .with(
             // Filter out all logs from other crates
             tracing_subscriber::filter::Targets::new()
-                .with_target(
-                    "tombi",
-                    convert_log_level_filter(args.verbose.log_level_filter()),
-                )
-                .with_target(
-                    "serde_tombi",
-                    convert_log_level_filter(args.verbose.log_level_filter()),
-                )
+                .with_target("tombi", log_level_filter)
+                .with_target("serde_tombi", log_level_filter)
                 .with_default(tracing_subscriber::filter::LevelFilter::OFF),
         )
         .with(
             tracing_subscriber::fmt::layer()
-                .event_format(TombiFormatter::from(args.verbose.log_level_filter()))
+                .event_format(TombiFormatter::from(log_level_filter))
                 .with_writer(std::io::stderr),
         )
         .init();

@@ -14,7 +14,6 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 clap_complete = "4.5.58"
-clap-verbosity-flag.workspace = true
 itertools.workspace = true
 nu-ansi-term.workspace = true
 serde_tombi.workspace = true
