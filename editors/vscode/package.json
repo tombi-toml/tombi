@@ -21,12 +21,12 @@
     "Linters"
   ],
   "engines": {
-    "vscode": "^1.93.0"
+    "vscode": "^1.95.0"
   },
   "main": "./dist/main",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "build-base": "esbuild ./src/main.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node --target=node20",
+    "build-base": "esbuild ./src/main.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node --target=node22",
     "build": "pnpm run build-base --sourcemap",
     "watch": "pnpm run build-base --sourcemap --watch",
     "package": "pnpm run build && vsce package --no-dependencies -o tombi.vsix",
