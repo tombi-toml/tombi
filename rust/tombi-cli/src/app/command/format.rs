@@ -266,7 +266,7 @@ where
         Ok(formatted) => {
             let has_diff = source != formatted;
             if has_diff && diff {
-                tracing::info!("Found differences in stdin");
+                tracing::info!("Found format changes in stdin");
                 eprint_diff(&source, &formatted);
             }
             if check {
@@ -320,7 +320,7 @@ where
         Ok(formatted) => {
             if source != formatted {
                 if diff {
-                    tracing::info!("Found differences in {:?}", source_path);
+                    tracing::info!("Found format changes in {:?}", source_path);
                     eprint_diff(&source, &formatted);
                 }
                 if check {
