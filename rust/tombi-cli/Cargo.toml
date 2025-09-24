@@ -18,6 +18,7 @@ clap-verbosity-flag.workspace = true
 itertools.workspace = true
 nu-ansi-term.workspace = true
 serde_tombi.workspace = true
+similar = { workspace = true, features = ["inline"] }
 thiserror.workspace = true
 tokio.workspace = true
 tombi-cache.workspace = true
