@@ -39,18 +39,18 @@
   },
   "dependencies": {
     "semver": "^7.7.2",
-    "valibot": "^1.0.0",
+    "valibot": "^1.1.0",
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "^2.0.5",
+    "@tsconfig/strictest": "^2.0.6",
     "@types/minimatch": "^5.1.2",
-    "@types/semver": "^7.5.8",
-    "@types/vscode": "^1.93.0",
-    "@vscode/python-extension": "^1.0.5",
-    "@vscode/vsce": "^3.6.0",
-    "esbuild": "^0.25.0",
-    "ovsx": "^0.10.4",
+    "@types/semver": "^7.7.1",
+    "@types/vscode": "^1.104.0",
+    "@vscode/python-extension": "^1.0.6",
+    "@vscode/vsce": "^3.6.1",
+    "esbuild": "^0.25.10",
+    "ovsx": "^0.10.5",
     "vitest": "^2.1.9"
   },
   "activationEvents": [
