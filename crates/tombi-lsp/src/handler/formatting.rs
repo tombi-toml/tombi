@@ -192,6 +192,9 @@ fn compute_text_edits(
     let start_pos = Position::new(old_start_line as u32, 0);
     let end_pos = if old_end_line < old_lines.len() {
         Position::new(old_end_line as u32, 0)
+    } else if replacement_text.is_empty() || replacement_text.ends_with(line_ending) {
+        // End of document with final newline so use start of last line
+        Position::new(old_lines.len() as u32, 0)
     } else {
         // End of document - need to get the column position
         let last_line = old_lines.last().unwrap_or(&"");
@@ -216,6 +219,14 @@ mod tests {
     fn test_compute_text_edits_no_changes() {
         let old_text = "hello world";
         let new_text = "hello world";
+        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
+        assert!(edits.is_empty());
+    }
+
+    #[test]
+    fn test_compute_text_edits_no_changes_final_newline() {
+        let old_text = "hello world\n";
+        let new_text = "hello world\n";
         let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
         assert!(edits.is_empty());
     }
@@ -257,5 +268,25 @@ mod tests {
         )
         .into();
         assert_eq!(edit.range, expected_range);
+    }
+
+    #[test]
+    fn test_compute_text_edits_trim_final_newlines() {
+        // Test case: remove any final trailing newlines leaving a single newline
+        let old_text = "line1\n\n\n";
+        let new_text = "line1\n";
+        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
+
+        assert_eq!(edits.len(), 1);
+        let edit = &edits[0];
+
+        let expected_range: tower_lsp::lsp_types::Range = Range::new(
+            Position::new(1, 0), // Start of second line (after common prefix)
+            Position::new(3, 0), // Start of fourth line
+        )
+        .into();
+        assert_eq!(edit.range, expected_range);
+        // Remove the extra newlines with an empty string
+        assert_eq!(edit.new_text, "");
     }
 }
