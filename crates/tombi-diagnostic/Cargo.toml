@@ -14,7 +14,6 @@ wasm-bindgen = { workspace = true, optional = true }
 
 [dev-dependencies]
 clap.workspace = true
-clap-verbosity-flag.workspace = true
 tracing-subscriber.workspace = true
 
 [features]

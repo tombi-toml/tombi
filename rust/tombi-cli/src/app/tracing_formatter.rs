@@ -43,15 +43,15 @@ impl TombiFormatter {
     }
 }
 
-impl From<clap_verbosity_flag::log::LevelFilter> for TombiFormatter {
-    fn from(level: clap_verbosity_flag::log::LevelFilter) -> Self {
+impl From<tracing_subscriber::filter::LevelFilter> for TombiFormatter {
+    fn from(level: tracing_subscriber::filter::LevelFilter) -> Self {
         let level = match level {
-            clap_verbosity_flag::log::LevelFilter::Off => None,
-            clap_verbosity_flag::log::LevelFilter::Error => Some(tracing::Level::ERROR),
-            clap_verbosity_flag::log::LevelFilter::Warn => Some(tracing::Level::WARN),
-            clap_verbosity_flag::log::LevelFilter::Info => Some(tracing::Level::INFO),
-            clap_verbosity_flag::log::LevelFilter::Debug => Some(tracing::Level::DEBUG),
-            clap_verbosity_flag::log::LevelFilter::Trace => Some(tracing::Level::TRACE),
+            tracing_subscriber::filter::LevelFilter::OFF => None,
+            tracing_subscriber::filter::LevelFilter::ERROR => Some(tracing::Level::ERROR),
+            tracing_subscriber::filter::LevelFilter::WARN => Some(tracing::Level::WARN),
+            tracing_subscriber::filter::LevelFilter::INFO => Some(tracing::Level::INFO),
+            tracing_subscriber::filter::LevelFilter::DEBUG => Some(tracing::Level::DEBUG),
+            tracing_subscriber::filter::LevelFilter::TRACE => Some(tracing::Level::TRACE),
         };
 
         Self { level }
