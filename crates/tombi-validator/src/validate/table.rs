@@ -14,6 +14,7 @@ use crate::{
     comment_directive::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
+    error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::type_mismatch,
 };
 
@@ -137,7 +138,7 @@ async fn validate_table(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     lint_rules: Option<&TableCommonLintRules>,
 ) -> Result<(), crate::Error> {
-    let mut total_score = 1; // Type matched points.
+    let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
 
     for (key, value) in table_value.key_values() {
@@ -367,7 +368,7 @@ async fn validate_table(
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
             } else {
-                total_score += 1;
+                total_score += REQUIRED_KEY_SCORE;
             }
         }
     }

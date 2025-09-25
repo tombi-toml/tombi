@@ -1,5 +1,8 @@
 use std::cmp::Ordering;
 
+pub const TYPE_MATCHED_SCORE: u8 = 1;
+pub const REQUIRED_KEY_SCORE: u8 = 1;
+
 #[derive(Debug)]
 pub struct Error {
     pub score: u8,
@@ -36,7 +39,7 @@ impl Error {
 impl From<Vec<tombi_diagnostic::Diagnostic>> for Error {
     fn from(diagnostics: Vec<tombi_diagnostic::Diagnostic>) -> Self {
         Self {
-            score: 1, // Type matched points.
+            score: TYPE_MATCHED_SCORE,
             diagnostics,
         }
     }
