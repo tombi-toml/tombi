@@ -14,6 +14,7 @@ use crate::{
     comment_directive::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
+    error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::type_mismatch,
 };
 
@@ -26,16 +27,8 @@ impl Validate for tombi_document_tree::Table {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+    ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
-            let mut total_diagnostics = vec![];
-            let (table_common_rules, diagnostics) =
-                get_tombi_table_comment_directive_and_diagnostics(self, accessors).await;
-
-            if !diagnostics.is_empty() {
-                total_diagnostics.extend(diagnostics);
-            }
-
             if let Some(Ok(DocumentSchema {
                 value_schema: Some(value_schema),
                 schema_uri,
@@ -58,8 +51,11 @@ impl Validate for tombi_document_tree::Table {
                     .await;
             }
 
-            if let Some(current_schema) = current_schema {
-                let result = match current_schema.value_schema.as_ref() {
+            let (lint_rules, lint_rules_diagnostics) =
+                get_tombi_table_comment_directive_and_diagnostics(self, accessors).await;
+
+            let result = if let Some(current_schema) = current_schema {
+                match current_schema.value_schema.as_ref() {
                     ValueSchema::Table(table_schema) => {
                         validate_table(
                             self,
@@ -67,7 +63,7 @@ impl Validate for tombi_document_tree::Table {
                             table_schema,
                             current_schema,
                             schema_context,
-                            table_common_rules.as_ref(),
+                            lint_rules.as_ref(),
                         )
                         .await
                     }
@@ -78,7 +74,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            table_common_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -89,7 +85,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            table_common_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -100,7 +96,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            table_common_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -109,25 +105,25 @@ impl Validate for tombi_document_tree::Table {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
-                        table_common_rules.as_ref().map(|rules| &rules.common),
+                        lint_rules.as_ref().map(|rules| &rules.common),
                     ),
-                };
-
-                if let Err(diagnostics) = result {
-                    total_diagnostics.extend(diagnostics);
                 }
             } else {
-                if let Err(diagnostics) =
-                    validate_table_without_schema(self, accessors, schema_context).await
-                {
-                    total_diagnostics.extend(diagnostics);
-                }
-            }
+                validate_table_without_schema(self, accessors, schema_context).await
+            };
 
-            if total_diagnostics.is_empty() {
-                Ok(())
-            } else {
-                Err(total_diagnostics)
+            match result {
+                Ok(()) => {
+                    if lint_rules_diagnostics.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(lint_rules_diagnostics.into())
+                    }
+                }
+                Err(mut error) => {
+                    error.prepend_diagnostics(lint_rules_diagnostics);
+                    Err(error)
+                }
             }
         }
         .boxed()
@@ -140,9 +136,10 @@ async fn validate_table(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    value_rules: Option<&TableCommonLintRules>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
-    let mut diagnostics = vec![];
+    lint_rules: Option<&TableCommonLintRules>,
+) -> Result<(), crate::Error> {
+    let mut total_score = TYPE_MATCHED_SCORE;
+    let mut total_diagnostics = vec![];
 
     for (key, value) in table_value.key_values() {
         let key_rules = if let Some(directives) = key.comment_directives() {
@@ -184,7 +181,9 @@ async fn validate_table(
                 .await
                 .inspect_err(|err| tracing::warn!("{err}"))
             {
-                if let Err(mut schema_diagnostics) = value
+                if let Err(crate::Error {
+                    mut diagnostics, ..
+                }) = value
                     .validate(&new_accessors, Some(&current_schema), schema_context)
                     .await
                 {
@@ -192,11 +191,11 @@ async fn validate_table(
                         &current_schema,
                         value,
                         key,
-                        &mut schema_diagnostics,
+                        &mut diagnostics,
                     )
                     .await;
 
-                    diagnostics.extend(schema_diagnostics);
+                    total_diagnostics.extend(diagnostics);
                 }
             }
         }
@@ -224,7 +223,9 @@ async fn validate_table(
                         .await
                         .inspect_err(|err| tracing::warn!("{err}"))
                     {
-                        if let Err(mut schema_diagnostics) = value
+                        if let Err(crate::Error {
+                            mut diagnostics, ..
+                        }) = value
                             .validate(&new_accessors, Some(&current_schema), schema_context)
                             .await
                         {
@@ -232,11 +233,11 @@ async fn validate_table(
                                 &current_schema,
                                 value,
                                 key,
-                                &mut schema_diagnostics,
+                                &mut diagnostics,
                             )
                             .await;
 
-                            diagnostics.extend(schema_diagnostics);
+                            total_diagnostics.extend(diagnostics);
                         }
                     }
                 } else if !table_schema.allows_additional_properties(schema_context.strict()) {
@@ -262,7 +263,7 @@ async fn validate_table(
                         }),
                         range: key.range(),
                     }
-                    .push_diagnostic_with_level(level, &mut diagnostics);
+                    .push_diagnostic_with_level(level, &mut total_diagnostics);
                 }
             }
         }
@@ -281,7 +282,7 @@ async fn validate_table(
                     .inspect_err(|err| tracing::warn!("{err}"))
                 {
                     if current_schema.value_schema.deprecated().await == Some(true) {
-                        let level = value_rules
+                        let level = lint_rules
                             .map(|rules| &rules.common)
                             .and_then(|rules| {
                                 rules
@@ -298,14 +299,14 @@ async fn validate_table(
                             )),
                             range: key.range() + value.range(),
                         }
-                        .push_diagnostic_with_level(level, &mut diagnostics);
+                        .push_diagnostic_with_level(level, &mut total_diagnostics);
                     }
 
-                    if let Err(schema_diagnostics) = value
+                    if let Err(crate::Error { diagnostics, .. }) = value
                         .validate(&new_accessors, Some(&current_schema), schema_context)
                         .await
                     {
-                        diagnostics.extend(schema_diagnostics);
+                        total_diagnostics.extend(diagnostics);
                     }
                 }
             }
@@ -318,7 +319,7 @@ async fn validate_table(
                     }),
                     range: key.range() + value.range(),
                 }
-                .push_diagnostic_with_level(SeverityLevel::Warn, &mut diagnostics);
+                .push_diagnostic_with_level(SeverityLevel::Warn, &mut total_diagnostics);
 
                 continue;
             }
@@ -338,7 +339,7 @@ async fn validate_table(
                     }),
                     range: key.range() + value.range(),
                 }
-                .push_diagnostic_with_level(level, &mut diagnostics);
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
                 continue;
             }
         }
@@ -349,7 +350,7 @@ async fn validate_table(
 
         for required_key in required {
             if !keys.contains(&required_key) {
-                let level = value_rules
+                let level = lint_rules
                     .map(|rules| &rules.value)
                     .and_then(|rules| {
                         rules
@@ -365,14 +366,16 @@ async fn validate_table(
                     }),
                     range: table_value.range(),
                 }
-                .push_diagnostic_with_level(level, &mut diagnostics);
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
+            } else {
+                total_score += REQUIRED_KEY_SCORE;
             }
         }
     }
 
     if let Some(max_properties) = table_schema.max_properties {
         if table_value.keys().count() > max_properties {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -389,13 +392,13 @@ async fn validate_table(
                 }),
                 range: table_value.range(),
             }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+            .push_diagnostic_with_level(level, &mut total_diagnostics);
         }
     }
 
     if let Some(min_properties) = table_schema.min_properties {
         if table_value.keys().count() < min_properties {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -412,13 +415,13 @@ async fn validate_table(
                 }),
                 range: table_value.range(),
             }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+            .push_diagnostic_with_level(level, &mut total_diagnostics);
         }
     }
 
-    if diagnostics.is_empty() {
+    if total_diagnostics.is_empty() {
         if table_schema.deprecated == Some(true) {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
@@ -434,14 +437,17 @@ async fn validate_table(
                 )),
                 range: table_value.range(),
             }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+            .push_diagnostic_with_level(level, &mut total_diagnostics);
         }
     }
 
-    if diagnostics.is_empty() {
+    if total_diagnostics.is_empty() {
         Ok(())
     } else {
-        Err(diagnostics)
+        Err(crate::Error {
+            score: total_score,
+            diagnostics: total_diagnostics,
+        })
     }
 }
 
@@ -449,12 +455,12 @@ async fn validate_table_without_schema(
     table_value: &tombi_document_tree::Table,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
-    let mut diagnostics = vec![];
+) -> Result<(), crate::Error> {
+    let mut total_diagnostics = vec![];
 
     // Validate without schema
     for (key, value) in table_value.key_values() {
-        if let Err(schema_diagnostics) = value
+        if let Err(crate::Error { diagnostics, .. }) = value
             .validate(
                 &accessors
                     .iter()
@@ -466,14 +472,14 @@ async fn validate_table_without_schema(
             )
             .await
         {
-            diagnostics.extend(schema_diagnostics);
+            total_diagnostics.extend(diagnostics);
         }
     }
 
-    if diagnostics.is_empty() {
+    if total_diagnostics.is_empty() {
         Ok(())
     } else {
-        Err(diagnostics)
+        Err(total_diagnostics.into())
     }
 }
 

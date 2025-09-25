@@ -354,6 +354,24 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_tombi_schema_lint_rules_with_unknown_key(
+                r#"
+                [[schemas]]
+                root = "tool.taskipy"
+                path = "schemas/partial-taskipy.schema.json"
+                include = ["pyproject.toml"]
+                unknown = true
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {
+                    key: "unknown".to_string(),
+                },
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_tombi_schema_lint_rules_key_empty_undefined(
                 r#"
                 [lint.rules]

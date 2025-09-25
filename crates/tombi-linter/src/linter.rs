@@ -142,11 +142,11 @@ impl<'a> Linter<'a> {
                     }),
             };
 
-            if let Err(schema_diagnostics) =
+            if let Err(diagnostics) =
                 tombi_validator::validate(document_tree, source_schema.as_ref(), &schema_context)
                     .await
             {
-                self.diagnostics.extend(schema_diagnostics);
+                self.diagnostics.extend(diagnostics);
             }
         }
 

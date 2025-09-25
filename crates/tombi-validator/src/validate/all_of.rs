@@ -14,7 +14,7 @@ pub fn validate_all_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 
     _common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>
+) -> BoxFuture<'b, Result<(), crate::Error>>
 where
     T: Validate + Sync + Send + Debug,
 {
@@ -22,7 +22,7 @@ where
     tracing::trace!("all_of_schema = {:?}", all_of_schema);
 
     async move {
-        let mut diagnostics = vec![];
+        let mut total_diagnostics = vec![];
 
         let mut schemas = all_of_schema.schemas.write().await;
         for referable_schema in schemas.iter_mut() {
@@ -40,19 +40,18 @@ where
                 continue;
             };
 
-            match value
+            if let Err(crate::Error { diagnostics, .. }) = value
                 .validate(accessors, Some(&current_schema), schema_context)
                 .await
             {
-                Ok(()) => {}
-                Err(mut schema_diagnostics) => diagnostics.append(&mut schema_diagnostics),
+                total_diagnostics.extend(diagnostics);
             }
         }
 
-        if diagnostics.is_empty() {
+        if total_diagnostics.is_empty() {
             Ok(())
         } else {
-            Err(diagnostics)
+            Err(total_diagnostics.into())
         }
     }
     .boxed()

@@ -18,31 +18,27 @@ impl Validate for LocalDateTime {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+    ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
-            let mut total_diagnostics = vec![];
-            let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_key_table_value_rules_and_diagnostics::<
-                    LocalDateTimeCommonFormatRules,
-                    LocalDateTimeCommonLintRules,
-                >(comment_directives, accessors)
-                .await;
+            let (lint_rules, lint_rules_diagnostics) =
+                if let Some(comment_directives) = self.comment_directives() {
+                    get_tombi_key_table_value_rules_and_diagnostics::<
+                        LocalDateTimeCommonFormatRules,
+                        LocalDateTimeCommonLintRules,
+                    >(comment_directives, accessors)
+                    .await
+                } else {
+                    (None, Vec::with_capacity(0))
+                };
 
-                total_diagnostics.extend(diagnostics);
-
-                value_rules
-            } else {
-                None
-            };
-
-            if let Some(current_schema) = current_schema {
-                let result = match current_schema.value_schema.as_ref() {
+            let result = if let Some(current_schema) = current_schema {
+                match current_schema.value_schema.as_ref() {
                     ValueSchema::LocalDateTime(local_date_time_schema) => {
                         validate_local_date_time(
                             self,
                             accessors,
                             local_date_time_schema,
-                            value_rules.as_ref(),
+                            lint_rules.as_ref(),
                         )
                         .await
                     }
@@ -53,7 +49,7 @@ impl Validate for LocalDateTime {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -64,7 +60,7 @@ impl Validate for LocalDateTime {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -75,7 +71,7 @@ impl Validate for LocalDateTime {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -84,19 +80,25 @@ impl Validate for LocalDateTime {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
-                        value_rules.as_ref().map(|rules| &rules.common),
+                        lint_rules.as_ref().map(|rules| &rules.common),
                     ),
-                };
-
-                if let Err(diagnostics) = result {
-                    total_diagnostics.extend(diagnostics);
                 }
-            }
-
-            if total_diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(total_diagnostics)
+                Ok(())
+            };
+
+            match result {
+                Ok(()) => {
+                    if lint_rules_diagnostics.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(lint_rules_diagnostics.into())
+                    }
+                }
+                Err(mut error) => {
+                    error.prepend_diagnostics(lint_rules_diagnostics);
+                    Err(error)
+                }
             }
         }
         .boxed()
@@ -107,15 +109,15 @@ async fn validate_local_date_time(
     local_date_time_value: &LocalDateTime,
     accessors: &[tombi_schema_store::Accessor],
     local_date_time_schema: &tombi_schema_store::LocalDateTimeSchema,
-    value_rules: Option<&LocalDateTimeCommonLintRules>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    lint_rules: Option<&LocalDateTimeCommonLintRules>,
+) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
     let value_string = local_date_time_value.value().to_string();
     let range = local_date_time_value.range();
 
     if let Some(const_value) = &local_date_time_schema.const_value {
         if value_string != *const_value {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
@@ -138,7 +140,7 @@ async fn validate_local_date_time(
 
     if let Some(enumerate) = &local_date_time_schema.enumerate {
         if !enumerate.contains(&value_string) {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
@@ -161,7 +163,7 @@ async fn validate_local_date_time(
 
     if diagnostics.is_empty() {
         if local_date_time_schema.deprecated == Some(true) {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
@@ -185,6 +187,6 @@ async fn validate_local_date_time(
     if diagnostics.is_empty() {
         Ok(())
     } else {
-        Err(diagnostics)
+        Err(diagnostics.into())
     }
 }
