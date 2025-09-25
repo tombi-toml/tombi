@@ -17,7 +17,7 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>
+) -> BoxFuture<'b, Result<(), crate::Error>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
@@ -26,7 +26,7 @@ where
 
     async move {
         let mut schemas = any_of_schema.schemas.write().await;
-        let mut total_diagnostics = Vec::new();
+        let mut total_error = crate::Error::new();
 
         for referable_schema in schemas.iter_mut() {
             let current_schema = if let Ok(Some(current_schema)) = referable_schema
@@ -43,7 +43,7 @@ where
                 continue;
             };
 
-            let diagnostics = match (value.value_type(), current_schema.value_schema.as_ref()) {
+            let error = match (value.value_type(), current_schema.value_schema.as_ref()) {
                 (tombi_document_tree::ValueType::Boolean, ValueSchema::Boolean(_))
                 | (
                     tombi_document_tree::ValueType::Integer,
@@ -67,7 +67,7 @@ where
                         Ok(()) => {
                             return Ok(());
                         }
-                        Err(diagnostics) => diagnostics,
+                        Err(error) => error,
                     }
                 }
                 (_, ValueSchema::Null) => {
@@ -89,7 +89,7 @@ where
                     common_rules,
                 ) {
                     Ok(()) => continue,
-                    Err(diagnostics) => diagnostics,
+                    Err(error) => error,
                 },
                 (_, ValueSchema::OneOf(one_of_schema)) => {
                     match validate_one_of(
@@ -105,7 +105,7 @@ where
                         Ok(()) => {
                             return Ok(());
                         }
-                        Err(diagnostics) => diagnostics,
+                        Err(error) => error,
                     }
                 }
                 (_, ValueSchema::AnyOf(any_of_schema)) => {
@@ -122,7 +122,7 @@ where
                         Ok(()) => {
                             return Ok(());
                         }
-                        Err(diagnostics) => diagnostics,
+                        Err(error) => error,
                     }
                 }
                 (_, ValueSchema::AllOf(all_of_schema)) => {
@@ -139,26 +139,27 @@ where
                         Ok(()) => {
                             return Ok(());
                         }
-                        Err(diagnostics) => diagnostics,
+                        Err(error) => error,
                     }
                 }
             };
 
-            if diagnostics.is_empty() {
+            if error.diagnostics.is_empty() {
                 return Ok(());
-            } else if diagnostics
+            } else if error
+                .diagnostics
                 .iter()
                 .filter(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
                 .count()
                 == 0
             {
-                return Err(diagnostics);
+                return Err(error);
             }
 
-            total_diagnostics.extend(diagnostics);
+            total_error.combine(error);
         }
 
-        Err(total_diagnostics)
+        Err(total_error)
     }
     .boxed()
 }
