@@ -46,7 +46,7 @@
     "@tsconfig/strictest": "^2.0.6",
     "@types/minimatch": "^5.1.2",
     "@types/semver": "^7.7.1",
-    "@types/vscode": "^1.104.0",
+    "@types/vscode": "^1.95.0",
     "@vscode/python-extension": "^1.0.6",
     "@vscode/vsce": "^3.6.1",
     "esbuild": "^0.25.10",
