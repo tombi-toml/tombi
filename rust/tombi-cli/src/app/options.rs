@@ -26,7 +26,7 @@ impl VerbosityLevel {
 /// Verbosity flag that supports -v and -vv only
 #[derive(clap::Args, Debug, Clone)]
 pub struct Verbosity {
-    /// Verbose logging level
+    /// Use verbose output
     ///
     /// -v: DEBUG
     ///
