@@ -178,13 +178,14 @@ key = [
 ## Linting
 
 ### Validation Score
-For complex JSON Schemas, many types of errors occur when they do not match the schema.
-To identify the errors humans want to know, Tombi filters out unnecessary errors by scoring the schema's fit.
+For complex JSON Schemas, validation failures can produce many error messages.
+To help users identify the most relevant errors,
+Tombi uses a scoring system to filter out less important validation failures.
 
 The currently implemented points are as follows:
 
-- Type matching
-- Required key matching
+- Type matching: 1 point is added for the value that matches the type defined in the JSON Schema.
+- Required key matching: 1 point is added for each required key present in the table schema.
 
 More details are [here](https://github.com/tombi-toml/tombi/issues/1021#issuecomment-3338983593).
 
