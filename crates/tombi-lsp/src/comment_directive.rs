@@ -17,7 +17,7 @@ use tombi_schema_store::Accessor;
 
 pub const DOCUMENT_SCHEMA_DIRECTIVE_TITLE: &str = "Schema Document Directive";
 pub const DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION: &str =
-    "Specify the Schema URL/Path for the document.";
+    "Specify the Schema URL/Path for this document.";
 
 pub const DOCUMENT_TOMBI_DIRECTIVE_TITLE: &str = "Tombi Document Directive";
 pub const DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION: &str =
