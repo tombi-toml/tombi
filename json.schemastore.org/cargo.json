@@ -2220,6 +2220,16 @@
     "patch": {
       "description": "The `[patch]` section of `Cargo.toml` can be used to override dependencies\nwith other copies. The syntax is similar to the\n[`[dependencies]`](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) section.\n\n",
       "type": "object",
+      "properties": {
+        "crates-io": {
+          "title": "Override the dependency on crates.io",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Dependency"
+          },
+          "x-tombi-table-keys-order": "version-sort"
+        }
+      },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": {
@@ -2227,7 +2237,10 @@
         },
         "x-tombi-table-keys-order": "version-sort"
       },
-      "x-tombi-table-keys-order": "version-sort",
+      "x-tombi-table-keys-order": {
+        "properties": "schema",
+        "additionalProperties": "version-sort"
+      },
       "x-taplo": {
         "links": {
           "key": "https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section"

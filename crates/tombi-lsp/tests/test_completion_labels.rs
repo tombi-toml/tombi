@@ -790,6 +790,7 @@ mod completion_labels {
                 "tox",
                 "ty",
                 "uv",
+                "$key",
             ]);
         }
 
@@ -1216,6 +1217,20 @@ mod completion_labels {
                 "\"serde\"",
                 "\"\"",
                 "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_patch(
+                r#"
+                [patch]
+                █
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "crates-io",
+                "$key"
             ]);
         }
     }
