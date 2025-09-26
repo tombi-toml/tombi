@@ -55,7 +55,8 @@ impl FindCompletionContents for tombi_document_tree::Table {
                 if !matches!(
                     self.kind(),
                     tombi_document_tree::TableKind::InlineTable { .. }
-                ) {
+                ) && completion_hint != Some(CompletionHint::InTableHeader)
+                {
                     // Skip if the cursor is the end space of key value like:
                     //
                     // ```toml

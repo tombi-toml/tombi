@@ -990,6 +990,35 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_dependencies_and_next_section(
+                r#"
+                [dependencies]
+
+                [█]
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "badges",
+                "bench",
+                "bin",
+                "build-dependencies",
+                "dependencies",
+                "dev-dependencies",
+                "example",
+                "features",
+                "lib",
+                "lints",
+                "package",
+                "patch",
+                "profile",
+                "target",
+                "test",
+                "workspace",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_dependencies(
                 r#"
                 [dependencies]
