@@ -20,7 +20,7 @@
     <div align="center" style="font-size: 2.0em; margin-bottom: 30px;">
         <strong> 🦅&nbsp; Feature-Rich TOML Toolkit &nbsp 🦅</strong>
     </div>
-    Tombi(鳶 <code>/toɴbi/</code>) provides a Formatter, Linter, and Language Server
+    Tombi(鳶 <a href="https://ipa-reader.com/?text=toɴbi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">/toɴbi/</a>) provides a Formatter, Linter, and Language Server
     <br><br>
     <a href="https://tombi-toml.github.io/tombi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">
         📚 Documentation here 📚
