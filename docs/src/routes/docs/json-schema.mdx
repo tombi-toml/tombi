@@ -176,6 +176,16 @@ key = [
 ```
 
 ## Linting
+
+### Validation Score
+For complex JSON Schemas, many types of errors occur when they do not match the schema.
+To identify the errors humans want to know, Tombi filters out unnecessary errors by scoring the schema's fit.
+
+The currently implemented points are as follows:
+
+- Type matching
+- Required key matching
+
 ### Strict Mode
 By default, Tombi operates in `strict` mode. In this mode, objects without `additionalProperties` are treated as if `additionalProperties: false` was specified.
 This differs from the standard JSON Schema specification but provides more precise validation by eliminating ambiguity.
