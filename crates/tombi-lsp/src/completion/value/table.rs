@@ -494,46 +494,44 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
 
-                            if completion_contents.is_empty() {
-                                if let Some(pattern_properties) = &table_schema.pattern_properties {
-                                    let patterns = pattern_properties
-                                        .read()
-                                        .await
-                                        .keys()
-                                        .map(ToString::to_string)
-                                        .collect_vec();
-                                    completion_contents.push(CompletionContent::new_pattern_key(
-                                        patterns.as_ref(),
-                                        position,
-                                        Some(current_schema.schema_uri.as_ref()),
-                                        completion_hint,
-                                    ))
-                                } else if let Some((_, additional_property_schema)) =
-                                    &table_schema.additional_property_schema
+                            if let Some(pattern_properties) = &table_schema.pattern_properties {
+                                let patterns = pattern_properties
+                                    .read()
+                                    .await
+                                    .keys()
+                                    .map(ToString::to_string)
+                                    .collect_vec();
+                                completion_contents.push(CompletionContent::new_pattern_key(
+                                    patterns.as_ref(),
+                                    position,
+                                    Some(current_schema.schema_uri.as_ref()),
+                                    completion_hint,
+                                ))
+                            } else if let Some((_, additional_property_schema)) =
+                                &table_schema.additional_property_schema
+                            {
+                                if let Ok(Some(CurrentSchema {
+                                    value_schema,
+                                    schema_uri,
+                                    ..
+                                })) = additional_property_schema
+                                    .write()
+                                    .await
+                                    .resolve(
+                                        current_schema.schema_uri.clone(),
+                                        current_schema.definitions.clone(),
+                                        schema_context.store,
+                                    )
+                                    .await
                                 {
-                                    if let Ok(Some(CurrentSchema {
-                                        value_schema,
-                                        schema_uri,
-                                        ..
-                                    })) = additional_property_schema
-                                        .write()
-                                        .await
-                                        .resolve(
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
-                                        )
-                                        .await
-                                    {
-                                        completion_contents.push(
-                                            CompletionContent::new_additional_key(
-                                                position,
-                                                Some(schema_uri.as_ref()),
-                                                value_schema.deprecated().await,
-                                                completion_hint,
-                                            ),
-                                        );
-                                    }
+                                    completion_contents.push(
+                                        CompletionContent::new_additional_key(
+                                            position,
+                                            Some(schema_uri.as_ref()),
+                                            value_schema.deprecated().await,
+                                            completion_hint,
+                                        ),
+                                    );
                                 }
                             }
                         }
