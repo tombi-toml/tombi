@@ -790,7 +790,7 @@ mod completion_labels {
                 "tox",
                 "ty",
                 "uv",
-                "$key",
+                "$tool_name",
             ]);
         }
 
