@@ -330,13 +330,15 @@ impl CompletionContent {
     }
 
     pub fn new_pattern_key(
+        key_label: Option<&str>,
         patterns: &[String],
         position: tombi_text::Position,
         schema_uri: Option<&SchemaUri>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
+        let key_label = key_label.unwrap_or("key");
         Self {
-            label: "$key".to_string(),
+            label: format!("${key_label}"),
             kind: CompletionKind::Key,
             emoji_icon: None,
             priority: CompletionContentPriority::AdditionalKey,
@@ -352,7 +354,7 @@ impl CompletionContent {
             },
             filter_text: None,
             edit: CompletionEdit::new_additional_key(
-                "key",
+                key_label,
                 tombi_text::Range::at(position),
                 completion_hint,
             ),
@@ -364,13 +366,15 @@ impl CompletionContent {
     }
 
     pub fn new_additional_key(
+        key_label: Option<&str>,
         position: tombi_text::Position,
         schema_uri: Option<&SchemaUri>,
         deprecated: Option<bool>,
         completion_hint: Option<CompletionHint>,
     ) -> Self {
+        let key_label = key_label.unwrap_or("key");
         Self {
-            label: "$key".to_string(),
+            label: format!("${key_label}"),
             kind: CompletionKind::Key,
             emoji_icon: None,
             priority: CompletionContentPriority::AdditionalKey,
@@ -378,7 +382,7 @@ impl CompletionContent {
             documentation: None,
             filter_text: None,
             edit: CompletionEdit::new_additional_key(
-                "key",
+                key_label,
                 tombi_text::Range::at(position),
                 completion_hint,
             ),

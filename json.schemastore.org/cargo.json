@@ -325,6 +325,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Lint"
           },
+          "x-tombi-additional-key-label": "lint_name",
           "x-tombi-table-keys-order": "version-sort"
         },
         "rustdoc": {
@@ -333,6 +334,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Lint"
           },
+          "x-tombi-additional-key-label": "lint_name",
           "x-tombi-table-keys-order": "version-sort"
         },
         "clippy": {
@@ -341,6 +343,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Lint"
           },
+          "x-tombi-additional-key-label": "lint_name",
           "x-tombi-table-keys-order": "version-sort"
         }
       },
@@ -775,6 +778,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Dependency"
           },
+          "x-tombi-additional-key-label": "crate_name",
           "x-tombi-table-keys-order": "version-sort",
           "x-taplo": {
             "links": {
@@ -788,6 +792,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Dependency"
           },
+          "x-tombi-additional-key-label": "crate_name",
           "x-tombi-table-keys-order": "version-sort",
           "x-taplo": {
             "links": {
@@ -815,6 +820,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Dependency"
           },
+          "x-tombi-additional-key-label": "crate_name",
           "x-tombi-table-keys-order": "version-sort",
           "x-taplo": {
             "links": {
@@ -1011,6 +1017,7 @@
       "additionalProperties": {
         "$ref": "#/definitions/Profile"
       },
+      "x-tombi-additional-key-label": "profile_name",
       "x-tombi-table-keys-order": "version-sort",
       "x-taplo": {
         "links": {
@@ -1090,6 +1097,11 @@
       },
       "additionalProperties": {
         "$ref": "#/definitions/ProfileWithBuildOverride"
+      },
+      "x-tombi-additional-key-label": "profile_name",
+      "x-tombi-table-keys-order": {
+        "properties": "schema",
+        "additionalProperties": "ascending"
       },
       "x-taplo": {
         "links": {
@@ -1490,6 +1502,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Dependency"
           },
+          "x-tombi-additional-key-label": "crate_name",
           "x-tombi-table-keys-order": "version-sort",
           "x-taplo": {
             "links": {
@@ -1894,6 +1907,7 @@
           }
         ]
       },
+      "x-tombi-additional-key-label": "asset_path",
       "x-tombi-table-keys-order": "schema",
       "x-taplo": {
         "links": {
@@ -2065,6 +2079,7 @@
       "additionalProperties": {
         "$ref": "#/definitions/Dependency"
       },
+      "x-tombi-additional-key-label": "crate_name",
       "x-tombi-table-keys-order": "version-sort",
       "x-taplo": {
         "links": {
@@ -2078,6 +2093,7 @@
       "additionalProperties": {
         "$ref": "#/definitions/Dependency"
       },
+      "x-tombi-additional-key-label": "crate_name",
       "x-tombi-table-keys-order": "version-sort",
       "x-taplo": {
         "links": {
@@ -2107,6 +2123,7 @@
       "additionalProperties": {
         "$ref": "#/definitions/Dependency"
       },
+      "x-tombi-additional-key-label": "crate_name",
       "x-tombi-table-keys-order": "version-sort",
       "x-taplo": {
         "links": {
@@ -2132,6 +2149,7 @@
     },
     "target": {
       "type": "object",
+      "x-tombi-additional-key-label": "target_name",
       "x-tombi-table-keys-order": "version-sort",
       "additionalProperties": {
         "$ref": "#/definitions/Platform"
@@ -2147,6 +2165,7 @@
         },
         "x-tombi-table-keys-order": "version-sort"
       },
+      "x-tombi-additional-key-label": "badge_name",
       "x-tombi-table-keys-order": "version-sort",
       "x-taplo": {
         "links": {
@@ -2182,6 +2201,7 @@
         },
         "x-tombi-array-values-order": "version-sort"
       },
+      "x-tombi-additional-key-label": "feature_name",
       "x-tombi-table-keys-order": {
         "properties": "schema",
         "additionalProperties": "version-sort"
@@ -2227,6 +2247,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/Dependency"
           },
+          "x-tombi-additional-key-label": "crate_name",
           "x-tombi-table-keys-order": "version-sort"
         }
       },
@@ -2235,8 +2256,10 @@
         "additionalProperties": {
           "$ref": "#/definitions/Dependency"
         },
+        "x-tombi-additional-key-label": "crate_name",
         "x-tombi-table-keys-order": "version-sort"
       },
+      "x-tombi-additional-key-label": "source_url_or_registry_name",
       "x-tombi-table-keys-order": {
         "properties": "schema",
         "additionalProperties": "version-sort"
