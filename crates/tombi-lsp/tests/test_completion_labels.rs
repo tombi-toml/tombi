@@ -1027,7 +1027,7 @@ mod completion_labels {
                 "#,
                 Schema(cargo_schema_path()),
             ) -> Ok([
-                "$key",
+                "$crate_name",
             ]);
         }
 
@@ -1230,7 +1230,7 @@ mod completion_labels {
                 Schema(cargo_schema_path()),
             ) -> Ok([
                 "crates-io",
-                "$key"
+                "$source_url_or_registry_name"
             ]);
         }
     }
