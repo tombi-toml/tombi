@@ -5,6 +5,7 @@ pub const X_TOMBI_ARRAY_VALUES_ORDER: &str = "x-tombi-array-values-order";
 pub const X_TOMBI_ARRAY_VALUES_ORDER_BY: &str = "x-tombi-array-values-order-by";
 pub const X_TOMBI_TABLE_KEYS_ORDER: &str = "x-tombi-table-keys-order";
 pub const X_TOMBI_STRING_FORMATS: &str = "x-tombi-string-formats";
+pub const X_TOMBI_ADDITIONAL_KEY_LABEL: &str = "x-tombi-additional-key-label";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

@@ -502,6 +502,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     .map(ToString::to_string)
                                     .collect_vec();
                                 completion_contents.push(CompletionContent::new_pattern_key(
+                                    table_schema.additional_key_label.as_deref(),
                                     patterns.as_ref(),
                                     position,
                                     Some(current_schema.schema_uri.as_ref()),
@@ -526,6 +527,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 {
                                     completion_contents.push(
                                         CompletionContent::new_additional_key(
+                                            table_schema.additional_key_label.as_deref(),
                                             position,
                                             Some(schema_uri.as_ref()),
                                             value_schema.deprecated().await,
