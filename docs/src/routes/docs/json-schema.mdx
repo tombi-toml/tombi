@@ -14,7 +14,10 @@ This section explains how Tombi prioritizes the application of `x-tombi-*` keys 
 2. JSON Schema specified in [the Tombi configuration file](/docs/configuration#search-priority)
 3. JSON Schema from the [JSON Schema Store](https://json.schemastore.org)
 
-## Formatting
+## Tombi metadata
+
+Tombi supports the following metadata keys in your JSON Schema.
+
 ### x-tombi-toml-version
 This key automatically determines the TOML version to use.
 Currently, we support:
@@ -28,6 +31,34 @@ Until `v1.1.0` is officially released, we recommend using `v1.0.0`.
 
 For experimental purposes, the JSON Schema in `tombi.toml` is specified as `v1.1.0-preview`.
 </Note>
+
+### x-tombi-additional-key-label
+This key specifies the label to use for additional keys.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Dependency"
+      },
+      "x-tombi-additional-key-label": "crate_name",
+      ...
+    },
+    ...
+  },
+  ...
+}
+```
+
+This allows the label displayed in the completion candidates for additionalProperties keys to be `$crate_name`.\
+If you don't specify this key, the label will be `$key`.
+
+<img src="/x-tombi-additional-key-label.png" class="w-full" />
+
+## Formatting
 
 ### x-tombi-table-keys-order
 
