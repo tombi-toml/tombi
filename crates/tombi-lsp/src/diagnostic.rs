@@ -104,7 +104,7 @@ pub async fn get_diagnostics_result(
                 Some(Either::Left(text_document_uri)),
                 &schema_store,
             )
-            .lint(&document.text)
+            .lint(document.text())
             .await
             {
                 Ok(_) => Vec::with_capacity(0),

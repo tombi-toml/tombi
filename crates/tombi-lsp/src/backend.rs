@@ -106,7 +106,7 @@ impl Backend {
             .await;
 
         let source_schema = if let Some(parsed) =
-            tombi_parser::parse_document_header_comments(&document_source.text)
+            tombi_parser::parse_document_header_comments(document_source.text())
                 .cast::<tombi_ast::Root>()
         {
             match schema_store
@@ -134,7 +134,7 @@ impl Backend {
             })
             .unwrap_or(config.toml_version.unwrap_or_default());
 
-        Some(tombi_parser::parse(&document_source.text, toml_version))
+        Some(tombi_parser::parse(document_source.text(), toml_version))
     }
 
     #[inline]

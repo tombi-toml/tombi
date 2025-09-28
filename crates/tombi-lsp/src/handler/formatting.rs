@@ -91,14 +91,14 @@ pub async fn handle_formatting(
         Some(Either::Left(&text_document_uri)),
         &schema_store,
     )
-    .format(&document_source.text)
+    .format(document_source.text())
     .await
     {
         Ok(formatted) => {
-            if document_source.text != formatted {
+            if document_source.text() != formatted {
                 let edits =
-                    compute_text_edits(&document_source.text, &formatted, &formatter_definitions);
-                document_source.text = formatted.clone();
+                    compute_text_edits(document_source.text(), &formatted, &formatter_definitions);
+                document_source.set_text(formatted);
 
                 return Ok(Some(edits));
             } else {

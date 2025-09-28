@@ -103,7 +103,7 @@ pub async fn handle_completion(
         if trigger_character == "\n" {
             let pos_line = position.line as usize;
             if pos_line > 0 {
-                if let Some(prev_line) = &document_source.text.lines().nth(pos_line - 1) {
+                if let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1) {
                     if prev_line.trim().is_empty() || root_schema.is_none() {
                         tracing::trace!("completion skipped due to consecutive line breaks");
                         return Ok(None);
