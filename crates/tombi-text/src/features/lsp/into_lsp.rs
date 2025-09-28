@@ -1,37 +1,7 @@
-use unicode_segmentation::UnicodeSegmentation;
-
 use crate::FromLsp;
 
 pub trait IntoLsp<T> {
     fn into_lsp(self, line_index: &crate::LineIndex) -> T;
-}
-
-impl IntoLsp<tower_lsp::lsp_types::Position> for crate::Position {
-    fn into_lsp(self, line_index: &crate::LineIndex) -> tower_lsp::lsp_types::Position {
-        let character = line_index
-            .line_text(self.line)
-            .map(|line_text| {
-                line_text
-                    .graphemes(true)
-                    .take(self.column as usize)
-                    .fold(0, |acc, char| acc + line_index.wide_encoding.measure(char))
-            })
-            .unwrap_or_default();
-
-        tower_lsp::lsp_types::Position {
-            line: self.line,
-            character,
-        }
-    }
-}
-
-impl IntoLsp<tower_lsp::lsp_types::Range> for crate::Range {
-    fn into_lsp(self, line_index: &crate::LineIndex) -> tower_lsp::lsp_types::Range {
-        tower_lsp::lsp_types::Range {
-            start: self.start.into_lsp(line_index),
-            end: self.end.into_lsp(line_index),
-        }
-    }
 }
 
 impl<T, U> IntoLsp<U> for T

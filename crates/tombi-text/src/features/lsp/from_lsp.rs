@@ -1,5 +1,7 @@
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::IntoLsp;
+
 pub trait FromLsp<T> {
     fn from_lsp(source: T, line_index: &crate::LineIndex) -> Self;
 }
@@ -22,6 +24,39 @@ impl FromLsp<tower_lsp::lsp_types::Position> for crate::Position {
     }
 }
 
+impl FromLsp<crate::Position> for tower_lsp::lsp_types::Position {
+    fn from_lsp(
+        source: crate::Position,
+        line_index: &crate::LineIndex,
+    ) -> tower_lsp::lsp_types::Position {
+        let character = line_index
+            .line_text(source.line)
+            .map(|line_text| {
+                line_text
+                    .graphemes(true)
+                    .take(source.column as usize)
+                    .fold(0, |acc, char| acc + line_index.wide_encoding.measure(char))
+            })
+            .unwrap_or_default();
+
+        tower_lsp::lsp_types::Position {
+            line: source.line,
+            character,
+        }
+    }
+}
+
+impl FromLsp<crate::RelativePosition> for tower_lsp::lsp_types::Position {
+    #[inline]
+    fn from_lsp(
+        source: crate::RelativePosition,
+        line_index: &crate::LineIndex,
+    ) -> tower_lsp::lsp_types::Position {
+        let source = crate::Position::new(source.line, source.column);
+        tower_lsp::lsp_types::Position::from_lsp(source, line_index)
+    }
+}
+
 impl FromLsp<tower_lsp::lsp_types::Range> for crate::Range {
     fn from_lsp(
         source: tower_lsp::lsp_types::Range,
@@ -31,6 +66,18 @@ impl FromLsp<tower_lsp::lsp_types::Range> for crate::Range {
             crate::Position::from_lsp(source.start, line_index),
             crate::Position::from_lsp(source.end, line_index),
         )
+    }
+}
+
+impl FromLsp<crate::Range> for tower_lsp::lsp_types::Range {
+    fn from_lsp(
+        source: crate::Range,
+        line_index: &crate::LineIndex,
+    ) -> tower_lsp::lsp_types::Range {
+        tower_lsp::lsp_types::Range {
+            start: source.start.into_lsp(line_index),
+            end: source.end.into_lsp(line_index),
+        }
     }
 }
 
