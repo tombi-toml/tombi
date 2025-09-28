@@ -1,15 +1,13 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-pub trait IntoLsp {
-    type Output;
+use crate::FromLsp;
 
-    fn into_lsp(self, line_index: &crate::LineIndex) -> Self::Output;
+pub trait IntoLsp<T> {
+    fn into_lsp(self, line_index: &crate::LineIndex) -> T;
 }
 
-impl IntoLsp for crate::Position {
-    type Output = tower_lsp::lsp_types::Position;
-
-    fn into_lsp(self, line_index: &crate::LineIndex) -> Self::Output {
+impl IntoLsp<tower_lsp::lsp_types::Position> for crate::Position {
+    fn into_lsp(self, line_index: &crate::LineIndex) -> tower_lsp::lsp_types::Position {
         let character = line_index
             .line_text(self.line)
             .map(|line_text| {
@@ -27,14 +25,21 @@ impl IntoLsp for crate::Position {
     }
 }
 
-impl IntoLsp for crate::Range {
-    type Output = tower_lsp::lsp_types::Range;
-
-    fn into_lsp(self, line_index: &crate::LineIndex) -> Self::Output {
+impl IntoLsp<tower_lsp::lsp_types::Range> for crate::Range {
+    fn into_lsp(self, line_index: &crate::LineIndex) -> tower_lsp::lsp_types::Range {
         tower_lsp::lsp_types::Range {
             start: self.start.into_lsp(line_index),
             end: self.end.into_lsp(line_index),
         }
+    }
+}
+
+impl<T, U> IntoLsp<U> for T
+where
+    U: FromLsp<T>,
+{
+    fn into_lsp(self: T, line_index: &crate::LineIndex) -> U {
+        U::from_lsp(self, line_index)
     }
 }
 
@@ -51,7 +56,7 @@ mod tests {
             end: tower_lsp::lsp_types::Position::new(1, 3),
         };
 
-        let lsp_range = range.into_lsp(&line_index);
+        let lsp_range: tower_lsp::lsp_types::Range = range.into_lsp(&line_index);
         pretty_assertions::assert_eq!(lsp_range, expected_range);
     }
 
@@ -64,7 +69,7 @@ mod tests {
             end: tower_lsp::lsp_types::Position::new(0, 2),
         };
 
-        let lsp_range = range.into_lsp(&line_index);
+        let lsp_range: tower_lsp::lsp_types::Range = range.into_lsp(&line_index);
         pretty_assertions::assert_eq!(lsp_range, expected_range);
     }
 }

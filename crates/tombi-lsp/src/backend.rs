@@ -8,6 +8,7 @@ use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::SourceSchema;
 use tombi_syntax::SyntaxNode;
+use tombi_text::IntoLsp;
 use tower_lsp::{
     lsp_types::{
         request::{
@@ -342,9 +343,27 @@ impl LanguageServer for Backend {
         &self,
         params: CompletionParams,
     ) -> Result<Option<CompletionResponse>, tower_lsp::jsonrpc::Error> {
+        let document_source = self.document_sources.read().await;
+        let Some(document_source) = document_source.get(
+            &params
+                .text_document_position
+                .text_document
+                .uri
+                .clone()
+                .into(),
+        ) else {
+            return Ok(None);
+        };
+
         handle_completion(self, params).await.map(|response| {
-            response
-                .map(|items| CompletionResponse::Array(items.into_iter().map(Into::into).collect()))
+            response.map(|items| {
+                CompletionResponse::Array(
+                    items
+                        .into_iter()
+                        .map(|item| item.into_lsp(document_source.line_index()))
+                        .collect(),
+                )
+            })
         })
     }
 
@@ -370,9 +389,22 @@ impl LanguageServer for Backend {
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>, tower_lsp::jsonrpc::Error> {
+        let document_source = self.document_sources.read().await;
+        let Some(document_source) = document_source.get(
+            &params
+                .text_document_position_params
+                .text_document
+                .uri
+                .clone()
+                .into(),
+        ) else {
+            return Ok(None);
+        };
+        let line_index = document_source.line_index();
+
         handle_hover(self, params)
             .await
-            .map(|response| response.map(Into::into))
+            .map(|response| response.map(|content| content.into_lsp(line_index)))
     }
 
     async fn folding_range(

@@ -6,7 +6,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-nohash-hasher.workspace = true
 serde = { workspace = true, optional = true }
 tower-lsp = { workspace = true, optional = true }
 tracing.workspace = true

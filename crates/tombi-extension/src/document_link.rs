@@ -1,6 +1,7 @@
 use std::{borrow::Cow, str::FromStr};
 
 use tombi_schema_store::get_tombi_schemastore_content;
+use tombi_text::{FromLsp, IntoLsp};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentLink {
@@ -9,12 +10,15 @@ pub struct DocumentLink {
     pub tooltip: Cow<'static, str>,
 }
 
-impl From<DocumentLink> for tower_lsp::lsp_types::DocumentLink {
-    fn from(value: DocumentLink) -> Self {
+impl FromLsp<DocumentLink> for tower_lsp::lsp_types::DocumentLink {
+    fn from_lsp(
+        source: DocumentLink,
+        line_index: &tombi_text::LineIndex,
+    ) -> tower_lsp::lsp_types::DocumentLink {
         tower_lsp::lsp_types::DocumentLink {
-            range: value.range.into(),
-            target: Some(value.target.into()),
-            tooltip: Some(value.tooltip.into_owned()),
+            range: source.range.into_lsp(line_index),
+            target: Some(source.target.into()),
+            tooltip: Some(source.tooltip.into_owned()),
             data: None,
         }
     }

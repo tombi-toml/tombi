@@ -1561,6 +1561,7 @@ mod completion_labels {
                     LspService,
                 };
                 use tombi_lsp::handler::handle_did_open;
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -1616,6 +1617,8 @@ mod completion_labels {
                             .into(),
                     );
                 };
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
 
                 let toml_file_url = match $source_file_path {
                     Some(path) => {
@@ -1650,7 +1653,7 @@ mod completion_labels {
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into(),
+                            .into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                         partial_result_params: PartialResultParams {
@@ -1666,7 +1669,7 @@ mod completion_labels {
 
                 let labels = completions
                     .into_iter()
-                    .map(|content| Into::<CompletionItem>::into(content))
+                    .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
                         a.sort_text
                             .as_ref()
@@ -1812,6 +1815,7 @@ mod completion_labels {
                     LspService,
                 };
                 use tombi_lsp::handler::handle_did_open;
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -1893,6 +1897,9 @@ mod completion_labels {
                     );
                 };
 
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
+
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
@@ -1919,7 +1926,7 @@ mod completion_labels {
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into(),
+                            .into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                         partial_result_params: PartialResultParams {
@@ -1935,7 +1942,7 @@ mod completion_labels {
 
                 let labels = completions
                     .into_iter()
-                    .map(|content| Into::<CompletionItem>::into(content))
+                    .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
                         a.sort_text
                             .as_ref()

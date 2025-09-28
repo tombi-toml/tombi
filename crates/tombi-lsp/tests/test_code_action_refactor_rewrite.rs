@@ -81,6 +81,7 @@ macro_rules! test_code_action_refactor_rewrite {
             use tombi_lsp::handler::handle_code_action;
             use tombi_lsp::handler::handle_did_open;
             use tombi_lsp::Backend;
+            use tombi_text::IntoLsp;
             use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
             use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
             use tower_lsp::LspService;
@@ -105,6 +106,9 @@ macro_rules! test_code_action_refactor_rewrite {
             toml_text.remove(index);
             tracing::debug!(?toml_text, "test toml text");
             tracing::debug!(?index, "test toml text index");
+
+            let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
 
             let toml_file_url = $toml_file_path
                 .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
@@ -134,7 +138,7 @@ macro_rules! test_code_action_refactor_rewrite {
                     (tombi_text::Position::default()
                         + tombi_text::RelativePosition::of(&toml_text[..index])),
                 )
-                .into(),
+                .into_lsp(&line_index),
                 context: Default::default(),
                 work_done_progress_params: Default::default(),
                 partial_result_params: Default::default(),

@@ -1,5 +1,6 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{GotoDefinitionParams, TextDocumentPositionParams};
 
 use crate::config_manager::ConfigSchemaStore;
@@ -64,7 +65,13 @@ pub async fn handle_goto_definition(
         )
         .await;
 
-    let position = position.into();
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(Default::default());
+    };
+    let line_index = document_source.line_index();
+
+    let position = position.into_lsp(line_index);
     let Some((keys, _)) = get_hover_keys_with_range(&root, position, toml_version).await else {
         return Ok(Default::default());
     };

@@ -105,7 +105,7 @@ pub fn server_capabilities(
     });
 
     ServerCapabilities {
-        position_encoding: Some(PositionEncodingKind::UTF32),
+        position_encoding: Some(PositionEncodingKind::UTF16),
         workspace,
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {

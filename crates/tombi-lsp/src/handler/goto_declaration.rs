@@ -1,5 +1,6 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::request::GotoDeclarationParams;
 use tower_lsp::lsp_types::TextDocumentPositionParams;
 
@@ -54,8 +55,13 @@ pub async fn handle_goto_declaration(
         .await
         .ok()
         .flatten();
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(None);
+    };
+    let line_index = document_source.line_index();
 
-    let position = position.into();
+    let position = position.into_lsp(line_index);
 
     let tombi_document_comment_directive =
         tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;

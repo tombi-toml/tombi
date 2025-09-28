@@ -1,25 +1,36 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-pub trait FromLsp {
-    type Output;
-
-    fn from_lsp(self, line_index: &crate::LineIndex) -> Self::Output;
+pub trait FromLsp<T> {
+    fn from_lsp(source: T, line_index: &crate::LineIndex) -> Self;
 }
 
-impl FromLsp for tower_lsp::lsp_types::Position {
-    type Output = crate::Position;
-
-    fn from_lsp(self, line_index: &crate::LineIndex) -> Self::Output {
+impl FromLsp<tower_lsp::lsp_types::Position> for crate::Position {
+    fn from_lsp(
+        source: tower_lsp::lsp_types::Position,
+        line_index: &crate::LineIndex,
+    ) -> crate::Position {
         let column = line_index
-            .line_text(self.line)
+            .line_text(source.line)
             .map(|line_text| {
                 let column_text =
-                    take_column_text(line_text, self.character, line_index.wide_encoding);
+                    take_column_text(line_text, source.character, line_index.wide_encoding);
                 crate::WideEncoding::GraphemeCluster.measure(column_text)
             })
             .unwrap_or_default();
 
-        crate::Position::new(self.line, column)
+        crate::Position::new(source.line, column)
+    }
+}
+
+impl FromLsp<tower_lsp::lsp_types::Range> for crate::Range {
+    fn from_lsp(
+        source: tower_lsp::lsp_types::Range,
+        line_index: &crate::LineIndex,
+    ) -> crate::Range {
+        crate::Range::new(
+            crate::Position::from_lsp(source.start, line_index),
+            crate::Position::from_lsp(source.end, line_index),
+        )
     }
 }
 
@@ -64,7 +75,10 @@ mod tests {
         let line_index = LineIndex::new(text, WideEncoding::Utf16);
         let lsp_position = tower_lsp::lsp_types::Position::new(0, 2);
 
-        assert_eq!(lsp_position.from_lsp(&line_index), Position::new(0, 1));
+        assert_eq!(
+            Position::from_lsp(lsp_position, &line_index),
+            Position::new(0, 1)
+        );
     }
 
     #[test]
@@ -73,6 +87,9 @@ mod tests {
         let line_index = LineIndex::new(text, WideEncoding::Utf8);
         let lsp_position = tower_lsp::lsp_types::Position::new(0, 10);
 
-        assert_eq!(lsp_position.from_lsp(&line_index), Position::new(0, 5));
+        assert_eq!(
+            Position::from_lsp(lsp_position, &line_index),
+            Position::new(0, 5)
+        );
     }
 }

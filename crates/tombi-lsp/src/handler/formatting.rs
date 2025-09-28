@@ -1,8 +1,8 @@
-use itertools::Either;
+use itertools::{Either, Itertools};
 use tombi_config::FormatOptions;
 use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{matches_file_patterns, MatchResult};
-use tombi_text::{Position, Range};
+use tombi_text::{IntoLsp, Position, Range};
 use tower_lsp::lsp_types::{
     notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
 };
@@ -96,8 +96,12 @@ pub async fn handle_formatting(
     {
         Ok(formatted) => {
             if document_source.text() != formatted {
-                let edits =
-                    compute_text_edits(document_source.text(), &formatted, &formatter_definitions);
+                let edits = compute_text_edits(
+                    document_source.text(),
+                    &formatted,
+                    &formatter_definitions,
+                    document_source.line_index(),
+                );
                 document_source.set_text(formatted);
 
                 return Ok(Some(edits));
@@ -115,11 +119,15 @@ pub async fn handle_formatting(
         }
         Err(diagnostics) => {
             tracing::error!("Failed to format");
+            let line_index = document_source.line_index();
             backend
                 .client
                 .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
                     uri: text_document_uri.into(),
-                    diagnostics: diagnostics.into_iter().map(Into::into).collect(),
+                    diagnostics: diagnostics
+                        .into_iter()
+                        .map(|diagnostic| diagnostic.into_lsp(line_index))
+                        .collect_vec(),
                     version: document_source.version,
                 })
                 .await;
@@ -136,6 +144,7 @@ fn compute_text_edits(
     old_text: &str,
     new_text: &str,
     formatter_definitions: &FormatDefinitions,
+    line_index: &tombi_text::LineIndex,
 ) -> Vec<TextEdit> {
     let old_lines: Vec<&str> = old_text.lines().collect();
     let new_lines: Vec<&str> = new_text.lines().collect();
@@ -202,7 +211,7 @@ fn compute_text_edits(
     };
 
     vec![TextEdit {
-        range: Range::new(start_pos, end_pos).into(),
+        range: Range::new(start_pos, end_pos).into_lsp(line_index),
         new_text: replacement_text,
     }]
 }
@@ -210,13 +219,19 @@ fn compute_text_edits(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tombi_text::{Position, Range};
+    use tombi_text::{LineIndex, Position, Range, WideEncoding};
 
     #[test]
     fn test_compute_text_edits_no_changes() {
         let old_text = "hello world";
         let new_text = "hello world";
-        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(
+            old_text,
+            new_text,
+            &FormatDefinitions::default(),
+            &line_index,
+        );
         assert!(edits.is_empty());
     }
 
@@ -224,7 +239,13 @@ mod tests {
     fn test_compute_text_edits_simple_replacement() {
         let old_text = "hello world";
         let new_text = "hello universe";
-        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(
+            old_text,
+            new_text,
+            &FormatDefinitions::default(),
+            &line_index,
+        );
 
         assert_eq!(edits.len(), 1);
         let edit = &edits[0];
@@ -235,7 +256,7 @@ mod tests {
             Position::new(0, 0),  // Start of line 0
             Position::new(0, 11), // End of last character in line 0
         )
-        .into();
+        .into_lsp(&line_index);
         assert_eq!(edit.range, expected_range);
     }
 
@@ -243,7 +264,13 @@ mod tests {
     fn test_compute_text_edits_multiline() {
         let old_text = "line1\nline2\nline3";
         let new_text = "line1\nmodified line2\nline3";
-        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(
+            old_text,
+            new_text,
+            &FormatDefinitions::default(),
+            &line_index,
+        );
 
         assert_eq!(edits.len(), 1);
         let edit = &edits[0];
@@ -255,7 +282,7 @@ mod tests {
             Position::new(1, 0), // Start of line 1 (line2)
             Position::new(2, 0), // Start of line 2 (line3)
         )
-        .into();
+        .into_lsp(&line_index);
         assert_eq!(edit.range, expected_range);
     }
 }

@@ -7,11 +7,14 @@ use tombi_extension::CommentContext;
 use tombi_extension::CompletionContent;
 use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
+use tombi_extension::CompletionTextEdit;
+use tombi_extension::TextEdit;
 use tombi_future::Boxable;
 use tombi_schema_store::matches_accessors;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
 use tombi_version_sort::version_sort;
+use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::find_path_crate_cargo_toml;
 use crate::find_workspace_cargo_toml;
@@ -254,18 +257,14 @@ async fn complete_crate_version(
                 deprecated: None,
                 edit: match version_value {
                     Some(value) => Some(tombi_extension::CompletionEdit {
-                        text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                            tower_lsp::lsp_types::TextEdit {
-                                range: tombi_text::Range::at(position).into(),
-                                new_text: format!("\"{ver}\""),
-                            },
-                        ),
-                        insert_text_format: Some(
-                            tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT,
-                        ),
-                        additional_text_edits: Some(vec![tower_lsp::lsp_types::TextEdit {
-                            range: value.range().into(),
-                            new_text: "".to_string(),
+                        text_edit: CompletionTextEdit::Edit(tombi_extension::TextEdit {
+                            range: tombi_text::Range::at(position),
+                            new_text: format!("\"{ver}\""),
+                        }),
+                        insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+                        additional_text_edits: Some(vec![TextEdit {
+                            range: value.range(),
+                            new_text: String::new(),
                         }]),
                     }),
                     None => tombi_extension::CompletionEdit::new_literal(
@@ -407,16 +406,14 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 schema_uri: None,
                 deprecated: None,
                 edit: editing_feature_string.map(|value| tombi_extension::CompletionEdit {
-                    text_edit: tower_lsp::lsp_types::CompletionTextEdit::Edit(
-                        tower_lsp::lsp_types::TextEdit {
-                            range: tombi_text::Range::at(position).into(),
-                            new_text: format!("\"{feature}\""),
-                        },
-                    ),
-                    insert_text_format: Some(tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT),
-                    additional_text_edits: Some(vec![tower_lsp::lsp_types::TextEdit {
-                        range: value.range().into(),
-                        new_text: "".to_string(),
+                    text_edit: CompletionTextEdit::Edit(TextEdit {
+                        range: tombi_text::Range::at(position),
+                        new_text: format!("\"{feature}\""),
+                    }),
+                    insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+                    additional_text_edits: Some(vec![TextEdit {
+                        range: value.range(),
+                        new_text: String::new(),
                     }]),
                 }),
                 preselect: None,

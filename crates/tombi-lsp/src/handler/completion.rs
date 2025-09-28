@@ -1,6 +1,7 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint};
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionParams, CompletionTriggerKind, TextDocumentPositionParams,
 };
@@ -113,8 +114,10 @@ pub async fn handle_completion(
         }
     }
 
+    let line_index = document_source.line_index();
+
     let mut completion_items = Vec::new();
-    let position = position.into();
+    let position = position.into_lsp(line_index);
 
     let comment_context = get_comment_context(&root, position);
     let (document_tree, keys, completion_hint) = match &comment_context {

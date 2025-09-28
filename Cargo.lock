@@ -1994,12 +1994,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nohash-hasher"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
-
-[[package]]
 name = "nu-ansi-term"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3639,7 +3633,9 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
+ "serde_json",
  "tombi-ast",
+ "tombi-diagnostic",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3975,7 +3971,6 @@ dependencies = [
 name = "tombi-text"
 version = "0.0.0-dev"
 dependencies = [
- "nohash-hasher",
  "pretty_assertions",
  "rstest",
  "serde",
