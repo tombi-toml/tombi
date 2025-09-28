@@ -16,11 +16,14 @@
 /// but makes it much easier to implement features that work with the tree.
 ///
 mod features;
+mod line_index;
 mod offset;
 mod position;
 mod range;
 mod relative_position;
 mod span;
+mod traits;
+mod wide_encoding;
 
 type RawTextSize = u32;
 pub type RawOffset = RawTextSize;
@@ -29,8 +32,14 @@ pub type Line = RawTextSize;
 pub type Column = RawTextSize;
 
 pub use crate::{
-    offset::Offset, position::Position, range::Range, relative_position::RelativePosition,
+    line_index::LineIndex,
+    offset::Offset,
+    position::Position,
+    range::Range,
+    relative_position::RelativePosition,
     span::Span,
+    traits::{FromLsp, IntoLsp},
+    wide_encoding::WideEncoding,
 };
 
 #[cfg(target_pointer_width = "16")]
