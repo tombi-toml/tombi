@@ -1,6 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::IntoLsp;
+use crate::{features::lsp::WideEncoding, IntoLsp};
 
 pub trait FromLsp<T> {
     fn from_lsp(source: T, line_index: &crate::LineIndex) -> Self;
@@ -16,7 +16,7 @@ impl FromLsp<tower_lsp::lsp_types::Position> for crate::Position {
             .map(|line_text| {
                 let column_text =
                     take_column_text(line_text, source.character, line_index.wide_encoding);
-                crate::WideEncoding::GraphemeCluster.measure(column_text)
+                WideEncoding::GraphemeCluster.measure(column_text)
             })
             .unwrap_or_default();
 
@@ -70,11 +70,7 @@ impl FromLsp<crate::Range> for tower_lsp::lsp_types::Range {
     }
 }
 
-fn take_column_text<'a>(
-    line_text: &'a str,
-    target_units: u32,
-    encoding: crate::WideEncoding,
-) -> &'a str {
+fn take_column_text<'a>(line_text: &'a str, target_units: u32, encoding: WideEncoding) -> &'a str {
     if target_units == 0 {
         return "";
     }
@@ -103,7 +99,7 @@ fn take_column_text<'a>(
 #[cfg(test)]
 mod tests {
     use super::FromLsp;
-    use crate::{LineIndex, Position, WideEncoding};
+    use crate::{features::lsp::WideEncoding, LineIndex, Position};
 
     #[test]
     fn converts_utf16_column_to_graphemes() {
