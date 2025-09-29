@@ -27,16 +27,13 @@ impl<'a> SemanticTokensBuilder<'a> {
 
     pub fn add_token(&mut self, token_type: TokenType, elem: tombi_syntax::SyntaxElement) {
         let range: tombi_text::Range = elem.range();
-
-        let delta = tower_lsp::lsp_types::Position::from_lsp(
-            range.start - self.last_range.start,
-            self.line_index,
-        );
+        let (delta_line, delta_start) =
+            delta_line_and_start(self.last_range.start, range.start, self.line_index);
 
         #[allow(clippy::cast_possible_truncation)]
         self.tokens.push(SemanticToken {
-            delta_line: delta.line as u32,
-            delta_start: delta.character as u32,
+            delta_line,
+            delta_start,
             length: token_length(range, self.line_index),
             token_type: token_type as u32,
             token_modifiers_bitset: 0,
@@ -51,21 +48,21 @@ impl<'a> SemanticTokensBuilder<'a> {
         directive_range: tombi_text::Range,
     ) {
         let comment_range = comment.as_ref().syntax().range();
-
-        let delta = tower_lsp::lsp_types::Position::from_lsp(
-            comment_range.start - self.last_range.start,
-            self.line_index,
-        );
         let directive_range =
             tower_lsp::lsp_types::Range::from_lsp(directive_range, self.line_index);
+        let (delta_line, delta_start) =
+            delta_line_and_start(self.last_range.start, comment_range.start, self.line_index);
+
         self.last_range = comment_range;
+
         let comment_range = tower_lsp::lsp_types::Range::from_lsp(comment_range, self.line_index);
         let prefix_len = directive_range.start.character - comment_range.start.character;
         let directive_len = directive_range.end.character - directive_range.start.character;
+        let content_len = comment_range.end.character - directive_range.end.character;
 
         self.tokens.push(SemanticToken {
-            delta_line: delta.line as u32,
-            delta_start: delta.character as u32,
+            delta_line,
+            delta_start,
             length: prefix_len,
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
@@ -82,7 +79,7 @@ impl<'a> SemanticTokensBuilder<'a> {
         self.tokens.push(SemanticToken {
             delta_line: 0,
             delta_start: directive_len,
-            length: (comment_range.end.character - directive_range.end.character),
+            length: content_len,
             token_type: TokenType::COMMENT as u32,
             token_modifiers_bitset: 0,
         });
@@ -91,6 +88,22 @@ impl<'a> SemanticTokensBuilder<'a> {
     pub fn build(self) -> Vec<SemanticToken> {
         self.tokens
     }
+}
+
+fn delta_line_and_start(
+    start: tombi_text::Position,
+    end: tombi_text::Position,
+    line_index: &tombi_text::LineIndex,
+) -> (u32, u32) {
+    let delta_start = tower_lsp::lsp_types::Position::from_lsp(start, line_index);
+    let delta_end = tower_lsp::lsp_types::Position::from_lsp(end, line_index);
+    let line = delta_end.line - delta_start.line;
+    let start = if line == 0 {
+        delta_end.character - delta_start.character
+    } else {
+        delta_end.character
+    };
+    (line, start)
 }
 
 fn token_length(range: tombi_text::Range, line_index: &tombi_text::LineIndex) -> u32 {

@@ -931,7 +931,7 @@ mod completion_labels {
             async fn pyproject_project_description_comment_directive(
                 r#"
                 [project]
-                description = "🦅 TOML Toolkit 🦅 " # tombi: lint█
+                description = "🦅 TOML Toolkit 🦅" # tombi: lint█
                 "#,
                 Schema(pyproject_schema_path()),
             ) -> Ok([

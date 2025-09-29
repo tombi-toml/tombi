@@ -46,17 +46,6 @@ impl FromLsp<crate::Position> for tower_lsp::lsp_types::Position {
     }
 }
 
-impl FromLsp<crate::RelativePosition> for tower_lsp::lsp_types::Position {
-    #[inline]
-    fn from_lsp(
-        source: crate::RelativePosition,
-        line_index: &crate::LineIndex,
-    ) -> tower_lsp::lsp_types::Position {
-        let source = crate::Position::new(source.line, source.column);
-        tower_lsp::lsp_types::Position::from_lsp(source, line_index)
-    }
-}
-
 impl FromLsp<tower_lsp::lsp_types::Range> for crate::Range {
     fn from_lsp(
         source: tower_lsp::lsp_types::Range,
