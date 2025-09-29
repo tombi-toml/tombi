@@ -264,7 +264,7 @@ async fn complete_crate_version(
                         insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
                         additional_text_edits: Some(vec![TextEdit {
                             range: value.range(),
-                            new_text: String::new(),
+                            new_text: "".to_string(),
                         }]),
                     }),
                     None => tombi_extension::CompletionEdit::new_literal(
