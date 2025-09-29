@@ -54,7 +54,7 @@ impl From<WideEncoding> for tower_lsp::lsp_types::PositionEncodingKind {
             WideEncoding::Utf8 => PositionEncodingKind::UTF8,
             WideEncoding::Utf16 => PositionEncodingKind::UTF16,
             WideEncoding::Utf32 => PositionEncodingKind::UTF32,
-            WideEncoding::GraphemeCluster => unreachable!("GraphemeCluster is not supported"),
+            WideEncoding::GraphemeCluster => unreachable!("Cannot convert WideEncoding::GraphemeCluster to PositionEncodingKind: GraphemeCluster is not supported by LSP"),
         }
     }
 }
