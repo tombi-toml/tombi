@@ -131,7 +131,11 @@ fn token_length(range: tombi_text::Range, line_index: &tombi_text::LineIndex) ->
                         0
                     };
                     let take_count = if line == range.end.line {
-                        (range.end.column - range.start.column) as usize
+                        if range.end.line == range.start.line {
+                            (range.end.column - range.start.column) as usize
+                        } else {
+                            range.end.column as usize
+                        }
                     } else {
                         line_text_graphemes.size_hint().1.unwrap()
                     };
