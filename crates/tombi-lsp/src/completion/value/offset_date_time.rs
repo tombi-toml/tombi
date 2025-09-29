@@ -1,4 +1,6 @@
-use tombi_comment_directive::value::OffsetDateTimeCommonRules;
+use tombi_comment_directive::value::{
+    OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules,
+};
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, SchemaUri};
@@ -30,11 +32,10 @@ impl FindCompletionContents for tombi_document_tree::OffsetDateTime {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<OffsetDateTimeCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    OffsetDateTimeCommonFormatRules,
+                    OffsetDateTimeCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,

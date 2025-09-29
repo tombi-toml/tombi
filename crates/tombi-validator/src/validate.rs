@@ -24,15 +24,6 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 use tombi_severity_level::SeverityLevelDefaultError;
 
-pub trait Validate {
-    fn validate<'a: 'b, 'b>(
-        &'a self,
-        accessors: &'a [tombi_schema_store::Accessor],
-        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
-        schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>>;
-}
-
 pub fn validate<'a: 'b, 'b>(
     tree: tombi_document_tree::DocumentTree,
     source_schema: Option<&'a tombi_schema_store::SourceSchema>,
@@ -52,7 +43,7 @@ pub fn validate<'a: 'b, 'b>(
             })
         });
 
-        if let Err(diagnostics) = tree
+        if let Err(crate::Error { diagnostics, .. }) = tree
             .validate(&[], current_schema.as_ref(), schema_context)
             .await
         {
@@ -64,12 +55,21 @@ pub fn validate<'a: 'b, 'b>(
     .boxed()
 }
 
+pub trait Validate {
+    fn validate<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [tombi_schema_store::Accessor],
+        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext,
+    ) -> BoxFuture<'b, Result<(), crate::Error>>;
+}
+
 fn type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,
     range: tombi_text::Range,
-    common_rules: Option<&tombi_comment_directive::value::CommonRules>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
 
     let level = common_rules
@@ -90,6 +90,9 @@ fn type_mismatch(
     if diagnostics.is_empty() {
         Ok(())
     } else {
-        Err(diagnostics)
+        Err(crate::Error {
+            score: 0,
+            diagnostics,
+        })
     }
 }

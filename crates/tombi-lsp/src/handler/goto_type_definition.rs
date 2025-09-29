@@ -1,6 +1,7 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaContext;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::request::GotoTypeDefinitionParams;
 
 use crate::{
@@ -51,7 +52,13 @@ pub async fn handle_goto_type_definition(
         return Ok(Default::default());
     }
 
-    let position = position.into();
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(Default::default());
+    };
+    let line_index = document_source.line_index();
+
+    let position = position.into_lsp(line_index);
     let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         return Ok(Default::default());
     };

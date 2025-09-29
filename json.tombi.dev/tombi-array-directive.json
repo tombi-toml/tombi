@@ -3,6 +3,17 @@
   "title": "TombiValueDirectiveContent",
   "type": "object",
   "properties": {
+    "format": {
+      "title": "Formatter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "lint": {
       "title": "Linter options",
       "anyOf": [
@@ -17,14 +28,14 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "LintOptions": {
+    "FormatOptions": {
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules",
+          "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithCommonRules"
+              "$ref": "#/definitions/WithCommonFormatRules"
             },
             {
               "type": "null"
@@ -34,7 +45,79 @@
       },
       "additionalProperties": false
     },
-    "WithCommonRules": {
+    "WithCommonFormatRules": {
+      "type": "object",
+      "properties": {
+        "array-values-order": {
+          "title": "Array values order",
+          "description": "Control the sorting method of the array.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SortOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "SortOptions": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SortMethod"
+        },
+        {
+          "$ref": "#/definitions/SortDisabledOptions"
+        }
+      ]
+    },
+    "SortMethod": {
+      "type": "string",
+      "enum": [
+        "ascending",
+        "descending",
+        "version-sort"
+      ]
+    },
+    "SortDisabledOptions": {
+      "type": "object",
+      "properties": {
+        "disabled": {
+          "title": "Sort disabled",
+          "description": "If `true`, Sort is disabled for this value.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true
+          ],
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "LintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WithCommonLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "WithCommonLintRules": {
       "type": "object",
       "properties": {
         "type-mismatch": {
@@ -86,7 +169,7 @@
           ]
         },
         "array-max-values": {
-          "title": "Maximum values",
+          "title": "Max values",
           "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
           "anyOf": [
             {
@@ -98,7 +181,7 @@
           ]
         },
         "array-min-values": {
-          "title": "Minimum values",
+          "title": "Min values",
           "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
           "anyOf": [
             {

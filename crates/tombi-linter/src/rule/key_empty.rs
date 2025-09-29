@@ -1,10 +1,10 @@
 use tombi_ast::AstNode;
+use tombi_comment_directive::value::{KeyCommonExtensibleLintRules, KeyFormatRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_config::SeverityLevel;
 use tombi_severity_level::SeverityLevelDefaultWarn;
-use tombi_validator::comment_directive::get_tombi_key_rules_and_diagnostics;
 
 use crate::Rule;
-use itertools::Itertools;
 
 pub struct KeyEmptyRule;
 
@@ -61,19 +61,20 @@ async fn check_key_empty(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let level = get_tombi_key_rules_and_diagnostics(&comment_directives.collect_vec())
-        .await
-        .0
-        .as_ref()
-        .map(|rules| &rules.value)
-        .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
-        .unwrap_or_else(|| {
-            l.options()
-                .rules
-                .as_ref()
-                .and_then(|rules| rules.key_empty)
-                .unwrap_or_default()
-        });
+    let level = get_comment_directive_content::<KeyFormatRules, KeyCommonExtensibleLintRules>(
+        comment_directives,
+    )
+    .as_ref()
+    .and_then(|comment_directive| comment_directive.lint_rules())
+    .map(|rules| &rules.value)
+    .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
+    .unwrap_or_else(|| {
+        l.options()
+            .rules
+            .as_ref()
+            .and_then(|rules| rules.key_empty)
+            .unwrap_or_default()
+    });
 
     if level == SeverityLevel::Off {
         return;

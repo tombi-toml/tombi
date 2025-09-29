@@ -1,4 +1,5 @@
-use tombi_x_keyword::{ArrayValuesOrder, StringFormat, TableKeysOrder};
+use tombi_schema_store::{XTombiArrayValuesOrder, XTombiTableKeysOrder};
+use tombi_x_keyword::{ArrayValuesOrderBy, ArrayValuesOrderGroup, StringFormat};
 
 use super::display_value::DisplayValue;
 
@@ -61,7 +62,7 @@ pub struct ValueConstraints {
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
     pub unique_items: Option<bool>,
-    pub values_order: Option<ArrayValuesOrder>,
+    pub values_order: Option<XTombiArrayValuesOrder>,
 
     // Table
     pub required_keys: Option<Vec<String>>,
@@ -69,7 +70,9 @@ pub struct ValueConstraints {
     pub max_keys: Option<usize>,
     pub key_patterns: Option<Vec<String>>,
     pub additional_keys: Option<bool>,
-    pub keys_order: Option<TableKeysOrder>,
+    pub pattern_keys: bool,
+    pub keys_order: Option<XTombiTableKeysOrder>,
+    pub array_values_order_by: Option<ArrayValuesOrderBy>,
 }
 
 impl std::fmt::Display for ValueConstraints {
@@ -115,11 +118,11 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(min_length) = self.min_length {
-            write!(f, "Minimum Length: `{min_length}`\n\n")?;
+            write!(f, "Min Length: `{min_length}`\n\n")?;
         }
 
         if let Some(max_length) = self.max_length {
-            write!(f, "Maximum Length: `{max_length}`\n\n")?;
+            write!(f, "Max Length: `{max_length}`\n\n")?;
         }
 
         if let Some(format) = &self.format {
@@ -131,19 +134,37 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(min_items) = self.min_items {
-            write!(f, "Minimum Items: `{min_items}`\n\n")?;
+            write!(f, "Min Values: `{min_items}`\n\n")?;
         }
 
         if let Some(max_items) = self.max_items {
-            write!(f, "Maximum Items: `{max_items}`\n\n")?;
+            write!(f, "Max Values: `{max_items}`\n\n")?;
         }
 
         if self.unique_items.unwrap_or(false) {
-            write!(f, "Unique Items: `true`\n\n")?;
+            write!(f, "Unique Values: `true`\n\n")?;
         }
 
         if let Some(values_order) = &self.values_order {
-            write!(f, "Values Order: `{values_order}`\n\n")?;
+            match values_order {
+                XTombiArrayValuesOrder::All(values_order) => {
+                    write!(f, "Values Order: `{values_order}`\n\n")?
+                }
+                XTombiArrayValuesOrder::Groups(values_order) => match values_order {
+                    ArrayValuesOrderGroup::OneOf(values_order) => {
+                        write!(f, "Values Order: `oneOf`\n\n")?;
+                        for value in values_order.iter() {
+                            write!(f, "  - `{value}`\n\n")?;
+                        }
+                    }
+                    ArrayValuesOrderGroup::AnyOf(values_order) => {
+                        write!(f, "Values Order: `anyOf`\n\n")?;
+                        for value in values_order.iter() {
+                            write!(f, "  - `{value}`\n\n")?;
+                        }
+                    }
+                },
+            }
         }
 
         if let Some(required_keys) = &self.required_keys {
@@ -154,11 +175,11 @@ impl std::fmt::Display for ValueConstraints {
         }
 
         if let Some(min_keys) = self.min_keys {
-            write!(f, "Minimum Keys: `{min_keys}`\n\n")?;
+            write!(f, "Min Keys: `{min_keys}`\n\n")?;
         }
 
         if let Some(max_keys) = self.max_keys {
-            write!(f, "Maximum Keys: `{max_keys}`\n\n")?;
+            write!(f, "Max Keys: `{max_keys}`\n\n")?;
         }
 
         if let Some(key_patterns) = &self.key_patterns {
@@ -172,8 +193,26 @@ impl std::fmt::Display for ValueConstraints {
             write!(f, "Additional Keys: `true`\n\n")?;
         }
 
+        if self.pattern_keys {
+            write!(f, "Pattern Keys: `true`\n\n")?;
+        }
+
         if let Some(keys_order) = &self.keys_order {
-            write!(f, "Keys Order: `{keys_order}`\n\n")?;
+            match keys_order {
+                XTombiTableKeysOrder::All(keys_order) => {
+                    write!(f, "Keys Order: `{keys_order}`\n\n")?
+                }
+                XTombiTableKeysOrder::Groups(keys_order) => {
+                    write!(f, "Keys Order:\n\n")?;
+                    for key in keys_order.iter() {
+                        write!(f, "  - {}: `{}`\n\n", key.target, key.order)?;
+                    }
+                }
+            }
+        }
+
+        if let Some(array_values_order_by) = &self.array_values_order_by {
+            write!(f, "Array Values Order By: `{array_values_order_by}`\n\n")?;
         }
 
         Ok(())

@@ -7,11 +7,14 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+ahash.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 regex.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
+tombi-comment-directive.workspace = true
+tombi-comment-directive-serde.workspace = true
 tombi-document-tree.workspace = true
 tombi-future.workspace = true
 tombi-parser.workspace = true

@@ -1,6 +1,6 @@
-import { SUPPORT_TOML_LANGUAGES } from "@/extension";
 import * as vscode from "vscode";
 import type * as languageclient from "vscode-languageclient";
+import { SUPPORT_TOML_LANGUAGES } from "@/extension";
 
 export function clientOptions(
   workspaceFolder?: vscode.WorkspaceFolder,

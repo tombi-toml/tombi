@@ -3,6 +3,17 @@
   "title": "TombiValueDirectiveContent",
   "type": "object",
   "properties": {
+    "format": {
+      "title": "Formatter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "lint": {
       "title": "Linter options",
       "anyOf": [
@@ -17,14 +28,14 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "LintOptions": {
+    "FormatOptions": {
       "type": "object",
       "properties": {
         "rules": {
-          "title": "Lint rules",
+          "title": "Format rules",
           "anyOf": [
             {
-              "$ref": "#/definitions/WithKeyTableRules"
+              "$ref": "#/definitions/WithKeyFormatRules"
             },
             {
               "type": "null"
@@ -34,7 +45,29 @@
       },
       "additionalProperties": false
     },
-    "WithKeyTableRules": {
+    "WithKeyFormatRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "LintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/WithKeyTableLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "WithKeyTableLintRules": {
       "type": "object",
       "properties": {
         "key-empty": {
@@ -86,7 +119,7 @@
           ]
         },
         "table-max-keys": {
-          "title": "Maximum keys",
+          "title": "Max keys",
           "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
           "anyOf": [
             {
@@ -98,7 +131,7 @@
           ]
         },
         "table-min-keys": {
-          "title": "Minimum keys",
+          "title": "Min keys",
           "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
           "anyOf": [
             {

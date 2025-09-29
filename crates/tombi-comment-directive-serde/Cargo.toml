@@ -1,0 +1,15 @@
+[package]
+name = "tombi-comment-directive-serde"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+tombi-ast.workspace = true
+tombi-comment-directive.workspace = true
+tombi-document.workspace = true
+tombi-document-tree.workspace = true
+tombi-parser.workspace = true

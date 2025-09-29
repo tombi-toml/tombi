@@ -42,7 +42,7 @@ tombi-parser.workspace = true
 tombi-rg-tree.workspace = true
 tombi-schema-store = { workspace = true, features = ["document-tree"] }
 tombi-syntax.workspace = true
-tombi-text.workspace = true
+tombi-text = { workspace = true, features = ["lsp"] }
 tombi-uri.workspace = true
 tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
@@ -59,7 +59,7 @@ tokio = { workspace = true, features = ["fs", "macros", "rt"] }
 tombi-test-lib.workspace = true
 
 [features]
-clap = ["dep:clap"]
 default = ["clap", "native"]
+clap = ["dep:clap"]
 native = ["tombi-schema-store/native"]
 wasm = ["tombi-schema-store/wasm"]

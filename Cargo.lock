@@ -566,16 +566,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clap-verbosity-flag"
-version = "3.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eeab6a5cdfc795a05538422012f20a5496f050223c91be4e5420bfd13c641fb1"
-dependencies = [
- "clap",
- "log",
-]
-
-[[package]]
 name = "clap_builder"
 version = "4.5.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -585,6 +575,15 @@ dependencies = [
  "anstyle",
  "clap_lex",
  "strsim",
+]
+
+[[package]]
+name = "clap_complete"
+version = "4.5.58"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75bf0b32ad2e152de789bb635ea4d3078f6b838ad7974143e99b99f45a04af4a"
+dependencies = [
+ "clap",
 ]
 
 [[package]]
@@ -3005,6 +3004,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
+
+[[package]]
 name = "slab"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3454,11 +3459,14 @@ dependencies = [
 name = "tombi-ast-editor"
 version = "0.0.0-dev"
 dependencies = [
+ "ahash",
  "indexmap",
  "itertools 0.14.0",
  "regex",
  "thiserror 2.0.12",
  "tombi-ast",
+ "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-document-tree",
  "tombi-future",
  "tombi-parser",
@@ -3487,11 +3495,12 @@ name = "tombi-cli"
 version = "0.0.0-dev"
 dependencies = [
  "clap",
- "clap-verbosity-flag",
+ "clap_complete",
  "itertools 0.14.0",
  "nu-ansi-term 0.50.1",
  "regex",
  "serde_tombi",
+ "similar",
  "thiserror 2.0.12",
  "tokio",
  "tombi-cache",
@@ -3518,6 +3527,18 @@ dependencies = [
  "tombi-toml-version",
  "tombi-uri",
  "tombi-x-keyword",
+]
+
+[[package]]
+name = "tombi-comment-directive-serde"
+version = "0.0.0-dev"
+dependencies = [
+ "serde",
+ "tombi-ast",
+ "tombi-comment-directive",
+ "tombi-document",
+ "tombi-document-tree",
+ "tombi-parser",
 ]
 
 [[package]]
@@ -3561,7 +3582,6 @@ name = "tombi-diagnostic"
 version = "0.0.0-dev"
 dependencies = [
  "clap",
- "clap-verbosity-flag",
  "nu-ansi-term 0.50.1",
  "serde",
  "tombi-text",
@@ -3613,6 +3633,9 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
+ "serde_json",
+ "tombi-ast",
+ "tombi-diagnostic",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3791,6 +3814,7 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-comment-directive",
+ "tombi-comment-directive-serde",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-document-tree",
@@ -4014,6 +4038,7 @@ name = "tombi-version-sort"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "pretty_assertions",
 ]
 
 [[package]]
@@ -5039,7 +5064,7 @@ dependencies = [
 
 [[package]]
 name = "zed-tombi"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "zed_extension_api",
 ]

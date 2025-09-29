@@ -292,23 +292,6 @@ mod tests {
             r#"
             array = [
               1  # comment
-            ]
-            "#
-        ) -> Ok(
-            r#"
-            array = [
-              1,  # comment
-            ]
-            "#
-        );
-    }
-
-    test_format! {
-        #[test]
-        fn multiline_array6(
-            r#"
-            array = [
-              1  # comment
               ,
             ]
             "#

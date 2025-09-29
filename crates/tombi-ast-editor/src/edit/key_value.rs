@@ -1,74 +1,58 @@
-use std::borrow::Cow;
+use std::sync::Arc;
 
-use itertools::Itertools;
-use tombi_document_tree::TryIntoDocumentTree;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{Accessor, CurrentSchema};
+use tombi_schema_store::Accessor;
 
-use super::get_schema;
+use crate::edit::edit_recursive;
 
 impl crate::Edit for tombi_ast::KeyValue {
     fn edit<'a: 'b, 'b>(
         &'a self,
-        _accessors: &'a [tombi_schema_store::Accessor],
+        node: &'a tombi_document_tree::Value,
+        accessors: &'a [Accessor],
         source_path: Option<&'a std::path::Path>,
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
-            let mut changes = vec![];
+            tracing::trace!("node = {:?}", node);
+            tracing::trace!("accessors = {:?}", accessors);
+            tracing::trace!("current_schema = {:?}", current_schema);
 
-            let Some(keys) = self.keys() else {
-                return changes;
+            let Some(key_accessors) = self.get_accessors(schema_context.toml_version) else {
+                return Vec::with_capacity(0);
             };
 
-            let keys_accessors = keys
-                .keys()
-                .filter_map(|key| {
-                    key.try_to_raw_text(schema_context.toml_version)
-                        .ok()
-                        .map(Accessor::Key)
-                })
-                .collect_vec();
+            edit_recursive(
+                node,
+                |node, accessors, current_schema| {
+                    async move {
+                        tracing::trace!("node = {:?}", node);
+                        tracing::trace!("accessors = {:?}", accessors);
+                        tracing::trace!("current_schema = {:?}", current_schema);
 
-            if let Some(current_schema) = current_schema {
-                if let Some(value_schema) = get_schema(
-                    &tombi_document_tree::Value::Table(
-                        self.clone()
-                            .try_into_document_tree(schema_context.toml_version)
-                            .unwrap(),
-                    ),
-                    &keys_accessors.clone(),
-                    current_schema,
-                    schema_context,
-                )
-                .await
-                {
-                    if let Some(value) = self.value() {
-                        changes.extend(
+                        if let Some(value) = self.value() {
                             value
                                 .edit(
-                                    &[],
+                                    node,
+                                    &accessors,
                                     source_path,
-                                    Some(&CurrentSchema {
-                                        value_schema: Cow::Owned(value_schema),
-                                        schema_uri: current_schema.schema_uri.clone(),
-                                        definitions: current_schema.definitions.clone(),
-                                    }),
+                                    current_schema.as_ref(),
                                     schema_context,
                                 )
-                                .await,
-                        );
-                        return changes;
+                                .await
+                        } else {
+                            Vec::with_capacity(0)
+                        }
                     }
-                }
-            }
-
-            if let Some(value) = self.value() {
-                changes.extend(value.edit(&[], source_path, None, schema_context).await);
-            }
-
-            changes
+                    .boxed()
+                },
+                &key_accessors,
+                Arc::from(accessors.to_vec()),
+                current_schema.cloned(),
+                schema_context,
+            )
+            .await
         }
         .boxed()
     }

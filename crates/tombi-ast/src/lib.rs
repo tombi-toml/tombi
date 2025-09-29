@@ -90,25 +90,33 @@ impl<N: AstNode> Iterator for AstChildren<N> {
     }
 }
 
-pub trait GetHeaderSchemarAccessors {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>>;
+pub trait GetHeaderAccessors {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>>;
 }
 
-impl GetHeaderSchemarAccessors for crate::Table {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
+impl GetHeaderAccessors for crate::Table {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
-            .array_of_tables_keys()
-            .map(|keys| keys.into_iter().collect_vec())
+            .array_of_tables_keys(toml_version)
+            .map(|keys| {
+                keys.into_iter()
+                    .map(|key| key.to_raw_text(toml_version))
+                    .collect_vec()
+            })
             .counts();
 
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
-            header_keys.push(key);
+            let key_text = key.to_raw_text(toml_version);
+            accessors.push(Accessor::Key(key_text.clone()));
+            header_keys.push(key_text);
 
-            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-                accessors.push(Accessor::Index(*new_index));
+            if let Some(index) = array_of_tables_keys
+                .get(&header_keys)
+                .map(|count| count - 1)
+            {
+                accessors.push(Accessor::Index(index));
             }
         }
 
@@ -116,21 +124,29 @@ impl GetHeaderSchemarAccessors for crate::Table {
     }
 }
 
-impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
-    fn get_header_accessor(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
+impl GetHeaderAccessors for crate::ArrayOfTable {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
             .array_of_tables_keys()
-            .map(|keys| keys.into_iter().collect_vec())
+            .map(|keys| {
+                keys.into_iter()
+                    .map(|key| key.to_raw_text(toml_version))
+                    .collect_vec()
+            })
             .counts();
 
         let mut accessors = vec![];
         let mut header_keys = vec![];
         for key in self.header()?.keys() {
-            accessors.push(Accessor::Key(key.try_to_raw_text(toml_version).ok()?));
-            header_keys.push(key);
+            let key_text = key.to_raw_text(toml_version);
+            accessors.push(Accessor::Key(key_text.clone()));
+            header_keys.push(key_text);
 
-            if let Some(new_index) = array_of_tables_keys.get(&header_keys) {
-                accessors.push(Accessor::Index(*new_index));
+            if let Some(index) = array_of_tables_keys
+                .get(&header_keys)
+                .map(|count| count - 1)
+            {
+                accessors.push(Accessor::Index(index));
             }
         }
 
@@ -139,5 +155,16 @@ impl GetHeaderSchemarAccessors for crate::ArrayOfTable {
         ));
 
         Some(accessors)
+    }
+}
+
+impl GetHeaderAccessors for crate::TableOrArrayOfTable {
+    fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
+        match self {
+            crate::TableOrArrayOfTable::Table(table) => table.get_header_accessors(toml_version),
+            crate::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                array_of_table.get_header_accessors(toml_version)
+            }
+        }
     }
 }

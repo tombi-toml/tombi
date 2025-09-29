@@ -2,6 +2,7 @@ use itertools::Either;
 use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::get_tombi_github_uri;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
 
 use crate::{config_manager::ConfigSchemaStore, Backend};
@@ -40,6 +41,12 @@ pub async fn handle_document_link(
         return Ok(None);
     };
 
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(None);
+    };
+    let line_index = document_source.line_index();
+
     let mut document_links = vec![];
 
     if let Some(SchemaDocumentCommentDirective {
@@ -55,7 +62,7 @@ pub async fn handle_document_link(
                 target: get_tombi_github_uri(&schema_uri).unwrap_or(schema_uri.into()),
                 tooltip,
             }
-            .into(),
+            .into_lsp(line_index),
         );
     }
 
@@ -82,20 +89,32 @@ pub async fn handle_document_link(
         tombi_extension_cargo::document_link(&text_document_uri, &document_tree, toml_version)
             .await?
     {
-        document_links.extend(locations.into_iter().map(Into::into));
+        document_links.extend(
+            locations
+                .into_iter()
+                .map(|location| location.into_lsp(line_index)),
+        );
     }
 
     if let Some(locations) =
         tombi_extension_tombi::document_link(&text_document_uri, &document_tree, toml_version)
             .await?
     {
-        document_links.extend(locations.into_iter().map(Into::into));
+        document_links.extend(
+            locations
+                .into_iter()
+                .map(|location| location.into_lsp(line_index)),
+        );
     }
 
     if let Some(locations) =
         tombi_extension_uv::document_link(&text_document_uri, &document_tree, toml_version).await?
     {
-        document_links.extend(locations.into_iter().map(Into::into));
+        document_links.extend(
+            locations
+                .into_iter()
+                .map(|location| location.into_lsp(line_index)),
+        );
     }
 
     Ok(Some(document_links))

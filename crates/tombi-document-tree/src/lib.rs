@@ -135,7 +135,7 @@ pub fn get_accessors(
 
     for key in keys {
         current_value = find_value_in_current(current_value, key, &mut accessors, position);
-        accessors.push(tombi_accessor::Accessor::Key(key.value().to_string()));
+        accessors.push(tombi_accessor::Accessor::Key(key.value.clone()));
     }
 
     if let crate::Value::Array(array) = current_value {

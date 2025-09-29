@@ -1,7 +1,9 @@
 use std::{borrow::Cow, sync::Arc};
 
 use tombi_future::{BoxFuture, Boxable};
-use tombi_x_keyword::{ArrayValuesOrder, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER};
+use tombi_x_keyword::{
+    ArrayValuesOrder, ArrayValuesOrderGroup, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER,
+};
 
 use super::{
     CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUri,
@@ -22,7 +24,7 @@ pub struct ArraySchema {
     pub default: Option<tombi_json::Value>,
     pub const_value: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
-    pub values_order: Option<ArrayValuesOrder>,
+    pub values_order: Option<XTombiArrayValuesOrder>,
     pub deprecated: Option<bool>,
 }
 
@@ -66,27 +68,7 @@ impl ArraySchema {
                 .map(|array| array.items.iter().map(|v| v.into()).collect()),
             values_order: object
                 .get(X_TOMBI_ARRAY_VALUES_ORDER)
-                .and_then(|order| match order {
-                    tombi_json::ValueNode::String(string) => {
-                        match ArrayValuesOrder::try_from(string.value.as_ref()) {
-                            Ok(val) => Some(val),
-                            Err(_) => {
-                                tracing::warn!(
-                                    "Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}",
-                                    string.value
-                                );
-                                None
-                            }
-                        }
-                    }
-                    _ => {
-                        tracing::warn!(
-                            "Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}",
-                            order.to_string()
-                        );
-                        None
-                    }
-                }),
+                .and_then(XTombiArrayValuesOrder::new),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
             range: object.range,
         }
@@ -141,5 +123,84 @@ impl FindSchemaCandidates for ArraySchema {
             (candidates, errors)
         }
         .boxed()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum XTombiArrayValuesOrder {
+    All(ArrayValuesOrder),
+    Groups(ArrayValuesOrderGroup),
+}
+
+impl XTombiArrayValuesOrder {
+    pub fn new(value_node: &tombi_json::ValueNode) -> Option<Self> {
+        match value_node {
+            tombi_json::ValueNode::String(string) => {
+                match ArrayValuesOrder::try_from(string.value.as_ref()) {
+                    Ok(val) => return Some(XTombiArrayValuesOrder::All(val)),
+                    Err(_) => {
+                        tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
+                    }
+                }
+            }
+            tombi_json::ValueNode::Object(object_node) => {
+                for (group_name, group_orders) in &object_node.properties {
+                    match group_name.value.as_str() {
+                        "oneOf" => {
+                            if let Some(group_orders) = group_orders.as_array() {
+                                let mut orders = vec![];
+                                for order in &group_orders.items {
+                                    match order
+                                        .as_str()
+                                        .and_then(|v| ArrayValuesOrder::try_from(v).ok())
+                                    {
+                                        Some(val) => orders.push(val),
+                                        None => {
+                                            tracing::warn!(
+                                                "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
+                                                group_orders.to_string()
+                                            );
+                                        }
+                                    }
+                                }
+                                return Some(XTombiArrayValuesOrder::Groups(
+                                    ArrayValuesOrderGroup::OneOf(orders),
+                                ));
+                            }
+                        }
+                        "anyOf" => {
+                            if let Some(group_orders) = group_orders.as_array() {
+                                let mut orders = vec![];
+                                for order in &group_orders.items {
+                                    match order
+                                        .as_str()
+                                        .and_then(|v| ArrayValuesOrder::try_from(v).ok())
+                                    {
+                                        Some(val) => orders.push(val),
+                                        None => {
+                                            tracing::warn!(
+                                                "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
+                                                group_orders.to_string()
+                                            );
+                                        }
+                                    }
+                                }
+                                return Some(XTombiArrayValuesOrder::Groups(
+                                    ArrayValuesOrderGroup::AnyOf(orders),
+                                ));
+                            }
+                        }
+                        _ => {
+                            tracing::warn!(
+                                "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} group: {}",
+                                group_name.value
+                            );
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+        None
     }
 }

@@ -614,6 +614,7 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
+                "format",
                 "lint",
             ]);
         }
@@ -789,6 +790,7 @@ mod completion_labels {
                 "tox",
                 "ty",
                 "uv",
+                "$tool_name",
             ]);
         }
 
@@ -929,7 +931,7 @@ mod completion_labels {
             async fn pyproject_project_description_comment_directive(
                 r#"
                 [project]
-                description = "🦅 TOML Toolkit 🦅 " # tombi: lint█
+                description = "🦅 TOML Toolkit 🦅" # tombi: lint█
                 "#,
                 Schema(pyproject_schema_path()),
             ) -> Ok([
@@ -989,6 +991,35 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_dependencies_and_next_section(
+                r#"
+                [dependencies]
+
+                [█]
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "badges",
+                "bench",
+                "bin",
+                "build-dependencies",
+                "dependencies",
+                "dev-dependencies",
+                "example",
+                "features",
+                "lib",
+                "lints",
+                "package",
+                "patch",
+                "profile",
+                "target",
+                "test",
+                "workspace",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_dependencies(
                 r#"
                 [dependencies]
@@ -996,7 +1027,7 @@ mod completion_labels {
                 "#,
                 Schema(cargo_schema_path()),
             ) -> Ok([
-                "$key",
+                "$crate_name",
             ]);
         }
 
@@ -1186,6 +1217,20 @@ mod completion_labels {
                 "\"serde\"",
                 "\"\"",
                 "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_patch(
+                r#"
+                [patch]
+                █
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "crates-io",
+                "$source_url_or_registry_name"
             ]);
         }
     }
@@ -1516,6 +1561,7 @@ mod completion_labels {
                     LspService,
                 };
                 use tombi_lsp::handler::handle_did_open;
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -1571,6 +1617,8 @@ mod completion_labels {
                             .into(),
                     );
                 };
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
 
                 let toml_file_url = match $source_file_path {
                     Some(path) => {
@@ -1605,7 +1653,7 @@ mod completion_labels {
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into(),
+                            .into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                         partial_result_params: PartialResultParams {
@@ -1621,7 +1669,7 @@ mod completion_labels {
 
                 let labels = completions
                     .into_iter()
-                    .map(|content| Into::<CompletionItem>::into(content))
+                    .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
                         a.sort_text
                             .as_ref()
@@ -1767,6 +1815,7 @@ mod completion_labels {
                     LspService,
                 };
                 use tombi_lsp::handler::handle_did_open;
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -1848,6 +1897,9 @@ mod completion_labels {
                     );
                 };
 
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
+
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
@@ -1874,7 +1926,7 @@ mod completion_labels {
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into(),
+                            .into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                         partial_result_params: PartialResultParams {
@@ -1890,7 +1942,7 @@ mod completion_labels {
 
                 let labels = completions
                     .into_iter()
-                    .map(|content| Into::<CompletionItem>::into(content))
+                    .map(|content| IntoLsp::<CompletionItem>::into_lsp(content, &line_index))
                     .sorted_by(|a, b| {
                         a.sort_text
                             .as_ref()

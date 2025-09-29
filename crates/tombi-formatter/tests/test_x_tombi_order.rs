@@ -197,6 +197,100 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_dependency_groups_multiple_lines_include_group(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  { include-group = "stub" },
+                  "pytest>=8.3.3",
+                  { include-group = "ci" },
+                  "ruff>=0.7.4",
+                ]
+                ci = [
+                  "ruff>=0.7.4",
+                  "pytest-ci>=0.0.0",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "tombi"
+                version = "1.0.0"
+                requires-python = ">=3.10"
+                dependencies = []
+
+                [dependency-groups]
+                dev = [
+                  "pytest>=8.3.3",
+                  "ruff>=0.7.4",
+                  { include-group = "ci" },
+                  { include-group = "stub" },
+                ]
+                ci = [
+                  "pytest-ci>=0.0.0",
+                  "ruff>=0.7.4",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_dependency_groups_multiple_lines_include_group_with_comment_directive_array_values_order_ascending(
+                r#"
+                [dependency-groups]
+                # tombi: format.rules.array-values-order = "ascending"
+                dev = [
+                  { include-group = "stub" },
+                  "pytest>=8.3.3",
+                  { include-group = "ci" },
+                  "ruff>=0.7.4",
+                ]
+                ci = [
+                  "ruff>=0.7.4",
+                  "pytest-ci>=0.0.0",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                # tombi: format.rules.array-values-order = "ascending"
+                dev = [
+                  { include-group = "ci" },
+                  "pytest>=8.3.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub" },
+                ]
+                ci = [
+                  "pytest-ci>=0.0.0",
+                  "ruff>=0.7.4",
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_tool_poetry_dependencies(
                 r#"
                 [project]
@@ -264,6 +358,28 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_maturin_include(
+                r#"
+                [tool.maturin]
+                include = [
+                  { path = "json.schemastore.org/**/*.json", format = "sdist" },
+                  { path = "json.tombi.dev/**/*.json", format = "sdist" },
+                ]
+                "#,
+                pyproject_schema_path(),
+            ) -> Ok(
+                r#"
+                [tool.maturin]
+                include = [
+                  { format = "sdist", path = "json.schemastore.org/**/*.json" },
+                  { format = "sdist", path = "json.tombi.dev/**/*.json" },
+                ]
+                "#
+            )
+        }
     }
 
     mod cargo {
@@ -325,6 +441,62 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_cargo_package_with_disabled_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_package_with_ascending_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                [package]
+                name = "toml-version"
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                [package]
+                authors = { workspace = true }
+                edition = { workspace = true }
+                license = { workspace = true }
+                name = "toml-version"
+                repository = { workspace = true }
+                version = { workspace = true }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_dependencies_and_features(
                 r#"
                 [features]
@@ -343,8 +515,30 @@ mod table_keys_order {
                 serde = { version = "^1.0.0", features = ["derive"] }
 
                 [features]
-                clap = ["clap/derive"]
                 default = ["clap"]
+                clap = ["clap/derive"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_default_feature(
+                r#"
+                [features]
+                wasm = ["tombi-schema-store/wasm"]
+                clap = ["dep:clap"]
+                default = ["clap", "native"]
+                native = ["tombi-schema-store/native"]
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                [features]
+                default = ["clap", "native"]
+                clap = ["dep:clap"]
+                native = ["tombi-schema-store/native"]
+                wasm = ["tombi-schema-store/wasm"]
                 "#
             )
         }
@@ -379,6 +573,31 @@ mod table_keys_order {
                 serde = { version = "^1.0.0", features = [
                   "derive",
                   "std",
+                ] }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_cargo_dependencies_trailing_comma_with_comment_directive(
+                r#"
+                [dependencies]
+                serde = { features = [
+                  # tombi: format.rules.array-values-order.disabled = true
+
+                  "std", "derive",
+                ], version = "^1.0.0" }
+                "#,
+                cargo_schema_path(),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                serde = { version = "^1.0.0", features = [
+                  # tombi: format.rules.array-values-order.disabled = true
+
+                  "std",
+                  "derive",
                 ] }
                 "#
             )
@@ -447,7 +666,7 @@ mod table_keys_order {
                 include = ["*.toml"]
                 path = "pyproject.toml"
                 "#,
-                tombi_schema_path(),
+              tombi_schema_path(),
             ) -> Ok(
                 r#"
                 [[schemas]]
@@ -458,6 +677,61 @@ mod table_keys_order {
         }
     }
 
+    mod type_test {
+        use tombi_test_lib::type_test_schema_path;
+
+        use super::test_format;
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_sort(
+                r#"
+                [[array]]
+                integer = 1
+
+                [[array]]
+                integer = 2
+
+                [array.table]
+                key = "value"
+
+                [[array]]
+                integer = 3
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_nested_array_sort(
+                r#"
+                [[array1]]
+                integer = 1
+
+                [[array1]]
+                integer = 2
+
+                [array1.table1]
+                key1 = "2"
+
+                [[array1.table1.array2]]
+                key2 = "1"
+
+                [[array1.table1.array2]]
+                key2 = "2"
+
+                [array1.table1.array2.table2]
+                key3 = "1"
+
+                [[array1]]
+                integer = 3
+                "#,
+                type_test_schema_path(),
+            ) -> Ok(source)
+        }
+    }
+
     mod non_schema {
         use super::test_format;
 
@@ -465,6 +739,12 @@ mod table_keys_order {
             #[tokio::test]
             async fn test_header_order(
                 r#"
+                key2.key3 = "value1"
+                key1 = "value2"
+                key2.key4 = "value3"
+                key4 = "value4"
+                key5 = "value5"
+
                 [aaa]
                 key1 = "value1"
                 key2 = "value2"
@@ -477,6 +757,12 @@ mod table_keys_order {
                 key5 = "value5"
                 "#,
             ) -> Ok(r#"
+                key2.key3 = "value1"
+                key2.key4 = "value3"
+                key1 = "value2"
+                key4 = "value4"
+                key5 = "value5"
+
                 [aaa]
                 key1 = "value1"
                 key2 = "value2"
@@ -487,6 +773,271 @@ mod table_keys_order {
                 [bbb]
                 key3 = "value3"
                 key4 = "value4"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_comment_directive_sort(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                key2.key3 = "value1"
+                key1 = "value2"
+                key2.key4 = "value3"
+                key4 = "value4"
+                key5 = "value5"
+
+                [aaa]
+                key1 = "value1"
+
+                [bbb]
+                key2 = "value2"
+
+                [ccc]
+                key3 = "value3"
+
+                [ccc.ddd]
+                key4 = "value4"
+
+                [ccc.eee]
+                key5 = "value5"
+                "#,
+            ) -> Ok(r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                key5 = "value5"
+                key4 = "value4"
+                key2.key4 = "value3"
+                key2.key3 = "value1"
+                key1 = "value2"
+
+                [ccc]
+                key3 = "value3"
+
+                [ccc.eee]
+                key5 = "value5"
+
+                [ccc.ddd]
+                key4 = "value4"
+
+                [bbb]
+                key2 = "value2"
+
+                [aaa]
+                key1 = "value1"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_of_tables(
+                r#"
+                [[aaa]]
+                key1 = "value1"
+                key2 = "value2"
+
+                [[aaa]]
+                key1 = "value3"
+                key2 = "value4"
+
+                [aaa.key3]
+                key4 = "value5"
+
+                [[aaa]]
+                key1 = "value6"
+                key2 = "value7"
+
+                [[aaa]]
+                key1 = "value8"
+                key2 = "value9"
+                "#,
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_leading_comment_directive(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [
+
+                  5, 4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [3, 4, 5]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_inner_comment_directive(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  5, 4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  3,
+                  4,
+                  5,
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_trailing_comment_directive(
+                r#"
+                key = [
+
+                  5, 4, 3,
+                ]  # tombi: format.rules.array-values-order = "ascending"
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  3,
+                  4,
+                  5,
+                ]  # tombi: format.rules.array-values-order = "ascending"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_with_inner_comment_directive_with_trailing_comment(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  # leading comment1
+                  5 # trailing comment1
+
+                  # leading comment2
+                  , # trailing comment2
+                  4, # trailing comment3
+                  3 # trailing comment4
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  3,  # trailing comment4
+                  4,  # trailing comment3
+                  # leading comment1
+                  5  # trailing comment1
+                  # leading comment2
+                  ,  # trailing comment2
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_leading_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                key = { key5 = 5, key4 = 4, key3 = 3 }
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                key = { key3 = 3, key4 = 4, key5 = 5 }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_inner_comment_directive(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  key5 = 5, key4 = 4, key3 = 3
+                }
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+            ) -> Ok(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  key3 = 3,
+                  key4 = 4,
+                  key5 = 5,
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_trailing_comment_directive(
+                r#"
+                key = {
+                  key5 = 5, key4 = 4, key3 = 3,
+                }  # tombi: format.rules.table-keys-order = "ascending"
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+            ) -> Ok(
+                r#"
+                key = {
+                  key3 = 3,
+                  key4 = 4,
+                  key5 = 5,
+                }  # tombi: format.rules.table-keys-order = "ascending"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_inner_comment_directive_with_trailing_comment(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  # leading comment1
+                  key5 = 5 # trailing comment1
+
+                  # leading comment2
+                  , # trailing comment2
+                  key4 = 4, # trailing comment3
+                  key3 = 3 # trailing comment4
+                }
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+            ) -> Ok(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  key3 = 3,  # trailing comment4
+                  key4 = 4,  # trailing comment3
+                  # leading comment1
+                  key5 = 5  # trailing comment1
+                  # leading comment2
+                  ,  # trailing comment2
+                }
                 "#
             )
         }
@@ -887,12 +1438,119 @@ mod table_keys_order {
             #[tokio::test]
             async fn $name:ident(
                 $source:expr,
+                TomlVersion($toml_version:expr),
+                $schema_path:expr$(,)?
+            ) -> Ok(source)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Some($schema_path),
+                ) -> Ok($source)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                TomlVersion($toml_version:expr),
+            ) -> Ok(source)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($source)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                $schema_path:expr$(,)?
+            ) -> Ok(source)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Some($schema_path),
+                ) -> Ok($source)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                TomlVersion($toml_version:expr),
                 $schema_path:expr$(,)?
             ) -> Ok($expected:expr$(,)?)
         ) => {
             test_format! {
                 #[tokio::test]
-                async fn _$name($source, Some($schema_path)) -> Ok($expected)
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Some($schema_path),
+                ) -> Ok($expected)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                TomlVersion($toml_version:expr),
+            ) -> Ok($expected:expr$(,)?)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    $toml_version,
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($expected)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+                $schema_path:expr$(,)?
+            ) -> Ok($expected:expr$(,)?)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Some($schema_path),
+                ) -> Ok($expected)
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident(
+                $source:expr,
+            ) -> Ok(source)
+        ) => {
+            test_format! {
+                #[tokio::test]
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($source)
             }
         };
 
@@ -904,7 +1562,11 @@ mod table_keys_order {
         ) => {
             test_format! {
                 #[tokio::test]
-                async fn _$name($source, Option::<&std::path::Path>::None) -> Ok($expected)
+                async fn _$name(
+                    $source,
+                    TomlVersion::default(),
+                    Option::<&std::path::Path>::None,
+                ) -> Ok($expected)
             }
         };
 
@@ -912,7 +1574,8 @@ mod table_keys_order {
             #[tokio::test]
             async fn _$name:ident(
                 $source:expr,
-                $schema_path:expr$(,)?
+                $toml_version:expr,
+                $schema_path:expr,
             ) -> Ok($expected:expr$(,)?)
         ) => {
             #[tokio::test]
@@ -928,12 +1591,15 @@ mod table_keys_order {
                 let schema_store = SchemaStore::new();
 
                 if let Some(schema_path) = $schema_path {
+                    let path = tombi_uri::Uri::from_file_path(schema_path)
+                        .unwrap()
+                        .to_string();
                     // Load schemas
                     schema_store
                         .load_config_schemas(
                             &[tombi_config::Schema::Root(tombi_config::RootSchema {
                                 toml_version: None,
-                                path: schema_path.to_string_lossy().to_string(),
+                                path,
                                 include: vec!["*.toml".to_string()],
                             })],
                             None,
@@ -946,7 +1612,7 @@ mod table_keys_order {
                 let format_options = FormatOptions::default();
                 let source_path = tombi_test_lib::project_root_path().join("test.toml");
                 let formatter = Formatter::new(
-                    TomlVersion::default(),
+                    $toml_version,
                     format_definitions,
                     &format_options,
                     Some(itertools::Either::Right(source_path.as_path())),

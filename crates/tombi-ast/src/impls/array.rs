@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
-use crate::{support, AstNode};
+use crate::{support, AstNode, TombiValueCommentDirective};
 
 impl crate::Array {
     #[inline]
@@ -66,6 +66,7 @@ impl crate::Array {
             })
     }
 
+    #[inline]
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
         self.has_trailing_comma_after_last_value()
             || self.has_multiline_values(toml_version)
@@ -73,6 +74,7 @@ impl crate::Array {
             || self.has_inner_comments()
     }
 
+    #[inline]
     pub fn has_trailing_comma_after_last_value(&self) -> bool {
         self.syntax()
             .children_with_tokens()
@@ -85,6 +87,7 @@ impl crate::Array {
             .is_some_and(|it| it.kind() == T!(,))
     }
 
+    #[inline]
     pub fn has_multiline_values(&self, toml_version: TomlVersion) -> bool {
         self.values().any(|value| match value {
             crate::Value::Array(array) => array.should_be_multiline(toml_version),
@@ -109,5 +112,36 @@ impl crate::Array {
     #[inline]
     pub fn has_inner_comments(&self) -> bool {
         support::node::has_inner_comments(self.syntax().children_with_tokens(), T!('['), T!(']'))
+    }
+
+    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+        let mut comment_directives = vec![];
+
+        if self.values().next().is_none() {
+            for comments in self.inner_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        } else {
+            for comments in self.inner_begin_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+            for comments in self.inner_end_dangling_comments() {
+                for comment in comments {
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        comment_directives.push(comment_directive);
+                    }
+                }
+            }
+        }
+
+        comment_directives.into_iter()
     }
 }

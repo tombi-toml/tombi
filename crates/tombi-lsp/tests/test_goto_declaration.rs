@@ -98,6 +98,7 @@ mod goto_declaration_tests {
                     },
                     LspService,
                 };
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -114,6 +115,8 @@ mod goto_declaration_tests {
                     return Err("failed to find position marker (█) in the test data".into());
                 };
                 toml_text.remove(index);
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
 
                 handle_did_open(
                     backend,
@@ -133,7 +136,7 @@ mod goto_declaration_tests {
                         text_document: TextDocumentIdentifier { uri: toml_file_url },
                         position: (tombi_text::Position::default()
                             + tombi_text::RelativePosition::of(&toml_text[..index]))
-                        .into(),
+                        .into_lsp(&line_index),
                     },
                     work_done_progress_params: WorkDoneProgressParams::default(),
                     partial_result_params: PartialResultParams::default(),

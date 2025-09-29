@@ -2,16 +2,12 @@
 #:tombi toml-version = "v1.0.0"
 
 [project]
-name = "tombi"  # tombi: lint.rules.type-mismatch.disabled = true
+name = "tombi"
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
-description = "🦅 TOML Toolkit 🦅 "
+description = "🦅 TOML Toolkit 🦅"  # tombi: lint.rules.deprecated.disabled = true
 readme = "python/tombi/README.md"
 requires-python = ">=3.10"
-dependencies = [
-  # tombi: lint.rules.array-min-values.disabled = true
-
-  "tombi-config>=0.0.0-dev",
-]
+dependencies = []
 
 [project.urls]
 GitHub = "https://github.com/tombi-toml/tombi"
@@ -20,17 +16,23 @@ GitHub = "https://github.com/tombi-toml/tombi"
 dev = [
   "pytest>=8.3.3",
   "ruff>=0.7.4",
+  { include-group = "stub" },
+]
+stub = [
+  "pytest-stub>=1.1.0",
 ]
 
 [build-system]
-requires = ["maturin>=1.5,<2.0"]
+requires = [
+  "maturin>=1.5,<2.0",
+]
 build-backend = "maturin"
 
 [tool.maturin]
 bindings = "bin"
 include = [
-  { path = "json.schemastore.org/**/*.json", format = "sdist" },
-  { path = "json.tombi.dev/**/*.json", format = "sdist" },
+  { format = "sdist", path = "json.schemastore.org/**/*.json" },
+  { format = "sdist", path = "json.tombi.dev/**/*.json" },
 ]
 manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"

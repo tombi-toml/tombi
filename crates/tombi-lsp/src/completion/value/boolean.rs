@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::BooleanCommonRules;
+use tombi_comment_directive::value::{BooleanCommonFormatRules, BooleanCommonLintRules};
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, BooleanSchema, CurrentSchema, SchemaUri};
@@ -30,11 +30,10 @@ impl FindCompletionContents for tombi_document_tree::Boolean {
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<BooleanCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    BooleanCommonFormatRules,
+                    BooleanCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,

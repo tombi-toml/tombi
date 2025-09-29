@@ -1,4 +1,4 @@
-use tombi_comment_directive::value::FloatCommonRules;
+use tombi_comment_directive::value::{FloatCommonFormatRules, FloatCommonLintRules};
 use tombi_schema_store::{Accessor, CurrentSchema, FloatSchema, ValueSchema};
 
 use crate::{
@@ -27,11 +27,10 @@ impl GetHoverContent for tombi_document_tree::Float {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<FloatCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    FloatCommonFormatRules,
+                    FloatCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(hover_content) =
                     get_value_comment_directive_hover_content(comment_directive_context, schema_uri)

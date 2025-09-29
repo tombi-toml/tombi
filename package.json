@@ -7,13 +7,14 @@
     "preinstall": "npx only-allow pnpm",
     "format": "biome format --write",
     "lint": "biome lint --write",
-    "vscode": "pnpm -C \"editors/vscode\""
+    "vscode": "pnpm -C \"editors/vscode\"",
+    "codex": "npx @openai/codex@latest"
   },
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "@biomejs/biome": "^2.2.4",
+    "@types/node": "^22.18.6",
+    "typescript": "^5.9.2"
   }
 }

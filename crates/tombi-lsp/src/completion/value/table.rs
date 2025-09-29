@@ -55,7 +55,8 @@ impl FindCompletionContents for tombi_document_tree::Table {
                 if !matches!(
                     self.kind(),
                     tombi_document_tree::TableKind::InlineTable { .. }
-                ) {
+                ) && completion_hint != Some(CompletionHint::InTableHeader)
+                {
                     // Skip if the cursor is the end space of key value like:
                     //
                     // ```toml
@@ -101,7 +102,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         let mut completion_contents = Vec::new();
 
                         if let Some(key) = keys.first() {
-                            let accessor_str = &key.to_raw_text(schema_context.toml_version);
+                            let accessor_str = &key.value;
                             if let Some(value) = self.get(key) {
                                 let accessor: Accessor = Accessor::Key(accessor_str.to_string());
 
@@ -167,7 +168,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 == Some(true)
                                         {
                                             for content in &mut contents {
-                                                content.deprecated = Some(true);
+                                                if !content.in_comment {
+                                                    content.deprecated = Some(true);
+                                                }
                                             }
                                         }
 
@@ -230,7 +233,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                     == Some(true)
                                             {
                                                 for content in &mut contents {
-                                                    content.deprecated = Some(true);
+                                                    if !content.in_comment {
+                                                        content.deprecated = Some(true);
+                                                    }
                                                 }
                                             }
 
@@ -292,7 +297,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                         == Some(true)
                                                 {
                                                     for content in &mut contents {
-                                                        content.deprecated = Some(true);
+                                                        if !content.in_comment {
+                                                            content.deprecated = Some(true);
+                                                        }
                                                     }
                                                 }
 
@@ -338,7 +345,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 == Some(true)
                                         {
                                             for content in &mut contents {
-                                                content.deprecated = Some(true);
+                                                if !content.in_comment {
+                                                    content.deprecated = Some(true);
+                                                }
                                             }
                                         }
 
@@ -485,46 +494,46 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
 
-                            if completion_contents.is_empty() {
-                                if let Some(pattern_properties) = &table_schema.pattern_properties {
-                                    let patterns = pattern_properties
-                                        .read()
-                                        .await
-                                        .keys()
-                                        .map(ToString::to_string)
-                                        .collect_vec();
-                                    completion_contents.push(CompletionContent::new_pattern_key(
-                                        patterns.as_ref(),
-                                        position,
-                                        Some(current_schema.schema_uri.as_ref()),
-                                        completion_hint,
-                                    ))
-                                } else if let Some((_, additional_property_schema)) =
-                                    &table_schema.additional_property_schema
+                            if let Some(pattern_properties) = &table_schema.pattern_properties {
+                                let patterns = pattern_properties
+                                    .read()
+                                    .await
+                                    .keys()
+                                    .map(ToString::to_string)
+                                    .collect_vec();
+                                completion_contents.push(CompletionContent::new_pattern_key(
+                                    table_schema.additional_key_label.as_deref(),
+                                    patterns.as_ref(),
+                                    position,
+                                    Some(current_schema.schema_uri.as_ref()),
+                                    completion_hint,
+                                ))
+                            } else if let Some((_, additional_property_schema)) =
+                                &table_schema.additional_property_schema
+                            {
+                                if let Ok(Some(CurrentSchema {
+                                    value_schema,
+                                    schema_uri,
+                                    ..
+                                })) = additional_property_schema
+                                    .write()
+                                    .await
+                                    .resolve(
+                                        current_schema.schema_uri.clone(),
+                                        current_schema.definitions.clone(),
+                                        schema_context.store,
+                                    )
+                                    .await
                                 {
-                                    if let Ok(Some(CurrentSchema {
-                                        value_schema,
-                                        schema_uri,
-                                        ..
-                                    })) = additional_property_schema
-                                        .write()
-                                        .await
-                                        .resolve(
-                                            current_schema.schema_uri.clone(),
-                                            current_schema.definitions.clone(),
-                                            schema_context.store,
-                                        )
-                                        .await
-                                    {
-                                        completion_contents.push(
-                                            CompletionContent::new_additional_key(
-                                                position,
-                                                Some(schema_uri.as_ref()),
-                                                value_schema.deprecated().await,
-                                                completion_hint,
-                                            ),
-                                        );
-                                    }
+                                    completion_contents.push(
+                                        CompletionContent::new_additional_key(
+                                            table_schema.additional_key_label.as_deref(),
+                                            position,
+                                            Some(schema_uri.as_ref()),
+                                            value_schema.deprecated().await,
+                                            completion_hint,
+                                        ),
+                                    );
                                 }
                             }
                         }
@@ -787,19 +796,13 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                     if current_schema.is_none() {
                         if range.end <= key.range().start {
                             return vec![CompletionContent::new_type_hint_key(
-                                &key.to_raw_text(schema_context.toml_version),
+                                &key.value,
                                 key.range(),
                                 None,
                                 completion_hint,
                             )];
                         }
-                        return type_hint_value(
-                            Some(key),
-                            position,
-                            schema_context.toml_version,
-                            None,
-                            completion_hint,
-                        );
+                        return type_hint_value(Some(key), position, None, completion_hint);
                     }
                 }
                 Some(CompletionHint::InTableHeader) => {
@@ -814,7 +817,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 Some(CompletionHint::InArray { .. } | CompletionHint::Comma { .. }) | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {
                         return CompletionContent::new_magic_triggers(
-                            &key.to_raw_text(schema_context.toml_version),
+                            &key.value,
                             position,
                             current_schema.map(|schema| schema.schema_uri.as_ref()),
                         );
@@ -830,9 +833,7 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Key(
-                        key.to_raw_text(schema_context.toml_version),
-                    )))
+                    .chain(std::iter::once(Accessor::Key(key.value.clone())))
                     .collect_vec(),
                 current_schema,
                 schema_context,

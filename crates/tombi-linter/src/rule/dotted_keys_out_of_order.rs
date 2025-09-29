@@ -1,10 +1,9 @@
 use crate::Rule;
 use ahash::AHashMap;
-use itertools::Itertools;
-use tombi_comment_directive::value::TableCommonRules;
+use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
+use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_config::SeverityLevel;
 use tombi_severity_level::SeverityLevelDefaultWarn;
-use tombi_validator::comment_directive::get_tombi_key_value_rules_and_diagnostics;
 
 pub struct DottedKeysOutOfOrderRule;
 
@@ -37,27 +36,36 @@ async fn check_dotted_keys_out_of_order(
     comment_directives: impl Iterator<Item = tombi_ast::TombiValueCommentDirective>,
     l: &mut crate::Linter<'_>,
 ) {
-    let level = get_tombi_key_value_rules_and_diagnostics::<TableCommonRules>(
-        &comment_directives.collect_vec(),
-        &[],
-    )
-    .await
-    .0
-    .as_ref()
-    .map(|rules| &rules.value)
-    .and_then(|rules| {
-        rules
-            .dotted_keys_out_of_order
-            .as_ref()
-            .map(SeverityLevelDefaultWarn::from)
-    })
-    .unwrap_or_else(|| {
-        l.options()
-            .rules
-            .as_ref()
-            .and_then(|rules| rules.dotted_keys_out_of_order)
-            .unwrap_or_default()
-    });
+    let comment_directive = get_comment_directive_content::<
+        TableCommonFormatRules,
+        TableCommonLintRules,
+    >(comment_directives);
+
+    if comment_directive
+        .as_ref()
+        .and_then(|comment_directive| comment_directive.table_keys_order_disabled())
+        .unwrap_or(false)
+    {
+        return;
+    }
+
+    let level = comment_directive
+        .as_ref()
+        .and_then(|comment_directive| comment_directive.lint_rules())
+        .map(|rules| &rules.value)
+        .and_then(|rules| {
+            rules
+                .dotted_keys_out_of_order
+                .as_ref()
+                .map(SeverityLevelDefaultWarn::from)
+        })
+        .unwrap_or_else(|| {
+            l.options()
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.dotted_keys_out_of_order)
+                .unwrap_or_default()
+        });
 
     if level == SeverityLevel::Off {
         return;

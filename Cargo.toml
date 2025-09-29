@@ -21,6 +21,7 @@ default-members = [
 
 [workspace.package]
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
+# tombi: lint.rules.deprecated.disabled = true
 authors = ["ya7010 <ya7010@outlook.com>"]
 edition = "2021"
 repository = "https://github.com/tombi-toml/tombi"
@@ -33,7 +34,6 @@ anyhow = "1.0.98"
 bytes = "1.10.1"
 chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.37", features = ["derive", "env", "string"] }
-clap-verbosity-flag = "3.0.2"
 console_error_panic_hook = "0.1.7"
 convert_case = "0.6.0"
 countme = "3.0.1"
@@ -67,7 +67,8 @@ schemars = { version = "1.0.2", features = ["preserve_order", "url2"] }
 semver = { version = "1.0.26" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
-serde_tombi = { default-features = false, path = "rust/serde_tombi" }
+serde_tombi = { path = "rust/serde_tombi", default-features = false }
+similar = { version = "2.7.0" }
 surf = "2.3.2"
 tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
@@ -79,6 +80,7 @@ tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
 tombi-cache = { path = "crates/tombi-cache" }
 tombi-comment-directive = { path = "crates/tombi-comment-directive" }
+tombi-comment-directive-serde = { path = "crates/tombi-comment-directive-serde" }
 tombi-comment-directive-store = { path = "crates/tombi-comment-directive-store" }
 tombi-config = { path = "crates/tombi-config" }
 tombi-date-time = { path = "crates/tombi-date-time" }
@@ -98,10 +100,10 @@ tombi-json-syntax = { path = "crates/tombi-json-syntax" }
 tombi-json-value = { path = "crates/tombi-json-value" }
 tombi-lexer = { path = "crates/tombi-lexer" }
 tombi-linter = { path = "crates/tombi-linter" }
-tombi-lsp = { default-features = false, path = "crates/tombi-lsp" }
+tombi-lsp = { path = "crates/tombi-lsp", default-features = false }
 tombi-parser = { path = "crates/tombi-parser" }
 tombi-rg-tree = { path = "crates/tombi-rg-tree" }
-tombi-schema-store = { default-features = false, path = "crates/tombi-schema-store" }
+tombi-schema-store = { path = "crates/tombi-schema-store", default-features = false }
 tombi-severity-level = { path = "crates/tombi-severity-level" }
 tombi-syntax = { path = "crates/tombi-syntax" }
 tombi-test-lib = { path = "crates/tombi-test-lib" }

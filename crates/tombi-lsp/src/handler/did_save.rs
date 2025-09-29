@@ -17,7 +17,7 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
     if let Some(text) = text {
         let mut document_sources = backend.document_sources.write().await;
         if let Some(document) = document_sources.get_mut(&text_document_uri) {
-            document.text = text;
+            document.set_text(text);
         }
         drop(document_sources);
     }

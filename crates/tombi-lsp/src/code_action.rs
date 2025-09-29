@@ -1,9 +1,9 @@
 use tombi_document_tree::{dig_accessors, TableKind};
-use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
-use tower_lsp::lsp_types::{
-    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextEdit, WorkspaceEdit,
+use tombi_extension::{
+    CodeAction, CodeActionKind, DocumentChanges, OneOf, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
+use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
+use tower_lsp::lsp_types::OptionalVersionedTextDocumentIdentifier;
 
 pub enum CodeActionRefactorRewriteName {
     DottedKeysToInlineTable,
@@ -70,7 +70,7 @@ pub fn dot_keys_to_inline_table_code_action(
                                 new_text: format!(
                                     "{} = {{ {}{}",
                                     parent_key,
-                                    key.value(),
+                                    key.value,
                                     if table.kind() == TableKind::KeyValue {
                                         " = "
                                     } else {

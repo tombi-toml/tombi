@@ -354,6 +354,24 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_tombi_schema_lint_rules_with_unknown_key(
+                r#"
+                [[schemas]]
+                root = "tool.taskipy"
+                path = "schemas/partial-taskipy.schema.json"
+                include = ["pyproject.toml"]
+                unknown = true
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {
+                    key: "unknown".to_string(),
+                },
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_tombi_schema_lint_rules_key_empty_undefined(
                 r#"
                 [lint.rules]
@@ -415,6 +433,19 @@ mod tests {
 
         test_lint! {
             #[test]
+            // Ref: https://github.com/tombi-toml/tombi/issues/1031
+            fn test_error_report_case1(
+                r#"
+                [job]
+                name = "foo"
+                prod.cpu = 10
+                prod.autoscale = { min = 10, max = 20 }
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
             fn test_warning_empty(
                 r#"
                 "" = 1
@@ -422,6 +453,37 @@ mod tests {
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
             ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_empty_document_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_key_value_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                key = "value"
+                "#,
+            ) -> Ok(_);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_table_with_dangling_value_comment_directive(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                [aaa]
+                "#,
+            ) -> Ok(_);
         }
 
         test_lint! {
@@ -515,6 +577,24 @@ mod tests {
                 crate::DiagnosticKind::DottedKeysOutOfOrder,
                 crate::DiagnosticKind::DottedKeysOutOfOrder
             ]);
+        }
+
+        test_lint! {
+            #[test]
+            fn test_dotted_keys_out_of_order_with_comment_directive_table_keys_order_disabled_eq_true(
+                r#"
+                # tombi: format.rules.table-keys-order.disabled = true
+
+                apple.type = "fruit"
+                orange.type = "fruit"
+
+                apple.skin = "thin"
+                orange.skin = "thick"
+
+                apple.color = "red"
+                orange.color = "orange"
+                "#,
+            ) -> Ok(_);
         }
 
         test_lint! {

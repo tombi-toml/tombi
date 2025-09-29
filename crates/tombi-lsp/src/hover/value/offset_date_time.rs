@@ -1,4 +1,6 @@
-use tombi_comment_directive::value::OffsetDateTimeCommonRules;
+use tombi_comment_directive::value::{
+    OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules,
+};
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, ValueSchema};
 
 use crate::{
@@ -27,11 +29,10 @@ impl GetHoverContent for tombi_document_tree::OffsetDateTime {
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
-                get_key_table_value_comment_directive_content_and_schema_uri::<OffsetDateTimeCommonRules>(
-                    self.comment_directives(),
-                    position,
-                    accessors,
-                )
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    OffsetDateTimeCommonFormatRules,
+                    OffsetDateTimeCommonLintRules,
+                >(self.comment_directives(), position, accessors)
             {
                 if let Some(hover_content) =
                     get_value_comment_directive_hover_content(comment_directive_context, schema_uri)

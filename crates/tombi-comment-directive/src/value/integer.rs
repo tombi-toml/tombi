@@ -3,30 +3,41 @@ use std::str::FromStr;
 use tombi_uri::SchemaUri;
 
 use crate::value::{
-    ErrorRuleOptions, TombiValueDirectiveContent, WithCommonRules, WithKeyTableRules,
+    EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonFormatRules,
+    WithCommonLintRules, WithKeyFormatRules, WithKeyTableLintRules,
 };
 use crate::TombiCommentDirectiveImpl;
 
-pub type KeyIntegerCommonRules = WithKeyTableRules<WithCommonRules<IntegerRules>>;
+pub type IntegerFormatRules = EmptyFormatRules;
 
-pub type IntegerCommonRules = WithCommonRules<IntegerRules>;
+pub type IntegerCommonFormatRules = WithCommonFormatRules<IntegerFormatRules>;
+pub type IntegerCommonLintRules = WithCommonLintRules<IntegerLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<KeyIntegerCommonRules> {
-    fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
-    }
-}
+pub type KeyIntegerCommonFormatRules = WithKeyFormatRules<IntegerCommonFormatRules>;
+pub type KeyIntegerCommonLintRules = WithKeyTableLintRules<IntegerCommonLintRules>;
 
-impl TombiCommentDirectiveImpl for TombiValueDirectiveContent<IntegerCommonRules> {
+pub type TombiIntegerDirectiveContent =
+    TombiValueDirectiveContent<IntegerCommonFormatRules, IntegerCommonLintRules>;
+
+pub type TombiKeyIntegerDirectiveContent =
+    TombiValueDirectiveContent<KeyIntegerCommonFormatRules, KeyIntegerCommonLintRules>;
+
+impl TombiCommentDirectiveImpl for TombiIntegerDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
         SchemaUri::from_str("tombi://json.tombi.dev/tombi-integer-directive.json").unwrap()
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+impl TombiCommentDirectiveImpl for TombiKeyIntegerDirectiveContent {
+    fn comment_directive_schema_url() -> SchemaUri {
+        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-integer-directive.json").unwrap()
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub struct IntegerRules {
+pub struct IntegerLintRules {
     /// # Maximum integer
     ///
     /// Check if the integer is less than or equal to the maximum.

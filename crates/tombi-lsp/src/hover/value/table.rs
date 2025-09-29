@@ -78,8 +78,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                     ValueSchema::Table(table_schema) => {
                         if let Some(key) = keys.first() {
                             if let Some(value) = self.get(key) {
-                                let key_string = key.to_raw_text(schema_context.toml_version);
-                                let accessor = Accessor::Key(key_string.clone());
+                                let accessor = Accessor::Key(key.value.clone());
                                 let key_patterns = match table_schema.pattern_properties.as_ref() {
                                     Some(pattern_properties) => Some(
                                         pattern_properties
@@ -104,7 +103,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     let required = table_schema
                                         .required
                                         .as_ref()
-                                        .map(|r| r.contains(&key_string))
+                                        .map(|r| r.contains(&key.value))
                                         .unwrap_or(false);
 
                                     if let Ok(Some(current_schema)) = property_schema
@@ -214,7 +213,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     ) in pattern_properties.write().await.iter_mut()
                                     {
                                         if let Ok(pattern) = regex::Regex::new(property_key) {
-                                            if pattern.is_match(&key_string) {
+                                            if pattern.is_match(&key.value) {
                                                 if let Ok(Some(current_schema)) = property_schema
                                                     .resolve(
                                                         current_schema.schema_uri.clone(),
@@ -478,7 +477,7 @@ impl GetHoverContent for tombi_document_tree::Table {
             } else {
                 if let Some(key) = keys.first() {
                     if let Some(value) = self.get(key) {
-                        let accessor = Accessor::Key(key.to_raw_text(schema_context.toml_version));
+                        let accessor = Accessor::Key(key.value.clone());
 
                         return value
                             .get_hover_content(
@@ -517,7 +516,7 @@ impl GetHoverContent for TableSchema {
         _keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
-        schema_context: &'a tombi_schema_store::SchemaContext,
+        _schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
             Some(HoverContent::Value(HoverValueContent {
@@ -541,10 +540,10 @@ impl GetHoverContent for TableSchema {
                     min_keys: self.min_properties,
                     // NOTE: key_patterns are output for keys, not this tables.
                     key_patterns: None,
-                    additional_keys: Some(
-                        self.allows_any_additional_properties(schema_context.strict()),
-                    ),
-                    keys_order: self.keys_order,
+                    additional_keys: self.additional_properties(),
+                    pattern_keys: self.pattern_properties.is_some(),
+                    keys_order: self.keys_order.clone(),
+                    array_values_order_by: self.array_values_order_by.clone(),
                     ..Default::default()
                 }),
                 schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),

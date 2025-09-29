@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use tombi_ast::AstNode;
+use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 
 use crate::{change::Change, Edit};
@@ -28,7 +29,15 @@ impl<'a> Editor<'a> {
     }
 
     pub async fn edit(self) -> tombi_ast::Root {
+        let Ok(document_tree) = self
+            .root
+            .clone()
+            .try_into_document_tree(self.schema_context.toml_version)
+        else {
+            return self.root;
+        };
         let new_root = self.root.clone_for_update();
+
         let current_schema = self.schema_context.root_schema.and_then(|document_schema| {
             document_schema
                 .value_schema
@@ -42,6 +51,7 @@ impl<'a> Editor<'a> {
 
         let changes = new_root
             .edit(
+                &document_tree.into(),
                 &[],
                 self.source_path,
                 current_schema.as_ref(),

@@ -1,3 +1,4 @@
+pub mod completion;
 pub mod format;
 pub mod lint;
 pub mod lsp;
@@ -12,4 +13,6 @@ pub enum TomlCommand {
 
     #[command(alias = "serve")]
     Lsp(lsp::Args),
+
+    Completion(completion::Args),
 }
