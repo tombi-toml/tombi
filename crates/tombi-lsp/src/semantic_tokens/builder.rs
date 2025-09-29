@@ -1,5 +1,5 @@
 use tombi_ast::AstToken;
-use tombi_text::{FromLsp, IntoLsp, WideEncoding};
+use tombi_text::FromLsp;
 use tower_lsp::lsp_types::SemanticToken;
 use unicode_segmentation::UnicodeSegmentation;
 
