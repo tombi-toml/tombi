@@ -14,13 +14,13 @@ pub struct DocumentSource {
 }
 
 impl DocumentSource {
-    pub fn new(text: impl Into<String>, version: Option<i32>) -> Self {
+    pub fn new(text: impl Into<String>, version: Option<i32>, wide_encoding: WideEncoding) -> Self {
         let text = text.into();
         let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(text.as_str()) };
 
         Self {
             text,
-            line_index: LineIndex::new(text_ref, WideEncoding::Utf16),
+            line_index: LineIndex::new(text_ref, wide_encoding),
             version,
         }
     }
@@ -32,7 +32,7 @@ impl DocumentSource {
     pub fn set_text(&mut self, text: impl Into<String>) {
         self.text = text.into();
         let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(self.text.as_str()) };
-        self.line_index = LineIndex::new(text_ref, WideEncoding::Utf16);
+        self.line_index = LineIndex::new(text_ref, self.line_index.wide_encoding);
     }
 
     pub fn line_index(&self) -> &LineIndex<'static> {

@@ -1,6 +1,6 @@
 //! See [`LineIndex`].
 
-use crate::{Offset, Span, WideEncoding};
+use crate::{features::lsp::WideEncoding, Offset, Span};
 
 /// Indexes the start and end offsets of each line in a piece of text.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,7 +78,7 @@ fn offset_from_usize(value: usize) -> Offset {
 
 #[cfg(test)]
 mod tests {
-    use crate::WideEncoding;
+    use crate::features::lsp::WideEncoding;
 
     use super::LineIndex;
 
