@@ -6,8 +6,7 @@ use tombi_comment_directive::{
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_uri::SchemaUri;
-use tower_lsp::lsp_types::Url;
+use tombi_uri::{SchemaUri, Uri};
 
 use crate::{
     comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
@@ -22,7 +21,7 @@ pub async fn get_document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     comment: &tombi_ast::Comment,
     position: tombi_text::Position,
-    text_document_uri: &Url,
+    text_document_uri: &Uri,
 ) -> Option<Vec<CompletionContent>> {
     let comment_text = comment.syntax().text();
     if let Some(colon_pos) = comment_text.find(':') {
@@ -74,7 +73,7 @@ fn document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
     comment_range: tombi_text::Range,
-    text_document_uri: &Url,
+    text_document_uri: &Uri,
 ) -> Vec<CompletionContent> {
     let mut completion_contents = Vec::new();
 

@@ -20,7 +20,13 @@ pub async fn handle_semantic_tokens_full(
         return Ok(None);
     };
 
-    let mut tokens_builder = SemanticTokensBuilder::new(text_document_uri);
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(None);
+    };
+    let line_index = document_source.line_index();
+
+    let mut tokens_builder = SemanticTokensBuilder::new(text_document_uri, line_index);
     root.append_semantic_tokens(&mut tokens_builder);
     let tokens = tokens_builder.build();
 

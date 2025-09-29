@@ -2,6 +2,7 @@ use itertools::{Either, Itertools};
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaContext;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 
 use crate::{
@@ -48,7 +49,13 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let position = position.into();
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(None);
+    };
+    let line_index = document_source.line_index();
+
+    let position = position.into_lsp(line_index);
     let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
         tracing::debug!("Failed to get incomplete ast");
         return Ok(None);

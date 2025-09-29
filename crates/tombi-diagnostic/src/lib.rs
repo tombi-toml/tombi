@@ -104,17 +104,23 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
     }
 }
 
-impl From<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
-    fn from(diagnostic: Diagnostic) -> Self {
+#[cfg(feature = "lsp")]
+impl tombi_text::FromLsp<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
+    fn from_lsp(
+        source: Diagnostic,
+        line_index: &tombi_text::LineIndex,
+    ) -> tower_lsp::lsp_types::Diagnostic {
+        use tombi_text::IntoLsp;
+
         tower_lsp::lsp_types::Diagnostic {
-            range: diagnostic.range().into(),
-            severity: Some(match diagnostic.level() {
+            range: source.range().into_lsp(line_index),
+            severity: Some(match source.level() {
                 level::Level::WARNING => tower_lsp::lsp_types::DiagnosticSeverity::WARNING,
                 level::Level::ERROR => tower_lsp::lsp_types::DiagnosticSeverity::ERROR,
             }),
-            message: diagnostic.message().to_string(),
+            message: source.message().to_string(),
             source: Some("Tombi".to_owned()),
-            code: Some(NumberOrString::String(diagnostic.code)),
+            code: Some(NumberOrString::String(source.code)),
             ..Default::default()
         }
     }

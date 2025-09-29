@@ -1,9 +1,9 @@
 use tombi_document_tree::{dig_accessors, dig_keys, TableKind};
-use tombi_schema_store::{matches_accessors, Accessor, AccessorContext};
-use tower_lsp::lsp_types::{
-    CodeAction, CodeActionOrCommand, DocumentChanges, OneOf,
-    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextEdit, WorkspaceEdit,
+use tombi_extension::{
+    CodeAction, CodeActionOrCommand, DocumentChanges, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
+use tombi_schema_store::{matches_accessors, Accessor, AccessorContext};
+use tower_lsp::lsp_types::{CodeActionKind, OneOf, OptionalVersionedTextDocumentIdentifier};
 
 use crate::{find_workspace_cargo_toml, get_workspace_path};
 
@@ -196,7 +196,7 @@ fn workspace_code_action(
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::InheritFromWorkspace.to_string(),
-        kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+        kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
         diagnostics: None,
         edit: Some(WorkspaceEdit {
             changes: None,
@@ -206,7 +206,7 @@ fn workspace_code_action(
                     version: None,
                 },
                 edits: vec![OneOf::Left(TextEdit {
-                    range: (parent_key_context.range + value.symbol_range()).into(),
+                    range: parent_key_context.range + value.symbol_range(),
                     new_text: format!("{parent_key}.workspace = true"),
                 })],
             }])),
@@ -251,7 +251,7 @@ fn use_workspace_depencency_code_action(
             )?;
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
-                kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+                kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
                     changes: None,
@@ -264,8 +264,7 @@ fn use_workspace_depencency_code_action(
                             range: tombi_text::Range {
                                 start: crate_key_context.range.start,
                                 end: version.range().end,
-                            }
-                            .into(),
+                            },
                             // NOTE: Convert to a workspace dependency to make it easier
                             //       to add other settings in the future.
                             new_text: format!("{crate_name} = {{ workspace = true }}"),
@@ -292,19 +291,19 @@ fn use_workspace_depencency_code_action(
 
             let text_edit = if table.kind() == TableKind::KeyValue {
                 TextEdit {
-                    range: (crate_key_context.range + version.range()).into(),
+                    range: crate_key_context.range + version.range(),
                     new_text: format!("{crate_name} = {{ workspace = true }}"),
                 }
             } else {
                 TextEdit {
-                    range: (key.range() + version.range()).into(),
+                    range: key.range() + version.range(),
                     new_text: "workspace = true".to_string(),
                 }
             };
 
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InheritDependencyFromWorkspace.to_string(),
-                kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+                kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
                     changes: None,
@@ -342,7 +341,7 @@ fn crate_version_code_action(
         {
             return Some(CodeAction {
                 title: CodeActionRefactorRewriteName::ConvertDependencyToTableFormat.to_string(),
-                kind: Some(tower_lsp::lsp_types::CodeActionKind::REFACTOR_REWRITE),
+                kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
                 diagnostics: None,
                 edit: Some(WorkspaceEdit {
                     changes: None,
@@ -353,11 +352,11 @@ fn crate_version_code_action(
                         },
                         edits: vec![
                             OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(version.symbol_range().start).into(),
+                                range: tombi_text::Range::at(version.symbol_range().start),
                                 new_text: "{ version = ".to_string(),
                             }),
                             OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(version.symbol_range().end).into(),
+                                range: tombi_text::Range::at(version.symbol_range().end),
                                 new_text: " }".to_string(),
                             }),
                         ],

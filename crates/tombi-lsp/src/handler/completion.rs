@@ -1,6 +1,7 @@
 use itertools::Either;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint};
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CompletionContext, CompletionParams, CompletionTriggerKind, TextDocumentPositionParams,
 };
@@ -103,7 +104,7 @@ pub async fn handle_completion(
         if trigger_character == "\n" {
             let pos_line = position.line as usize;
             if pos_line > 0 {
-                if let Some(prev_line) = &document_source.text.lines().nth(pos_line - 1) {
+                if let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1) {
                     if prev_line.trim().is_empty() || root_schema.is_none() {
                         tracing::trace!("completion skipped due to consecutive line breaks");
                         return Ok(None);
@@ -113,8 +114,10 @@ pub async fn handle_completion(
         }
     }
 
+    let line_index = document_source.line_index();
+
     let mut completion_items = Vec::new();
-    let position = position.into();
+    let position = position.into_lsp(line_index);
 
     let comment_context = get_comment_context(&root, position);
     let (document_tree, keys, completion_hint) = match &comment_context {

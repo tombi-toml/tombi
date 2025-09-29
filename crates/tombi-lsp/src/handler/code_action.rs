@@ -7,6 +7,7 @@ use crate::{
 use itertools::Either;
 use tombi_document_tree::{get_accessors, TryIntoDocumentTree};
 use tombi_schema_store::build_accessor_contexts;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
 
 pub async fn handle_code_action(
@@ -23,7 +24,14 @@ pub async fn handle_code_action(
     } = params;
 
     let text_document_uri = text_document.uri.into();
-    let position: tombi_text::Position = range.start.into();
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(None);
+    };
+
+    let line_index = document_source.line_index();
+
+    let position: tombi_text::Position = range.start.into_lsp(line_index);
 
     let ConfigSchemaStore {
         config,
@@ -65,6 +73,12 @@ pub async fn handle_code_action(
         )
         .await;
 
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&text_document_uri) else {
+        return Ok(None);
+    };
+    let line_index = document_source.line_index();
+
     let Some((keys, key_contexts)) =
         get_completion_keys_with_context(&root, position, toml_version).await
     else {
@@ -87,7 +101,7 @@ pub async fn handle_code_action(
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(code_action.into());
+        code_actions.push(code_action.into_lsp(line_index));
     }
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
@@ -95,7 +109,7 @@ pub async fn handle_code_action(
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(code_action.into());
+        code_actions.push(code_action.into_lsp(line_index));
     }
 
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
@@ -105,7 +119,11 @@ pub async fn handle_code_action(
         &accessor_contexts,
         toml_version,
     )? {
-        code_actions.extend(extension_code_actions);
+        code_actions.extend(
+            extension_code_actions
+                .into_iter()
+                .map(|code_action| code_action.into_lsp(line_index)),
+        );
     }
 
     if code_actions.is_empty() {

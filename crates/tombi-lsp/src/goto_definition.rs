@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_schema_store::get_tombi_schemastore_content;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CreateFile, CreateFileOptions, DocumentChangeOperation, DocumentChanges,
     GotoDefinitionResponse, OneOf, OptionalVersionedTextDocumentIdentifier, ResourceOp,
@@ -18,6 +19,12 @@ pub async fn into_definition_locations(
     let Some(definitions) = definitions else {
         return Ok(None);
     };
+
+    let document_source = backend.document_sources.read().await;
+    let Some(document_source) = document_source.get(&definitions[0].uri) else {
+        return Ok(None);
+    };
+    let line_index = document_source.line_index();
 
     let mut uri_set = AHashMap::new();
     for definition in &definitions {
@@ -39,12 +46,12 @@ pub async fn into_definition_locations(
     match definitions.len() {
         0 => Ok(None),
         1 => Ok(Some(GotoDefinitionResponse::Scalar(
-            definitions.into_iter().next().unwrap().into(),
+            definitions.into_iter().next().unwrap().into_lsp(line_index),
         ))),
         _ => Ok(Some(GotoDefinitionResponse::Array(
             definitions
                 .into_iter()
-                .map(|definition| definition.into())
+                .map(|definition| definition.into_lsp(line_index))
                 .collect(),
         ))),
     }
@@ -137,7 +144,7 @@ async fn insert_content(
             version: Some(0),
         },
         edits: vec![OneOf::Left(TextEdit {
-            range: tombi_text::Range::default().into(),
+            range: Default::default(),
             new_text: content.into(),
         })],
     };

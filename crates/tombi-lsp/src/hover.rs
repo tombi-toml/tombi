@@ -15,6 +15,7 @@ use tombi_extension::get_tombi_github_uri;
 use tombi_schema_store::{
     get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUri, ValueType,
 };
+use tombi_text::{FromLsp, IntoLsp};
 
 pub async fn get_hover_content(
     tree: &tombi_document_tree::DocumentTree,
@@ -64,12 +65,12 @@ pub enum HoverContent {
     DirectiveContent(HoverValueContent),
 }
 
-impl From<HoverContent> for tower_lsp::lsp_types::Hover {
-    fn from(value: HoverContent) -> Self {
-        match value {
-            HoverContent::Value(content) => content.into(),
-            HoverContent::Directive(content) => content.into(),
-            HoverContent::DirectiveContent(content) => content.into(),
+impl FromLsp<HoverContent> for tower_lsp::lsp_types::Hover {
+    fn from_lsp(source: HoverContent, line_index: &tombi_text::LineIndex) -> Self {
+        match source {
+            HoverContent::Value(content) => content.into_lsp(line_index),
+            HoverContent::Directive(content) => content.into_lsp(line_index),
+            HoverContent::DirectiveContent(content) => content.into_lsp(line_index),
         }
     }
 }
@@ -81,16 +82,16 @@ pub struct HoverDirectiveContent {
     pub range: tombi_text::Range,
 }
 
-impl From<HoverDirectiveContent> for tower_lsp::lsp_types::Hover {
-    fn from(value: HoverDirectiveContent) -> Self {
+impl FromLsp<HoverDirectiveContent> for tower_lsp::lsp_types::Hover {
+    fn from_lsp(source: HoverDirectiveContent, line_index: &tombi_text::LineIndex) -> Self {
         tower_lsp::lsp_types::Hover {
             contents: tower_lsp::lsp_types::HoverContents::Markup(
                 tower_lsp::lsp_types::MarkupContent {
                     kind: tower_lsp::lsp_types::MarkupKind::Markdown,
-                    value: format!("#### {}\n\n{}", value.title, value.description),
+                    value: format!("#### {}\n\n{}", source.title, source.description),
                 },
             ),
-            range: Some(value.range.into()),
+            range: Some(source.range.into_lsp(line_index)),
         }
     }
 }
@@ -167,16 +168,16 @@ impl std::fmt::Display for HoverValueContent {
     }
 }
 
-impl From<HoverValueContent> for tower_lsp::lsp_types::Hover {
-    fn from(value: HoverValueContent) -> Self {
+impl FromLsp<HoverValueContent> for tower_lsp::lsp_types::Hover {
+    fn from_lsp(source: HoverValueContent, line_index: &tombi_text::LineIndex) -> Self {
         tower_lsp::lsp_types::Hover {
             contents: tower_lsp::lsp_types::HoverContents::Markup(
                 tower_lsp::lsp_types::MarkupContent {
                     kind: tower_lsp::lsp_types::MarkupKind::Markdown,
-                    value: value.to_string(),
+                    value: source.to_string(),
                 },
             ),
-            range: value.range.map(Into::into),
+            range: source.range.map(|range| range.into_lsp(line_index)),
         }
     }
 }
