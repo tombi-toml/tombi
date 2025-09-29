@@ -102,6 +102,7 @@ pub async fn handle_formatting(
                     &formatter_definitions,
                     document_source.line_index(),
                 );
+                tracing::error!(?edits);
                 document_source.set_text(formatted);
 
                 return Ok(Some(edits));
@@ -146,10 +147,10 @@ fn compute_text_edits(
     formatter_definitions: &FormatDefinitions,
     line_index: &tombi_text::LineIndex,
 ) -> Vec<TextEdit> {
-    let old_lines: Vec<&str> = old_text.lines().collect();
-    let new_lines: Vec<&str> = new_text.lines().collect();
-
     let line_ending = formatter_definitions.line_ending.unwrap_or_default().into();
+
+    let old_lines: Vec<&str> = old_text.split(line_ending).collect();
+    let new_lines: Vec<&str> = new_text.split(line_ending).collect();
 
     // Find common prefix lines
     let common_prefix_lines = old_lines
@@ -182,36 +183,25 @@ fn compute_text_edits(
 
     // Build the replacement text from the changed lines
     let replacement_lines = &new_lines[new_start_line..new_end_line];
-    let replacement_text = if replacement_lines.is_empty() {
+    let mut replacement_text = if replacement_lines.is_empty() {
         String::new()
     } else {
-        // Reconstruct with line breaks, being careful about the last line
-        let mut result = replacement_lines.join(line_ending);
-
-        // If we're not replacing to the end of the text and the original text doesn't end with a newline,
-        // we need to be careful about trailing newlines
-        if old_end_line < old_lines.len() || old_text.ends_with(line_ending) {
-            result.push_str(line_ending);
-        }
-
-        result
+        replacement_lines.join(line_ending)
     };
 
-    // Calculate positions
-    let start_pos = Position::new(old_start_line as u32, 0);
     let end_pos = if old_end_line < old_lines.len() {
         Position::new(old_end_line as u32, 0)
-    } else if replacement_text.is_empty() || replacement_text.ends_with(line_ending) {
-        // End of document with final newline so use start of last line
-        Position::new(old_lines.len() as u32, 0)
     } else {
         // End of document - need to get the column position
         let last_line = old_lines.last().unwrap_or(&"");
         Position::new(
-            (old_lines.len() - 1) as u32,
+            old_lines.len().saturating_sub(1) as u32,
             UnicodeSegmentation::graphemes(*last_line, true).count() as u32,
         )
     };
+
+    // Calculate positions
+    let start_pos = std::cmp::min(Position::new(old_start_line as u32, 0), end_pos);
 
     vec![TextEdit {
         range: Range::new(start_pos, end_pos).into_lsp(line_index),
@@ -235,15 +225,70 @@ mod tests {
             &FormatDefinitions::default(),
             &line_index,
         );
-        assert!(edits.is_empty());
+
+        pretty_assertions::assert_eq!(edits, vec![]);
+    }
+
+    #[test]
+    fn test_compute_text_edits_append_final_newline() {
+        let old_text = "hello world";
+        let new_text = "hello world\n";
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(
+            old_text,
+            new_text,
+            &FormatDefinitions::default(),
+            &line_index,
+        );
+
+        pretty_assertions::assert_eq!(
+            edits,
+            vec![TextEdit {
+                range: Range::from(((1, 0), (1, 0))).into_lsp(&line_index),
+                new_text: "".to_string(),
+            }]
+        );
     }
 
     #[test]
     fn test_compute_text_edits_no_changes_final_newline() {
         let old_text = "hello world\n";
         let new_text = "hello world\n";
-        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
-        assert!(edits.is_empty());
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(
+            old_text,
+            new_text,
+            &FormatDefinitions::default(),
+            &line_index,
+        );
+
+        pretty_assertions::assert_eq!(edits, vec![]);
+    }
+
+    #[test]
+    fn test_compute_text_edits_trim_final_newlines() {
+        // Test case: remove any final trailing newlines leaving a single newline
+        let old_text = "line1\n\n\n";
+        let new_text = "line1\n";
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(
+            old_text,
+            new_text,
+            &FormatDefinitions::default(),
+            &line_index,
+        );
+
+        pretty_assertions::assert_eq!(edits.len(), 1);
+
+        let edit = &edits[0];
+
+        let expected_range: tower_lsp::lsp_types::Range =
+            Range::from(((2, 0), (4, 0))).into_lsp(&line_index);
+
+        pretty_assertions::assert_eq!(edit.range, expected_range);
+
+        // Remove the extra newlines with an empty string
+        pretty_assertions::assert_eq!(edit.new_text, "");
     }
 
     #[test]
@@ -258,17 +303,19 @@ mod tests {
             &line_index,
         );
 
-        assert_eq!(edits.len(), 1);
+        pretty_assertions::assert_eq!(edits.len(), 1);
         let edit = &edits[0];
+
         // Line-based approach replaces the entire line
-        assert_eq!(edit.new_text, "hello universe");
+        pretty_assertions::assert_eq!(edit.new_text, "hello universe");
 
         let expected_range: tower_lsp::lsp_types::Range = Range::new(
             Position::new(0, 0),  // Start of line 0
             Position::new(0, 11), // End of last character in line 0
         )
         .into_lsp(&line_index);
-        assert_eq!(edit.range, expected_range);
+
+        pretty_assertions::assert_eq!(edit.range, expected_range);
     }
 
     #[test]
@@ -283,37 +330,16 @@ mod tests {
             &line_index,
         );
 
-        assert_eq!(edits.len(), 1);
+        pretty_assertions::assert_eq!(edits.len(), 1);
+
         let edit = &edits[0];
 
         // We're replacing the entire "line2\n" with "modified line2\n"
-        assert_eq!(edit.new_text, "modified line2\n");
+        pretty_assertions::assert_eq!(edit.new_text, "modified line2\n");
 
-        let expected_range: tower_lsp::lsp_types::Range = Range::new(
-            Position::new(1, 0), // Start of line 1 (line2)
-            Position::new(2, 0), // Start of line 2 (line3)
-        )
-        .into_lsp(&line_index);
-        assert_eq!(edit.range, expected_range);
-    }
+        let expected_range: tower_lsp::lsp_types::Range =
+            Range::from(((1, 0), (2, 0))).into_lsp(&line_index);
 
-    #[test]
-    fn test_compute_text_edits_trim_final_newlines() {
-        // Test case: remove any final trailing newlines leaving a single newline
-        let old_text = "line1\n\n\n";
-        let new_text = "line1\n";
-        let edits = compute_text_edits(old_text, new_text, &FormatDefinitions::default());
-
-        assert_eq!(edits.len(), 1);
-        let edit = &edits[0];
-
-        let expected_range: tower_lsp::lsp_types::Range = Range::new(
-            Position::new(1, 0), // Start of second line (after common prefix)
-            Position::new(3, 0), // Start of fourth line
-        )
-        .into();
-        assert_eq!(edit.range, expected_range);
-        // Remove the extra newlines with an empty string
-        assert_eq!(edit.new_text, "");
+        pretty_assertions::assert_eq!(edit.range, expected_range);
     }
 }
