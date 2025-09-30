@@ -59,6 +59,8 @@ pub async fn handle_initialize(
         }
     }
 
+    tracing::debug!("backend_capabilities: {:?}", backend_capabilities);
+
     Ok(InitializeResult {
         server_info: Some(ServerInfo {
             name: String::from("Tombi LSP"),
