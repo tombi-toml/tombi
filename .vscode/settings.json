@@ -1,7 +1,7 @@
 {
-  // "files.trimTrailingWhitespace": true,
-  // "files.trimFinalNewlines": true,
-  // "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "files.insertFinalNewline": true,
   "editor.useTabStops": true,
   "editor.trimAutoWhitespace": true,
   "editor.tabSize": 4,
@@ -60,6 +60,9 @@
   },
   "[toml]": {
     "editor.tabSize": 2,
-    "editor.defaultFormatter": "tombi-toml.tombi"
+    "editor.defaultFormatter": "tombi-toml.tombi",
+    "files.trimTrailingWhitespace": false,
+    "files.trimFinalNewlines": false,
+    "files.insertFinalNewline": false
   }
 }
