@@ -101,7 +101,7 @@ pub async fn handle_formatting(
                     &formatted,
                     document_source.line_index(),
                 );
-                tracing::error!(?edits);
+                tracing::debug!(?edits);
                 document_source.set_text(formatted);
 
                 return Ok(Some(edits));
