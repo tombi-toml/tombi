@@ -99,9 +99,9 @@ pub async fn handle_formatting(
                 let edits = compute_text_edits(
                     document_source.text(),
                     &formatted,
-                    &formatter_definitions,
                     document_source.line_index(),
                 );
+                tracing::debug!(?edits);
                 document_source.set_text(formatted);
 
                 return Ok(Some(edits));
@@ -139,100 +139,146 @@ pub async fn handle_formatting(
 
 /// Computes incremental text edits between old and new text
 /// Returns a vector of TextEdit objects representing the minimal changes needed
-/// Uses a simpler line-based approach to avoid edge cases with complex diffing algorithms
+/// Uses a grapheme-aware prefix/suffix diff so edits stay minimal and on character boundaries
 fn compute_text_edits(
     old_text: &str,
     new_text: &str,
-    formatter_definitions: &FormatDefinitions,
     line_index: &tombi_text::LineIndex,
 ) -> Vec<TextEdit> {
-    let old_lines: Vec<&str> = old_text.lines().collect();
-    let new_lines: Vec<&str> = new_text.lines().collect();
-
-    let line_ending = formatter_definitions.line_ending.unwrap_or_default().into();
-
-    // Find common prefix lines
-    let common_prefix_lines = old_lines
-        .iter()
-        .zip(new_lines.iter())
-        .take_while(|(a, b)| a == b)
-        .count();
-
-    // Find common suffix lines
-    let remaining_old = &old_lines[common_prefix_lines..];
-    let remaining_new = &new_lines[common_prefix_lines..];
-
-    let common_suffix_lines = remaining_old
-        .iter()
-        .rev()
-        .zip(remaining_new.iter().rev())
-        .take_while(|(a, b)| a == b)
-        .count();
-
-    // Calculate edit boundaries
-    let old_start_line = common_prefix_lines;
-    let old_end_line = old_lines.len() - common_suffix_lines;
-    let new_start_line = common_prefix_lines;
-    let new_end_line = new_lines.len() - common_suffix_lines;
-
-    // If no changes, return empty vector
-    if old_start_line >= old_end_line && new_start_line >= new_end_line {
+    if old_text == new_text {
         return Vec::with_capacity(0);
     }
 
-    // Build the replacement text from the changed lines
-    let replacement_lines = &new_lines[new_start_line..new_end_line];
-    let replacement_text = if replacement_lines.is_empty() {
-        String::new()
-    } else {
-        // Reconstruct with line breaks, being careful about the last line
-        let mut result = replacement_lines.join(line_ending);
+    let common_prefix_bytes = old_text
+        .graphemes(true)
+        .zip(new_text.graphemes(true))
+        .take_while(|(old_grapheme, new_grapheme)| old_grapheme == new_grapheme)
+        .map(|(grapheme, _)| grapheme.len())
+        .sum::<usize>();
 
-        // If we're not replacing to the end of the text and the original text doesn't end with a newline,
-        // we need to be careful about trailing newlines
-        if old_end_line < old_lines.len() || old_text.ends_with(line_ending) {
-            result.push_str(line_ending);
-        }
+    let old_suffix = &old_text[common_prefix_bytes..];
+    let new_suffix = &new_text[common_prefix_bytes..];
 
-        result
-    };
+    let common_suffix_bytes = old_suffix
+        .graphemes(true)
+        .rev()
+        .zip(new_suffix.graphemes(true).rev())
+        .take_while(|(old_grapheme, new_grapheme)| old_grapheme == new_grapheme)
+        .map(|(grapheme, _)| grapheme.len())
+        .sum::<usize>()
+        .min(old_suffix.len())
+        .min(new_suffix.len());
 
-    // Calculate positions
-    let start_pos = Position::new(old_start_line as u32, 0);
-    let end_pos = if old_end_line < old_lines.len() {
-        Position::new(old_end_line as u32, 0)
-    } else {
-        // End of document - need to get the column position
-        let last_line = old_lines.last().unwrap_or(&"");
-        Position::new(
-            (old_lines.len() - 1) as u32,
-            UnicodeSegmentation::graphemes(*last_line, true).count() as u32,
-        )
-    };
+    let change_start = common_prefix_bytes;
+    let old_change_end = old_text
+        .len()
+        .saturating_sub(common_suffix_bytes)
+        .max(change_start);
+    let new_change_end = new_text
+        .len()
+        .saturating_sub(common_suffix_bytes)
+        .max(change_start);
+
+    if change_start == old_change_end && change_start == new_change_end {
+        return Vec::with_capacity(0);
+    }
+
+    let start_position = position_at_offset(line_index, change_start);
+    let end_position = position_at_offset(line_index, old_change_end);
+
+    let replacement = new_text[change_start..new_change_end].to_string();
 
     vec![TextEdit {
-        range: Range::new(start_pos, end_pos).into_lsp(line_index),
-        new_text: replacement_text,
+        range: Range::new(start_position, end_position).into_lsp(line_index),
+        new_text: replacement,
     }]
+}
+
+fn position_at_offset(line_index: &tombi_text::LineIndex, offset: usize) -> Position {
+    if line_index.is_empty() {
+        return Position::new(0, 0);
+    }
+
+    let mut last_line = 0u32;
+    let mut last_text = "";
+
+    for (idx, span) in line_index.iter().enumerate() {
+        let line = idx as u32;
+        let line_text = line_index.line_text(line).unwrap_or("");
+
+        last_line = line;
+        last_text = line_text;
+
+        if offset <= usize::from(span.end) {
+            let slice_end = offset
+                .saturating_sub(usize::from(span.start))
+                .min(line_text.len());
+            let column =
+                UnicodeSegmentation::graphemes(&line_text[..slice_end], true).count() as u32;
+            return Position::new(line, column);
+        }
+    }
+
+    let column = UnicodeSegmentation::graphemes(last_text, true).count() as u32;
+    Position::new(last_line, column)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tombi_text::{LineIndex, Position, Range, WideEncoding};
+    use tombi_text::{LineIndex, Range, WideEncoding};
 
     #[test]
     fn test_compute_text_edits_no_changes() {
         let old_text = "hello world";
         let new_text = "hello world";
         let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
-        let edits = compute_text_edits(
-            old_text,
-            new_text,
-            &FormatDefinitions::default(),
-            &line_index,
+        let edits = compute_text_edits(old_text, new_text, &line_index);
+
+        pretty_assertions::assert_eq!(edits, vec![]);
+    }
+
+    #[test]
+    fn test_compute_text_edits_append_final_newline() {
+        let old_text = "hello world";
+        let new_text = "hello world\n";
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(old_text, new_text, &line_index);
+
+        pretty_assertions::assert_eq!(
+            edits,
+            vec![TextEdit {
+                range: Range::from(((0, 11), (0, 11))).into_lsp(&line_index),
+                new_text: "\n".to_string(),
+            }]
         );
-        assert!(edits.is_empty());
+    }
+
+    #[test]
+    fn test_compute_text_edits_no_changes_final_newline() {
+        let old_text = "hello world\n";
+        let new_text = "hello world\n";
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(old_text, new_text, &line_index);
+
+        pretty_assertions::assert_eq!(edits, vec![]);
+    }
+
+    #[test]
+    fn test_compute_text_edits_trim_final_newlines() {
+        // Test case: remove any final trailing newlines leaving a single newline
+        let old_text = "line1\n\n\n";
+        let new_text = "line1\n";
+        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let edits = compute_text_edits(old_text, new_text, &line_index);
+
+        pretty_assertions::assert_eq!(
+            edits,
+            vec![TextEdit {
+                range: Range::from(((1, 0), (3, 0))).into_lsp(&line_index),
+                new_text: "".to_string(),
+            }]
+        );
     }
 
     #[test]
@@ -240,24 +286,15 @@ mod tests {
         let old_text = "hello world";
         let new_text = "hello universe";
         let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
-        let edits = compute_text_edits(
-            old_text,
-            new_text,
-            &FormatDefinitions::default(),
-            &line_index,
+        let edits = compute_text_edits(old_text, new_text, &line_index);
+
+        pretty_assertions::assert_eq!(
+            edits,
+            vec![TextEdit {
+                range: Range::from(((0, 6), (0, 11))).into_lsp(&line_index),
+                new_text: "universe".to_string(),
+            }]
         );
-
-        assert_eq!(edits.len(), 1);
-        let edit = &edits[0];
-        // Line-based approach replaces the entire line
-        assert_eq!(edit.new_text, "hello universe");
-
-        let expected_range: tower_lsp::lsp_types::Range = Range::new(
-            Position::new(0, 0),  // Start of line 0
-            Position::new(0, 11), // End of last character in line 0
-        )
-        .into_lsp(&line_index);
-        assert_eq!(edit.range, expected_range);
     }
 
     #[test]
@@ -265,24 +302,14 @@ mod tests {
         let old_text = "line1\nline2\nline3";
         let new_text = "line1\nmodified line2\nline3";
         let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
-        let edits = compute_text_edits(
-            old_text,
-            new_text,
-            &FormatDefinitions::default(),
-            &line_index,
+        let edits = compute_text_edits(old_text, new_text, &line_index);
+
+        pretty_assertions::assert_eq!(
+            edits,
+            vec![TextEdit {
+                range: Range::from(((1, 0), (1, 0))).into_lsp(&line_index),
+                new_text: "modified ".to_string(),
+            }]
         );
-
-        assert_eq!(edits.len(), 1);
-        let edit = &edits[0];
-
-        // We're replacing the entire "line2\n" with "modified line2\n"
-        assert_eq!(edit.new_text, "modified line2\n");
-
-        let expected_range: tower_lsp::lsp_types::Range = Range::new(
-            Position::new(1, 0), // Start of line 1 (line2)
-            Position::new(2, 0), // Start of line 2 (line3)
-        )
-        .into_lsp(&line_index);
-        assert_eq!(edit.range, expected_range);
     }
 }
