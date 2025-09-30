@@ -13,7 +13,11 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
     let mut document_sources = backend.document_sources.write().await;
     document_sources.insert(
         text_document_uri.clone(),
-        DocumentSource::new(text_document.text, Some(text_document.version)),
+        DocumentSource::new(
+            text_document.text,
+            Some(text_document.version),
+            backend.capabilities.read().await.wide_encoding,
+        ),
     );
     drop(document_sources);
 
