@@ -8,7 +8,8 @@
     "format": "biome format --write",
     "lint": "biome lint --write",
     "vscode": "pnpm -C \"editors/vscode\"",
-    "codex": "npx @openai/codex@latest"
+    "codex": "npx @openai/codex@latest",
+    "claude": "npx @anthropic-ai/claude-code@latest"
   },
   "keywords": [],
   "license": "MIT",
