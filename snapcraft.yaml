@@ -1,0 +1,28 @@
+name: tombi
+base: core24 
+version: '0.6.8'
+summary: TOML Formatter / Linter / Language Server
+description: |
+  Tombi (鳶) is a powerful toolkit that provides a TOML Formatter, Linter, and
+  Language Server to help you maintain clean and consistent TOML files
+grade: stable
+confinement: classic
+
+parts:
+  tombi:
+    plugin: rust
+    source-type: git
+    source: https://github.com/tombi-toml/tombi
+    source-tag: 'v0.6.8'
+    rust-use-global-lto: true
+    rust-inherit-ldflags: true
+    build-attributes:
+      - enable-patchelf
+    build-environment:
+      - LDFLAGS: >
+          -Wl,-rpath=\$ORIGIN/lib:/snap/core24/current/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR
+          -Wl,-dynamic-linker=$(find /snap/core24/current/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR -name 'ld*.so.*' -print | head -n1)
+
+apps:
+  tombi:
+    command: tombi
