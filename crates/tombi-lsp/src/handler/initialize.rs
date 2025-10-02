@@ -1,4 +1,4 @@
-use tombi_text::WideEncoding;
+use tombi_text::EncodingKind;
 use tower_lsp::lsp_types::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
     CompletionOptionsCompletionItem, DeclarationCapability, DiagnosticOptions,
@@ -182,7 +182,7 @@ pub fn server_capabilities(
     }
 }
 
-fn negotiated_wide_encoding(client_capabilities: &ClientCapabilities) -> WideEncoding {
+fn negotiated_wide_encoding(client_capabilities: &ClientCapabilities) -> EncodingKind {
     client_capabilities
         .general
         .as_ref()
@@ -190,7 +190,7 @@ fn negotiated_wide_encoding(client_capabilities: &ClientCapabilities) -> WideEnc
         .and_then(|encodings| {
             encodings
                 .iter()
-                .filter_map(|encoding| WideEncoding::try_from(encoding).ok())
+                .filter_map(|encoding| EncodingKind::try_from(encoding).ok())
                 .next()
         })
         .unwrap_or_default()

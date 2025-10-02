@@ -1,18 +1,18 @@
 //! See [`LineIndex`].
 
-use crate::{features::lsp::WideEncoding, Offset, Span};
+use crate::{features::lsp::EncodingKind, Offset, Span};
 
 /// Indexes the start and end offsets of each line in a piece of text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LineIndex<'a> {
     text: &'a str,
     lines: Vec<Span>,
-    pub wide_encoding: WideEncoding,
+    pub wide_encoding: EncodingKind,
 }
 
 impl<'a> LineIndex<'a> {
     /// Computes the line index for `text`.
-    pub fn new(text: &'a str, wide_encoding: WideEncoding) -> Self {
+    pub fn new(text: &'a str, wide_encoding: EncodingKind) -> Self {
         let mut lines = Vec::new();
         let mut start: usize = 0;
         let bytes = text.as_bytes();
@@ -78,14 +78,14 @@ fn offset_from_usize(value: usize) -> Offset {
 
 #[cfg(test)]
 mod tests {
-    use crate::features::lsp::WideEncoding;
+    use crate::features::lsp::EncodingKind;
 
     use super::LineIndex;
 
     #[test]
     fn indexes_unix_newlines() {
         let text = "foo\nbar\nbaz";
-        let index = LineIndex::new(text, WideEncoding::Utf8);
+        let index = LineIndex::new(text, EncodingKind::Utf8);
 
         let lines: Vec<&str> = index
             .iter()
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn indexes_trailing_newline() {
         let text = "foo\n";
-        let index = LineIndex::new(text, WideEncoding::Utf8);
+        let index = LineIndex::new(text, EncodingKind::Utf8);
 
         let lines: Vec<&str> = index
             .iter()
@@ -111,7 +111,7 @@ mod tests {
     #[test]
     fn indexes_windows_newlines() {
         let text = "foo\r\nbar";
-        let index = LineIndex::new(text, WideEncoding::Utf8);
+        let index = LineIndex::new(text, EncodingKind::Utf8);
 
         let lines: Vec<&str> = index
             .iter()

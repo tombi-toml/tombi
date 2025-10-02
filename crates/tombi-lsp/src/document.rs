@@ -1,4 +1,4 @@
-use tombi_text::{LineIndex, WideEncoding};
+use tombi_text::{LineIndex, EncodingKind};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSource {
@@ -14,7 +14,7 @@ pub struct DocumentSource {
 }
 
 impl DocumentSource {
-    pub fn new(text: impl Into<String>, version: Option<i32>, wide_encoding: WideEncoding) -> Self {
+    pub fn new(text: impl Into<String>, version: Option<i32>, wide_encoding: EncodingKind) -> Self {
         let text = text.into();
         let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(text.as_str()) };
 

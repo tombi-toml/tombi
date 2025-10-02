@@ -1,6 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{features::lsp::WideEncoding, IntoLsp};
+use crate::{features::lsp::EncodingKind, IntoLsp};
 
 pub trait FromLsp<T> {
     fn from_lsp(source: T, line_index: &crate::LineIndex) -> Self;
@@ -16,7 +16,7 @@ impl FromLsp<tower_lsp::lsp_types::Position> for crate::Position {
             .map(|line_text| {
                 let column_text =
                     take_column_text(line_text, source.character, line_index.wide_encoding);
-                WideEncoding::GraphemeCluster.measure(column_text)
+                EncodingKind::GraphemeCluster.measure(column_text)
             })
             .unwrap_or_default();
 
@@ -70,7 +70,7 @@ impl FromLsp<crate::Range> for tower_lsp::lsp_types::Range {
     }
 }
 
-fn take_column_text<'a>(line_text: &'a str, target_units: u32, encoding: WideEncoding) -> &'a str {
+fn take_column_text<'a>(line_text: &'a str, target_units: u32, encoding: EncodingKind) -> &'a str {
     if target_units == 0 {
         return "";
     }
@@ -99,12 +99,12 @@ fn take_column_text<'a>(line_text: &'a str, target_units: u32, encoding: WideEnc
 #[cfg(test)]
 mod tests {
     use super::FromLsp;
-    use crate::{features::lsp::WideEncoding, LineIndex, Position};
+    use crate::{features::lsp::EncodingKind, LineIndex, Position};
 
     #[test]
     fn converts_utf16_column_to_graphemes() {
         let text = "🦅 Tombi";
-        let line_index = LineIndex::new(text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(text, EncodingKind::Utf16);
         let lsp_position = tower_lsp::lsp_types::Position::new(0, 2);
 
         assert_eq!(
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn clamps_when_lsp_column_exceeds_line() {
         let text = "hello";
-        let line_index = LineIndex::new(text, WideEncoding::Utf8);
+        let line_index = LineIndex::new(text, EncodingKind::Utf8);
         let lsp_position = tower_lsp::lsp_types::Position::new(0, 10);
 
         assert_eq!(
