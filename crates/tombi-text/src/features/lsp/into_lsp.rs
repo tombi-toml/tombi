@@ -1,15 +1,15 @@
 use crate::FromLsp;
 
-pub trait IntoLsp<T> {
-    fn into_lsp(self, line_index: &crate::LineIndex) -> T;
+pub trait IntoLsp<Output> {
+    fn into_lsp(self, line_index: &crate::LineIndex) -> Output;
 }
 
-impl<T, U> IntoLsp<U> for T
+impl<Input, Output> IntoLsp<Output> for Input
 where
-    U: FromLsp<T>,
+    Output: FromLsp<Input>,
 {
-    fn into_lsp(self: T, line_index: &crate::LineIndex) -> U {
-        U::from_lsp(self, line_index)
+    fn into_lsp(self: Input, line_index: &crate::LineIndex) -> Output {
+        Output::from_lsp(self, line_index)
     }
 }
 
