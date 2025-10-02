@@ -3,34 +3,52 @@ use std::{
     ops::{Add, AddAssign, Sub},
 };
 
-use crate::{Column, Line, RelativePosition};
+use crate::{Column, Line, PointerAlign, RelativePosition};
 
-#[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Default, Copy, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
-#[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Position {
     pub line: Line,
     pub column: Column,
+
+    _align: PointerAlign,
 }
 
 impl Position {
-    pub const MAX: Position = Position {
-        line: Line::MAX,
-        column: Column::MAX,
-    };
-    pub const MIN: Position = Position {
-        line: Line::MIN,
-        column: Column::MIN,
-    };
+    pub const MAX: Position = Position::new(Line::MAX, Column::MAX);
+    pub const MIN: Position = Position::new(Line::MIN, Column::MIN);
 
     #[inline]
     pub const fn new(line: Line, column: Column) -> Self {
-        Self { line, column }
+        Self {
+            line,
+            column,
+            _align: PointerAlign([]),
+        }
     }
 
     #[inline]
     pub fn add_text(&self, text: &str) -> Self {
         (*self) + RelativePosition::of(text)
+    }
+
+    #[expect(clippy::inline_always)] // Because this is a no-op on 64-bit platforms.
+    #[inline(always)]
+    const fn as_u64(self) -> u64 {
+        if cfg!(target_endian = "little") {
+            ((self.column as u64) << 32) | (self.line as u64)
+        } else {
+            ((self.line as u64) << 32) | (self.column as u64)
+        }
+    }
+}
+
+impl std::fmt::Debug for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Position")
+            .field("line", &self.line)
+            .field("column", &self.column)
+            .finish()
     }
 }
 
@@ -109,6 +127,43 @@ impl Sub<Position> for Position {
             self.column
         };
         RelativePosition { line, column }
+    }
+}
+
+impl PartialEq for Position {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        if cfg!(target_pointer_width = "64") {
+            self.as_u64() == other.as_u64()
+        } else {
+            self.line == other.line && self.column == other.column
+        }
+    }
+}
+
+impl Eq for Position {}
+
+impl std::hash::Hash for Position {
+    #[inline] // We exclusively use `FxHasher`, which produces small output hashing `u64`s and `u32`s
+    fn hash<H: std::hash::Hasher>(&self, hasher: &mut H) {
+        if cfg!(target_pointer_width = "64") {
+            self.as_u64().hash(hasher);
+        } else {
+            self.line.hash(hasher);
+            self.column.hash(hasher);
+        }
+    }
+}
+
+#[cfg(feature = "wasm")]
+impl serde::Serialize for Position {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("line", &self.line)?;
+        map.serialize_entry("column", &self.column)?;
+        map.end()
     }
 }
 

@@ -43,6 +43,6 @@ impl Token {
 
 impl std::fmt::Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} @{:?} @{:?}", self.kind, self.span, self.range)
+        write!(f, "{:?} @{} @{}", self.kind, self.span, self.range)
     }
 }

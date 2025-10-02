@@ -2,7 +2,7 @@ use std::ops::{Add, AddAssign};
 
 use crate::{Column, Line, Position, RelativePosition};
 
-#[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Range {
@@ -55,15 +55,9 @@ impl Range {
     }
 }
 
-impl std::fmt::Debug for Range {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}..{}", self.start, self.end)
-    }
-}
-
 impl std::fmt::Display for Range {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self, f)
+        write!(f, "{}..{}", self.start, self.end)
     }
 }
 
