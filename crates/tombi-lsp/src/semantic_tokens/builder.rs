@@ -107,7 +107,7 @@ fn delta_line_and_start(
 }
 
 fn token_length(range: tombi_text::Range, line_index: &tombi_text::LineIndex) -> u32 {
-    let wide_encoding = line_index.wide_encoding;
+    let encoding_kind = line_index.encoding_kind;
 
     if range.start.line == range.end.line {
         let Some(line_text) = line_index.line_text(range.start.line) else {
@@ -118,7 +118,7 @@ fn token_length(range: tombi_text::Range, line_index: &tombi_text::LineIndex) ->
         line_text_graphemes
             .skip(range.start.column as usize)
             .take((range.end.column - range.start.column) as usize)
-            .fold(0, |acc, char| acc + wide_encoding.measure(char))
+            .fold(0, |acc, char| acc + encoding_kind.measure(char))
     } else {
         (range.start.line..=range.end.line).fold(0, |acc, line| {
             acc + line_index
@@ -142,7 +142,7 @@ fn token_length(range: tombi_text::Range, line_index: &tombi_text::LineIndex) ->
                     line_text_graphemes
                         .skip(skip_count)
                         .take(take_count)
-                        .fold(0, |acc, char| acc + wide_encoding.measure(char))
+                        .fold(0, |acc, char| acc + encoding_kind.measure(char))
                 })
                 .unwrap_or_default()
         })

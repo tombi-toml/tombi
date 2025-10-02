@@ -16,7 +16,7 @@ pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParam
         DocumentSource::new(
             text_document.text,
             Some(text_document.version),
-            backend.capabilities.read().await.wide_encoding,
+            backend.capabilities.read().await.encoding_kind,
         ),
     );
     drop(document_sources);

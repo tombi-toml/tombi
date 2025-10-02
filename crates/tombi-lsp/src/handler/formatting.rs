@@ -226,13 +226,13 @@ fn position_at_offset(line_index: &tombi_text::LineIndex, offset: usize) -> Posi
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tombi_text::{LineIndex, Range, WideEncoding};
+    use tombi_text::{EncodingKind, LineIndex, Range};
 
     #[test]
     fn test_compute_text_edits_no_changes() {
         let old_text = "hello world";
         let new_text = "hello world";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(edits, vec![]);
@@ -242,7 +242,7 @@ mod tests {
     fn test_compute_text_edits_append_final_newline() {
         let old_text = "hello world";
         let new_text = "hello world\n";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(
@@ -258,7 +258,7 @@ mod tests {
     fn test_compute_text_edits_no_changes_final_newline() {
         let old_text = "hello world\n";
         let new_text = "hello world\n";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(edits, vec![]);
@@ -269,7 +269,7 @@ mod tests {
         // Test case: remove any final trailing newlines leaving a single newline
         let old_text = "line1\n\n\n";
         let new_text = "line1\n";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(
@@ -285,7 +285,7 @@ mod tests {
     fn test_compute_text_edits_simple_replacement() {
         let old_text = "hello world";
         let new_text = "hello universe";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(
@@ -301,7 +301,7 @@ mod tests {
     fn test_compute_text_edits_multiline() {
         let old_text = "line1\nline2\nline3";
         let new_text = "line1\nmodified line2\nline3";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(

@@ -108,7 +108,7 @@ macro_rules! test_code_action_refactor_rewrite {
             tracing::debug!(?index, "test toml text index");
 
             let line_index =
-                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
             let toml_file_url = $toml_file_path
                 .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))

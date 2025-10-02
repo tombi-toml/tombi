@@ -44,7 +44,7 @@ use crate::{
     },
 };
 
-use tombi_text::WideEncoding;
+use tombi_text::EncodingKind;
 
 #[derive(Debug)]
 pub struct Backend {
@@ -57,7 +57,7 @@ pub struct Backend {
 
 #[derive(Debug)]
 pub struct BackendCapabilities {
-    pub wide_encoding: WideEncoding,
+    pub encoding_kind: EncodingKind,
     pub diagnostic_type: DiagnosticType,
 }
 
@@ -80,7 +80,7 @@ impl Backend {
             client,
             capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
                 diagnostic_type: DiagnosticType::Push,
-                wide_encoding: WideEncoding::default(),
+                encoding_kind: EncodingKind::default(),
             })),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),

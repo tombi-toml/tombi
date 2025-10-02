@@ -39,7 +39,7 @@ pub use crate::{
 };
 
 #[cfg(feature = "lsp")]
-pub use crate::features::lsp::{FromLsp, IntoLsp, LineIndex, WideEncoding};
+pub use crate::features::lsp::{EncodingKind, FromLsp, IntoLsp, LineIndex};
 
 #[cfg(target_pointer_width = "16")]
 compile_error!("'text' crate assumes usize >= u32 and does not work on 16-bit targets");
