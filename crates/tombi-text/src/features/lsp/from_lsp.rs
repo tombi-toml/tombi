@@ -2,8 +2,8 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{features::lsp::EncodingKind, IntoLsp};
 
-pub trait FromLsp<T> {
-    fn from_lsp(source: T, line_index: &crate::LineIndex) -> Self;
+pub trait FromLsp<Input> {
+    fn from_lsp(source: Input, line_index: &crate::LineIndex) -> Self;
 }
 
 impl FromLsp<tower_lsp::lsp_types::Position> for crate::Position {
