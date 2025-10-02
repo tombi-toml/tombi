@@ -35,3 +35,6 @@ node_modules
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+
+# kiro
+.kiro/
