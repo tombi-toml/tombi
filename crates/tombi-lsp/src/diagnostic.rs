@@ -191,7 +191,7 @@ pub async fn get_workspace_diagnostic_targets(
         config_path,
     } = workspace_config;
 
-    let wide_encoding = backend.capabilities.read().await.wide_encoding;
+    let encoding_kind = backend.capabilities.read().await.encoding_kind;
 
     let workspace_folder_path_str = workspace_folder_path.to_str()?;
     if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
@@ -223,7 +223,7 @@ pub async fn get_workspace_diagnostic_targets(
                         .write()
                         .await
                         .entry(text_document_uri.clone())
-                        .or_insert_with(|| DocumentSource::new(content, None, wide_encoding))
+                        .or_insert_with(|| DocumentSource::new(content, None, encoding_kind))
                         .version
                 };
 

@@ -15,7 +15,7 @@ impl FromLsp<tower_lsp::lsp_types::Position> for crate::Position {
             .line_text(source.line)
             .map(|line_text| {
                 let column_text =
-                    take_column_text(line_text, source.character, line_index.wide_encoding);
+                    take_column_text(line_text, source.character, line_index.encoding_kind);
                 EncodingKind::GraphemeCluster.measure(column_text)
             })
             .unwrap_or_default();
@@ -35,7 +35,7 @@ impl FromLsp<crate::Position> for tower_lsp::lsp_types::Position {
                 line_text
                     .graphemes(true)
                     .take(source.column as usize)
-                    .fold(0, |acc, char| acc + line_index.wide_encoding.measure(char))
+                    .fold(0, |acc, char| acc + line_index.encoding_kind.measure(char))
             })
             .unwrap_or_default();
 

@@ -7,12 +7,12 @@ use crate::{features::lsp::EncodingKind, Offset, Span};
 pub struct LineIndex<'a> {
     text: &'a str,
     lines: Vec<Span>,
-    pub wide_encoding: EncodingKind,
+    pub encoding_kind: EncodingKind,
 }
 
 impl<'a> LineIndex<'a> {
     /// Computes the line index for `text`.
-    pub fn new(text: &'a str, wide_encoding: EncodingKind) -> Self {
+    pub fn new(text: &'a str, encoding_kind: EncodingKind) -> Self {
         let mut lines = Vec::new();
         let mut start: usize = 0;
         let bytes = text.as_bytes();
@@ -43,7 +43,7 @@ impl<'a> LineIndex<'a> {
         LineIndex {
             text,
             lines,
-            wide_encoding,
+            encoding_kind,
         }
     }
 

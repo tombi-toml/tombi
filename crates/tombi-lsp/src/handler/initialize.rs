@@ -50,7 +50,7 @@ pub async fn handle_initialize(
     }
 
     let mut backend_capabilities = backend.capabilities.write().await;
-    backend_capabilities.wide_encoding = negotiated_wide_encoding(&client_capabilities);
+    backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
         if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
             if diagnostic_capabilities.dynamic_registration == Some(true) {
@@ -109,7 +109,7 @@ pub fn server_capabilities(
     });
 
     ServerCapabilities {
-        position_encoding: Some(backend_capabilities.wide_encoding.into()),
+        position_encoding: Some(backend_capabilities.encoding_kind.into()),
         workspace,
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
