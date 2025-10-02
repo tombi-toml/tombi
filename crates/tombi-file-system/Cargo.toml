@@ -1,0 +1,25 @@
+[package]
+name = "tombi-file-system"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+dashmap = "6.1"
+futures = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util"], optional = true }
+tracing = { workspace = true }
+wasi = { workspace = true, optional = true }
+wasm-bindgen-futures = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["full", "test-util"] }
+
+[features]
+default = ["native"]
+native = ["tokio"]
+wasm = ["wasi"]
