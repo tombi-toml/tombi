@@ -8,7 +8,6 @@ license.workspace = true
 
 [dependencies]
 dashmap = "6.1"
-futures = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["fs", "io-util"], optional = true }
 tracing = { workspace = true }
@@ -22,4 +21,4 @@ tokio = { workspace = true, features = ["full", "test-util"] }
 [features]
 default = ["native"]
 native = ["tokio"]
-wasm = ["wasi"]
+wasm = ["wasi", "wasm-bindgen-futures"]

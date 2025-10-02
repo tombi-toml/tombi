@@ -3737,7 +3737,6 @@ name = "tombi-file-system"
 version = "0.0.0-dev"
 dependencies = [
  "dashmap 6.1.0",
- "futures",
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
