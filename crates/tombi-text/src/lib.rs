@@ -28,6 +28,11 @@ pub type RelativeOffset = RawTextSize;
 pub type Line = RawTextSize;
 pub type Column = RawTextSize;
 
+/// Zero-sized type which has pointer alignment (8 on 64-bit, 4 on 32-bit).
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+struct PointerAlign([usize; 0]);
+
 pub use crate::{
     offset::Offset, position::Position, range::Range, relative_position::RelativePosition,
     span::Span,

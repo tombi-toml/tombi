@@ -3,12 +3,7 @@ use std::{
     ops::{Add, AddAssign, Bound, Index, IndexMut, Range, RangeBounds, Sub, SubAssign},
 };
 
-use crate::{Offset, RawOffset, RawTextSize};
-
-/// Zero-sized type which has pointer alignment (8 on 64-bit, 4 on 32-bit).
-#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(transparent)]
-struct PointerAlign([usize; 0]);
+use crate::{Offset, PointerAlign, RawOffset, RawTextSize};
 
 /// A span in text, represented as a pair of [`Offset`][struct@Offset].
 ///
@@ -23,6 +18,15 @@ pub struct Span {
 }
 
 impl std::fmt::Debug for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Span")
+            .field("start", &self.start)
+            .field("end", &self.end)
+            .finish()
+    }
+}
+
+impl std::fmt::Display for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}..{}", self.start.raw, self.end.raw)
     }
