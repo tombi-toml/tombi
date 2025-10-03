@@ -1,5 +1,3 @@
-#![cfg(feature = "native")]
-
 use crate::{AbsPath, Error, FileSystem, FileType, Metadata};
 use std::time::SystemTime;
 use tracing::{debug, error};
@@ -30,7 +28,11 @@ impl FileSystem for NativeFileSystem {
     }
 
     async fn write(&self, path: &AbsPath, contents: &[u8]) -> Result<(), Error> {
-        debug!("Writing {} bytes to file: {:?}", contents.len(), path.as_ref());
+        debug!(
+            "Writing {} bytes to file: {:?}",
+            contents.len(),
+            path.as_ref()
+        );
         tokio::fs::write(path.as_ref(), contents)
             .await
             .map_err(|e| {
@@ -62,40 +64,36 @@ impl FileSystem for NativeFileSystem {
 
     async fn remove(&self, path: &AbsPath) -> Result<(), Error> {
         debug!("Removing file: {:?}", path.as_ref());
-        tokio::fs::remove_file(path.as_ref())
-            .await
-            .map_err(|e| {
-                error!("Failed to remove file {:?}: {}", path.as_ref(), e);
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    Error::NotFound {
-                        path: path.to_path_buf(),
-                    }
-                } else {
-                    Error::IoError {
-                        path: path.to_path_buf(),
-                        source: e,
-                    }
+        tokio::fs::remove_file(path.as_ref()).await.map_err(|e| {
+            error!("Failed to remove file {:?}: {}", path.as_ref(), e);
+            if e.kind() == std::io::ErrorKind::NotFound {
+                Error::NotFound {
+                    path: path.to_path_buf(),
                 }
-            })
+            } else {
+                Error::IoError {
+                    path: path.to_path_buf(),
+                    source: e,
+                }
+            }
+        })
     }
 
     async fn create_dir_all(&self, path: &AbsPath) -> Result<(), Error> {
         debug!("Creating directory (with parents): {:?}", path.as_ref());
-        tokio::fs::create_dir_all(path.as_ref())
-            .await
-            .map_err(|e| {
-                error!("Failed to create directory {:?}: {}", path.as_ref(), e);
-                if e.kind() == std::io::ErrorKind::PermissionDenied {
-                    Error::PermissionDenied {
-                        path: path.to_path_buf(),
-                    }
-                } else {
-                    Error::IoError {
-                        path: path.to_path_buf(),
-                        source: e,
-                    }
+        tokio::fs::create_dir_all(path.as_ref()).await.map_err(|e| {
+            error!("Failed to create directory {:?}: {}", path.as_ref(), e);
+            if e.kind() == std::io::ErrorKind::PermissionDenied {
+                Error::PermissionDenied {
+                    path: path.to_path_buf(),
                 }
-            })
+            } else {
+                Error::IoError {
+                    path: path.to_path_buf(),
+                    source: e,
+                }
+            }
+        })
     }
 
     async fn metadata(&self, path: &AbsPath) -> Result<Metadata, Error> {
