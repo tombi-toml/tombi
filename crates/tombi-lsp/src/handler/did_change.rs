@@ -22,7 +22,11 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         if let Some(range) = content_change.range {
             tracing::warn!("Range change is not supported: {:?}", range);
         } else {
-            document.set_text(content_change.text);
+            let toml_version = backend
+                .text_document_toml_version(&text_document_uri, &content_change.text)
+                .await;
+
+            document.set_text(content_change.text, toml_version);
         }
     }
     drop(document_sources);

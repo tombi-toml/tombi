@@ -16,20 +16,16 @@ pub async fn handle_document_symbol(
     let DocumentSymbolParams { text_document, .. } = params;
 
     let text_document_uri = text_document.uri.into();
-    let Some(tree) = backend
-        .get_incomplete_document_tree(&text_document_uri)
-        .await
-    else {
+
+    let document_sources = backend.document_sources.read().await;
+    let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(None);
     };
 
-    let document_source = backend.document_sources.read().await;
-    let Some(document_source) = document_source.get(&text_document_uri) else {
-        return Ok(None);
-    };
+    let document_tree = document_source.document_tree();
     let line_index = document_source.line_index();
 
-    let symbols = create_symbols(&tree, &line_index);
+    let symbols = create_symbols(&document_tree, &line_index);
 
     Ok(Some(DocumentSymbolResponse::Nested(symbols)))
 }

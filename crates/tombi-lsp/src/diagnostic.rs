@@ -77,30 +77,12 @@ pub async fn get_diagnostics_result(
         }
     }
 
-    let root = backend.get_incomplete_ast(text_document_uri).await?;
-
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
-        .await
-        .ok()
-        .flatten();
-
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_document_comment_directive,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
-
     let document_sources = backend.document_sources.read().await;
 
     match document_sources.get(text_document_uri) {
         Some(document_source) => Some(DiagnosticsResult {
             diagnostics: match tombi_linter::Linter::new(
-                toml_version,
+                document_source.toml_version,
                 config.lint.as_ref().unwrap_or(&LintOptions::default()),
                 Some(Either::Left(text_document_uri)),
                 &schema_store,
@@ -217,13 +199,20 @@ pub async fn get_workspace_diagnostic_targets(
                 let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
                     continue;
                 };
+
+                let toml_version = backend
+                    .text_document_toml_version(&text_document_uri, &content)
+                    .await;
+
                 let version = {
                     backend
                         .document_sources
                         .write()
                         .await
                         .entry(text_document_uri.clone())
-                        .or_insert_with(|| DocumentSource::new(content, None, encoding_kind))
+                        .or_insert_with(|| {
+                            DocumentSource::new(content, None, toml_version, encoding_kind)
+                        })
                         .version
                 };
 
