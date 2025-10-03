@@ -5,7 +5,7 @@ pub use level::Level;
 pub use printer::Print;
 use tower_lsp::lsp_types::NumberOrString;
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Diagnostic {
@@ -90,6 +90,14 @@ impl PartialEq for Diagnostic {
 }
 
 impl Eq for Diagnostic {}
+
+impl std::hash::Hash for Diagnostic {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.range.hash(state);
+        self.code.hash(state);
+        self.message.hash(state);
+    }
+}
 
 pub trait SetDiagnostics {
     /// Set the diagnostic to the given diagnostics.
