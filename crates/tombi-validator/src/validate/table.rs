@@ -419,26 +419,25 @@ async fn validate_table(
         }
     }
 
-    if total_diagnostics.is_empty()
-        && table_schema.deprecated == Some(true) {
-            let level = lint_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .deprecated
-                        .as_ref()
-                        .map(SeverityLevelDefaultWarn::from)
-                })
-                .unwrap_or_default();
+    if total_diagnostics.is_empty() && table_schema.deprecated == Some(true) {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .deprecated
+                    .as_ref()
+                    .map(SeverityLevelDefaultWarn::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Deprecated(
-                    tombi_schema_store::SchemaAccessors::from(accessors),
-                )),
-                range: table_value.range(),
-            }
-            .push_diagnostic_with_level(level, &mut total_diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Deprecated(
+                tombi_schema_store::SchemaAccessors::from(accessors),
+            )),
+            range: table_value.range(),
         }
+        .push_diagnostic_with_level(level, &mut total_diagnostics);
+    }
 
     if total_diagnostics.is_empty() {
         Ok(())
@@ -487,7 +486,7 @@ async fn convert_deprecated_diagnostics_range(
     current_schema: &CurrentSchema<'_>,
     value: &tombi_document_tree::Value,
     key: &tombi_document_tree::Key,
-    schema_diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
     if current_schema.value_schema.deprecated().await == Some(true) {
         for diagnostic in schema_diagnostics.iter_mut() {

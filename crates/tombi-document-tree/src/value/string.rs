@@ -46,7 +46,7 @@ impl crate::String {
         quoted_string: impl Into<std::string::String>,
         range: tombi_text::Range,
         toml_version: TomlVersion,
-        comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+        comment_directives: Option<Vec<TombiValueCommentDirective>>,
     ) -> Result<Self, tombi_toml_text::ParseError> {
         let quoted_string = quoted_string.into();
 
@@ -67,7 +67,7 @@ impl crate::String {
             kind,
             value,
             range,
-            comment_directives,
+            comment_directives: comment_directives.map(Box::new),
         })
     }
 

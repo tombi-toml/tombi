@@ -73,7 +73,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Float {
                 tree: crate::Value::Float(crate::Float {
                     value,
                     range: token.range(),
-                    comment_directives,
+                    comment_directives: comment_directives.map(Box::new),
                 }),
                 errors,
             },

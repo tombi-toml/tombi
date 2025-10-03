@@ -78,7 +78,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::OffsetDateTime {
                 tree: crate::Value::OffsetDateTime(crate::OffsetDateTime {
                     value,
                     range: token.range(),
-                    comment_directives,
+                    comment_directives: comment_directives.map(Box::new),
                 }),
                 errors,
             },

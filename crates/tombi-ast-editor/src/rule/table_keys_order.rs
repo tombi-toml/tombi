@@ -363,6 +363,7 @@ async fn extract_pattern_properties<T>(
     sorted_targets
 }
 
+#[allow(clippy::type_complexity)]
 async fn sort_targets<T>(
     mut targets: Vec<(Accessor, Vec<(Vec<Accessor>, T)>)>,
     order: TableKeysOrder,

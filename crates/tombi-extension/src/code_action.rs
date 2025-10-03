@@ -103,8 +103,7 @@ impl FromLsp<WorkspaceEdit> for tower_lsp::lsp_types::WorkspaceEdit {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct CodeAction {
     pub title: String,
     pub kind: Option<CodeActionKind>,
@@ -115,7 +114,6 @@ pub struct CodeAction {
     pub disabled: Option<CodeActionDisabled>,
     pub data: Option<Value>,
 }
-
 
 impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeAction {
     fn from_lsp(
@@ -136,7 +134,6 @@ impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeAction {
             is_preferred: source.is_preferred,
             disabled: source.disabled,
             data: source.data,
-            ..Default::default()
         }
     }
 }

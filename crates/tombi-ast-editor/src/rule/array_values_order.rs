@@ -183,9 +183,7 @@ async fn get_sorted_values_order_groups<'a>(
     schema_context: &'a SchemaContext<'a>,
     values_order_group: ArrayValuesOrderGroup,
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
-    let Some(current_schema) = current_schema else {
-        return None;
-    };
+    let current_schema = current_schema?;
 
     match (values_order_group, current_schema.value_schema.as_ref()) {
         (

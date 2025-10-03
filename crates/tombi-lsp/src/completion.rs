@@ -447,8 +447,7 @@ fn get_leading_comma(node: &SyntaxNode, position: tombi_text::Position) -> Optio
     }
     if let Some(sibling) = node
         .siblings_with_tokens(Direction::Prev)
-        .skip_while(|node_or_token| node_or_token.range().contains(position))
-        .next()
+        .find(|node_or_token| !node_or_token.range().contains(position))
     {
         if sibling.kind() == SyntaxKind::COMMA {
             return Some(CommaHint {
@@ -499,7 +498,8 @@ fn get_trailing_comma(node: &SyntaxNode, position: tombi_text::Position) -> Opti
                 if let NodeOrToken::Node(node) = sibling {
                     if let Some(next_node_or_token) = node
                         .children_with_tokens()
-                        .skip_while(|sibling| !sibling.range().contains(position)).nth(1)
+                        .skip_while(|sibling| !sibling.range().contains(position))
+                        .nth(1)
                     {
                         match next_node_or_token.kind() {
                             SyntaxKind::COMMA => {
