@@ -110,7 +110,7 @@ where
                     }
 
                     match value
-                        .validate(&accessors, Some(&current_schema), schema_context)
+                        .validate(accessors, Some(&current_schema), schema_context)
                         .await
                     {
                         Ok(()) => valid_hover_value_contents.push(hover_value_content.clone()),

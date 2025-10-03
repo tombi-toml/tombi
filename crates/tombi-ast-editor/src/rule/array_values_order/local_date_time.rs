@@ -42,7 +42,7 @@ pub async fn create_local_date_time_sortable_values<'a>(
                     };
                     let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
 
-                    let mut keys_iter = keys.keys().into_iter();
+                    let mut keys_iter = keys.keys();
                     if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
                         let key_text = key.to_raw_text(schema_context.toml_version);
                         if key_text == array_values_order_by {

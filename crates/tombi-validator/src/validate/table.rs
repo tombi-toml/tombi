@@ -143,7 +143,7 @@ async fn validate_table(
 
     for (key, value) in table_value.key_values() {
         let key_rules = if let Some(directives) = key.comment_directives() {
-            get_tombi_key_rules_and_diagnostics(&directives)
+            get_tombi_key_rules_and_diagnostics(directives)
                 .await
                 .0
                 .map(|rules| rules.value)
@@ -212,7 +212,7 @@ async fn validate_table(
                     tracing::warn!("Invalid regex pattern property: {}", pattern_key);
                     continue;
                 };
-                if pattern.is_match(&accessor_raw_text) {
+                if pattern.is_match(accessor_raw_text) {
                     matched_key = true;
                     if let Ok(Some(current_schema)) = property_schema
                         .resolve(
@@ -419,8 +419,8 @@ async fn validate_table(
         }
     }
 
-    if total_diagnostics.is_empty() {
-        if table_schema.deprecated == Some(true) {
+    if total_diagnostics.is_empty()
+        && table_schema.deprecated == Some(true) {
             let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
@@ -439,7 +439,6 @@ async fn validate_table(
             }
             .push_diagnostic_with_level(level, &mut total_diagnostics);
         }
-    }
 
     if total_diagnostics.is_empty() {
         Ok(())

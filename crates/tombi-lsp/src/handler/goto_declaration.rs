@@ -51,16 +51,16 @@ pub async fn handle_goto_declaration(
 
     let position = position.into_lsp(line_index);
 
-    let Some((keys, _)) = get_hover_keys_with_range(&root, position, toml_version).await else {
+    let Some((keys, _)) = get_hover_keys_with_range(root, position, toml_version).await else {
         return Ok(None);
     };
 
     let document_tree = document_source.document_tree();
-    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree::get_accessors(document_tree, &keys, position);
 
     if let Some(locations) = tombi_extension_cargo::goto_declaration(
         &text_document_uri,
-        &document_tree,
+        document_tree,
         &accessors,
         toml_version,
     )
@@ -71,7 +71,7 @@ pub async fn handle_goto_declaration(
 
     if let Some(locations) = tombi_extension_uv::goto_declaration(
         &text_document_uri,
-        &document_tree,
+        document_tree,
         &accessors,
         toml_version,
     )

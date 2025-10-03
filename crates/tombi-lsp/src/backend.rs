@@ -120,7 +120,7 @@ impl Backend {
             ..
         } = self
             .config_manager
-            .config_schema_store_for_uri(&text_document_uri)
+            .config_schema_store_for_uri(text_document_uri)
             .await;
 
         let source_schema = if let Some(parsed) =
@@ -137,7 +137,7 @@ impl Backend {
             }
 
             match schema_store
-                .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
+                .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
                 .await
             {
                 Ok(Some(schema)) => Some(schema),

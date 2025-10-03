@@ -54,20 +54,20 @@ pub async fn get_document_comment_directive_hover_content(
             content_range,
             position_in_content,
         }) => {
-            return get_comment_directive_toml_content_hover_content(
+            get_comment_directive_toml_content_hover_content(
                 content,
                 content_range,
                 position_in_content,
                 TombiDocumentDirectiveContent::comment_directive_schema_url(),
             )
-            .await;
+            .await
         }
         Some(CommentDirectiveContext::Directive { directive_range }) => {
-            return Some(HoverContent::Directive(HoverDirectiveContent {
+            Some(HoverContent::Directive(HoverDirectiveContent {
                 title: DOCUMENT_TOMBI_DIRECTIVE_TITLE.to_string(),
                 description: DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION.to_string(),
                 range: directive_range,
-            }));
+            }))
         }
         None => None,
     }

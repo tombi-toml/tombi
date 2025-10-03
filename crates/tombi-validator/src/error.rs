@@ -16,6 +16,12 @@ pub struct Error {
     pub diagnostics: Vec<tombi_diagnostic::Diagnostic>,
 }
 
+impl Default for Error {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Error {
     #[inline]
     pub fn new() -> Self {

@@ -63,7 +63,7 @@ pub async fn handle_goto_type_definition(
     let position = position.into_lsp(line_index);
 
     if let Some(type_definition) =
-        get_tombi_document_comment_directive_type_definition(&root, position).await
+        get_tombi_document_comment_directive_type_definition(root, position).await
     {
         return Ok(Some(vec![tombi_extension::DefinitionLocation {
             uri: type_definition.schema_uri.into(),
@@ -72,12 +72,12 @@ pub async fn handle_goto_type_definition(
     }
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
+        .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
 
-    let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
+    let Some((keys, range)) = get_hover_keys_with_range(root, position, toml_version).await else {
         return Ok(Default::default());
     };
 

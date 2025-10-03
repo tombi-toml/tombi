@@ -133,7 +133,7 @@ impl Value {
             }
             Value::Array(array) => array.comment_directives = Some(Box::new(comment_directives)),
             Value::Table(table) => table.comment_directives = Some(Box::new(comment_directives)),
-            Value::Incomplete { .. } => return,
+            Value::Incomplete { .. } => (),
         }
     }
 

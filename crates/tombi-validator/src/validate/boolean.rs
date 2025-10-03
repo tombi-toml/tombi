@@ -154,8 +154,8 @@ async fn validate_boolean(
         }
     }
 
-    if diagnostics.is_empty() {
-        if boolean_schema.deprecated == Some(true) {
+    if diagnostics.is_empty()
+        && boolean_schema.deprecated == Some(true) {
             let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
@@ -175,7 +175,6 @@ async fn validate_boolean(
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
         }
-    }
 
     if diagnostics.is_empty() {
         Ok(())

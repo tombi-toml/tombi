@@ -144,7 +144,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                         schema_context,
                                         if self.kind() == ArrayKind::Array {
                                             if new_item_index == 0 {
-                                                let add_trailing_comma = if self.len() == 0
+                                                let add_trailing_comma = if self.is_empty()
                                                     || matches!(
                                                         completion_hint,
                                                         Some(CompletionHint::Comma {
@@ -170,13 +170,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                                     })
                                                 ) {
                                                     None
-                                                } else if let Some(start_position) =
-                                                    new_item_start_position
-                                                {
-                                                    Some(AddLeadingComma { start_position })
-                                                } else {
-                                                    None
-                                                };
+                                                } else { new_item_start_position.map(|start_position| AddLeadingComma { start_position }) };
 
                                                 let add_trailing_comma = if matches!(
                                                     completion_hint,
@@ -186,12 +180,10 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                                     })
                                                 ) {
                                                     None
+                                                } else if new_item_index != self.len() {
+                                                    Some(AddTrailingComma)
                                                 } else {
-                                                    if new_item_index != self.len() {
-                                                        Some(AddTrailingComma)
-                                                    } else {
-                                                        None
-                                                    }
+                                                    None
                                                 };
 
                                                 Some(CompletionHint::InArray {

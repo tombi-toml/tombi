@@ -93,7 +93,7 @@ impl From<crate::Boolean> for Option<LiteralValue> {
             return None;
         };
 
-        try_from_boolean(&token.text())
+        try_from_boolean(token.text())
             .ok()
             .map(LiteralValue::Boolean)
     }
@@ -105,7 +105,7 @@ impl From<crate::IntegerBin> for Option<LiteralValue> {
             return None;
         };
 
-        try_from_binary(&token.text())
+        try_from_binary(token.text())
             .ok()
             .map(LiteralValue::Integer)
     }
@@ -117,7 +117,7 @@ impl From<crate::IntegerDec> for Option<LiteralValue> {
             return None;
         };
 
-        try_from_decimal(&token.text())
+        try_from_decimal(token.text())
             .ok()
             .map(LiteralValue::Integer)
     }
@@ -129,7 +129,7 @@ impl From<crate::IntegerOct> for Option<LiteralValue> {
             return None;
         };
 
-        try_from_octal(&token.text())
+        try_from_octal(token.text())
             .ok()
             .map(LiteralValue::Integer)
     }
@@ -141,7 +141,7 @@ impl From<crate::IntegerHex> for Option<LiteralValue> {
             return None;
         };
 
-        try_from_hexadecimal(&token.text())
+        try_from_hexadecimal(token.text())
             .ok()
             .map(LiteralValue::Integer)
     }
@@ -153,7 +153,7 @@ impl From<crate::Float> for Option<LiteralValue> {
             return None;
         };
 
-        try_from_float(&token.text()).ok().map(LiteralValue::Float)
+        try_from_float(token.text()).ok().map(LiteralValue::Float)
     }
 }
 

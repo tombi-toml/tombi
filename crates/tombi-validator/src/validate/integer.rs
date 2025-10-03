@@ -283,8 +283,8 @@ async fn validate_integer_schema(
         }
     }
 
-    if diagnostics.is_empty() {
-        if integer_schema.deprecated == Some(true) {
+    if diagnostics.is_empty()
+        && integer_schema.deprecated == Some(true) {
             let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
@@ -304,7 +304,6 @@ async fn validate_integer_schema(
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
         }
-    }
 
     if diagnostics.is_empty() {
         Ok(())
@@ -484,8 +483,8 @@ async fn validate_float_schema_for_integer(
         }
     }
 
-    if diagnostics.is_empty() {
-        if float_schema.deprecated == Some(true) {
+    if diagnostics.is_empty()
+        && float_schema.deprecated == Some(true) {
             let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
@@ -505,7 +504,6 @@ async fn validate_float_schema_for_integer(
             }
             .push_diagnostic_with_level(level, &mut diagnostics);
         }
-    }
 
     if diagnostics.is_empty() {
         Ok(())
