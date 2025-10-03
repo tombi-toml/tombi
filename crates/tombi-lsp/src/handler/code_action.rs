@@ -60,7 +60,6 @@ pub async fn handle_code_action(
     let accessors = get_accessors(&document_tree, &keys, position);
     let mut key_contexts = key_contexts.into_iter();
     let accessor_contexts = build_accessor_contexts(&accessors, &mut key_contexts);
-    let line_index = document_source.line_index();
 
     let mut code_actions = Vec::new();
 
