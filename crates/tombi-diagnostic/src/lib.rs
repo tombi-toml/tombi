@@ -5,7 +5,7 @@ pub use level::Level;
 pub use printer::Print;
 use tower_lsp::lsp_types::NumberOrString;
 
-#[derive(Debug, Clone, Eq, Hash)]
+#[derive(Debug, Clone, Hash)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Diagnostic {
@@ -88,6 +88,8 @@ impl PartialEq for Diagnostic {
         self.range == other.range && self.code == other.code && self.message == other.message
     }
 }
+
+impl Eq for Diagnostic {}
 
 pub trait SetDiagnostics {
     /// Set the diagnostic to the given diagnostics.
