@@ -184,12 +184,12 @@ impl Table {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &*v)
+        self.comment_directives.as_deref()
     }
 
     #[inline]
     pub fn inner_comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.inner_comment_directives.as_deref().map(|v| &*v)
+        self.inner_comment_directives.as_deref()
     }
 
     #[inline]

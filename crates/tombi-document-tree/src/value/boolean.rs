@@ -37,7 +37,7 @@ impl Boolean {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &*v)
+        self.comment_directives.as_deref()
     }
 }
 
@@ -77,7 +77,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Boolean {
             tree: crate::Value::Boolean(crate::Boolean {
                 value,
                 range: token.range(),
-                comment_directives: comment_directives,
+                comment_directives,
             }),
             errors,
         }
