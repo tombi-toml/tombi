@@ -15,7 +15,7 @@ pub struct Key {
     kind: KeyKind,
     pub value: String,
     range: tombi_text::Range,
-    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl Key {
@@ -26,7 +26,7 @@ impl Key {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &**v)
+        self.comment_directives.as_deref().map(|v| &*v)
     }
 
     #[inline]

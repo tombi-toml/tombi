@@ -43,8 +43,8 @@ pub struct Array {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
-    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
-    pub(crate) inner_comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) inner_comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl Array {
@@ -187,12 +187,12 @@ impl Array {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &**v)
+        self.comment_directives.as_deref().map(|v| &*v)
     }
 
     #[inline]
     pub fn inner_comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.inner_comment_directives.as_deref().map(|v| &**v)
+        self.inner_comment_directives.as_deref().map(|v| &*v)
     }
 
     #[inline]
@@ -308,11 +308,11 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
             }
 
             if !comment_directives.is_empty() {
-                array.comment_directives = Some(Box::new(comment_directives));
+                array.comment_directives = Some(comment_directives);
             }
 
             if !inner_comment_directives.is_empty() {
-                array.inner_comment_directives = Some(Box::new(inner_comment_directives));
+                array.inner_comment_directives = Some(inner_comment_directives);
             }
         }
 

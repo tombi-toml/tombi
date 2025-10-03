@@ -20,7 +20,7 @@ pub struct Integer {
     kind: IntegerKind,
     value: i64,
     range: tombi_text::Range,
-    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl Integer {
@@ -46,7 +46,7 @@ impl Integer {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &**v)
+        self.comment_directives.as_deref().map(|v| &*v)
     }
 }
 
@@ -89,7 +89,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerBin {
                     kind: IntegerKind::Binary,
                     value,
                     range: token.range(),
-                    comment_directives: comment_directives.map(Box::new),
+                    comment_directives,
                 }),
                 errors,
             },
@@ -128,7 +128,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerOct {
                     kind: IntegerKind::Octal,
                     value,
                     range: token.range(),
-                    comment_directives: comment_directives.map(Box::new),
+                    comment_directives,
                 }),
                 errors,
             },
@@ -167,7 +167,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerDec {
                     kind: IntegerKind::Decimal,
                     value,
                     range: token.range(),
-                    comment_directives: comment_directives.map(Box::new),
+                    comment_directives,
                 }),
                 errors,
             },
@@ -206,7 +206,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::IntegerHex {
                     kind: IntegerKind::Hexadecimal,
                     value,
                     range: token.range(),
-                    comment_directives: comment_directives.map(Box::new),
+                    comment_directives,
                 }),
                 errors,
             },
