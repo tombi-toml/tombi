@@ -20,8 +20,8 @@ pub async fn into_definition_locations(
         return Ok(None);
     };
 
-    let document_source = backend.document_sources.read().await;
-    let Some(document_source) = document_source.get(&definitions[0].uri) else {
+    let document_sources = backend.document_sources.read().await;
+    let Some(document_source) = document_sources.get(&definitions[0].uri) else {
         return Ok(None);
     };
     let line_index = document_source.line_index();

@@ -57,31 +57,12 @@ pub async fn handle_formatting(
         }
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
-        return Ok(None);
-    };
-
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
-        .await
-        .ok()
-        .flatten();
-
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_document_comment_directive,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
-
     let mut document_sources = backend.document_sources.write().await;
     let Some(document_source) = document_sources.get_mut(&text_document_uri) else {
         return Ok(None);
     };
 
+    let toml_version = document_source.toml_version;
     let formatter_definitions = FormatDefinitions::default();
 
     match tombi_formatter::Formatter::new(
@@ -102,7 +83,7 @@ pub async fn handle_formatting(
                     document_source.line_index(),
                 );
                 tracing::debug!(?edits);
-                document_source.set_text(formatted);
+                document_source.set_text(formatted, toml_version);
 
                 return Ok(Some(edits));
             } else {

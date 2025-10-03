@@ -15,11 +15,12 @@ pub async fn handle_folding_range(
     let FoldingRangeParams { text_document, .. } = params;
     let text_document_uri = text_document.uri.into();
 
-    let Some((root, _)) = backend.get_ast_and_diagnostics(&text_document_uri).await else {
+    let document_sources = backend.document_sources.read().await;
+    let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(None);
     };
 
-    let folding_ranges = create_folding_ranges(root);
+    let folding_ranges = create_folding_ranges(document_source.ast());
 
     if !folding_ranges.is_empty() {
         Ok(Some(folding_ranges))
@@ -28,7 +29,7 @@ pub async fn handle_folding_range(
     }
 }
 
-fn create_folding_ranges(root: tombi_ast::Root) -> Vec<FoldingRange> {
+fn create_folding_ranges(root: &tombi_ast::Root) -> Vec<FoldingRange> {
     let mut ranges: Vec<FoldingRange> = vec![];
 
     for node in root.syntax().descendants() {
