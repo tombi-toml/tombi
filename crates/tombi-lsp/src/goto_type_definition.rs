@@ -6,8 +6,13 @@ mod value;
 
 use std::{borrow::Cow, ops::Deref};
 
+use ahash::AHashMap;
 pub use comment::get_tombi_document_comment_directive_type_definition;
+use itertools::Itertools;
 use tombi_schema_store::{CurrentSchema, SchemaUri};
+use tower_lsp::lsp_types::GotoDefinitionResponse;
+
+use crate::{goto_definition::open_remote_file, Backend};
 
 pub async fn get_type_definition(
     document_tree: &tombi_document_tree::DocumentTree,
@@ -36,6 +41,54 @@ pub async fn get_type_definition(
                 .get_type_definition(position, keys, &[], None, schema_context)
                 .await
         }
+    }
+}
+
+pub async fn into_type_definition_locations(
+    backend: &Backend,
+    definitions: Option<Vec<tombi_extension::DefinitionLocation>>,
+) -> Result<Option<GotoDefinitionResponse>, tower_lsp::jsonrpc::Error> {
+    let Some(definitions) = definitions else {
+        return Ok(None);
+    };
+
+    let mut uri_set = AHashMap::new();
+    for definition in &definitions {
+        if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
+            uri_set.insert(definition.uri.clone(), remote_uri);
+        }
+    }
+
+    let definitions = definitions
+        .into_iter()
+        .map(|mut definition| {
+            if let Some(remote_uri) = uri_set.get(&definition.uri) {
+                definition.uri = remote_uri.clone();
+            }
+            tower_lsp::lsp_types::Location::new(
+                definition.uri.into(),
+                tower_lsp::lsp_types::Range::new(
+                    tower_lsp::lsp_types::Position::new(
+                        definition.range.start.line,
+                        definition.range.start.column,
+                    ),
+                    tower_lsp::lsp_types::Position::new(
+                        definition.range.end.line,
+                        definition.range.end.column,
+                    ),
+                ),
+            )
+        })
+        .collect_vec();
+
+    match definitions.len() {
+        0 => Ok(None),
+        1 => Ok(Some(GotoDefinitionResponse::Scalar(
+            definitions.into_iter().next().unwrap(),
+        ))),
+        _ => Ok(Some(GotoDefinitionResponse::Array(
+            definitions.into_iter().collect(),
+        ))),
     }
 }
 

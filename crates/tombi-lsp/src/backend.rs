@@ -27,6 +27,7 @@ use crate::{
     config_manager::{ConfigManager, ConfigSchemaStore},
     document::DocumentSource,
     goto_definition::into_definition_locations,
+    goto_type_definition::into_type_definition_locations,
     handler::{
         handle_associate_schema, handle_code_action, handle_completion, handle_diagnostic,
         handle_did_change, handle_did_change_configuration, handle_did_change_watched_files,
@@ -349,7 +350,7 @@ impl LanguageServer for Backend {
         &self,
         params: GotoTypeDefinitionParams,
     ) -> Result<Option<GotoTypeDefinitionResponse>, tower_lsp::jsonrpc::Error> {
-        into_definition_locations(self, handle_goto_type_definition(self, params).await?).await
+        into_type_definition_locations(self, handle_goto_type_definition(self, params).await?).await
     }
 
     async fn goto_declaration(
