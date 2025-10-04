@@ -89,9 +89,7 @@ impl From<crate::Value> for Option<LiteralValue> {
 
 impl From<crate::Boolean> for Option<LiteralValue> {
     fn from(value: crate::Boolean) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         try_from_boolean(token.text())
             .ok()
@@ -101,9 +99,7 @@ impl From<crate::Boolean> for Option<LiteralValue> {
 
 impl From<crate::IntegerBin> for Option<LiteralValue> {
     fn from(value: crate::IntegerBin) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         try_from_binary(token.text())
             .ok()
@@ -113,9 +109,7 @@ impl From<crate::IntegerBin> for Option<LiteralValue> {
 
 impl From<crate::IntegerDec> for Option<LiteralValue> {
     fn from(value: crate::IntegerDec) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         try_from_decimal(token.text())
             .ok()
@@ -125,21 +119,15 @@ impl From<crate::IntegerDec> for Option<LiteralValue> {
 
 impl From<crate::IntegerOct> for Option<LiteralValue> {
     fn from(value: crate::IntegerOct) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
-        try_from_octal(token.text())
-            .ok()
-            .map(LiteralValue::Integer)
+        try_from_octal(token.text()).ok().map(LiteralValue::Integer)
     }
 }
 
 impl From<crate::IntegerHex> for Option<LiteralValue> {
     fn from(value: crate::IntegerHex) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         try_from_hexadecimal(token.text())
             .ok()
@@ -149,9 +137,7 @@ impl From<crate::IntegerHex> for Option<LiteralValue> {
 
 impl From<crate::Float> for Option<LiteralValue> {
     fn from(value: crate::Float) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         try_from_float(token.text()).ok().map(LiteralValue::Float)
     }
@@ -159,9 +145,7 @@ impl From<crate::Float> for Option<LiteralValue> {
 
 impl From<crate::BasicString> for Option<LiteralValue> {
     fn from(value: crate::BasicString) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         Some(LiteralValue::String(token.text().to_string()))
     }
@@ -169,9 +153,7 @@ impl From<crate::BasicString> for Option<LiteralValue> {
 
 impl From<crate::OffsetDateTime> for Option<LiteralValue> {
     fn from(value: crate::OffsetDateTime) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         Some(LiteralValue::OffsetDateTime(token.text().to_string()))
     }
@@ -179,9 +161,7 @@ impl From<crate::OffsetDateTime> for Option<LiteralValue> {
 
 impl From<crate::LocalDateTime> for Option<LiteralValue> {
     fn from(value: crate::LocalDateTime) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         Some(LiteralValue::LocalDateTime(token.text().to_string()))
     }
@@ -189,9 +169,7 @@ impl From<crate::LocalDateTime> for Option<LiteralValue> {
 
 impl From<crate::LocalDate> for Option<LiteralValue> {
     fn from(value: crate::LocalDate) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         Some(LiteralValue::LocalDate(token.text().to_string()))
     }
@@ -199,9 +177,7 @@ impl From<crate::LocalDate> for Option<LiteralValue> {
 
 impl From<crate::LocalTime> for Option<LiteralValue> {
     fn from(value: crate::LocalTime) -> Self {
-        let Some(token) = value.token() else {
-            return None;
-        };
+        let token = value.token()?;
 
         Some(LiteralValue::LocalTime(token.text().to_string()))
     }
