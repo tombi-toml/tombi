@@ -9,6 +9,7 @@ mod goto_definition;
 mod goto_type_definition;
 pub mod handler;
 mod hover;
+mod mtime_tracker;
 mod semantic_tokens;
 
 pub use backend::Backend;

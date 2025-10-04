@@ -158,6 +158,7 @@ pub async fn get_workspace_configs(
 pub struct WorkspaceDiagnosticTarget {
     pub text_document_uri: tombi_uri::Uri,
     pub version: Option<i32>,
+    pub should_skip: bool,
 }
 
 pub async fn get_workspace_diagnostic_targets(
@@ -191,6 +192,9 @@ pub async fn get_workspace_diagnostic_targets(
             files
         );
 
+        let mut excluded_count = 0;
+        let mut skipped_count = 0;
+
         for file in files {
             let Ok(text_document_path) = file else {
                 continue;
@@ -216,11 +220,66 @@ pub async fn get_workspace_diagnostic_targets(
                         .version
                 };
 
+                // Exclude files opened in editor (version is Some)
+                if version.is_some() {
+                    excluded_count += 1;
+                    continue;
+                }
+
+                // Check if file should be skipped based on mtime
+                // Get file modification time
+                let mtime = match tokio::fs::metadata(&text_document_path).await {
+                    Ok(metadata) => match metadata.modified() {
+                        Ok(time) => Some(time),
+                        Err(err) => {
+                            tracing::debug!(
+                                "Failed to get mtime for {:?}: {}",
+                                text_document_path,
+                                err
+                            );
+                            None
+                        }
+                    },
+                    Err(err) => {
+                        tracing::debug!(
+                            "Failed to get metadata for {:?}: {}",
+                            text_document_path,
+                            err
+                        );
+                        None
+                    }
+                };
+
+                let should_skip = if let Some(mtime) = mtime {
+                    backend
+                        .mtime_tracker
+                        .should_skip(&text_document_uri, mtime)
+                        .await
+                } else {
+                    false
+                };
+
+                if should_skip {
+                    skipped_count += 1;
+                }
+
                 total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
                     text_document_uri,
                     version,
+                    should_skip,
                 });
             }
+        }
+
+        tracing::debug!(
+            "Excluded {} files opened in editor, {} files skipped by mtime",
+            excluded_count,
+            skipped_count
+        );
+
+        if !total_diagnostic_targets.is_empty() {
+            let skip_rate = (skipped_count as f64 / total_diagnostic_targets.len() as f64) * 100.0;
+            tracing::debug!("Skip rate: {:.1}%", skip_rate);
         }
     }
 
