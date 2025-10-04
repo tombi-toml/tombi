@@ -16,7 +16,7 @@ pub async fn handle_workspace_diagnostic(
     backend: &Backend,
     params: WorkspaceDiagnosticParams,
 ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-    tracing::trace!("handle_workspace_diagnostic");
+    tracing::info!("handle_workspace_diagnostic");
     tracing::trace!(?params);
 
     if let Some(configs) = get_workspace_configs(backend).await {
@@ -40,14 +40,35 @@ pub async fn handle_workspace_diagnostic(
             if let Some(workspace_diagnostic_targets) =
                 get_workspace_diagnostic_targets(backend, workspace_config).await
             {
+                let mut skipped_count = 0;
                 for WorkspaceDiagnosticTarget {
                     text_document_uri,
                     version,
+                    should_skip,
                 } in workspace_diagnostic_targets
                 {
+                    // Skip processing if should_skip flag is true
+                    if should_skip {
+                        skipped_count += 1;
+                        continue;
+                    }
+
                     if let Some(diagnostics) =
                         get_diagnostics_result(backend, &text_document_uri).await
                     {
+                        // Record mtime after diagnostic execution
+                        if let Ok(path) = tombi_uri::Uri::to_file_path(&text_document_uri) {
+                            if let Ok(metadata) = tokio::fs::metadata(&path).await {
+                                if let Ok(mtime) = metadata.modified() {
+                                    backend
+                                        .mtime_tracker
+                                        .record(text_document_uri.clone(), mtime)
+                                        .await;
+                                    tracing::debug!("Recorded mtime for {:?}", path);
+                                }
+                            }
+                        }
+
                         items.push(WorkspaceDocumentDiagnosticReport::Full(
                             WorkspaceFullDocumentDiagnosticReport {
                                 uri: text_document_uri.into(),
@@ -60,6 +81,7 @@ pub async fn handle_workspace_diagnostic(
                         ));
                     }
                 }
+                tracing::debug!("Skipped {} files in workspace diagnostics", skipped_count);
             }
         }
 
@@ -99,13 +121,35 @@ pub async fn push_workspace_diagnostics(backend: &Backend) {
             if let Some(workspace_diagnostic_targets) =
                 get_workspace_diagnostic_targets(backend, workspace_config).await
             {
+                let mut skipped_count = 0;
                 for WorkspaceDiagnosticTarget {
                     text_document_uri,
                     version,
+                    should_skip,
                 } in workspace_diagnostic_targets
                 {
-                    publish_diagnostics(backend, text_document_uri, version).await;
+                    // Skip processing if should_skip flag is true
+                    if should_skip {
+                        skipped_count += 1;
+                        continue;
+                    }
+
+                    publish_diagnostics(backend, text_document_uri.clone(), version).await;
+
+                    // Record mtime after diagnostic execution
+                    if let Ok(path) = tombi_uri::Uri::to_file_path(&text_document_uri) {
+                        if let Ok(metadata) = tokio::fs::metadata(&path).await {
+                            if let Ok(mtime) = metadata.modified() {
+                                backend.mtime_tracker.record(text_document_uri, mtime).await;
+                                tracing::debug!("Recorded mtime for {:?}", path);
+                            }
+                        }
+                    }
                 }
+                tracing::debug!(
+                    "Skipped {} files in push workspace diagnostics",
+                    skipped_count
+                );
             }
         }
     }

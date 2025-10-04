@@ -38,6 +38,7 @@ use crate::{
         handle_update_schema, handle_workspace_diagnostic, push_diagnostics, AssociateSchemaParams,
         GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
     },
+    mtime_tracker::MtimeTracker,
 };
 
 use tombi_text::EncodingKind;
@@ -49,6 +50,7 @@ pub struct Backend {
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
+    pub mtime_tracker: MtimeTracker,
 }
 
 #[derive(Debug)]
@@ -80,6 +82,7 @@ impl Backend {
             })),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
+            mtime_tracker: MtimeTracker::new(),
         }
     }
 
