@@ -11,6 +11,7 @@ pub mod handler;
 mod hover;
 mod mtime_tracker;
 mod semantic_tokens;
+mod workspace_diagnostics_throttle;
 
 pub use backend::Backend;
 pub(crate) use comment_directive::{

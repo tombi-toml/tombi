@@ -527,6 +527,17 @@
               "type": "null"
             }
           ]
+        },
+        "throttle-seconds": {
+          "title": "Throttle interval in seconds",
+          "description": "Controls the throttling behavior of workspace diagnostics:\n- 0: Run only once (first execution), then always skip\n- >0: Skip if within the specified interval, allow if interval has passed",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0,
+          "default": 5
         }
       },
       "additionalProperties": false
