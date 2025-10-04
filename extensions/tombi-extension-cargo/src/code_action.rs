@@ -85,7 +85,7 @@ fn code_actions_for_workspace_cargo_toml(
     if let Some(action) =
         crate_version_code_action(text_document_uri, document_tree, accessors, contexts)
     {
-        code_actions.push(CodeActionOrCommand::CodeAction(action));
+        code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
     }
 
     code_actions
@@ -114,7 +114,7 @@ fn code_actions_for_crate_cargo_toml(
             accessors,
             contexts,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(action));
+            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
         }
 
         if let Some(action) = use_workspace_depencency_code_action(
@@ -124,7 +124,7 @@ fn code_actions_for_crate_cargo_toml(
             accessors,
             contexts,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(action));
+            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
         }
     }
 
@@ -132,7 +132,7 @@ fn code_actions_for_crate_cargo_toml(
     if let Some(action) =
         crate_version_code_action(text_document_uri, crate_document_tree, accessors, contexts)
     {
-        code_actions.push(CodeActionOrCommand::CodeAction(action));
+        code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
     }
 
     code_actions
