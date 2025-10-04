@@ -86,9 +86,7 @@ pub async fn into_type_definition_locations(
         1 => Ok(Some(GotoDefinitionResponse::Scalar(
             definitions.into_iter().next().unwrap(),
         ))),
-        _ => Ok(Some(GotoDefinitionResponse::Array(
-            definitions.into_iter().collect(),
-        ))),
+        _ => Ok(Some(GotoDefinitionResponse::Array(definitions))),
     }
 }
 
