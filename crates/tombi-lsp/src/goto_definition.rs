@@ -20,12 +20,6 @@ pub async fn into_definition_locations(
         return Ok(None);
     };
 
-    let document_sources = backend.document_sources.read().await;
-    let Some(document_source) = document_sources.get(&definitions[0].uri) else {
-        return Ok(None);
-    };
-    let line_index = document_source.line_index();
-
     let mut uri_set = AHashMap::new();
     for definition in &definitions {
         if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
@@ -45,15 +39,31 @@ pub async fn into_definition_locations(
 
     match definitions.len() {
         0 => Ok(None),
-        1 => Ok(Some(GotoDefinitionResponse::Scalar(
-            definitions.into_iter().next().unwrap().into_lsp(line_index),
-        ))),
-        _ => Ok(Some(GotoDefinitionResponse::Array(
-            definitions
-                .into_iter()
-                .map(|definition| definition.into_lsp(line_index))
-                .collect(),
-        ))),
+        1 => {
+            let document_sources = backend.document_sources.read().await;
+            let definition = definitions.into_iter().next().unwrap();
+            let Some(document_source) = document_sources.get(&definition.uri) else {
+                return Ok(None);
+            };
+
+            Ok(Some(GotoDefinitionResponse::Scalar(
+                definition.into_lsp(document_source.line_index()),
+            )))
+        }
+        _ => {
+            let mut lsp_definitions = Vec::with_capacity(definitions.len());
+
+            let document_sources = backend.document_sources.read().await;
+            for definition in definitions {
+                let Some(document_source) = document_sources.get(&definition.uri) else {
+                    continue;
+                };
+
+                lsp_definitions.push(definition.into_lsp(document_source.line_index()));
+            }
+
+            Ok(Some(GotoDefinitionResponse::Array(lsp_definitions)))
+        }
     }
 }
 
