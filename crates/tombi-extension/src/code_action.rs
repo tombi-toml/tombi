@@ -149,8 +149,8 @@ impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeActionOrCommand {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CodeActionOrCommand {
-    CodeAction(CodeAction),
-    Command(Command),
+    CodeAction(Box<CodeAction>),
+    Command(Box<Command>),
 }
 
 impl FromLsp<CodeActionOrCommand> for tower_lsp::lsp_types::CodeActionOrCommand {
@@ -160,10 +160,12 @@ impl FromLsp<CodeActionOrCommand> for tower_lsp::lsp_types::CodeActionOrCommand 
     ) -> tower_lsp::lsp_types::CodeActionOrCommand {
         match source {
             CodeActionOrCommand::CodeAction(action) => {
-                tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(action.into_lsp(line_index))
+                tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(
+                    (*action).into_lsp(line_index),
+                )
             }
             CodeActionOrCommand::Command(command) => {
-                tower_lsp::lsp_types::CodeActionOrCommand::Command(command)
+                tower_lsp::lsp_types::CodeActionOrCommand::Command(*command)
             }
         }
     }
