@@ -45,11 +45,7 @@ pub async fn get_tombi_value_comment_directive_type_definition(
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
 
-    let Some((keys, range)) =
-        get_hover_keys_with_range(&root, position_in_content, toml_version).await
-    else {
-        return None;
-    };
+    let (keys, range) = get_hover_keys_with_range(&root, position_in_content, toml_version).await?;
 
     if keys.is_empty() && range.is_none() {
         return None;

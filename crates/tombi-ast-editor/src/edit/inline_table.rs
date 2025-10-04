@@ -30,7 +30,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                     key_value
                         .edit(
                             node,
-                            &accessors,
+                            accessors,
                             source_path,
                             current_schema,
                             schema_context,
@@ -44,7 +44,7 @@ impl crate::Edit for tombi_ast::InlineTable {
                     if let Some(key_value) = self
                         .syntax()
                         .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                        .and_then(tombi_ast::KeyValue::cast)
                     {
                         key_value
                             .comment_directives()

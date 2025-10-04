@@ -187,8 +187,8 @@ impl CompletionEdit {
                 add_trailing_comma,
             }) => {
                 let new_text = match add_trailing_comma {
-                    Some(_) => format!("[$1],$0"),
-                    None => format!("[$1]$0"),
+                    Some(_) => "[$1],$0".to_string(),
+                    None => "[$1]$0".to_string(),
                 };
                 let additional_text_edits =
                     head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
@@ -238,8 +238,8 @@ impl CompletionEdit {
                 add_trailing_comma,
             }) => {
                 let new_text = match add_trailing_comma {
-                    Some(_) => format!("{{ $1 }},$0"),
-                    None => format!("{{ $1 }}$0"),
+                    Some(_) => "{ $1 },$0".to_string(),
+                    None => "{ $1 }$0".to_string(),
                 };
                 let additional_text_edits =
                     head_comma_text_edits(add_leading_comma, add_trailing_comma, position);

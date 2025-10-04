@@ -120,7 +120,7 @@ impl std::str::FromStr for DateTime {
                 return Err(crate::parse::Error::InvalidMonth);
             }
             let is_leap_year =
-                (date.year % 4 == 0) && ((date.year % 100 != 0) || (date.year % 400 == 0));
+                date.year.is_multiple_of(4) && (!date.year.is_multiple_of(100) || date.year.is_multiple_of(400));
             let max_days_in_month = match date.month {
                 2 if is_leap_year => 29,
                 2 => 28,

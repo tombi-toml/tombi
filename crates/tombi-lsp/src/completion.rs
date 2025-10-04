@@ -59,9 +59,9 @@ pub fn get_comment_context(
 
 fn _get_comment_context(comment: tombi_ast::Comment) -> Option<CommentContext> {
     if comment.get_tombi_value_directive().is_some() {
-        return Some(CommentContext::ValueDirective(comment));
+        Some(CommentContext::ValueDirective(comment))
     } else {
-        return Some(CommentContext::Normal(comment));
+        Some(CommentContext::Normal(comment))
     }
 }
 
@@ -447,8 +447,7 @@ fn get_leading_comma(node: &SyntaxNode, position: tombi_text::Position) -> Optio
     }
     if let Some(sibling) = node
         .siblings_with_tokens(Direction::Prev)
-        .skip_while(|node_or_token| node_or_token.range().contains(position))
-        .next()
+        .find(|node_or_token| !node_or_token.range().contains(position))
     {
         if sibling.kind() == SyntaxKind::COMMA {
             return Some(CommaHint {
@@ -500,8 +499,7 @@ fn get_trailing_comma(node: &SyntaxNode, position: tombi_text::Position) -> Opti
                     if let Some(next_node_or_token) = node
                         .children_with_tokens()
                         .skip_while(|sibling| !sibling.range().contains(position))
-                        .skip(1)
-                        .next()
+                        .nth(1)
                     {
                         match next_node_or_token.kind() {
                             SyntaxKind::COMMA => {

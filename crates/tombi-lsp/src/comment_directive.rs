@@ -111,7 +111,7 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
         position: tombi_text::Position,
     ) -> Option<CommentDirectiveContext<String>> {
         if self.content_range.contains(position) {
-            return Some(CommentDirectiveContext::Content {
+            Some(CommentDirectiveContext::Content {
                 content: self.content.clone(),
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
@@ -120,11 +120,11 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
                         .column
                         .saturating_sub(self.directive_range.end.column),
                 ),
-            });
+            })
         } else if self.directive_range.contains(position) {
-            return Some(CommentDirectiveContext::Directive {
+            Some(CommentDirectiveContext::Directive {
                 directive_range: self.directive_range,
-            });
+            })
         } else {
             None
         }

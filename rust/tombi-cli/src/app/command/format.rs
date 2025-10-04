@@ -325,14 +325,12 @@ where
                 }
                 if check {
                     Err(crate::error::NotFormattedError::from(file.source()).into_error())
+                } else if let Err(err) = file.reset().await {
+                    Err(crate::Error::Io(err))
                 } else {
-                    if let Err(err) = file.reset().await {
-                        Err(crate::Error::Io(err))
-                    } else {
-                        match file.write_all(formatted.as_bytes()).await {
-                            Ok(_) => Ok(true),
-                            Err(err) => Err(crate::Error::Io(err)),
-                        }
+                    match file.write_all(formatted.as_bytes()).await {
+                        Ok(_) => Ok(true),
+                        Err(err) => Err(crate::Error::Io(err)),
                     }
                 }
             } else {

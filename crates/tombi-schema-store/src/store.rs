@@ -546,7 +546,7 @@ impl SchemaStore {
                 }
             };
             return self
-                .try_get_source_schema_from_remote_url(&SchemaUri::from(schema_uri))
+                .try_get_source_schema_from_remote_url(&schema_uri)
                 .await
                 .map_err(|err| (err, uri_range));
         }

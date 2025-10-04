@@ -70,7 +70,7 @@ impl FromLsp<crate::Range> for tower_lsp::lsp_types::Range {
     }
 }
 
-fn take_column_text<'a>(line_text: &'a str, target_units: u32, encoding: EncodingKind) -> &'a str {
+fn take_column_text(line_text: &str, target_units: u32, encoding: EncodingKind) -> &str {
     if target_units == 0 {
         return "";
     }

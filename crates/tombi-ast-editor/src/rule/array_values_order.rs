@@ -93,7 +93,7 @@ pub async fn array_values_order<'a>(
         XTombiArrayValuesOrder::Groups(values_order_group) => {
             get_sorted_values_order_groups(
                 values_with_comma,
-                array_node.values().into_iter().collect_vec(),
+                array_node.values().iter().collect_vec(),
                 accessors,
                 current_schema,
                 schema_context,
@@ -159,7 +159,7 @@ async fn get_sorted_values_order_all<'a>(
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
     let sortable_values = match SortableValues::try_new(
         values_with_comma,
-        &array_node.values().into_iter().collect_vec(),
+        &array_node.values().iter().collect_vec(),
         accessors,
         current_schema,
         schema_context,
@@ -183,9 +183,7 @@ async fn get_sorted_values_order_groups<'a>(
     schema_context: &'a SchemaContext<'a>,
     values_order_group: ArrayValuesOrderGroup,
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
-    let Some(current_schema) = current_schema else {
-        return None;
-    };
+    let current_schema = current_schema?;
 
     match (values_order_group, current_schema.value_schema.as_ref()) {
         (
@@ -411,7 +409,7 @@ impl SortableType {
 
                     for key_value in inline_table.key_values() {
                         if let Some(keys) = key_value.keys() {
-                            let mut keys_iter = keys.keys().into_iter();
+                            let mut keys_iter = keys.keys();
                             let Some(key_text) = keys_iter
                                 .next()
                                 .map(|key| key.to_raw_text(schema_context.toml_version))

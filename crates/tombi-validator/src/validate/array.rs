@@ -242,8 +242,8 @@ async fn validate_array(
         }
     }
 
-    if total_diagnostics.is_empty() {
-        if array_schema.deprecated == Some(true) {
+    if total_diagnostics.is_empty()
+        && array_schema.deprecated == Some(true) {
             let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
@@ -262,7 +262,6 @@ async fn validate_array(
             }
             .push_diagnostic_with_level(level, &mut total_diagnostics);
         }
-    }
 
     if total_diagnostics.is_empty() {
         Ok(())

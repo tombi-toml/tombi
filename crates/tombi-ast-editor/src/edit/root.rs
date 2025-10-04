@@ -42,7 +42,7 @@ impl crate::Edit for tombi_ast::Root {
                 changes.extend(
                     key_value
                         .edit(
-                            node.into(),
+                            node,
                             &[],
                             source_path,
                             current_schema,

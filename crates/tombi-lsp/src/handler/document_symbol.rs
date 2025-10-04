@@ -25,7 +25,7 @@ pub async fn handle_document_symbol(
     let document_tree = document_source.document_tree();
     let line_index = document_source.line_index();
 
-    let symbols = create_symbols(&document_tree, &line_index);
+    let symbols = create_symbols(document_tree, line_index);
 
     Ok(Some(DocumentSymbolResponse::Nested(symbols)))
 }
