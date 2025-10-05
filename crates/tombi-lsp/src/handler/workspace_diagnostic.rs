@@ -61,7 +61,8 @@ async fn execute_workspace_diagnostics(
         let throttle_seconds =
             get_throttle_seconds(workspace_config).unwrap_or(DEFAULT_THROTTLE_SECONDS);
         match backend
-            .workspace_diagnostics_throttle
+            .workspace_diagnostic_state
+            .throttle()
             .should_skip_by_throttle(throttle_seconds)
             .await
         {
@@ -116,7 +117,8 @@ async fn execute_workspace_diagnostics(
 
     // Record completion time
     backend
-        .workspace_diagnostics_throttle
+        .workspace_diagnostic_state
+        .throttle()
         .record_completion()
         .await;
 
@@ -192,7 +194,8 @@ async fn process_workspace_diagnostic_targets(
                 if let Ok(metadata) = tokio::fs::metadata(&path).await {
                     if let Ok(mtime) = metadata.modified() {
                         backend
-                            .mtime_tracker
+                            .workspace_diagnostic_state
+                            .mtime_tracker()
                             .record(text_document_uri_clone, mtime)
                             .await;
                         tracing::debug!("Recorded mtime for {:?}", path);

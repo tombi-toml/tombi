@@ -252,7 +252,8 @@ pub async fn get_workspace_diagnostic_targets(
 
                 let should_skip = if let Some(mtime) = mtime {
                     backend
-                        .mtime_tracker
+                        .workspace_diagnostic_state
+                        .mtime_tracker()
                         .should_skip(&text_document_uri, mtime)
                         .await
                 } else {

@@ -11,6 +11,7 @@ pub mod handler;
 mod hover;
 mod mtime_tracker;
 mod semantic_tokens;
+pub mod workspace_diagnostic_state;
 mod workspace_diagnostics_throttle;
 
 pub use backend::Backend;
