@@ -8,8 +8,63 @@ use tower_lsp::lsp_types::{CodeActionKind, OneOf, OptionalVersionedTextDocumentI
 use crate::{find_workspace_cargo_toml, get_workspace_path};
 
 pub enum CodeActionRefactorRewriteName {
+    /// Inherit from Workspace
+    ///
+    /// If you are using a crate that depends on the workspace, inherit the workspace's crate.
+    ///
+    /// Before
+    ///
+    /// ```toml
+    /// # In your member crate's Cargo.toml
+    /// [package]
+    /// version = "1.0.0"
+    /// ```
+    ///
+    /// After applying "Inherit from Workspace"
+    ///
+    /// ```toml
+    /// # In your member crate's Cargo.toml
+    /// [package]
+    /// version.workspace = true
+    /// ```
     InheritFromWorkspace,
+
+    /// Inherit Dependency from Workspace
+    ///
+    /// If you are using a crate that depends on the workspace, inherit the workspace's crate.
+    ///
+    /// Before
+    ///
+    /// ```toml
+    /// # In your member crate's Cargo.toml
+    /// [dependencies]
+    /// serde = "1.0"
+    /// ```
+    ///
+    /// After applying "Inherit Dependency from Workspace"
+    ///
+    /// ```toml
+    /// # In your member crate's Cargo.toml
+    /// [dependencies]
+    /// serde = { workspace = true }
+    /// ```
     InheritDependencyFromWorkspace,
+
+    /// Convert Dependency to Table Format
+    ///
+    /// Before
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// serde = "1.0"
+    /// ```
+    ///
+    /// After applying "Convert Dependency to Table Format"
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// serde = { version = "1.0" }
+    /// ```
     ConvertDependencyToTableFormat,
 }
 
