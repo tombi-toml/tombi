@@ -46,7 +46,12 @@ macro_rules! test_format {
                 &tombi_schema_store::SchemaStore::new()
             ).format($source).await {
                 Ok(formatted_text) => {
-                    pretty_assertions::assert_eq!(formatted_text, textwrap::dedent($expected).trim().to_string() + "\n");
+                    let new_line = if formatted_text.is_empty() {
+                        ""
+                    } else {
+                        "\n"
+                    };
+                    pretty_assertions::assert_eq!(formatted_text, textwrap::dedent($expected).trim().to_string() + new_line);
                 }
                 Err(errors) => {
                     pretty_assertions::assert_eq!(errors, vec![]);
@@ -94,6 +99,22 @@ mod test {
 
     use super::*;
     use crate::FormatDefinitions;
+
+    test_format! {
+        #[test]
+        fn test_empty(
+            r#""#,
+            TomlVersion::V1_0_0
+        ) -> Ok(source);
+    }
+
+    test_format! {
+        #[test]
+        fn test_whitespace(
+            r#"    "#,
+            TomlVersion::V1_0_0
+        ) -> Ok("");
+    }
 
     test_format! {
         #[test]
