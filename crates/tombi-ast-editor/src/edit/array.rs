@@ -109,10 +109,8 @@ impl crate::Edit for tombi_ast::Array {
                             ArrayCommonFormatRules,
                             ArrayCommonLintRules,
                         >(
-                            if let Some(key_value) = self
-                                .syntax()
-                                .parent()
-                                .and_then(tombi_ast::KeyValue::cast)
+                            if let Some(key_value) =
+                                self.syntax().parent().and_then(tombi_ast::KeyValue::cast)
                             {
                                 key_value
                                     .comment_directives()

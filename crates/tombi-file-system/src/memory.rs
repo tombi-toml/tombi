@@ -23,8 +23,10 @@ impl FileSystem for InMemoryFileSystem {
     }
 
     async fn write(&self, path: &AbsPath, contents: &[u8]) -> Result<(), Error> {
-        self.files
-            .insert(AbsPathBuf::new_unchecked(path.to_path_buf()), contents.to_vec());
+        self.files.insert(
+            AbsPathBuf::new_unchecked(path.to_path_buf()),
+            contents.to_vec(),
+        );
         Ok(())
     }
 
@@ -35,11 +37,9 @@ impl FileSystem for InMemoryFileSystem {
 
     async fn remove(&self, path: &AbsPath) -> Result<(), Error> {
         let key = AbsPathBuf::new_unchecked(path.to_path_buf());
-        self.files
-            .remove(&key)
-            .ok_or_else(|| Error::NotFound {
-                path: path.to_path_buf(),
-            })?;
+        self.files.remove(&key).ok_or_else(|| Error::NotFound {
+            path: path.to_path_buf(),
+        })?;
         Ok(())
     }
 
@@ -50,11 +50,9 @@ impl FileSystem for InMemoryFileSystem {
 
     async fn metadata(&self, path: &AbsPath) -> Result<Metadata, Error> {
         let key = AbsPathBuf::new_unchecked(path.to_path_buf());
-        let data = self.files
-            .get(&key)
-            .ok_or_else(|| Error::NotFound {
-                path: path.to_path_buf(),
-            })?;
+        let data = self.files.get(&key).ok_or_else(|| Error::NotFound {
+            path: path.to_path_buf(),
+        })?;
 
         Ok(Metadata {
             size: data.len() as u64,

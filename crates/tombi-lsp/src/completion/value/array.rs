@@ -170,7 +170,11 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                                     })
                                                 ) {
                                                     None
-                                                } else { new_item_start_position.map(|start_position| AddLeadingComma { start_position }) };
+                                                } else {
+                                                    new_item_start_position.map(|start_position| {
+                                                        AddLeadingComma { start_position }
+                                                    })
+                                                };
 
                                                 let add_trailing_comma = if matches!(
                                                     completion_hint,

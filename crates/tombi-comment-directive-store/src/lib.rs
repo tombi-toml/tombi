@@ -8,11 +8,10 @@ static COMMENT_DIRECTIVE_SCHEMA_STORE: tokio::sync::OnceCell<tombi_schema_store:
 pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
     COMMENT_DIRECTIVE_SCHEMA_STORE
         .get_or_init(|| async {
-            
             tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
-                    strict: Some(false),
-                    ..Default::default()
-                })
+                strict: Some(false),
+                ..Default::default()
+            })
         })
         .await
 }
