@@ -145,7 +145,11 @@ impl<'a> Formatter<'a> {
             self.line_ending()
         };
 
-        Ok(self.buf + line_ending)
+        if self.buf.is_empty() {
+            Ok(self.buf)
+        } else {
+            Ok(self.buf + line_ending)
+        }
     }
 
     /// Format a node and return the result as a string
