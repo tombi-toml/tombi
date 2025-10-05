@@ -28,7 +28,9 @@ impl MtimeTracker {
     /// - Returns true if mtime matches, false otherwise
     pub async fn should_skip(&self, uri: &tombi_uri::Uri, mtime: SystemTime) -> bool {
         let mtimes = self.mtimes.read().await;
-        mtimes.get(uri).map_or(false, |recorded_mtime| *recorded_mtime == mtime)
+        mtimes
+            .get(uri)
+            .map_or(false, |recorded_mtime| *recorded_mtime == mtime)
     }
 
     /// Record mtime
