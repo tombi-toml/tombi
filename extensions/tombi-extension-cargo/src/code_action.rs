@@ -591,7 +591,10 @@ fn generate_workspace_dependencies_edit(
     let workspace_deps = dig_keys(workspace_document_tree, &["workspace", "dependencies"]);
 
     // Extract dependency value to copy to workspace
-    // NOTE: By convention, dependencies are not written as inline tables, so this logic assumes the value is represented as a Table.
+    //
+    // NOTE: By convention, dependencies are not written as inline tables,
+    //       so this logic assumes the value is represented as a Table.
+    //
     let dependency_text = format!("{} = {}\n", crate_name, crate_value.to_string());
 
     // Determine insertion position
