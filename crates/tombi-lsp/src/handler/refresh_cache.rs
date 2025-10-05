@@ -12,7 +12,7 @@ pub async fn handle_refresh_cache(
 ) -> Result<bool, tower_lsp::jsonrpc::Error> {
     tracing::info!("handle_refresh_cache");
 
-    backend.mtime_tracker.clear().await;
+    backend.workspace_diagnostic_state.clear().await;
     match backend.config_manager.refresh_cache().await {
         Ok(true) => {
             tracing::info!("Cache refreshed");

@@ -1,4 +1,4 @@
-use crate::BoolDefaultTrue;
+use crate::{BoolDefaultTrue, DEFAULT_THROTTLE_SECONDS};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
@@ -165,4 +165,17 @@ pub struct LspWorkspaceDiagnostic {
     ///
     /// Whether to enable workspace diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
+
+    /// # Throttle interval in seconds
+    ///
+    /// Controls the throttling behavior of workspace diagnostics:
+    /// - 0: Run only once (first execution), then always skip
+    /// - >0: Skip if within the specified interval, allow if interval has passed
+    ///
+    #[cfg_attr(feature = "serde", serde(default = "default_throttle_seconds"))]
+    pub throttle_seconds: Option<u64>,
+}
+
+const fn default_throttle_seconds() -> Option<u64> {
+    Some(DEFAULT_THROTTLE_SECONDS)
 }
