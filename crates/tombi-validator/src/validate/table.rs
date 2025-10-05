@@ -240,33 +240,36 @@ async fn validate_table(
                             total_diagnostics.extend(diagnostics);
                         }
                     }
-                } else if !table_schema.allows_additional_properties(schema_context.strict()) {
-                    let level = key_rules
-                        .and_then(|rules| {
-                            rules
-                                .key_pattern
-                                .as_ref()
-                                .map(SeverityLevelDefaultError::from)
-                        })
-                        .unwrap_or_default();
-
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::KeyPattern {
-                            patterns: Patterns(
-                                pattern_properties
-                                    .read()
-                                    .await
-                                    .keys()
-                                    .map(ToString::to_string)
-                                    .collect(),
-                            ),
-                        }),
-                        range: key.range(),
-                    }
-                    .push_diagnostic_with_level(level, &mut total_diagnostics);
                 }
             }
+
+            if !matched_key && !table_schema.allows_additional_properties(schema_context.strict()) {
+                let level = key_rules
+                    .and_then(|rules| {
+                        rules
+                            .key_pattern
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
+                    .unwrap_or_default();
+
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::KeyPattern {
+                        patterns: Patterns(
+                            pattern_properties
+                                .read()
+                                .await
+                                .keys()
+                                .map(ToString::to_string)
+                                .collect(),
+                        ),
+                    }),
+                    range: key.range(),
+                }
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
+            }
         }
+
         if !matched_key {
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
