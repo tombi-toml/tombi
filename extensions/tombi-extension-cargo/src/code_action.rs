@@ -602,7 +602,7 @@ fn generate_workspace_dependencies_edit(
 
             // Find insertion position in the actual table
             if insertion_index == 0 {
-                if table.len() == 0 {
+                if table.is_empty() {
                     tombi_text::Range::at(table.range().end)
                 } else {
                     let range = table.keys().next().unwrap().range();
