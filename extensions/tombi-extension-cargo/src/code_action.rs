@@ -591,31 +591,7 @@ fn generate_workspace_dependencies_edit(
     let workspace_deps = dig_keys(workspace_document_tree, &["workspace", "dependencies"]);
 
     // Extract dependency value to copy to workspace
-    let dependency_text = match crate_value {
-        tombi_document_tree::Value::String(version) => {
-            format!("{} = {}\n", crate_name, version.to_string())
-        }
-        tombi_document_tree::Value::Table(table) => {
-            // For table format, we need to serialize the entire table
-            // For now, we'll handle simple cases
-            if let Some(tombi_document_tree::Value::String(version)) = table.get("version") {
-                let mut parts = vec![format!("version = {}", version.to_string())];
-
-                if let Some(tombi_document_tree::Value::Array(features)) = table.get("features") {
-                    parts.push(format!("features = {}", features.to_string()));
-                }
-
-                if let Some(tombi_document_tree::Value::Boolean(optional)) = table.get("optional") {
-                    parts.push(format!("optional = {}", optional.value()));
-                }
-
-                format!("{} = {{ {} }}\n", crate_name, parts.join(", "))
-            } else {
-                return None;
-            }
-        }
-        _ => return None,
-    };
+    let dependency_text = format!("{} = {}\n", crate_name, crate_value.to_string());
 
     // Determine insertion position
     let (insertion_range, needs_section_creation) = if let Some((_, deps_table)) = workspace_deps {
@@ -626,9 +602,12 @@ fn generate_workspace_dependencies_edit(
 
             // Find insertion position in the actual table
             if insertion_index == 0 {
-                // Insert at the beginning of the table
-                let range = table.range();
-                (tombi_text::Range::at(range.start), false)
+                if table.len() == 0 {
+                    (tombi_text::Range::at(table.range().end), false)
+                } else {
+                    let range = table.keys().next().unwrap().range();
+                    (tombi_text::Range::at(range.start), false)
+                }
             } else if insertion_index >= existing_crates.len() {
                 // Insert at the end of the table
                 let range = table.range();
