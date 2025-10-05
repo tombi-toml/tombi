@@ -98,7 +98,11 @@ impl VfsPath {
     /// Panics if the path does not start with `/`.
     pub fn new_virtual_path(path: impl Into<String>) -> Self {
         let path = path.into();
-        assert!(path.starts_with('/'), "Virtual path must start with /: {}", path);
+        assert!(
+            path.starts_with('/'),
+            "Virtual path must start with /: {}",
+            path
+        );
         Self(path)
     }
 
@@ -180,10 +184,7 @@ mod tests {
     #[test]
     fn test_abspath_extension() {
         let abs_path = AbsPathBuf::assert(PathBuf::from("/path/to/file.txt"));
-        assert_eq!(
-            abs_path.as_path().extension().unwrap(),
-            OsStr::new("txt")
-        );
+        assert_eq!(abs_path.as_path().extension().unwrap(), OsStr::new("txt"));
     }
 
     #[test]

@@ -71,10 +71,8 @@ pub trait FileSystem: Send + Sync {
     ///
     /// Returns `Error::NotFound` if the file does not exist.
     /// Returns `Error::IoError` for other I/O errors.
-    fn remove(
-        &self,
-        path: &AbsPath,
-    ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
+    fn remove(&self, path: &AbsPath)
+        -> impl std::future::Future<Output = Result<(), Error>> + Send;
 
     /// Create all directories in the path
     ///

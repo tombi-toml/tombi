@@ -145,10 +145,7 @@ async fn test_native_metadata() {
 
     assert_eq!(metadata.size, content.len() as u64);
     assert!(metadata.modified.is_some());
-    assert_eq!(
-        metadata.file_type,
-        tombi_file_system::FileType::File
-    );
+    assert_eq!(metadata.file_type, tombi_file_system::FileType::File);
 }
 
 #[tokio::test]
@@ -165,8 +162,5 @@ async fn test_native_metadata_directory() {
     // Get metadata
     let metadata = fs.metadata(abs_path.as_path()).await.unwrap();
 
-    assert_eq!(
-        metadata.file_type,
-        tombi_file_system::FileType::Directory
-    );
+    assert_eq!(metadata.file_type, tombi_file_system::FileType::Directory);
 }
