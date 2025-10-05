@@ -216,7 +216,7 @@ fn code_actions_for_crate_cargo_toml(
             code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
         }
 
-        if let Some(action) = use_workspace_depencency_code_action(
+        if let Some(action) = use_workspace_dependency_code_action(
             text_document_uri,
             crate_document_tree,
             &workspace_document_tree,
@@ -315,7 +315,7 @@ fn workspace_code_action(
     })
 }
 
-fn use_workspace_depencency_code_action(
+fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     crate_document_tree: &tombi_document_tree::DocumentTree,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
