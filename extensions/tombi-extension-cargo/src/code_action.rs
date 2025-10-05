@@ -594,7 +594,7 @@ fn generate_workspace_dependencies_edit(
     let dependency_text = format!("{} = {}\n", crate_name, crate_value.to_string());
 
     // Determine insertion position
-    let (insertion_range, needs_section_creation) = if let Some((_, deps_table)) = workspace_deps {
+    let insertion_range = if let Some((_, deps_table)) = workspace_deps {
         if let tombi_document_tree::Value::Table(table) = deps_table {
             // Get existing crate names and calculate insertion index
             let existing_crates: Vec<&str> = table.keys().map(|key| key.value.as_str()).collect();
@@ -603,24 +603,24 @@ fn generate_workspace_dependencies_edit(
             // Find insertion position in the actual table
             if insertion_index == 0 {
                 if table.len() == 0 {
-                    (tombi_text::Range::at(table.range().end), false)
+                    tombi_text::Range::at(table.range().end)
                 } else {
                     let range = table.keys().next().unwrap().range();
-                    (tombi_text::Range::at(range.start), false)
+                    tombi_text::Range::at(range.start)
                 }
             } else if insertion_index >= existing_crates.len() {
                 // Insert at the end of the table
                 let range = table.range();
-                (tombi_text::Range::at(range.end), false)
+                tombi_text::Range::at(range.end)
             } else {
                 // Insert before the crate at insertion_index
                 if let Some((target_key, _)) = table.get_key_value(existing_crates[insertion_index])
                 {
                     let range = target_key.range();
-                    (tombi_text::Range::at(range.start), false)
+                    tombi_text::Range::at(range.start)
                 } else {
                     let range = table.range();
-                    (tombi_text::Range::at(range.end), false)
+                    tombi_text::Range::at(range.end)
                 }
             }
         } else {
@@ -632,14 +632,10 @@ fn generate_workspace_dependencies_edit(
         return None;
     };
 
-    if needs_section_creation {
-        None
-    } else {
-        Some(TextEdit {
-            range: insertion_range,
-            new_text: dependency_text,
-        })
-    }
+    Some(TextEdit {
+        range: insertion_range,
+        new_text: dependency_text,
+    })
 }
 
 /// Generate TextEdit for converting member dependency to workspace = true
