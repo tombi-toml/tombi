@@ -42,18 +42,21 @@ impl WorkspaceDiagnosticsThrottle {
                 Ok((false, None))
             }
             Some(last_time) => {
-                // If throttle_seconds is 0, always skip after first execution
-                if throttle_seconds == 0 {
-                    return Ok((true, None));
-                }
-
                 let now = SystemTime::now();
                 let elapsed = now
                     .duration_since(last_time)
                     .map_err(|e| format!("Failed to calculate elapsed time: {}", e))?;
 
                 let elapsed_secs = elapsed.as_secs_f64();
-                let should_skip = elapsed_secs < throttle_seconds as f64;
+
+                // Determine skip behavior based on throttle_seconds
+                let should_skip = if throttle_seconds == 0 {
+                    // throttle_seconds=0: always skip after first execution
+                    true
+                } else {
+                    // throttle_seconds>0: skip only if within interval
+                    elapsed_secs < throttle_seconds as f64
+                };
 
                 Ok((should_skip, Some(elapsed_secs)))
             }
