@@ -54,7 +54,7 @@ async fn execute_workspace_diagnostics(
                 "`lsp.workspace-diagnostic.enabled` is false in {}",
                 workspace_config.workspace_folder_path.display()
             );
-            break;
+            continue;
         }
 
         // Check throttling only if enabled
