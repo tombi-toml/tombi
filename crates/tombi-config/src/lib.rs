@@ -24,7 +24,6 @@ pub const CONFIG_TOML_FILENAME: &str = "config.toml";
 pub const PYPROJECT_TOML_FILENAME: &str = "pyproject.toml";
 pub const SUPPORTED_CONFIG_FILENAMES: [&str; 2] = [TOMBI_TOML_FILENAME, PYPROJECT_TOML_FILENAME];
 pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
-pub const DEFAULT_THROTTLE_SECONDS: u64 = 5;
 
 /// # Tombi
 ///

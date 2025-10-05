@@ -1,4 +1,4 @@
-use crate::{BoolDefaultTrue, DEFAULT_THROTTLE_SECONDS};
+use crate::BoolDefaultTrue;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
@@ -172,10 +172,7 @@ pub struct LspWorkspaceDiagnostic {
     /// - 0: Run only once (first execution), then always skip
     /// - >0: Skip if within the specified interval, allow if interval has passed
     ///
-    #[cfg_attr(feature = "serde", serde(default = "default_throttle_seconds"))]
+    /// Default: Follows the editor's execution frequency (no additional throttling).
+    ///
     pub throttle_seconds: Option<u64>,
-}
-
-const fn default_throttle_seconds() -> Option<u64> {
-    Some(DEFAULT_THROTTLE_SECONDS)
 }

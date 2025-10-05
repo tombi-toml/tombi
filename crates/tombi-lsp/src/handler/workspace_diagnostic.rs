@@ -1,4 +1,3 @@
-use tombi_config::DEFAULT_THROTTLE_SECONDS;
 use tower_lsp::lsp_types::{
     FullDocumentDiagnosticReport, WorkspaceDiagnosticParams, WorkspaceDiagnosticReport,
     WorkspaceDiagnosticReportResult, WorkspaceDocumentDiagnosticReport,
@@ -58,48 +57,48 @@ async fn execute_workspace_diagnostics(
         }
 
         // Check throttling only if enabled
-        let throttle_seconds =
-            get_throttle_seconds(workspace_config).unwrap_or(DEFAULT_THROTTLE_SECONDS);
-        match backend
-            .workspace_diagnostic_state
-            .throttle()
-            .should_skip_by_throttle(throttle_seconds)
-            .await
-        {
-            Ok((should_skip, elapsed_secs)) => {
-                if should_skip {
-                    if let Some(elapsed) = elapsed_secs {
-                        tracing::info!(
+        if let Some(throttle_seconds) = get_throttle_seconds(workspace_config) {
+            match backend
+                .workspace_diagnostic_state
+                .throttle()
+                .should_skip_by_throttle(throttle_seconds)
+                .await
+            {
+                Ok((should_skip, elapsed_secs)) => {
+                    if should_skip {
+                        if let Some(elapsed) = elapsed_secs {
+                            tracing::info!(
                             "Workspace diagnostics skipped by throttle: elapsed {:.2}s < {}s, workspace_folder_path={}, config_path={:?}",
                             elapsed,
                             throttle_seconds,
                             workspace_config.workspace_folder_path.display(),
                             workspace_config.config_path,
                         );
-                    } else {
-                        tracing::info!("Workspace diagnostics skipped by `workspace-diagnostic.throttle-seconds = 0`, workspace_folder_path={}, config_path={:?}",
+                        } else {
+                            tracing::info!("Workspace diagnostics skipped by `workspace-diagnostic.throttle-seconds = 0`, workspace_folder_path={}, config_path={:?}",
                             workspace_config.workspace_folder_path.display(),
                             workspace_config.config_path,
                         );
-                    }
-                    continue;
-                } else if let Some(elapsed) = elapsed_secs {
-                    tracing::debug!(
+                        }
+                        continue;
+                    } else if let Some(elapsed) = elapsed_secs {
+                        tracing::debug!(
                         "Workspace diagnostics executing: elapsed {:.2}s >= {}s, workspace_folder_path={}, config_path={:?}",
                         elapsed,
                         throttle_seconds,
                         workspace_config.workspace_folder_path.display(),
                         workspace_config.config_path,
                     );
+                    }
                 }
-            }
-            Err(err) => {
-                tracing::error!(
+                Err(err) => {
+                    tracing::error!(
                     "Failed to check workspace diagnostics throttle: {}, proceeding without throttle, workspace_folder_path={}, config_path={:?}",
                     err,
                     workspace_config.workspace_folder_path.display(),
                     workspace_config.config_path,
                 );
+                }
             }
         }
 
