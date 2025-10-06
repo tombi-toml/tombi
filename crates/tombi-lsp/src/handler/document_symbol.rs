@@ -45,13 +45,19 @@ fn create_symbols(
 
 #[allow(deprecated)]
 fn symbols_for_value(
-    name: String,
+    mut name: String,
     value: &tombi_document_tree::Value,
     parent_key_range: Option<tombi_text::Range>,
     line_index: &tombi_text::LineIndex,
     symbols: &mut Vec<DocumentSymbol>,
 ) {
     use tombi_document_tree::Value::*;
+
+    // If the key is empty, set the name to "\"\"" for avoiding the empty key error.
+    // See: https://github.com/tombi-toml/tombi/pull/1090
+    if name.is_empty() {
+        name = "\"\"".to_string();
+    }
 
     let value_range = value.symbol_range();
     let range = if let Some(parent_key_range) = parent_key_range {
