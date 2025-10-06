@@ -163,10 +163,13 @@ fn create_folding_ranges(root: tombi_ast::Root) -> Vec<FoldingRange> {
         } else if let Some(multi_line_basic_string) =
             tombi_ast::MultiLineBasicString::cast(node.to_owned())
         {
-            for folding_range in [multi_line_basic_string
-                .leading_comments()
-                .collect_vec()
-                .get_comment_folding_range()]
+            for folding_range in [
+                multi_line_basic_string
+                    .leading_comments()
+                    .collect_vec()
+                    .get_comment_folding_range(),
+                multi_line_basic_string.get_region_folding_range(),
+            ]
             .into_iter()
             .flatten()
             {
@@ -175,10 +178,13 @@ fn create_folding_ranges(root: tombi_ast::Root) -> Vec<FoldingRange> {
         } else if let Some(multi_line_literal_string) =
             tombi_ast::MultiLineLiteralString::cast(node.to_owned())
         {
-            for folding_range in [multi_line_literal_string
-                .leading_comments()
-                .collect_vec()
-                .get_comment_folding_range()]
+            for folding_range in [
+                multi_line_literal_string
+                    .leading_comments()
+                    .collect_vec()
+                    .get_comment_folding_range(),
+                multi_line_literal_string.get_region_folding_range(),
+            ]
             .into_iter()
             .flatten()
             {
@@ -406,10 +412,38 @@ impl GetFoldingRange for tombi_ast::Array {
 
 impl GetFoldingRange for tombi_ast::InlineTable {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let start_position = self.brace_start()?.range().start;
+        let start_position: tombi_text::Position = self.brace_start()?.range().start;
         let end_position = self.brace_end()?.range().end;
 
         Some(tombi_text::Range::new(start_position, end_position))
+    }
+}
+
+impl GetFoldingRange for tombi_ast::MultiLineBasicString {
+    fn get_folding_range(&self) -> Option<tombi_text::Range> {
+        let token = self.token()?;
+        let range = token.range();
+
+        // 2行以上の場合のみ範囲を返す
+        if range.start.line != range.end.line {
+            Some(range)
+        } else {
+            None
+        }
+    }
+}
+
+impl GetFoldingRange for tombi_ast::MultiLineLiteralString {
+    fn get_folding_range(&self) -> Option<tombi_text::Range> {
+        let token = self.token()?;
+        let range = token.range();
+
+        // 2行以上の場合のみ範囲を返す
+        if range.start.line != range.end.line {
+            Some(range)
+        } else {
+            None
+        }
     }
 }
 
