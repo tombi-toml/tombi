@@ -53,6 +53,8 @@ fn symbols_for_value(
 ) {
     use tombi_document_tree::Value::*;
 
+    // If the key is empty, set the name to "\"\"" for avoiding the empty key error.
+    // See: https://github.com/tombi-toml/tombi/pull/1090
     if name.is_empty() {
         name = "\"\"".to_string();
     }
