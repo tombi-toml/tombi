@@ -313,9 +313,10 @@ fn create_folding_ranges(root: &tombi_ast::Root) -> Vec<FoldingRange> {
     ranges
 }
 
-trait GetFoldingRange {
+trait GetRegionFoldingRange {
     fn get_folding_range(&self) -> Option<tombi_text::Range>;
 
+    #[inline]
     fn get_region_folding_range(&self) -> Option<FoldingRange> {
         self.get_folding_range().map(|range| FoldingRange {
             start_line: range.start.line,
@@ -326,7 +327,12 @@ trait GetFoldingRange {
             collapsed_text: None,
         })
     }
+}
 
+trait GetCommentFoldingRange {
+    fn get_folding_range(&self) -> Option<tombi_text::Range>;
+
+    #[inline]
     fn get_comment_folding_range(&self) -> Option<FoldingRange> {
         self.get_folding_range().map(|range| FoldingRange {
             start_line: range.start.line,
@@ -339,7 +345,7 @@ trait GetFoldingRange {
     }
 }
 
-impl GetFoldingRange for tombi_ast::Table {
+impl GetRegionFoldingRange for tombi_ast::Table {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         use tombi_syntax::{SyntaxKind::*, T};
 
@@ -366,7 +372,7 @@ impl GetFoldingRange for tombi_ast::Table {
     }
 }
 
-impl GetFoldingRange for tombi_ast::ArrayOfTable {
+impl GetRegionFoldingRange for tombi_ast::ArrayOfTable {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         use tombi_syntax::{SyntaxKind::*, T};
 
@@ -393,7 +399,7 @@ impl GetFoldingRange for tombi_ast::ArrayOfTable {
     }
 }
 
-impl GetFoldingRange for tombi_ast::TableOrArrayOfTable {
+impl GetRegionFoldingRange for tombi_ast::TableOrArrayOfTable {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         match self {
             Self::Table(table) => table.get_folding_range(),
@@ -402,7 +408,7 @@ impl GetFoldingRange for tombi_ast::TableOrArrayOfTable {
     }
 }
 
-impl GetFoldingRange for tombi_ast::Array {
+impl GetRegionFoldingRange for tombi_ast::Array {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let start_position = self.bracket_start()?.range().start;
         let end_position = self.bracket_end()?.range().end;
@@ -411,7 +417,7 @@ impl GetFoldingRange for tombi_ast::Array {
     }
 }
 
-impl GetFoldingRange for tombi_ast::InlineTable {
+impl GetRegionFoldingRange for tombi_ast::InlineTable {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let start_position = self.brace_start()?.range().start;
         let end_position = self.brace_end()?.range().end;
@@ -420,7 +426,7 @@ impl GetFoldingRange for tombi_ast::InlineTable {
     }
 }
 
-impl GetFoldingRange for tombi_ast::MultiLineBasicString {
+impl GetRegionFoldingRange for tombi_ast::MultiLineBasicString {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let token = self.token()?;
         let range = token.range();
@@ -433,7 +439,7 @@ impl GetFoldingRange for tombi_ast::MultiLineBasicString {
     }
 }
 
-impl GetFoldingRange for tombi_ast::MultiLineLiteralString {
+impl GetRegionFoldingRange for tombi_ast::MultiLineLiteralString {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let token = self.token()?;
         let range = token.range();
@@ -446,7 +452,7 @@ impl GetFoldingRange for tombi_ast::MultiLineLiteralString {
     }
 }
 
-impl GetFoldingRange for Vec<tombi_ast::LeadingComment> {
+impl GetCommentFoldingRange for Vec<tombi_ast::LeadingComment> {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let first = self.first()?;
         let last = self.last()?;
@@ -457,7 +463,7 @@ impl GetFoldingRange for Vec<tombi_ast::LeadingComment> {
     }
 }
 
-impl GetFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
+impl GetCommentFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
         let last = self
@@ -478,7 +484,7 @@ impl GetFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
     }
 }
 
-impl GetFoldingRange for Vec<Vec<tombi_ast::EndDanglingComment>> {
+impl GetCommentFoldingRange for Vec<Vec<tombi_ast::EndDanglingComment>> {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
         let last = self
