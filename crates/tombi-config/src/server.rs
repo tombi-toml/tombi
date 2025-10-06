@@ -165,4 +165,14 @@ pub struct LspWorkspaceDiagnostic {
     ///
     /// Whether to enable workspace diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
+
+    /// # Throttle interval in seconds
+    ///
+    /// Controls the throttling behavior of workspace diagnostics:
+    /// - 0: Run only once (first execution), then always skip
+    /// - >0: Skip if within the specified interval, allow if interval has passed
+    ///
+    /// Default: Follows the editor's execution frequency (no additional throttling).
+    ///
+    pub throttle_seconds: Option<u64>,
 }

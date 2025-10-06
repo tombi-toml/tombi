@@ -1,5 +1,4 @@
 use itertools::Either;
-use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
@@ -66,29 +65,21 @@ pub async fn handle_completion(
         return Ok(None);
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
-        return Ok(None);
-    };
-
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
-        .await
-        .ok()
-        .flatten();
-
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
-
     let document_sources = backend.document_sources.read().await;
     let Some(document_source) = document_sources.get(&text_document_uri) else {
         tracing::trace!("document_source not found");
         return Ok(None);
     };
+
+    let root = document_source.ast();
+    let toml_version = document_source.toml_version;
+    let line_index = document_source.line_index();
+
+    let source_schema = schema_store
+        .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
+        .await
+        .ok()
+        .flatten();
 
     let root_schema = source_schema
         .as_ref()
@@ -114,17 +105,17 @@ pub async fn handle_completion(
         }
     }
 
-    let line_index = document_source.line_index();
-
-    let mut completion_items = Vec::new();
+    let document_tree = document_source.document_tree();
     let position = position.into_lsp(line_index);
 
-    let comment_context = get_comment_context(&root, position);
-    let (document_tree, keys, completion_hint) = match &comment_context {
+    let mut completion_items = Vec::new();
+
+    let comment_context = get_comment_context(root, position);
+    let (keys, completion_hint) = match &comment_context {
         Some(CommentContext::DocumentDirective(comment)) => {
             if let Some(comment_completion_contents) =
                 get_document_comment_directive_completion_contents(
-                    &root,
+                    root,
                     comment,
                     position,
                     &text_document_uri,
@@ -133,28 +124,24 @@ pub async fn handle_completion(
             {
                 return Ok(Some(comment_completion_contents));
             }
-            let Some((document_tree, keys, completion_hint)) =
-                get_document_tree_and_keys_and_completion_hint(
-                    root,
-                    position,
-                    toml_version,
-                    comment_context.as_ref(),
-                )
-            else {
+            let Some((keys, completion_hint)) = get_keys_and_completion_hint(
+                root,
+                position,
+                toml_version,
+                comment_context.as_ref(),
+            ) else {
                 return Ok(Some(Vec::with_capacity(0)));
             };
 
-            (document_tree, keys, completion_hint)
+            (keys, completion_hint)
         }
         Some(CommentContext::ValueDirective(_)) | None => {
-            let Some((document_tree, keys, completion_hint)) =
-                get_document_tree_and_keys_and_completion_hint(
-                    root,
-                    position,
-                    toml_version,
-                    comment_context.as_ref(),
-                )
-            else {
+            let Some((keys, completion_hint)) = get_keys_and_completion_hint(
+                root,
+                position,
+                toml_version,
+                comment_context.as_ref(),
+            ) else {
                 return Ok(Some(Vec::with_capacity(0)));
             };
 
@@ -170,7 +157,7 @@ pub async fn handle_completion(
 
             completion_items.extend(
                 find_completion_contents_with_tree(
-                    &document_tree,
+                    document_tree,
                     position,
                     &keys,
                     &schema_context,
@@ -179,28 +166,26 @@ pub async fn handle_completion(
                 .await,
             );
 
-            (document_tree, keys, completion_hint)
+            (keys, completion_hint)
         }
         Some(CommentContext::Normal(_)) => {
-            let Some((document_tree, keys, completion_hint)) =
-                get_document_tree_and_keys_and_completion_hint(
-                    root,
-                    position,
-                    toml_version,
-                    comment_context.as_ref(),
-                )
-            else {
+            let Some((keys, completion_hint)) = get_keys_and_completion_hint(
+                root,
+                position,
+                toml_version,
+                comment_context.as_ref(),
+            ) else {
                 return Ok(Some(Vec::with_capacity(0)));
             };
 
-            (document_tree, keys, completion_hint)
+            (keys, completion_hint)
         }
     };
 
-    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
+    let accessors = tombi_document_tree::get_accessors(document_tree, &keys, position);
     if let Some(items) = tombi_extension_cargo::completion(
         &text_document_uri,
-        &document_tree,
+        document_tree,
         position,
         &accessors,
         toml_version,
@@ -219,23 +204,18 @@ pub async fn handle_completion(
     Ok(Some(completion_items))
 }
 
-fn get_document_tree_and_keys_and_completion_hint(
-    root: tombi_ast::Root,
+fn get_keys_and_completion_hint(
+    root: &tombi_ast::Root,
     position: tombi_text::Position,
     toml_version: tombi_config::TomlVersion,
     comment_context: Option<&CommentContext>,
-) -> Option<(
-    tombi_document_tree::DocumentTree,
-    Vec<tombi_document_tree::Key>,
-    Option<CompletionHint>,
-)> {
+) -> Option<(Vec<tombi_document_tree::Key>, Option<CompletionHint>)> {
     let Some((keys, completion_hint)) =
-        extract_keys_and_hint(&root, position, toml_version, comment_context)
+        extract_keys_and_hint(root, position, toml_version, comment_context)
     else {
         tracing::trace!("keys and completion_hint not found");
         return None;
     };
-    let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
-    Some((document_tree, keys, completion_hint))
+    Some((keys, completion_hint))
 }

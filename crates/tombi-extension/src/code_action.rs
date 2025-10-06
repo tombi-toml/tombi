@@ -103,7 +103,7 @@ impl FromLsp<WorkspaceEdit> for tower_lsp::lsp_types::WorkspaceEdit {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct CodeAction {
     pub title: String,
     pub kind: Option<CodeActionKind>,
@@ -115,21 +115,6 @@ pub struct CodeAction {
     pub data: Option<Value>,
 }
 
-impl Default for CodeAction {
-    fn default() -> Self {
-        Self {
-            title: String::new(),
-            kind: None,
-            diagnostics: None,
-            edit: None,
-            command: None,
-            is_preferred: None,
-            disabled: None,
-            data: None,
-        }
-    }
-}
-
 impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeAction {
     fn from_lsp(
         source: CodeAction,
@@ -137,7 +122,7 @@ impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeAction {
     ) -> tower_lsp::lsp_types::CodeAction {
         tower_lsp::lsp_types::CodeAction {
             title: source.title,
-            kind: source.kind.map(Into::into),
+            kind: source.kind,
             diagnostics: source.diagnostics.map(|diagnostics| {
                 diagnostics
                     .into_iter()
@@ -145,11 +130,10 @@ impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeAction {
                     .collect()
             }),
             edit: source.edit.map(|edit| edit.into_lsp(line_index)),
-            command: source.command.map(Into::into),
+            command: source.command,
             is_preferred: source.is_preferred,
-            disabled: source.disabled.map(Into::into),
+            disabled: source.disabled,
             data: source.data,
-            ..Default::default()
         }
     }
 }
@@ -165,8 +149,8 @@ impl FromLsp<CodeAction> for tower_lsp::lsp_types::CodeActionOrCommand {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CodeActionOrCommand {
-    CodeAction(CodeAction),
-    Command(Command),
+    CodeAction(Box<CodeAction>),
+    Command(Box<Command>),
 }
 
 impl FromLsp<CodeActionOrCommand> for tower_lsp::lsp_types::CodeActionOrCommand {
@@ -176,10 +160,12 @@ impl FromLsp<CodeActionOrCommand> for tower_lsp::lsp_types::CodeActionOrCommand 
     ) -> tower_lsp::lsp_types::CodeActionOrCommand {
         match source {
             CodeActionOrCommand::CodeAction(action) => {
-                tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(action.into_lsp(line_index))
+                tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(
+                    (*action).into_lsp(line_index),
+                )
             }
             CodeActionOrCommand::Command(command) => {
-                tower_lsp::lsp_types::CodeActionOrCommand::Command(command.into())
+                tower_lsp::lsp_types::CodeActionOrCommand::Command(*command)
             }
         }
     }

@@ -15,13 +15,7 @@ pub struct RedToken<L: Language> {
 
 impl<L: Language> fmt::Debug for RedToken<L> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:?} @{:?} @{:?}",
-            self.kind(),
-            self.span(),
-            self.range()
-        )?;
+        write!(f, "{:?} @{} @{}", self.kind(), self.span(), self.range())?;
         if self.text().len() < 25 {
             return write!(f, " {:?}", self.text());
         }

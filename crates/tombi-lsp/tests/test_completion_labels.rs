@@ -1618,7 +1618,7 @@ mod completion_labels {
                     );
                 };
                 let line_index =
-                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
                 let toml_file_url = match $source_file_path {
                     Some(path) => {
@@ -1898,7 +1898,7 @@ mod completion_labels {
                 };
 
                 let line_index =
-                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());

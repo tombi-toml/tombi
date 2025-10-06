@@ -26,6 +26,7 @@ pub trait IntoValue {
 }
 
 impl IntoValue for tombi_document_tree::Value {
+    #[allow(clippy::only_used_in_recursion)]
     fn into_value(self, toml_version: TomlVersion) -> Value {
         match self {
             tombi_document_tree::Value::Boolean(value) => Value::Literal {

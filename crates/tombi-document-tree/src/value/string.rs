@@ -22,7 +22,7 @@ pub struct String {
     kind: StringKind,
     value: std::string::String,
     range: tombi_text::Range,
-    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl std::fmt::Display for String {
@@ -46,7 +46,7 @@ impl crate::String {
         quoted_string: impl Into<std::string::String>,
         range: tombi_text::Range,
         toml_version: TomlVersion,
-        comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+        comment_directives: Option<Vec<TombiValueCommentDirective>>,
     ) -> Result<Self, tombi_toml_text::ParseError> {
         let quoted_string = quoted_string.into();
 
@@ -111,7 +111,7 @@ impl crate::String {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &**v)
+        self.comment_directives.as_deref()
     }
 }
 

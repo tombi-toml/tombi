@@ -17,7 +17,7 @@ impl Lexed {
         result_token: Result<crate::Token, crate::Error>,
     ) -> (tombi_text::Span, tombi_text::Range) {
         let idx = self.len();
-        if idx % (bits::BITS as usize) == 0 {
+        if idx.is_multiple_of(bits::BITS as usize) {
             self.joints.push(0);
         }
         match result_token {

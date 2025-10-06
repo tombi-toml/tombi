@@ -185,7 +185,7 @@ impl ConfigManager {
             ));
         config_schema_store
             .schema_store
-            .reload_config(&config, Some(&config_path))
+            .reload_config(&config, Some(config_path))
             .await?;
         config_schema_store.config = config;
         Ok(())

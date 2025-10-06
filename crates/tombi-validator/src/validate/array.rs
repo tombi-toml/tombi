@@ -242,26 +242,24 @@ async fn validate_array(
         }
     }
 
-    if total_diagnostics.is_empty() {
-        if array_schema.deprecated == Some(true) {
-            let level = lint_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .deprecated
-                        .as_ref()
-                        .map(SeverityLevelDefaultWarn::from)
-                })
-                .unwrap_or_default();
+    if total_diagnostics.is_empty() && array_schema.deprecated == Some(true) {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .deprecated
+                    .as_ref()
+                    .map(SeverityLevelDefaultWarn::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Deprecated(
-                    tombi_schema_store::SchemaAccessors::from(accessors),
-                )),
-                range: array_value.range(),
-            }
-            .push_diagnostic_with_level(level, &mut total_diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Deprecated(
+                tombi_schema_store::SchemaAccessors::from(accessors),
+            )),
+            range: array_value.range(),
         }
+        .push_diagnostic_with_level(level, &mut total_diagnostics);
     }
 
     if total_diagnostics.is_empty() {

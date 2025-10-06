@@ -24,7 +24,7 @@ impl FromLsp<TextDocumentEdit> for tower_lsp::lsp_types::TextDocumentEdit {
         line_index: &tombi_text::LineIndex,
     ) -> tower_lsp::lsp_types::TextDocumentEdit {
         tower_lsp::lsp_types::TextDocumentEdit {
-            text_document: source.text_document.into(),
+            text_document: source.text_document,
             edits: source
                 .edits
                 .into_iter()

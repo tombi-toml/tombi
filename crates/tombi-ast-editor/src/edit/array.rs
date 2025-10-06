@@ -109,10 +109,8 @@ impl crate::Edit for tombi_ast::Array {
                             ArrayCommonFormatRules,
                             ArrayCommonLintRules,
                         >(
-                            if let Some(key_value) = self
-                                .syntax()
-                                .parent()
-                                .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                            if let Some(key_value) =
+                                self.syntax().parent().and_then(tombi_ast::KeyValue::cast)
                             {
                                 key_value
                                     .comment_directives()
@@ -126,7 +124,7 @@ impl crate::Edit for tombi_ast::Array {
                         changes.extend(
                             array_values_order(
                                 self.values_with_comma().collect_vec(),
-                                &array_node,
+                                array_node,
                                 &accessors,
                                 current_schema.as_ref(),
                                 schema_context,

@@ -306,7 +306,7 @@ mod goto_definition_tests {
                 };
                 toml_text.remove(index);
                 let line_index =
-                tombi_text::LineIndex::new(&toml_text, tombi_text::WideEncoding::Utf16);
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
                 handle_did_open(
                     backend,

@@ -28,13 +28,18 @@ pub type RelativeOffset = RawTextSize;
 pub type Line = RawTextSize;
 pub type Column = RawTextSize;
 
+/// Zero-sized type which has pointer alignment (8 on 64-bit, 4 on 32-bit).
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+struct PointerAlign([usize; 0]);
+
 pub use crate::{
     offset::Offset, position::Position, range::Range, relative_position::RelativePosition,
     span::Span,
 };
 
 #[cfg(feature = "lsp")]
-pub use crate::features::lsp::{FromLsp, IntoLsp, LineIndex, WideEncoding};
+pub use crate::features::lsp::{EncodingKind, FromLsp, IntoLsp, LineIndex};
 
 #[cfg(target_pointer_width = "16")]
 compile_error!("'text' crate assumes usize >= u32 and does not work on 16-bit targets");

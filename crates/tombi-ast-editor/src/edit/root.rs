@@ -41,13 +41,7 @@ impl crate::Edit for tombi_ast::Root {
             for key_value in self.key_values() {
                 changes.extend(
                     key_value
-                        .edit(
-                            node.into(),
-                            &[],
-                            source_path,
-                            current_schema,
-                            schema_context,
-                        )
+                        .edit(node, &[], source_path, current_schema, schema_context)
                         .await,
                 );
                 key_values.push(key_value);

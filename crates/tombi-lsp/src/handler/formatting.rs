@@ -57,31 +57,12 @@ pub async fn handle_formatting(
         }
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
-        return Ok(None);
-    };
-
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
-        .await
-        .ok()
-        .flatten();
-
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_document_comment_directive,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
-
     let mut document_sources = backend.document_sources.write().await;
     let Some(document_source) = document_sources.get_mut(&text_document_uri) else {
         return Ok(None);
     };
 
+    let toml_version = document_source.toml_version;
     let formatter_definitions = FormatDefinitions::default();
 
     match tombi_formatter::Formatter::new(
@@ -102,7 +83,7 @@ pub async fn handle_formatting(
                     document_source.line_index(),
                 );
                 tracing::debug!(?edits);
-                document_source.set_text(formatted);
+                document_source.set_text(formatted, toml_version);
 
                 return Ok(Some(edits));
             } else {
@@ -226,13 +207,13 @@ fn position_at_offset(line_index: &tombi_text::LineIndex, offset: usize) -> Posi
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tombi_text::{LineIndex, Range, WideEncoding};
+    use tombi_text::{EncodingKind, LineIndex, Range};
 
     #[test]
     fn test_compute_text_edits_no_changes() {
         let old_text = "hello world";
         let new_text = "hello world";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(edits, vec![]);
@@ -242,7 +223,7 @@ mod tests {
     fn test_compute_text_edits_append_final_newline() {
         let old_text = "hello world";
         let new_text = "hello world\n";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(
@@ -258,7 +239,7 @@ mod tests {
     fn test_compute_text_edits_no_changes_final_newline() {
         let old_text = "hello world\n";
         let new_text = "hello world\n";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(edits, vec![]);
@@ -269,7 +250,7 @@ mod tests {
         // Test case: remove any final trailing newlines leaving a single newline
         let old_text = "line1\n\n\n";
         let new_text = "line1\n";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(
@@ -285,7 +266,7 @@ mod tests {
     fn test_compute_text_edits_simple_replacement() {
         let old_text = "hello world";
         let new_text = "hello universe";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(
@@ -301,7 +282,7 @@ mod tests {
     fn test_compute_text_edits_multiline() {
         let old_text = "line1\nline2\nline3";
         let new_text = "line1\nmodified line2\nline3";
-        let line_index = LineIndex::new(old_text, WideEncoding::Utf16);
+        let line_index = LineIndex::new(old_text, EncodingKind::Utf16);
         let edits = compute_text_edits(old_text, new_text, &line_index);
 
         pretty_assertions::assert_eq!(

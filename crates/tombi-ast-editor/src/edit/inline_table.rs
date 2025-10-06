@@ -28,23 +28,15 @@ impl crate::Edit for tombi_ast::InlineTable {
                 ));
                 changes.extend(
                     key_value
-                        .edit(
-                            node,
-                            &accessors,
-                            source_path,
-                            current_schema,
-                            schema_context,
-                        )
+                        .edit(node, accessors, source_path, current_schema, schema_context)
                         .await,
                 );
             }
 
             let comment_directive =
                 get_comment_directive_content::<TableCommonFormatRules, TableCommonLintRules>(
-                    if let Some(key_value) = self
-                        .syntax()
-                        .parent()
-                        .and_then(|parent| tombi_ast::KeyValue::cast(parent))
+                    if let Some(key_value) =
+                        self.syntax().parent().and_then(tombi_ast::KeyValue::cast)
                     {
                         key_value
                             .comment_directives()

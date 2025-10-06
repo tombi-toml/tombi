@@ -85,17 +85,14 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
                         .into_iter()
                         .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_range)),
                 );
-            } else {
-                if let Err(diagnostics) =
-                    crate::validate(document_tree.clone(), Some(&source_schema), &schema_context)
-                        .await
-                {
-                    total_diagnostics.extend(
-                        diagnostics.into_iter().map(|diagnostic| {
-                            into_directive_diagnostic(&diagnostic, content_range)
-                        }),
-                    );
-                }
+            } else if let Err(diagnostics) =
+                crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
+            {
+                total_diagnostics.extend(
+                    diagnostics
+                        .into_iter()
+                        .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_range)),
+                );
             }
             if let Some(total_document_tree_table) = total_document_tree_table.as_mut() {
                 if let Err(errors) = total_document_tree_table.merge(document_tree.into()) {

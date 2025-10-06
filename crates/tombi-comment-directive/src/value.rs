@@ -272,9 +272,9 @@ pub enum SortMethod {
     VersionSort,
 }
 
-impl Into<tombi_x_keyword::TableKeysOrder> for SortMethod {
-    fn into(self) -> tombi_x_keyword::TableKeysOrder {
-        match self {
+impl From<SortMethod> for tombi_x_keyword::TableKeysOrder {
+    fn from(val: SortMethod) -> Self {
+        match val {
             SortMethod::Ascending => tombi_x_keyword::TableKeysOrder::Ascending,
             SortMethod::Descending => tombi_x_keyword::TableKeysOrder::Descending,
             SortMethod::VersionSort => tombi_x_keyword::TableKeysOrder::VersionSort,
@@ -282,9 +282,9 @@ impl Into<tombi_x_keyword::TableKeysOrder> for SortMethod {
     }
 }
 
-impl Into<tombi_x_keyword::ArrayValuesOrder> for SortMethod {
-    fn into(self) -> tombi_x_keyword::ArrayValuesOrder {
-        match self {
+impl From<SortMethod> for tombi_x_keyword::ArrayValuesOrder {
+    fn from(val: SortMethod) -> Self {
+        match val {
             SortMethod::Ascending => tombi_x_keyword::ArrayValuesOrder::Ascending,
             SortMethod::Descending => tombi_x_keyword::ArrayValuesOrder::Descending,
             SortMethod::VersionSort => tombi_x_keyword::ArrayValuesOrder::VersionSort,
