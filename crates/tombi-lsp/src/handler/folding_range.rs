@@ -413,7 +413,7 @@ impl GetFoldingRange for tombi_ast::Array {
 
 impl GetFoldingRange for tombi_ast::InlineTable {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let start_position: tombi_text::Position = self.brace_start()?.range().start;
+        let start_position = self.brace_start()?.range().start;
         let end_position = self.brace_end()?.range().end;
 
         Some(tombi_text::Range::new(start_position, end_position))
