@@ -425,7 +425,6 @@ impl GetFoldingRange for tombi_ast::MultiLineBasicString {
         let token = self.token()?;
         let range = token.range();
 
-        // 2行以上の場合のみ範囲を返す
         if range.start.line != range.end.line {
             Some(range)
         } else {
@@ -439,7 +438,6 @@ impl GetFoldingRange for tombi_ast::MultiLineLiteralString {
         let token = self.token()?;
         let range = token.range();
 
-        // 2行以上の場合のみ範囲を返す
         if range.start.line != range.end.line {
             Some(range)
         } else {
