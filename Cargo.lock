@@ -3929,6 +3929,7 @@ dependencies = [
  "ahash",
  "chrono",
  "clap",
+ "dirs",
  "futures",
  "indexmap",
  "itertools 0.14.0",

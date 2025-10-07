@@ -12,6 +12,7 @@ ignored = ["semver"]
 ahash.workspace = true
 chrono.workspace = true
 clap = { workspace = true, optional = true }
+dirs.workspace = true
 futures.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
