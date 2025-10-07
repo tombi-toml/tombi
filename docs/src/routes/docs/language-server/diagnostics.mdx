@@ -1,3 +1,5 @@
+import { Note, Warning } from "~/components/Highlight"
+
 # Diagnostics
 
 Real-time error detection and linting feedback in your editor through Tombi's Language Server.
@@ -18,3 +20,9 @@ If you want to run Workspace Diagnostic only once at startup, set `lsp.workspace
 
 If you want to run Workspace Diagnostic every time, set `lsp.workspace-diagnostic.enabled = false`.
 </Note>
+
+<Warning>
+When opening the editor in your HOME directory, Workspace Diagnostic will be skipped to avoid scanning a large number of files. 
+
+This is a special exception to prevent performance issues from analyzing too many files and directories.
+</Warning>
