@@ -45,6 +45,7 @@ async fn execute_workspace_diagnostics(
 ) -> Option<Vec<WorkspaceDocumentDiagnosticReport>> {
     let configs = get_workspace_configs(backend).await?;
     let mut all_items = Vec::new();
+    let home_dir = dirs::home_dir();
 
     for workspace_config in configs.values() {
         // Check if workspace diagnostic is enabled first (priority over throttle)
@@ -54,6 +55,16 @@ async fn execute_workspace_diagnostics(
                 workspace_config.workspace_folder_path.display()
             );
             continue;
+        }
+
+        if let Some(home_dir) = &home_dir {
+            if &workspace_config.workspace_folder_path == home_dir {
+                tracing::debug!(
+                    "Skip diagnostics for workspace folder matching $HOME: {:?}",
+                    workspace_config.workspace_folder_path
+                );
+                continue;
+            }
         }
 
         // Check throttling only if enabled
