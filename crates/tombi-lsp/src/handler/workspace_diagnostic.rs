@@ -71,6 +71,8 @@ async fn execute_workspace_diagnostics(
         if let Some(throttle_seconds) = get_throttle_seconds(workspace_config) {
             match backend
                 .workspace_diagnostic_state
+                .read()
+                .await
                 .throttle()
                 .should_skip_by_throttle(throttle_seconds)
                 .await
@@ -115,8 +117,46 @@ async fn execute_workspace_diagnostics(
             }
         }
 
-        let (items, skipped_count) =
-            process_workspace_diagnostic_targets(backend, workspace_config, is_push_mode).await;
+        // Check if file watcher is available and get dirty files
+        let use_dirty_files = backend
+            .workspace_diagnostic_state
+            .read()
+            .await
+            .file_watcher_manager()
+            .is_some();
+
+        let (items, skipped_count) = if use_dirty_files {
+            // Use dirty files from file watcher
+            let dirty_files = backend
+                .workspace_diagnostic_state
+                .read()
+                .await
+                .dirty_files_queue()
+                .get_and_clear_dirty_files(&workspace_config.workspace_folder_path)
+                .await;
+
+            if dirty_files.is_empty() {
+                tracing::debug!(
+                    "No dirty files for workspace, skipping diagnostics: {:?}",
+                    workspace_config.workspace_folder_path
+                );
+                (Vec::new(), 0)
+            } else {
+                tracing::debug!(
+                    "Processing {} dirty files for workspace: {:?}",
+                    dirty_files.len(),
+                    workspace_config.workspace_folder_path
+                );
+                process_dirty_files(backend, workspace_config, dirty_files, is_push_mode).await
+            }
+        } else {
+            // Fallback to full scan
+            tracing::debug!(
+                "File watcher not available, using full scan for workspace: {:?}",
+                workspace_config.workspace_folder_path
+            );
+            process_workspace_diagnostic_targets(backend, workspace_config, is_push_mode).await
+        };
 
         all_items.extend(items);
         tracing::debug!(
@@ -130,6 +170,8 @@ async fn execute_workspace_diagnostics(
     // Record completion time
     backend
         .workspace_diagnostic_state
+        .read()
+        .await
         .throttle()
         .record_completion()
         .await;
@@ -155,6 +197,118 @@ fn get_throttle_seconds(workspace_config: &WorkspaceConfig) -> Option<u64> {
         .lsp()
         .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
         .and_then(|wd| wd.throttle_seconds)
+}
+
+/// Process dirty files from file watcher
+async fn process_dirty_files(
+    backend: &Backend,
+    _workspace_config: &WorkspaceConfig,
+    dirty_files: Vec<tombi_uri::Uri>,
+    is_push_mode: bool,
+) -> (Vec<WorkspaceDocumentDiagnosticReport>, usize) {
+    let mut items = Vec::new();
+    let mut skipped_count = 0;
+
+    let encoding_kind = backend.capabilities.read().await.encoding_kind;
+
+    for text_document_uri in dirty_files {
+        // Check if file is opened in editor (skip if it is)
+        let is_opened = backend
+            .document_sources
+            .read()
+            .await
+            .get(&text_document_uri)
+            .and_then(|ds| ds.version)
+            .is_some();
+
+        if is_opened {
+            skipped_count += 1;
+            continue;
+        }
+
+        // Check mtime
+        let should_skip = if let Ok(path) = tombi_uri::Uri::to_file_path(&text_document_uri) {
+            match tokio::fs::metadata(&path).await {
+                Ok(metadata) => match metadata.modified() {
+                    Ok(mtime) => {
+                        backend
+                            .workspace_diagnostic_state
+                            .read()
+                            .await
+                            .mtime_tracker()
+                            .should_skip(&text_document_uri, mtime)
+                            .await
+                    }
+                    Err(_) => false,
+                },
+                Err(_) => {
+                    // File doesn't exist anymore, skip it
+                    skipped_count += 1;
+                    continue;
+                }
+            }
+        } else {
+            false
+        };
+
+        if should_skip {
+            skipped_count += 1;
+            continue;
+        }
+
+        // Load file content and create document source
+        if let Ok(path) = tombi_uri::Uri::to_file_path(&text_document_uri) {
+            if let Ok(content) = tokio::fs::read_to_string(&path).await {
+                let toml_version = backend
+                    .text_document_toml_version(&text_document_uri, &content)
+                    .await;
+
+                // Update document source
+                backend
+                    .document_sources
+                    .write()
+                    .await
+                    .entry(text_document_uri.clone())
+                    .or_insert_with(|| {
+                        crate::document::DocumentSource::new(content, None, toml_version, encoding_kind)
+                    });
+
+                let text_document_uri_clone = text_document_uri.clone();
+
+                if is_push_mode {
+                    publish_diagnostics(backend, text_document_uri, None).await;
+                } else if let Some(diagnostics) =
+                    get_diagnostics_result(backend, &text_document_uri).await
+                {
+                    items.push(WorkspaceDocumentDiagnosticReport::Full(
+                        WorkspaceFullDocumentDiagnosticReport {
+                            uri: text_document_uri.into(),
+                            version: None,
+                            full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                                items: diagnostics.diagnostics,
+                                ..Default::default()
+                            },
+                        },
+                    ));
+                }
+
+                // Record mtime after diagnostic execution
+                if let Ok(metadata) = tokio::fs::metadata(&path).await {
+                    if let Ok(mtime) = metadata.modified() {
+                        backend
+                            .workspace_diagnostic_state
+                            .read()
+                            .await
+                            .mtime_tracker()
+                            .record(text_document_uri_clone, mtime)
+                            .await;
+                    }
+                }
+            }
+        }
+    }
+
+    (items, skipped_count)
 }
 
 /// Process workspace diagnostic targets for a single workspace
@@ -207,6 +361,8 @@ async fn process_workspace_diagnostic_targets(
                     if let Ok(mtime) = metadata.modified() {
                         backend
                             .workspace_diagnostic_state
+                            .read()
+                            .await
                             .mtime_tracker()
                             .record(text_document_uri_clone, mtime)
                             .await;

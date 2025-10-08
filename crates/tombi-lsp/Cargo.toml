@@ -16,11 +16,14 @@ dirs.workspace = true
 futures.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
+notify.workspace = true
+notify-debouncer-full.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 semver.workspace = true
 serde.workspace = true
 serde_tombi.workspace = true
+thiserror.workspace = true
 tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
 tombi-ast.workspace = true
 tombi-cache.workspace = true

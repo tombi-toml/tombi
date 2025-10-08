@@ -175,4 +175,62 @@ pub struct LspWorkspaceDiagnostic {
     /// Default: Follows the editor's execution frequency (no additional throttling).
     ///
     pub throttle_seconds: Option<u64>,
+
+    /// # Enable file watcher for workspace diagnostics
+    ///
+    /// Whether to enable file system watching for workspace diagnostics.
+    /// When enabled, only changed files are diagnosed instead of full scans.
+    ///
+    /// Default: true
+    pub file_watcher_enabled: Option<BoolDefaultTrue>,
+
+    /// # File watcher debounce interval in milliseconds
+    ///
+    /// Time to wait before processing file system events to batch rapid changes.
+    /// Higher values reduce CPU usage but increase diagnostic latency.
+    ///
+    /// Default: 100
+    pub file_watcher_debounce_ms: Option<u64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lsp_workspace_diagnostic_default() {
+        let workspace_diagnostic = LspWorkspaceDiagnostic::default();
+        assert_eq!(workspace_diagnostic.enabled, None);
+        assert_eq!(workspace_diagnostic.throttle_seconds, None);
+        assert_eq!(workspace_diagnostic.file_watcher_enabled, None);
+        assert_eq!(workspace_diagnostic.file_watcher_debounce_ms, None);
+    }
+
+    #[test]
+    fn test_lsp_workspace_diagnostic_with_file_watcher_fields() {
+        let workspace_diagnostic = LspWorkspaceDiagnostic {
+            enabled: Some(BoolDefaultTrue(true)),
+            throttle_seconds: Some(5),
+            file_watcher_enabled: Some(BoolDefaultTrue(true)),
+            file_watcher_debounce_ms: Some(150),
+        };
+
+        assert_eq!(workspace_diagnostic.enabled.map(|v| v.value()), Some(true));
+        assert_eq!(workspace_diagnostic.throttle_seconds, Some(5));
+        assert_eq!(workspace_diagnostic.file_watcher_enabled.map(|v| v.value()), Some(true));
+        assert_eq!(workspace_diagnostic.file_watcher_debounce_ms, Some(150));
+    }
+
+    #[test]
+    fn test_lsp_workspace_diagnostic_file_watcher_only() {
+        let workspace_diagnostic = LspWorkspaceDiagnostic {
+            enabled: None,
+            throttle_seconds: None,
+            file_watcher_enabled: Some(BoolDefaultTrue(false)),
+            file_watcher_debounce_ms: Some(200),
+        };
+
+        assert_eq!(workspace_diagnostic.file_watcher_enabled.map(|v| v.value()), Some(false));
+        assert_eq!(workspace_diagnostic.file_watcher_debounce_ms, Some(200));
+    }
 }

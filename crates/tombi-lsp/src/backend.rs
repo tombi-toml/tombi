@@ -51,7 +51,7 @@ pub struct Backend {
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
-    pub workspace_diagnostic_state: WorkspaceDiagnosticState,
+    pub workspace_diagnostic_state: Arc<tokio::sync::RwLock<WorkspaceDiagnosticState>>,
 }
 
 #[derive(Debug)]
@@ -83,7 +83,9 @@ impl Backend {
             })),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
-            workspace_diagnostic_state: WorkspaceDiagnosticState::new(),
+            workspace_diagnostic_state: Arc::new(tokio::sync::RwLock::new(
+                WorkspaceDiagnosticState::new(),
+            )),
         }
     }
 
@@ -233,7 +235,7 @@ impl LanguageServer for Backend {
     }
 
     async fn shutdown(&self) -> Result<(), tower_lsp::jsonrpc::Error> {
-        handle_shutdown().await
+        handle_shutdown(self).await
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {

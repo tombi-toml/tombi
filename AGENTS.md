@@ -15,11 +15,13 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 **Specs** (`.kiro/specs/`) - Formalize development process for individual features
 
 ### Active Specifications
+- **workspace-diagnostics-file-watcher**: ファイル監視による Workspace Diagnostics の CPU 負荷削減
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
+- Write all source code comments in English (ソースコードのコメントは英語で記述すること)
 
 ## Workflow
 

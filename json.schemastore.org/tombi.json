@@ -537,6 +537,28 @@
           ],
           "format": "uint64",
           "minimum": 0
+        },
+        "file-watcher-enabled": {
+          "title": "Enable file watcher for workspace diagnostics",
+          "description": "Whether to enable file system watching for workspace diagnostics.\nWhen enabled, only changed files are diagnosed instead of full scans.\n\nDefault: true",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "file-watcher-debounce-ms": {
+          "title": "File watcher debounce interval in milliseconds",
+          "description": "Time to wait before processing file system events to batch rapid changes.\nHigher values reduce CPU usage but increase diagnostic latency.\n\nDefault: 100",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
         }
       },
       "additionalProperties": false
