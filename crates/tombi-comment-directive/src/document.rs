@@ -57,7 +57,7 @@ pub struct FormatOptions {
 impl FormatOptions {
     pub fn disabled(&self) -> Option<bool> {
         #[allow(deprecated)]
-        self.disabled.or_else(|| self.disable)
+        self.disabled.or(self.disable)
     }
 }
 
@@ -85,7 +85,7 @@ pub struct LintOptions {
 impl LintOptions {
     pub fn disabled(&self) -> Option<bool> {
         #[allow(deprecated)]
-        self.disabled.or_else(|| self.disable)
+        self.disabled.or(self.disable)
     }
 }
 

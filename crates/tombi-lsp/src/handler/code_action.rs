@@ -4,9 +4,9 @@ use crate::{
     config_manager::ConfigSchemaStore,
     Backend,
 };
-use itertools::Either;
-use tombi_document_tree::{get_accessors, TryIntoDocumentTree};
+use tombi_document_tree::get_accessors;
 use tombi_schema_store::build_accessor_contexts;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{CodeActionOrCommand, CodeActionParams};
 
 pub async fn handle_code_action(
@@ -23,13 +23,8 @@ pub async fn handle_code_action(
     } = params;
 
     let text_document_uri = text_document.uri.into();
-    let position: tombi_text::Position = range.start.into();
 
-    let ConfigSchemaStore {
-        config,
-        schema_store,
-        ..
-    } = backend
+    let ConfigSchemaStore { config, .. } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
         .await;
@@ -45,37 +40,24 @@ pub async fn handle_code_action(
         return Ok(None);
     }
 
-    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
+    let document_sources = backend.document_sources.read().await;
+    let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(None);
     };
 
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
-        .await
-        .ok()
-        .flatten();
+    let toml_version = document_source.toml_version;
+    let line_index = document_source.line_index();
 
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_document_comment_directive,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
+    let position: tombi_text::Position = range.start.into_lsp(line_index);
 
     let Some((keys, key_contexts)) =
-        get_completion_keys_with_context(&root, position, toml_version).await
+        get_completion_keys_with_context(document_source.ast(), position, toml_version).await
     else {
         return Ok(None);
     };
 
-    let Ok(document_tree) = root.try_into_document_tree(toml_version) else {
-        return Ok(None);
-    };
-
-    let accessors = get_accessors(&document_tree, &keys, position);
+    let document_tree = document_source.document_tree();
+    let accessors = get_accessors(document_tree, &keys, position);
     let mut key_contexts = key_contexts.into_iter();
     let accessor_contexts = build_accessor_contexts(&accessors, &mut key_contexts);
 
@@ -83,29 +65,34 @@ pub async fn handle_code_action(
 
     if let Some(code_action) = dot_keys_to_inline_table_code_action(
         &text_document_uri,
-        &document_tree,
+        document_tree,
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(code_action.into());
+        code_actions.push(code_action.into_lsp(line_index));
     }
+
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
-        &document_tree,
+        document_tree,
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(code_action.into());
+        code_actions.push(code_action.into_lsp(line_index));
     }
 
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
         &text_document_uri,
-        &document_tree,
+        document_tree,
         &accessors,
         &accessor_contexts,
-        toml_version,
+        document_source.toml_version,
     )? {
-        code_actions.extend(extension_code_actions);
+        code_actions.extend(
+            extension_code_actions
+                .into_iter()
+                .map(|code_action| code_action.into_lsp(line_index)),
+        );
     }
 
     if code_actions.is_empty() {

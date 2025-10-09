@@ -3,39 +3,47 @@ use std::{
     ops::{Add, AddAssign, Bound, Index, IndexMut, Range, RangeBounds, Sub, SubAssign},
 };
 
-use crate::{Offset, RawOffset, RawTextSize};
+use crate::{Offset, PointerAlign, RawOffset, RawTextSize};
 
 /// A span in text, represented as a pair of [`Offset`][struct@Offset].
 ///
 /// It is a logic error for `start` to be greater than `end`.
-#[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Default, Copy, Clone)]
 pub struct Span {
     // Invariant: start <= end
     pub start: Offset,
     pub end: Offset,
+
+    _align: PointerAlign,
 }
 
 impl std::fmt::Debug for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Span")
+            .field("start", &self.start)
+            .field("end", &self.end)
+            .finish()
+    }
+}
+
+impl std::fmt::Display for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}..{}", self.start.raw, self.end.raw)
     }
 }
 
 impl Span {
-    pub const MAX: Span = Span {
-        start: Offset::MAX,
-        end: Offset::MAX,
-    };
-
-    pub const MIN: Span = Span {
-        start: Offset::MIN,
-        end: Offset::MIN,
-    };
+    pub const MAX: Span = Span::new(Offset::MAX, Offset::MAX);
+    pub const MIN: Span = Span::new(Offset::MIN, Offset::MIN);
 
     #[inline]
     pub const fn new(start: Offset, end: Offset) -> Span {
-        assert!(start.raw <= end.raw);
-        Span { start, end }
+        debug_assert!(start.raw <= end.raw);
+        Span {
+            start,
+            end,
+            _align: PointerAlign([0; 0]),
+        }
     }
 
     /// Create a new `Span` with the given `offset` and `len` (`offset..offset + len`).
@@ -72,15 +80,9 @@ impl Span {
     /// ```
     #[inline]
     pub const fn empty(offset: Offset) -> Span {
-        Span {
-            start: offset,
-            end: offset,
-        }
+        Span::new(offset, offset)
     }
-}
 
-/// Identity methods.
-impl Span {
     /// The size of this span.
     #[inline]
     pub const fn len(self) -> RawOffset {
@@ -94,10 +96,7 @@ impl Span {
         // HACK for const fn: math on primitives only
         self.start.raw == self.end.raw
     }
-}
 
-/// Manipulation methods.
-impl Span {
     /// Check if this span contains an offset.
     ///
     /// The end index is considered excluded.
@@ -228,10 +227,10 @@ impl Span {
     /// in contrast to primitive integers, which check in debug mode only.
     #[inline]
     pub fn checked_add(self, offset: Offset) -> Option<Span> {
-        Some(Span {
-            start: self.start.checked_add(offset)?,
-            end: self.end.checked_add(offset)?,
-        })
+        Some(Span::new(
+            self.start.checked_add(offset)?,
+            self.end.checked_add(offset)?,
+        ))
     }
 
     /// Subtract an offset from this span.
@@ -244,10 +243,10 @@ impl Span {
     /// in contrast to primitive integers, which check in debug mode only.
     #[inline]
     pub fn checked_sub(self, offset: Offset) -> Option<Span> {
-        Some(Span {
-            start: self.start.checked_sub(offset)?,
-            end: self.end.checked_sub(offset)?,
-        })
+        Some(Span::new(
+            self.start.checked_sub(offset)?,
+            self.end.checked_sub(offset)?,
+        ))
     }
 
     /// Relative order of the two ranges (overlapping ranges are considered
@@ -293,6 +292,16 @@ impl Span {
             Ordering::Equal
         }
     }
+
+    #[expect(clippy::inline_always)] // Because this is a no-op on 64-bit platforms.
+    #[inline(always)]
+    const fn as_u64(self) -> u64 {
+        if cfg!(target_endian = "little") {
+            ((self.end.raw as u64) << 32) | (self.start.raw as u64)
+        } else {
+            ((self.start.raw as u64) << 32) | (self.end.raw as u64)
+        }
+    }
 }
 
 impl Index<Span> for str {
@@ -332,6 +341,31 @@ impl RangeBounds<RawTextSize> for Span {
 
     fn end_bound(&self) -> Bound<&RawTextSize> {
         Bound::Excluded(&self.end.raw)
+    }
+}
+
+impl PartialEq for Span {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        if cfg!(target_pointer_width = "64") {
+            self.as_u64() == other.as_u64()
+        } else {
+            self.start == other.start && self.end == other.end
+        }
+    }
+}
+
+impl Eq for Span {}
+
+impl std::hash::Hash for Span {
+    #[inline] // We exclusively use `FxHasher`, which produces small output hashing `u64`s and `u32`s
+    fn hash<H: std::hash::Hasher>(&self, hasher: &mut H) {
+        if cfg!(target_pointer_width = "64") {
+            self.as_u64().hash(hasher);
+        } else {
+            self.start.raw.hash(hasher);
+            self.end.raw.hash(hasher);
+        }
     }
 }
 
@@ -394,10 +428,7 @@ impl Add<Span> for Span {
     type Output = Span;
     #[inline]
     fn add(self, other: Span) -> Span {
-        Span {
-            start: self.start,
-            end: other.end,
-        }
+        Span::new(self.start, other.end)
     }
 }
 
@@ -421,5 +452,24 @@ where
     #[inline]
     fn sub_assign(&mut self, rhs: S) {
         *self = *self - rhs
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_size() {
+        const _: () = assert!(size_of::<Span>() == 8);
+    }
+
+    #[test]
+    fn test_align() {
+        #[cfg(target_pointer_width = "64")]
+        const _: () = assert!(align_of::<Span>() == 8);
+
+        #[cfg(not(target_pointer_width = "64"))]
+        const _: () = assert!(align_of::<Span>() == 4);
     }
 }

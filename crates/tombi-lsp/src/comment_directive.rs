@@ -16,15 +16,24 @@ use tombi_document_tree::{ArrayKind, TableKind};
 use tombi_schema_store::Accessor;
 
 pub const DOCUMENT_SCHEMA_DIRECTIVE_TITLE: &str = "Schema Document Directive";
-pub const DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION: &str =
-    "Specify the Schema URL/Path for the document.";
+pub const DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION: &str = r#"
+Specify the Schema URL/Path for this document.
+
+See the [docs](https://tombi-toml.github.io/tombi/docs/comment-directive/#document-comment-directive) for more details.
+"#;
 
 pub const DOCUMENT_TOMBI_DIRECTIVE_TITLE: &str = "Tombi Document Directive";
-pub const DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION: &str =
-    "Directives that apply only to this document.";
+pub const DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION: &str = r#"
+Directives that apply only to this document.
+
+See the [docs](https://tombi-toml.github.io/tombi/docs/comment-directive/#document-comment-directive) for more details.
+"#;
 
 pub const VALUE_TOMBI_DIRECTIVE_TITLE: &str = "Tombi Value Directive";
-pub const VALUE_TOMBI_DIRECTIVE_DESCRIPTION: &str = "Directives that apply only to this value.";
+pub const VALUE_TOMBI_DIRECTIVE_DESCRIPTION: &str = r#"Directives that apply only to this value.
+
+See the [docs](https://tombi-toml.github.io/tombi/docs/comment-directive/#value-comment-directive) for more details.
+"#;
 
 #[derive(Debug, Clone)]
 pub enum CommentDirectiveContext<T> {
@@ -102,7 +111,7 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
         position: tombi_text::Position,
     ) -> Option<CommentDirectiveContext<String>> {
         if self.content_range.contains(position) {
-            return Some(CommentDirectiveContext::Content {
+            Some(CommentDirectiveContext::Content {
                 content: self.content.clone(),
                 content_range: self.content_range,
                 position_in_content: tombi_text::Position::new(
@@ -111,11 +120,11 @@ impl GetCommentDirectiveContext<String> for TombiValueCommentDirective {
                         .column
                         .saturating_sub(self.directive_range.end.column),
                 ),
-            });
+            })
         } else if self.directive_range.contains(position) {
-            return Some(CommentDirectiveContext::Directive {
+            Some(CommentDirectiveContext::Directive {
                 directive_range: self.directive_range,
-            });
+            })
         } else {
             None
         }

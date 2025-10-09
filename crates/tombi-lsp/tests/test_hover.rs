@@ -492,6 +492,7 @@ mod hover_keys_value {
                     LspService,
                 };
                 use tombi_lsp::handler::handle_did_open;
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -545,6 +546,9 @@ mod hover_keys_value {
                     return Err("failed to write to temporary file".into());
                 };
 
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
+
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
@@ -571,7 +575,7 @@ mod hover_keys_value {
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into(),
+                            .into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                     },

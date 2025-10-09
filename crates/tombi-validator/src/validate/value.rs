@@ -8,7 +8,7 @@ impl Validate for tombi_document_tree::Value {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+    ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             match self {
                 Self::Boolean(boolean) => {

@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_schema_store::get_tombi_schemastore_content;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CreateFile, CreateFileOptions, DocumentChangeOperation, DocumentChanges,
     GotoDefinitionResponse, OneOf, OptionalVersionedTextDocumentIdentifier, ResourceOp,
@@ -38,15 +39,31 @@ pub async fn into_definition_locations(
 
     match definitions.len() {
         0 => Ok(None),
-        1 => Ok(Some(GotoDefinitionResponse::Scalar(
-            definitions.into_iter().next().unwrap().into(),
-        ))),
-        _ => Ok(Some(GotoDefinitionResponse::Array(
-            definitions
-                .into_iter()
-                .map(|definition| definition.into())
-                .collect(),
-        ))),
+        1 => {
+            let document_sources = backend.document_sources.read().await;
+            let definition = definitions.into_iter().next().unwrap();
+            let Some(document_source) = document_sources.get(&definition.uri) else {
+                return Ok(None);
+            };
+
+            Ok(Some(GotoDefinitionResponse::Scalar(
+                definition.into_lsp(document_source.line_index()),
+            )))
+        }
+        _ => {
+            let mut lsp_definitions = Vec::with_capacity(definitions.len());
+
+            let document_sources = backend.document_sources.read().await;
+            for definition in definitions {
+                let Some(document_source) = document_sources.get(&definition.uri) else {
+                    continue;
+                };
+
+                lsp_definitions.push(definition.into_lsp(document_source.line_index()));
+            }
+
+            Ok(Some(GotoDefinitionResponse::Array(lsp_definitions)))
+        }
     }
 }
 
@@ -137,7 +154,7 @@ async fn insert_content(
             version: Some(0),
         },
         edits: vec![OneOf::Left(TextEdit {
-            range: tombi_text::Range::default().into(),
+            range: Default::default(),
             new_text: content.into(),
         })],
     };

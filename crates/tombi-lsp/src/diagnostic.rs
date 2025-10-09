@@ -4,6 +4,7 @@ use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::{Config, ConfigLevel, LintOptions};
 use tombi_glob::{matches_file_patterns, MatchResult};
+use tombi_text::IntoLsp;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, document::DocumentSource};
 
@@ -76,41 +77,27 @@ pub async fn get_diagnostics_result(
         }
     }
 
-    let root = backend.get_incomplete_ast(text_document_uri).await?;
-
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
-        .await
-        .ok()
-        .flatten();
-
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_document_comment_directive,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
-
     let document_sources = backend.document_sources.read().await;
 
     match document_sources.get(text_document_uri) {
-        Some(document) => Some(DiagnosticsResult {
+        Some(document_source) => Some(DiagnosticsResult {
             diagnostics: match tombi_linter::Linter::new(
-                toml_version,
+                document_source.toml_version,
                 config.lint.as_ref().unwrap_or(&LintOptions::default()),
                 Some(Either::Left(text_document_uri)),
                 &schema_store,
             )
-            .lint(&document.text)
+            .lint(document_source.text())
             .await
             {
                 Ok(_) => Vec::with_capacity(0),
-                Err(diagnostics) => diagnostics.into_iter().unique().map(Into::into).collect(),
+                Err(diagnostics) => diagnostics
+                    .into_iter()
+                    .unique()
+                    .map(|diagnostic| diagnostic.into_lsp(document_source.line_index()))
+                    .collect_vec(),
             },
-            version: document.version,
+            version: document_source.version,
         }),
         None => None,
     }
@@ -171,6 +158,7 @@ pub async fn get_workspace_configs(
 pub struct WorkspaceDiagnosticTarget {
     pub text_document_uri: tombi_uri::Uri,
     pub version: Option<i32>,
+    pub should_skip: bool,
 }
 
 pub async fn get_workspace_diagnostic_targets(
@@ -185,6 +173,8 @@ pub async fn get_workspace_diagnostic_targets(
         config_level,
         config_path,
     } = workspace_config;
+
+    let encoding_kind = backend.capabilities.read().await.encoding_kind;
 
     let workspace_folder_path_str = workspace_folder_path.to_str()?;
     if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
@@ -202,6 +192,9 @@ pub async fn get_workspace_diagnostic_targets(
             files
         );
 
+        let mut excluded_count = 0;
+        let mut skipped_count = 0;
+
         for file in files {
             let Ok(text_document_path) = file else {
                 continue;
@@ -210,21 +203,84 @@ pub async fn get_workspace_diagnostic_targets(
                 let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
                     continue;
                 };
+
+                let toml_version = backend
+                    .text_document_toml_version(&text_document_uri, &content)
+                    .await;
+
                 let version = {
                     backend
                         .document_sources
                         .write()
                         .await
                         .entry(text_document_uri.clone())
-                        .or_insert_with(|| DocumentSource::new(content, None))
+                        .or_insert_with(|| {
+                            DocumentSource::new(content, None, toml_version, encoding_kind)
+                        })
                         .version
                 };
+
+                // Exclude files opened in editor (version is Some)
+                if version.is_some() {
+                    excluded_count += 1;
+                    continue;
+                }
+
+                // Check if file should be skipped based on mtime
+                // Get file modification time
+                let mtime = match tokio::fs::metadata(&text_document_path).await {
+                    Ok(metadata) => match metadata.modified() {
+                        Ok(time) => Some(time),
+                        Err(err) => {
+                            tracing::debug!(
+                                "Failed to get mtime for {:?}: {}",
+                                text_document_path,
+                                err
+                            );
+                            None
+                        }
+                    },
+                    Err(err) => {
+                        tracing::debug!(
+                            "Failed to get metadata for {:?}: {}",
+                            text_document_path,
+                            err
+                        );
+                        None
+                    }
+                };
+
+                let should_skip = if let Some(mtime) = mtime {
+                    backend
+                        .workspace_diagnostic_state
+                        .mtime_tracker()
+                        .should_skip(&text_document_uri, mtime)
+                        .await
+                } else {
+                    false
+                };
+
+                if should_skip {
+                    skipped_count += 1;
+                }
 
                 total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
                     text_document_uri,
                     version,
+                    should_skip,
                 });
             }
+        }
+
+        tracing::debug!(
+            "Excluded {} files opened in editor, {} files skipped by mtime",
+            excluded_count,
+            skipped_count
+        );
+
+        if !total_diagnostic_targets.is_empty() {
+            let skip_rate = (skipped_count as f64 / total_diagnostic_targets.len() as f64) * 100.0;
+            tracing::debug!("Skip rate: {:.1}%", skip_rate);
         }
     }
 

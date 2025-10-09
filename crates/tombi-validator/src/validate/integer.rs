@@ -16,31 +16,27 @@ impl Validate for tombi_document_tree::Integer {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
+    ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
-            let mut total_diagnostics = vec![];
-            let value_rules = if let Some(comment_directives) = self.comment_directives() {
-                let (value_rules, diagnostics) = get_tombi_key_table_value_rules_and_diagnostics::<
-                    IntegerCommonFormatRules,
-                    IntegerCommonLintRules,
-                >(comment_directives, accessors)
-                .await;
+            let (lint_rules, lint_rules_diagnostics) =
+                if let Some(comment_directives) = self.comment_directives() {
+                    get_tombi_key_table_value_rules_and_diagnostics::<
+                        IntegerCommonFormatRules,
+                        IntegerCommonLintRules,
+                    >(comment_directives, accessors)
+                    .await
+                } else {
+                    (None, Vec::with_capacity(0))
+                };
 
-                total_diagnostics.extend(diagnostics);
-
-                value_rules
-            } else {
-                None
-            };
-
-            if let Some(current_schema) = current_schema {
-                let result = match current_schema.value_schema.as_ref() {
+            let result = if let Some(current_schema) = current_schema {
+                match current_schema.value_schema.as_ref() {
                     tombi_schema_store::ValueSchema::Integer(integer_schema) => {
                         validate_integer_schema(
                             self,
                             accessors,
                             integer_schema,
-                            value_rules.as_ref(),
+                            lint_rules.as_ref(),
                         )
                         .await
                     }
@@ -49,40 +45,40 @@ impl Validate for tombi_document_tree::Integer {
                             self,
                             accessors,
                             float_schema,
-                            value_rules.as_ref(),
+                            lint_rules.as_ref(),
                         )
                         .await
                     }
                     tombi_schema_store::ValueSchema::OneOf(one_of_schema) => {
-                        return validate_one_of(
+                        validate_one_of(
                             self,
                             accessors,
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
                     tombi_schema_store::ValueSchema::AnyOf(any_of_schema) => {
-                        return validate_any_of(
+                        validate_any_of(
                             self,
                             accessors,
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
                     tombi_schema_store::ValueSchema::AllOf(all_of_schema) => {
-                        return validate_all_of(
+                        validate_all_of(
                             self,
                             accessors,
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            value_rules.as_ref().map(|rules| &rules.common),
+                            lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
                     }
@@ -91,19 +87,25 @@ impl Validate for tombi_document_tree::Integer {
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
-                        value_rules.as_ref().map(|rules| &rules.common),
+                        lint_rules.as_ref().map(|rules| &rules.common),
                     ),
-                };
-
-                if let Err(diagnostics) = result {
-                    total_diagnostics.extend(diagnostics);
                 }
-            }
-
-            if total_diagnostics.is_empty() {
-                Ok(())
             } else {
-                Err(total_diagnostics)
+                Ok(())
+            };
+
+            match result {
+                Ok(()) => {
+                    if lint_rules_diagnostics.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(lint_rules_diagnostics.into())
+                    }
+                }
+                Err(mut error) => {
+                    error.prepend_diagnostics(lint_rules_diagnostics);
+                    Err(error)
+                }
             }
         }
         .boxed()
@@ -114,14 +116,14 @@ async fn validate_integer_schema(
     integer_value: &tombi_document_tree::Integer,
     accessors: &[tombi_schema_store::Accessor],
     integer_schema: &tombi_schema_store::IntegerSchema,
-    value_rules: Option<&IntegerCommonLintRules>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    lint_rules: Option<&IntegerCommonLintRules>,
+) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
     let value = integer_value.value();
     let range = integer_value.range();
 
     if let Some(const_value) = &integer_schema.const_value {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.common)
             .and_then(|rules| {
                 rules
@@ -144,7 +146,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(enumerate) = &integer_schema.enumerate {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.common)
             .and_then(|rules| {
                 rules
@@ -167,7 +169,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(maximum) = &integer_schema.maximum {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
                 rules
@@ -190,7 +192,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(minimum) = &integer_schema.minimum {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
                 rules
@@ -213,7 +215,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
                 rules
@@ -236,7 +238,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
                 rules
@@ -259,7 +261,7 @@ async fn validate_integer_schema(
     }
 
     if let Some(multiple_of) = &integer_schema.multiple_of {
-        let level = value_rules
+        let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
                 rules
@@ -281,33 +283,31 @@ async fn validate_integer_schema(
         }
     }
 
-    if diagnostics.is_empty() {
-        if integer_schema.deprecated == Some(true) {
-            let level = value_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .deprecated
-                        .as_ref()
-                        .map(SeverityLevelDefaultWarn::from)
-                })
-                .unwrap_or_default();
+    if diagnostics.is_empty() && integer_schema.deprecated == Some(true) {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .deprecated
+                    .as_ref()
+                    .map(SeverityLevelDefaultWarn::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::from(accessors),
-                    value.to_string(),
-                )),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
+                tombi_schema_store::SchemaAccessors::from(accessors),
+                value.to_string(),
+            )),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
     }
 
     if diagnostics.is_empty() {
         Ok(())
     } else {
-        Err(diagnostics)
+        Err(diagnostics.into())
     }
 }
 
@@ -315,15 +315,15 @@ async fn validate_float_schema_for_integer(
     integer_value: &tombi_document_tree::Integer,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
-    value_rules: Option<&IntegerCommonLintRules>,
-) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
+    lint_rules: Option<&IntegerCommonLintRules>,
+) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
     let value = integer_value.value() as f64;
     let range = integer_value.range();
 
     if let Some(const_value) = &float_schema.const_value {
         if (value - *const_value).abs() > f64::EPSILON {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
@@ -346,7 +346,7 @@ async fn validate_float_schema_for_integer(
 
     if let Some(enumerate) = &float_schema.enumerate {
         if !enumerate.contains(&value) {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.common)
                 .and_then(|rules| {
                     rules
@@ -369,7 +369,7 @@ async fn validate_float_schema_for_integer(
 
     if let Some(maximum) = &float_schema.maximum {
         if value > *maximum {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -392,7 +392,7 @@ async fn validate_float_schema_for_integer(
 
     if let Some(minimum) = &float_schema.minimum {
         if value < *minimum {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -415,7 +415,7 @@ async fn validate_float_schema_for_integer(
 
     if let Some(exclusive_maximum) = &float_schema.exclusive_maximum {
         if value >= *exclusive_maximum {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -438,7 +438,7 @@ async fn validate_float_schema_for_integer(
 
     if let Some(exclusive_minimum) = &float_schema.exclusive_minimum {
         if value <= *exclusive_minimum {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -461,7 +461,7 @@ async fn validate_float_schema_for_integer(
 
     if let Some(multiple_of) = &float_schema.multiple_of {
         if value % *multiple_of != 0.0 {
-            let level = value_rules
+            let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
                     rules
@@ -482,32 +482,30 @@ async fn validate_float_schema_for_integer(
         }
     }
 
-    if diagnostics.is_empty() {
-        if float_schema.deprecated == Some(true) {
-            let level = value_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .deprecated
-                        .as_ref()
-                        .map(SeverityLevelDefaultWarn::from)
-                })
-                .unwrap_or_default();
+    if diagnostics.is_empty() && float_schema.deprecated == Some(true) {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .deprecated
+                    .as_ref()
+                    .map(SeverityLevelDefaultWarn::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::from(accessors),
-                    value.to_string(),
-                )),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
+                tombi_schema_store::SchemaAccessors::from(accessors),
+                value.to_string(),
+            )),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
     }
 
     if diagnostics.is_empty() {
         Ok(())
     } else {
-        Err(diagnostics)
+        Err(diagnostics.into())
     }
 }

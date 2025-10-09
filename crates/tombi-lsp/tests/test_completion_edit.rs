@@ -1,3 +1,4 @@
+use tombi_extension::CompletionTextEdit;
 use tombi_test_lib::{
     today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
@@ -744,6 +745,7 @@ mod completion_edit {
                     },
                     LspService,
                 };
+                use tombi_text::IntoLsp;
 
                 tombi_test_lib::init_tracing();
 
@@ -796,6 +798,8 @@ mod completion_edit {
                             .into(),
                     );
                 }
+                let line_index =
+                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
@@ -823,7 +827,7 @@ mod completion_edit {
                             },
                             position: (tombi_text::Position::default()
                                 + tombi_text::RelativePosition::of(&toml_text[..index]))
-                            .into(),
+                            .into_lsp(&line_index),
                         },
                         work_done_progress_params: WorkDoneProgressParams::default(),
                         partial_result_params: PartialResultParams {
@@ -869,7 +873,7 @@ mod completion_edit {
 
                 let mut new_text = "".to_string();
                 match completion_edit.text_edit {
-                    tower_lsp::lsp_types::CompletionTextEdit::Edit(text_edit) => {
+                    CompletionTextEdit::Edit(text_edit) => {
                         let mut cursor = toml_text.split('\n').enumerate();
                         let start_line = text_edit.range.start.line as usize;
                         let end_line = text_edit.range.end.line as usize;
@@ -880,15 +884,15 @@ mod completion_edit {
                             }
 
                             if start_line == index {
-                                new_text.push_str(&line[..text_edit.range.start.character as usize]);
+                                new_text.push_str(&line[..text_edit.range.start.column as usize]);
                                 new_text.push_str(&text_edit.new_text);
                                 if index == end_line {
-                                    new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                    new_text.push_str(&line[text_edit.range.end.column as usize..]);
                                     continue;
                                 }
                                 while let Some((index, line)) = cursor.next() {
                                     if index == end_line {
-                                        new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                        new_text.push_str(&line[text_edit.range.end.column as usize..]);
                                         break;
                                     }
                                 }
@@ -916,15 +920,15 @@ mod completion_edit {
                             }
 
                             if start_line == index {
-                                additional_new_text.push_str(&line[..text_edit.range.start.character as usize]);
+                                additional_new_text.push_str(&line[..text_edit.range.start.column as usize]);
                                 additional_new_text.push_str(&text_edit.new_text);
                                 if index == end_line {
-                                    additional_new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                    additional_new_text.push_str(&line[text_edit.range.end.column as usize..]);
                                     continue;
                                 }
                                 while let Some((index, line)) = cursor.next() {
                                     if index == end_line {
-                                        additional_new_text.push_str(&line[text_edit.range.end.character as usize..]);
+                                        additional_new_text.push_str(&line[text_edit.range.end.column as usize..]);
                                         break;
                                     }
                                 }

@@ -16,7 +16,7 @@ impl SchemaAccessor {
     /// # Examples
     ///
     /// ```
-    /// use tombi_schema_store::{SchemaAccessor, Accessor};
+    /// use tombi_accessor::{SchemaAccessor, Accessor};
     ///
     /// let accessors = SchemaAccessor::parse("key1[*].key2").unwrap();
     /// assert_eq!(accessors.len(), 3);
@@ -148,13 +148,13 @@ impl AsRef<[SchemaAccessor]> for SchemaAccessors {
 
 impl From<&[Accessor]> for SchemaAccessors {
     fn from(accessors: &[Accessor]) -> Self {
-        Self(accessors.into_iter().map(Into::into).collect_vec())
+        Self(accessors.iter().map(Into::into).collect_vec())
     }
 }
 
 impl From<&Vec<Accessor>> for SchemaAccessors {
     fn from(accessors: &Vec<Accessor>) -> Self {
-        Self(accessors.into_iter().map(Into::into).collect_vec())
+        Self(accessors.iter().map(Into::into).collect_vec())
     }
 }
 

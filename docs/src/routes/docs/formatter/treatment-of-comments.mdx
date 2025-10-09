@@ -359,21 +359,3 @@ key1 = {
 ```
 
 Through this intelligent comment interpretation, Tombi enables automatic sorting 🚀
-
-## `:schema` Directive
-
-Tombi supports embedding JSON Schema information in TOML files, similar to Taplo.
-
-```toml
-#:schema your-schema.json
-key = "value"
-```
-
-During auto-sorting, to ensure the `#:schema` directive remains at the beginning of the document,
-Tombi first moves the comment group containing the `#:schema` directive to the start before performing auto-sorting.
-
-```toml
-#:schema your-schema.json
-
-key = "value"
-```

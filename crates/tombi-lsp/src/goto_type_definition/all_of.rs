@@ -56,7 +56,7 @@ where
                 .await
             {
                 if value
-                    .validate(&accessors, Some(&current_schema), schema_context)
+                    .validate(accessors, Some(&current_schema), schema_context)
                     .await
                     .is_err()
                 {

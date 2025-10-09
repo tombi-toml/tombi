@@ -1,9 +1,9 @@
 use tombi_document_tree::{dig_accessors, TableKind};
-use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
-use tower_lsp::lsp_types::{
-    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
-    TextDocumentEdit, TextEdit, WorkspaceEdit,
+use tombi_extension::{
+    CodeAction, CodeActionKind, DocumentChanges, OneOf, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
+use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
+use tower_lsp::lsp_types::OptionalVersionedTextDocumentIdentifier;
 
 pub enum CodeActionRefactorRewriteName {
     DottedKeysToInlineTable,
@@ -65,8 +65,7 @@ pub fn dot_keys_to_inline_table_code_action(
                                 range: tombi_text::Range {
                                     start: parent_key_context.range.start,
                                     end: value.range().start,
-                                }
-                                .into(),
+                                },
                                 new_text: format!(
                                     "{} = {{ {}{}",
                                     parent_key,
@@ -79,7 +78,7 @@ pub fn dot_keys_to_inline_table_code_action(
                                 ),
                             }),
                             OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(value.symbol_range().end).into(),
+                                range: tombi_text::Range::at(value.symbol_range().end),
                                 new_text: " }".to_string(),
                             }),
                         ],
@@ -131,16 +130,14 @@ pub fn inline_table_to_dot_keys_code_action(
                                 range: tombi_text::Range::new(
                                     parent_context.range.end,
                                     key.range().start,
-                                )
-                                .into(),
+                                ),
                                 new_text: ".".to_string(),
                             }),
                             OneOf::Left(TextEdit {
                                 range: tombi_text::Range::new(
                                     value.range().end,
                                     table.symbol_range().end,
-                                )
-                                .into(),
+                                ),
                                 new_text: "".to_string(),
                             }),
                         ],

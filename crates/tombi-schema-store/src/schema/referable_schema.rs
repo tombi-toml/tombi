@@ -27,6 +27,16 @@ pub struct CurrentSchema<'a> {
     pub definitions: Cow<'a, SchemaDefinitions>,
 }
 
+impl<'a> CurrentSchema<'a> {
+    pub fn into_owned(self) -> CurrentSchema<'static> {
+        CurrentSchema {
+            value_schema: Cow::Owned(self.value_schema.into_owned()),
+            schema_uri: Cow::Owned(self.schema_uri.into_owned()),
+            definitions: Cow::Owned(self.definitions.into_owned()),
+        }
+    }
+}
+
 impl std::fmt::Debug for CurrentSchema<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CurrentSchema")

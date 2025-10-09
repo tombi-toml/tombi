@@ -253,7 +253,11 @@ where
 
                 Some(results)
             }
-            tombi_document_tree::Value::Array(array) => {
+            tombi_document_tree::Value::Array(array)
+                if sort_targets_map
+                    .iter()
+                    .all(|(accessor, _)| matches!(accessor, Accessor::Index(_))) =>
+            {
                 if let Some(current_schema) = current_schema {
                     if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
                         if let Some(referable_schema) = &array_schema.items {
@@ -359,6 +363,7 @@ async fn extract_pattern_properties<T>(
     sorted_targets
 }
 
+#[allow(clippy::type_complexity)]
 async fn sort_targets<T>(
     mut targets: Vec<(Accessor, Vec<(Vec<Accessor>, T)>)>,
     order: TableKeysOrder,

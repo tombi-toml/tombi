@@ -6,7 +6,7 @@ use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{
     ArrayValuesOrderBy, StringFormat, TableKeysOrder, TableKeysOrderGroupKind,
-    X_TOMBI_ARRAY_VALUES_ORDER_BY, X_TOMBI_TABLE_KEYS_ORDER,
+    X_TOMBI_ADDITIONAL_KEY_LABEL, X_TOMBI_ARRAY_VALUES_ORDER_BY, X_TOMBI_TABLE_KEYS_ORDER,
 };
 
 use super::{
@@ -25,7 +25,10 @@ pub struct TableSchema {
     pub properties: SchemaProperties,
     pub pattern_properties: Option<SchemaPatternProperties>,
     additional_properties: Option<bool>,
-    pub additional_property_schema: Option<(tombi_text::Range, SchemaItem)>,
+    pub additional_property_schema: Option<(
+        tombi_text::Range, // JSON Schema property name range (for GoToTypeDefinition)
+        SchemaItem,
+    )>,
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
@@ -36,6 +39,7 @@ pub struct TableSchema {
     pub enumerate: Option<Vec<tombi_json::Object>>,
     pub examples: Option<Vec<tombi_json::Object>>,
     pub deprecated: Option<bool>,
+    pub additional_key_label: Option<String>,
 }
 
 impl TableSchema {
@@ -186,6 +190,9 @@ impl TableSchema {
                         .collect()
                 }),
             deprecated: object_node.get("deprecated").and_then(|v| v.as_bool()),
+            additional_key_label: object_node
+                .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
+                .and_then(|v| v.as_str().map(|s| s.to_string())),
         }
     }
 

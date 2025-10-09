@@ -110,14 +110,14 @@ where
                     }
 
                     match value
-                        .validate(&accessors, Some(&current_schema), schema_context)
+                        .validate(accessors, Some(&current_schema), schema_context)
                         .await
                     {
                         Ok(()) => valid_hover_value_contents.push(hover_value_content.clone()),
-                        Err(errors)
-                            if errors
-                                .iter()
-                                .all(|error| error.level() == tombi_diagnostic::Level::WARNING) =>
+                        Err(tombi_validator::Error { diagnostics, .. })
+                            if diagnostics.iter().all(|diagnostic| {
+                                diagnostic.level() == tombi_diagnostic::Level::WARNING
+                            }) =>
                         {
                             valid_hover_value_contents.push(hover_value_content.clone());
                         }

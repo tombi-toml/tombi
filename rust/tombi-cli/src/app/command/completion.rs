@@ -1,6 +1,6 @@
 use clap::CommandFactory;
 
-/// Generate shell completion to standard output.
+/// Generate shell completion.
 #[derive(clap::Args, Debug)]
 pub struct Args {
     /// Shell to generate completion for

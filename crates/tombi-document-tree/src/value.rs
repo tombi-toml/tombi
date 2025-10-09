@@ -111,29 +111,25 @@ impl Value {
         comment_directives: Vec<TombiValueCommentDirective>,
     ) {
         match self {
-            Value::Boolean(boolean) => {
-                boolean.comment_directives = Some(Box::new(comment_directives))
-            }
-            Value::Integer(integer) => {
-                integer.comment_directives = Some(Box::new(comment_directives))
-            }
-            Value::Float(float) => float.comment_directives = Some(Box::new(comment_directives)),
-            Value::String(string) => string.comment_directives = Some(Box::new(comment_directives)),
+            Value::Boolean(boolean) => boolean.comment_directives = Some(comment_directives),
+            Value::Integer(integer) => integer.comment_directives = Some(comment_directives),
+            Value::Float(float) => float.comment_directives = Some(comment_directives),
+            Value::String(string) => string.comment_directives = Some(comment_directives),
             Value::OffsetDateTime(offset_date_time) => {
-                offset_date_time.comment_directives = Some(Box::new(comment_directives))
+                offset_date_time.comment_directives = Some(comment_directives)
             }
             Value::LocalDateTime(local_date_time) => {
-                local_date_time.comment_directives = Some(Box::new(comment_directives))
+                local_date_time.comment_directives = Some(comment_directives)
             }
             Value::LocalDate(local_date) => {
-                local_date.comment_directives = Some(Box::new(comment_directives))
+                local_date.comment_directives = Some(comment_directives)
             }
             Value::LocalTime(local_time) => {
-                local_time.comment_directives = Some(Box::new(comment_directives))
+                local_time.comment_directives = Some(comment_directives)
             }
-            Value::Array(array) => array.comment_directives = Some(Box::new(comment_directives)),
-            Value::Table(table) => table.comment_directives = Some(Box::new(comment_directives)),
-            Value::Incomplete { .. } => return,
+            Value::Array(array) => array.comment_directives = Some(comment_directives),
+            Value::Table(table) => table.comment_directives = Some(comment_directives),
+            Value::Incomplete { .. } => (),
         }
     }
 
@@ -158,7 +154,7 @@ impl Value {
         if let Some(value_comment_directives) = value_comment_directives {
             value_comment_directives.extend(comment_directives);
         } else {
-            *value_comment_directives = Some(Box::new(comment_directives));
+            *value_comment_directives = Some(comment_directives);
         }
     }
 
@@ -283,10 +279,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
 
 fn collect_comment_directives_and_errors(
     node: &impl AstNode,
-) -> (
-    Option<Box<Vec<TombiValueCommentDirective>>>,
-    Vec<crate::Error>,
-) {
+) -> (Option<Vec<TombiValueCommentDirective>>, Vec<crate::Error>) {
     let mut comment_directives = vec![];
     let mut errors = vec![];
 
@@ -311,7 +304,7 @@ fn collect_comment_directives_and_errors(
     }
 
     if !comment_directives.is_empty() {
-        (Some(Box::new(comment_directives)), errors)
+        (Some(comment_directives), errors)
     } else {
         (None, errors)
     }

@@ -2,6 +2,7 @@ use itertools::{Either, Itertools};
 use tombi_ast::{algo::ancestors_at_position, AstNode};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaContext;
+use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 
 use crate::{
@@ -48,40 +49,32 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let position = position.into();
-    let Some(root) = backend.get_incomplete_ast(&text_document_uri).await else {
-        tracing::debug!("Failed to get incomplete ast");
+    let document_sources = backend.document_sources.read().await;
+    let Some(document_source) = document_sources.get(&text_document_uri) else {
         return Ok(None);
     };
 
-    tracing::trace!("root = {:#?}", root);
+    let root = document_source.ast();
+    let toml_version = document_source.toml_version;
+    let line_index = document_source.line_index();
+
+    let position = position.into_lsp(line_index);
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
+        .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
 
-    let tombi_document_comment_directive =
-        tombi_validator::comment_directive::get_tombi_document_comment_directive(&root).await;
-    let (toml_version, _) = backend
-        .source_toml_version(
-            tombi_document_comment_directive,
-            source_schema.as_ref(),
-            &config,
-        )
-        .await;
-
     let source_path = text_document_uri.to_file_path().ok();
-
     // Check if position is in a #:tombi comment directive
     if let Some(content) =
-        get_document_comment_directive_hover_content(&root, position, source_path.as_deref()).await
+        get_document_comment_directive_hover_content(root, position, source_path.as_deref()).await
     {
         return Ok(Some(content));
     }
 
-    let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
+    let Some((keys, range)) = get_hover_keys_with_range(root, position, toml_version).await else {
         tracing::debug!("Failed to get hover keys with range");
         return Ok(None);
     };
@@ -91,12 +84,10 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let document_tree = root.into_document_tree_and_errors(toml_version).tree;
-
-    tracing::trace!("document_tree = {:#?}", document_tree);
+    let document_tree = document_source.document_tree();
 
     let mut hover_content = get_hover_content(
-        &document_tree,
+        document_tree,
         position,
         &keys,
         &SchemaContext {

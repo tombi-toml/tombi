@@ -1,28 +1,39 @@
 use tombi_ast::AstNode;
-use tombi_document_tree::TryIntoDocumentTree;
-use tombi_toml_version::TomlVersion;
-use tombi_x_keyword::ArrayValuesOrderBy;
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 
 use crate::{
     node::make_comma,
-    rule::array_values_order::{SortFailReason, SortableValues},
+    rule::array_values_order::{
+        try_array_values_order_by_from_item_schema, SortFailReason, SortableValues,
+    },
 };
 
-pub fn create_local_date_time_sortable_values(
+pub async fn create_local_date_time_sortable_values<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_values_order_by: Option<&ArrayValuesOrderBy>,
-    toml_version: TomlVersion,
+    value_nodes: &'a [&'a tombi_document_tree::Value],
+    accessors: &'a [Accessor],
+    current_schema: Option<&'a CurrentSchema<'a>>,
+    schema_context: &'a SchemaContext<'a>,
 ) -> Result<SortableValues, SortFailReason> {
     let mut sortable_values = Vec::with_capacity(values_with_comma.len());
-    for (value, comma) in values_with_comma {
+    for ((value, comma), value_node) in values_with_comma.into_iter().zip(value_nodes) {
         let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
-        match value.clone() {
-            tombi_ast::Value::LocalDateTime(_) => {
-                sortable_values.push((value.syntax().to_string(), value, comma))
-            }
-            tombi_ast::Value::InlineTable(inline_table) => {
-                let array_values_order_by =
-                    array_values_order_by.ok_or(SortFailReason::ArrayValuesOrderByRequired)?;
+        match (value.clone(), value_node) {
+            (
+                tombi_ast::Value::LocalDateTime(_),
+                tombi_document_tree::Value::LocalDateTime(local_date_time_node),
+            ) => sortable_values.push((local_date_time_node.to_string(), value, comma)),
+            (
+                tombi_ast::Value::InlineTable(inline_table),
+                tombi_document_tree::Value::Table(table_node),
+            ) => {
+                let array_values_order_by = try_array_values_order_by_from_item_schema(
+                    table_node,
+                    accessors,
+                    current_schema,
+                    schema_context,
+                )
+                .await?;
 
                 let mut found = false;
                 for (key_value, comma) in inline_table.key_values_with_comma() {
@@ -31,22 +42,19 @@ pub fn create_local_date_time_sortable_values(
                     };
                     let comma = comma.unwrap_or(tombi_ast::Comma::cast(make_comma()).unwrap());
 
-                    let mut keys_iter = keys.keys().into_iter();
+                    let mut keys_iter = keys.keys();
                     if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
-                        if key.to_raw_text(toml_version) == *array_values_order_by {
-                            if let Some(inline_value) = key_value.value() {
-                                let document_tree_value_result = match inline_value {
-                                    tombi_ast::Value::LocalDateTime(local_date_time) => {
-                                        local_date_time.try_into_document_tree(toml_version)
-                                    }
-                                    _ => return Err(SortFailReason::Incomplete),
-                                };
-                                let Ok(tombi_document_tree::Value::LocalDateTime(local_date_time)) =
-                                    document_tree_value_result
-                                else {
-                                    return Err(SortFailReason::Incomplete);
-                                };
-                                sortable_values.push((local_date_time.to_string(), value, comma));
+                        let key_text = key.to_raw_text(schema_context.toml_version);
+                        if key_text == array_values_order_by {
+                            if let Some(tombi_document_tree::Value::LocalDateTime(
+                                local_date_time_node,
+                            )) = table_node.get(&key_text)
+                            {
+                                sortable_values.push((
+                                    local_date_time_node.to_string(),
+                                    value,
+                                    comma,
+                                ));
 
                                 found = true;
                                 break;

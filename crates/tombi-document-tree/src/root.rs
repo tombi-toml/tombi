@@ -82,7 +82,7 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
                 }
 
                 if !inner_comment_directives.is_empty() {
-                    table.inner_comment_directives = Some(Box::new(inner_comment_directives));
+                    table.inner_comment_directives = Some(inner_comment_directives);
                 }
             }
 

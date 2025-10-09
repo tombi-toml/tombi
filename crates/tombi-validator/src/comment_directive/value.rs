@@ -6,10 +6,11 @@ use tombi_comment_directive::{
         ArrayOfTableCommonLintRules, ArrayOfTableLintRules, InlineTableCommonFormatRules,
         InlineTableCommonLintRules, InlineTableLintRules, KeyArrayOfTableCommonFormatRules,
         KeyArrayOfTableCommonLintRules, KeyCommonExtensibleLintRules, KeyFormatRules,
-        KeyTableCommonFormatRules, KeyTableCommonLintRules, LintOptions, ParentTableCommonLintRules,
-        RootTableCommonLintRules, RootTableLintRules, TableCommonFormatRules, TableCommonLintRules,
-        TombiValueDirectiveContent, WithCommonExtensibleLintRules, WithCommonLintRules,
-        WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
+        KeyTableCommonFormatRules, KeyTableCommonLintRules, LintOptions,
+        ParentTableCommonLintRules, RootTableCommonLintRules, RootTableLintRules,
+        TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
+        WithCommonExtensibleLintRules, WithCommonLintRules, WithKeyFormatRules, WithKeyLintRules,
+        WithKeyTableLintRules,
     },
     TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
@@ -482,7 +483,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
         ..
     } in comment_directives
     {
-        let (root, errors) = tombi_parser::parse(&content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        let (root, errors) = tombi_parser::parse(content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
             .into_root_and_errors();
         // Check if there are any parsing errors
         if !errors.is_empty() {
@@ -512,16 +513,14 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
                     .into_iter()
                     .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_range)),
             );
-        } else {
-            if let Err(diagnostics) =
-                crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
-            {
-                total_diagnostics.extend(
-                    diagnostics
-                        .into_iter()
-                        .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_range)),
-                );
-            }
+        } else if let Err(diagnostics) =
+            crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
+        {
+            total_diagnostics.extend(
+                diagnostics
+                    .into_iter()
+                    .map(|diagnostic| into_directive_diagnostic(&diagnostic, *content_range)),
+            );
         }
 
         if let Some(total_document_tree_table) = total_document_tree_table.as_mut() {

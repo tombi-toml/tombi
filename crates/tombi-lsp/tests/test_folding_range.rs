@@ -195,6 +195,157 @@ mod folding_range_tests {
         ];
     );
 
+    test_folding_range!(
+        #[tokio::test]
+        async fn multi_line_basic_string_simple(
+            r#"
+            key = """
+            Line 1
+            Line 2
+            """
+            "#,
+        ) -> [
+            0..3,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn multi_line_literal_string_simple(
+            r#"
+            key = '''
+            Line 1
+            Line 2
+            '''
+            "#,
+        ) -> [
+            0..3,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn single_line_multi_line_string_excluded(
+            r#"
+            key1 = """single line"""
+            key2 = '''another single'''
+            "#,
+        ) -> [];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn multi_line_string_with_comment(
+            r#"
+            # Comment
+            key = """
+            Line 1
+            Line 2
+            """
+            "#,
+        ) -> [
+            0..0,
+            1..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn multi_line_string_in_array(
+            r#"
+            array = [
+              """
+              Line 1
+              Line 2
+              """,
+              "other"
+            ]
+            "#,
+        ) -> [
+            0..6,
+            1..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn multi_line_string_with_empty_lines(
+            r#"
+            key = """
+            Line 1
+
+            Line 3
+            """
+            "#,
+        ) -> [
+            0..4,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn complex_nested_structure(
+            r#"
+            # Line 0
+            [table] # Line 1
+            description = """
+            Multi-line
+            description
+            """ # Line 5
+            config = { key = "value" } # Line 6
+            # Line 7
+            # Line 8
+            items = [
+              """
+              Item 1
+              description
+              """,
+              # Line 14
+              """
+              Item 2
+              description
+              """,
+            ] # Line 19
+            "#,
+        ) -> [
+            0..0,
+            1..19,
+            2..5,
+            6..6,
+            7..8,
+            9..19,
+            10..13,
+            14..14,
+            15..18,
+        ];
+    );
+
+    test_folding_range!(
+        #[tokio::test]
+        async fn mixed_multiline_strings(
+            r#"
+            basic1 = """
+            Line 1
+            Line 2
+            """
+            literal1 = '''
+            Line 1
+            Line 2
+            '''
+            single_basic = """single line"""
+            single_literal = '''another single'''
+            basic2 = """
+            Another
+            multi-line
+            """
+            "#,
+        ) -> [
+            0..3,
+            4..7,
+            10..13,
+        ];
+    );
+
     #[macro_export]
     macro_rules! test_folding_range {
         (#[tokio::test] async fn $name:ident($source:expr $(,)?) -> [$($expected:expr),* $(,)?];) => {
@@ -245,12 +396,12 @@ mod folding_range_tests {
                     partial_result_params: PartialResultParams::default(),
                 };
 
-                let Ok(Some(result)) = handle_folding_range(backend, params).await else {
-                    panic!("failed to get folding range");
-                };
+                let result = handle_folding_range(backend, params).await
+                    .expect("folding range request failed");
 
                 let expected: Vec<std::ops::Range<u32>> = vec![$($expected),*];
                 let actual: Vec<std::ops::Range<u32>> = result
+                    .unwrap_or_default()
                     .into_iter()
                     .sorted_by_key(|r| (r.start_line, r.start_character))
                     .map(|r| r.start_line..r.end_line)

@@ -5,7 +5,7 @@ pub use level::Level;
 pub use printer::Print;
 use tower_lsp::lsp_types::NumberOrString;
 
-#[derive(Debug, Clone, Eq, Hash)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[cfg_attr(feature = "wasm", derive(serde::Serialize))]
 pub struct Diagnostic {
@@ -89,6 +89,16 @@ impl PartialEq for Diagnostic {
     }
 }
 
+impl Eq for Diagnostic {}
+
+impl std::hash::Hash for Diagnostic {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.range.hash(state);
+        self.code.hash(state);
+        self.message.hash(state);
+    }
+}
+
 pub trait SetDiagnostics {
     /// Set the diagnostic to the given diagnostics.
     ///
@@ -104,17 +114,23 @@ impl<T: SetDiagnostics> SetDiagnostics for Vec<T> {
     }
 }
 
-impl From<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
-    fn from(diagnostic: Diagnostic) -> Self {
+#[cfg(feature = "lsp")]
+impl tombi_text::FromLsp<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
+    fn from_lsp(
+        source: Diagnostic,
+        line_index: &tombi_text::LineIndex,
+    ) -> tower_lsp::lsp_types::Diagnostic {
+        use tombi_text::IntoLsp;
+
         tower_lsp::lsp_types::Diagnostic {
-            range: diagnostic.range().into(),
-            severity: Some(match diagnostic.level() {
+            range: source.range().into_lsp(line_index),
+            severity: Some(match source.level() {
                 level::Level::WARNING => tower_lsp::lsp_types::DiagnosticSeverity::WARNING,
                 level::Level::ERROR => tower_lsp::lsp_types::DiagnosticSeverity::ERROR,
             }),
-            message: diagnostic.message().to_string(),
+            message: source.message().to_string(),
             source: Some("Tombi".to_owned()),
-            code: Some(NumberOrString::String(diagnostic.code)),
+            code: Some(NumberOrString::String(source.code)),
             ..Default::default()
         }
     }

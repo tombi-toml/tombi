@@ -16,8 +16,13 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
 
     if let Some(text) = text {
         let mut document_sources = backend.document_sources.write().await;
+
+        let toml_version = backend
+            .text_document_toml_version(&text_document_uri, &text)
+            .await;
+
         if let Some(document) = document_sources.get_mut(&text_document_uri) {
-            document.text = text;
+            document.set_text(text, toml_version);
         }
         drop(document_sources);
     }

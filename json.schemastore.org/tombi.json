@@ -2,7 +2,7 @@
   "$id": "https://json.schemastore.org/tombi.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Tombi",
-  "description": "**Tombi** (鳶) is a toolkit for TOML; providing a formatter/linter and language server.\nSee the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.",
+  "description": "**Tombi** (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server.\nSee the [GitHub repository](https://github.com/tombi-toml/tombi) for more information.",
   "type": "object",
   "properties": {
     "toml-version": {
@@ -527,6 +527,16 @@
               "type": "null"
             }
           ]
+        },
+        "throttle-seconds": {
+          "title": "Throttle interval in seconds",
+          "description": "Controls the throttling behavior of workspace diagnostics:\n- 0: Run only once (first execution), then always skip\n- >0: Skip if within the specified interval, allow if interval has passed\n\nDefault: Follows the editor's execution frequency (no additional throttling).",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
         }
       },
       "additionalProperties": false

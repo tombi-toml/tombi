@@ -10,10 +10,18 @@ use tombi_diagnostic::{
 pub enum Error {
     #[error(transparent)]
     NotFormatted(#[from] NotFormattedError),
+
     #[error(transparent)]
     TombiGlob(#[from] tombi_glob::Error),
+
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    #[error("stdin failed to parse")]
+    StdinParseFailed,
+
+    #[error("{0:?} failed to parse")]
+    FileParseFailed(PathBuf),
 }
 
 #[derive(thiserror::Error, Debug)]

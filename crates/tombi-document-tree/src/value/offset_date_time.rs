@@ -9,7 +9,7 @@ use crate::{
 pub struct OffsetDateTime {
     value: tombi_date_time::OffsetDateTime,
     range: tombi_text::Range,
-    pub(crate) comment_directives: Option<Box<Vec<TombiValueCommentDirective>>>,
+    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl OffsetDateTime {
@@ -30,7 +30,7 @@ impl OffsetDateTime {
 
     #[inline]
     pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref().map(|v| &**v)
+        self.comment_directives.as_deref()
     }
 }
 

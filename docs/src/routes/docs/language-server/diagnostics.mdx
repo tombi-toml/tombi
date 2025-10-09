@@ -1,3 +1,28 @@
+import { Note, Warning } from "~/components/Highlight"
+
 # Diagnostics
 
 Real-time error detection and linting feedback in your editor through Tombi's Language Server.
+
+## Workspace Diagnostic
+Run diagnostics for the entire workspace.
+
+The editor will use either Push/Pull mode, but to reduce CPU usage from frequent diagnostics,
+the execution frequency can be adjusted with throttle-seconds.
+
+```toml
+[lsp]
+workspace-diagnostic.throttle-seconds = 5
+```
+
+<Note>
+If you want to run Workspace Diagnostic only once at startup, set `lsp.workspace-diagnostic.throttle-seconds = 0`.
+
+If you want to run Workspace Diagnostic every time, set `lsp.workspace-diagnostic.enabled = false`.
+</Note>
+
+<Warning>
+When opening the editor in your HOME directory, Workspace Diagnostic will be skipped to avoid scanning a large number of files. 
+
+This is a special exception to prevent performance issues from analyzing too many files and directories.
+</Warning>

@@ -1,14 +1,15 @@
+use tombi_text::EncodingKind;
 use tower_lsp::lsp_types::{
     ClientCapabilities, ClientInfo, CodeActionProviderCapability, CompletionOptions,
     CompletionOptionsCompletionItem, DeclarationCapability, DiagnosticOptions,
     DiagnosticServerCapabilities, DocumentLinkOptions, FileOperationFilter, FileOperationPattern,
     FileOperationPatternKind, FileOperationRegistrationOptions, FoldingRangeProviderCapability,
     HoverProviderCapability, InitializeParams, InitializeResult, MessageType, OneOf,
-    PositionEncodingKind, SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability,
-    WorkDoneProgressOptions, WorkspaceFileOperationsServerCapabilities,
-    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities,
+    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    TextDocumentSyncSaveOptions, TypeDefinitionProviderCapability, WorkDoneProgressOptions,
+    WorkspaceFileOperationsServerCapabilities, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
 };
 
 use crate::{
@@ -49,6 +50,7 @@ pub async fn handle_initialize(
     }
 
     let mut backend_capabilities = backend.capabilities.write().await;
+    backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
         if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
             if diagnostic_capabilities.dynamic_registration == Some(true) {
@@ -56,6 +58,8 @@ pub async fn handle_initialize(
             }
         }
     }
+
+    tracing::debug!("backend_capabilities: {:?}", backend_capabilities);
 
     Ok(InitializeResult {
         server_info: Some(ServerInfo {
@@ -105,7 +109,7 @@ pub fn server_capabilities(
     });
 
     ServerCapabilities {
-        position_encoding: Some(PositionEncodingKind::UTF16),
+        position_encoding: Some(backend_capabilities.encoding_kind.into()),
         workspace,
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
@@ -176,4 +180,18 @@ pub fn server_capabilities(
         },
         ..Default::default()
     }
+}
+
+fn negotiated_wide_encoding(client_capabilities: &ClientCapabilities) -> EncodingKind {
+    client_capabilities
+        .general
+        .as_ref()
+        .and_then(|general| general.position_encodings.as_ref())
+        .and_then(|encodings| {
+            encodings
+                .iter()
+                .filter_map(|encoding| EncodingKind::try_from(encoding).ok())
+                .next()
+        })
+        .unwrap_or_default()
 }

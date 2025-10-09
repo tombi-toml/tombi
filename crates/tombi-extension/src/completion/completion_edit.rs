@@ -1,14 +1,30 @@
-use tower_lsp::lsp_types::{CompletionTextEdit, InsertTextFormat, TextEdit, Url};
+use tower_lsp::lsp_types::InsertTextFormat;
 
-use crate::completion::completion_hint::{AddLeadingComma, AddTrailingComma};
+use crate::{
+    completion::completion_hint::{AddLeadingComma, AddTrailingComma},
+    TextEdit,
+};
 
 use super::CompletionHint;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompletionTextEdit {
+    Edit(TextEdit),
+    InsertAndReplace(InsertReplaceEdit),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InsertReplaceEdit {
+    pub new_text: String,
+    pub insert: tombi_text::Range,
+    pub replace: tombi_text::Range,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompletionEdit {
-    pub text_edit: tower_lsp::lsp_types::CompletionTextEdit,
-    pub insert_text_format: Option<tower_lsp::lsp_types::InsertTextFormat>,
-    pub additional_text_edits: Option<Vec<tower_lsp::lsp_types::TextEdit>>,
+    pub text_edit: CompletionTextEdit,
+    pub insert_text_format: Option<InsertTextFormat>,
+    pub additional_text_edits: Option<Vec<TextEdit>>,
 }
 
 impl CompletionEdit {
@@ -24,11 +40,11 @@ impl CompletionEdit {
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {label}"),
-                    range: tombi_text::Range::at(position).into(),
+                    range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -46,7 +62,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text,
-                        range: tombi_text::Range::at(position).into(),
+                        range: tombi_text::Range::at(position),
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits,
@@ -68,11 +84,11 @@ impl CompletionEdit {
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = ${{0:{label}}}"),
-                    range: tombi_text::Range::at(position).into(),
+                    range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -92,11 +108,11 @@ impl CompletionEdit {
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {quote}$1{quote}$0"),
-                    range: tombi_text::Range::at(position).into(),
+                    range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -114,7 +130,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text,
-                        range: tombi_text::Range::at(position).into(),
+                        range: tombi_text::Range::at(position),
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits,
@@ -124,7 +140,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text: format!("{quote}$1{quote}$0"),
-                        range: tombi_text::Range::at(position).into(),
+                        range: tombi_text::Range::at(position),
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits: None,
@@ -140,7 +156,7 @@ impl CompletionEdit {
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
                 new_text: label.to_string(),
-                range: value_range.into(),
+                range: value_range,
             }),
             insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
             additional_text_edits: None,
@@ -158,11 +174,11 @@ impl CompletionEdit {
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: " = [$1]$0".to_string(),
-                    range: tombi_text::Range::at(position).into(),
+                    range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -171,8 +187,8 @@ impl CompletionEdit {
                 add_trailing_comma,
             }) => {
                 let new_text = match add_trailing_comma {
-                    Some(_) => format!("[$1],$0"),
-                    None => format!("[$1]$0"),
+                    Some(_) => "[$1],$0".to_string(),
+                    None => "[$1]$0".to_string(),
                 };
                 let additional_text_edits =
                     head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
@@ -180,7 +196,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text,
-                        range: tombi_text::Range::at(position).into(),
+                        range: tombi_text::Range::at(position),
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits,
@@ -190,7 +206,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text: "[$1]$0".to_string(),
-                        range: tombi_text::Range::at(position).into(),
+                        range: tombi_text::Range::at(position),
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits: None,
@@ -209,11 +225,11 @@ impl CompletionEdit {
             ) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: " = {{ $1 }}$0".to_string(),
-                    range: tombi_text::Range::at(position).into(),
+                    range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -222,8 +238,8 @@ impl CompletionEdit {
                 add_trailing_comma,
             }) => {
                 let new_text = match add_trailing_comma {
-                    Some(_) => format!("{{ $1 }},$0"),
-                    None => format!("{{ $1 }}$0"),
+                    Some(_) => "{ $1 },$0".to_string(),
+                    None => "{ $1 }$0".to_string(),
                 };
                 let additional_text_edits =
                     head_comma_text_edits(add_leading_comma, add_trailing_comma, position);
@@ -231,7 +247,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text,
-                        range: tombi_text::Range::at(position).into(),
+                        range: tombi_text::Range::at(position),
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits,
@@ -241,7 +257,7 @@ impl CompletionEdit {
             Some(CompletionHint::Comma { .. }) | None => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: "{{ $1 }}$0".to_string(),
-                    range: tombi_text::Range::at(position).into(),
+                    range: tombi_text::Range::at(position),
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: None,
@@ -269,7 +285,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text,
-                        range: key_range.into(),
+                        range: key_range,
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits,
@@ -278,22 +294,22 @@ impl CompletionEdit {
             Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ {key_name}$1 }}$0"),
-                    range: key_range.into(),
+                    range: key_range,
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
             Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(".{key_name}"),
-                    range: key_range.into(),
+                    range: key_range,
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -321,7 +337,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text,
-                        range: key_range.into(),
+                        range: key_range,
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits,
@@ -330,22 +346,22 @@ impl CompletionEdit {
             Some(CompletionHint::EqualTrigger { range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(" = {{ ${{1:{key_name}}} }}$0"),
-                    range: range.into(),
+                    range,
                 }),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
             Some(CompletionHint::DotTrigger { range, .. }) => Some(Self {
                 text_edit: CompletionTextEdit::Edit(TextEdit {
                     new_text: format!(".${{0:{key_name}}}"),
-                    range: range.into(),
+                    range,
                 }),
                 insert_text_format: None,
                 additional_text_edits: Some(vec![TextEdit {
-                    range: range.into(),
+                    range,
                     new_text: "".to_string(),
                 }]),
             }),
@@ -353,7 +369,7 @@ impl CompletionEdit {
                 Some(Self {
                     text_edit: CompletionTextEdit::Edit(TextEdit {
                         new_text: format!("${{0:{key_name}}}"),
-                        range: key_range.into(),
+                        range: key_range,
                     }),
                     insert_text_format: Some(InsertTextFormat::SNIPPET),
                     additional_text_edits: None,
@@ -366,7 +382,7 @@ impl CompletionEdit {
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
                 new_text: trigger.to_string(),
-                range: tombi_text::Range::at(position).into(),
+                range: tombi_text::Range::at(position),
             }),
             insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
             additional_text_edits: None,
@@ -376,7 +392,7 @@ impl CompletionEdit {
     pub fn new_schema_comment_directive(
         position: tombi_text::Position,
         comment_range: tombi_text::Range,
-        text_document_uri: &Url,
+        text_document_uri: &tombi_uri::Uri,
     ) -> Option<Self> {
         let file_name = std::path::Path::new(text_document_uri.path())
             .file_stem() // "ccc"
@@ -389,11 +405,11 @@ impl CompletionEdit {
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
                 new_text: format!("#:schema ${{0:{schema_uri}}}"),
-                range: tombi_text::Range::at(position).into(),
+                range: tombi_text::Range::at(position),
             }),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             additional_text_edits: Some(vec![TextEdit {
-                range: comment_range.into(),
+                range: comment_range,
                 new_text: "".to_string(),
             }]),
         })
@@ -407,29 +423,28 @@ impl CompletionEdit {
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
                 new_text: format!("#:{directive_name} "),
-                range: tombi_text::Range::at(position).into(),
+                range: tombi_text::Range::at(position),
             }),
             insert_text_format: None,
             additional_text_edits: Some(vec![TextEdit {
-                range: comment_range.into(),
+                range: comment_range,
                 new_text: "".to_string(),
             }]),
         })
     }
 
     pub fn with_position(mut self, position: tombi_text::Position) -> Self {
-        fn offset(
-            range: tower_lsp::lsp_types::Range,
-            position: tombi_text::Position,
-        ) -> tower_lsp::lsp_types::Range {
-            let mut start = range.start;
-            start.line += position.line;
-            start.character += position.column;
-            let mut end = range.end;
-            end.line += position.line;
-            end.character += position.column;
+        fn offset(range: tombi_text::Range, position: tombi_text::Position) -> tombi_text::Range {
+            let start = tombi_text::Position::new(
+                range.start.line + position.line,
+                range.start.column + position.column,
+            );
+            let end = tombi_text::Position::new(
+                range.end.line + position.line,
+                range.end.column + position.column,
+            );
 
-            tower_lsp::lsp_types::Range { start, end }
+            tombi_text::Range::new(start, end)
         }
 
         self.text_edit = match self.text_edit {
@@ -438,7 +453,7 @@ impl CompletionEdit {
                 new_text: text_edit.new_text,
             }),
             CompletionTextEdit::InsertAndReplace(insert_replace_edit) => {
-                CompletionTextEdit::InsertAndReplace(tower_lsp::lsp_types::InsertReplaceEdit {
+                CompletionTextEdit::InsertAndReplace(InsertReplaceEdit {
                     insert: offset(insert_replace_edit.insert, position),
                     replace: offset(insert_replace_edit.replace, position),
                     new_text: insert_replace_edit.new_text,
@@ -478,11 +493,41 @@ fn head_comma_text_edits(
             range: tombi_text::Range {
                 start: start_position,
                 end: cursor_position,
-            }
-            .into(),
+            },
             new_text,
         }])
     } else {
         None
+    }
+}
+
+impl tombi_text::FromLsp<InsertReplaceEdit> for tower_lsp::lsp_types::InsertReplaceEdit {
+    fn from_lsp(
+        source: InsertReplaceEdit,
+        line_index: &tombi_text::LineIndex,
+    ) -> tower_lsp::lsp_types::InsertReplaceEdit {
+        tower_lsp::lsp_types::InsertReplaceEdit {
+            new_text: source.new_text,
+            insert: tombi_text::IntoLsp::into_lsp(source.insert, line_index),
+            replace: tombi_text::IntoLsp::into_lsp(source.replace, line_index),
+        }
+    }
+}
+
+impl tombi_text::FromLsp<CompletionTextEdit> for tower_lsp::lsp_types::CompletionTextEdit {
+    fn from_lsp(
+        source: CompletionTextEdit,
+        line_index: &tombi_text::LineIndex,
+    ) -> tower_lsp::lsp_types::CompletionTextEdit {
+        match source {
+            CompletionTextEdit::Edit(text_edit) => tower_lsp::lsp_types::CompletionTextEdit::Edit(
+                tombi_text::IntoLsp::into_lsp(text_edit, line_index),
+            ),
+            CompletionTextEdit::InsertAndReplace(insert_replace_edit) => {
+                tower_lsp::lsp_types::CompletionTextEdit::InsertAndReplace(
+                    tombi_text::IntoLsp::into_lsp(insert_replace_edit, line_index),
+                )
+            }
+        }
     }
 }

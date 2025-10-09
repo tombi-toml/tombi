@@ -16,7 +16,7 @@
     },
     {
       "name": "Tombi",
-      "description": "Tombi (鳶) is a toolkit for TOML; providing a formatter/linter and language server",
+      "description": "Tombi (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server",
       "fileMatch": ["tombi.toml", "tombi/config.toml"],
       "url": "tombi://json.schemastore.org/tombi.json"
     }

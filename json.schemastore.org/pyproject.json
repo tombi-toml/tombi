@@ -430,6 +430,7 @@
               "key": "https://packaging.python.org/en/latest/specifications/pyproject-toml/#urls"
             }
           },
+          "x-tombi-additional-key-label": "url_label",
           "x-tombi-table-keys-order": "version-sort",
           "examples": [
             {
@@ -456,6 +457,7 @@
               "key": "https://packaging.python.org/en/latest/specifications/entry-points/#use-for-scripts"
             }
           },
+          "x-tombi-additional-key-label": "script_name",
           "x-tombi-table-keys-order": "version-sort",
           "examples": [
             {
@@ -477,6 +479,7 @@
               "key": "https://packaging.python.org/en/latest/specifications/entry-points/#use-for-scripts"
             }
           },
+          "x-tombi-additional-key-label": "script_name",
           "x-tombi-table-keys-order": "version-sort",
           "examples": [
             {
@@ -492,7 +495,8 @@
               "type": "object",
               "additionalProperties": {
                 "type": "string"
-              }
+              },
+              "x-tombi-additional-key-label": "entry_point_name"
             }
           },
           "propertyNames": {
@@ -516,6 +520,7 @@
               "key": "https://packaging.python.org/en/latest/specifications/entry-points/#use-for-plugins"
             }
           },
+          "x-tombi-additional-key-label": "entry_point_group_name",
           "x-tombi-table-keys-order": "version-sort",
           "examples": [
             {
@@ -545,7 +550,6 @@
         },
         "optional-dependencies": {
           "type": "object",
-          "x-tombi-table-keys-order": "version-sort",
           "patternProperties": {
             "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9])$": {
               "type": "array",
@@ -563,6 +567,8 @@
               "key": "https://packaging.python.org/en/latest/specifications/pyproject-toml/#dependencies-optional-dependencies"
             }
           },
+          "x-tombi-additional-key-label": "package_name",
+          "x-tombi-table-keys-order": "version-sort",
           "examples": [
             {
               "typing": ["boto3-stubs", "typing-extensions ~= 4.1"]
@@ -851,16 +857,6 @@
       "title": "PEP 735 dependency groups",
       "description": "Named groups of dependencies, similar to `requirements.txt` files, which launchers, IDEs, and other tools can find and identify by name. Each item in `[dependency-groups]` is defined as mapping of group name to list of [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).",
       "markdownDescription": "Named groups of dependencies, similar to `requirements.txt` files, which launchers, IDEs, and other tools can find and identify by name. Each item in `[dependency-groups]` is defined as mapping of group name to list of [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).",
-      "x-intellij-html-description": "<p>Named groups of dependencies, similar to <code>requirements.txt</code> files, which launchers, IDEs, and other tools can find and identify by name. Each item in <code>[dependency-groups]</code> is defined as mapping of group name to list of <a href=\"https://packaging.python.org/en/latest/specifications/dependency-specifiers/\">dependency specifiers</a>.</p>",
-      "x-tombi-table-keys-order": {
-        "properties": "version-sort",
-        "patternProperties": "version-sort"
-      },
-      "x-taplo": {
-        "links": {
-          "key": "https://peps.python.org/pep-0735/"
-        }
-      },
       "type": "object",
       "properties": {
         "dev": {
@@ -872,7 +868,18 @@
           "$ref": "#/definitions/DependencyGroup"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "x-intellij-html-description": "<p>Named groups of dependencies, similar to <code>requirements.txt</code> files, which launchers, IDEs, and other tools can find and identify by name. Each item in <code>[dependency-groups]</code> is defined as mapping of group name to list of <a href=\"https://packaging.python.org/en/latest/specifications/dependency-specifiers/\">dependency specifiers</a>.</p>",
+      "x-tombi-additional-key-label": "group_name",
+      "x-tombi-table-keys-order": {
+        "properties": "version-sort",
+        "patternProperties": "version-sort"
+      },
+      "x-taplo": {
+        "links": {
+          "key": "https://peps.python.org/pep-0735/"
+        }
+      }
     },
     "build-system": {
       "$ref": "#/definitions/BuildSystem"
@@ -892,6 +899,7 @@
           "key": "https://packaging.python.org/en/latest/specifications/pyproject-toml/#arbitrary-tool-configuration-the-tool-table"
         }
       },
+      "x-tombi-additional-key-label": "tool_name",
       "x-tombi-table-keys-order": "version-sort",
       "properties": {
         "black": {
@@ -982,7 +990,7 @@
         "tombi": {
           "$ref": "https://json.schemastore.org/tombi.json",
           "title": "TOML Toolkit",
-          "description": "Tombi (鳶) is a toolkit for TOML; providing a formatter/linter and language server"
+          "description": "Tombi (鳶 `/toɴbi/`) is a toolkit for TOML; providing a formatter/linter and language server"
         },
         "tox": {
           "$ref": "https://json.schemastore.org/partial-tox.json",

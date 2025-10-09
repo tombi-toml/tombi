@@ -34,7 +34,6 @@ anyhow = "1.0.98"
 bytes = "1.10.1"
 chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.37", features = ["derive", "env", "string"] }
-clap-verbosity-flag = "3.0.2"
 console_error_panic_hook = "0.1.7"
 convert_case = "0.6.0"
 countme = "3.0.1"
@@ -60,7 +59,7 @@ rayon = "1.10.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.15", default-features = false, features = [
   "json",
-  "rustls-tls",
+  "rustls-tls-native-roots",
 ] }
 rstest = { version = "0.25.0" }
 rustc-hash = { version = "2.1.1" }
@@ -69,6 +68,7 @@ semver = { version = "1.0.26" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 serde_tombi = { path = "rust/serde_tombi", default-features = false }
+similar = { version = "2.7.0" }
 surf = "2.3.2"
 tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
@@ -91,6 +91,7 @@ tombi-extension = { path = "crates/tombi-extension" }
 tombi-extension-cargo = { path = "extensions/tombi-extension-cargo" }
 tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
 tombi-extension-uv = { path = "extensions/tombi-extension-uv" }
+tombi-file-system = { path = "crates/tombi-file-system" }
 tombi-formatter = { path = "crates/tombi-formatter" }
 tombi-future = { path = "crates/tombi-future" }
 tombi-glob = { path = "crates/tombi-glob" }
@@ -121,6 +122,7 @@ typed-builder = "0.21.0"
 ungrammar.version = "1.16.1"
 unicode-segmentation = "1.12.0"
 uuid = { version = "1.18.0", features = ["v1", "v3", "v4", "v5", "v7", "v8"] }
+wasi = { version = "0.13.0" }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
 xshell.version = "0.2.7"
@@ -128,4 +130,11 @@ zed_extension_api = "0.1.0"
 zip = { version = "2.3.0" }
 
 [workspace.metadata.cargo-shear]
-ignored = ["semver", "tracing"]
+ignored = [
+  "semver",
+  "tracing",
+  "wasi",
+  "wasm-bindgen",
+  "wasm-bindgen-futures",
+  "tombi-file-system",
+]

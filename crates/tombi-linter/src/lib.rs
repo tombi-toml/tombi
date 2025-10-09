@@ -354,6 +354,24 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_tombi_schema_lint_rules_with_unknown_key(
+                r#"
+                [[schemas]]
+                root = "tool.taskipy"
+                path = "schemas/partial-taskipy.schema.json"
+                include = ["pyproject.toml"]
+                unknown = true
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {
+                    key: "unknown".to_string(),
+                },
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_tombi_schema_lint_rules_key_empty_undefined(
                 r#"
                 [lint.rules]
@@ -412,6 +430,19 @@ mod tests {
         use tombi_schema_store::SchemaUri;
 
         use super::*;
+
+        test_lint! {
+            #[test]
+            // Ref: https://github.com/tombi-toml/tombi/issues/1031
+            fn test_error_report_case1(
+                r#"
+                [job]
+                name = "foo"
+                prod.cpu = 10
+                prod.autoscale = { min = 10, max = 20 }
+                "#,
+            ) -> Ok(_);
+        }
 
         test_lint! {
             #[test]

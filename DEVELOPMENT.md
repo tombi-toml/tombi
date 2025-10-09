@@ -53,6 +53,12 @@ $ ./gradlew check
 * [JetBrains Marketplace Documentation](https://plugins.jetbrains.com/docs/marketplace/discover-jetbrains-marketplace.html)
 * [InteliJ Platform Explorer](https://plugins.jetbrains.com/intellij-platform-explorer/extensions)
 
+## Rust tests
+
+The easiest way to test a specific test case is to run the code action of the specific test case with [VSCode Rust Analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+
+When running with cargo nextest, run `RUST_LOG=trace cargo nextest run -- $TEST_NAME` to output detailed logs.
+
 ## toml-test
 
 To test if it passes [toml-test](https://github.com/toml-lang/toml-test), run the following.
