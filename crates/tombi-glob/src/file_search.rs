@@ -47,7 +47,7 @@ impl FileSearch {
             FileInputType::Project => {
                 tracing::debug!("Searching for TOML files using configured patterns...");
 
-                FileSearch::Files(search_with_patterns_async(root, files_options).await)
+                FileSearch::Files(search_pattern_matched_paths(root, files_options).await)
             }
             FileInputType::Files => {
                 tracing::debug!("Searching for TOML files using user input patterns...");
@@ -59,7 +59,7 @@ impl FileSearch {
 
                     if is_glob_pattern(file_path) {
                         matched_paths.extend(
-                            search_with_patterns_async(
+                            search_pattern_matched_paths(
                                 root,
                                 FilesOptions {
                                     include: Some(vec![file_path.to_string()]),
@@ -74,7 +74,7 @@ impl FileSearch {
                             matched_paths.push(Ok(path));
                         } else if path.is_dir() {
                             matched_paths.extend(
-                                search_with_patterns_async(path, files_options.clone()).await,
+                                search_pattern_matched_paths(path, files_options.clone()).await,
                             );
                         } else {
                             matched_paths.push(Err(crate::Error::FileNotFound(path)));
@@ -102,7 +102,7 @@ impl FileSearch {
     }
 }
 
-async fn search_with_patterns_async<P: AsRef<std::path::Path>>(
+pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
     root: P,
     files_options: FilesOptions,
 ) -> Vec<Result<PathBuf, crate::Error>> {

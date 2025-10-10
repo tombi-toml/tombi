@@ -2,11 +2,11 @@ use std::path::PathBuf;
 
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
-use tombi_config::{Config, ConfigLevel, LintOptions};
+use tombi_config::{Config, LintOptions};
 use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::IntoLsp;
 
-use crate::{backend::Backend, config_manager::ConfigSchemaStore, document::DocumentSource};
+use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
 pub async fn publish_diagnostics(
     backend: &Backend,
@@ -107,8 +107,6 @@ pub async fn get_diagnostics_result(
 pub struct WorkspaceConfig {
     pub workspace_folder_path: PathBuf,
     pub config: Config,
-    pub config_path: Option<PathBuf>,
-    pub config_level: ConfigLevel,
 }
 
 pub async fn get_workspace_configs(
@@ -137,156 +135,17 @@ pub async fn get_workspace_configs(
     let mut configs = AHashMap::new();
 
     for workspace_folder_path in workspace_folder_paths {
-        if let Ok((config, config_path, config_level)) =
-            serde_tombi::config::load_with_path_and_level(Some(workspace_folder_path.clone()))
+        if let Ok((config, config_path)) =
+            serde_tombi::config::load_with_path(Some(workspace_folder_path.clone()))
         {
             configs
                 .entry(config_path.clone())
                 .or_insert(WorkspaceConfig {
                     workspace_folder_path,
                     config,
-                    config_path,
-                    config_level,
                 });
         };
     }
 
     Some(configs)
-}
-
-#[derive(Debug)]
-pub struct WorkspaceDiagnosticTarget {
-    pub text_document_uri: tombi_uri::Uri,
-    pub version: Option<i32>,
-    pub should_skip: bool,
-}
-
-pub async fn get_workspace_diagnostic_targets(
-    backend: &Backend,
-    workspace_config: &WorkspaceConfig,
-) -> Option<Vec<WorkspaceDiagnosticTarget>> {
-    let mut total_diagnostic_targets = Vec::new();
-
-    let WorkspaceConfig {
-        workspace_folder_path,
-        config,
-        config_level,
-        config_path,
-    } = workspace_config;
-
-    let encoding_kind = backend.capabilities.read().await.encoding_kind;
-
-    let workspace_folder_path_str = workspace_folder_path.to_str()?;
-    if let tombi_glob::FileSearch::Files(files) = tombi_glob::FileSearch::new(
-        &[workspace_folder_path_str],
-        config,
-        config_path.as_deref(),
-        *config_level,
-    )
-    .await
-    {
-        tracing::debug!(
-            "Found {} files in {}: {:?}",
-            files.len(),
-            workspace_folder_path_str,
-            files
-        );
-
-        let mut excluded_count = 0;
-        let mut skipped_count = 0;
-
-        for file in files {
-            let Ok(text_document_path) = file else {
-                continue;
-            };
-            if let Ok(text_document_uri) = tombi_uri::Uri::from_file_path(&text_document_path) {
-                let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
-                    continue;
-                };
-
-                let toml_version = backend
-                    .text_document_toml_version(&text_document_uri, &content)
-                    .await;
-
-                let version = {
-                    backend
-                        .document_sources
-                        .write()
-                        .await
-                        .entry(text_document_uri.clone())
-                        .or_insert_with(|| {
-                            DocumentSource::new(content, None, toml_version, encoding_kind)
-                        })
-                        .version
-                };
-
-                // Exclude files opened in editor (version is Some)
-                if version.is_some() {
-                    excluded_count += 1;
-                    continue;
-                }
-
-                // Check if file should be skipped based on mtime
-                // Get file modification time
-                let mtime = match tokio::fs::metadata(&text_document_path).await {
-                    Ok(metadata) => match metadata.modified() {
-                        Ok(time) => Some(time),
-                        Err(err) => {
-                            tracing::debug!(
-                                "Failed to get mtime for {:?}: {}",
-                                text_document_path,
-                                err
-                            );
-                            None
-                        }
-                    },
-                    Err(err) => {
-                        tracing::debug!(
-                            "Failed to get metadata for {:?}: {}",
-                            text_document_path,
-                            err
-                        );
-                        None
-                    }
-                };
-
-                let should_skip = if let Some(mtime) = mtime {
-                    backend
-                        .workspace_diagnostic_state
-                        .mtime_tracker()
-                        .should_skip(&text_document_uri, mtime)
-                        .await
-                } else {
-                    false
-                };
-
-                if should_skip {
-                    skipped_count += 1;
-                }
-
-                total_diagnostic_targets.push(WorkspaceDiagnosticTarget {
-                    text_document_uri,
-                    version,
-                    should_skip,
-                });
-            }
-        }
-
-        tracing::debug!(
-            "Excluded {} files opened in editor, {} files skipped by mtime",
-            excluded_count,
-            skipped_count
-        );
-
-        if !total_diagnostic_targets.is_empty() {
-            let skip_rate = (skipped_count as f64 / total_diagnostic_targets.len() as f64) * 100.0;
-            tracing::debug!("Skip rate: {:.1}%", skip_rate);
-        }
-    }
-
-    if total_diagnostic_targets.is_empty() {
-        None
-    } else {
-        Some(total_diagnostic_targets)
-    }
 }
