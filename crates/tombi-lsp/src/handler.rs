@@ -54,4 +54,4 @@ pub use semantic_tokens_full::handle_semantic_tokens_full;
 pub use shutdown::handle_shutdown;
 pub use update_config::handle_update_config;
 pub use update_schema::handle_update_schema;
-pub use workspace_diagnostic::{handle_workspace_diagnostic, push_workspace_diagnostics};
+pub use workspace_diagnostic::push_workspace_diagnostics;

@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use serde_tombi::config::load_with_path;
 use tombi_config::Config;
 use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
@@ -94,8 +93,8 @@ impl ConfigManager {
         &self,
         text_document_uri: &tombi_uri::Uri,
     ) -> ConfigSchemaStore {
-        if let Ok(path) = text_document_uri.to_file_path() {
-            self.config_schema_store_for_file(&path).await
+        if let Ok(text_document_path) = text_document_uri.to_file_path() {
+            self.config_schema_store_for_file(&text_document_path).await
         } else {
             self.default_config_schema_store().await
         }
@@ -112,9 +111,9 @@ impl ConfigManager {
             Some(config_path) => config_path.to_owned(),
             None => {
                 let text_document_path_buf: PathBuf = text_document_path.to_path_buf();
-                if let Ok((config, Some(config_path_buf))) =
-                    load_with_path(text_document_path_buf.parent().map(ToOwned::to_owned))
-                {
+                if let Ok((config, Some(config_path_buf))) = serde_tombi::config::load_with_path(
+                    text_document_path_buf.parent().map(ToOwned::to_owned),
+                ) {
                     source_config_paths.insert(text_document_path_buf, config_path_buf.clone());
 
                     let schema_options = schema_store_options(&config, &self.backend_options);

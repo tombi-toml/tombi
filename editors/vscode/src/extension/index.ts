@@ -76,15 +76,6 @@ export class Extension {
       log.error(`Failed to get LSP version: ${error}`);
     }
 
-    try {
-      await client.sendRequest(new node.RequestType("workspace/diagnostic"), {
-        previousResultIds: [],
-      });
-      log.info("Sent `workspace/diagnostic` request");
-    } catch (error) {
-      log.error(`Failed to send \`workspace/diagnostic\`: ${error}`);
-    }
-
     // NOTE: When VSCode starts, if a TOML document is open in a tab and the focus is not on it,
     //       the Language Server will not start.
     //       Therefore, send the notification to the Language Server for all open TOML documents.
