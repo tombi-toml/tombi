@@ -1,5 +1,5 @@
-import { RequestType } from "vscode-languageclient";
 import * as vscode from "vscode";
+import { RequestType } from "vscode-languageclient";
 import type * as node from "vscode-languageclient/node";
 
 export type RefreshCacheParams = Record<string, never>;

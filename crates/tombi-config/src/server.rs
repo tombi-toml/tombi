@@ -168,11 +168,9 @@ pub struct LspWorkspaceDiagnostic {
 
     /// # Throttle interval in seconds
     ///
-    /// Controls the throttling behavior of workspace diagnostics:
-    /// - 0: Run only once (first execution), then always skip
-    /// - >0: Skip if within the specified interval, allow if interval has passed
+    /// **🚧 Deprecated 🚧**\
+    /// Don't need to use this option.
     ///
-    /// Default: Follows the editor's execution frequency (no additional throttling).
-    ///
+    #[cfg_attr(feature = "jsonschema", deprecated)]
     pub throttle_seconds: Option<u64>,
 }

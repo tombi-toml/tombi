@@ -1,55 +1,34 @@
-use tower_lsp::lsp_types::{
-    FullDocumentDiagnosticReport, WorkspaceDiagnosticParams, WorkspaceDiagnosticReport,
-    WorkspaceDiagnosticReportResult, WorkspaceDocumentDiagnosticReport,
-    WorkspaceFullDocumentDiagnosticReport,
-};
+use ahash::AHashSet;
+use tombi_glob::search_pattern_matched_paths;
 
 use crate::{
-    backend::{Backend, DiagnosticType},
-    diagnostic::{
-        get_diagnostics_result, get_workspace_configs, get_workspace_diagnostic_targets,
-        publish_diagnostics, WorkspaceConfig, WorkspaceDiagnosticTarget,
-    },
+    backend::Backend,
+    diagnostic::{get_workspace_configs, publish_diagnostics, WorkspaceConfig},
+    document::DocumentSource,
 };
 
-pub async fn handle_workspace_diagnostic(
+pub async fn push_workspace_diagnostics(
     backend: &Backend,
-    params: WorkspaceDiagnosticParams,
-) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_workspace_diagnostic");
-    tracing::trace!(?params);
-
-    let items = execute_workspace_diagnostics(backend, false)
-        .await
-        .unwrap_or_default();
-
-    Ok(WorkspaceDiagnosticReportResult::Report(
-        WorkspaceDiagnosticReport { items },
-    ))
-}
-
-pub async fn push_workspace_diagnostics(backend: &Backend) {
-    if backend.capabilities.read().await.diagnostic_type != DiagnosticType::Push {
-        return;
-    }
-
+) -> Result<(), tower_lsp::jsonrpc::Error> {
     tracing::info!("push_workspace_diagnostics");
 
-    let _ = execute_workspace_diagnostics(backend, true).await;
+    for target_path in collect_workspace_diagnostic_targets(backend).await {
+        publish_diagnostics(backend, target_path.into(), None).await;
+    }
+
+    Ok(())
 }
 
-/// Execute workspace diagnostics with common logic
-async fn execute_workspace_diagnostics(
-    backend: &Backend,
-    is_push_mode: bool,
-) -> Option<Vec<WorkspaceDocumentDiagnosticReport>> {
-    let configs = get_workspace_configs(backend).await?;
-    let mut all_items = Vec::new();
+async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_uri::Uri> {
+    let Some(configs) = get_workspace_configs(backend).await else {
+        return Vec::with_capacity(0);
+    };
+
+    let mut targets = AHashSet::new();
     let home_dir = dirs::home_dir();
 
-    for workspace_config in configs.values() {
-        // Check if workspace diagnostic is enabled first (priority over throttle)
-        if !is_workspace_diagnostic_enabled(workspace_config) {
+    for workspace_config in configs.into_values() {
+        if !is_workspace_diagnostic_enabled(&workspace_config) {
             tracing::debug!(
                 "`lsp.workspace-diagnostic.enabled` is false in {}",
                 workspace_config.workspace_folder_path.display()
@@ -67,77 +46,29 @@ async fn execute_workspace_diagnostics(
             }
         }
 
-        // Check throttling only if enabled
-        if let Some(throttle_seconds) = get_throttle_seconds(workspace_config) {
-            match backend
-                .workspace_diagnostic_state
-                .throttle()
-                .should_skip_by_throttle(throttle_seconds)
+        let files_options = workspace_config.config.files.clone().unwrap_or_default();
+
+        for matched_path in
+            search_pattern_matched_paths(workspace_config.workspace_folder_path, files_options)
                 .await
-            {
-                Ok((should_skip, elapsed_secs)) => {
-                    if should_skip {
-                        if let Some(elapsed) = elapsed_secs {
-                            if elapsed == 0.0 {
-                                tracing::debug!("Workspace diagnostics skipped by `workspace-diagnostic.throttle-seconds = 0`, workspace_folder_path={}, config_path={:?}",
-                                    workspace_config.workspace_folder_path.display(),
-                                    workspace_config.config_path,
-                                );
-                            } else {
-                                tracing::debug!(
-                                    "Workspace diagnostics skipped by throttle: elapsed {:.2}s < {}s, workspace_folder_path={}, config_path={:?}",
-                                    elapsed,
-                                    throttle_seconds,
-                                    workspace_config.workspace_folder_path.display(),
-                                    workspace_config.config_path,
-                                );
-                            }
-                        }
-                        continue;
-                    } else if let Some(elapsed) = elapsed_secs {
-                        tracing::debug!(
-                            "Workspace diagnostics executing: elapsed {:.2}s >= {}s, workspace_folder_path={}, config_path={:?}",
-                            elapsed,
-                            throttle_seconds,
-                            workspace_config.workspace_folder_path.display(),
-                            workspace_config.config_path,
-                        );
-                    }
-                }
-                Err(err) => {
-                    tracing::error!(
-                        "Failed to check workspace diagnostics throttle: {}, proceeding without throttle, workspace_folder_path={}, config_path={:?}",
-                        err,
-                        workspace_config.workspace_folder_path.display(),
-                        workspace_config.config_path,
-                    );
-                }
+        {
+            let Ok(path) = matched_path else {
+                continue;
+            };
+
+            if let Ok(uri) = tombi_uri::Uri::from_file_path(path) {
+                upsert_document_source(backend, uri.clone()).await;
+
+                targets.insert(uri);
             }
         }
-
-        let (items, skipped_count) =
-            process_workspace_diagnostic_targets(backend, workspace_config, is_push_mode).await;
-
-        all_items.extend(items);
-        tracing::debug!(
-            "Skipped {} files in workspace diagnostics, workspace_folder_path={}, config_path={:?}",
-            skipped_count,
-            workspace_config.workspace_folder_path.display(),
-            workspace_config.config_path
-        );
     }
 
-    // Record completion time
-    backend
-        .workspace_diagnostic_state
-        .throttle()
-        .record_completion()
-        .await;
-
-    Some(all_items)
+    targets.into_iter().collect()
 }
 
 /// Check if workspace diagnostic is enabled for the given workspace config
+#[inline]
 fn is_workspace_diagnostic_enabled(workspace_config: &WorkspaceConfig) -> bool {
     workspace_config
         .config
@@ -148,74 +79,46 @@ fn is_workspace_diagnostic_enabled(workspace_config: &WorkspaceConfig) -> bool {
         .value()
 }
 
-/// Get throttle seconds from workspace config
-fn get_throttle_seconds(workspace_config: &WorkspaceConfig) -> Option<u64> {
-    workspace_config
-        .config
-        .lsp()
-        .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
-        .and_then(|wd| wd.throttle_seconds)
-}
-
-/// Process workspace diagnostic targets for a single workspace
-async fn process_workspace_diagnostic_targets(
-    backend: &Backend,
-    workspace_config: &WorkspaceConfig,
-    is_push_mode: bool,
-) -> (Vec<WorkspaceDocumentDiagnosticReport>, usize) {
-    let mut items = Vec::new();
-    let mut skipped_count = 0;
-
-    if let Some(workspace_diagnostic_targets) =
-        get_workspace_diagnostic_targets(backend, workspace_config).await
-    {
-        for WorkspaceDiagnosticTarget {
-            text_document_uri,
-            version,
-            should_skip,
-        } in workspace_diagnostic_targets
-        {
-            // Skip processing if should_skip flag is true
-            if should_skip {
-                skipped_count += 1;
-                continue;
-            }
-
-            // Clone URI for mtime recording
-            let text_document_uri_clone = text_document_uri.clone();
-
-            if is_push_mode {
-                publish_diagnostics(backend, text_document_uri, version).await;
-            } else if let Some(diagnostics) =
-                get_diagnostics_result(backend, &text_document_uri).await
-            {
-                items.push(WorkspaceDocumentDiagnosticReport::Full(
-                    WorkspaceFullDocumentDiagnosticReport {
-                        uri: text_document_uri.into(),
-                        version: version.map(|version| version as i64),
-                        full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                            items: diagnostics.diagnostics,
-                            ..Default::default()
-                        },
-                    },
-                ));
-            }
-
-            // Record mtime after diagnostic execution
-            if let Ok(path) = tombi_uri::Uri::to_file_path(&text_document_uri_clone) {
-                if let Ok(metadata) = tokio::fs::metadata(&path).await {
-                    if let Ok(mtime) = metadata.modified() {
-                        backend
-                            .workspace_diagnostic_state
-                            .mtime_tracker()
-                            .record(text_document_uri_clone, mtime)
-                            .await;
-                        tracing::debug!("Recorded mtime for {:?}", path);
-                    }
-                }
-            }
+pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_uri::Uri) -> bool {
+    let text_document_path = match text_document_uri.to_file_path() {
+        Ok(text_document_path) => text_document_path,
+        Err(_) => {
+            tracing::warn!("Watcher event for non-file URI: {text_document_uri}");
+            return false;
         }
+    };
+
+    let Ok(content) = tokio::fs::read_to_string(&text_document_path).await else {
+        tracing::warn!(
+            "Failed to read file for diagnostics: {:?}",
+            text_document_path
+        );
+        return false;
+    };
+
+    let toml_version = backend
+        .text_document_toml_version(&text_document_uri, &content)
+        .await;
+
+    let mut document_sources = backend.document_sources.write().await;
+    if let Some(source) = document_sources.get_mut(&text_document_uri) {
+        if source.version.is_some() {
+            tracing::debug!("Skip diagnostics for open document: {text_document_uri}");
+            return false;
+        }
+
+        source.set_text(content, toml_version);
+    } else {
+        document_sources.insert(
+            text_document_uri.clone(),
+            DocumentSource::new(
+                content,
+                None,
+                toml_version,
+                backend.capabilities.read().await.encoding_kind,
+            ),
+        );
     }
 
-    (items, skipped_count)
+    true
 }

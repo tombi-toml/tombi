@@ -5,22 +5,19 @@ use itertools::Either;
 use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_config::{Config, TomlVersion};
 use tombi_text::IntoLsp;
-use tower_lsp::{
-    lsp_types::{
-        request::{
-            GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
-            GotoTypeDefinitionResponse,
-        },
-        CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
-        DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
-        DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-        DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
-        DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
-        GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
-        InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
-        TextDocumentIdentifier, Url, WorkspaceDiagnosticParams, WorkspaceDiagnosticReportResult,
+use tower_lsp::lsp_types::{
+    request::{
+        GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
+        GotoTypeDefinitionResponse,
     },
-    LanguageServer,
+    CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
+    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentLink, DocumentLinkParams,
+    DocumentSymbolParams, DocumentSymbolResponse, FoldingRange, FoldingRangeParams,
+    GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
+    InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
+    TextDocumentIdentifier, Url,
 };
 
 use crate::{
@@ -36,10 +33,9 @@ use crate::{
         handle_get_toml_version, handle_goto_declaration, handle_goto_definition,
         handle_goto_type_definition, handle_hover, handle_initialize, handle_initialized,
         handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown, handle_update_config,
-        handle_update_schema, handle_workspace_diagnostic, push_diagnostics, AssociateSchemaParams,
-        GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
+        handle_update_schema, push_diagnostics, AssociateSchemaParams, GetStatusResponse,
+        GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
     },
-    workspace_diagnostic_state::WorkspaceDiagnosticState,
 };
 
 use tombi_text::EncodingKind;
@@ -51,19 +47,11 @@ pub struct Backend {
     pub capabilities: Arc<tokio::sync::RwLock<BackendCapabilities>>,
     pub document_sources: Arc<tokio::sync::RwLock<AHashMap<tombi_uri::Uri, DocumentSource>>>,
     pub config_manager: Arc<ConfigManager>,
-    pub workspace_diagnostic_state: WorkspaceDiagnosticState,
 }
 
 #[derive(Debug)]
 pub struct BackendCapabilities {
     pub encoding_kind: EncodingKind,
-    pub diagnostic_type: DiagnosticType,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DiagnosticType {
-    Push,
-    Pull,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -78,12 +66,10 @@ impl Backend {
         Self {
             client,
             capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
-                diagnostic_type: DiagnosticType::Push,
                 encoding_kind: EncodingKind::default(),
             })),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),
-            workspace_diagnostic_state: WorkspaceDiagnosticState::new(),
         }
     }
 
@@ -220,7 +206,7 @@ impl Backend {
 }
 
 #[tower_lsp::async_trait]
-impl LanguageServer for Backend {
+impl tower_lsp::LanguageServer for Backend {
     async fn initialize(
         &self,
         params: InitializeParams,
@@ -249,7 +235,7 @@ impl LanguageServer for Backend {
     }
 
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
-        handle_did_change_watched_files(params).await
+        handle_did_change_watched_files(self, params).await
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
@@ -375,12 +361,5 @@ impl LanguageServer for Backend {
         params: DocumentDiagnosticParams,
     ) -> Result<DocumentDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
         handle_diagnostic(self, params).await
-    }
-
-    async fn workspace_diagnostic(
-        &self,
-        params: WorkspaceDiagnosticParams,
-    ) -> Result<WorkspaceDiagnosticReportResult, tower_lsp::jsonrpc::Error> {
-        handle_workspace_diagnostic(self, params).await
     }
 }
