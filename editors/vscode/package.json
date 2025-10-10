@@ -5,8 +5,8 @@
   "description": "TOML Language Server",
   "publisher": "tombi-toml",
   "author": {
-    "name": "ya7010",
-    "email": "ya7010@outlook.com"
+    "name": "tombi-toml",
+    "email": "tombi-toml@outlook.com"
   },
   "repository": "https://github.com/tombi-toml/tombi",
   "license": "MIT",

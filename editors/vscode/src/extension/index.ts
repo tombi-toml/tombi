@@ -18,8 +18,8 @@ import { registerExtensionSchemas } from "@/tomlValidation";
 import type { Settings } from "./settings";
 export type { Settings };
 
-export const Extension_ID = "tombi";
-export const Extension_NAME = "Tombi";
+export const EXTENSION_ID = "tombi";
+export const EXTENSION_NAME = "Tombi";
 export const SUPPORT_TOML_LANGUAGES = ["toml", "cargoLock"];
 export const SUPPORT_TOMBI_CONFIG_FILENAMES = [
   "tombi.toml",
@@ -49,15 +49,15 @@ export class Extension {
 
   static async activate(context: vscode.ExtensionContext): Promise<Extension> {
     const settings = vscode.workspace.getConfiguration(
-      Extension_ID,
+      EXTENSION_ID,
     ) as Settings;
 
     const tombiBin = await bootstrap(context, settings);
 
     const server = new Server(tombiBin);
     const client = new node.LanguageClient(
-      Extension_ID,
-      `${Extension_NAME} Language Server`,
+      EXTENSION_ID,
+      `${EXTENSION_NAME} Language Server`,
       serverOptions(server.tombiBin.path, settings),
       clientOptions(),
       // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
@@ -100,19 +100,19 @@ export class Extension {
   private registerCommands(): void {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
-        `${Extension_ID}.showLanguageServerVersion`,
+        `${EXTENSION_ID}.showLanguageServerVersion`,
         async () => command.showLanguageServerVersion(this.server),
       ),
     );
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
-        `${Extension_ID}.restartLanguageServer`,
+        `${EXTENSION_ID}.restartLanguageServer`,
         async () => command.restartLanguageServer(this.client),
       ),
     );
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
-        `${Extension_ID}.refreshCache`,
+        `${EXTENSION_ID}.refreshCache`,
         async () => command.refreshCache(this.client),
       ),
     );
@@ -178,7 +178,7 @@ export class Extension {
         this.statusBarItem.text = text;
         this.statusBarItem.color = color;
         this.statusBarItem.backgroundColor = undefined;
-        this.statusBarItem.command = `${Extension_ID}.showLanguageServerVersion`;
+        this.statusBarItem.command = `${EXTENSION_ID}.showLanguageServerVersion`;
         this.statusBarItem.tooltip = tooltip;
         this.statusBarItem.show();
       } catch (error) {
