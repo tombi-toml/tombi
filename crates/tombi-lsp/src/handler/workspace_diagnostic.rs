@@ -103,7 +103,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
     let mut document_sources = backend.document_sources.write().await;
     if let Some(source) = document_sources.get_mut(&text_document_uri) {
         if source.version.is_some() {
-            tracing::debug!("Skip watcher diagnostics for open document: {text_document_uri}");
+            tracing::debug!("Skip diagnostics for open document: {text_document_uri}");
             return false;
         }
 
