@@ -64,7 +64,7 @@ export class Extension {
       process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"] !== undefined,
     );
 
-    await client.start;
+    await client.start();
 
     const extension = new Extension(context, client, server);
 
