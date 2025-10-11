@@ -49,6 +49,11 @@ pub async fn handle_goto_definition(
     let line_index = document_source.line_index();
 
     let position = position.into_lsp(line_index);
+
+    if let Some(location) = resolve_schema_definition_location(root, &text_document_uri, position) {
+        return Ok(Some(vec![location]));
+    }
+
     let Some((keys, _)) = get_hover_keys_with_range(root, position, toml_version).await else {
         return Ok(Default::default());
     };
@@ -90,4 +95,37 @@ pub async fn handle_goto_definition(
     }
 
     Ok(Default::default())
+}
+
+fn resolve_schema_definition_location(
+    root: &tombi_ast::Root,
+    text_document_uri: &tombi_uri::Uri,
+    position: tombi_text::Position,
+) -> Option<tombi_extension::DefinitionLocation> {
+    let document_file_path = text_document_uri.to_file_path().ok()?;
+    let schema_directive =
+        root.schema_document_comment_directive(Some(document_file_path.as_path()))?;
+
+    if !schema_directive.uri_range.contains(position) {
+        return None;
+    }
+
+    let Ok(uri) = schema_directive.uri else {
+        return None;
+    };
+
+    if uri.scheme() == "file" {
+        if let Ok(path) = uri.to_file_path() {
+            if !path.is_file() {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+
+    Some(tombi_extension::DefinitionLocation {
+        uri: uri.into(),
+        range: tombi_text::Range::default(),
+    })
 }
