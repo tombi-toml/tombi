@@ -27,43 +27,32 @@ pub async fn into_definition_locations(
         }
     }
 
-    let definitions = definitions
+    let document_sources = backend.document_sources.read().await;
+
+    let locations = definitions
         .into_iter()
         .map(|mut definition| {
             if let Some(remote_uri) = uri_set.get(&definition.uri) {
                 definition.uri = remote_uri.clone();
             }
-            definition
+            let range = if let Some(document_source) = document_sources.get(&definition.uri) {
+                definition.range.into_lsp(document_source.line_index())
+            } else {
+                tombi_text::convert_range_to_lsp(definition.range)
+            };
+            tower_lsp::lsp_types::Location {
+                uri: definition.uri.into(),
+                range,
+            }
         })
         .collect_vec();
 
-    match definitions.len() {
+    match locations.len() {
         0 => Ok(None),
-        1 => {
-            let document_sources = backend.document_sources.read().await;
-            let definition = definitions.into_iter().next().unwrap();
-            let Some(document_source) = document_sources.get(&definition.uri) else {
-                return Ok(None);
-            };
-
-            Ok(Some(GotoDefinitionResponse::Scalar(
-                definition.into_lsp(document_source.line_index()),
-            )))
-        }
-        _ => {
-            let mut lsp_definitions = Vec::with_capacity(definitions.len());
-
-            let document_sources = backend.document_sources.read().await;
-            for definition in definitions {
-                let Some(document_source) = document_sources.get(&definition.uri) else {
-                    continue;
-                };
-
-                lsp_definitions.push(definition.into_lsp(document_source.line_index()));
-            }
-
-            Ok(Some(GotoDefinitionResponse::Array(lsp_definitions)))
-        }
+        1 => Ok(Some(GotoDefinitionResponse::Scalar(
+            locations.into_iter().next().unwrap(),
+        ))),
+        _ => Ok(Some(GotoDefinitionResponse::Array(locations))),
     }
 }
 

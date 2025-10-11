@@ -299,6 +299,24 @@ mod document_link_tests {
                 },
             ]));
         );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_bin_path_links_to_target(
+                r#"
+                [[bin]]
+                name = "profile"
+                path = "src/bin/profile.rs"
+                "#,
+                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+            ) -> Ok(Some(vec![
+                {
+                    path: project_root_path().join("crates/tombi-glob/src/bin/profile.rs"),
+                    range: 2:8..2:26,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::RustSource,
+                }
+            ]));
+        );
     }
 
     mod tombi_schema {

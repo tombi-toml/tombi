@@ -67,16 +67,7 @@ pub async fn into_type_definition_locations(
             }
             tower_lsp::lsp_types::Location::new(
                 definition.uri.into(),
-                tower_lsp::lsp_types::Range::new(
-                    tower_lsp::lsp_types::Position::new(
-                        definition.range.start.line,
-                        definition.range.start.column,
-                    ),
-                    tower_lsp::lsp_types::Position::new(
-                        definition.range.end.line,
-                        definition.range.end.column,
-                    ),
-                ),
+                tombi_text::convert_range_to_lsp(definition.range),
             )
         })
         .collect_vec();

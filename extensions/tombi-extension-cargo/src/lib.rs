@@ -364,6 +364,47 @@ fn goto_crate_package(
     Ok(None)
 }
 
+fn goto_bin_path_target(
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[tombi_schema_store::Accessor],
+    cargo_toml_path: &std::path::Path,
+) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+    assert!(matches_accessors!(accessors, ["bin", _, "path"]));
+
+    let Some((_, tombi_document_tree::Value::String(path_value))) =
+        dig_accessors(document_tree, accessors)
+    else {
+        return Ok(None);
+    };
+
+    let raw_path = path_value.value();
+    if raw_path.trim().is_empty() {
+        return Ok(None);
+    }
+
+    let bin_path = std::path::Path::new(raw_path);
+    let resolved_path = if bin_path.is_absolute() {
+        bin_path.to_path_buf()
+    } else if let Some(cargo_dir) = cargo_toml_path.parent() {
+        cargo_dir.join(bin_path)
+    } else {
+        return Ok(None);
+    };
+
+    if !resolved_path.is_file() {
+        return Ok(None);
+    }
+
+    let Ok(uri) = tombi_uri::Uri::from_file_path(&resolved_path) else {
+        return Ok(None);
+    };
+
+    Ok(Some(tombi_extension::DefinitionLocation {
+        uri,
+        range: tombi_text::Range::default(),
+    }))
+}
+
 /// Sanitize the dependency key to be "dependencies" if it is "dev-dependencies" or "build-dependencies".
 ///
 /// This is because the dependency key is always "dependencies" in the workspace Cargo.toml.
@@ -519,6 +560,8 @@ fn goto_definition_for_crate_cargo_toml(
         || matches_accessors!(accessors, ["build-dependencies", _, "path"])
     {
         goto_crate_package(document_tree, accessors, cargo_toml_path, toml_version)
+    } else if matches_accessors!(accessors, ["bin", _, "path"]) {
+        goto_bin_path_target(document_tree, accessors, cargo_toml_path)
     } else {
         Ok(None)
     }?;

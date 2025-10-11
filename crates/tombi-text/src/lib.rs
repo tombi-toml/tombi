@@ -43,3 +43,18 @@ pub use crate::features::lsp::{EncodingKind, FromLsp, IntoLsp, LineIndex};
 
 #[cfg(target_pointer_width = "16")]
 compile_error!("'text' crate assumes usize >= u32 and does not work on 16-bit targets");
+
+#[cfg(feature = "lsp")]
+#[inline]
+/// Converts a `Range` to a `tower_lsp::lsp_types::Range`.
+///
+/// Ideally, we should use `line_index` and consider `EncodingKind` when converting positions.
+/// However, only TOML files maintain a `line_index`. Other file types do not support this.
+/// For simplicity, and at the cost of accuracy, this function forcibly converts to the LSP type.
+///
+pub fn convert_range_to_lsp(range: Range) -> tower_lsp::lsp_types::Range {
+    tower_lsp::lsp_types::Range::new(
+        tower_lsp::lsp_types::Position::new(range.start.line, range.start.column),
+        tower_lsp::lsp_types::Position::new(range.end.line, range.end.column),
+    )
+}
