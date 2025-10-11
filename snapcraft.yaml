@@ -1,6 +1,6 @@
 name: tombi
-base: core24 
-version: '0.6.8'
+base: core24
+version: "0.6.26"
 summary: TOML Formatter / Linter / Language Server
 description: |
   Tombi (鳶) is a powerful toolkit that provides a TOML Formatter, Linter, and
@@ -13,7 +13,7 @@ parts:
     plugin: rust
     source-type: git
     source: https://github.com/tombi-toml/tombi
-    source-tag: 'v0.6.8'
+    source-tag: "v0.6.26"
     rust-use-global-lto: true
     rust-inherit-ldflags: true
     build-attributes:
