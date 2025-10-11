@@ -377,25 +377,9 @@ fn goto_bin_path_target(
         return Ok(None);
     };
 
-    let raw_path = path_value.value();
-    if raw_path.trim().is_empty() {
-        return Ok(None);
-    }
-
-    let bin_path = std::path::Path::new(raw_path);
-    let resolved_path = if bin_path.is_absolute() {
-        bin_path.to_path_buf()
-    } else if let Some(cargo_dir) = cargo_toml_path.parent() {
-        cargo_dir.join(bin_path)
-    } else {
-        return Ok(None);
-    };
-
-    if !resolved_path.is_file() {
-        return Ok(None);
-    }
-
-    let Ok(uri) = tombi_uri::Uri::from_file_path(&resolved_path) else {
+    let Some(uri) =
+        get_uri_relative_to_cargo_toml(std::path::Path::new(path_value.value()), cargo_toml_path)
+    else {
         return Ok(None);
     };
 
@@ -650,4 +634,27 @@ fn get_workspace_path(document_tree: &tombi_document_tree::DocumentTree) -> Opti
             None
         }
     })
+}
+
+fn get_uri_relative_to_cargo_toml(
+    relative_path: &std::path::Path,
+    cargo_toml_path: &std::path::Path,
+) -> Option<tombi_uri::Uri> {
+    let resolved_path = if relative_path.is_absolute() {
+        relative_path.to_path_buf()
+    } else if let Some(cargo_dir) = cargo_toml_path.parent() {
+        cargo_dir.join(relative_path)
+    } else {
+        return None;
+    };
+
+    if !resolved_path.is_file() {
+        return None;
+    }
+
+    let Ok(uri) = tombi_uri::Uri::from_file_path(&resolved_path) else {
+        return None;
+    };
+
+    Some(uri)
 }
