@@ -3,6 +3,46 @@ use tombi_test_lib::project_root_path;
 mod goto_definition_tests {
     use super::*;
 
+    mod document_schema {
+        use super::*;
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn relative_schema_path(
+                r#"
+                #:schema ./json.schemastore.org/tombi.json█
+
+                toml-version = "v1.0.0"
+                "#,
+                project_root_path().join("tombi.toml"),
+            ) -> Ok([project_root_path().join("json.schemastore.org/tombi.json")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn ignores_http_schema_uri(
+                r#"
+                #:schema http://json.schemastore.org/tombi.json█
+
+                toml-version = "v1.0.0"
+                "#,
+                project_root_path().join("tombi.toml"),
+            ) -> Ok(["http://json.schemastore.org/tombi.json"]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn ignores_missing_relative_path(
+                r#"
+                #:schema schemas/does-not-exist.json█
+
+                toml-version = "v1.0.0"
+                "#,
+                project_root_path().join("tombi.toml"),
+            ) -> Ok([]);
+        );
+    }
+
     mod cargo_schema {
         use super::*;
 
@@ -317,6 +357,8 @@ mod goto_definition_tests {
         ) -> Ok([$($expected_file_path:expr),*$(,)?]);) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
+                use std::str::FromStr;
+
                 use itertools::Itertools;
                 use tombi_lsp::handler::{handle_did_open, handle_goto_definition};
                 use tombi_lsp::Backend;
@@ -329,6 +371,28 @@ mod goto_definition_tests {
                     LspService,
                 };
                 use tombi_text::IntoLsp;
+
+                trait ToUri {
+                    fn to_uri(&self) -> tombi_uri::Uri;
+                }
+
+                impl ToUri for tombi_uri::Uri {
+                    fn to_uri(&self) -> tombi_uri::Uri {
+                        self.clone()
+                    }
+                }
+
+                impl ToUri for std::path::PathBuf {
+                    fn to_uri(&self) -> tombi_uri::Uri {
+                        tombi_uri::Uri::from_file_path(self).unwrap()
+                    }
+                }
+
+                impl ToUri for &str {
+                    fn to_uri(&self) -> tombi_uri::Uri {
+                        tombi_uri::Uri::from_str(self).unwrap()
+                    }
+                }
 
                 tombi_test_lib::init_tracing();
 
@@ -378,12 +442,12 @@ mod goto_definition_tests {
 
                 tracing::debug!("goto_definition result: {:#?}", result);
 
-                let expected_paths: Vec<std::path::PathBuf> = vec![$($expected_file_path.to_owned()),*];
+                let expected_paths: Vec<tombi_uri::Uri> = vec![$($expected_file_path.to_uri()),*];
 
                 match result {
                     Some(definition_links) => {
                         pretty_assertions::assert_eq!(
-                            definition_links.into_iter().map(|link| link.uri.to_file_path().unwrap()).collect_vec(),
+                            definition_links.into_iter().map(|link| link.uri.to_uri()).collect_vec(),
                             expected_paths,
                         );
                     },
