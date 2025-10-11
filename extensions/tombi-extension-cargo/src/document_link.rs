@@ -2,7 +2,7 @@ use std::{borrow::Cow, str::FromStr};
 
 use crate::{
     find_package_cargo_toml_paths, find_path_crate_cargo_toml, find_workspace_cargo_toml,
-    get_workspace_path, load_cargo_toml,
+    get_uri_relative_to_cargo_toml, get_workspace_path, load_cargo_toml,
 };
 use itertools::Itertools;
 use tombi_config::TomlVersion;
@@ -508,10 +508,6 @@ fn document_link_for_bin_targets(
         return Vec::with_capacity(0);
     };
 
-    let Some(crate_dir) = crate_cargo_toml_path.parent() else {
-        return Vec::with_capacity(0);
-    };
-
     bin_items
         .values()
         .iter()
@@ -525,23 +521,12 @@ fn document_link_for_bin_targets(
         })
         .filter_map(|path_string| {
             let raw_path = path_string.value();
-            if raw_path.trim().is_empty() {
+            let Some(target) = get_uri_relative_to_cargo_toml(
+                std::path::Path::new(raw_path),
+                crate_cargo_toml_path,
+            ) else {
                 return None;
-            }
-            let resolved_path = {
-                let candidate = std::path::Path::new(raw_path);
-                if candidate.is_absolute() {
-                    candidate.to_path_buf()
-                } else {
-                    crate_dir.join(candidate)
-                }
             };
-
-            if !resolved_path.is_file() {
-                return None;
-            }
-
-            let target = tombi_uri::Uri::from_file_path(&resolved_path).ok()?;
 
             Some(tombi_extension::DocumentLink {
                 target,
