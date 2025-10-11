@@ -22,6 +22,7 @@ pub enum DocumentLinkToolTip {
     CargoToml,
     CargoTomlFirstMember,
     WorkspaceCargoToml,
+    RustSource,
 }
 
 impl From<&DocumentLinkToolTip> for &'static str {
@@ -34,6 +35,7 @@ impl From<&DocumentLinkToolTip> for &'static str {
             DocumentLinkToolTip::CargoToml => "Open Cargo.toml",
             DocumentLinkToolTip::CargoTomlFirstMember => "Open first Cargo.toml in members",
             DocumentLinkToolTip::WorkspaceCargoToml => "Open Workspace Cargo.toml",
+            DocumentLinkToolTip::RustSource => "Open Rust Source",
         }
     }
 }
@@ -387,6 +389,11 @@ fn document_link_for_crate_cargo_toml(
         }
     }
 
+    total_document_links.extend(document_link_for_bin_targets(
+        crate_document_tree,
+        crate_cargo_toml_path,
+    ));
+
     Ok(total_document_links)
 }
 
@@ -489,6 +496,60 @@ fn document_link_for_crate_dependency_has_workspace(
                 .collect_vec())
         }
     }
+}
+
+fn document_link_for_bin_targets(
+    crate_document_tree: &tombi_document_tree::DocumentTree,
+    crate_cargo_toml_path: &std::path::Path,
+) -> Vec<tombi_extension::DocumentLink> {
+    let Some((_, tombi_document_tree::Value::Array(bin_items))) =
+        dig_keys(crate_document_tree, &["bin"])
+    else {
+        return Vec::with_capacity(0);
+    };
+
+    let Some(crate_dir) = crate_cargo_toml_path.parent() else {
+        return Vec::with_capacity(0);
+    };
+
+    bin_items
+        .values()
+        .iter()
+        .filter_map(|value| match value {
+            tombi_document_tree::Value::Table(bin_table) => bin_table.get_key_value("path"),
+            _ => None,
+        })
+        .filter_map(|(_, path_value)| match path_value {
+            tombi_document_tree::Value::String(path_string) => Some(path_string),
+            _ => None,
+        })
+        .filter_map(|path_string| {
+            let raw_path = path_string.value();
+            if raw_path.trim().is_empty() {
+                return None;
+            }
+            let resolved_path = {
+                let candidate = std::path::Path::new(raw_path);
+                if candidate.is_absolute() {
+                    candidate.to_path_buf()
+                } else {
+                    crate_dir.join(candidate)
+                }
+            };
+
+            if !resolved_path.is_file() {
+                return None;
+            }
+
+            let target = tombi_uri::Uri::from_file_path(&resolved_path).ok()?;
+
+            Some(tombi_extension::DocumentLink {
+                target,
+                range: path_string.unquoted_range(),
+                tooltip: DocumentLinkToolTip::RustSource.into(),
+            })
+        })
+        .collect()
 }
 
 fn document_link_for_dependency(

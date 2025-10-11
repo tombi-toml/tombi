@@ -204,6 +204,46 @@ mod goto_definition_tests {
                 project_root_path().join("extensions/tombi-extension-uv/Cargo.toml"),
             ]);
         );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn bin_path_resolves_existing_file(
+                r#"
+                [[bin]]
+                name = "profile"
+                path = "src/bin/profile.rs█"
+                "#,
+                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+            ) -> Ok([project_root_path().join("crates/tombi-glob/src/bin/profile.rs")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn bin_path_missing_file_returns_none(
+                r#"
+                [[bin]]
+                name = "missing"
+                path = "src/bin/missing.rs█"
+                "#,
+                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+            ) -> Ok([]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn bin_path_multiple_entries_follow_active_table(
+                r#"
+                [[bin]]
+                name = "primary"
+                path = "src/bin/profile.rs"
+
+                [[bin]]
+                name = "secondary"
+                path = "src/bin/profile.rs█"
+                "#,
+                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+            ) -> Ok([project_root_path().join("crates/tombi-glob/src/bin/profile.rs")]);
+        );
     }
 
     mod pyproject_uv_schema {
