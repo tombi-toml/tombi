@@ -25,6 +25,7 @@ pub fn run(sh: &Shell) -> anyhow::Result<()> {
     set_editors_vscode_package_json_version(sh, &version)?;
     set_pyproject_toml_version(sh, &version)?;
     set_package_json_versions(sh, &version)?;
+    set_snapcraft_yaml_version(sh, &version)?;
 
     println!("TOMBI_VERSION={version}");
 
@@ -91,6 +92,20 @@ fn set_package_json_versions(sh: &Shell, version: &str) -> anyhow::Result<()> {
             }
         }
     }
+    Ok(())
+}
+
+fn set_snapcraft_yaml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
+    let mut patch = Patch::new(sh, project_root_path().join("snapcraft.yaml"))?;
+    patch.replace(
+        &format!(r#"version: "{DEV_VERSION}""#),
+        &format!(r#"version: "{version}""#),
+    );
+    patch.replace(
+        &format!(r#"source-tag: "v{DEV_VERSION}""#),
+        &format!(r#"source-tag: "v{version}""#),
+    );
+    patch.commit(sh)?;
     Ok(())
 }
 
