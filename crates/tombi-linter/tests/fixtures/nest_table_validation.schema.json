@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "aaa": {
+      "type": "object",
+      "minProperties": 5,
+      "properties": {
+        "bbb": {
+          "type": "object",
+          "minProperties": 4,
+          "properties": {
+            "ccc": {
+              "type": "object",
+              "properties": {
+                "ddd": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
