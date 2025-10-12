@@ -13,7 +13,7 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    backend::{BackendCapabilities, DiagnosticType},
+    backend::{BackendCapabilities, DiagnosticMode},
     semantic_tokens::SUPPORTED_TOKEN_TYPES,
     Backend,
 };
@@ -54,7 +54,7 @@ pub async fn handle_initialize(
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
         if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
             if diagnostic_capabilities.dynamic_registration == Some(true) {
-                backend_capabilities.diagnostic_type = DiagnosticType::Pull;
+                backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
             }
         }
     }
@@ -169,7 +169,7 @@ pub fn server_capabilities(
             }
             .into(),
         ),
-        diagnostic_provider: if backend_capabilities.diagnostic_type == DiagnosticType::Pull {
+        diagnostic_provider: if backend_capabilities.diagnostic_mode == DiagnosticMode::Pull {
             Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
                 inter_file_dependencies: false,
                 workspace_diagnostics: false,
