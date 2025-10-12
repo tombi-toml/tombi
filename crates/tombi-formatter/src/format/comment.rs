@@ -130,17 +130,31 @@ fn format_comment(
     // write '#' character
     write!(f, "{}", iter.next().unwrap())?;
 
-    if let Some(c) = iter.next() {
-        if c != ' ' && c != '\t' {
-            write!(f, " ")?;
-        }
-        write!(f, "{c}")?;
-    }
-    if strip_leading_spaces {
-        for c in iter.by_ref() {
-            if c != ' ' && c != '\t' {
+    if let Some(mut c) = iter.next() {
+        // For https://crates.io/crates/document-features crate, the comment starts with '#' or '!'.
+        {
+            if matches!(c, '#' | '!') {
                 write!(f, "{c}")?;
-                break;
+                if let Some(next) = iter.next() {
+                    c = next;
+                } else {
+                    return Ok(());
+                }
+            }
+        }
+
+        write!(f, " ")?;
+
+        if c != ' ' && c != '\t' {
+            write!(f, "{c}")?;
+        } else {
+            if strip_leading_spaces {
+                for c in iter.by_ref() {
+                    if c != ' ' && c != '\t' {
+                        write!(f, "{c}")?;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -163,18 +177,70 @@ mod tests {
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
+        #[test]
+        fn empty_comment_document_features(r"#!") -> Ok(source);
+    }
+
+    test_format! {
+        // Reference: https://crates.io/crates/document-features
+        #[test]
+        fn empty_comment_document_features2(r"##") -> Ok(source);
+    }
+
+    test_format! {
         #[test]
         fn only_space_comment1(r"# ") -> Ok(r"#");
     }
 
     test_format! {
         #[test]
-        fn only_space_comment2(r"#      ") -> Ok(r"#");
+        fn only_long_space_comment(r"#      ") -> Ok(r"#");
+    }
+
+    test_format! {
+        #[test]
+        fn only_space_comment_document_features(r"#! ") -> Ok(r"#!");
+    }
+
+    test_format! {
+        #[test]
+        fn only_space_comment_document_features2(r"## ") -> Ok(r"##");
+    }
+
+    test_format! {
+        #[test]
+        fn only_long_space_comment_document_features(r"#!       ") -> Ok(r"#!");
+    }
+
+    test_format! {
+        #[test]
+        fn only_long_space_comment_document_features2(r"##      ") -> Ok(r"##");
     }
 
     test_format! {
         #[test]
         fn strip_prefix_space(r"#    hello") -> Ok(r"# hello");
+    }
+
+    test_format! {
+        #[test]
+        fn strip_prefix_space_document_features(r"#!      hello") -> Ok(r"#! hello");
+    }
+
+    test_format! {
+        #[test]
+        fn strip_prefix_space_document_features2(r"##      hello") -> Ok(r"## hello");
+    }
+
+    test_format! {
+        #[test]
+        fn strip_prefix_space_document_features_double_bang(r"#!!  hello") -> Ok(r"#! !  hello");
+    }
+
+    test_format! {
+        #[test]
+        fn strip_prefix_space_document_features_double_sharp(r"###  hello") -> Ok(r"## #  hello");
     }
 
     test_format! {
