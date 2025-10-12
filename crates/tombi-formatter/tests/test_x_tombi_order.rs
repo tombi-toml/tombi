@@ -112,7 +112,7 @@ mod table_keys_order {
                   "maturin>=1.5,<2.0",
                   "tombi-cli>=0.0.0",
                   "tombi-formatter>=0.0.0",
-                  "tombi-linter>=0.0.0",
+                  "tombi-linter>=0.0.0"
                 ]
                 "#,
             )
@@ -189,7 +189,7 @@ mod table_keys_order {
                 [dependency-groups]
                 dev = [
                   "pytest>=8.3.3",  # pytest trailing comment
-                  "ruff>=0.7.4",
+                  "ruff>=0.7.4"
                 ]
                 "#,
             )
@@ -892,7 +892,7 @@ mod table_keys_order {
 
                   3,
                   4,
-                  5,
+                  5
                 ]
                 "#
             )
@@ -983,7 +983,7 @@ mod table_keys_order {
 
                   key3 = 3,
                   key4 = 4,
-                  key5 = 5,
+                  key5 = 5
                 }
                 "#
             )

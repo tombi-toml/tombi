@@ -1,7 +1,8 @@
 # Magic Trailing Comma
 
-Magic Trailing Comma is a feature inspired by the [Black formatter](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#the-magic-trailing-comma), which automatically adds trailing commas to arrays and tables that span multiple lines.  
-This feature makes version control more efficient by ensuring clean diffs when adding new elements in the future.
+Magic Trailing Comma is a feature inspired by the [Black formatter](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#the-magic-trailing-comma).  
+When you add a trailing comma to the last element, Tombi treats it as an explicit hint to expand into multiple lines and keeps the trailing comma after formatting.  
+This keeps diffs clean when new elements are added later, while respecting the author's intent when no trailing comma is present.
 
 ## Basic Usage
 
@@ -19,7 +20,7 @@ items = [
 items = ["aaaa", "bbbb", "cccc"]
 ```
 
-If the line width is too wide, it will be expanded to multiple lines.
+If the line width is too wide, the array will be expanded to multiple lines, but the final element does not receive a trailing comma automatically.
 
 ```toml
 # Before formatting
@@ -36,11 +37,12 @@ items = [
   "gggg",
   "hhhh",
   "iiii",
-  "jjjj",
+  "jjjj"
 ]
 ```
 
-Alternatively, you can force it to expand to multiple lines by adding a comma to the last element of the array.
+Alternatively, you can force it to expand to multiple lines by adding a comma to the last element of the array.  
+The formatter preserves that trailing comma in the expanded form.
 
 ```toml
 # Before formatting
@@ -56,7 +58,7 @@ dependencies = [
 
 ## Magic Trailing Comma for Inline Tables
 
-In TOML v1.1.0, Magic Trailing Comma will also be enabled for Inline Tables.
+In TOML v1.1.0, Magic Trailing Comma will also be enabled for Inline Tables, and the same trailing-comma hint applies.
 
 ```toml
 # Before formatting

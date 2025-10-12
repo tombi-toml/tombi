@@ -88,6 +88,9 @@ fn format_multiline_inline_table(
     } else {
         table.inner_begin_dangling_comments().format(f)?;
 
+        let has_last_key_value_trailing_comma = table.has_last_key_value_trailing_comma();
+        let key_values_len = key_values_with_comma.len();
+
         for (i, (key_value, comma)) in key_values_with_comma.into_iter().enumerate() {
             // value format
             {
@@ -116,7 +119,7 @@ fn format_multiline_inline_table(
                     write!(f, "{}", f.line_ending())?;
                     f.write_indent()?;
                     write!(f, ",")?;
-                } else {
+                } else if has_last_key_value_trailing_comma || i + 1 != key_values_len {
                     write!(f, ",")?;
                 }
 
@@ -245,7 +248,7 @@ mod tests {
             table = {
               key1 = 1111111111,
               key2 = 2222222222,
-              key3 = 3333333333,
+              key3 = 3333333333
             }
             "#
         );
@@ -264,7 +267,7 @@ mod tests {
             r#"
             table = {
               key1 = [1111111111, 2222222222],
-              key2 = [3333333333, 4444444444],
+              key2 = [3333333333, 4444444444]
             }
             "#
         );
@@ -273,7 +276,7 @@ mod tests {
     test_format! {
         #[test]
         fn inline_table_with_nested_inline_table_exceeds_line_width(
-            r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222 }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#,
+            r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222, }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#,
             TomlVersion::V1_1_0_Preview,
             &FormatDefinitions {
                 line_width: Some(30.try_into().unwrap()),
@@ -288,8 +291,8 @@ mod tests {
               },
               t2 = {
                 key3 = 3333333333,
-                key4 = 4444444444,
-              },
+                key4 = 4444444444
+              }
             }
             "#
         );

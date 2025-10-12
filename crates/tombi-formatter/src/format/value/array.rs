@@ -82,6 +82,9 @@ fn format_multiline_array(
     } else {
         array.inner_begin_dangling_comments().format(f)?;
 
+        let has_last_value_trailing_comma = array.has_last_value_trailing_comma();
+        let values_len = values_with_comma.len();
+
         for (i, (value, comma)) in values_with_comma.into_iter().enumerate() {
             // value format
             {
@@ -110,7 +113,7 @@ fn format_multiline_array(
                     write!(f, "{}", f.line_ending())?;
                     f.write_indent()?;
                     write!(f, ",")?;
-                } else {
+                } else if has_last_value_trailing_comma || i + 1 != values_len {
                     write!(f, ",")?;
                 }
 
@@ -383,6 +386,29 @@ mod tests {
                 7,
                 8,
                 9,
+              ]
+            ]
+            "#
+        );
+    }
+
+    test_format! {
+        #[test]
+        fn nested_multiline_array_with_trailing_comma(
+            "array = [ [1,2,3,], [4,5,6], [7,8,9,], ]"
+        ) -> Ok(
+            r#"
+            array = [
+              [
+                1,
+                2,
+                3,
+              ],
+              [4, 5, 6],
+              [
+                7,
+                8,
+                9,
               ],
             ]
             "#
@@ -419,12 +445,12 @@ mod tests {
     #[rstest]
     #[case("[1, 2, 3,]", true)]
     #[case("[1, 2, 3]", false)]
-    fn has_trailing_comma_after_last_value(#[case] source: &str, #[case] expected: bool) {
+    fn has_last_value_trailing_comma(#[case] source: &str, #[case] expected: bool) {
         let p = tombi_parser::parse_as::<tombi_ast::Array>(source, TomlVersion::default());
         pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
 
         let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
-        pretty_assertions::assert_eq!(ast.has_trailing_comma_after_last_value(), expected);
+        pretty_assertions::assert_eq!(ast.has_last_value_trailing_comma(), expected);
     }
 
     test_format! {
@@ -441,7 +467,7 @@ mod tests {
             array = [
               1111111111,
               2222222222,
-              3333333333,
+              3333333333
             ]
             "#
         );
@@ -460,7 +486,7 @@ mod tests {
             r#"
             array = [
               [1111111111, 2222222222],
-              [3333333333, 4444444444],
+              [3333333333, 4444444444]
             ]
             "#
         );
@@ -480,16 +506,16 @@ mod tests {
             array = [
               {
                 key1 = 1111111111,
-                key2 = 2222222222,
+                key2 = 2222222222
               },
               {
                 key3 = [3333333333, 4444444444],
                 key4 = [
                   5555555555,
                   6666666666,
-                  7777777777,
-                ],
-              },
+                  7777777777
+                ]
+              }
             ]
             "#
         );
