@@ -1,4 +1,4 @@
-import type { Root, Heading } from "mdast";
+import type { Heading, Root, RootContent } from "mdast";
 import { visit } from "unist-util-visit";
 
 // Function to convert text to URL-safe slugs
@@ -11,6 +11,21 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, ""); // Remove hyphens at the beginning and end
 }
 
+// Recursively extract textual content from a heading node
+function extractText(node: Heading | RootContent): string {
+  if ("value" in node && typeof node.value === "string") {
+    return node.value;
+  }
+
+  if ("children" in node && Array.isArray(node.children)) {
+    return (node.children as RootContent[])
+      .map((child) => extractText(child))
+      .join("");
+  }
+
+  return "";
+}
+
 interface NodeData {
   id?: string;
   hProperties?: Record<string, string | number | boolean>;
@@ -21,13 +36,14 @@ export function remarkHeadingAnchor() {
   return (tree: Root) => {
     visit(tree, "heading", (node: Heading) => {
       // Extract text content
-      let headingText = "";
-      visit(node, "text", (textNode) => {
-        headingText += textNode.value;
-      });
+      const headingText = extractText(node);
 
       // Generate slug
       const slug = slugify(headingText);
+
+      if (!slug) {
+        return;
+      }
 
       // Add ID to data properties
       if (!node.data) node.data = {};
