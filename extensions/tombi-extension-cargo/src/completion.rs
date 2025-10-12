@@ -515,7 +515,7 @@ async fn fetch_local_crate_features(
         if !features.is_empty() {
             return Some(features);
         }
-    };
+    }
 
     None
 }
