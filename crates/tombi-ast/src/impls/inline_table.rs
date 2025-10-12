@@ -84,7 +84,7 @@ impl crate::InlineTable {
         match toml_version {
             TomlVersion::V1_0_0 => false,
             TomlVersion::V1_1_0_Preview => {
-                self.has_trailing_comma_after_last_value()
+                self.has_last_key_value_trailing_comma()
                     || self.has_multiline_values(toml_version)
                     // || self.has_only_comments(toml_version)
                     || self.has_inner_comments()
@@ -93,7 +93,7 @@ impl crate::InlineTable {
     }
 
     #[inline]
-    pub fn has_trailing_comma_after_last_value(&self) -> bool {
+    pub fn has_last_key_value_trailing_comma(&self) -> bool {
         self.syntax()
             .children_with_tokens()
             .collect_vec()
