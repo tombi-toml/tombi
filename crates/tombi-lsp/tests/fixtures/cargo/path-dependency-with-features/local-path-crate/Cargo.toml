@@ -1,0 +1,9 @@
+[package]
+name = "local-path-crate"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["extras"]
+extras = []
+flag = []

@@ -99,9 +99,7 @@ fn find_path_crate_cargo_toml(
 ) -> Option<(std::path::PathBuf, tombi_document_tree::DocumentTree)> {
     let mut crate_path = crate_path.to_path_buf();
     if !crate_path.is_absolute() {
-        if let Some(workspace_dir) = cargo_toml_path.parent() {
-            crate_path = workspace_dir.join(crate_path);
-        }
+        crate_path = cargo_toml_path.parent()?.join(crate_path);
     }
 
     let Ok(crate_path) = crate_path.canonicalize() else {

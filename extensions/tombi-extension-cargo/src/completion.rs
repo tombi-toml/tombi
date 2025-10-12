@@ -490,28 +490,31 @@ async fn fetch_local_crate_features(
     if let Some((_, tombi_document_tree::Value::Table(features_table))) =
         tombi_document_tree::dig_keys(&subcrate_document_tree, &["features"])
     {
-        let mut features = AHashMap::new();
+        let features = features_table
+            .key_values()
+            .iter()
+            .map(|(feature_name, feature_deps)| {
+                let deps = match feature_deps {
+                    tombi_document_tree::Value::Array(arr) => arr
+                        .values()
+                        .iter()
+                        .filter_map(|value| {
+                            if let tombi_document_tree::Value::String(string) = value {
+                                Some(string.value().to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect(),
+                    _ => Vec::new(),
+                };
+                (feature_name.value.clone(), deps)
+            })
+            .collect::<AHashMap<_, _>>();
 
-        for (feature_name, feature_deps) in features_table.key_values() {
-            let feature_name = feature_name.value.clone();
-            let deps = match feature_deps {
-                tombi_document_tree::Value::Array(arr) => arr
-                    .values()
-                    .iter()
-                    .filter_map(|v| {
-                        if let tombi_document_tree::Value::String(s) = v {
-                            Some(s.value().to_string())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect(),
-                _ => Vec::new(),
-            };
-            features.insert(feature_name, deps);
+        if !features.is_empty() {
+            return Some(features);
         }
-
-        return Some(features);
     }
 
     None
