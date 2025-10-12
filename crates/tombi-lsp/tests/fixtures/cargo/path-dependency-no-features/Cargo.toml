@@ -1,0 +1,7 @@
+[package]
+name = "path-dependency-no-features"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+local-path-no-features = { path = "local-path-no-features", features = ["default"] }

@@ -1222,6 +1222,43 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_dependencies_local_path_features(
+                r#"
+                [dependencies]
+                local-path-crate = { path = "local-path-crate", features = [█] }
+                "#,
+                Source(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml"
+                )),
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "\"default\"",
+                "\"extras\"",
+                "\"flag\"",
+                "\"\"",
+                "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_local_path_no_features(
+                r#"
+                [dependencies]
+                local-path-no-features = { path = "local-path-no-features", features = [█] }
+                "#,
+                Source(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/cargo/path-dependency-no-features/Cargo.toml"
+                )),
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_dependencies_patch(
                 r#"
                 [patch]
