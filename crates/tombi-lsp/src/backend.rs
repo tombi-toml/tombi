@@ -52,6 +52,13 @@ pub struct Backend {
 #[derive(Debug)]
 pub struct BackendCapabilities {
     pub encoding_kind: EncodingKind,
+    pub diagnostic_type: DiagnosticType,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiagnosticType {
+    Push,
+    Pull,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -67,6 +74,7 @@ impl Backend {
             client,
             capabilities: Arc::new(tokio::sync::RwLock::new(BackendCapabilities {
                 encoding_kind: EncodingKind::default(),
+                diagnostic_type: DiagnosticType::Push,
             })),
             document_sources: Default::default(),
             config_manager: Arc::new(ConfigManager::new(options)),

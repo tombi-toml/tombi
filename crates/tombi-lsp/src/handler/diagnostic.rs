@@ -4,7 +4,7 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    backend::Backend,
+    backend::{Backend, DiagnosticType},
     diagnostic::{get_diagnostics_result, publish_diagnostics},
 };
 
@@ -39,6 +39,10 @@ pub async fn push_diagnostics(
     text_document_uri: tombi_uri::Uri,
     version: Option<i32>,
 ) {
+    if backend.capabilities.read().await.diagnostic_type != DiagnosticType::Push {
+        return;
+    }
+
     #[derive(Debug)]
     struct PushDiagnosticsParams {
         text_document: TextDocumentIdentifier,
