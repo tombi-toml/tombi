@@ -204,3 +204,88 @@ order = "3"
 ```
 
 このため、コメントディレクティブの format には矛盾する指定項目があるが、実際には競合が発生しないのである。
+
+## 現状の課題まとめ
+
+現状、特に Table, Array of Tables に対してのコメントディレクティブの適用には、以下の課題がある。
+
+### ルートの自動ソート後の順序変更による意味の変化
+これは、コメントディレクティブが先勝ちのロジックであるため、
+例えば以下の例では、自動ソートの並び替えの結果エラーが発生する。
+
+```toml
+# tombi: lint.rules.table-max-keys.disabled = true
+[[aaa.bbb]]
+order = "2"
+
+[[aaa.bbb]]
+order = "1"
+```
+
+これはエラーにならないが、自動ソートの結果
+
+```toml
+[[aaa.bbb]]
+order = "1"
+
+[[aaa.bbb]]
+# tombi: lint.rules.table-max-keys.disabled = true
+order = "2"
+```
+
+これはエラーになる。
+実際には現状、ルートの Array of Tables に対しては、
+`x-tombi-array-values-order-by` を伴う自動ソートが未実装のため、
+このケースが発生しない。
+
+## 課題を克服する方法
+
+これは、下記の方法で実現可能である。
+
+現在、 document-tree が保持するテーブルのコメントディレクティブは、最初にパースされたテーブルのコメントディレクティブである。
+
+```rust
+struct Table {
+    ...
+    comment_directives: Vec<TombiValueCommentDirective>,
+    inner_comment_directives: Vec<TombiValueCommentDirective>,
+}
+```
+
+順番による影響を考慮するため、これを
+
+```rust
+struct Table {
+    ...
+    comment_directives_accessors: Option<Vec<Accessor>>,
+    comment_directives: Vec<TombiValueCommentDirective>,
+    inner_comment_directives: Vec<TombiValueCommentDirective>,
+}
+```
+
+のように `comment_directives_accessors` を追加することで、 document-tree のノードを組み立てる際に優先度をもとにコメントディレクティブを更新できる。
+
+特に、こうすることで Array of Tables に対して順序を考慮しないコメントディレクティブを適用することができる。
+
+優先度の順位
+1. 自身を表現する、より具体的な Accessors のコメントディレクティブを優先
+
+  例えば、下記に対して
+
+  ```toml
+  [aaa.bbb]
+  ccc = 1
+  ```
+
+  `aaa.bbb` のテーブルに対しては、`aaa` に対するコメントディレクティブよりも、 `aaa.bbb` に対するコメントディレクティブを優先する。
+  しかし、 `ccc` に対するコメントディレクティブは適用しない（自身よりも深いレイヤーを表現しているため）。
+
+2. 同一の配列要素の対しては、コメントディレクティブを結合（merge）する
+
+  ```toml
+  [[aaa.bbb]]
+  order = 1
+
+  [[aaa.bbb]]
+  order = 2
+  ```
