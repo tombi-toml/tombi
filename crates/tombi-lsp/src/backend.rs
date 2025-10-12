@@ -60,7 +60,12 @@ pub struct BackendCapabilities {
 /// Many editors, such as VSCode, adopt the Pull diagnostic mode, but some specific editors adopt the Push mode.
 /// Therefore, it is necessary to support both modes.
 ///
+/// See: https://github.com/tombi-toml/tombi/issues/711
+///
 /// For WorkspaceDiagnostic, Tombi supports only the Push model in order to avoid CPU spikes.
+///
+/// See: https://github.com/tombi-toml/tombi/issues/1070
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiagnosticMode {
     Push,
