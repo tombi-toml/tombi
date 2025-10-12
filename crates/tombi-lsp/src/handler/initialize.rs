@@ -12,7 +12,11 @@ use tower_lsp::lsp_types::{
     WorkspaceServerCapabilities,
 };
 
-use crate::{backend::BackendCapabilities, semantic_tokens::SUPPORTED_TOKEN_TYPES, Backend};
+use crate::{
+    backend::{BackendCapabilities, DiagnosticType},
+    semantic_tokens::SUPPORTED_TOKEN_TYPES,
+    Backend,
+};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialize(
@@ -47,6 +51,14 @@ pub async fn handle_initialize(
 
     let mut backend_capabilities = backend.capabilities.write().await;
     backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
+    if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
+        if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
+            if diagnostic_capabilities.dynamic_registration == Some(true) {
+                backend_capabilities.diagnostic_type = DiagnosticType::Pull;
+            }
+        }
+    }
+
     tracing::debug!("backend_capabilities: {:?}", backend_capabilities);
 
     Ok(InitializeResult {
@@ -157,11 +169,15 @@ pub fn server_capabilities(
             }
             .into(),
         ),
-        diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-            inter_file_dependencies: false,
-            workspace_diagnostics: false,
-            ..Default::default()
-        })),
+        diagnostic_provider: if backend_capabilities.diagnostic_type == DiagnosticType::Pull {
+            Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                inter_file_dependencies: false,
+                workspace_diagnostics: false,
+                ..Default::default()
+            }))
+        } else {
+            None
+        },
         ..Default::default()
     }
 }
