@@ -1,0 +1,8 @@
+#:schema ./nest_table_validation.schema.json
+
+# tombi: lint.rules.table-min-keys.disabled = true
+[aaa]
+# tombi: lint.rules.table-min-keys.disabled = true
+[aaa.bbb]
+[aaa.bbb.ccc]
+ddd = 1

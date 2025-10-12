@@ -21,6 +21,11 @@ pub async fn publish_diagnostics(
         return;
     };
 
+    // Preventing the publishing of duplicate diagnoses.
+    if old_version.is_some() || version.is_none() {
+        return;
+    }
+
     backend
         .client
         .publish_diagnostics(
