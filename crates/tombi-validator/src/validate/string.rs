@@ -5,6 +5,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
 use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_x_keyword::StringFormat;
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
@@ -156,8 +157,10 @@ async fn validate_string(
         }
     }
 
+    let length = UnicodeSegmentation::graphemes(value.as_str(), true).count();
+
     if let Some(max_length) = &string_schema.max_length {
-        if value.len() > *max_length {
+        if length > *max_length {
             let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
@@ -171,7 +174,7 @@ async fn validate_string(
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::StringMaxLength {
                     maximum: *max_length,
-                    actual: value.len(),
+                    actual: length,
                 }),
                 range,
             }
@@ -180,7 +183,7 @@ async fn validate_string(
     }
 
     if let Some(min_length) = &string_schema.min_length {
-        if value.len() < *min_length {
+        if length < *min_length {
             let level = lint_rules
                 .map(|rules| &rules.value)
                 .and_then(|rules| {
@@ -193,7 +196,7 @@ async fn validate_string(
             crate::Diagnostic {
                 kind: Box::new(crate::DiagnosticKind::StringMinLength {
                     minimum: *min_length,
-                    actual: value.len(),
+                    actual: length,
                 }),
                 range,
             }

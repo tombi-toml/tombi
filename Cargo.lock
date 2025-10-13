@@ -4125,6 +4125,7 @@ dependencies = [
  "tombi-uri",
  "tombi-x-keyword",
  "tracing",
+ "unicode-segmentation",
  "uuid",
 ]
 

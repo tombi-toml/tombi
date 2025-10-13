@@ -28,4 +28,5 @@ tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
 tracing.workspace = true
+unicode-segmentation.workspace = true
 uuid.workspace = true
