@@ -1,6 +1,6 @@
 import type { JSX } from "solid-js";
-import { Header } from "~/components/header/index";
 import { AnchorHandler } from "~/components/AnchorHandler";
+import { Header } from "~/components/header/index";
 
 export default function Layout(props: { children: JSX.Element }) {
   return (

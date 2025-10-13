@@ -1,7 +1,7 @@
 import { A } from "@solidjs/router";
-import { createSignal, createEffect, onMount, onCleanup, For } from "solid-js";
-import type { ParentProps } from "solid-js";
 import { IoChevronForward } from "solid-icons/io";
+import type { ParentProps } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, onMount } from "solid-js";
 import type { DicIndex } from "~/utils/doc-index";
 
 interface HeaderDropdownItemProps {
