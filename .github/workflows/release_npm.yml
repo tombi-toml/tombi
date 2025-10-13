@@ -17,7 +17,6 @@ env:
   GITHUB_REF: ${{ (github.ref) }}
 
 jobs:
-
   build:
     strategy:
       matrix:
@@ -84,7 +83,6 @@ jobs:
       - name: Build binaries
         run: cargo build -p tombi-cli --release --target ${{ matrix.target }}
 
-
       # Copy the CLI binary and rename it to include the name of the target platform
       - run: ls target
       - run: ls target/${{ matrix.target }}
@@ -130,7 +128,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - name: Generate npm package
         run: node typescript/@tombi-toml/tombi/scripts/generate-packages.mjs
@@ -159,18 +157,18 @@ jobs:
           else
             # Create a temporary directory
             temp_dir=$(mktemp -d)
-            
-            # Copy @tombi-toml/tombi package
-            cp -r typescript/@tombi-toml/tombi/* "$temp_dir/"
-            
+
+            # Copy @tombi-toml/tombi package (follow symlinks)
+            cp -Lr typescript/@tombi-toml/tombi/* "$temp_dir/"
+
             # Update package.json to change the name from @tombi-toml/tombi to tombi
             cd "$temp_dir"
             jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
-            
+
             # Publish as tombi
             npm publish --tag latest --access public --provenance
             echo "Published tombi@${TOMBI_VERSION}"
-            
+
             # Clean up
             cd -
             rm -rf "$temp_dir"
