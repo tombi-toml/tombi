@@ -32,8 +32,8 @@ impl CompletionContentPriority {
     pub fn as_prefix(&self) -> String {
         match self {
             CompletionContentPriority::Custom(value) => value.to_string(),
-            // NOTE: 30 is the prefix for completion items from extensions
-            //       that should be prioritized over basic features.
+            // NOTE: Completion candidates provided by extensions are assigned priority numbers starting from 50,
+            //       allowing them to be placed above basic features.
             CompletionContentPriority::Default => "50".to_string(),
             CompletionContentPriority::Const => "51".to_string(),
             CompletionContentPriority::Enum => "52".to_string(),
