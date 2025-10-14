@@ -1,5 +1,5 @@
 import { useLocation } from "@solidjs/router";
-import { onMount, createEffect } from "solid-js";
+import { createEffect, onMount } from "solid-js";
 import { handleInitialHash } from "../utils/anchor-scroll";
 
 /**

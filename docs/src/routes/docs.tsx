@@ -1,9 +1,9 @@
 import type { RouteSectionProps } from "@solidjs/router";
 import { useLocation } from "@solidjs/router";
-import { Sidebar } from "~/components/Sidebar";
-import { createEffect } from "solid-js";
 import Prism from "prismjs";
+import { createEffect } from "solid-js";
 import { DocNavigation } from "~/components/DocNavigation";
+import { Sidebar } from "~/components/Sidebar";
 import { setupAnchors } from "~/utils/anchor";
 
 export default function DocumentationLayout(props: RouteSectionProps) {

@@ -2,12 +2,12 @@ import "prismjs";
 import "prismjs/components/prism-toml";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-json";
-import Prism from "prismjs";
+import { MetaProvider } from "@solidjs/meta";
 
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
-import { Suspense, onMount } from "solid-js";
-import { MetaProvider } from "@solidjs/meta";
+import Prism from "prismjs";
+import { onMount, Suspense } from "solid-js";
 import { MDXProvider } from "solid-mdx";
 import * as components from "~/components";
 import "virtual:uno.css";

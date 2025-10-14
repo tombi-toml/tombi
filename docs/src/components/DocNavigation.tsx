@@ -1,6 +1,6 @@
-import { useLocation, A } from "@solidjs/router";
-import docIndex from "../../doc-index.json";
+import { A, useLocation } from "@solidjs/router";
 import { flattenDocPages } from "~/utils/doc-index";
+import docIndex from "../../doc-index.json";
 
 export function DocNavigation() {
   const location = useLocation();

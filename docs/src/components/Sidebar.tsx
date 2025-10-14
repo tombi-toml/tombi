@@ -1,8 +1,8 @@
-import { For, createSignal, createMemo } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
-import docIndex from "../../doc-index.json";
+import { createMemo, createSignal, For } from "solid-js";
 import type { DicIndex } from "~/utils/doc-index";
+import docIndex from "../../doc-index.json";
 
 const docIndexs: DicIndex[] = docIndex;
 

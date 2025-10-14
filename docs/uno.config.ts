@@ -1,4 +1,4 @@
-import { defineConfig, presetUno, presetTypography } from "unocss";
+import { defineConfig, presetTypography, presetUno } from "unocss";
 import breakpoints from "./breakpoints.json" with { type: "json" };
 
 export default defineConfig({

@@ -1,6 +1,6 @@
-import { visit } from "unist-util-visit";
 import type { Link, Root } from "mdast";
 import type { MdxJsxFlowElement } from "mdast-util-mdx";
+import { visit } from "unist-util-visit";
 
 export function remarkBaseUrl() {
   return (tree: Root) => {
