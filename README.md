@@ -40,6 +40,20 @@ To quickly try out Tombi's formatter, you can run:
 </div>
 
 <div align="center">
+<h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
+<strong>Features</strong>
+</h2>
+
+<ul style="list-style: none; margin: 0; padding: 0; text-align: left; display: block;">
+  <li>🦀 Written in Rust</li>
+  <li>⚡️ Over 2x faster than <a href="https://github.com/tamasfe/taplo">Taplo</a></li>
+  <li>↕️ Automatic Sorting Using JSON Schema Metadata</li>
+  <li>🏬 Support <a href="https://www.schemastore.org/">JSON Schema Store</a></li>
+  <li>💬 Support <a href="https://tombi-toml.github.io/tombi/docs/comment-directive">Comment Directive</a></li>
+</ul>
+
+
+<div align="center">
     <h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
         <strong>Support</strong>
     </h2>
