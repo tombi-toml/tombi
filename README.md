@@ -22,9 +22,9 @@
     </div>
     Tombi(鳶 <a href="https://ipa-reader.com/?text=toɴbi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">/toɴbi/</a>) provides a Formatter, Linter, and Language Server
     <br><br>
-    <a href="https://tombi-toml.github.io/tombi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">
-        📚 Documentation here 📚
-    </a>
+    <span aria-hidden="true">📚</span> <a href="https://tombi-toml.github.io/tombi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">
+        Documentation here
+    </a> <span aria-hidden="true">📚</span>
 </div>
 
 <br>
@@ -41,7 +41,7 @@ To quickly try out Tombi's formatter, you can run:
 
 <div align="center">
     <h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
-        <strong>Support</strong>
+        <strong>Support us</strong>
     </h2>
     If you like this project and would like to support us
     <br><br>
