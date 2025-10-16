@@ -43,7 +43,7 @@ To quickly try out Tombi's formatter, you can run:
     <h2 align="center" style="font-size: 2.0em; margin-bottom: 30px;">
         <strong>Support</strong>
     </h2>
-    ❤️ If you like this project and would like to support us ❤️
+    If you like this project and would like to support us
     <br><br>
     <a href="https://github.com/sponsors/tombi-toml">
         <img src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=ff69b4" alt="GitHub Sponsor">
