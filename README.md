@@ -45,11 +45,7 @@ To quickly try out Tombi's formatter, you can run:
     </h2>
     ❤️ If you like this project and would like to support us ❤️
     <br><br>
-    <a href="https://www.buymeacoffee.com/tombi" target="_blank">
-        <img
-            src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
-            alt="Buy Me A Coffee"
-            style="width: 180px !important;"
-        >
+    <a href="https://github.com/sponsors/tombi-toml">
+        <img src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=ff69b4" alt="GitHub Sponsor">
     </a>
 </div>
