@@ -126,7 +126,7 @@ wasi = { version = "0.13.0" }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
 xshell.version = "0.2.7"
-zed_extension_api = "0.1.0"
+zed_extension_api = "0.7.0"
 zip = { version = "2.3.0" }
 
 [workspace.metadata.cargo-shear]
