@@ -198,7 +198,7 @@
           "pattern": "^.*tombi(\\.exe)?$"
         },
         "tombi.args": {
-          "description": "Arguments to `tombi lsp` command.",
+          "description": "Arguments to `tombi` command.",
           "type": "array",
           "scope": "resource",
           "default": null,
