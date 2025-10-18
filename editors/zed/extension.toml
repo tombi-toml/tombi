@@ -1,12 +1,12 @@
 id = "tombi"
 name = "Tombi | TOML Toolkit"
-version = "0.1.10"
-description = "🦅  TOML Language Server  🦅 "
+version = "0.2.0"
+description = "🦅  TOML Language Server  🦅"
 schema_version = 1
 authors = ["tombi-toml <tombi-toml@outlook.com>"]
 repository = "https://github.com/tombi-toml/tombi"
 
-[language_servers.toml]
+[language_servers.tombi]
 name = "Tombi"
 languages = ["TOML"]
 

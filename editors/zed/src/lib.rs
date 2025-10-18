@@ -4,7 +4,7 @@ use zed_extension_api::{self as zed, settings::LspSettings, Result};
 
 struct TombiBinary {
     path: String,
-    args: Option<Vec<String>>,
+    args: Vec<String>,
 }
 
 struct TombiExtension {
@@ -17,18 +17,21 @@ impl TombiExtension {
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<TombiBinary> {
-        let binary_settings = LspSettings::for_worktree("tombi", worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.binary);
-        let binary_args = binary_settings
+        let lsp_settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree).ok();
+        let binary_settings = lsp_settings
             .as_ref()
-            .and_then(|binary_settings| binary_settings.arguments.clone());
+            .and_then(|lsp_settings| lsp_settings.binary.as_ref());
 
-        if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path) {
-            return Ok(TombiBinary {
-                path,
-                args: binary_args,
-            });
+        let args = binary_settings
+            .and_then(|binary_settings| binary_settings.arguments.as_ref())
+            .map(|args| args.clone())
+            .unwrap_or_else(|| vec!["lsp".to_string()]);
+
+        if let Some(path) = binary_settings
+            .as_ref()
+            .and_then(|binary_settings| binary_settings.path.clone())
+        {
+            return Ok(TombiBinary { path, args });
         }
 
         let worktree_root_path = worktree.root_path();
@@ -44,7 +47,7 @@ impl TombiExtension {
         if venv_bin_path.is_file() {
             return Ok(TombiBinary {
                 path: venv_bin_path.to_string_lossy().to_string(),
-                args: binary_args,
+                args,
             });
         }
 
@@ -52,22 +55,19 @@ impl TombiExtension {
         if node_modules_bin_path.is_file() {
             return Ok(TombiBinary {
                 path: node_modules_bin_path.to_string_lossy().to_string(),
-                args: binary_args,
+                args,
             });
         }
 
         if let Some(path) = worktree.which("tombi") {
-            return Ok(TombiBinary {
-                path,
-                args: binary_args,
-            });
+            return Ok(TombiBinary { path, args });
         }
 
         if let Some(path) = &self.cached_binary_path {
             if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
                 return Ok(TombiBinary {
                     path: path.clone(),
-                    args: binary_args,
+                    args,
                 });
             }
         }
@@ -157,7 +157,7 @@ impl TombiExtension {
         self.cached_binary_path = Some(binary_path.clone());
         Ok(TombiBinary {
             path: binary_path,
-            args: binary_args,
+            args,
         })
     }
 }
@@ -177,7 +177,7 @@ impl zed::Extension for TombiExtension {
         let tombi_binary = self.language_server_binary(language_server_id, worktree)?;
         Ok(zed::Command {
             command: tombi_binary.path,
-            args: tombi_binary.args.unwrap_or_else(|| vec!["lsp".into()]),
+            args: tombi_binary.args,
             env: vec![],
         })
     }
