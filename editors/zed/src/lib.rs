@@ -24,7 +24,7 @@ impl TombiExtension {
 
         let args = binary_settings
             .and_then(|binary_settings| binary_settings.arguments.as_ref())
-            .map(|args| args.clone())
+            .cloned()
             .unwrap_or_else(|| vec!["lsp".to_string()]);
 
         if let Some(path) = binary_settings
