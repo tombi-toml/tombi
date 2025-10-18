@@ -1,0 +1,31 @@
+# Zed Extension
+
+## Language Server Binary Priority
+
+The tombi Zed extension selects the Language Server binary in the following order of priority:
+
+| Order | Source Type      | Description                                                                                 |
+|-------|------------------|--------------------------------------------------------------------------------------------|
+| 1     | editor settings  | Path explicitly specified by `lsp.tombi.binary.path` in Zed settings                        |
+| 2     | venv             | `tombi` binary found in a Python virtual environment (`.venv/bin/tombi`) in the workspace   |
+| 3     | node_modules     | `tombi` binary found in the `node_modules/.bin` directory in the workspace                  |
+| 4     | local            | `tombi` binary found in the system PATH (via `which tombi`)                                 |
+| 5     | cached           | Previously downloaded `tombi` binary from a previous session                                 |
+| 6     | downloaded       | `tombi` binary downloaded from the latest GitHub release                                     |
+
+## Configuration
+
+You can configure the extension through Zed's LSP settings. For example, to specify custom arguments and environment variables:
+
+```json
+{
+  "lsp": {
+    "tombi": {
+      "binary": {
+        "arguments": ["lsp", "-v"],
+        "env": { "NO_COLOR": "true" }
+      }
+    }
+  }
+}
+```
