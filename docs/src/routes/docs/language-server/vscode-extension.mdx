@@ -15,3 +15,13 @@ The tombi VSCode extension selects the Language Server binary in the following o
 You can check which tombi binary is currently selected by running the `Tombi: Show Language Server Version` command from the VSCode command palette.
 
 <img src="/show_language_server_version.png" class="w-full" />
+
+## Offline Mode
+
+You can set offline mode in the VSCode settings file.
+
+```json
+{
+  "tombi.args": ["lsp", "--offline"]
+}
+```

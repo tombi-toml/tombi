@@ -88,6 +88,10 @@
       {
         "title": "VSCode Extension",
         "path": "/docs/language-server/vscode-extension"
+      },
+      {
+        "title": "Zed Extension",
+        "path": "/docs/language-server/zed-extension"
       }
     ]
   },
