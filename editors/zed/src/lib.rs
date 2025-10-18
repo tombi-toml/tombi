@@ -28,7 +28,6 @@ impl TombiExtension {
             .unwrap_or_else(|| vec!["lsp".to_string()]);
 
         if let Some(path) = binary_settings
-            .as_ref()
             .and_then(|binary_settings| binary_settings.path.clone())
         {
             return Ok(TombiBinary { path, args });
