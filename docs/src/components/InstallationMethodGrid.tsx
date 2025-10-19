@@ -1,5 +1,5 @@
-import { createSignal, For, createEffect } from "solid-js";
 import type { Component } from "solid-js";
+import { createEffect, createSignal, For } from "solid-js";
 
 interface InstallationMethod {
   id: string;
@@ -19,6 +19,12 @@ const installationMethods: InstallationMethod[] = [
     id: "cli",
     name: "CLI",
     image: "/terminal.svg",
+  },
+  {
+    id: "homebrew",
+    name: "Homebrew",
+    image: "/homebrew.svg",
+    category: "package-manager",
   },
   {
     id: "python",
