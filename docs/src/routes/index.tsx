@@ -99,7 +99,7 @@ export default function Home() {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-8 mb-16">
           {FEATURES.map((feature) => (
             <FeatureCard
-              // @ts-ignore
+              // @ts-expect-error
               key={feature.title}
               emoji={feature.emoji}
               title={feature.title}
