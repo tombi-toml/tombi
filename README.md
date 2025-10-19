@@ -6,7 +6,8 @@
 <div align="center">
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/tombi-toml.tombi?label=VS%20Code%20Marketplace&logo=visual-studio-code&labelColor=374151&color=60a5fa)](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
-[![open vsx](https://img.shields.io/open-vsx/v/tombi-toml/tombi?label=Open%20VSX%20Registry&labelColor=374151&color=60a5fa)](https://open-vsx.org/extension/tombi-toml/tombi)
+[![Open VSX Registory](https://img.shields.io/open-vsx/v/tombi-toml/tombi?label=Open%20VSX%20Registry&labelColor=374151&color=60a5fa)](https://open-vsx.org/extension/tombi-toml/tombi)
+[![Zed Extension](https://img.shields.io/badge/Zed%20Extension-v0.2.0-blue?labelColor=374151&color=60a5fa)](https://zed.dev/extensions/tombi)
 [![pypi](https://img.shields.io/pypi/v/tombi.svg?labelColor=374151&color=60a5fa)](https://pypi.python.org/pypi/tombi)
 [![npm](https://img.shields.io/npm/v/tombi.svg?labelColor=374151&color=60a5fa)](https://www.npmjs.com/package/tombi)
 [![toml-test](https://github.com/tombi-toml/tombi/actions/workflows/toml-test.yml/badge.svg)](https://github.com/tombi-toml/tombi/actions)
