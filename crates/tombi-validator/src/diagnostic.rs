@@ -110,7 +110,7 @@ or set `schema.strict = false` in your `tombi.toml`."#
     #[error("\"{key}\" is required")]
     TableKeyRequired { key: String },
 
-    #[error("One of {total_count} schemas must be valid, but found {valid_count} valid schemas")]
+    #[error("1 of {total_count} schemas must be valid, but found {valid_count} valid schemas")]
     OneOf {
         valid_count: usize,
         total_count: usize,
