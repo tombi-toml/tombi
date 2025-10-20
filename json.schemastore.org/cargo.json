@@ -185,13 +185,13 @@
                 "schemas": "feature"
               }
             },
-            "oneOf": [
+            "anyOf": [
               { "type": "string", "pattern": "default" },
               { "type": "string" }
             ]
           },
           "x-tombi-array-values-order": {
-            "oneOf": ["ascending", "version-sort"]
+            "anyOf": ["ascending", "version-sort"]
           },
           "x-taplo": {
             "links": {
@@ -278,7 +278,7 @@
     "Inherits": {
       "title": "Inherits",
       "description": "In addition to the built-in profiles, additional custom profiles can be defined.",
-      "oneOf": [
+      "anyOf": [
         {
           "type": "string",
           "enum": ["dev", "test", "bench", "release"]
