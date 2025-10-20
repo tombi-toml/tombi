@@ -8,7 +8,7 @@
     "Item": {
       "type": "object",
       "additionalProperties": {
-        "oneOf": [
+        "anyOf": [
           {
             "type": "string",
             "format": "date-time"

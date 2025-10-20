@@ -4,6 +4,7 @@ use tombi_comment_directive::value::CommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, OneOfSchema, ValueSchema};
+use tombi_severity_level::SeverityLevel;
 
 use super::Validate;
 use crate::validate::{all_of::validate_all_of, any_of::validate_any_of, type_mismatch};
@@ -153,14 +154,30 @@ where
 
             unreachable!("one_of_schema must have exactly one valid schema");
         } else {
-            Err(each_results
+            let error = each_results
                 .into_iter()
                 .fold(crate::Error::new(), |mut a, b| {
                     if let Err(error) = b {
                         a.combine(error);
                     }
                     a
-                }))
+                });
+            if error.diagnostics.is_empty() {
+                let mut diagnostics = vec![];
+
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::OneOf {
+                        valid_count,
+                        total_count: schemas.len(),
+                    }),
+                    range: value.range(),
+                }
+                .push_diagnostic_with_level(SeverityLevel::Error, &mut diagnostics);
+
+                Err(diagnostics.into())
+            } else {
+                Err(error)
+            }
         }
     }
     .boxed()
