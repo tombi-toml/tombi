@@ -66,6 +66,6 @@
     }
   ],
   "settings": {
-    // "tombi.args": ["-vv"]
+    // "tombi.args": ["lsp", "-vv"]
   }
 }

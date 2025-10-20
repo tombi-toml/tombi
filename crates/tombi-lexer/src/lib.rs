@@ -11,7 +11,7 @@ pub use token::Token;
 use tombi_syntax::{SyntaxKind, T};
 
 macro_rules! regex {
-    ($($var:ident = $re:expr);+;) => {
+    ($(static $var:ident = $re:expr);+;) => {
         $(
             static $var: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
                 regex::Regex::new($re).unwrap()
@@ -21,17 +21,17 @@ macro_rules! regex {
 }
 
 regex!(
-    REGEX_INTEGER_BIN = r"^0b[0|1](:?_?[0|1])*$";
-    REGEX_INTEGER_OCT = r"^0o[0-7](:?_?[0-7])*$";
-    REGEX_INTEGER_HEX = r"^0x[0-9A-Fa-f](:?_?[0-9A-Fa-f])*$";
-    REGEX_INTEGER_DEC = r"^(:?[1-9](:?_?[0-9])*|0)$";
-    REGEX_FLOAT = r"^[0-9_]+(:?(:?\.[0-9_]+)?[eE][+-]?[0-9_]+|\.[0-9_]+)$";
-    REGEX_IS_DATE_TIME = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}";
-    REGEX_OFFSET_DATE_TIME =
+    static REGEX_INTEGER_BIN = r"^0b[0|1](:?_?[0|1])*$";
+    static REGEX_INTEGER_OCT = r"^0o[0-7](:?_?[0-7])*$";
+    static REGEX_INTEGER_HEX = r"^0x[0-9A-Fa-f](:?_?[0-9A-Fa-f])*$";
+    static REGEX_INTEGER_DEC = r"^(:?[1-9](:?_?[0-9])*|0)$";
+    static REGEX_FLOAT = r"^[0-9_]+(:?(:?\.[0-9_]+)?[eE][+-]?[0-9_]+|\.[0-9_]+)$";
+    static REGEX_IS_DATE_TIME = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}";
+    static REGEX_OFFSET_DATE_TIME =
         r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ][0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?(?:[Zz]|[+-][0-9]{2}:[0-9]{2})$";
-    REGEX_LOCAL_DATE_TIME = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ][0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?$";
-    REGEX_LOCAL_DATE = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
-    REGEX_LOCAL_TIME = r"^[0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?$";
+    static REGEX_LOCAL_DATE_TIME = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ][0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?$";
+    static REGEX_LOCAL_DATE = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
+    static REGEX_LOCAL_TIME = r"^[0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?$";
 );
 
 #[tracing::instrument(level = "debug", skip_all)]

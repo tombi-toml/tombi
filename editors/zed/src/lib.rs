@@ -2,32 +2,41 @@ use std::fs;
 use zed::LanguageServerId;
 use zed_extension_api::{self as zed, settings::LspSettings, Result};
 
-struct TombiBinary {
-    path: String,
-    args: Option<Vec<String>>,
-}
-
 struct TombiExtension {
     cached_binary_path: Option<String>,
 }
 
 impl TombiExtension {
-    fn language_server_binary(
+    fn make_language_server_command(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
-    ) -> Result<TombiBinary> {
-        let binary_settings = LspSettings::for_worktree("tombi", worktree)
-            .ok()
-            .and_then(|lsp_settings| lsp_settings.binary);
-        let binary_args = binary_settings
+    ) -> Result<zed::Command> {
+        let lsp_settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree).ok();
+        let binary_settings = lsp_settings
             .as_ref()
-            .and_then(|binary_settings| binary_settings.arguments.clone());
+            .and_then(|lsp_settings| lsp_settings.binary.as_ref());
 
-        if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path) {
-            return Ok(TombiBinary {
-                path,
-                args: binary_args,
+        let args = binary_settings
+            .and_then(|binary_settings| binary_settings.arguments.as_ref())
+            .cloned()
+            .unwrap_or_else(|| vec!["lsp".to_string()]);
+
+        let env = binary_settings
+            .and_then(|binary_settings| binary_settings.env.as_ref())
+            .map(|env| {
+                env.into_iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        if let Some(path) = binary_settings.and_then(|binary_settings| binary_settings.path.clone())
+        {
+            return Ok(zed::Command {
+                command: path,
+                args,
+                env,
             });
         }
 
@@ -42,32 +51,36 @@ impl TombiExtension {
         let venv_bin_path =
             worktree_root_path.join(format!(".venv/{venv_script_dir}/{binary_name}"));
         if venv_bin_path.is_file() {
-            return Ok(TombiBinary {
-                path: venv_bin_path.to_string_lossy().to_string(),
-                args: binary_args,
+            return Ok(zed::Command {
+                command: venv_bin_path.to_string_lossy().to_string(),
+                args,
+                env,
             });
         }
 
         let node_modules_bin_path = worktree_root_path.join("node_modules/.bin/tombi");
         if node_modules_bin_path.is_file() {
-            return Ok(TombiBinary {
-                path: node_modules_bin_path.to_string_lossy().to_string(),
-                args: binary_args,
+            return Ok(zed::Command {
+                command: node_modules_bin_path.to_string_lossy().to_string(),
+                args,
+                env,
             });
         }
 
         if let Some(path) = worktree.which("tombi") {
-            return Ok(TombiBinary {
-                path,
-                args: binary_args,
+            return Ok(zed::Command {
+                command: path,
+                args,
+                env,
             });
         }
 
         if let Some(path) = &self.cached_binary_path {
             if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
-                return Ok(TombiBinary {
-                    path: path.clone(),
-                    args: binary_args,
+                return Ok(zed::Command {
+                    command: path.clone(),
+                    args,
+                    env,
                 });
             }
         }
@@ -155,9 +168,11 @@ impl TombiExtension {
         }
 
         self.cached_binary_path = Some(binary_path.clone());
-        Ok(TombiBinary {
-            path: binary_path,
-            args: binary_args,
+
+        Ok(zed::Command {
+            command: binary_path,
+            args,
+            env,
         })
     }
 }
@@ -174,12 +189,7 @@ impl zed::Extension for TombiExtension {
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<zed::Command> {
-        let tombi_binary = self.language_server_binary(language_server_id, worktree)?;
-        Ok(zed::Command {
-            command: tombi_binary.path,
-            args: tombi_binary.args.unwrap_or_else(|| vec!["lsp".into()]),
-            env: vec![],
-        })
+        self.make_language_server_command(language_server_id, worktree)
     }
 
     fn language_server_initialization_options(
