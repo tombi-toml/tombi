@@ -4,7 +4,7 @@ use tombi_comment_directive::value::CommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, OneOfSchema, ValueSchema};
-use tombi_severity_level::SeverityLevel;
+use tombi_severity_level::SeverityLevelDefaultError;
 
 use super::Validate;
 use crate::validate::{all_of::validate_all_of, any_of::validate_any_of, type_mismatch};
@@ -162,17 +162,23 @@ where
                     }
                     a
                 });
-            if error.diagnostics.is_empty() {
+            if error.diagnostics.is_empty() && valid_count > 1 {
                 let mut diagnostics = vec![];
 
                 crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::OneOf {
+                    kind: Box::new(crate::DiagnosticKind::OneOfMultipleMatch {
                         valid_count,
                         total_count: schemas.len(),
                     }),
                     range: value.range(),
                 }
-                .push_diagnostic_with_level(SeverityLevel::Error, &mut diagnostics);
+                .push_diagnostic_with_level(
+                    common_rules
+                        .and_then(|rules| rules.one_of_multiple_match.as_ref())
+                        .map(SeverityLevelDefaultError::from)
+                        .unwrap_or_default(),
+                    &mut diagnostics,
+                );
 
                 Err(diagnostics.into())
             } else {

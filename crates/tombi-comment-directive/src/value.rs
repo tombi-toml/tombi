@@ -432,4 +432,10 @@ pub struct CommonLintRules {
     /// Check if the value is deprecated.
     ///
     pub deprecated: Option<WarnRuleOptions>,
+
+    /// # One of multiple match
+    ///
+    /// Check if more than one schema in the `oneOf` is valid.
+    ///
+    pub one_of_multiple_match: Option<ErrorRuleOptions>,
 }
