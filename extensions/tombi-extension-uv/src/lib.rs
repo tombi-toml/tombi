@@ -35,19 +35,35 @@ impl From<PackageLocation> for Option<tombi_extension::DefinitionLocation> {
 fn load_pyproject_toml(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Option<tombi_document_tree::DocumentTree> {
+) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
     let toml_text = std::fs::read_to_string(pyproject_toml_path).ok()?;
 
     let root =
         tombi_ast::Root::cast(tombi_parser::parse(&toml_text, toml_version).into_syntax_node())?;
 
-    root.try_into_document_tree(toml_version).ok()
+    // Clone the root before converting to document tree
+    let root_clone = tombi_ast::Root::cast(root.syntax().clone())?;
+    let document_tree = root.try_into_document_tree(toml_version).ok()?;
+
+    Some((root_clone, document_tree))
+}
+
+fn load_pyproject_toml_document_tree(
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Option<tombi_document_tree::DocumentTree> {
+    let (_, document_tree) = load_pyproject_toml(pyproject_toml_path, toml_version)?;
+    Some(document_tree)
 }
 
 fn find_workspace_pyproject_toml(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Option<(std::path::PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(
+    std::path::PathBuf,
+    tombi_ast::Root,
+    tombi_document_tree::DocumentTree,
+)> {
     let mut current_dir = pyproject_toml_path.parent()?;
 
     while let Some(target_dir) = current_dir.parent() {
@@ -55,23 +71,17 @@ fn find_workspace_pyproject_toml(
         let workspace_pyproject_toml_path = current_dir.join("pyproject.toml");
 
         if workspace_pyproject_toml_path.exists() {
-            let Some(package_pyproject_toml_document_tree) =
+            let Some((root, document_tree)) =
                 load_pyproject_toml(&workspace_pyproject_toml_path, toml_version)
             else {
                 continue;
             };
 
             // Check if this pyproject.toml has a [tool.uv.workspace] section
-            if tombi_document_tree::dig_keys(
-                &package_pyproject_toml_document_tree,
-                &["tool", "uv", "workspace"],
-            )
-            .is_some()
+            if tombi_document_tree::dig_keys(&document_tree, &["tool", "uv", "workspace"])
+                .is_some()
             {
-                return Some((
-                    workspace_pyproject_toml_path,
-                    package_pyproject_toml_document_tree,
-                ));
+                return Some((workspace_pyproject_toml_path, root, document_tree));
             }
         }
     }
@@ -266,7 +276,7 @@ fn goto_workspace_member(
             || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
     );
 
-    let Some((workspace_pyproject_toml_path, workspace_pyproject_toml_document_tree)) =
+    let Some((workspace_pyproject_toml_path, _, workspace_pyproject_toml_document_tree)) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
     else {
         return Ok(None);
@@ -301,7 +311,8 @@ fn goto_workspace_member(
         else {
             return Ok(None);
         };
-        let Some(member_document_tree) = load_pyproject_toml(pyproject_toml_path, toml_version)
+        let Some(member_document_tree) =
+            load_pyproject_toml_document_tree(pyproject_toml_path, toml_version)
         else {
             return Ok(None);
         };
@@ -354,7 +365,8 @@ fn goto_member_pyprojects(
     for (_, pyproject_toml_path) in
         find_pyproject_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
     {
-        let Some(member_document_tree) = load_pyproject_toml(&pyproject_toml_path, toml_version)
+        let Some(member_document_tree) =
+            load_pyproject_toml_document_tree(&pyproject_toml_path, toml_version)
         else {
             continue;
         };
@@ -387,7 +399,7 @@ fn find_member_project_toml(
         find_pyproject_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
     {
         let Some(package_project_toml_document_tree) =
-            load_pyproject_toml(&package_project_toml_path, toml_version)
+            load_pyproject_toml_document_tree(&package_project_toml_path, toml_version)
         else {
             continue;
         };

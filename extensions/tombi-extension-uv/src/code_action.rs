@@ -1,5 +1,6 @@
 use pep508_rs::{Requirement, VerbatimUrl};
 use std::str::FromStr;
+use tombi_ast::AstNode;
 use tombi_extension::{
     CodeAction, CodeActionOrCommand, DocumentChanges, TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
@@ -103,10 +104,88 @@ fn calculate_insertion_index(existing_package_names: &[&str], new_package_name: 
         .unwrap_or(existing_package_names.len())
 }
 
+/// Get AST array from document tree range
+/// First finds the range in document_tree, then locates the corresponding AST node
+fn get_ast_array_from_document_tree(
+    root: &tombi_ast::Root,
+    document_tree: &tombi_document_tree::DocumentTree,
+    keys: &[&str],
+) -> Option<tombi_ast::Array> {
+    // Get the value from document tree to find its range
+    let (_, value) = tombi_document_tree::dig_keys(document_tree, keys)?;
+
+    let tombi_document_tree::Value::Array(doc_array) = value else {
+        return None;
+    };
+
+    // Get the range of the array in the document tree
+    let target_range = doc_array.range();
+
+    // Use descendants to find the Array with matching range
+    for node in root.syntax().descendants() {
+        if let Some(array) = tombi_ast::Array::cast(node) {
+            if array.range() == target_range {
+                return Some(array);
+            }
+        }
+    }
+
+    None
+}
+
+/// Calculate insertion position and text for array insertion with comma handling
+/// Uses tombi_ast API to properly handle commas and formatting
+fn calculate_array_insertion(
+    ast_array: &tombi_ast::Array,
+    insertion_index: usize,
+    new_element: &tombi_document_tree::String,
+) -> Option<(tombi_text::Position, String)> {
+    use tombi_ast::AstNode;
+
+    let values_with_comma: Vec<_> = ast_array.values_with_comma().collect();
+
+    if values_with_comma.is_empty() {
+        // Empty array - insert without comma
+        let bracket_start = ast_array.bracket_start()?;
+        let insert_pos = bracket_start.range().end;
+        return Some((insert_pos, new_element.to_string()));
+    }
+
+    if insertion_index == 0 {
+        // Insert at the beginning
+        let (first_value, _) = values_with_comma.first()?;
+        let insert_pos = first_value.syntax().range().start;
+        let new_text = format!("{}, ", new_element.to_string());
+        return Some((insert_pos, new_text));
+    }
+
+    if insertion_index >= values_with_comma.len() {
+        // Insert at the end
+        let (last_value, last_comma) = values_with_comma.last()?;
+        let insert_pos = last_value.syntax().range().end;
+
+        let new_text = if last_comma.is_some() {
+            // If there's already a trailing comma, add the new element with a trailing comma too
+            format!(" {}, ", new_element.to_string())
+        } else {
+            // No trailing comma - add comma before the new element, no comma after
+            format!(", {}", new_element.to_string())
+        };
+        return Some((insert_pos, new_text));
+    }
+
+    // Insert in the middle
+    let (target_value, _) = values_with_comma.get(insertion_index)?;
+    let insert_pos = target_value.syntax().range().start;
+    let new_text = format!("{}, ", new_element.to_string());
+    Some((insert_pos, new_text))
+}
+
 fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     member_document_tree: &tombi_document_tree::DocumentTree,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_root: &tombi_ast::Root,
     workspace_pyproject_toml_path: &std::path::Path,
     accessors: &[Accessor],
     _contexts: &[AccessorContext],
@@ -164,8 +243,12 @@ fn add_workspace_dependency_code_action(
     };
 
     // Generate workspace edit (add dependency with version, without extras)
-    let workspace_edit =
-        generate_workspace_dependency_edit(workspace_document_tree, &requirement, dependency)?;
+    let workspace_edit = generate_workspace_dependency_edit(
+        workspace_document_tree,
+        workspace_root,
+        &requirement,
+        dependency,
+    )?;
 
     // Generate member edit (convert to version-less format, preserving extras)
     let member_edit = generate_member_dependency_edit(dependency, &requirement)?;
@@ -204,19 +287,27 @@ fn add_workspace_dependency_code_action(
 /// Generate TextEdit for adding dependency to workspace [project.dependencies]
 fn generate_workspace_dependency_edit(
     workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_root: &tombi_ast::Root,
     requirement: &Requirement<VerbatimUrl>,
     dependency: &tombi_document_tree::String,
 ) -> Option<TextEdit> {
-    // Get workspace.dependencies array
+    // Get workspace.dependencies array from document tree
     let (_, workspace_deps) =
         tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
 
-    let tombi_document_tree::Value::Array(deps_array) = workspace_deps else {
+    let tombi_document_tree::Value::Array(deps_doc_array) = workspace_deps else {
         return None;
     };
 
+    // Get the AST array to access comma information
+    let deps_ast_array = get_ast_array_from_document_tree(
+        workspace_root,
+        workspace_document_tree,
+        &["project", "dependencies"],
+    )?;
+
     // Get existing package names
-    let existing_package_names: Vec<String> = deps_array
+    let existing_package_names: Vec<String> = deps_doc_array
         .iter()
         .filter_map(|dep| {
             if let tombi_document_tree::Value::String(dep_str) = dep {
@@ -235,35 +326,9 @@ fn generate_workspace_dependency_edit(
     // Calculate insertion index
     let insertion_index = calculate_insertion_index(&existing_packages, &package_name);
 
-    // Determine insertion position and comma handling
-    let (insertion_range, new_text) = if insertion_index == 0 {
-        if deps_array.is_empty() {
-            // Empty array case
-            (deps_array.range().end, dependency.to_string())
-        } else {
-            // Insert at the beginning - add comma after the new element
-            (
-                deps_array.first()?.range().start,
-                format!("{}, ", dependency.to_string()),
-            )
-        }
-    } else if insertion_index >= deps_array.len() {
-        // Insert at the end
-        let last_elem = deps_array.last()?;
-        // Check if the last element has a trailing comma by looking at the source text
-        // For simplicity, we'll add comma to the new element based on TOML style
-        // Note: In TOML arrays, trailing commas are optional but commonly used
-        (
-            last_elem.range().end,
-            format!(", {}", dependency.to_string()),
-        )
-    } else {
-        // Insert in the middle - add comma after the new element
-        (
-            deps_array.get(insertion_index)?.range().start,
-            format!("{}, ", dependency.to_string()),
-        )
-    };
+    // Determine insertion position and comma handling using AST
+    let (insertion_range, new_text) =
+        calculate_array_insertion(&deps_ast_array, insertion_index, dependency)?;
 
     Some(TextEdit {
         range: tombi_text::Range::at(insertion_range),
@@ -413,7 +478,7 @@ pub fn code_action(
         return Ok(None);
     };
 
-    let Some((workspace_path, workspace_document_tree)) =
+    let Some((workspace_path, workspace_root, workspace_document_tree)) =
         find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
     else {
         tracing::debug!(
@@ -447,6 +512,7 @@ pub fn code_action(
         text_document_uri,
         document_tree,
         &workspace_document_tree,
+        &workspace_root,
         &workspace_path,
         accessors,
         contexts,
@@ -911,7 +977,9 @@ dependencies = ["pydantic>=2.10"]
                 .into_syntax_node(),
         )
         .unwrap();
-        let workspace_tree = workspace_root
+        let workspace_root_for_tree =
+            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -919,6 +987,7 @@ dependencies = ["pydantic>=2.10"]
             &member_uri,
             &member_tree,
             &workspace_tree,
+            &workspace_root,
             workspace_uri.to_file_path().unwrap().as_path(),
             &[
                 Accessor::Key("project".to_string()),
@@ -969,7 +1038,9 @@ dependencies = ["pydantic>=2.10,<3.0"]
                 .into_syntax_node(),
         )
         .unwrap();
-        let workspace_tree = workspace_root
+        let workspace_root_for_tree =
+            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -977,6 +1048,7 @@ dependencies = ["pydantic>=2.10,<3.0"]
             &member_uri,
             &member_tree,
             &workspace_tree,
+            &workspace_root,
             workspace_uri.to_file_path().unwrap().as_path(),
             &[
                 Accessor::Key("project".to_string()),
@@ -1025,7 +1097,9 @@ dependencies = ["pydantic>=2.10,<3.0"]
                 .into_syntax_node(),
         )
         .unwrap();
-        let workspace_tree = workspace_root
+        let workspace_root_for_tree =
+            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -1048,6 +1122,7 @@ dependencies = ["pydantic>=2.10,<3.0"]
             &member_uri,
             &member_tree,
             &workspace_tree,
+            &workspace_root,
             workspace_uri.to_file_path().unwrap().as_path(),
             &[
                 Accessor::Key("project".to_string()),
@@ -1092,7 +1167,9 @@ dependencies = ["pydantic>=2.10"]
                 .into_syntax_node(),
         )
         .unwrap();
-        let workspace_tree = workspace_root
+        let workspace_root_for_tree =
+            tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
+        let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -1115,6 +1192,7 @@ dependencies = ["pydantic>=2.10"]
             &member_uri,
             &member_tree,
             &workspace_tree,
+            &workspace_root,
             workspace_uri.to_file_path().unwrap().as_path(),
             &[
                 Accessor::Key("project".to_string()),
