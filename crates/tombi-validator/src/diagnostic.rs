@@ -110,8 +110,8 @@ or set `schema.strict = false` in your `tombi.toml`."#
     #[error("\"{key}\" is required")]
     TableKeyRequired { key: String },
 
-    #[error("1 of {total_count} schemas must be valid, but found {valid_count} valid schemas")]
-    OneOf {
+    #[error("1 of {total_count} schemas must be matched, but found {valid_count} matched schemas")]
+    OneOfMultipleMatch {
         valid_count: usize,
         total_count: usize,
     },
@@ -156,7 +156,7 @@ impl Diagnostic {
             DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
             DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
             DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
-            DiagnosticKind::OneOf { .. } => "one-of",
+            DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
         }
     }
 

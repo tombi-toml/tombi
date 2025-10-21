@@ -118,6 +118,18 @@
             }
           ]
         },
+        "one-of-multiple-match": {
+          "title": "One of multiple match",
+          "description": "Check if more than one schema in the `oneOf` is valid.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "float-maximum": {
           "title": "Maximum float",
           "description": "Check if the float is less than or equal to the maximum.\n\n```rust\nfloat <= maximum\n```",
