@@ -3790,7 +3790,9 @@ dependencies = [
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
+ "tombi-version-sort",
  "tower-lsp",
+ "tracing",
 ]
 
 [[package]]
