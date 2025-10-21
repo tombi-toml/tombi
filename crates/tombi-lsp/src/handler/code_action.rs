@@ -95,6 +95,20 @@ pub async fn handle_code_action(
         );
     }
 
+    if let Some(extension_code_actions) = tombi_extension_uv::code_action(
+        &text_document_uri,
+        document_tree,
+        &accessors,
+        &accessor_contexts,
+        document_source.toml_version,
+    )? {
+        code_actions.extend(
+            extension_code_actions
+                .into_iter()
+                .map(|code_action| code_action.into_lsp(line_index)),
+        );
+    }
+
     if code_actions.is_empty() {
         return Ok(None);
     }
