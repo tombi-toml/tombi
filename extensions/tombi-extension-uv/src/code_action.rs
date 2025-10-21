@@ -140,45 +140,58 @@ fn calculate_array_insertion(
     insertion_index: usize,
     new_element: &tombi_document_tree::String,
 ) -> Option<(tombi_text::Position, String)> {
-    use tombi_ast::AstNode;
-
     let values_with_comma: Vec<_> = ast_array.values_with_comma().collect();
 
     if values_with_comma.is_empty() {
         // Empty array - insert without comma
-        let bracket_start = ast_array.bracket_start()?;
-        let insert_pos = bracket_start.range().end;
-        return Some((insert_pos, new_element.to_string()));
+        return if let Some(dangling_comment) = ast_array
+            .inner_dangling_comments()
+            .last()
+            .and_then(|comments| comments.last())
+        {
+            Some((
+                dangling_comment.syntax().range().end,
+                format!("\n\n{},\n", new_element),
+            ))
+        } else {
+            Some((
+                ast_array.bracket_start()?.range().end,
+                new_element.to_string(),
+            ))
+        };
     }
 
     if insertion_index == 0 {
         // Insert at the beginning
         let (first_value, _) = values_with_comma.first()?;
         let insert_pos = first_value.syntax().range().start;
-        let new_text = format!("{}, ", new_element.to_string());
+        let new_text = format!("\n{},\n", new_element.to_string());
         return Some((insert_pos, new_text));
     }
 
     if insertion_index >= values_with_comma.len() {
         // Insert at the end
         let (last_value, last_comma) = values_with_comma.last()?;
-        let insert_pos = last_value.syntax().range().end;
-
-        let new_text = if last_comma.is_some() {
-            // If there's already a trailing comma, add the new element with a trailing comma too
-            format!(" {}, ", new_element.to_string())
+        if let Some(last_comma) = last_comma {
+            let insert_pos = last_comma.range().end;
+            let new_text = format!("\n{}, ", new_element.to_string());
+            return Some((insert_pos, new_text));
         } else {
-            // No trailing comma - add comma before the new element, no comma after
-            format!(", {}", new_element.to_string())
-        };
-        return Some((insert_pos, new_text));
+            let insert_pos = last_value.syntax().range().end;
+            let new_text = format!("\n{}", new_element.to_string());
+            return Some((insert_pos, new_text));
+        }
     }
 
     // Insert in the middle
-    let (target_value, _) = values_with_comma.get(insertion_index)?;
-    let insert_pos = target_value.syntax().range().start;
-    let new_text = format!("{}, ", new_element.to_string());
-    Some((insert_pos, new_text))
+    let (target_value, target_comma) = values_with_comma.get(insertion_index)?;
+    let insert_pos = if let Some(target_comma) = target_comma {
+        target_comma.range().end
+    } else {
+        target_value.syntax().range().end
+    };
+    let new_text = format!("\n{},\n", new_element.to_string());
+    return Some((insert_pos, new_text));
 }
 
 fn add_workspace_dependency_code_action(
