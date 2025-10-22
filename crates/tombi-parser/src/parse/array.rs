@@ -6,6 +6,7 @@ use crate::{
         trailing_comment, Parse,
     },
     parser::Parser,
+    token_set::TS_LINE_END,
     ErrorKind::*,
 };
 
@@ -22,6 +23,8 @@ impl Parse for tombi_ast::Array {
         begin_dangling_comments(p);
 
         loop {
+            while p.eat_ts(TS_LINE_END) {}
+
             let n = peek_leading_comments(p);
             if p.nth_at(n, EOF) || p.nth_at(n, T![']']) {
                 break;

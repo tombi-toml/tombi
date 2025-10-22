@@ -165,7 +165,7 @@ fn calculate_array_insertion(
         // Insert at the beginning
         let (first_value, _) = values_with_comma.first()?;
         let insert_pos = first_value.syntax().range().start;
-        let new_text = format!("\n{},\n", new_element.to_string());
+        let new_text = format!("{},\n", new_element.to_string());
         return Some((insert_pos, new_text));
     }
 
