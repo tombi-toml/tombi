@@ -1,5 +1,5 @@
-/// TextEdit type specifically for completion feature.
-/// Uses `tombi_text::Range` internally and converts to LSP type via `FromLsp` trait.
+/// General-purpose type for representing LSP text edits that require range conversion.
+/// Uses `tombi_text::Range` internally and converts to LSP type via the `FromLsp` trait.
 use tombi_text::IntoLsp;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
