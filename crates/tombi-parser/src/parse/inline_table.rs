@@ -7,6 +7,7 @@ use crate::{
         trailing_comment, Parse,
     },
     parser::Parser,
+    token_set::TS_LINE_END,
     ErrorKind::*,
 };
 
@@ -27,6 +28,8 @@ impl Parse for tombi_ast::InlineTable {
         let mut key_value_lines = 0;
         let mut last_comma_range = None;
         loop {
+            while p.eat_ts(TS_LINE_END) {}
+
             let n = peek_leading_comments(p);
             if p.nth_at(n, EOF) || p.nth_at(n, T!['}']) {
                 break;
