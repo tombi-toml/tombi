@@ -133,24 +133,27 @@ where
         match node_or_token {
             SyntaxElement::Token(token) => match token.kind() {
                 COMMENT => {
+                    let comment = crate::Comment::cast(token).unwrap();
                     if let Some(last_group) = acc.last_mut() {
-                        if let Some(comment) = crate::Comment::cast(token) {
-                            if is_new_group {
-                                acc.push(vec![comment.into()]);
-                            } else {
-                                last_group.push(comment.into());
-                            }
+                        if is_new_group {
+                            acc.push(vec![comment.into()]);
+                        } else {
+                            last_group.push(comment.into());
                         }
-                    } else if let Some(comment) = crate::Comment::cast(token) {
+                    } else {
                         acc.push(vec![comment.into()]);
                     }
                     is_new_group = false;
                 }
                 LINE_BREAK => {
-                    if token
-                        .next_sibling_or_token()
-                        .is_some_and(|next| next.kind() == LINE_BREAK)
-                        && acc.last().is_some_and(|last_group| !last_group.is_empty())
+                    if token.next_sibling_or_token().is_some_and(|next| {
+                        if next.kind() == WHITESPACE {
+                            next.next_sibling_or_token()
+                                .is_some_and(|next| next.kind() == LINE_BREAK)
+                        } else {
+                            next.kind() == LINE_BREAK
+                        }
+                    }) && acc.last().is_some_and(|last_group| !last_group.is_empty())
                     {
                         is_new_group = true;
                     }
