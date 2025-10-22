@@ -3729,9 +3729,7 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
- "serde_json",
  "tombi-ast",
- "tombi-diagnostic",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
@@ -3790,7 +3788,9 @@ dependencies = [
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",
+ "tombi-version-sort",
  "tower-lsp",
+ "tracing",
 ]
 
 [[package]]

@@ -27,6 +27,8 @@ impl Parse for tombi_ast::InlineTable {
         let mut key_value_lines = 0;
         let mut last_comma_range = None;
         loop {
+            while p.eat(LINE_BREAK) {}
+
             let n = peek_leading_comments(p);
             if p.nth_at(n, EOF) || p.nth_at(n, T!['}']) {
                 break;

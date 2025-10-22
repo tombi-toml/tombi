@@ -107,7 +107,7 @@ fn get_workspace_dependency_declaration(
     toml_version: TomlVersion,
 ) -> Option<tombi_extension::DefinitionLocation> {
     // Find the workspace pyproject.toml
-    let (workspace_pyproject_toml_path, workspace_document_tree) =
+    let (workspace_pyproject_toml_path, _, workspace_document_tree) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
 
     // Find the member project

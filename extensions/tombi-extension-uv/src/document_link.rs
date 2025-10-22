@@ -206,7 +206,7 @@ fn document_link_for_member_pyproject_toml(
         return Ok(Vec::with_capacity(0));
     };
 
-    let Some((workspace_pyproject_toml_path, workspace_pyproject_toml_document_tree)) =
+    let Some((workspace_pyproject_toml_path, _, workspace_pyproject_toml_document_tree)) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
     else {
         return Ok(Vec::with_capacity(0));

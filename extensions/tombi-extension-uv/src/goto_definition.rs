@@ -8,7 +8,7 @@ use tombi_schema_store::{matches_accessors, Accessor};
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
-    load_pyproject_toml,
+    load_pyproject_toml_document_tree,
 };
 
 pub async fn goto_definition(
@@ -119,7 +119,7 @@ fn get_workspace_dependency_definition(
     toml_version: TomlVersion,
 ) -> Option<tombi_extension::DefinitionLocation> {
     // Find the workspace pyproject.toml
-    let (workspace_path, workspace_document_tree) =
+    let (workspace_path, _, workspace_document_tree) =
         find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
 
     // Find the member project
@@ -130,7 +130,8 @@ fn get_workspace_dependency_definition(
         toml_version,
     )?;
 
-    let member_document_tree = load_pyproject_toml(&member_pyproject_toml_path, toml_version)?;
+    let member_document_tree =
+        load_pyproject_toml_document_tree(&member_pyproject_toml_path, toml_version)?;
     let package_name = get_project_name(&member_document_tree)?;
     let member_pyproject_toml_uri =
         tombi_uri::Uri::from_file_path(&member_pyproject_toml_path).ok()?;
@@ -147,7 +148,8 @@ pub fn get_path_dependency_definition(
 ) -> Option<tombi_extension::DefinitionLocation> {
     let pyproject_toml_path = std::path::PathBuf::from(path).join("pyproject.toml");
 
-    let member_document_tree = load_pyproject_toml(&pyproject_toml_path, toml_version)?;
+    let member_document_tree =
+        load_pyproject_toml_document_tree(&pyproject_toml_path, toml_version)?;
 
     let package_name = get_project_name(&member_document_tree)?;
 

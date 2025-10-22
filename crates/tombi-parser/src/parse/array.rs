@@ -22,6 +22,8 @@ impl Parse for tombi_ast::Array {
         begin_dangling_comments(p);
 
         loop {
+            while p.eat(LINE_BREAK) {}
+
             let n = peek_leading_comments(p);
             if p.nth_at(n, EOF) || p.nth_at(n, T![']']) {
                 break;
