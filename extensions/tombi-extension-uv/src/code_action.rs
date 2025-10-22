@@ -176,11 +176,11 @@ fn calculate_array_insertion(
         let (last_value, last_comma) = values_with_comma.last()?;
         if let Some(last_comma) = last_comma {
             let insert_pos = last_comma.range().end;
-            let new_text = format!("\n{}, ", new_element.to_string());
+            let new_text = format!("\n{},", new_element.to_string());
             return Some((insert_pos, new_text));
         } else {
             let insert_pos = last_value.syntax().range().end;
-            let new_text = format!("\n{}", new_element.to_string());
+            let new_text = format!(",{}", new_element.to_string());
             return Some((insert_pos, new_text));
         }
     }
