@@ -1,9 +1,11 @@
 use tombi_document_tree::{dig_accessors, dig_keys, TableKind};
-use tombi_extension::{
-    CodeAction, CodeActionOrCommand, DocumentChanges, TextDocumentEdit, TextEdit, WorkspaceEdit,
-};
+use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::{matches_accessors, Accessor, AccessorContext};
-use tower_lsp::lsp_types::{CodeActionKind, OneOf, OptionalVersionedTextDocumentIdentifier};
+use tombi_text::IntoLsp;
+use tower_lsp::lsp_types::{
+    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
+    TextDocumentEdit, TextEdit, WorkspaceEdit,
+};
 
 use crate::{find_workspace_cargo_toml, get_workspace_path};
 
@@ -119,6 +121,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
+    line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
@@ -136,15 +139,14 @@ pub fn code_action(
     if document_tree.contains_key("workspace") {
         code_actions.extend(code_actions_for_workspace_cargo_toml(
             text_document_uri,
+            line_index,
             document_tree,
-            &cargo_toml_path,
             accessors,
-            contexts,
-            toml_version,
         ))
     } else {
         code_actions.extend(code_actions_for_crate_cargo_toml(
             text_document_uri,
+            line_index,
             document_tree,
             &cargo_toml_path,
             accessors,
@@ -162,18 +164,16 @@ pub fn code_action(
 
 fn code_actions_for_workspace_cargo_toml(
     text_document_uri: &tombi_uri::Uri,
+    line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
-    _cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
-    contexts: &[AccessorContext],
-    _toml_version: tombi_config::TomlVersion,
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
     if let Some(action) =
-        crate_version_code_action(text_document_uri, document_tree, accessors, contexts)
+        crate_version_code_action(text_document_uri, line_index, document_tree, accessors)
     {
-        code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+        code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
     code_actions
@@ -181,8 +181,9 @@ fn code_actions_for_workspace_cargo_toml(
 
 fn code_actions_for_crate_cargo_toml(
     text_document_uri: &tombi_uri::Uri,
-    crate_document_tree: &tombi_document_tree::DocumentTree,
-    crate_cargo_toml_path: &std::path::Path,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
+    cargo_toml_path: &std::path::Path,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
@@ -190,48 +191,59 @@ fn code_actions_for_crate_cargo_toml(
     let mut code_actions = Vec::new();
 
     if let Some((workspace_cargo_toml_path, workspace_document_tree)) = find_workspace_cargo_toml(
-        crate_cargo_toml_path,
-        get_workspace_path(crate_document_tree),
+        cargo_toml_path,
+        get_workspace_path(document_tree),
         toml_version,
     ) {
+        // Load workspace text and create line index for workspace document
+        let Ok(workspace_text) = std::fs::read_to_string(&workspace_cargo_toml_path) else {
+            return code_actions;
+        };
+        let workspace_line_index =
+            tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
+
         // Add workspace-specific code actions here
         if let Some(action) = workspace_code_action(
             text_document_uri,
-            crate_document_tree,
-            &workspace_document_tree,
+            line_index,
+            document_tree,
             accessors,
             contexts,
+            &workspace_document_tree,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+            code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
         if let Some(action) = add_workspace_dependency_code_action(
             text_document_uri,
-            crate_document_tree,
-            &workspace_document_tree,
-            &workspace_cargo_toml_path,
+            line_index,
+            document_tree,
             accessors,
             contexts,
+            &workspace_cargo_toml_path,
+            &workspace_line_index,
+            &workspace_document_tree,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+            code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
 
         if let Some(action) = use_workspace_dependency_code_action(
             text_document_uri,
-            crate_document_tree,
-            &workspace_document_tree,
+            line_index,
+            document_tree,
             accessors,
             contexts,
+            &workspace_document_tree,
         ) {
-            code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+            code_actions.push(CodeActionOrCommand::CodeAction(action));
         }
     }
 
     // Add crate-specific code actions here
     if let Some(action) =
-        crate_version_code_action(text_document_uri, crate_document_tree, accessors, contexts)
+        crate_version_code_action(text_document_uri, line_index, document_tree, accessors)
     {
-        code_actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+        code_actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
     code_actions
@@ -239,10 +251,11 @@ fn code_actions_for_crate_cargo_toml(
 
 fn workspace_code_action(
     text_document_uri: &tombi_uri::Uri,
-    crate_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     if accessors.len() < 2 {
         return None;
@@ -281,7 +294,7 @@ fn workspace_code_action(
         return None;
     }
 
-    let (_, value) = dig_accessors(crate_document_tree, &accessors[..2])?;
+    let (_, value) = dig_accessors(document_tree, &accessors[..2])?;
     dig_keys(
         workspace_document_tree,
         &["workspace", "package", parent_key.as_str()],
@@ -305,7 +318,7 @@ fn workspace_code_action(
                     version: None,
                 },
                 edits: vec![OneOf::Left(TextEdit {
-                    range: parent_key_context.range + value.symbol_range(),
+                    range: (parent_key_context.range + value.symbol_range()).into_lsp(line_index),
                     new_text: format!("{parent_key}.workspace = true"),
                 })],
             }])),
@@ -317,10 +330,11 @@ fn workspace_code_action(
 
 fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
+    line_index: &tombi_text::LineIndex,
     crate_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     if accessors.len() < 2 {
         return None;
@@ -363,7 +377,8 @@ fn use_workspace_dependency_code_action(
                             range: tombi_text::Range {
                                 start: crate_key_context.range.start,
                                 end: version.range().end,
-                            },
+                            }
+                            .into_lsp(line_index),
                             // NOTE: Convert to a workspace dependency to make it easier
                             //       to add other settings in the future.
                             new_text: format!("{crate_name} = {{ workspace = true }}"),
@@ -390,12 +405,12 @@ fn use_workspace_dependency_code_action(
 
             let text_edit = if table.kind() == TableKind::KeyValue {
                 TextEdit {
-                    range: crate_key_context.range + version.range(),
+                    range: (crate_key_context.range + version.range()).into_lsp(line_index),
                     new_text: format!("{crate_name} = {{ workspace = true }}"),
                 }
             } else {
                 TextEdit {
-                    range: key.range() + version.range(),
+                    range: (key.range() + version.range()).into_lsp(line_index),
                     new_text: "workspace = true".to_string(),
                 }
             };
@@ -426,9 +441,9 @@ fn use_workspace_dependency_code_action(
 
 fn crate_version_code_action(
     text_document_uri: &tombi_uri::Uri,
+    line_index: &tombi_text::LineIndex,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
-    _contexts: &[AccessorContext],
 ) -> Option<CodeAction> {
     if matches_accessors!(accessors, ["dependencies", _])
         || matches_accessors!(accessors, ["dev-dependencies", _])
@@ -451,11 +466,13 @@ fn crate_version_code_action(
                         },
                         edits: vec![
                             OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(version.symbol_range().start),
+                                range: tombi_text::Range::at(version.symbol_range().start)
+                                    .into_lsp(line_index),
                                 new_text: "{ version = ".to_string(),
                             }),
                             OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(version.symbol_range().end),
+                                range: tombi_text::Range::at(version.symbol_range().end)
+                                    .into_lsp(line_index),
                                 new_text: " }".to_string(),
                             }),
                         ],
@@ -492,11 +509,13 @@ fn calculate_insertion_index(existing_crate_names: &[&str], new_crate_name: &str
 /// - The dependency is not already using workspace = true
 fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
-    crate_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_cargo_toml_path: &std::path::Path,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
+    workspace_cargo_toml_path: &std::path::Path,
+    workspace_line_index: &tombi_text::LineIndex,
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     // Check if accessors match dependency patterns
     if accessors.len() < 2 {
@@ -512,7 +531,7 @@ fn add_workspace_dependency_code_action(
 
     // Extract crate name and value from member Cargo.toml
     let Some((Accessor::Key(crate_name), crate_value)) =
-        dig_accessors(crate_document_tree, &accessors[..2])
+        dig_accessors(document_tree, &accessors[..2])
     else {
         return None;
     };
@@ -544,11 +563,16 @@ fn add_workspace_dependency_code_action(
     };
 
     // Generate workspace edit for workspace.dependencies
-    let workspace_edit =
-        generate_workspace_dependencies_edit(workspace_document_tree, crate_name, crate_value)?;
+    let workspace_edit = generate_workspace_dependencies_edit(
+        workspace_line_index,
+        workspace_document_tree,
+        crate_name,
+        crate_value,
+    )?;
 
     // Generate member edit to convert to workspace = true
-    let member_edit = generate_member_workspace_true_edit(&contexts[1], crate_name, crate_value)?;
+    let member_edit =
+        generate_member_workspace_true_edit(line_index, crate_name, crate_value, &contexts[1])?;
 
     // Build WorkspaceEdit with both file changes
     let workspace_edit = WorkspaceEdit {
@@ -583,6 +607,7 @@ fn add_workspace_dependency_code_action(
 
 /// Generate TextEdit for adding dependency to workspace.dependencies
 fn generate_workspace_dependencies_edit(
+    workspace_line_index: &tombi_text::LineIndex,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     crate_name: &str,
     crate_value: &tombi_document_tree::Value,
@@ -637,23 +662,24 @@ fn generate_workspace_dependencies_edit(
     };
 
     Some(TextEdit {
-        range: insertion_range,
+        range: insertion_range.into_lsp(workspace_line_index),
         new_text: dependency_text,
     })
 }
 
 /// Generate TextEdit for converting member dependency to workspace = true
 fn generate_member_workspace_true_edit(
-    accessor_context: &AccessorContext,
+    line_index: &tombi_text::LineIndex,
     crate_name: &str,
     crate_value: &tombi_document_tree::Value,
+    accessor_context: &AccessorContext,
 ) -> Option<TextEdit> {
     let AccessorContext::Key(crate_key_context) = accessor_context else {
         return None;
     };
 
     Some(TextEdit {
-        range: crate_key_context.range + crate_value.range(),
+        range: (crate_key_context.range + crate_value.range()).into_lsp(line_index),
         new_text: format!("{} = {{ workspace = true }}", crate_name),
     })
 }

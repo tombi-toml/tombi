@@ -1,11 +1,13 @@
 use pep508_rs::{Requirement, VerbatimUrl};
 use std::str::FromStr;
 use tombi_ast::AstNode;
-use tombi_extension::{
-    CodeAction, CodeActionOrCommand, DocumentChanges, TextDocumentEdit, TextEdit, WorkspaceEdit,
+use tombi_extension::CodeActionOrCommand;
+use tombi_schema_store::Accessor;
+use tombi_text::IntoLsp;
+use tower_lsp::lsp_types::{
+    CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
+    TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
-use tombi_schema_store::{Accessor, AccessorContext};
-use tower_lsp::lsp_types::{CodeActionKind, OneOf, OptionalVersionedTextDocumentIdentifier};
 
 use crate::find_workspace_pyproject_toml;
 
@@ -196,12 +198,13 @@ fn calculate_array_insertion(
 
 fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
-    member_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_root: &tombi_ast::Root,
-    workspace_pyproject_toml_path: &std::path::Path,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
-    _contexts: &[AccessorContext],
+    workspace_pyproject_toml_path: &std::path::Path,
+    workspace_line_index: &tombi_text::LineIndex,
+    workspace_root: &tombi_ast::Root,
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     // Accessors should be at least: ["project", "dependencies", Index(n)]
     if accessors.len() < 3 {
@@ -209,8 +212,7 @@ fn add_workspace_dependency_code_action(
     }
 
     // Get the dependency string from member's document tree
-    let (_, dependency_value) =
-        tombi_document_tree::dig_accessors(member_document_tree, accessors)?;
+    let (_, dependency_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
     let tombi_document_tree::Value::String(dependency) = dependency_value else {
         return None;
@@ -257,14 +259,15 @@ fn add_workspace_dependency_code_action(
 
     // Generate workspace edit (add dependency with version, without extras)
     let workspace_edit = generate_workspace_dependency_edit(
-        workspace_document_tree,
+        workspace_line_index,
         workspace_root,
+        workspace_document_tree,
         &requirement,
         dependency,
     )?;
 
     // Generate member edit (convert to version-less format, preserving extras)
-    let member_edit = generate_member_dependency_edit(dependency, &requirement)?;
+    let member_edit = generate_member_dependency_edit(dependency, &requirement, line_index)?;
 
     // Build WorkspaceEdit with both file changes
     let workspace_edit_full = WorkspaceEdit {
@@ -299,8 +302,9 @@ fn add_workspace_dependency_code_action(
 
 /// Generate TextEdit for adding dependency to workspace [project.dependencies]
 fn generate_workspace_dependency_edit(
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    workspace_line_index: &tombi_text::LineIndex,
     workspace_root: &tombi_ast::Root,
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
     requirement: &Requirement<VerbatimUrl>,
     dependency: &tombi_document_tree::String,
 ) -> Option<TextEdit> {
@@ -344,7 +348,7 @@ fn generate_workspace_dependency_edit(
         calculate_array_insertion(&deps_ast_array, insertion_index, dependency)?;
 
     Some(TextEdit {
-        range: tombi_text::Range::at(insertion_range),
+        range: tombi_text::Range::at(insertion_range).into_lsp(workspace_line_index),
         new_text,
     })
 }
@@ -353,21 +357,22 @@ fn generate_workspace_dependency_edit(
 fn generate_member_dependency_edit(
     dependency: &tombi_document_tree::String,
     requirement: &Requirement<VerbatimUrl>,
+    line_index: &tombi_text::LineIndex,
 ) -> Option<TextEdit> {
     let new_dep_str = format_dependency_without_version(requirement);
 
     Some(TextEdit {
-        range: dependency.range(),
+        range: dependency.range().into_lsp(line_index),
         new_text: format!("\"{}\"", new_dep_str),
     })
 }
 
 fn use_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
-    member_document_tree: &tombi_document_tree::DocumentTree,
-    workspace_document_tree: &tombi_document_tree::DocumentTree,
+    line_index: &tombi_text::LineIndex,
+    document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
-    _contexts: &[AccessorContext],
+    workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     // Accessors should be at least: ["project", "dependencies", Index(n)]
     if accessors.len() < 3 {
@@ -375,7 +380,7 @@ fn use_workspace_dependency_code_action(
     }
 
     // Get the dependency string from member's document tree
-    let (_, dep_value) = tombi_document_tree::dig_accessors(member_document_tree, accessors)?;
+    let (_, dep_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
     let tombi_document_tree::Value::String(dep_string) = dep_value else {
         return None;
@@ -415,7 +420,7 @@ fn use_workspace_dependency_code_action(
     let new_dep_str = format_dependency_without_version(&requirement);
 
     // Use the string's range for replacement
-    let range = dep_string.range();
+    let range = dep_string.range().into_lsp(line_index);
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
@@ -443,8 +448,8 @@ pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
-    contexts: &[AccessorContext],
     toml_version: tombi_config::TomlVersion,
+    line_index: &tombi_text::LineIndex,
 ) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
     // Check if the file is pyproject.toml
     if !text_document_uri.path().ends_with("pyproject.toml") {
@@ -501,41 +506,53 @@ pub fn code_action(
         return Ok(None);
     };
 
+    // Load workspace text and create line index for workspace document
+    let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
+        tracing::warn!(
+            path = %workspace_path.display(),
+            "Failed to read workspace pyproject.toml"
+        );
+        return Ok(None);
+    };
+    let workspace_line_index =
+        tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
+
     // Try to provide code actions
     let mut actions = Vec::new();
 
     // Try "Use Workspace Dependency" (when dependency exists in workspace)
     if let Some(action) = use_workspace_dependency_code_action(
         text_document_uri,
+        line_index,
         document_tree,
-        &workspace_document_tree,
         accessors,
-        contexts,
+        &workspace_document_tree,
     ) {
         tracing::debug!(
             action = %action.title,
             uri = %text_document_uri,
             "Providing 'Use Workspace Dependency' code action"
         );
-        actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+        actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
     // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
     if let Some(action) = add_workspace_dependency_code_action(
         text_document_uri,
+        line_index,
         document_tree,
-        &workspace_document_tree,
-        &workspace_root,
-        &workspace_path,
         accessors,
-        contexts,
+        &workspace_path,
+        &workspace_line_index,
+        &workspace_root,
+        &workspace_document_tree,
     ) {
         tracing::debug!(
             action = %action.title,
             uri = %text_document_uri,
             "Providing 'Add to Workspace and Use Workspace Dependency' code action"
         );
-        actions.push(CodeActionOrCommand::CodeAction(Box::new(action)));
+        actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
     if actions.is_empty() {
@@ -642,13 +659,14 @@ name = "test"
         let document_tree = root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = code_action(
             &uri,
             &document_tree,
             &[],
-            &[],
             tombi_config::TomlVersion::default(),
+            &line_index,
         );
 
         assert!(result.is_ok());
@@ -672,6 +690,7 @@ dependencies = ["pydantic>=2.10"]
         let document_tree = root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = code_action(
             &uri,
@@ -680,8 +699,8 @@ dependencies = ["pydantic>=2.10"]
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
             ],
-            &[],
             tombi_config::TomlVersion::default(),
+            &line_index,
         );
 
         assert!(result.is_ok());
@@ -702,6 +721,7 @@ name = "test"
         let document_tree = root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         // Test with invalid accessor (not dependencies)
         let result = code_action(
@@ -711,8 +731,8 @@ name = "test"
                 Accessor::Key("project".to_string()),
                 Accessor::Key("name".to_string()),
             ],
-            &[],
             tombi_config::TomlVersion::default(),
+            &line_index,
         );
 
         assert!(result.is_ok());
@@ -731,12 +751,12 @@ name = "test"
 name = "member"
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let member_root = tombi_ast::Root::cast(
+        let document_root = tombi_ast::Root::cast(
             tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
                 .into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -756,18 +776,20 @@ dependencies = ["pydantic>=2.10,<3.0"]
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index =
+            tombi_text::LineIndex::new(member_toml, tombi_text::EncodingKind::default());
 
         // Call use_workspace_dependency_code_action
         let result = use_workspace_dependency_code_action(
             &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
 
         // Should return a code action to convert "pydantic>=2.10,<3.0" to "pydantic"
@@ -778,19 +800,18 @@ dependencies = ["pydantic>=2.10,<3.0"]
 
     #[test]
     fn test_use_workspace_dependency_with_extras() {
-        let member_uri =
+        let text_document_uri =
             tombi_uri::Uri::from_file_path("/workspace/member/pyproject.toml").unwrap();
-        let member_toml = r#"
+        let toml_text = r#"
 [project]
 name = "member"
-dependencies = ["pydantic[email,dotenv]>=2.10"]
+dependencies = ["pydantic[email,dotenv]>=2.10,<3.0"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
-                .into_syntax_node(),
+        let document_root = tombi_ast::Root::cast(
+            tombi_parser::parse(toml_text, tombi_config::TomlVersion::default()).into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -809,17 +830,18 @@ dependencies = ["pydantic>=2.10"]
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = use_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
 
         // Should convert to "pydantic[email,dotenv]" (preserving extras)
@@ -830,17 +852,16 @@ dependencies = ["pydantic>=2.10"]
     fn test_use_workspace_dependency_already_versionless() {
         let member_uri =
             tombi_uri::Uri::from_file_path("/workspace/member/pyproject.toml").unwrap();
-        let member_toml = r#"
+        let toml_text = r#"
 [project]
 name = "member"
 dependencies = ["pydantic"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
-                .into_syntax_node(),
+        let document_root = tombi_ast::Root::cast(
+            tombi_parser::parse(toml_text, tombi_config::TomlVersion::default()).into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -859,17 +880,18 @@ dependencies = ["pydantic>=2.10"]
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = use_workspace_dependency_code_action(
             &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
 
         // Already version-less, should not provide code action
@@ -878,19 +900,18 @@ dependencies = ["pydantic>=2.10"]
 
     #[test]
     fn test_use_workspace_dependency_not_in_workspace() {
-        let member_uri =
+        let text_document_uri =
             tombi_uri::Uri::from_file_path("/workspace/member/pyproject.toml").unwrap();
-        let member_toml = r#"
+        let toml_text = r#"
 [project]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
-                .into_syntax_node(),
+        let document_root = tombi_ast::Root::cast(
+            tombi_parser::parse(toml_text, tombi_config::TomlVersion::default()).into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -909,17 +930,18 @@ dependencies = ["pydantic>=2.10"]
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = use_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
 
         // Dependency not in workspace, should not provide code action
@@ -995,19 +1017,24 @@ dependencies = ["pydantic>=2.10"]
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let member_line_index =
+            tombi_text::LineIndex::new(member_toml, tombi_text::EncodingKind::default());
+        let workspace_line_index =
+            tombi_text::LineIndex::new(workspace_toml, tombi_text::EncodingKind::default());
 
         let result = add_workspace_dependency_code_action(
             &member_uri,
+            &member_line_index,
             &member_tree,
-            &workspace_tree,
-            &workspace_root,
-            workspace_uri.to_file_path().unwrap().as_path(),
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            workspace_uri.to_file_path().unwrap().as_path(),
+            &workspace_line_index,
+            &workspace_root,
+            &workspace_tree,
         );
 
         // Should return a code action to add "requests>=2.28" to workspace and convert member to "requests"
@@ -1056,19 +1083,24 @@ dependencies = ["pydantic>=2.10,<3.0"]
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let member_line_index =
+            tombi_text::LineIndex::new(member_toml, tombi_text::EncodingKind::default());
+        let workspace_line_index =
+            tombi_text::LineIndex::new(workspace_toml, tombi_text::EncodingKind::default());
 
         let result = add_workspace_dependency_code_action(
             &member_uri,
+            &member_line_index,
             &member_tree,
-            &workspace_tree,
-            &workspace_root,
-            workspace_uri.to_file_path().unwrap().as_path(),
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            workspace_uri.to_file_path().unwrap().as_path(),
+            &workspace_line_index,
+            &workspace_root,
+            &workspace_tree,
         );
 
         // Already in workspace, should not provide code action
@@ -1080,21 +1112,20 @@ dependencies = ["pydantic>=2.10,<3.0"]
     #[test]
     fn test_exclusive_provision_use_when_in_workspace() {
         // When dependency exists in workspace, only "Use Workspace Dependency" should be provided
-        let member_uri =
+        let text_document_uri =
             tombi_uri::Uri::from_file_path("/workspace/member/pyproject.toml").unwrap();
         let workspace_uri = tombi_uri::Uri::from_file_path("/workspace/pyproject.toml").unwrap();
 
-        let member_toml = r#"
+        let toml_text = r#"
 [project]
 name = "member"
 dependencies = ["pydantic>=2.10"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
-                .into_syntax_node(),
+        let document_root = tombi_ast::Root::cast(
+            tombi_parser::parse(toml_text, tombi_config::TomlVersion::default()).into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -1115,34 +1146,38 @@ dependencies = ["pydantic>=2.10,<3.0"]
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
+        let workspace_line_index =
+            tombi_text::LineIndex::new(workspace_toml, tombi_text::EncodingKind::default());
 
         // "Use Workspace Dependency" should be provided
         let use_result = use_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
         assert!(use_result.is_some());
 
         // "Add to Workspace" should NOT be provided
         let add_result = add_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
-            &workspace_root,
-            workspace_uri.to_file_path().unwrap().as_path(),
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            workspace_uri.to_file_path().unwrap().as_path(),
+            &workspace_line_index,
+            &workspace_root,
+            &workspace_tree,
         );
         assert!(add_result.is_none());
     }
@@ -1150,21 +1185,20 @@ dependencies = ["pydantic>=2.10,<3.0"]
     #[test]
     fn test_exclusive_provision_add_when_not_in_workspace() {
         // When dependency doesn't exist in workspace, only "Add to Workspace" should be provided
-        let member_uri =
+        let text_document_uri =
             tombi_uri::Uri::from_file_path("/workspace/member/pyproject.toml").unwrap();
         let workspace_uri = tombi_uri::Uri::from_file_path("/workspace/pyproject.toml").unwrap();
 
-        let member_toml = r#"
+        let toml_text = r#"
 [project]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
-                .into_syntax_node(),
+        let document_root = tombi_ast::Root::cast(
+            tombi_parser::parse(toml_text, tombi_config::TomlVersion::default()).into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -1185,34 +1219,38 @@ dependencies = ["pydantic>=2.10"]
         let workspace_tree = workspace_root_for_tree
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
+        let workspace_line_index =
+            tombi_text::LineIndex::new(workspace_toml, tombi_text::EncodingKind::default());
 
         // "Use Workspace Dependency" should NOT be provided
         let use_result = use_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
         assert!(use_result.is_none());
 
         // "Add to Workspace" should be provided
         let add_result = add_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
-            &workspace_root,
-            workspace_uri.to_file_path().unwrap().as_path(),
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("dependencies".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            workspace_uri.to_file_path().unwrap().as_path(),
+            &workspace_line_index,
+            &workspace_root,
+            &workspace_tree,
         );
         assert!(add_result.is_some());
     }
@@ -1220,21 +1258,20 @@ dependencies = ["pydantic>=2.10"]
     #[test]
     fn test_optional_dependencies_support() {
         // Test that code actions work for [project.optional-dependencies] too
-        let member_uri =
+        let text_document_uri =
             tombi_uri::Uri::from_file_path("/workspace/member/pyproject.toml").unwrap();
-        let member_toml = r#"
+        let toml_text = r#"
 [project]
 name = "member"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml, tombi_config::TomlVersion::default())
-                .into_syntax_node(),
+        let document_root = tombi_ast::Root::cast(
+            tombi_parser::parse(toml_text, tombi_config::TomlVersion::default()).into_syntax_node(),
         )
         .unwrap();
-        let member_tree = member_root
+        let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
 
@@ -1253,18 +1290,19 @@ dependencies = ["pytest>=7.0,<8.0"]
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
+        let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = use_workspace_dependency_code_action(
-            &member_uri,
-            &member_tree,
-            &workspace_tree,
+            &text_document_uri,
+            &line_index,
+            &document_tree,
             &[
                 Accessor::Key("project".to_string()),
                 Accessor::Key("optional-dependencies".to_string()),
                 Accessor::Key("dev".to_string()),
                 Accessor::Index(0),
             ],
-            &[],
+            &workspace_tree,
         );
 
         // Should work for optional-dependencies too

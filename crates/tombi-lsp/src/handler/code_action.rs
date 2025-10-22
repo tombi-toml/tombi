@@ -65,48 +65,43 @@ pub async fn handle_code_action(
 
     if let Some(code_action) = dot_keys_to_inline_table_code_action(
         &text_document_uri,
+        line_index,
         document_tree,
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(code_action.into_lsp(line_index));
+        code_actions.push(CodeActionOrCommand::CodeAction(code_action));
     }
 
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
+        line_index,
         document_tree,
         &accessors,
         &accessor_contexts,
     ) {
-        code_actions.push(code_action.into_lsp(line_index));
+        code_actions.push(CodeActionOrCommand::CodeAction(code_action));
     }
 
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
         &text_document_uri,
+        line_index,
         document_tree,
         &accessors,
         &accessor_contexts,
         document_source.toml_version,
     )? {
-        code_actions.extend(
-            extension_code_actions
-                .into_iter()
-                .map(|code_action| code_action.into_lsp(line_index)),
-        );
+        code_actions.extend(extension_code_actions);
     }
 
     if let Some(extension_code_actions) = tombi_extension_uv::code_action(
         &text_document_uri,
         document_tree,
         &accessors,
-        &accessor_contexts,
         document_source.toml_version,
+        line_index,
     )? {
-        code_actions.extend(
-            extension_code_actions
-                .into_iter()
-                .map(|code_action| code_action.into_lsp(line_index)),
-        );
+        code_actions.extend(extension_code_actions);
     }
 
     if code_actions.is_empty() {
