@@ -28,7 +28,7 @@
     Tombi(鳶 <a href="https://ipa-reader.com/?text=toɴbi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">/toɴbi/</a>) provides a Formatter, Linter, and Language Server
     <br><br>
     <span aria-hidden="true">📚</span>
-    <a href="https://tombi-toml.github.io/tombi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">Documentation here</a>
+    <a href="https://tombi-toml.github.io/tombi" style="font-size: 1.2em; color: #007acc; text-decoration: none;">Document</a>
     <span aria-hidden="true">📚</span>
 </div>
 
