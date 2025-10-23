@@ -56,6 +56,10 @@ mod goto_declaration_tests {
     mod pyproject_uv_schema {
         use super::*;
 
+        fn pyproject_workspace_fixtures_path() -> std::path::PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/pyproject_workspace")
+        }
+
         test_goto_declaration!(
             #[tokio::test]
             async fn tool_uv_sources_tombi_beta(
@@ -76,6 +80,88 @@ mod goto_declaration_tests {
                 "#,
                 project_root_path().join("python/tombi-beta/pyproject.toml"),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn tool_uv_sources_path_dependency(
+                r#"
+                [tool.uv.sources]
+                tombi-beta = { path = "members/app█" }
+                "#,
+                project_root_path().join("python/tombi-beta/pyproject.toml"),
+            ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn project_dependencies_workspace_jump(
+                r#"
+                [project]
+                name = "app"
+                version = "0.1.0"
+                dependencies = [
+                    "pydantic█"
+                ]
+                "#,
+                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn dependency_groups_member_candidates(
+                r#"
+                [project]
+                name = "workspace"
+                version = "0.1.0"
+                dependencies = ["anyio>=4.0"]
+
+                [tool.uv.workspace]
+                members = [
+                    "members/app",
+                    "members/app2",
+                    "members/app3",
+                ]
+
+                [dependency-groups]
+                extras = ["pydantic█"]
+                "#,
+                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn tool_uv_workspace_members_jump_to_member_project(
+                r#"
+                [tool.uv.workspace]
+                members = ["members/app█"]
+                "#,
+                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+            ]);
+        );
+
+        test_goto_declaration!(
+            #[tokio::test]
+            async fn tool_uv_workspace_members_glob_multiple_candidates(
+                r#"
+                [tool.uv.workspace]
+                members = ["members/app█*"]
+                "#,
+                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+            ) -> Ok([
+                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app3/pyproject.toml"),
+            ]);
         );
     }
 

@@ -168,7 +168,7 @@ fn get_workspace_dependency_definition(
     })
 }
 
-fn get_workspace_project_dependency_definition(
+pub(crate) fn get_workspace_project_dependency_definition(
     package_name: &str,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
@@ -201,7 +201,7 @@ fn get_workspace_project_dependency_definition(
     })
 }
 
-fn get_workspace_member_dependency_definitions(
+pub(crate) fn get_workspace_member_dependency_definitions(
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     workspace_pyproject_toml_path: &std::path::Path,
     package_name: &str,
