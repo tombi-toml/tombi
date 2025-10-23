@@ -132,3 +132,35 @@ serde = "1.0"
 [dependencies]
 serde = { version = "1.0" }
 ```
+
+#### Add to Workspace and Inherit Dependency
+
+Promote versioned dependencies into the workspace while switching members to use the shared entry:
+
+```toml
+# Before
+# Workspace Cargo.toml
+[workspace.dependencies]
+# (serde not present)
+
+# Member Cargo.toml
+[dependencies]
+serde = "1.0"
+
+# After applying "Add to Workspace and Inherit Dependency"
+[workspace.dependencies]
+serde = "1.0"
+
+[dependencies]
+serde = { workspace = true }
+```
+
+The workspace entry keeps the original requirement, and the member now follows the workspace-managed version.
+
+### Document Links
+
+The extension enriches `Cargo.toml` with contextual document links so you can jump directly to related resources:
+- Entries in `[workspace.members]` and `[workspace.default-members]` open the corresponding member crate's `Cargo.toml`.
+- Dependencies in member manifests surface links to the workspace definition (when `workspace = true`), local path manifests, git repositories, custom registries, or crates.io when applicable.
+- `[workspace.dependencies]` entries provide quick access both to the workspace declaration and the external source (registry/git/crates.io).
+- Fields such as `package.workspace`, `lints.workspace`, and `[bin]` targets link back to their workspace counterparts or the referenced source file for faster navigation.
