@@ -17,6 +17,7 @@ please use it as an experimental feature with the understanding that support may
 For example, suppose you have a `pyproject.toml` like the one below:
 
 #### Go to package definition from `dependencies`
+
 ```toml
 [project]
 name = "albatross"
@@ -46,3 +47,56 @@ bird-feeder = { workspace = true }
 ```
 
 In this case, when your cursor is on `workspace`, executing "Go to Declaration" will navigate you to the workspace definition in the **workspace**'s `pyproject.toml` file.
+
+`Go to Declaration` also works when the cursor is placed on the dependency string itself (例: `"bird-feeder"`).  
+If the package comes from `tool.uv.sources` with `workspace = true`, the command jumps to the member entry in the workspace `pyproject.toml`, letting you inspect which pattern pulled the project into the workspace.
+
+### Code Actions
+
+When editing member `pyproject.toml` files, additional refactor actions help you converge on workspace-managed dependencies.
+
+#### Use Workspace Dependency
+
+If the workspace already pins the dependency, select "Use Workspace Dependency" to strip the version requirement (and keep extras) so the member follows the workspace definition:
+
+```toml
+# Before
+[project]
+dependencies = ["pydantic>=2.10,<3.0"]
+
+# After applying "Use Workspace Dependency"
+[project]
+dependencies = ["pydantic"]
+```
+
+The action also works inside `[project.optional-dependencies.*]` groups.
+
+#### Add to Workspace and Use Workspace Dependency
+
+When the workspace has not registered the dependency yet, this action adds the current versioned requirement to the workspace's `[project.dependencies]` array and rewrites the member entry to use the shared dependency:
+
+```toml
+# Before
+# Workspace pyproject.toml
+[project]
+dependencies = []
+
+# Member pyproject.toml
+[project]
+dependencies = ["pydantic>=2.10,<3.0"]
+
+# After applying "Add to Workspace and Use Workspace Dependency"
+[project]
+dependencies = ["pydantic>=2.10,<3.0"]
+
+# Member pyproject.toml
+[project]
+dependencies = ["pydantic"]
+```
+
+### Document Links
+
+The extension annotates key uv metadata with document links so you can jump to the right file or website in one click:
+- Entries in `[tool.uv.workspace.members]` (and matches found via globs) open the associated member project's `pyproject.toml`.
+- Sources declared under `[tool.uv.sources]` with `workspace = true` expose links to both the member manifest and the workspace root configuration.
+- Dependency arrays in `[project.dependencies]`, `[project.optional-dependencies.*]`, and `[dependency-groups.*]` link to local workspace packages when available, or fall back to the package page on PyPI.
