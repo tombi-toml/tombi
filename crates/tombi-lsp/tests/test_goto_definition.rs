@@ -3,10 +3,6 @@ use tombi_test_lib::project_root_path;
 mod goto_definition_tests {
     use super::*;
 
-    fn goto_definition_fixtures_path() -> std::path::PathBuf {
-        project_root_path().join("crates/tombi-lsp/tests/fixtures/goto_definition")
-    }
-
     mod document_schema {
         use super::*;
 
@@ -341,6 +337,10 @@ mod goto_definition_tests {
     mod pyproject_uv_workspace_dependencies {
         use super::*;
 
+        fn pyproject_workspace_fixtures_path() -> std::path::PathBuf {
+            project_root_path().join("crates/tombi-lsp/tests/fixtures/pyproject_workspace")
+        }
+
         test_goto_definition!(
             #[tokio::test]
             async fn project_dependencies_inherit_workspace_version(
@@ -352,11 +352,9 @@ mod goto_definition_tests {
                     "pydantic█"
                 ]
                 "#,
-                goto_definition_fixtures_path().join(
-                    "workspace_project_dependency/members/app/pyproject.toml"
-                ),
+                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
             ) -> Ok([
-                goto_definition_fixtures_path().join("workspace_project_dependency/pyproject.toml")
+                pyproject_workspace_fixtures_path().join("pyproject.toml")
             ]);
         );
 
@@ -376,10 +374,10 @@ mod goto_definition_tests {
                     "members/app3",
                 ]
                 "#,
-                goto_definition_fixtures_path().join("workspace_project_dependency/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("pyproject.toml"),
             ) -> Ok([
-                goto_definition_fixtures_path().join("workspace_project_dependency/members/app/pyproject.toml"),
-                goto_definition_fixtures_path().join("workspace_project_dependency/members/app2/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
             ]);
         );
     }

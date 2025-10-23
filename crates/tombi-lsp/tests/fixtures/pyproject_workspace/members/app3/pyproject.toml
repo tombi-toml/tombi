@@ -2,3 +2,6 @@
 name = "app3"
 version = "0.1.0"
 dependencies = ["anyio"]
+
+[tool.uv.sources]
+app2 = { workspace = true }
