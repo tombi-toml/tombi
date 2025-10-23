@@ -121,15 +121,11 @@ fn goto_declaration_for_dependency_package(
         }
     }
 
-    let mut has_workspace_dependency = false;
     if let Some(location) =
         get_workspace_project_dependency_definition(package_name, pyproject_toml_path, toml_version)
     {
-        has_workspace_dependency = true;
         locations.push(location);
-    }
-
-    if !has_workspace_dependency {
+    } else {
         if let Some((workspace_pyproject_toml_path, _, workspace_document_tree)) =
             find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
         {
