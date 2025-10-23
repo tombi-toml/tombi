@@ -2,9 +2,13 @@
 name = "workspace"
 version = "0.1.0"
 dependencies = [
-    "anyio>=4.0",
-    "pydantic>=2.10",
+  "anyio>=4.0",
+  "pydantic>=2.10",
 ]
 
 [tool.uv.workspace]
-members = ["members/app"]
+members = [
+  "members/app",
+  "members/app2",
+  "members/app3",
+]

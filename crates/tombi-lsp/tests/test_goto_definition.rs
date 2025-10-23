@@ -3,6 +3,10 @@ use tombi_test_lib::project_root_path;
 mod goto_definition_tests {
     use super::*;
 
+    fn goto_definition_fixtures_path() -> std::path::PathBuf {
+        project_root_path().join("crates/tombi-lsp/tests/fixtures/goto_definition")
+    }
+
     mod document_schema {
         use super::*;
 
@@ -348,12 +352,35 @@ mod goto_definition_tests {
                     "pydantic█"
                 ]
                 "#,
-                project_root_path().join(
-                    "crates/tombi-lsp/tests/fixtures/goto_definition/workspace_project_dependency/members/app/pyproject.toml"
+                goto_definition_fixtures_path().join(
+                    "workspace_project_dependency/members/app/pyproject.toml"
                 ),
-            ) -> Ok([project_root_path().join(
-                "crates/tombi-lsp/tests/fixtures/goto_definition/workspace_project_dependency/pyproject.toml"
-            )]);
+            ) -> Ok([
+                goto_definition_fixtures_path().join("workspace_project_dependency/pyproject.toml")
+            ]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn workspace_dependencies_list_member_usages(
+                r#"
+                [project]
+                name = "app"
+                version = "0.1.0"
+                dependencies = ["pydantic█"]
+
+                [tool.uv.workspace]
+                members = [
+                    "members/app",
+                    "members/app2",
+                    "members/app3",
+                ]
+                "#,
+                goto_definition_fixtures_path().join("workspace_project_dependency/pyproject.toml"),
+            ) -> Ok([
+                goto_definition_fixtures_path().join("workspace_project_dependency/members/app/pyproject.toml"),
+                goto_definition_fixtures_path().join("workspace_project_dependency/members/app2/pyproject.toml"),
+            ]);
         );
     }
 
