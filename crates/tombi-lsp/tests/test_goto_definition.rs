@@ -334,6 +334,29 @@ mod goto_definition_tests {
         );
     }
 
+    mod pyproject_uv_workspace_dependencies {
+        use super::*;
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn project_dependencies_inherit_workspace_version(
+                r#"
+                [project]
+                name = "app"
+                version = "0.1.0"
+                dependencies = [
+                    "pydantic█"
+                ]
+                "#,
+                project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/goto_definition/workspace_project_dependency/members/app/pyproject.toml"
+                ),
+            ) -> Ok([project_root_path().join(
+                "crates/tombi-lsp/tests/fixtures/goto_definition/workspace_project_dependency/pyproject.toml"
+            )]);
+        );
+    }
+
     mod tombi_schema {
         use super::*;
 

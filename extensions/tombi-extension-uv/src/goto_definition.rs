@@ -83,31 +83,41 @@ fn goto_definition_for_dependency_package(
     };
 
     // Parse the PEP 508 requirement to extract package name
-    let package_name = match Requirement::<VerbatimUrl>::from_str(dependency.value()) {
-        Ok(requirement) => requirement.name,
+    let requirement = match Requirement::<VerbatimUrl>::from_str(dependency.value()) {
+        Ok(requirement) => requirement,
         Err(_) => return Ok(None),
     };
+    let package_name = requirement.name.as_ref();
 
     // Check if this package is in tool.uv.sources
-    let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"])
-    else {
-        return Ok(None);
-    };
-    let Some((_, Value::Table(source_table))) = sources.get_key_value(package_name.as_ref()) else {
-        return Ok(None);
-    };
-    if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace") {
-        if !is_workspace.value() {
-            return Ok(None);
+    if let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"]) {
+        if let Some((_, Value::Table(source_table))) = sources.get_key_value(package_name) {
+            if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace")
+            {
+                if !is_workspace.value() {
+                    return Ok(None);
+                }
+                return Ok(get_workspace_dependency_definition(
+                    package_name,
+                    pyproject_toml_path,
+                    toml_version,
+                ));
+            }
+            if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
+                return Ok(get_path_dependency_definition(path.value(), toml_version));
+            }
         }
-        return Ok(get_workspace_dependency_definition(
+    }
+
+    // Package references without version info should jump to workspace definition when available
+    if requirement.version_or_url.is_none() {
+        if let Some(location) = get_workspace_project_dependency_definition(
             package_name.as_ref(),
             pyproject_toml_path,
             toml_version,
-        ));
-    }
-    if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
-        return Ok(get_path_dependency_definition(path.value(), toml_version));
+        ) {
+            return Ok(Some(location));
+        }
     }
 
     Ok(None)
@@ -139,6 +149,39 @@ fn get_workspace_dependency_definition(
     Some(tombi_extension::DefinitionLocation {
         uri: member_pyproject_toml_uri,
         range: package_name.unquoted_range(),
+    })
+}
+
+fn get_workspace_project_dependency_definition(
+    package_name: &str,
+    pyproject_toml_path: &std::path::Path,
+    toml_version: TomlVersion,
+) -> Option<tombi_extension::DefinitionLocation> {
+    let (workspace_pyproject_toml_path, _, workspace_document_tree) =
+        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
+
+    let Some((_, Value::Array(workspace_dependencies))) =
+        dig_keys(&workspace_document_tree, &["project", "dependencies"])
+    else {
+        return None;
+    };
+
+    let workspace_dependency = workspace_dependencies.iter().find_map(|value| {
+        if let Value::String(dep_string) = value {
+            Requirement::<VerbatimUrl>::from_str(dep_string.value())
+                .ok()
+                .filter(|requirement| requirement.name.as_ref() == package_name)
+                .map(|_| dep_string)
+        } else {
+            None
+        }
+    })?;
+
+    let workspace_uri = tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path).ok()?;
+
+    Some(tombi_extension::DefinitionLocation {
+        uri: workspace_uri,
+        range: workspace_dependency.unquoted_range(),
     })
 }
 

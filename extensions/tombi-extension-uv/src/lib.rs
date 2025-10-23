@@ -78,8 +78,7 @@ fn find_workspace_pyproject_toml(
             };
 
             // Check if this pyproject.toml has a [tool.uv.workspace] section
-            if tombi_document_tree::dig_keys(&document_tree, &["tool", "uv", "workspace"])
-                .is_some()
+            if tombi_document_tree::dig_keys(&document_tree, &["tool", "uv", "workspace"]).is_some()
             {
                 return Some((workspace_pyproject_toml_path, root, document_tree));
             }
