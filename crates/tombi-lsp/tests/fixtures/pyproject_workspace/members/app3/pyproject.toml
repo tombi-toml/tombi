@@ -1,7 +1,10 @@
 [project]
 name = "app3"
 version = "0.1.0"
-dependencies = ["anyio"]
+dependencies = [
+  "anyio",
+  "app2",
+]
 
 [tool.uv.sources]
 app2 = { workspace = true }
