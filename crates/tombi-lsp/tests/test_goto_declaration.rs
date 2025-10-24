@@ -130,10 +130,7 @@ mod goto_declaration_tests {
                 extras = ["pydantic█"]
                 "#,
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
-            ) -> Ok([
-                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
-                pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
-            ]);
+            ) -> Ok([]);
         );
 
         test_goto_declaration!(

@@ -8,8 +8,7 @@ use tombi_schema_store::matches_accessors;
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml,
     goto_definition::{
-        get_path_dependency_definition, get_workspace_member_dependency_definitions,
-        get_workspace_project_dependency_definition,
+        get_path_dependency_definition, get_workspace_project_dependency_definition,
     },
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
 };
@@ -125,35 +124,6 @@ fn goto_declaration_for_dependency_package(
         get_workspace_project_dependency_definition(package_name, pyproject_toml_path, toml_version)
     {
         locations.push(location);
-    } else {
-        if let Some((workspace_pyproject_toml_path, _, workspace_document_tree)) =
-            find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
-        {
-            let mut member_locations = get_workspace_member_dependency_definitions(
-                &workspace_document_tree,
-                &workspace_pyproject_toml_path,
-                package_name,
-                toml_version,
-            );
-            if member_locations.is_empty()
-                && dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some()
-            {
-                member_locations = get_workspace_member_dependency_definitions(
-                    document_tree,
-                    pyproject_toml_path,
-                    package_name,
-                    toml_version,
-                );
-            }
-            locations.extend(member_locations);
-        } else if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
-            locations.extend(get_workspace_member_dependency_definitions(
-                document_tree,
-                pyproject_toml_path,
-                package_name,
-                toml_version,
-            ));
-        }
     }
 
     Ok(locations)
