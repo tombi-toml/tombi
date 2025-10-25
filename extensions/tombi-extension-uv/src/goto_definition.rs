@@ -190,27 +190,24 @@ pub(crate) fn collect_workspace_project_dependency_definitions(
     {
         workspace_dependencies.extend(collect_requirements_from_dependencies(dependencies.iter()));
     }
-    if let Some((_, Value::Array(dependencies))) = dig_keys(
+    if let Some((_, Value::Table(dependencies))) = dig_keys(
         &workspace_document_tree,
         &["project", "optional-dependencies"],
     ) {
-        workspace_dependencies.extend(collect_requirements_from_dependencies(dependencies.iter()));
+        for value in dependencies.values() {
+            if let Value::Array(array) = value {
+                workspace_dependencies.extend(collect_requirements_from_dependencies(array.iter()));
+            }
+        }
     }
     if let Some((_, Value::Table(dependencies))) =
         dig_keys(&workspace_document_tree, &["dependency-groups"])
     {
-        workspace_dependencies.extend(collect_requirements_from_dependencies(
-            dependencies
-                .values()
-                .flat_map(|value| {
-                    if let Value::Array(dependencies) = value {
-                        Some(dependencies.iter())
-                    } else {
-                        None
-                    }
-                })
-                .flatten(),
-        ));
+        for value in dependencies.values() {
+            if let Value::Array(array) = value {
+                workspace_dependencies.extend(collect_requirements_from_dependencies(array.iter()));
+            }
+        }
     }
 
     let Ok(workspace_uri) = tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path) else {

@@ -2,7 +2,7 @@ use pep508_rs::{Requirement, VerbatimUrl};
 use std::str::FromStr;
 use tombi_ast::AstNode;
 use tombi_extension::CodeActionOrCommand;
-use tombi_schema_store::Accessor;
+use tombi_schema_store::{matches_accessors, Accessor};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
@@ -39,28 +39,36 @@ pub fn code_action(
         }
     }
 
-    // Check if accessors match [project.dependencies] or [project.optional-dependencies.*]
-    if accessors.len() < 3 {
-        return Ok(None);
+    if matches_accessors!(accessors, ["project", "dependencies", _])
+        || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
+        || matches_accessors!(accessors, ["dependency-groups", _, _])
+    {
+        Ok(code_action_for_dependency_package(
+            text_document_uri,
+            document_tree,
+            accessors,
+            toml_version,
+            line_index,
+        ))
+    } else {
+        Ok(None)
     }
+}
 
-    let is_project_dependencies = matches!(accessors.first(), Some(Accessor::Key(key)) if key == "project")
-        && matches!(accessors.get(1), Some(Accessor::Key(key)) if key == "dependencies");
-
-    let is_optional_dependencies = matches!(accessors.first(), Some(Accessor::Key(key)) if key == "project")
-        && matches!(accessors.get(1), Some(Accessor::Key(key)) if key == "optional-dependencies");
-
-    if !is_project_dependencies && !is_optional_dependencies {
-        return Ok(None);
-    }
-
+fn code_action_for_dependency_package(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    toml_version: tombi_config::TomlVersion,
+    line_index: &tombi_text::LineIndex,
+) -> Option<Vec<CodeActionOrCommand>> {
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
         tracing::warn!(
             uri = %text_document_uri,
             "Failed to convert URI to file path"
         );
-        return Ok(None);
+        return None;
     };
 
     let Some((workspace_path, workspace_root, workspace_document_tree)) =
@@ -70,7 +78,7 @@ pub fn code_action(
             member_path = %pyproject_toml_path.display(),
             "No workspace pyproject.toml found"
         );
-        return Ok(None);
+        return None;
     };
 
     // Load workspace text and create line index for workspace document
@@ -79,7 +87,7 @@ pub fn code_action(
             path = %workspace_path.display(),
             "Failed to read workspace pyproject.toml"
         );
-        return Ok(None);
+        return None;
     };
     let workspace_line_index =
         tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
@@ -95,11 +103,6 @@ pub fn code_action(
         accessors,
         &workspace_document_tree,
     ) {
-        tracing::debug!(
-            action = %action.title,
-            uri = %text_document_uri,
-            "Providing 'Use Workspace Dependency' code action"
-        );
         actions.push(CodeActionOrCommand::CodeAction(action));
     }
 
@@ -123,14 +126,10 @@ pub fn code_action(
     }
 
     if actions.is_empty() {
-        tracing::trace!(
-            uri = %text_document_uri,
-            "No code actions available for this context"
-        );
-        Ok(None)
-    } else {
-        Ok(Some(actions))
+        return None;
     }
+
+    Some(actions)
 }
 
 fn parse_dependency(dep_string: &str) -> Option<Requirement<VerbatimUrl>> {
