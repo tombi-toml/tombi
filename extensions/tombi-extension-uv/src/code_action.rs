@@ -1,5 +1,4 @@
 use pep508_rs::{Requirement, VerbatimUrl};
-use std::str::FromStr;
 use tombi_ast::AstNode;
 use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::{matches_accessors, Accessor};
@@ -9,7 +8,7 @@ use tower_lsp::lsp_types::{
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
-use crate::find_workspace_pyproject_toml;
+use crate::{find_workspace_pyproject_toml, parse_requirement};
 
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
@@ -130,20 +129,6 @@ fn code_action_for_dependency_package(
     }
 
     Some(actions)
-}
-
-fn parse_dependency(dep_string: &str) -> Option<Requirement<VerbatimUrl>> {
-    match Requirement::<VerbatimUrl>::from_str(dep_string) {
-        Ok(requirement) => Some(requirement),
-        Err(e) => {
-            tracing::debug!(
-                dependency = %dep_string,
-                error = %e,
-                "Failed to parse PEP 508 dependency string"
-            );
-            None
-        }
-    }
 }
 
 fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> String {
@@ -335,12 +320,12 @@ fn add_workspace_dependency_code_action(
     // Get the dependency string from member's document tree
     let (_, dependency_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::String(dependency) = dependency_value else {
+    let tombi_document_tree::Value::String(dep_str) = dependency_value else {
         return None;
     };
 
     // Parse the dependency
-    let requirement = parse_dependency(dependency.value())?;
+    let requirement = parse_requirement(dep_str.value())?;
 
     // If no version specified, don't provide code action
     if requirement.version_or_url.is_none() {
@@ -357,8 +342,8 @@ fn add_workspace_dependency_code_action(
 
     // Check if the workspace already has a dependency with the same package name
     let workspace_has_dep = workspace_deps_array.iter().any(|dep| {
-        if let tombi_document_tree::Value::String(ws_dep_str) = dep {
-            if let Some(ws_requirement) = parse_dependency(ws_dep_str.value()) {
+        if let tombi_document_tree::Value::String(dep_str) = dep {
+            if let Some(ws_requirement) = parse_requirement(dep_str.value()) {
                 return ws_requirement.name == requirement.name;
             }
         }
@@ -384,11 +369,11 @@ fn add_workspace_dependency_code_action(
         workspace_root,
         workspace_document_tree,
         &requirement,
-        dependency,
+        dep_str,
     )?;
 
     // Generate member edit (convert to version-less format, preserving extras)
-    let member_edit = generate_member_dependency_edit(dependency, &requirement, line_index)?;
+    let member_edit = generate_member_dependency_edit(dep_str, &requirement, line_index)?;
 
     // Build WorkspaceEdit with both file changes
     let workspace_edit_full = WorkspaceEdit {
@@ -449,7 +434,7 @@ fn generate_workspace_dependency_edit(
         .iter()
         .filter_map(|dep| {
             if let tombi_document_tree::Value::String(dep_str) = dep {
-                parse_dependency(dep_str.value()).map(|req| req.name.to_string())
+                parse_requirement(dep_str.value()).map(|req| req.name.to_string())
             } else {
                 None
             }
@@ -503,12 +488,12 @@ fn use_workspace_dependency_code_action(
     // Get the dependency string from member's document tree
     let (_, dep_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::String(dep_string) = dep_value else {
+    let tombi_document_tree::Value::String(dep_str) = dep_value else {
         return None;
     };
 
     // Parse the dependency
-    let requirement = parse_dependency(dep_string.value())?;
+    let requirement = parse_requirement(dep_str.value())?;
 
     // If no version specified, don't provide code action
     if requirement.version_or_url.is_none() {
@@ -525,8 +510,8 @@ fn use_workspace_dependency_code_action(
 
     // Check if the workspace has a dependency with the same package name
     let workspace_has_dep = workspace_deps_array.iter().any(|dep| {
-        if let tombi_document_tree::Value::String(ws_dep_str) = dep {
-            if let Some(ws_requirement) = parse_dependency(ws_dep_str.value()) {
+        if let tombi_document_tree::Value::String(dep_str) = dep {
+            if let Some(ws_requirement) = parse_requirement(dep_str.value()) {
                 return ws_requirement.name == requirement.name;
             }
         }
@@ -541,7 +526,7 @@ fn use_workspace_dependency_code_action(
     let new_dep_str = format_dependency_without_version(&requirement);
 
     // Use the string's range for replacement
-    let range = dep_string.range().into_lsp(line_index);
+    let range = dep_str.range().into_lsp(line_index);
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
@@ -585,7 +570,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_basic_with_version() {
-        let requirement = parse_dependency("pydantic>=2.10,<3.0").unwrap();
+        let requirement = parse_requirement("pydantic>=2.10,<3.0").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         assert!(requirement.extras.is_empty());
         assert!(requirement.version_or_url.is_some());
@@ -593,7 +578,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_with_extras() {
-        let requirement = parse_dependency("pydantic[email,dotenv]>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic[email,dotenv]>=2.10").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         let extras: Vec<String> = requirement.extras.iter().map(|e| e.to_string()).collect();
         assert_eq!(extras, vec!["email", "dotenv"]);
@@ -602,7 +587,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_without_version() {
-        let requirement = parse_dependency("pydantic").unwrap();
+        let requirement = parse_requirement("pydantic").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         assert!(requirement.extras.is_empty());
         assert!(requirement.version_or_url.is_none());
@@ -610,7 +595,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_with_extras_no_version() {
-        let requirement = parse_dependency("pydantic[email]").unwrap();
+        let requirement = parse_requirement("pydantic[email]").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         let extras: Vec<String> = requirement.extras.iter().map(|e| e.to_string()).collect();
         assert_eq!(extras, vec!["email"]);
@@ -619,27 +604,27 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_invalid() {
-        let result = parse_dependency("invalid package name!!!");
+        let result = parse_requirement("invalid package name!!!");
         assert!(result.is_none());
     }
 
     #[test]
     fn test_format_dependency_without_extras() {
-        let requirement = parse_dependency("pydantic>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic>=2.10").unwrap();
         let formatted = format_dependency_without_version(&requirement);
         assert_eq!(formatted, "pydantic");
     }
 
     #[test]
     fn test_format_dependency_with_one_extra() {
-        let requirement = parse_dependency("pydantic[email]>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic[email]>=2.10").unwrap();
         let formatted = format_dependency_without_version(&requirement);
         assert_eq!(formatted, "pydantic[email]");
     }
 
     #[test]
     fn test_format_dependency_with_multiple_extras() {
-        let requirement = parse_dependency("pydantic[email,dotenv]>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic[email,dotenv]>=2.10").unwrap();
         let formatted = format_dependency_without_version(&requirement);
         assert_eq!(formatted, "pydantic[email,dotenv]");
     }

@@ -3,11 +3,14 @@ mod document_link;
 mod goto_declaration;
 mod goto_definition;
 
+use std::str::FromStr;
+
 pub use code_action::code_action;
 pub use document_link::document_link;
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 use itertools::Itertools;
+use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_accessors, TryIntoDocumentTree};
@@ -411,4 +414,18 @@ fn find_member_project_toml(
     }
 
     None
+}
+
+fn parse_requirement(dependency: &str) -> Option<Requirement<VerbatimUrl>> {
+    match Requirement::<VerbatimUrl>::from_str(dependency) {
+        Ok(requirement) => Some(requirement),
+        Err(e) => {
+            tracing::debug!(
+                dependency = %dependency,
+                error = %e,
+                "Failed to parse PEP 508 dependency string"
+            );
+            None
+        }
+    }
 }

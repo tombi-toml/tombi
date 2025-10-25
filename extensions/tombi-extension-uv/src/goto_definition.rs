@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use itertools::Itertools;
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
@@ -9,7 +7,7 @@ use tombi_schema_store::{matches_accessors, Accessor};
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
-    load_pyproject_toml_document_tree,
+    load_pyproject_toml_document_tree, parse_requirement,
 };
 
 #[derive(Debug, Clone)]
@@ -82,14 +80,13 @@ fn goto_definition_for_dependency_package(
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
     // Get the dependency string from the current position
-    let Some((_, Value::String(dependency))) = dig_accessors(document_tree, accessors) else {
+    let Some((_, Value::String(dep_str))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::with_capacity(0));
     };
 
     // Parse the PEP 508 requirement to extract package name
-    let requirement = match Requirement::<VerbatimUrl>::from_str(dependency.value()) {
-        Ok(requirement) => requirement,
-        Err(_) => return Ok(Vec::with_capacity(0)),
+    let Some(requirement) = parse_requirement(dep_str.value()) else {
+        return Ok(Vec::with_capacity(0));
     };
     let package_name = requirement.name.as_ref();
 
@@ -347,13 +344,11 @@ fn collect_requirements_from_dependencies<'a>(
 ) -> Vec<Dependency<'a>> {
     dependencies
         .filter_map(|value| {
-            if let Value::String(dependency) = value {
-                Requirement::<VerbatimUrl>::from_str(dependency.value())
-                    .ok()
-                    .map(|requirement| Dependency {
-                        requirement,
-                        dependency,
-                    })
+            if let Value::String(dep_str) = value {
+                parse_requirement(dep_str.value()).map(|requirement| Dependency {
+                    requirement,
+                    dependency: dep_str,
+                })
             } else {
                 None
             }
