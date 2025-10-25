@@ -1,5 +1,4 @@
 use pep508_rs::{Requirement, VerbatimUrl};
-use std::str::FromStr;
 use tombi_ast::AstNode;
 use tombi_extension::CodeActionOrCommand;
 use tombi_schema_store::{matches_accessors, Accessor};
@@ -9,7 +8,10 @@ use tower_lsp::lsp_types::{
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
-use crate::find_workspace_pyproject_toml;
+use crate::{
+    collect_dependency_requirements_from_document_tree, find_workspace_pyproject_toml,
+    parse_dependency_requirement, parse_requirement, DependencyRequirement,
+};
 
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
@@ -132,20 +134,6 @@ fn code_action_for_dependency_package(
     Some(actions)
 }
 
-fn parse_dependency(dep_string: &str) -> Option<Requirement<VerbatimUrl>> {
-    match Requirement::<VerbatimUrl>::from_str(dep_string) {
-        Ok(requirement) => Some(requirement),
-        Err(e) => {
-            tracing::debug!(
-                dependency = %dep_string,
-                error = %e,
-                "Failed to parse PEP 508 dependency string"
-            );
-            None
-        }
-    }
-}
-
 fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> String {
     let name = requirement.name.to_string();
     if requirement.extras.is_empty() {
@@ -232,10 +220,10 @@ fn calculate_insertion_index(existing_package_names: &[&str], new_package_name: 
 fn get_ast_array_from_document_tree(
     root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
-    keys: &[&str],
+    accessors: &[Accessor],
 ) -> Option<tombi_ast::Array> {
     // Get the value from document tree to find its range
-    let (_, value) = tombi_document_tree::dig_keys(document_tree, keys)?;
+    let (_, value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
     let tombi_document_tree::Value::Array(doc_array) = value else {
         return None;
@@ -327,46 +315,37 @@ fn add_workspace_dependency_code_action(
     workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
-    // Accessors should be at least: ["project", "dependencies", Index(n)]
-    if accessors.len() < 3 {
-        return None;
-    }
-
     // Get the dependency string from member's document tree
     let (_, dependency_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::String(dependency) = dependency_value else {
+    let tombi_document_tree::Value::String(dep_str) = dependency_value else {
         return None;
     };
 
     // Parse the dependency
-    let requirement = parse_dependency(dependency.value())?;
+    let dependency_requirement = parse_dependency_requirement(dep_str)?;
 
     // If no version specified, don't provide code action
-    if requirement.version_or_url.is_none() {
+    if dependency_requirement.version_or_url().is_none() {
         return None;
     }
 
     // Check if this dependency already exists in workspace
-    let (_, workspace_deps) =
-        tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
-
-    let tombi_document_tree::Value::Array(workspace_deps_array) = workspace_deps else {
+    let workspace_dependencies =
+        collect_dependency_requirements_from_document_tree(&workspace_document_tree);
+    if workspace_dependencies
+        .iter()
+        .find(
+            |DependencyRequirement {
+                 requirement: workspace_requirement,
+                 ..
+             }| {
+                dependency_requirement.requirement.name == workspace_requirement.name
+            },
+        )
+        .is_some()
+    {
         return None;
-    };
-
-    // Check if the workspace already has a dependency with the same package name
-    let workspace_has_dep = workspace_deps_array.iter().any(|dep| {
-        if let tombi_document_tree::Value::String(ws_dep_str) = dep {
-            if let Some(ws_requirement) = parse_dependency(ws_dep_str.value()) {
-                return ws_requirement.name == requirement.name;
-            }
-        }
-        false
-    });
-
-    if workspace_has_dep {
-        return None; // Already in workspace
     }
 
     // Generate workspace URI
@@ -380,15 +359,15 @@ fn add_workspace_dependency_code_action(
 
     // Generate workspace edit (add dependency with version, without extras)
     let workspace_edit = generate_workspace_dependency_edit(
+        accessors,
         workspace_line_index,
         workspace_root,
         workspace_document_tree,
-        &requirement,
-        dependency,
+        &dependency_requirement,
     )?;
 
     // Generate member edit (convert to version-less format, preserving extras)
-    let member_edit = generate_member_dependency_edit(dependency, &requirement, line_index)?;
+    let member_edit = generate_member_dependency_edit(&dependency_requirement, line_index)?;
 
     // Build WorkspaceEdit with both file changes
     let workspace_edit_full = WorkspaceEdit {
@@ -423,15 +402,26 @@ fn add_workspace_dependency_code_action(
 
 /// Generate TextEdit for adding dependency to workspace [project.dependencies]
 fn generate_workspace_dependency_edit(
+    accessors: &[Accessor],
     workspace_line_index: &tombi_text::LineIndex,
     workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
-    requirement: &Requirement<VerbatimUrl>,
-    dependency: &tombi_document_tree::String,
+    dependency_requirement: &DependencyRequirement,
 ) -> Option<TextEdit> {
     // Get workspace.dependencies array from document tree
-    let (_, workspace_deps) =
-        tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
+    let (workspace_accessors, workspace_deps) = match tombi_document_tree::dig_accessors(
+        workspace_document_tree,
+        &accessors[..accessors.len() - 1],
+    ) {
+        Some((_, value)) => (accessors[..accessors.len() - 1].to_vec(), value),
+        None => (
+            vec![
+                Accessor::Key("project".to_string()),
+                Accessor::Key("dependencies".to_string()),
+            ],
+            tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?.1,
+        ),
+    };
 
     let tombi_document_tree::Value::Array(deps_doc_array) = workspace_deps else {
         return None;
@@ -441,7 +431,7 @@ fn generate_workspace_dependency_edit(
     let deps_ast_array = get_ast_array_from_document_tree(
         workspace_root,
         workspace_document_tree,
-        &["project", "dependencies"],
+        &workspace_accessors,
     )?;
 
     // Get existing package names
@@ -449,7 +439,7 @@ fn generate_workspace_dependency_edit(
         .iter()
         .filter_map(|dep| {
             if let tombi_document_tree::Value::String(dep_str) = dep {
-                parse_dependency(dep_str.value()).map(|req| req.name.to_string())
+                parse_requirement(dep_str.value()).map(|req| req.name.to_string())
             } else {
                 None
             }
@@ -459,14 +449,17 @@ fn generate_workspace_dependency_edit(
     // Convert to &str for calculate_insertion_index
     let existing_packages: Vec<&str> = existing_package_names.iter().map(|s| s.as_str()).collect();
 
-    let package_name = requirement.name.to_string();
+    let package_name = dependency_requirement.requirement.name.to_string();
 
     // Calculate insertion index
     let insertion_index = calculate_insertion_index(&existing_packages, &package_name);
 
     // Determine insertion position and comma handling using AST
-    let (insertion_range, new_text) =
-        calculate_array_insertion(&deps_ast_array, insertion_index, dependency)?;
+    let (insertion_range, new_text) = calculate_array_insertion(
+        &deps_ast_array,
+        insertion_index,
+        dependency_requirement.dependency,
+    )?;
 
     Some(TextEdit {
         range: tombi_text::Range::at(insertion_range).into_lsp(workspace_line_index),
@@ -476,8 +469,10 @@ fn generate_workspace_dependency_edit(
 
 /// Generate TextEdit for converting member dependency to version-less format
 fn generate_member_dependency_edit(
-    dependency: &tombi_document_tree::String,
-    requirement: &Requirement<VerbatimUrl>,
+    DependencyRequirement {
+        requirement,
+        dependency,
+    }: &DependencyRequirement,
     line_index: &tombi_text::LineIndex,
 ) -> Option<TextEdit> {
     let new_dep_str = format_dependency_without_version(requirement);
@@ -503,45 +498,35 @@ fn use_workspace_dependency_code_action(
     // Get the dependency string from member's document tree
     let (_, dep_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
-    let tombi_document_tree::Value::String(dep_string) = dep_value else {
+    let tombi_document_tree::Value::String(dep_str) = dep_value else {
         return None;
     };
 
     // Parse the dependency
-    let requirement = parse_dependency(dep_string.value())?;
+    let requirement = parse_requirement(dep_str.value())?;
 
     // If no version specified, don't provide code action
     if requirement.version_or_url.is_none() {
         return None;
     }
 
-    // Check if this dependency exists in workspace
-    let (_, workspace_deps) =
-        tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
-
-    let tombi_document_tree::Value::Array(workspace_deps_array) = workspace_deps else {
-        return None;
-    };
-
-    // Check if the workspace has a dependency with the same package name
-    let workspace_has_dep = workspace_deps_array.iter().any(|dep| {
-        if let tombi_document_tree::Value::String(ws_dep_str) = dep {
-            if let Some(ws_requirement) = parse_dependency(ws_dep_str.value()) {
-                return ws_requirement.name == requirement.name;
-            }
-        }
-        false
-    });
-
-    if !workspace_has_dep {
-        return None;
-    }
+    let workspace_dependency_requirements =
+        collect_dependency_requirements_from_document_tree(&workspace_document_tree);
+    let DependencyRequirement {
+        requirement: workspace_requirement,
+        ..
+    } = workspace_dependency_requirements.iter().find(
+        |DependencyRequirement {
+             requirement: workspace_requirement,
+             ..
+         }| workspace_requirement.name == requirement.name,
+    )?;
 
     // Format dependency without version (preserving extras)
-    let new_dep_str = format_dependency_without_version(&requirement);
+    let new_dep_str = format_dependency_without_version(&workspace_requirement);
 
     // Use the string's range for replacement
-    let range = dep_string.range().into_lsp(line_index);
+    let range = dep_str.range().into_lsp(line_index);
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::UseWorkspaceDependency.to_string(),
@@ -585,7 +570,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_basic_with_version() {
-        let requirement = parse_dependency("pydantic>=2.10,<3.0").unwrap();
+        let requirement = parse_requirement("pydantic>=2.10,<3.0").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         assert!(requirement.extras.is_empty());
         assert!(requirement.version_or_url.is_some());
@@ -593,7 +578,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_with_extras() {
-        let requirement = parse_dependency("pydantic[email,dotenv]>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic[email,dotenv]>=2.10").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         let extras: Vec<String> = requirement.extras.iter().map(|e| e.to_string()).collect();
         assert_eq!(extras, vec!["email", "dotenv"]);
@@ -602,7 +587,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_without_version() {
-        let requirement = parse_dependency("pydantic").unwrap();
+        let requirement = parse_requirement("pydantic").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         assert!(requirement.extras.is_empty());
         assert!(requirement.version_or_url.is_none());
@@ -610,7 +595,7 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_with_extras_no_version() {
-        let requirement = parse_dependency("pydantic[email]").unwrap();
+        let requirement = parse_requirement("pydantic[email]").unwrap();
         assert_eq!(requirement.name.to_string(), "pydantic");
         let extras: Vec<String> = requirement.extras.iter().map(|e| e.to_string()).collect();
         assert_eq!(extras, vec!["email"]);
@@ -619,27 +604,27 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_invalid() {
-        let result = parse_dependency("invalid package name!!!");
+        let result = parse_requirement("invalid package name!!!");
         assert!(result.is_none());
     }
 
     #[test]
     fn test_format_dependency_without_extras() {
-        let requirement = parse_dependency("pydantic>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic>=2.10").unwrap();
         let formatted = format_dependency_without_version(&requirement);
         assert_eq!(formatted, "pydantic");
     }
 
     #[test]
     fn test_format_dependency_with_one_extra() {
-        let requirement = parse_dependency("pydantic[email]>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic[email]>=2.10").unwrap();
         let formatted = format_dependency_without_version(&requirement);
         assert_eq!(formatted, "pydantic[email]");
     }
 
     #[test]
     fn test_format_dependency_with_multiple_extras() {
-        let requirement = parse_dependency("pydantic[email,dotenv]>=2.10").unwrap();
+        let requirement = parse_requirement("pydantic[email,dotenv]>=2.10").unwrap();
         let formatted = format_dependency_without_version(&requirement);
         assert_eq!(formatted, "pydantic[email,dotenv]");
     }
