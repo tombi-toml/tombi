@@ -1,4 +1,12 @@
 [project]
 name = "app2"
 version = "0.1.0"
-dependencies = ["pydantic"]
+dependencies = [
+  "pydantic",
+]
+
+[dependency-groups]
+dev = [
+  "pytest",
+  "ruff",
+]
