@@ -220,10 +220,10 @@ fn calculate_insertion_index(existing_package_names: &[&str], new_package_name: 
 fn get_ast_array_from_document_tree(
     root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
-    keys: &[&str],
+    accessors: &[Accessor],
 ) -> Option<tombi_ast::Array> {
     // Get the value from document tree to find its range
-    let (_, value) = tombi_document_tree::dig_keys(document_tree, keys)?;
+    let (_, value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
     let tombi_document_tree::Value::Array(doc_array) = value else {
         return None;
@@ -359,6 +359,7 @@ fn add_workspace_dependency_code_action(
 
     // Generate workspace edit (add dependency with version, without extras)
     let workspace_edit = generate_workspace_dependency_edit(
+        accessors,
         workspace_line_index,
         workspace_root,
         workspace_document_tree,
@@ -401,14 +402,26 @@ fn add_workspace_dependency_code_action(
 
 /// Generate TextEdit for adding dependency to workspace [project.dependencies]
 fn generate_workspace_dependency_edit(
+    accessors: &[Accessor],
     workspace_line_index: &tombi_text::LineIndex,
     workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     dependency_requirement: &DependencyRequirement,
 ) -> Option<TextEdit> {
     // Get workspace.dependencies array from document tree
-    let (_, workspace_deps) =
-        tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
+    let (workspace_accessors, workspace_deps) = match tombi_document_tree::dig_accessors(
+        workspace_document_tree,
+        &accessors[..accessors.len() - 1],
+    ) {
+        Some((_, value)) => (accessors[..accessors.len() - 1].to_vec(), value),
+        None => (
+            vec![
+                Accessor::Key("project".to_string()),
+                Accessor::Key("dependencies".to_string()),
+            ],
+            tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?.1,
+        ),
+    };
 
     let tombi_document_tree::Value::Array(deps_doc_array) = workspace_deps else {
         return None;
@@ -418,7 +431,7 @@ fn generate_workspace_dependency_edit(
     let deps_ast_array = get_ast_array_from_document_tree(
         workspace_root,
         workspace_document_tree,
-        &["project", "dependencies"],
+        &workspace_accessors,
     )?;
 
     // Get existing package names
