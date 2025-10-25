@@ -8,7 +8,7 @@ use tombi_schema_store::matches_accessors;
 use crate::{
     find_member_project_toml, find_workspace_pyproject_toml,
     goto_definition::{
-        get_path_dependency_definition, get_workspace_project_dependency_definition,
+        collect_workspace_project_dependency_definitions, get_path_dependency_definition,
     },
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
 };
@@ -120,11 +120,11 @@ fn goto_declaration_for_dependency_package(
         }
     }
 
-    if let Some(location) =
-        get_workspace_project_dependency_definition(package_name, pyproject_toml_path, toml_version)
-    {
-        locations.push(location);
-    }
+    locations.extend(collect_workspace_project_dependency_definitions(
+        package_name,
+        pyproject_toml_path,
+        toml_version,
+    ));
 
     Ok(locations)
 }

@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use itertools::Itertools;
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_accessors, dig_keys, Value};
@@ -10,6 +11,12 @@ use crate::{
     goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
     load_pyproject_toml_document_tree,
 };
+
+#[derive(Debug, Clone)]
+struct Dependency<'a> {
+    requirement: Requirement<VerbatimUrl>,
+    dependency: &'a tombi_document_tree::String,
+}
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
@@ -118,13 +125,11 @@ fn goto_definition_for_dependency_package(
 
     // Package references without version info should jump to workspace definition when available
     if requirement.version_or_url.is_none() {
-        if let Some(location) = get_workspace_project_dependency_definition(
+        locations.extend(collect_workspace_project_dependency_definitions(
             package_name.as_ref(),
             pyproject_toml_path,
             toml_version,
-        ) {
-            locations.push(location);
-        }
+        ));
     }
 
     if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
@@ -168,37 +173,65 @@ fn get_workspace_dependency_definition(
     })
 }
 
-pub(crate) fn get_workspace_project_dependency_definition(
+pub(crate) fn collect_workspace_project_dependency_definitions(
     package_name: &str,
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Option<tombi_extension::DefinitionLocation> {
-    let (workspace_pyproject_toml_path, _, workspace_document_tree) =
-        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)?;
-
-    let Some((_, Value::Array(workspace_dependencies))) =
-        dig_keys(&workspace_document_tree, &["project", "dependencies"])
+) -> Vec<tombi_extension::DefinitionLocation> {
+    let Some((workspace_pyproject_toml_path, _, workspace_document_tree)) =
+        find_workspace_pyproject_toml(pyproject_toml_path, toml_version)
     else {
-        return None;
+        return Vec::with_capacity(0);
     };
 
-    let workspace_dependency = workspace_dependencies.iter().find_map(|value| {
-        if let Value::String(dep_string) = value {
-            Requirement::<VerbatimUrl>::from_str(dep_string.value())
-                .ok()
-                .filter(|requirement| requirement.name.as_ref() == package_name)
-                .map(|_| dep_string)
-        } else {
-            None
+    let mut workspace_dependencies = Vec::new();
+    if let Some((_, Value::Array(dependencies))) =
+        dig_keys(&workspace_document_tree, &["project", "dependencies"])
+    {
+        workspace_dependencies.extend(collect_requirements_from_dependencies(dependencies.iter()));
+    }
+    if let Some((_, Value::Table(dependencies))) = dig_keys(
+        &workspace_document_tree,
+        &["project", "optional-dependencies"],
+    ) {
+        for value in dependencies.values() {
+            if let Value::Array(array) = value {
+                workspace_dependencies.extend(collect_requirements_from_dependencies(array.iter()));
+            }
         }
-    })?;
+    }
+    if let Some((_, Value::Table(dependencies))) =
+        dig_keys(&workspace_document_tree, &["dependency-groups"])
+    {
+        for value in dependencies.values() {
+            if let Value::Array(array) = value {
+                workspace_dependencies.extend(collect_requirements_from_dependencies(array.iter()));
+            }
+        }
+    }
 
-    let workspace_uri = tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path).ok()?;
+    let Ok(workspace_uri) = tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path) else {
+        return Vec::with_capacity(0);
+    };
 
-    Some(tombi_extension::DefinitionLocation {
-        uri: workspace_uri,
-        range: workspace_dependency.unquoted_range(),
-    })
+    workspace_dependencies
+        .iter()
+        .filter_map(
+            |Dependency {
+                 requirement,
+                 dependency,
+             }| {
+                if requirement.name.as_ref() == package_name {
+                    Some(tombi_extension::DefinitionLocation {
+                        uri: workspace_uri.clone(),
+                        range: dependency.unquoted_range(),
+                    })
+                } else {
+                    None
+                }
+            },
+        )
+        .collect_vec()
 }
 
 pub(crate) fn get_workspace_member_dependency_definitions(
@@ -246,22 +279,18 @@ fn collect_package_references_in_member(
     locations: &mut Vec<tombi_extension::DefinitionLocation>,
 ) {
     let mut collect_from_dependencies = |dependencies: &tombi_document_tree::Array| {
-        for dependency in dependencies.iter() {
-            let Value::String(dep_string) = dependency else {
-                continue;
-            };
-
-            if Requirement::<VerbatimUrl>::from_str(dep_string.value())
-                .ok()
-                .filter(|requirement| requirement.name.as_ref() == package_name)
-                .is_some()
-            {
+        for Dependency {
+            requirement,
+            dependency,
+        } in collect_requirements_from_dependencies(dependencies.iter())
+        {
+            if requirement.name.as_ref() == package_name {
                 let Ok(uri) = tombi_uri::Uri::from_file_path(member_pyproject_toml_path) else {
                     continue;
                 };
                 locations.push(tombi_extension::DefinitionLocation {
                     uri,
-                    range: dep_string.unquoted_range(),
+                    range: dependency.unquoted_range(),
                 });
             }
         }
@@ -311,4 +340,23 @@ pub fn get_path_dependency_definition(
         uri: member_pyproject_toml_uri,
         range: package_name.unquoted_range(),
     })
+}
+
+fn collect_requirements_from_dependencies<'a>(
+    dependencies: impl Iterator<Item = &'a tombi_document_tree::Value>,
+) -> Vec<Dependency<'a>> {
+    dependencies
+        .filter_map(|value| {
+            if let Value::String(dependency) = value {
+                Requirement::<VerbatimUrl>::from_str(dependency.value())
+                    .ok()
+                    .map(|requirement| Dependency {
+                        requirement,
+                        dependency,
+                    })
+            } else {
+                None
+            }
+        })
+        .collect()
 }

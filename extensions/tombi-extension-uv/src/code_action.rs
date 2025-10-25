@@ -2,7 +2,7 @@ use pep508_rs::{Requirement, VerbatimUrl};
 use std::str::FromStr;
 use tombi_ast::AstNode;
 use tombi_extension::CodeActionOrCommand;
-use tombi_schema_store::Accessor;
+use tombi_schema_store::{matches_accessors, Accessor};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
@@ -10,6 +10,127 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::find_workspace_pyproject_toml;
+
+pub fn code_action(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    toml_version: tombi_config::TomlVersion,
+    line_index: &tombi_text::LineIndex,
+) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
+    // Check if the file is pyproject.toml
+    if !text_document_uri.path().ends_with("pyproject.toml") {
+        return Ok(None);
+    }
+
+    // Check if this is a workspace root (has [tool.uv.workspace] section)
+    if document_tree.contains_key("tool") {
+        if let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"]) {
+            if let tombi_document_tree::Value::Table(tool_table) = tool_value {
+                if let Some((_, uv_value)) = tool_table.get_key_value("uv") {
+                    if let tombi_document_tree::Value::Table(uv_table) = uv_value {
+                        if uv_table.contains_key("workspace") {
+                            // This is a workspace root, don't provide code actions
+                            return Ok(None);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if matches_accessors!(accessors, ["project", "dependencies", _])
+        || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
+        || matches_accessors!(accessors, ["dependency-groups", _, _])
+    {
+        Ok(code_action_for_dependency_package(
+            text_document_uri,
+            document_tree,
+            accessors,
+            toml_version,
+            line_index,
+        ))
+    } else {
+        Ok(None)
+    }
+}
+
+fn code_action_for_dependency_package(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    accessors: &[Accessor],
+    toml_version: tombi_config::TomlVersion,
+    line_index: &tombi_text::LineIndex,
+) -> Option<Vec<CodeActionOrCommand>> {
+    // Try to find workspace pyproject.toml
+    let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
+        tracing::warn!(
+            uri = %text_document_uri,
+            "Failed to convert URI to file path"
+        );
+        return None;
+    };
+
+    let Some((workspace_path, workspace_root, workspace_document_tree)) =
+        find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
+    else {
+        tracing::debug!(
+            member_path = %pyproject_toml_path.display(),
+            "No workspace pyproject.toml found"
+        );
+        return None;
+    };
+
+    // Load workspace text and create line index for workspace document
+    let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
+        tracing::warn!(
+            path = %workspace_path.display(),
+            "Failed to read workspace pyproject.toml"
+        );
+        return None;
+    };
+    let workspace_line_index =
+        tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
+
+    // Try to provide code actions
+    let mut actions = Vec::new();
+
+    // Try "Use Workspace Dependency" (when dependency exists in workspace)
+    if let Some(action) = use_workspace_dependency_code_action(
+        text_document_uri,
+        line_index,
+        document_tree,
+        accessors,
+        &workspace_document_tree,
+    ) {
+        actions.push(CodeActionOrCommand::CodeAction(action));
+    }
+
+    // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
+    if let Some(action) = add_workspace_dependency_code_action(
+        text_document_uri,
+        line_index,
+        document_tree,
+        accessors,
+        &workspace_path,
+        &workspace_line_index,
+        &workspace_root,
+        &workspace_document_tree,
+    ) {
+        tracing::debug!(
+            action = %action.title,
+            uri = %text_document_uri,
+            "Providing 'Add to Workspace and Use Workspace Dependency' code action"
+        );
+        actions.push(CodeActionOrCommand::CodeAction(action));
+    }
+
+    if actions.is_empty() {
+        return None;
+    }
+
+    Some(actions)
+}
 
 fn parse_dependency(dep_string: &str) -> Option<Requirement<VerbatimUrl>> {
     match Requirement::<VerbatimUrl>::from_str(dep_string) {
@@ -442,128 +563,6 @@ fn use_workspace_dependency_code_action(
         }),
         ..Default::default()
     })
-}
-
-pub fn code_action(
-    text_document_uri: &tombi_uri::Uri,
-    document_tree: &tombi_document_tree::DocumentTree,
-    accessors: &[Accessor],
-    toml_version: tombi_config::TomlVersion,
-    line_index: &tombi_text::LineIndex,
-) -> Result<Option<Vec<CodeActionOrCommand>>, tower_lsp::jsonrpc::Error> {
-    // Check if the file is pyproject.toml
-    if !text_document_uri.path().ends_with("pyproject.toml") {
-        return Ok(None);
-    }
-
-    // Check if this is a workspace root (has [tool.uv.workspace] section)
-    if document_tree.contains_key("tool") {
-        if let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"]) {
-            if let tombi_document_tree::Value::Table(tool_table) = tool_value {
-                if let Some((_, uv_value)) = tool_table.get_key_value("uv") {
-                    if let tombi_document_tree::Value::Table(uv_table) = uv_value {
-                        if uv_table.contains_key("workspace") {
-                            // This is a workspace root, don't provide code actions
-                            return Ok(None);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Check if accessors match [project.dependencies] or [project.optional-dependencies.*]
-    if accessors.len() < 3 {
-        return Ok(None);
-    }
-
-    let is_project_dependencies = matches!(accessors.first(), Some(Accessor::Key(key)) if key == "project")
-        && matches!(accessors.get(1), Some(Accessor::Key(key)) if key == "dependencies");
-
-    let is_optional_dependencies = matches!(accessors.first(), Some(Accessor::Key(key)) if key == "project")
-        && matches!(accessors.get(1), Some(Accessor::Key(key)) if key == "optional-dependencies");
-
-    if !is_project_dependencies && !is_optional_dependencies {
-        return Ok(None);
-    }
-
-    // Try to find workspace pyproject.toml
-    let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
-        tracing::warn!(
-            uri = %text_document_uri,
-            "Failed to convert URI to file path"
-        );
-        return Ok(None);
-    };
-
-    let Some((workspace_path, workspace_root, workspace_document_tree)) =
-        find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
-    else {
-        tracing::debug!(
-            member_path = %pyproject_toml_path.display(),
-            "No workspace pyproject.toml found"
-        );
-        return Ok(None);
-    };
-
-    // Load workspace text and create line index for workspace document
-    let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
-        tracing::warn!(
-            path = %workspace_path.display(),
-            "Failed to read workspace pyproject.toml"
-        );
-        return Ok(None);
-    };
-    let workspace_line_index =
-        tombi_text::LineIndex::new(&workspace_text, line_index.encoding_kind);
-
-    // Try to provide code actions
-    let mut actions = Vec::new();
-
-    // Try "Use Workspace Dependency" (when dependency exists in workspace)
-    if let Some(action) = use_workspace_dependency_code_action(
-        text_document_uri,
-        line_index,
-        document_tree,
-        accessors,
-        &workspace_document_tree,
-    ) {
-        tracing::debug!(
-            action = %action.title,
-            uri = %text_document_uri,
-            "Providing 'Use Workspace Dependency' code action"
-        );
-        actions.push(CodeActionOrCommand::CodeAction(action));
-    }
-
-    // Try "Add to Workspace and Use Workspace Dependency" (when dependency doesn't exist in workspace)
-    if let Some(action) = add_workspace_dependency_code_action(
-        text_document_uri,
-        line_index,
-        document_tree,
-        accessors,
-        &workspace_path,
-        &workspace_line_index,
-        &workspace_root,
-        &workspace_document_tree,
-    ) {
-        tracing::debug!(
-            action = %action.title,
-            uri = %text_document_uri,
-            "Providing 'Add to Workspace and Use Workspace Dependency' code action"
-        );
-        actions.push(CodeActionOrCommand::CodeAction(action));
-    }
-
-    if actions.is_empty() {
-        tracing::trace!(
-            uri = %text_document_uri,
-            "No code actions available for this context"
-        );
-        Ok(None)
-    } else {
-        Ok(Some(actions))
-    }
 }
 
 #[cfg(test)]
