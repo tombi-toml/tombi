@@ -10,11 +10,24 @@ pub use document_link::document_link;
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
 use itertools::Itertools;
-use pep508_rs::{Requirement, VerbatimUrl};
+use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_accessors, TryIntoDocumentTree};
+use tombi_document_tree::{dig_accessors, dig_keys, TryIntoDocumentTree};
 use tombi_schema_store::matches_accessors;
+
+#[derive(Debug, Clone)]
+struct DependencyRequirement<'a> {
+    dependency: &'a tombi_document_tree::String,
+    requirement: Requirement<VerbatimUrl>,
+}
+
+impl<'a> DependencyRequirement<'a> {
+    #[inline]
+    fn version_or_url(&self) -> Option<&VersionOrUrl<VerbatimUrl>> {
+        self.requirement.version_or_url.as_ref()
+    }
+}
 
 #[derive(Debug, Clone)]
 struct PackageLocation {
@@ -428,4 +441,68 @@ fn parse_requirement(dependency: &str) -> Option<Requirement<VerbatimUrl>> {
             None
         }
     }
+}
+
+fn parse_dependency_requirement<'a>(
+    dependency: &'a tombi_document_tree::String,
+) -> Option<DependencyRequirement<'a>> {
+    parse_requirement(dependency.value()).map(|requirement| DependencyRequirement {
+        requirement,
+        dependency,
+    })
+}
+
+fn collect_dependency_requirements_from_document_tree<'a>(
+    document_tree: &'a tombi_document_tree::DocumentTree,
+) -> Vec<DependencyRequirement<'a>> {
+    let mut dependency_requirements = Vec::new();
+
+    if let Some((_, tombi_document_tree::Value::Array(dep_array))) =
+        dig_keys(document_tree, &["project", "dependencies"])
+    {
+        dependency_requirements.extend(collect_dependency_requirements_from_values::<'a>(
+            dep_array.iter(),
+        ));
+    }
+    if let Some((_, tombi_document_tree::Value::Table(dep_group))) =
+        dig_keys(document_tree, &["project", "optional-dependencies"])
+    {
+        for value in dep_group.values() {
+            if let tombi_document_tree::Value::Array(dep_array) = value {
+                dependency_requirements.extend(collect_dependency_requirements_from_values(
+                    dep_array.iter(),
+                ));
+            }
+        }
+    }
+    if let Some((_, tombi_document_tree::Value::Table(dep_group))) =
+        dig_keys(document_tree, &["dependency-groups"])
+    {
+        for value in dep_group.values() {
+            if let tombi_document_tree::Value::Array(dep_array) = value {
+                dependency_requirements.extend(collect_dependency_requirements_from_values(
+                    dep_array.iter(),
+                ));
+            }
+        }
+    }
+
+    dependency_requirements
+}
+
+fn collect_dependency_requirements_from_values<'a>(
+    dependencies: impl Iterator<Item = &'a tombi_document_tree::Value>,
+) -> Vec<DependencyRequirement<'a>> {
+    dependencies
+        .filter_map(|value| {
+            if let tombi_document_tree::Value::String(dep_str) = value {
+                parse_requirement(dep_str.value()).map(|requirement| DependencyRequirement {
+                    requirement,
+                    dependency: dep_str,
+                })
+            } else {
+                None
+            }
+        })
+        .collect()
 }

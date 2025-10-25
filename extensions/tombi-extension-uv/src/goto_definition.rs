@@ -1,20 +1,14 @@
 use itertools::Itertools;
-use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{dig_accessors, dig_keys, Value};
 use tombi_schema_store::{matches_accessors, Accessor};
 
 use crate::{
-    find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
-    goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
-    load_pyproject_toml_document_tree, parse_requirement,
+    collect_dependency_requirements_from_document_tree, find_member_project_toml,
+    find_workspace_pyproject_toml, get_project_name, goto_definition_for_member_pyproject_toml,
+    goto_definition_for_workspace_pyproject_toml, load_pyproject_toml_document_tree,
+    parse_requirement, DependencyRequirement,
 };
-
-#[derive(Debug, Clone)]
-struct Dependency<'a> {
-    requirement: Requirement<VerbatimUrl>,
-    dependency: &'a tombi_document_tree::String,
-}
 
 pub async fn goto_definition(
     text_document_uri: &tombi_uri::Uri,
@@ -181,40 +175,14 @@ pub(crate) fn collect_workspace_project_dependency_definitions(
         return Vec::with_capacity(0);
     };
 
-    let mut workspace_dependencies = Vec::new();
-    if let Some((_, Value::Array(dependencies))) =
-        dig_keys(&workspace_document_tree, &["project", "dependencies"])
-    {
-        workspace_dependencies.extend(collect_requirements_from_dependencies(dependencies.iter()));
-    }
-    if let Some((_, Value::Table(dependencies))) = dig_keys(
-        &workspace_document_tree,
-        &["project", "optional-dependencies"],
-    ) {
-        for value in dependencies.values() {
-            if let Value::Array(array) = value {
-                workspace_dependencies.extend(collect_requirements_from_dependencies(array.iter()));
-            }
-        }
-    }
-    if let Some((_, Value::Table(dependencies))) =
-        dig_keys(&workspace_document_tree, &["dependency-groups"])
-    {
-        for value in dependencies.values() {
-            if let Value::Array(array) = value {
-                workspace_dependencies.extend(collect_requirements_from_dependencies(array.iter()));
-            }
-        }
-    }
-
     let Ok(workspace_uri) = tombi_uri::Uri::from_file_path(&workspace_pyproject_toml_path) else {
         return Vec::with_capacity(0);
     };
 
-    workspace_dependencies
+    collect_dependency_requirements_from_document_tree(&workspace_document_tree)
         .iter()
         .filter_map(
-            |Dependency {
+            |DependencyRequirement {
                  requirement,
                  dependency,
              }| {
@@ -258,31 +226,13 @@ pub(crate) fn get_workspace_member_dependency_definitions(
             continue;
         };
 
-        collect_package_references_in_member(
-            &member_document_tree,
-            &member_pyproject_toml_path,
-            package_name,
-            &mut locations,
-        );
-    }
-
-    locations
-}
-
-fn collect_package_references_in_member(
-    member_document_tree: &tombi_document_tree::DocumentTree,
-    member_pyproject_toml_path: &std::path::Path,
-    package_name: &str,
-    locations: &mut Vec<tombi_extension::DefinitionLocation>,
-) {
-    let mut collect_from_dependencies = |dependencies: &tombi_document_tree::Array| {
-        for Dependency {
+        for DependencyRequirement {
             requirement,
             dependency,
-        } in collect_requirements_from_dependencies(dependencies.iter())
+        } in collect_dependency_requirements_from_document_tree(&member_document_tree)
         {
             if requirement.name.as_ref() == package_name {
-                let Ok(uri) = tombi_uri::Uri::from_file_path(member_pyproject_toml_path) else {
+                let Ok(uri) = tombi_uri::Uri::from_file_path(&member_pyproject_toml_path) else {
                     continue;
                 };
                 locations.push(tombi_extension::DefinitionLocation {
@@ -291,33 +241,9 @@ fn collect_package_references_in_member(
                 });
             }
         }
-    };
-
-    if let Some((_, Value::Array(dependencies))) =
-        dig_keys(member_document_tree, &["project", "dependencies"])
-    {
-        collect_from_dependencies(dependencies);
     }
 
-    if let Some((_, Value::Table(optional_dependencies))) =
-        dig_keys(member_document_tree, &["project", "optional-dependencies"])
-    {
-        for option in optional_dependencies.values() {
-            if let Value::Array(dependencies) = option {
-                collect_from_dependencies(dependencies);
-            }
-        }
-    }
-
-    if let Some((_, Value::Table(dependency_groups))) =
-        dig_keys(member_document_tree, &["dependency-groups"])
-    {
-        for group in dependency_groups.values() {
-            if let Value::Array(dependencies) = group {
-                collect_from_dependencies(dependencies);
-            }
-        }
-    }
+    locations
 }
 
 pub fn get_path_dependency_definition(
@@ -337,21 +263,4 @@ pub fn get_path_dependency_definition(
         uri: member_pyproject_toml_uri,
         range: package_name.unquoted_range(),
     })
-}
-
-fn collect_requirements_from_dependencies<'a>(
-    dependencies: impl Iterator<Item = &'a tombi_document_tree::Value>,
-) -> Vec<Dependency<'a>> {
-    dependencies
-        .filter_map(|value| {
-            if let Value::String(dep_str) = value {
-                parse_requirement(dep_str.value()).map(|requirement| Dependency {
-                    requirement,
-                    dependency: dep_str,
-                })
-            } else {
-                None
-            }
-        })
-        .collect()
 }

@@ -8,7 +8,10 @@ use tower_lsp::lsp_types::{
     TextDocumentEdit, TextEdit, WorkspaceEdit,
 };
 
-use crate::{find_workspace_pyproject_toml, parse_requirement};
+use crate::{
+    collect_dependency_requirements_from_document_tree, find_workspace_pyproject_toml,
+    parse_dependency_requirement, parse_requirement, DependencyRequirement,
+};
 
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
@@ -312,11 +315,6 @@ fn add_workspace_dependency_code_action(
     workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
-    // Accessors should be at least: ["project", "dependencies", Index(n)]
-    if accessors.len() < 3 {
-        return None;
-    }
-
     // Get the dependency string from member's document tree
     let (_, dependency_value) = tombi_document_tree::dig_accessors(document_tree, accessors)?;
 
@@ -325,33 +323,29 @@ fn add_workspace_dependency_code_action(
     };
 
     // Parse the dependency
-    let requirement = parse_requirement(dep_str.value())?;
+    let dependency_requirement = parse_dependency_requirement(dep_str)?;
 
     // If no version specified, don't provide code action
-    if requirement.version_or_url.is_none() {
+    if dependency_requirement.version_or_url().is_none() {
         return None;
     }
 
     // Check if this dependency already exists in workspace
-    let (_, workspace_deps) =
-        tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
-
-    let tombi_document_tree::Value::Array(workspace_deps_array) = workspace_deps else {
+    let workspace_dependencies =
+        collect_dependency_requirements_from_document_tree(&workspace_document_tree);
+    if workspace_dependencies
+        .iter()
+        .find(
+            |DependencyRequirement {
+                 requirement: workspace_requirement,
+                 ..
+             }| {
+                dependency_requirement.requirement.name == workspace_requirement.name
+            },
+        )
+        .is_some()
+    {
         return None;
-    };
-
-    // Check if the workspace already has a dependency with the same package name
-    let workspace_has_dep = workspace_deps_array.iter().any(|dep| {
-        if let tombi_document_tree::Value::String(dep_str) = dep {
-            if let Some(ws_requirement) = parse_requirement(dep_str.value()) {
-                return ws_requirement.name == requirement.name;
-            }
-        }
-        false
-    });
-
-    if workspace_has_dep {
-        return None; // Already in workspace
     }
 
     // Generate workspace URI
@@ -368,12 +362,11 @@ fn add_workspace_dependency_code_action(
         workspace_line_index,
         workspace_root,
         workspace_document_tree,
-        &requirement,
-        dep_str,
+        &dependency_requirement,
     )?;
 
     // Generate member edit (convert to version-less format, preserving extras)
-    let member_edit = generate_member_dependency_edit(dep_str, &requirement, line_index)?;
+    let member_edit = generate_member_dependency_edit(&dependency_requirement, line_index)?;
 
     // Build WorkspaceEdit with both file changes
     let workspace_edit_full = WorkspaceEdit {
@@ -411,8 +404,7 @@ fn generate_workspace_dependency_edit(
     workspace_line_index: &tombi_text::LineIndex,
     workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
-    requirement: &Requirement<VerbatimUrl>,
-    dependency: &tombi_document_tree::String,
+    dependency_requirement: &DependencyRequirement,
 ) -> Option<TextEdit> {
     // Get workspace.dependencies array from document tree
     let (_, workspace_deps) =
@@ -444,14 +436,17 @@ fn generate_workspace_dependency_edit(
     // Convert to &str for calculate_insertion_index
     let existing_packages: Vec<&str> = existing_package_names.iter().map(|s| s.as_str()).collect();
 
-    let package_name = requirement.name.to_string();
+    let package_name = dependency_requirement.requirement.name.to_string();
 
     // Calculate insertion index
     let insertion_index = calculate_insertion_index(&existing_packages, &package_name);
 
     // Determine insertion position and comma handling using AST
-    let (insertion_range, new_text) =
-        calculate_array_insertion(&deps_ast_array, insertion_index, dependency)?;
+    let (insertion_range, new_text) = calculate_array_insertion(
+        &deps_ast_array,
+        insertion_index,
+        dependency_requirement.dependency,
+    )?;
 
     Some(TextEdit {
         range: tombi_text::Range::at(insertion_range).into_lsp(workspace_line_index),
@@ -461,8 +456,10 @@ fn generate_workspace_dependency_edit(
 
 /// Generate TextEdit for converting member dependency to version-less format
 fn generate_member_dependency_edit(
-    dependency: &tombi_document_tree::String,
-    requirement: &Requirement<VerbatimUrl>,
+    DependencyRequirement {
+        requirement,
+        dependency,
+    }: &DependencyRequirement,
     line_index: &tombi_text::LineIndex,
 ) -> Option<TextEdit> {
     let new_dep_str = format_dependency_without_version(requirement);
@@ -500,30 +497,20 @@ fn use_workspace_dependency_code_action(
         return None;
     }
 
-    // Check if this dependency exists in workspace
-    let (_, workspace_deps) =
-        tombi_document_tree::dig_keys(workspace_document_tree, &["project", "dependencies"])?;
-
-    let tombi_document_tree::Value::Array(workspace_deps_array) = workspace_deps else {
-        return None;
-    };
-
-    // Check if the workspace has a dependency with the same package name
-    let workspace_has_dep = workspace_deps_array.iter().any(|dep| {
-        if let tombi_document_tree::Value::String(dep_str) = dep {
-            if let Some(ws_requirement) = parse_requirement(dep_str.value()) {
-                return ws_requirement.name == requirement.name;
-            }
-        }
-        false
-    });
-
-    if !workspace_has_dep {
-        return None;
-    }
+    let workspace_dependency_requirements =
+        collect_dependency_requirements_from_document_tree(&workspace_document_tree);
+    let DependencyRequirement {
+        requirement: workspace_requirement,
+        ..
+    } = workspace_dependency_requirements.iter().find(
+        |DependencyRequirement {
+             requirement: workspace_requirement,
+             ..
+         }| workspace_requirement.name == requirement.name,
+    )?;
 
     // Format dependency without version (preserving extras)
-    let new_dep_str = format_dependency_without_version(&requirement);
+    let new_dep_str = format_dependency_without_version(&workspace_requirement);
 
     // Use the string's range for replacement
     let range = dep_str.range().into_lsp(line_index);
