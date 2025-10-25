@@ -79,6 +79,10 @@ fn goto_declaration_for_dependency_package(
     pyproject_toml_path: &std::path::Path,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
+    if dig_keys(document_tree, &["tool", "uv", "workspace"]).is_some() {
+        return Ok(Vec::with_capacity(0));
+    }
+
     // Get the dependency string from the current position
     let Some((_, Value::String(dependency))) = dig_accessors(document_tree, accessors) else {
         return Ok(Vec::with_capacity(0));
