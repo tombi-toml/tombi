@@ -125,12 +125,12 @@ pub fn inline_table_to_dot_keys_code_action(
                 return None;
             };
             if !node.inner_begin_dangling_comments().is_empty()
-                || !node
+                || node
                     .inner_end_dangling_comments()
                     .into_iter()
                     .flatten()
-                    .collect_vec()
-                    .is_empty()
+                    .next()
+                    .is_some()
                 || node.has_inner_comments()
             {
                 return None;
