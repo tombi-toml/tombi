@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_document_tree::{dig_accessors, TableKind};
 use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
