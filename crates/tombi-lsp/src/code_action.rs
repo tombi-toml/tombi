@@ -28,6 +28,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 pub fn dot_keys_to_inline_table_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
+    _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],

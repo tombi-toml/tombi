@@ -122,6 +122,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
+    _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
@@ -190,11 +191,13 @@ fn code_actions_for_crate_cargo_toml(
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
-    if let Some((workspace_cargo_toml_path, workspace_document_tree)) = find_workspace_cargo_toml(
-        cargo_toml_path,
-        get_workspace_path(document_tree),
-        toml_version,
-    ) {
+    if let Some((workspace_cargo_toml_path, workspace_root, workspace_document_tree)) =
+        find_workspace_cargo_toml(
+            cargo_toml_path,
+            get_workspace_path(document_tree),
+            toml_version,
+        )
+    {
         // Load workspace text and create line index for workspace document
         let Ok(workspace_text) = std::fs::read_to_string(&workspace_cargo_toml_path) else {
             return code_actions;
@@ -222,6 +225,7 @@ fn code_actions_for_crate_cargo_toml(
             contexts,
             &workspace_cargo_toml_path,
             &workspace_line_index,
+            &workspace_root,
             &workspace_document_tree,
         ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
@@ -249,6 +253,22 @@ fn code_actions_for_crate_cargo_toml(
     code_actions
 }
 
+/// Convert a package field to inherit from workspace configuration.
+///
+/// Before
+///
+/// ```toml
+/// [package]
+/// version = "1.0.0"
+/// ```
+///
+/// After applying "Convert Package Field to Inherit from Workspace"
+///
+/// ```toml
+/// [package]
+/// version.workspace = true
+/// ```
+///
 fn workspace_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -439,6 +459,22 @@ fn use_workspace_dependency_code_action(
     None
 }
 
+/// Convert a dependency version to a table format.
+///
+/// Before
+///
+/// ```toml
+/// [dependencies]
+/// serde = "1.0"
+/// ```
+///
+/// After applying "Convert Dependency to Table Format"
+///
+/// ```toml
+/// [dependencies]
+/// serde = { version = "1.0" }
+/// ```
+///
 fn crate_version_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -507,6 +543,24 @@ fn calculate_insertion_index(existing_crate_names: &[&str], new_crate_name: &str
 /// - The cursor is on a dependency in member Cargo.toml
 /// - The dependency is not yet registered in workspace.dependencies
 /// - The dependency is not already using workspace = true
+///
+/// Before
+///
+/// ```toml
+/// [dependencies]
+/// serde = "1.0"
+/// ```
+///
+/// After applying "Add to Workspace and Inherit Dependency"
+///
+/// ```toml
+/// [workspace.dependencies]
+/// serde = "1.0"
+///
+/// [dependencies]
+/// serde = { workspace = true }
+/// ```
+///
 fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -515,6 +569,7 @@ fn add_workspace_dependency_code_action(
     contexts: &[AccessorContext],
     workspace_cargo_toml_path: &std::path::Path,
     workspace_line_index: &tombi_text::LineIndex,
+    workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     // Check if accessors match dependency patterns
@@ -565,6 +620,7 @@ fn add_workspace_dependency_code_action(
     // Generate workspace edit for workspace.dependencies
     let workspace_edit = generate_workspace_dependencies_edit(
         workspace_line_index,
+        workspace_root,
         workspace_document_tree,
         crate_name,
         crate_value,
@@ -608,6 +664,7 @@ fn add_workspace_dependency_code_action(
 /// Generate TextEdit for adding dependency to workspace.dependencies
 fn generate_workspace_dependencies_edit(
     workspace_line_index: &tombi_text::LineIndex,
+    workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     crate_name: &str,
     crate_value: &tombi_document_tree::Value,
@@ -656,8 +713,8 @@ fn generate_workspace_dependencies_edit(
             return None;
         }
     } else {
-        // workspace.dependencies section doesn't exist, need to create it
-        // For now, return None - this will be handled in a future enhancement
+        // NOTE: `workspace.dependencies` section doesn't exist, need to create it
+        //       For now, return None - this will be handled in a future enhancement
         return None;
     };
 

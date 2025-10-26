@@ -37,20 +37,27 @@ impl From<CrateLocation> for Option<tombi_extension::DefinitionLocation> {
 fn load_cargo_toml(
     cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Option<tombi_document_tree::DocumentTree> {
+) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
     let toml_text = std::fs::read_to_string(cargo_toml_path).ok()?;
 
     let root =
         tombi_ast::Root::cast(tombi_parser::parse(&toml_text, toml_version).into_syntax_node())?;
 
-    root.try_into_document_tree(toml_version).ok()
+    Some((
+        root.clone(),
+        root.try_into_document_tree(toml_version).ok()?,
+    ))
 }
 
 fn find_workspace_cargo_toml(
     cargo_toml_path: &std::path::Path,
     workspace_path: Option<&str>,
     toml_version: TomlVersion,
-) -> Option<(std::path::PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(
+    std::path::PathBuf,
+    tombi_ast::Root,
+    tombi_document_tree::DocumentTree,
+)> {
     let mut current_dir = cargo_toml_path.parent()?;
 
     if let Some(workspace_path) = workspace_path {
@@ -65,9 +72,9 @@ fn find_workspace_cargo_toml(
             }
         }
         if let Ok(canonicalized_path) = std::fs::canonicalize(&workspace_cargo_toml_path) {
-            let document_tree = load_cargo_toml(&canonicalized_path, toml_version)?;
+            let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
             if document_tree.contains_key("workspace") {
-                return Some((canonicalized_path, document_tree));
+                return Some((canonicalized_path, root, document_tree));
             };
         }
         return None;
@@ -78,13 +85,14 @@ fn find_workspace_cargo_toml(
         let workspace_cargo_toml_path = current_dir.join("Cargo.toml");
 
         if workspace_cargo_toml_path.exists() {
-            let Some(document_tree) = load_cargo_toml(&workspace_cargo_toml_path, toml_version)
+            let Some((root, document_tree)) =
+                load_cargo_toml(&workspace_cargo_toml_path, toml_version)
             else {
                 continue;
             };
 
             if document_tree.contains_key("workspace") {
-                return Some((workspace_cargo_toml_path, document_tree));
+                return Some((workspace_cargo_toml_path, root, document_tree));
             };
         }
     }
@@ -96,7 +104,11 @@ fn find_path_crate_cargo_toml(
     cargo_toml_path: &std::path::Path,
     crate_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Option<(std::path::PathBuf, tombi_document_tree::DocumentTree)> {
+) -> Option<(
+    std::path::PathBuf,
+    tombi_ast::Root,
+    tombi_document_tree::DocumentTree,
+)> {
     let mut crate_path = crate_path.to_path_buf();
     if !crate_path.is_absolute() {
         crate_path = cargo_toml_path.parent()?.join(crate_path);
@@ -111,9 +123,9 @@ fn find_path_crate_cargo_toml(
         return None;
     }
 
-    let document_tree = load_cargo_toml(&subcrate_cargo_toml_path, toml_version)?;
+    let (root, document_tree) = load_cargo_toml(&subcrate_cargo_toml_path, toml_version)?;
 
-    Some((subcrate_cargo_toml_path, document_tree))
+    Some((subcrate_cargo_toml_path, root, document_tree))
 }
 
 /// Get the location of the workspace Cargo.toml.
@@ -138,7 +150,7 @@ fn goto_workspace(
         Some(tombi_schema_store::Accessor::Key(key)) if key == "workspace"
     ));
 
-    let Some((workspace_cargo_toml_path, workspace_cargo_toml_document_tree)) =
+    let Some((workspace_cargo_toml_path, _, workspace_cargo_toml_document_tree)) =
         find_workspace_cargo_toml(crate_cargo_toml_path, workspace_path, toml_version)
     else {
         return Ok(None);
@@ -177,7 +189,7 @@ fn goto_workspace(
     {
         if let tombi_document_tree::Value::Table(table) = value {
             if let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path") {
-                if let Some((subcrate_cargo_toml_path, subcrate_document_tree)) =
+                if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
                     find_path_crate_cargo_toml(
                         &workspace_cargo_toml_path,
                         std::path::Path::new(subcrate_path.value()),
@@ -239,7 +251,7 @@ fn goto_dependency_crates(
     let mut locations = Vec::new();
     if let tombi_document_tree::Value::Table(table) = crate_value {
         if let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path") {
-            if let Some((subcrate_cargo_toml_path, subcrate_document_tree)) =
+            if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
                 find_path_crate_cargo_toml(
                     workspace_cargo_toml_path,
                     std::path::Path::new(subcrate_path.value()),
@@ -289,7 +301,7 @@ fn goto_dependency_crates(
             toml_version,
             "members",
         )? {
-            let Some(crate_document_tree) =
+            let Some((_, crate_document_tree)) =
                 load_cargo_toml(&crate_location.cargo_toml_path, toml_version)
             else {
                 continue;
@@ -343,11 +355,13 @@ fn goto_crate_package(
             _ => unreachable!(),
         };
 
-        if let Some((subcrate_cargo_toml_path, subcrate_document_tree)) = find_path_crate_cargo_toml(
-            workspace_cargo_toml_path,
-            std::path::Path::new(subcrate_path.value()),
-            toml_version,
-        ) {
+        if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
+            find_path_crate_cargo_toml(
+                workspace_cargo_toml_path,
+                std::path::Path::new(subcrate_path.value()),
+                toml_version,
+            )
+        {
             if let Some((_, tombi_document_tree::Value::String(package_name))) =
                 tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
             {
@@ -601,7 +615,8 @@ fn goto_workspace_member_crates(
     for (_, cargo_toml_path) in
         find_package_cargo_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
     {
-        let Some(member_document_tree) = load_cargo_toml(&cargo_toml_path, toml_version) else {
+        let Some((_, member_document_tree)) = load_cargo_toml(&cargo_toml_path, toml_version)
+        else {
             continue;
         };
 
