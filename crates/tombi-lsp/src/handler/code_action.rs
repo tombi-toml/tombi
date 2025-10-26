@@ -56,6 +56,7 @@ pub async fn handle_code_action(
         return Ok(None);
     };
 
+    let root = document_source.ast();
     let document_tree = document_source.document_tree();
     let accessors = get_accessors(document_tree, &keys, position);
     let mut key_contexts = key_contexts.into_iter();
@@ -76,6 +77,7 @@ pub async fn handle_code_action(
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
         line_index,
+        &root,
         document_tree,
         &accessors,
         &accessor_contexts,
@@ -96,6 +98,7 @@ pub async fn handle_code_action(
 
     if let Some(extension_code_actions) = tombi_extension_uv::code_action(
         &text_document_uri,
+        root,
         document_tree,
         &accessors,
         document_source.toml_version,

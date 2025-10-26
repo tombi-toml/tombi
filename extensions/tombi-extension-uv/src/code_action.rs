@@ -13,8 +13,71 @@ use crate::{
     parse_dependency_requirement, parse_requirement, DependencyRequirement,
 };
 
+pub enum CodeActionRefactorRewriteName {
+    /// Use Workspace Dependency
+    ///
+    /// Convert a member's dependency to use the version defined in the workspace.
+    ///
+    /// Before:
+    /// ```toml
+    /// # In member's pyproject.toml
+    /// [project]
+    /// dependencies = ["pydantic>=2.10,<3.0"]
+    /// ```
+    ///
+    /// After applying "Use Workspace Dependency":
+    /// ```toml
+    /// # In member's pyproject.toml
+    /// [project]
+    /// dependencies = ["pydantic"]
+    /// ```
+    UseWorkspaceDependency,
+
+    /// Add to Workspace and Use Workspace Dependency
+    ///
+    /// Add a dependency to workspace's [project.dependencies] and convert the member's
+    /// dependency to version-less format.
+    ///
+    /// Before:
+    /// ```toml
+    /// # Workspace pyproject.toml
+    /// [project]
+    /// dependencies = []
+    ///
+    /// # Member pyproject.toml
+    /// [project]
+    /// dependencies = ["pydantic>=2.10,<3.0"]
+    /// ```
+    ///
+    /// After applying "Add to Workspace and Use Workspace Dependency":
+    /// ```toml
+    /// # Workspace pyproject.toml
+    /// [project]
+    /// dependencies = ["pydantic>=2.10,<3.0"]
+    ///
+    /// # Member pyproject.toml
+    /// [project]
+    /// dependencies = ["pydantic"]
+    /// ```
+    AddToWorkspaceAndUseWorkspaceDependency,
+}
+
+impl std::fmt::Display for CodeActionRefactorRewriteName {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CodeActionRefactorRewriteName::UseWorkspaceDependency => {
+                write!(f, "Use Workspace Dependency")
+            }
+            CodeActionRefactorRewriteName::AddToWorkspaceAndUseWorkspaceDependency => {
+                write!(f, "Add to Workspace and Use Workspace Dependency")
+            }
+        }
+    }
+}
+
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
+    _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
@@ -141,68 +204,6 @@ fn format_dependency_without_version(requirement: &Requirement<VerbatimUrl>) -> 
     } else {
         let extras: Vec<String> = requirement.extras.iter().map(|e| e.to_string()).collect();
         format!("{}[{}]", name, extras.join(","))
-    }
-}
-
-pub enum CodeActionRefactorRewriteName {
-    /// Use Workspace Dependency
-    ///
-    /// Convert a member's dependency to use the version defined in the workspace.
-    ///
-    /// Before:
-    /// ```toml
-    /// # In member's pyproject.toml
-    /// [project]
-    /// dependencies = ["pydantic>=2.10,<3.0"]
-    /// ```
-    ///
-    /// After applying "Use Workspace Dependency":
-    /// ```toml
-    /// # In member's pyproject.toml
-    /// [project]
-    /// dependencies = ["pydantic"]
-    /// ```
-    UseWorkspaceDependency,
-
-    /// Add to Workspace and Use Workspace Dependency
-    ///
-    /// Add a dependency to workspace's [project.dependencies] and convert the member's
-    /// dependency to version-less format.
-    ///
-    /// Before:
-    /// ```toml
-    /// # Workspace pyproject.toml
-    /// [project]
-    /// dependencies = []
-    ///
-    /// # Member pyproject.toml
-    /// [project]
-    /// dependencies = ["pydantic>=2.10,<3.0"]
-    /// ```
-    ///
-    /// After applying "Add to Workspace and Use Workspace Dependency":
-    /// ```toml
-    /// # Workspace pyproject.toml
-    /// [project]
-    /// dependencies = ["pydantic>=2.10,<3.0"]
-    ///
-    /// # Member pyproject.toml
-    /// [project]
-    /// dependencies = ["pydantic"]
-    /// ```
-    AddToWorkspaceAndUseWorkspaceDependency,
-}
-
-impl std::fmt::Display for CodeActionRefactorRewriteName {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            CodeActionRefactorRewriteName::UseWorkspaceDependency => {
-                write!(f, "Use Workspace Dependency")
-            }
-            CodeActionRefactorRewriteName::AddToWorkspaceAndUseWorkspaceDependency => {
-                write!(f, "Add to Workspace and Use Workspace Dependency")
-            }
-        }
     }
 }
 
@@ -641,12 +642,14 @@ name = "test"
         )
         .unwrap();
         let document_tree = root
+            .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
         let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = code_action(
             &uri,
+            &root,
             &document_tree,
             &[],
             tombi_config::TomlVersion::default(),
@@ -672,12 +675,14 @@ dependencies = ["pydantic>=2.10"]
         )
         .unwrap();
         let document_tree = root
+            .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
         let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = code_action(
             &uri,
+            &root,
             &document_tree,
             &[
                 Accessor::Key("project".to_string()),
@@ -703,6 +708,7 @@ name = "test"
         )
         .unwrap();
         let document_tree = root
+            .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
         let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
@@ -710,6 +716,7 @@ name = "test"
         // Test with invalid accessor (not dependencies)
         let result = code_action(
             &uri,
+            &root,
             &document_tree,
             &[
                 Accessor::Key("project".to_string()),

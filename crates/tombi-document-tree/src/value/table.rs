@@ -124,12 +124,12 @@ impl Table {
 
     pub(crate) fn new_inline_table(node: &tombi_ast::InlineTable) -> Self {
         let has_comment = !node.inner_begin_dangling_comments().is_empty()
-            || !node
+            || node
                 .inner_end_dangling_comments()
                 .into_iter()
                 .flatten()
-                .collect_vec()
-                .is_empty()
+                .next()
+                .is_some()
             || node.has_inner_comments();
 
         let symbol_range = tombi_text::Range::new(
