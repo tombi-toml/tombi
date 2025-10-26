@@ -77,6 +77,7 @@ pub async fn handle_code_action(
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
         line_index,
+        &root,
         document_tree,
         &accessors,
         &accessor_contexts,
