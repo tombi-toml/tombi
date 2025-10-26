@@ -77,6 +77,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
+    _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     toml_version: tombi_config::TomlVersion,
@@ -641,12 +642,14 @@ name = "test"
         )
         .unwrap();
         let document_tree = root
+            .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
         let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = code_action(
             &uri,
+            &root,
             &document_tree,
             &[],
             tombi_config::TomlVersion::default(),
@@ -672,12 +675,14 @@ dependencies = ["pydantic>=2.10"]
         )
         .unwrap();
         let document_tree = root
+            .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
         let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
 
         let result = code_action(
             &uri,
+            &root,
             &document_tree,
             &[
                 Accessor::Key("project".to_string()),
@@ -703,6 +708,7 @@ name = "test"
         )
         .unwrap();
         let document_tree = root
+            .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
         let line_index = tombi_text::LineIndex::new(toml_text, tombi_text::EncodingKind::default());
@@ -710,6 +716,7 @@ name = "test"
         // Test with invalid accessor (not dependencies)
         let result = code_action(
             &uri,
+            &root,
             &document_tree,
             &[
                 Accessor::Key("project".to_string()),
