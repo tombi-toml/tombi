@@ -182,7 +182,8 @@ fn create_member_document_links(
         let mut member_document_links: Vec<_> =
             find_package_cargo_toml_paths(&member_patterns, &exclude_patterns, workspace_dir_path)
                 .filter_map(|(_, cargo_toml_path)| {
-                    let cargo_toml_document_tree = load_cargo_toml(&cargo_toml_path, toml_version)?;
+                    let (_, cargo_toml_document_tree) =
+                        load_cargo_toml(&cargo_toml_path, toml_version)?;
                     let (_, package_name) =
                         dig_keys(&cargo_toml_document_tree, &["package", "name"])?;
                     let package_name = match package_name {
@@ -261,7 +262,7 @@ fn document_link_for_crate_cargo_toml(
     }
 
     let mut total_document_links = vec![];
-    if let Some((workspace_cargo_toml_path, workspace_document_tree)) = find_workspace_cargo_toml(
+    if let Some((workspace_cargo_toml_path, _, workspace_document_tree)) = find_workspace_cargo_toml(
         crate_cargo_toml_path,
         get_workspace_path(crate_document_tree),
         toml_version,
@@ -551,7 +552,7 @@ fn document_link_for_dependency(
         };
 
         if let Some(tombi_document_tree::Value::String(crate_path)) = table.get("path") {
-            if let Some((path_target_cargo_toml_path, path_target_document_tree)) =
+            if let Some((path_target_cargo_toml_path, _, path_target_document_tree)) =
                 find_path_crate_cargo_toml(
                     crate_cargo_toml_path,
                     std::path::Path::new(crate_path.value()),
@@ -629,7 +630,7 @@ fn get_registories(
     toml_version: TomlVersion,
 ) -> Result<RegistoryMap, tower_lsp::jsonrpc::Error> {
     let mut registories = RegistoryMap::default();
-    if let Some(cargo_toml_document_tree) = load_cargo_toml(
+    if let Some((_, cargo_toml_document_tree)) = load_cargo_toml(
         &workspace_cargo_toml_path.join(".cargo/config.toml"),
         toml_version,
     ) {

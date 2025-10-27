@@ -122,6 +122,7 @@ impl std::fmt::Display for CodeActionRefactorRewriteName {
 pub fn code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
+    _root: &tombi_ast::Root,
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
     contexts: &[AccessorContext],
@@ -190,11 +191,13 @@ fn code_actions_for_crate_cargo_toml(
 ) -> Vec<CodeActionOrCommand> {
     let mut code_actions = Vec::new();
 
-    if let Some((workspace_cargo_toml_path, workspace_document_tree)) = find_workspace_cargo_toml(
-        cargo_toml_path,
-        get_workspace_path(document_tree),
-        toml_version,
-    ) {
+    if let Some((workspace_cargo_toml_path, workspace_root, workspace_document_tree)) =
+        find_workspace_cargo_toml(
+            cargo_toml_path,
+            get_workspace_path(document_tree),
+            toml_version,
+        )
+    {
         // Load workspace text and create line index for workspace document
         let Ok(workspace_text) = std::fs::read_to_string(&workspace_cargo_toml_path) else {
             return code_actions;
@@ -222,6 +225,7 @@ fn code_actions_for_crate_cargo_toml(
             contexts,
             &workspace_cargo_toml_path,
             &workspace_line_index,
+            &workspace_root,
             &workspace_document_tree,
         ) {
             code_actions.push(CodeActionOrCommand::CodeAction(action));
@@ -249,6 +253,22 @@ fn code_actions_for_crate_cargo_toml(
     code_actions
 }
 
+/// Convert a package field to inherit from workspace configuration.
+///
+/// Before
+///
+/// ```toml
+/// [package]
+/// version = "1.0.0"
+/// ```
+///
+/// After applying "Convert Package Field to Inherit from Workspace"
+///
+/// ```toml
+/// [package]
+/// version.workspace = true
+/// ```
+///
 fn workspace_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -439,6 +459,22 @@ fn use_workspace_dependency_code_action(
     None
 }
 
+/// Convert a dependency version to a table format.
+///
+/// Before
+///
+/// ```toml
+/// [dependencies]
+/// serde = "1.0"
+/// ```
+///
+/// After applying "Convert Dependency to Table Format"
+///
+/// ```toml
+/// [dependencies]
+/// serde = { version = "1.0" }
+/// ```
+///
 fn crate_version_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -500,6 +536,104 @@ fn calculate_insertion_index(existing_crate_names: &[&str], new_crate_name: &str
         .unwrap_or(existing_crate_names.len())
 }
 
+/// Get AST InlineTable from document tree range
+/// First finds the range in document_tree, then locates the corresponding AST node
+fn get_ast_inline_table_from_document_tree(
+    root: &tombi_ast::Root,
+    document_tree: &tombi_document_tree::DocumentTree,
+    keys: &[&str],
+) -> Option<tombi_ast::InlineTable> {
+    use tombi_ast::AstNode;
+
+    // Get the value from document tree to find its range
+    let (_, value) = tombi_document_tree::dig_keys(document_tree, keys)?;
+
+    let tombi_document_tree::Value::Table(doc_table) = value else {
+        return None;
+    };
+
+    // Get the range of the inline table in the document tree
+    let target_range = doc_table.range();
+
+    // Use descendants to find the InlineTable with matching range
+    for node in root.syntax().descendants() {
+        if let Some(inline_table) = tombi_ast::InlineTable::cast(node) {
+            if inline_table.range() == target_range {
+                return Some(inline_table);
+            }
+        }
+    }
+
+    None
+}
+
+/// Calculate insertion position and text for inline table insertion with comma handling
+/// Uses tombi_ast API to properly handle commas and formatting
+fn calculate_inline_table_insertion(
+    ast_inline_table: &tombi_ast::InlineTable,
+    insertion_index: usize,
+    new_entry_text: &str,
+) -> Option<(tombi_text::Position, String)> {
+    use tombi_ast::AstNode;
+
+    let key_values_with_comma: Vec<_> = ast_inline_table.key_values_with_comma().collect();
+
+    if key_values_with_comma.is_empty() {
+        // Empty inline table - insert after opening brace
+        // { } -> { serde = "1.0" }
+        return if let Some(dangling_comment) = ast_inline_table
+            .inner_dangling_comments()
+            .last()
+            .and_then(|comments| comments.last())
+        {
+            Some((
+                dangling_comment.syntax().range().end,
+                format!("\n\n{},\n", new_entry_text),
+            ))
+        } else {
+            Some((
+                ast_inline_table.brace_start()?.range().end,
+                format!("{}", new_entry_text),
+            ))
+        };
+    }
+
+    if insertion_index == 0 {
+        // Insert at the beginning
+        // { tokio = "1.0" } -> { serde = "1.0", tokio = "1.0" }
+        let (first_key_value, _) = key_values_with_comma.first()?;
+        let insert_pos = first_key_value.syntax().range().start;
+        let new_text = format!("{},\n", new_entry_text);
+        return Some((insert_pos, new_text));
+    }
+
+    if insertion_index >= key_values_with_comma.len() {
+        // Insert at the end
+        // { serde = "1.0" } -> { serde = "1.0", tokio = "1.0" }
+        let (last_key_value, last_comma) = key_values_with_comma.last()?;
+        if let Some(last_comma) = last_comma {
+            let insert_pos = last_comma.range().end;
+            let new_text = format!("\n{}, ", new_entry_text);
+            return Some((insert_pos, new_text));
+        } else {
+            let insert_pos = last_key_value.syntax().range().end;
+            let new_text = format!(", {}", new_entry_text);
+            return Some((insert_pos, new_text));
+        }
+    }
+
+    // Insert in the middle
+    // { serde = "1.0", tracing = "0.1" } -> { serde = "1.0", tokio = "1.0", tracing = "0.1" }
+    let (target_key_value, target_comma) = key_values_with_comma.get(insertion_index)?;
+    let insert_pos = if let Some(target_comma) = target_comma {
+        target_comma.range().end
+    } else {
+        target_key_value.syntax().range().end
+    };
+    let new_text = format!("\n{},\n", new_entry_text);
+    Some((insert_pos, new_text))
+}
+
 /// Add a dependency to workspace.dependencies and convert member's dependency
 /// to workspace = true format.
 ///
@@ -507,6 +641,24 @@ fn calculate_insertion_index(existing_crate_names: &[&str], new_crate_name: &str
 /// - The cursor is on a dependency in member Cargo.toml
 /// - The dependency is not yet registered in workspace.dependencies
 /// - The dependency is not already using workspace = true
+///
+/// Before
+///
+/// ```toml
+/// [dependencies]
+/// serde = "1.0"
+/// ```
+///
+/// After applying "Add to Workspace and Inherit Dependency"
+///
+/// ```toml
+/// [workspace.dependencies]
+/// serde = "1.0"
+///
+/// [dependencies]
+/// serde = { workspace = true }
+/// ```
+///
 fn add_workspace_dependency_code_action(
     text_document_uri: &tombi_uri::Uri,
     line_index: &tombi_text::LineIndex,
@@ -515,6 +667,7 @@ fn add_workspace_dependency_code_action(
     contexts: &[AccessorContext],
     workspace_cargo_toml_path: &std::path::Path,
     workspace_line_index: &tombi_text::LineIndex,
+    workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
 ) -> Option<CodeAction> {
     // Check if accessors match dependency patterns
@@ -565,6 +718,7 @@ fn add_workspace_dependency_code_action(
     // Generate workspace edit for workspace.dependencies
     let workspace_edit = generate_workspace_dependencies_edit(
         workspace_line_index,
+        workspace_root,
         workspace_document_tree,
         crate_name,
         crate_value,
@@ -608,6 +762,7 @@ fn add_workspace_dependency_code_action(
 /// Generate TextEdit for adding dependency to workspace.dependencies
 fn generate_workspace_dependencies_edit(
     workspace_line_index: &tombi_text::LineIndex,
+    workspace_root: &tombi_ast::Root,
     workspace_document_tree: &tombi_document_tree::DocumentTree,
     crate_name: &str,
     crate_value: &tombi_document_tree::Value,
@@ -615,55 +770,69 @@ fn generate_workspace_dependencies_edit(
     // Get or prepare workspace.dependencies section
     let workspace_deps = dig_keys(workspace_document_tree, &["workspace", "dependencies"]);
 
-    // Extract dependency value to copy to workspace
-    //
-    // NOTE: By convention, dependencies are not written as inline tables,
-    //       so this logic assumes the value is represented as a Table.
-    //
-    let dependency_text = format!("{} = {}\n", crate_name, crate_value.to_string());
+    let Some((_, deps_table)) = workspace_deps else {
+        // NOTE: `workspace.dependencies` section doesn't exist, need to create it
+        //       For now, return None - this will be handled in a future enhancement
+        return None;
+    };
 
-    // Determine insertion position
-    let insertion_range = if let Some((_, deps_table)) = workspace_deps {
-        if let tombi_document_tree::Value::Table(table) = deps_table {
-            // Get existing crate names and calculate insertion index
-            let existing_crates: Vec<&str> = table.keys().map(|key| key.value.as_str()).collect();
-            let insertion_index = calculate_insertion_index(&existing_crates, crate_name);
+    let tombi_document_tree::Value::Table(table) = deps_table else {
+        return None;
+    };
 
-            // Find insertion position in the actual table
-            if insertion_index == 0 {
-                if table.is_empty() {
-                    tombi_text::Range::at(table.range().end)
-                } else {
-                    let range = table.keys().next().unwrap().range();
-                    tombi_text::Range::at(range.start)
-                }
-            } else if insertion_index >= existing_crates.len() {
-                // Insert at the end of the table
+    // Get existing crate names and calculate insertion index
+    let existing_crates: Vec<&str> = table.keys().map(|key| key.value.as_str()).collect();
+    let insertion_index = calculate_insertion_index(&existing_crates, crate_name);
+    let crate_value_text = crate_value.to_string();
+
+    // Find insertion position in the actual table
+    let (insertion_range, new_text) = if table.kind() == TableKind::Table {
+        let insertion_range = if insertion_index == 0 {
+            if table.is_empty() {
+                tombi_text::Range::at(table.range().end)
+            } else {
+                let range = table.keys().next().unwrap().range();
+                tombi_text::Range::at(range.start)
+            }
+        } else if insertion_index >= existing_crates.len() {
+            // Insert at the end of the table
+            let range = table.range();
+            tombi_text::Range::at(range.end)
+        } else {
+            // Insert before the crate at insertion_index
+            if let Some((target_key, _)) = table.get_key_value(existing_crates[insertion_index]) {
+                let range = target_key.range();
+                tombi_text::Range::at(range.start)
+            } else {
                 let range = table.range();
                 tombi_text::Range::at(range.end)
-            } else {
-                // Insert before the crate at insertion_index
-                if let Some((target_key, _)) = table.get_key_value(existing_crates[insertion_index])
-                {
-                    let range = target_key.range();
-                    tombi_text::Range::at(range.start)
-                } else {
-                    let range = table.range();
-                    tombi_text::Range::at(range.end)
-                }
             }
-        } else {
-            return None;
-        }
+        };
+
+        (
+            insertion_range,
+            format!("{crate_name} = {crate_value_text}\n"),
+        )
+    } else if matches!(table.kind(), TableKind::InlineTable { .. }) {
+        // Handle InlineTable case using AST for accurate comma handling
+        let ast_inline_table = get_ast_inline_table_from_document_tree(
+            workspace_root,
+            workspace_document_tree,
+            &["workspace", "dependencies"],
+        )?;
+
+        let new_entry_text = format!("{crate_name} = {crate_value_text}");
+        let (insertion_pos, new_text) =
+            calculate_inline_table_insertion(&ast_inline_table, insertion_index, &new_entry_text)?;
+
+        (tombi_text::Range::at(insertion_pos), new_text)
     } else {
-        // workspace.dependencies section doesn't exist, need to create it
-        // For now, return None - this will be handled in a future enhancement
         return None;
     };
 
     Some(TextEdit {
         range: insertion_range.into_lsp(workspace_line_index),
-        new_text: dependency_text,
+        new_text,
     })
 }
 

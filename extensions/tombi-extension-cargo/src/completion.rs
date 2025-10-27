@@ -324,7 +324,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
                 .collect_vec(),
         ) {
             if boolean.value() {
-                let Some((workspace_cargo_toml_path, workspace_document_tree)) =
+                let Some((workspace_cargo_toml_path, _, workspace_document_tree)) =
                     find_workspace_cargo_toml(
                         cargo_toml_path,
                         get_workspace_path(document_tree),
@@ -480,7 +480,7 @@ async fn fetch_local_crate_features(
     toml_version: TomlVersion,
 ) -> Option<AHashMap<String, Vec<String>>> {
     // Get the directory of the current Cargo.toml file
-    let (_, subcrate_document_tree) = find_path_crate_cargo_toml(
+    let (_, _, subcrate_document_tree) = find_path_crate_cargo_toml(
         cargo_toml_path,
         std::path::Path::new(sub_crate_path),
         toml_version,

@@ -268,7 +268,7 @@ fn calculate_array_insertion(
         } else {
             Some((
                 ast_array.bracket_start()?.range().end,
-                new_element.to_string(),
+                format!("{}", new_element),
             ))
         };
     }
@@ -277,7 +277,7 @@ fn calculate_array_insertion(
         // Insert at the beginning
         let (first_value, _) = values_with_comma.first()?;
         let insert_pos = first_value.syntax().range().start;
-        let new_text = format!("{},\n", new_element.to_string());
+        let new_text = format!("{},\n", new_element);
         return Some((insert_pos, new_text));
     }
 
@@ -286,11 +286,11 @@ fn calculate_array_insertion(
         let (last_value, last_comma) = values_with_comma.last()?;
         if let Some(last_comma) = last_comma {
             let insert_pos = last_comma.range().end;
-            let new_text = format!("\n{},", new_element.to_string());
+            let new_text = format!("\n{}, ", new_element);
             return Some((insert_pos, new_text));
         } else {
             let insert_pos = last_value.syntax().range().end;
-            let new_text = format!(",{}", new_element.to_string());
+            let new_text = format!(", {}", new_element);
             return Some((insert_pos, new_text));
         }
     }
@@ -302,7 +302,7 @@ fn calculate_array_insertion(
     } else {
         target_value.syntax().range().end
     };
-    let new_text = format!("\n{},\n", new_element.to_string());
+    let new_text = format!("\n{},\n", new_element);
     return Some((insert_pos, new_text));
 }
 
