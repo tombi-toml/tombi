@@ -64,6 +64,8 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
+    let use_ansi_color = std::env::var("NO_COLOR").map_or(true, |v| v.is_empty());
+
     let (config, config_path, config_level) =
         serde_tombi::config::load_with_path_and_level(std::env::current_dir().ok())?;
 
@@ -111,6 +113,7 @@ where
                     toml_version,
                     &lint_options,
                     &schema_store,
+                    use_ansi_color,
                 )
                 .await
                 {
@@ -140,6 +143,7 @@ where
                                             toml_version,
                                             &options,
                                             &schema_store,
+                                            use_ansi_color,
                                         )
                                         .await
                                     });
@@ -149,16 +153,16 @@ where
                                         crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
                                             source_path,
                                         ))
-                                        .print(&mut printer);
+                                        .print(&mut printer, use_ansi_color);
                                     } else {
-                                        crate::Error::Io(err).print(&mut printer);
+                                        crate::Error::Io(err).print(&mut printer, use_ansi_color);
                                     }
                                     error_num += 1;
                                 }
                             }
                         }
                         Err(err) => {
-                            crate::Error::TombiGlob(err).print(&mut printer);
+                            crate::Error::TombiGlob(err).print(&mut printer, use_ansi_color);
                             error_num += 1;
                         }
                     }
@@ -195,6 +199,7 @@ async fn lint_file<R, P>(
     toml_version: TomlVersion,
     lint_options: &LintOptions,
     schema_store: &tombi_schema_store::SchemaStore,
+    use_ansi_color: bool,
 ) -> bool
 where
     Diagnostic: Print<P>,
@@ -224,7 +229,7 @@ where
             } else {
                 diagnostics
             }
-            .print(&mut printer),
+            .print(&mut printer, use_ansi_color),
         }
     }
     false

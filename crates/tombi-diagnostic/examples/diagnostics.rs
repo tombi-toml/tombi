@@ -38,10 +38,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let error = Diagnostic::new_error("Some error occured.", "tombi-diagnostic", ((2, 1), (2, 3)));
 
-    warning.print(&mut Pretty);
-    warning.with_source_file(&source_file).print(&mut Pretty);
-    error.print(&mut Pretty);
-    error.with_source_file(&source_file).print(&mut Pretty);
+    warning.print(&mut Pretty, true);
+    warning
+        .with_source_file(&source_file)
+        .print(&mut Pretty, true);
+    error.print(&mut Pretty, true);
+    error
+        .with_source_file(&source_file)
+        .print(&mut Pretty, true);
 
     Ok(())
 }

@@ -11,8 +11,8 @@ pub struct TombiFormatter {
 }
 
 impl TombiFormatter {
-    fn level_style_for(level: &tracing::Level, ansi: bool) -> Style {
-        if ansi {
+    fn level_style_for(level: &tracing::Level, use_ansi_color: bool) -> Style {
+        if use_ansi_color {
             match *level {
                 tracing::Level::ERROR => Style::new().bold().fg(nu_ansi_term::Color::Red),
                 tracing::Level::WARN => Style::new().bold().fg(nu_ansi_term::Color::Yellow),
@@ -26,16 +26,16 @@ impl TombiFormatter {
         }
     }
 
-    fn at_style(ansi: bool) -> Style {
-        if ansi {
+    fn at_style(use_ansi_color: bool) -> Style {
+        if use_ansi_color {
             Style::new().fg(nu_ansi_term::Color::DarkGray)
         } else {
             Style::new()
         }
     }
 
-    fn link_style(ansi: bool) -> Style {
-        if ansi {
+    fn link_style(use_ansi_color: bool) -> Style {
+        if use_ansi_color {
             Style::new().fg(nu_ansi_term::Color::Cyan)
         } else {
             Style::new()
@@ -69,13 +69,13 @@ where
         mut writer: tracing_subscriber::fmt::format::Writer<'_>,
         event: &Event<'_>,
     ) -> std::fmt::Result {
-        let ansi = std::env::var("NO_COLOR").map_or(true, |v| v.is_empty());
+        let use_ansi_color = std::env::var("NO_COLOR").map_or(true, |v| v.is_empty());
         let metadata = event.metadata();
 
         write!(
             writer,
             "{}: ",
-            Self::level_style_for(metadata.level(), ansi).paint(format!(
+            Self::level_style_for(metadata.level(), use_ansi_color).paint(format!(
                 "{:>7}",
                 match *metadata.level() {
                     tracing::Level::ERROR => "Error",
@@ -101,8 +101,8 @@ where
                 writeln!(
                     writer,
                     "    {} {}",
-                    Self::at_style(ansi).paint("at"),
-                    Self::link_style(ansi).paint(link)
+                    Self::at_style(use_ansi_color).paint("at"),
+                    Self::link_style(use_ansi_color).paint(link)
                 )?;
             }
         }
