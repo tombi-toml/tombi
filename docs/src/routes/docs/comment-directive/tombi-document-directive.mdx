@@ -7,10 +7,17 @@ Document comment directives are comments that apply to the entire document. This
 You can specify some of these options with the [Tombi configuration file](/docs/configuration) as well.
 However, settings specified by comment directives always take precedence over those in the configuration file.
 
-
 ## Available Options
 
-### `toml-version`
+- [toml-version](#toml-version)
+- [format](#format)
+  - [format.disabled](#format-disabled)
+- [lint](#lint)
+  - [lint.disabled](#lint-disabled)
+- [schema](#schema)
+  - [schema.strict](#schema-strict)
+
+### toml-version
 
 Specifies the TOML version of the document. This directive has the highest priority.
 
@@ -22,7 +29,11 @@ Specifies the TOML version of the document. This directive has the highest prior
 #:tombi toml-version = "v1.0.0"
 ```
 
-### `format.disabled`
+### format
+
+Formatter options for the document.
+
+### format.disabled
 
 Disables formatting for the entire document.
 
@@ -34,7 +45,11 @@ Disables formatting for the entire document.
 #:tombi format.disabled = true
 ```
 
-### `lint.disabled`
+### lint
+
+Linter options for the document.
+
+### lint.disabled
 
 Disables linting for the entire document.
 
@@ -46,7 +61,11 @@ Disables linting for the entire document.
 #:tombi lint.disabled = true
 ```
 
-### `schema.strict`
+### schema
+
+JSON Schema validation options for the document.
+
+### schema.strict
 
 Enables strict schema validation. If `additionalProperties` is not specified in the JSON Schema, the strict mode treats it as `additionalProperties: false`, which is different from the JSON Schema specification.
 
