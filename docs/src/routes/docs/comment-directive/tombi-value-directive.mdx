@@ -81,7 +81,7 @@ Controls the sorting method of table keys.
 - **Values**:
   - `"ascending"` - Sort in ascending order
   - `"descending"` - Sort in descending order
-  - `"version-sort"` - Sort by version
+  - `"version-sort"` - Sort by version based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting)
   - `{ disabled = true }` - Disable sorting
 
 ```toml
@@ -107,13 +107,13 @@ Controls the sorting method of array values.
 - **Values**:
   - `"ascending"` - Sort in ascending order
   - `"descending"` - Sort in descending order
-  - `"version-sort"` - Sort by version
+  - `"version-sort"` - Sort by version based on the [Rust style guide](https://doc.rust-lang.org/nightly/style-guide/#sorting)
   - `{ disabled = true }` - Disable sorting
 
 ```toml
 # Enable version-sort for array values
 # tombi: format.rules.array-values-order = "version-sort"
-dependencies = ["1.2.0", "1.10.0", "1.1.0"]
+dependencies = ["1.1.0", "1.10.0", "1.2.0"]
 ```
 
 ## Lint Rules
