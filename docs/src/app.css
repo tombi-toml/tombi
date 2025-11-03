@@ -147,7 +147,7 @@ main {
 }
 
 :root.dark .mdx-content code:not(pre code) {
-  background-color: rgba(119, 170, 221, 0.05);
+  background-color: #2f2f2f;
   color: #e6e6e6;
 }
 

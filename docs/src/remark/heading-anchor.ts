@@ -5,8 +5,9 @@ import { visit } from "unist-util-visit";
 function slugify(text: string): string {
   return text
     .toLowerCase()
+    .replace(/\./g, "-") // Replace dots with hyphens
     .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/[^\w-]/g, "") // Remove non-alphanumeric characters except hyphens
+    .replace(/[^a-z0-9-]/g, "") // Remove non-alphanumeric characters except hyphens
     .replace(/-+/g, "-") // Replace consecutive hyphens with a single hyphen
     .replace(/^-+|-+$/g, ""); // Remove hyphens at the beginning and end
 }
