@@ -1,0 +1,52 @@
+import { Warning } from "~/components/Highlight";
+
+# Auto Sorting
+
+One of Tombi's most distinctive features is automatic sorting.
+It can automatically sort content including comments, using its [own unique treatment of comments](/docs/formatter/treatment-of-comments).
+
+<Warning>
+If you don't like the automatic sorting provided by Tombi, we recommend adding a Tombi configuration file and disabling the formatter.
+
+```toml
+[lsp]
+formatting.enabled = false
+```
+
+Completely disabling automatic sorting means you will have to bear significant maintenance costs.
+
+If you still want to use Tombi's formatter without automatic sorting,
+you can create and manage your own JSON Schema that excludes automatic sorting specifications.
+</Warning>
+
+## How to Specify Auto-Sorting Methods
+
+Tombi does not perform automatic sorting unless a sorting method is specified.
+
+Auto-sorting methods are available in the following order of priority:
+
+- [Comment Directives](/docs/formatter/auto-sorting#comment-directives)
+- [JSON Schema](/docs/formatter/auto-sorting#json-schema)
+
+### Comment Directives
+
+You can specify auto-sorting methods using [comment directives](/docs/comment-directive#format-rules).
+This has higher priority than [JSON Schema](/docs/json-schema#formatting) specifications.
+
+<Warning>
+This is intended for projects that are not large enough to warrant creating a JSON Schema,
+or as a temporary workaround for errors in JSON Schemas registered in the Schema Store.
+</Warning>
+
+### JSON Schema
+This is probably the method you'll benefit from the most.
+
+When schemas automatically retrieved from the [JSON Schema Store](https://json.schemastore.org) contain the following keys, automatic sorting is performed according to that schema:
+
+- [x-tombi-table-keys-order](/docs/json-schema#x-tombi-table-keys-order) 
+- [x-tombi-array-values-order](/docs/json-schema#x-tombi-array-values-order)
+- [x-tombi-array-values-order-by](/docs/json-schema#x-tombi-array-values-order-by)
+
+Files like `Cargo.toml` and `pyproject.toml` registered in the JSON Schema Store have these keys specified.
+
+Additionally, you can specify JSON Schema files using [configuration files](/docs/configuration) or [comment directives](/docs/comment-directive#format-rules), allowing you to apply schemas from sources other than the JSON Schema Store.
