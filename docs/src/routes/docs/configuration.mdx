@@ -71,6 +71,48 @@ include = ["pyproject.toml"]
 
 ## Configuration Options
 
+- [toml-version](#toml-version)
+- [files](#files)
+  - [files.include](#filesinclude)
+  - [files.exclude](#filesexclude)
+- [format](#format)
+- [lint](#lint)
+  - [lint.rules](#lintrules)
+    - [lint.rules.key-empty](#lintruleskey-empty)
+    - [lint.rules.dotted-keys-out-of-order](#lintrulesdotted-keys-out-of-order)
+    - [lint.rules.tables-out-of-order](#lintrulestables-out-of-order)
+- [lsp](#lsp)
+  - [lsp.code-action](#lspcode-action)
+    - [lsp.code-action.enabled](#lspcode-actionenabled)
+  - [lsp.completion](#lspcompletion)
+    - [lsp.completion.enabled](#lspcompletionenabled)
+  - [lsp.diagnostic](#lspdiagnostic)
+    - [lsp.diagnostic.enabled](#lspdiagnosticenabled)
+  - [lsp.document-link](#lspdocument-link)
+    - [lsp.document-link.enabled](#lspdocument-linkenabled)
+  - [lsp.formatting](#lspformatting)
+    - [lsp.formatting.enabled](#lspformattingenabled)
+  - [lsp.goto-declaration](#lspgoto-declaration)
+    - [lsp.goto-declaration.enabled](#lspgoto-declarationenabled)
+  - [lsp.goto-definition](#lspgoto-definition)
+    - [lsp.goto-definition.enabled](#lspgoto-definitionenabled)
+  - [lsp.goto-type-definition](#lspgoto-type-definition)
+    - [lsp.goto-type-definition.enabled](#lspgoto-type-definitionenabled)
+  - [lsp.hover](#lsphover)
+    - [lsp.hover.enabled](#lsphoverenabled)
+  - [lsp.workspace-diagnostic](#lspworkspace-diagnostic)
+    - [lsp.workspace-diagnostic.enabled](#lspworkspace-diagnosticenabled)
+- [schema](#schema)
+  - [schema.enabled](#schemaenabled)
+  - [schema.strict](#schemastrict)
+  - [schema.catalog](#schemacatalog)
+    - [schema.catalog.paths](#schemacatalogpaths)
+- [schemas](#schemas)
+  - [schemas[*].toml-version](#root-schema)
+  - [schemas[*].root](#sub-schema)
+  - [schemas[*].path](#root-schema)
+  - [schemas[*].include](#root-schema)
+
 ### `toml-version`
 
 Specifies the TOML version to use if not specified in the schema and comment directive.
@@ -168,12 +210,20 @@ Language Server Protocol (LSP) feature configuration. Each feature can be indivi
 
 Configure code action feature.
 
+#### `lsp.code-action.enabled`
+
+Enable or disable code action feature.
+
 - Type: `boolean`
 - Default: `true`
 
 ### `lsp.completion`
 
 Configure completion feature.
+
+#### `lsp.completion.enabled`
+
+Enable or disable completion feature.
 
 - Type: `boolean`
 - Default: `true`
@@ -182,12 +232,20 @@ Configure completion feature.
 
 Configure diagnostic feature.
 
+#### `lsp.diagnostic.enabled`
+
+Enable or disable diagnostic feature.
+
 - Type: `boolean`
 - Default: `true`
 
 ### `lsp.document-link`
 
 Configure document link feature.
+
+#### `lsp.document-link.enabled`
+
+Enable or disable document link feature.
 
 - Type: `boolean`
 - Default: `true`
@@ -196,12 +254,20 @@ Configure document link feature.
 
 Configure formatting feature.
 
+#### `lsp.formatting.enabled`
+
+Enable or disable formatting feature.
+
 - Type: `boolean`
 - Default: `true`
 
 ### `lsp.goto-declaration`
 
 Configure goto declaration feature.
+
+#### `lsp.goto-declaration.enabled`
+
+Enable or disable goto declaration feature.
 
 - Type: `boolean`
 - Default: `true`
@@ -210,12 +276,20 @@ Configure goto declaration feature.
 
 Configure goto definition feature.
 
+#### `lsp.goto-definition.enabled`
+
+Enable or disable goto definition feature.
+
 - Type: `boolean`
 - Default: `true`
 
 ### `lsp.goto-type-definition`
 
 Configure goto type definition feature.
+
+#### `lsp.goto-type-definition.enabled`
+
+Enable or disable goto type definition feature.
 
 - Type: `boolean`
 - Default: `true`
@@ -224,12 +298,20 @@ Configure goto type definition feature.
 
 Configure hover feature.
 
+#### `lsp.hover.enabled`
+
+Enable or disable hover feature.
+
 - Type: `boolean`
 - Default: `true`
 
 ### `lsp.workspace-diagnostic`
 
 Configure workspace diagnostic feature.
+
+#### `lsp.workspace-diagnostic.enabled`
+
+Enable or disable workspace diagnostic feature.
 
 - Type: `boolean`
 - Default: `true`

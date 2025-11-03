@@ -179,6 +179,29 @@ main {
   background-color: rgba(119, 170, 221, 0.1);
 }
 
+/* List Styles */
+.mdx-content ul {
+  padding-left: 1.2em;
+  margin: 0.5em 0;
+  line-height: 1.8;
+}
+
+.mdx-content ul li {
+  margin: 0.25em 0;
+}
+
+.mdx-content ul ul {
+  list-style-type: circle;
+  padding-left: 1.2em;
+  margin: 0.25em 0;
+}
+
+.mdx-content ul ul ul {
+  list-style-type: square;
+  padding-left: 1.2em;
+  margin: 0.25em 0;
+}
+
 p {
   margin: 2rem 1rem;
   line-height: 1.35;
