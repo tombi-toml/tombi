@@ -1,0 +1,58 @@
+# `#:tombi` Tombi Document Directive
+
+`#:tombi` adds instructions to Tombi. The instructions can be written in the TOML syntax, and can specify the TOML version information, etc.
+
+Document comment directives are comments that apply to the entire document. This only works in the comment group at the beginning of the document, so you need to add a blank line before the document value.
+
+You can specify some of these options with the [Tombi configuration file](/docs/configuration) as well.
+However, settings specified by comment directives always take precedence over those in the configuration file.
+
+
+## Available Options
+
+### `toml-version`
+
+Specifies the TOML version of the document. This directive has the highest priority.
+
+- **Type**: `string`
+- **Default**: `"v1.0.0"`
+- **Values**: `"v1.0.0" | "v1.1.0-preview"`
+
+```toml
+#:tombi toml-version = "v1.0.0"
+```
+
+### `format.disabled`
+
+Disables formatting for the entire document.
+
+- **Type**: `boolean`
+- **Default**: `false`
+- **Values**: Only `true` can be specified
+
+```toml
+#:tombi format.disabled = true
+```
+
+### `lint.disabled`
+
+Disables linting for the entire document.
+
+- **Type**: `boolean`
+- **Default**: `false`
+- **Values**: Only `true` can be specified
+
+```toml
+#:tombi lint.disabled = true
+```
+
+### `schema.strict`
+
+Enables strict schema validation. If `additionalProperties` is not specified in the JSON Schema, the strict mode treats it as `additionalProperties: false`, which is different from the JSON Schema specification.
+
+- **Type**: `boolean`
+- **Default**: `true`
+
+```toml
+#:tombi schema.strict = false
+```

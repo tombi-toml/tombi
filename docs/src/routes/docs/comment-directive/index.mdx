@@ -1,0 +1,25 @@
+import { Warning } from "~/components/Highlight";
+
+# Comment Directive
+
+Tombi supports comment directives to control the behavior of the document.
+
+There are two types of comment directives with different scopes of application:
+
+| Type | Directive | Scope |
+|-----------|-----------|-------------|
+| Document Comment Directive | `#:schema`, `#:tombi` | Document |
+| Value Comment Directive | `# tombi:` | Value |
+
+### Document Comment Directive
+
+Document comment directives are comments that apply to the entire document. These only work in the comment group at the beginning of the document.
+
+- **[#:schema](/docs/comment-directive/schema-document-directive)** - Specify JSON Schema for validation
+- **[#:tombi](/docs/comment-directive/tombi-document-directive)** - Document-level configuration (TOML version, format/lint/schema options)
+
+### Value Comment Directive
+
+Value comment directives are comments that apply to a specific value, allowing fine-grained control over formatting and linting rules.
+
+- **[# tombi:](/docs/comment-directive/tombi-value-directive)** - Value-level configuration (format rules, lint rules)
