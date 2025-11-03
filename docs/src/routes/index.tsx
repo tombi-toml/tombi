@@ -17,16 +17,16 @@ const FEATURES = [
     description: "Full compliance with TOML specification and toml-test",
   },
   {
-    emoji: "↕️",
-    title: "Auto Sorting",
-    description:
-      "Automatically sort keys in your TOML files based on the JSON Schema metadata",
-  },
-  {
     emoji: "🛤️",
     title: "Schema Driven",
     description:
       "Validate and format your TOML files using a JSON Schema Store",
+  },
+  {
+    emoji: "↕️",
+    title: "Auto Sorting",
+    description:
+      "Automatically sort keys in your TOML files based on the JSON Schema metadata",
   },
   {
     emoji: "🚀",
