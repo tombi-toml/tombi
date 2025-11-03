@@ -68,3 +68,267 @@ root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
 ```
+
+## Configuration Options
+
+### `toml-version`
+
+Specifies the TOML version to use if not specified in the schema and comment directive.
+
+- Type: `string`
+- Default: `"v1.0.0"`
+- Valid values: `"v1.0.0"`, `"v1.1.0-preview"`
+
+```toml
+toml-version = "v1.0.0"
+```
+
+### `files`
+
+Configure file patterns for formatting and linting operations.
+
+#### `files.include`
+
+The file match pattern to include in formatting and linting. Supports glob pattern.
+
+- Type: `string[]`
+- Default: `["**/*.toml"]`
+
+```toml
+[files]
+include = ["**/*.toml", "Cargo.lock"]
+```
+
+#### `files.exclude`
+
+The file match pattern to exclude from formatting and linting. Supports glob pattern.
+
+- Type: `string[]`
+
+```toml
+[files]
+exclude = ["**/target/**", "**/node_modules/**"]
+```
+
+### `format`
+
+Formatter options. To avoid needless discussion of formatting rules, we do not currently have a configuration item for formatting.
+
+```toml
+[format]
+```
+
+### `lint`
+
+Linter options for TOML files.
+
+#### `lint.rules`
+
+Configure individual lint rules with severity levels.
+
+##### `lint.rules.key-empty`
+
+Check if the key is empty.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
+```toml
+# VALID BUT DISCOURAGED
+"" = true
+```
+
+##### `lint.rules.dotted-keys-out-of-order`
+
+Check if dotted keys are defined out of order.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
+```toml
+# VALID BUT DISCOURAGED
+apple.type = "fruit"
+orange.type = "fruit"
+apple.skin = "thin"
+orange.skin = "thick"
+
+# RECOMMENDED
+apple.type = "fruit"
+apple.skin = "thin"
+orange.type = "fruit"
+orange.skin = "thick"
+```
+
+##### `lint.rules.tables-out-of-order`
+
+Check if tables are defined out of order.
+
+- Type: `"off" | "warn" | "error"`
+- Default: `"warn"`
+
+```toml
+# VALID BUT DISCOURAGED
+[fruit.apple]
+[animal]
+[fruit.orange]
+
+# RECOMMENDED
+[fruit.apple]
+[fruit.orange]
+[animal]
+```
+
+### `lsp`
+
+Language Server Protocol (LSP) feature configuration. Each feature can be individually enabled or disabled.
+
+#### `lsp.code-action`
+
+Configure code action feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.completion`
+
+Configure completion feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.diagnostic`
+
+Configure diagnostic feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.document-link`
+
+Configure document link feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.formatting`
+
+Configure formatting feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.goto-declaration`
+
+Configure goto declaration feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.goto-definition`
+
+Configure goto definition feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.goto-type-definition`
+
+Configure goto type definition feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.hover`
+
+Configure hover feature.
+
+- Type: `boolean`
+- Default: `true`
+
+#### `lsp.workspace-diagnostic`
+
+Configure workspace diagnostic feature.
+
+- Type: `boolean`
+- Default: `true`
+
+### `schema`
+
+JSON Schema validation options for TOML files.
+
+#### `schema.enabled`
+
+Enable or disable schema validation.
+
+- Type: `boolean`
+- Default: `true`
+
+```toml
+[schema]
+enabled = true
+```
+
+#### `schema.strict`
+
+Enable strict schema validation. If `additionalProperties` is not specified in the JSON Schema, the strict mode treats it as `additionalProperties: false`, which is different from the JSON Schema specification.
+
+- Type: `boolean`
+- Default: `true`
+
+```toml
+[schema]
+strict = true
+```
+
+#### `schema.catalog`
+
+Configure schema catalog for automatic schema detection.
+
+##### `schema.catalog.paths`
+
+The schema catalog path/url array. The catalog is evaluated after the schemas specified by `[[schemas]]`. Schemas are loaded in order from the beginning of the catalog list.
+
+- Type: `string[]`
+- Default: `["tombi://json.schemastore.org/api/json/catalog.json", "https://json.schemastore.org/api/json/catalog.json"]`
+
+```toml
+[schema.catalog]
+paths = [
+  "tombi://json.schemastore.org/api/json/catalog.json",
+  "https://json.schemastore.org/api/json/catalog.json",
+]
+```
+
+### `schemas`
+
+Define custom schemas for specific TOML files. You can specify both root schemas and sub-schemas.
+
+#### Root Schema
+
+Apply a schema to the entire TOML document.
+
+```toml
+[[schemas]]
+toml-version = "v1.0.0"  # optional
+path = "https://example.com/schema.json"
+include = ["example.toml"]
+```
+
+- `toml-version`(optional): The TOML version that the schema is available for
+- `path`: The schema path (URL or local file path)
+- `include`: File match patterns to apply this schema (supports glob patterns)
+
+#### Sub Schema
+
+Apply a schema to a specific part of the TOML document.
+
+```toml
+[[schemas]]
+root = "tool.taskipy"
+path = "schemas/partial-taskipy.schema.json"
+include = ["pyproject.toml"]
+```
+
+- `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"items[0].name"`)
+- `path`: The schema path (URL or local file path)
+- `include`: File match patterns to apply this schema (supports glob patterns)
