@@ -199,21 +199,25 @@ mod tests {
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn only_space_comment_document_features(r"#! ") -> Ok(r"#!");
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn only_space_comment_document_features2(r"## ") -> Ok(r"##");
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn only_long_space_comment_document_features(r"#!       ") -> Ok(r"#!");
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn only_long_space_comment_document_features2(r"##      ") -> Ok(r"##");
     }
@@ -224,21 +228,25 @@ mod tests {
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn strip_prefix_space_document_features(r"#!      hello") -> Ok(r"#! hello");
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn strip_prefix_space_document_features2(r"##      hello") -> Ok(r"## hello");
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn strip_prefix_space_document_features_double_bang(r"#!!  hello") -> Ok(r"#! !  hello");
     }
 
     test_format! {
+        // Reference: https://crates.io/crates/document-features
         #[test]
         fn strip_prefix_space_document_features_double_sharp(r"###  hello") -> Ok(r"## #  hello");
     }

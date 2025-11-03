@@ -1,0 +1,311 @@
+import { Note } from "~/components/Highlight";
+
+# `# tombi:` Value Directive
+
+Value comment directives are comments that apply to a specific value.
+
+## Format Rules
+
+<Note>
+The option corresponding to `x-tombi-table-keys-order-by` is not supported by comment directives.
+</Note>
+
+### `format.rules.table-keys-order`
+
+Controls the sorting method of table keys. You can disable automatic sorting applied when using [JSON Schema](/docs/json-schema#formatting) for validation, or enable automatic sorting even if you are not using JSON Schema.
+
+- **Type**: `String ^ { disabled = true }`
+- **Values**:
+  - `"ascending"` - Sort in ascending order
+  - `"descending"` - Sort in descending order
+  - `"version-sort"` - Sort by version
+  - `{ disabled = true }` - Disable sorting
+
+```toml
+# Disable sorting
+# tombi: format.rules.table-keys-order.disabled = true
+[project]
+name = "tombi"
+readme = "README.md"
+version = "0.1.0"
+
+# Enable ascending sort
+# tombi: format.rules.table-keys-order = "ascending"
+[tool.uv]
+cache-dir = "~/.cache/uv"
+offline = true
+```
+
+### `format.rules.array-values-order`
+
+Controls the sorting method of array values.
+
+- **Type**: `String ^ { disabled = true }`
+- **Values**:
+  - `"ascending"` - Sort in ascending order
+  - `"descending"` - Sort in descending order
+  - `"version-sort"` - Sort by version
+  - `{ disabled = true }` - Disable sorting
+
+```toml
+# Enable version-sort for array values
+# tombi: format.rules.array-values-order = "version-sort"
+dependencies = ["1.2.0", "1.10.0", "1.1.0"]
+```
+
+## Lint Rules
+
+Value comment directives allow you to disable specific lint rules for individual values.
+
+### `type-mismatch`
+
+Check if the value is of the correct type.
+
+```toml
+# tombi: lint.rules.type-mismatch.disabled = true
+version = 123  # Normally expects string
+```
+
+### `const-value`
+
+Check if the value is equal to the const value.
+
+```toml
+# tombi: lint.rules.const-value.disabled = true
+type = "wrong-value"  # Schema expects specific const value
+```
+
+### `enumerate`
+
+Check if the value is one of the values in the enumerate.
+
+```toml
+# tombi: lint.rules.enumerate.disabled = true
+license = "Unknown"  # Not in enum list
+```
+
+### `deprecated`
+
+Check if the value is deprecated (Warning level).
+
+```toml
+# tombi: lint.rules.deprecated.disabled = true
+old-field = "value"  # Deprecated field
+```
+
+### `one-of-multiple-match`
+
+Check if more than one schema in the `oneOf` is valid.
+
+```toml
+# tombi: lint.rules.one-of-multiple-match.disabled = true
+ambiguous-field = "value"
+```
+
+### `key-empty`
+
+Check if the key is empty (Warning level).
+
+```toml
+# tombi: lint.rules.key-empty.disabled = true
+"" = "value"  # Empty key is valid but discouraged
+```
+
+### `key-not-allowed`
+
+Check if the key is not defined in this table.
+
+```toml
+# tombi: lint.rules.key-not-allowed.disabled = true
+[project]
+undefined-key = "value"  # Not defined in schema
+```
+
+### `key-pattern`
+
+Check if the key matches the pattern in the schema.
+
+```toml
+# tombi: lint.rules.key-pattern.disabled = true
+[tool.mytools]
+Invalid-Key = "value"  # Key doesn't match pattern
+```
+
+### `tables-out-of-order`
+
+Check if tables are defined out of order (Warning level).
+
+<Note>
+If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for this rule are automatically disabled.
+</Note>
+
+
+```toml
+# tombi: lint.rules.tables-out-of-order.disabled = true
+# VALID BUT DISCOURAGED
+[fruit.apple]
+[animal]
+[fruit.orange]
+
+# RECOMMENDED
+[fruit.apple]
+[fruit.orange]
+[animal]
+```
+
+### `dotted-keys-out-of-order`
+
+Check if dotted keys are defined out of order (Warning level).
+
+<Note>
+If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for this rule are automatically disabled.
+</Note>
+
+```toml
+# tombi: lint.rules.dotted-keys-out-of-order.disabled = true
+# VALID BUT DISCOURAGED
+apple.type = "fruit"
+orange.type = "fruit"
+apple.skin = "thin"    # Out of order
+orange.skin = "thick"
+```
+
+### `table-max-keys`
+
+Check if the table has more than the maximum number of keys.
+
+```toml
+# tombi: lint.rules.table-max-keys.disabled = true
+[config]
+key1 = "value1"
+key2 = "value2"
+key3 = "value3"  # Exceeds maxProperties in schema
+```
+
+### `table-min-keys`
+
+Check if the table has less than the minimum number of keys.
+
+```toml
+# tombi: lint.rules.table-min-keys.disabled = true
+[config]
+# Missing required minimum keys
+```
+
+### `table-key-required`
+
+Check if the required key exists in this table.
+
+```toml
+# tombi: lint.rules.table-key-required.disabled = true
+[project]
+# Missing required 'name' field
+```
+
+### `string-max-length`
+
+Check if the string is longer than the max length.
+
+```toml
+# tombi: lint.rules.string-max-length.disabled = true
+description = "Very long description that exceeds maxLength..."
+```
+
+### `string-min-length`
+
+Check if the string is shorter than the min length.
+
+```toml
+# tombi: lint.rules.string-min-length.disabled = true
+name = "x"  # Too short
+```
+
+### `string-format`
+
+Check if the string matches the format.
+
+```toml
+# tombi: lint.rules.string-format.disabled = true
+email = "invalid-email"  # Doesn't match email format
+```
+
+### `string-pattern`
+
+Check if the string matches the pattern.
+
+```toml
+# tombi: lint.rules.string-pattern.disabled = true
+version = "invalid"  # Doesn't match version pattern
+```
+
+### `integer-maximum`
+
+Check if the integer is less than or equal to the maximum.
+
+```toml
+# tombi: lint.rules.integer-maximum.disabled = true
+max-connections = 10000  # Exceeds maximum
+```
+
+### `integer-minimum`
+
+Check if the integer is greater than or equal to the minimum.
+
+```toml
+# tombi: lint.rules.integer-minimum.disabled = true
+port = -1  # Below minimum
+```
+
+### `integer-exclusive-maximum`
+
+Check if the integer is less than the maximum.
+
+```toml
+# tombi: lint.rules.integer-exclusive-maximum.disabled = true
+value = 100  # Must be less than 100
+```
+
+### `integer-exclusive-minimum`
+
+Check if the integer is greater than the minimum.
+
+```toml
+# tombi: lint.rules.integer-exclusive-minimum.disabled = true
+value = 0  # Must be greater than 0
+```
+
+### `integer-multiple-of`
+
+Check if the integer is a multiple of the value.
+
+```toml
+# tombi: lint.rules.integer-multiple-of.disabled = true
+increment = 7  # Must be multiple of 5
+```
+
+### `array-max-values`
+
+Check if the array has more than the maximum number of values.
+
+```toml
+# tombi: lint.rules.array-max-values.disabled = true
+items = [1, 2, 3, 4, 5, 6]  # Exceeds maxItems
+```
+
+### `array-min-values`
+
+Check if the array has less than the minimum number of values.
+
+```toml
+# tombi: lint.rules.array-min-values.disabled = true
+items = []  # Below minItems
+```
+
+### `array-unique-values`
+
+Check if the array has duplicate values.
+
+```toml
+# tombi: lint.rules.array-unique-values.disabled = true
+tags = ["tag1", "tag2", "tag1"]  # Duplicate values
+```

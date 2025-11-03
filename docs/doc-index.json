@@ -109,7 +109,21 @@
   },
   {
     "title": "Comment Directive",
-    "path": "/docs/comment-directive"
+    "path": "/docs/comment-directive",
+    "children": [
+      {
+        "title": "Schema Document Directive",
+        "path": "/docs/comment-directive/schema-document-directive"
+      },
+      {
+        "title": "Tombi Document Directive",
+        "path": "/docs/comment-directive/tombi-document-directive"
+      },
+      {
+        "title": "Tombi Value Directive",
+        "path": "/docs/comment-directive/tombi-value-directive"
+      }
+    ]
   },
   {
     "title": "Extensions",

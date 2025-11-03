@@ -1,0 +1,44 @@
+# `#:schema` Schema Document Directive
+
+Same as [Taplo](https://taplo.tamasfe.dev/configuration/directives.html#the-schema-directive), `#:schema` is used to specify the schema to use for the document.
+However, Tombi only allows document comment directives at the beginning of the document, so you need to add a blank line after the directive.
+
+## Usage
+
+```toml
+#:schema tombi://json.schemastore.org/pyproject.json
+
+[project]
+name = "tombi"
+```
+
+The `#:schema` directive must be:
+- Placed at the beginning of the document
+- Followed by a blank line before any TOML content
+- Written in a comment group (consecutive comment lines)
+
+## Schema URIs
+
+You can use various schema URIs:
+
+### HTTP/HTTPS URLs
+
+Reference schemas from remote URLs:
+
+```toml
+#:schema https://example.com/my-schema.json
+
+[config]
+value = "example"
+```
+
+### Local File Paths
+
+Reference local schema files:
+
+```toml
+#:schema ./schemas/my-schema.json
+
+[settings]
+enabled = true
+```
