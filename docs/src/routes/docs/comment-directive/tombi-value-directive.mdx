@@ -4,6 +4,65 @@ import { Note } from "~/components/Highlight";
 
 Value comment directives are comments that apply to a specific value.
 
+## Available Options
+
+- [format](#format-rules)
+  - [format.rules](#format-rules)
+    - [format.rules.table-keys-order](#format-rules-table-keys-order)
+    - [format.rules.array-values-order](#format-rules-array-values-order)
+- [lint](#lint-rules)
+  - [lint.rules](#lint-rules)
+    - [lint.rules.type-mismatch](#lint-rules-type-mismatch)
+      - [lint.rules.type-mismatch.disabled](#lint-rules-type-mismatch-disabled)
+    - [lint.rules.const-value](#lint-rules-const-value)
+      - [lint.rules.const-value.disabled](#lint-rules-const-value-disabled)
+    - [lint.rules.enumerate](#lint-rules-enumerate)
+      - [lint.rules.enumerate.disabled](#lint-rules-enumerate-disabled)
+    - [lint.rules.deprecated](#lint-rules-deprecated)
+      - [lint.rules.deprecated.disabled](#lint-rules-deprecated-disabled)
+    - [lint.rules.one-of-multiple-match](#lint-rules-one-of-multiple-match)
+      - [lint.rules.one-of-multiple-match.disabled](#lint-rules-one-of-multiple-match-disabled)
+    - [lint.rules.key-empty](#lint-rules-key-empty)
+      - [lint.rules.key-empty.disabled](#lint-rules-key-empty-disabled)
+    - [lint.rules.key-not-allowed](#lint-rules-key-not-allowed)
+      - [lint.rules.key-not-allowed.disabled](#lint-rules-key-not-allowed-disabled)
+    - [lint.rules.key-pattern](#lint-rules-key-pattern)
+      - [lint.rules.key-pattern.disabled](#lint-rules-key-pattern-disabled)
+    - [lint.rules.tables-out-of-order](#lint-rules-tables-out-of-order)
+      - [lint.rules.tables-out-of-order.disabled](#lint-rules-tables-out-of-order-disabled)
+    - [lint.rules.dotted-keys-out-of-order](#lint-rules-dotted-keys-out-of-order)
+      - [lint.rules.dotted-keys-out-of-order.disabled](#lint-rules-dotted-keys-out-of-order-disabled)
+    - [lint.rules.table-max-keys](#lint-rules-table-max-keys)
+      - [lint.rules.table-max-keys.disabled](#lint-rules-table-max-keys-disabled)
+    - [lint.rules.table-min-keys](#lint-rules-table-min-keys)
+      - [lint.rules.table-min-keys.disabled](#lint-rules-table-min-keys-disabled)
+    - [lint.rules.table-key-required](#lint-rules-table-key-required)
+      - [lint.rules.table-key-required.disabled](#lint-rules-table-key-required-disabled)
+    - [lint.rules.string-max-length](#lint-rules-string-max-length)
+      - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
+    - [lint.rules.string-min-length](#lint-rules-string-min-length)
+      - [lint.rules.string-min-length.disabled](#lint-rules-string-min-length-disabled)
+    - [lint.rules.string-format](#lint-rules-string-format)
+      - [lint.rules.string-format.disabled](#lint-rules-string-format-disabled)
+    - [lint.rules.string-pattern](#lint-rules-string-pattern)
+      - [lint.rules.string-pattern.disabled](#lint-rules-string-pattern-disabled)
+    - [lint.rules.integer-maximum](#lint-rules-integer-maximum)
+      - [lint.rules.integer-maximum.disabled](#lint-rules-integer-maximum-disabled)
+    - [lint.rules.integer-minimum](#lint-rules-integer-minimum)
+      - [lint.rules.integer-minimum.disabled](#lint-rules-integer-minimum-disabled)
+    - [lint.rules.integer-exclusive-maximum](#lint-rules-integer-exclusive-maximum)
+      - [lint.rules.integer-exclusive-maximum.disabled](#lint-rules-integer-exclusive-maximum-disabled)
+    - [lint.rules.integer-exclusive-minimum](#lint-rules-integer-exclusive-minimum)
+      - [lint.rules.integer-exclusive-minimum.disabled](#lint-rules-integer-exclusive-minimum-disabled)
+    - [lint.rules.integer-multiple-of](#lint-rules-integer-multiple-of)
+      - [lint.rules.integer-multiple-of.disabled](#lint-rules-integer-multiple-of-disabled)
+    - [lint.rules.array-max-values](#lint-rules-array-max-values)
+      - [lint.rules.array-max-values.disabled](#lint-rules-array-max-values-disabled)
+    - [lint.rules.array-min-values](#lint-rules-array-min-values)
+      - [lint.rules.array-min-values.disabled](#lint-rules-array-min-values-disabled)
+    - [lint.rules.array-unique-values](#lint-rules-array-unique-values)
+      - [lint.rules.array-unique-values.disabled](#lint-rules-array-unique-values-disabled)
+
 ## Format Rules
 Value directives can be used to control automatic sorting behavior.
 This is especially useful as a temporary workaround when the [JSON Schema](https://json-schema.org) provided by [Schema Store](https://json.schemastore.org) contains errors,
@@ -14,7 +73,7 @@ By specifying sorting rules directly in comments, you can enable or disable auto
 The option corresponding to `x-tombi-table-keys-order-by` is not supported by comment directives.
 </Note>
 
-### `format.rules.table-keys-order`
+### format.rules.table-keys-order
 
 Controls the sorting method of table keys.
 
@@ -40,7 +99,7 @@ cache-dir = "~/.cache/uv"
 offline = true
 ```
 
-### `format.rules.array-values-order`
+### format.rules.array-values-order
 
 Controls the sorting method of array values.
 
@@ -61,63 +120,117 @@ dependencies = ["1.2.0", "1.10.0", "1.1.0"]
 
 Value comment directives allow you to disable specific lint rules for individual values.
 
-### `type-mismatch`
+<Note>
+This disable setting is a temporary workaround for incorrect JSON Schema.  
+Please consider contacting the JSON Schema provider (e.g., [Schema Store](https://json.schemastore.org)) to fix the JSON Schema.
+</Note>
+
+### lint.rules.type-mismatch
 
 Check if the value is of the correct type.
+
+### lint.rules.type-mismatch.disabled
+
+Disable type-mismatch rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.type-mismatch.disabled = true
 version = 123  # Normally expects string
 ```
 
-### `const-value`
+### lint.rules.const-value
 
 Check if the value is equal to the const value.
+
+### lint.rules.const-value.disabled
+
+Disable const-value rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.const-value.disabled = true
 type = "wrong-value"  # Schema expects specific const value
 ```
 
-### `enumerate`
+### lint.rules.enumerate
 
 Check if the value is one of the values in the enumerate.
+
+### lint.rules.enumerate.disabled
+
+Disable enumerate rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.enumerate.disabled = true
 license = "Unknown"  # Not in enum list
 ```
 
-### `deprecated`
+### lint.rules.deprecated
 
 Check if the value is deprecated (Warning level).
+
+### lint.rules.deprecated.disabled
+
+Disable deprecated rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.deprecated.disabled = true
 old-field = "value"  # Deprecated field
 ```
 
-### `one-of-multiple-match`
+### lint.rules.one-of-multiple-match
 
 Check if more than one schema in the `oneOf` is valid.
+
+### lint.rules.one-of-multiple-match.disabled
+
+Disable one-of-multiple-match rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.one-of-multiple-match.disabled = true
 ambiguous-field = "value"
 ```
 
-### `key-empty`
+### lint.rules.key-empty
 
 Check if the key is empty (Warning level).
+
+### lint.rules.key-empty.disabled
+
+Disable key-empty rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.key-empty.disabled = true
 "" = "value"  # Empty key is valid but discouraged
 ```
 
-### `key-not-allowed`
+### lint.rules.key-not-allowed
 
 Check if the key is not defined in this table.
+
+### lint.rules.key-not-allowed.disabled
+
+Disable key-not-allowed rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.key-not-allowed.disabled = true
@@ -125,9 +238,16 @@ Check if the key is not defined in this table.
 undefined-key = "value"  # Not defined in schema
 ```
 
-### `key-pattern`
+### lint.rules.key-pattern
 
 Check if the key matches the pattern in the schema.
+
+### lint.rules.key-pattern.disabled
+
+Disable key-pattern rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.key-pattern.disabled = true
@@ -135,7 +255,7 @@ Check if the key matches the pattern in the schema.
 Invalid-Key = "value"  # Key doesn't match pattern
 ```
 
-### `tables-out-of-order`
+### lint.rules.tables-out-of-order
 
 Check if tables are defined out of order (Warning level).
 
@@ -143,6 +263,12 @@ Check if tables are defined out of order (Warning level).
 If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for this rule are automatically disabled.
 </Note>
 
+### lint.rules.tables-out-of-order.disabled
+
+Disable tables-out-of-order rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.tables-out-of-order.disabled = true
@@ -157,13 +283,20 @@ If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for t
 [animal]
 ```
 
-### `dotted-keys-out-of-order`
+### lint.rules.dotted-keys-out-of-order
 
 Check if dotted keys are defined out of order (Warning level).
 
 <Note>
 If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for this rule are automatically disabled.
 </Note>
+
+### lint.rules.dotted-keys-out-of-order.disabled
+
+Disable dotted-keys-out-of-order rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.dotted-keys-out-of-order.disabled = true
@@ -174,9 +307,16 @@ apple.skin = "thin"    # Out of order
 orange.skin = "thick"
 ```
 
-### `table-max-keys`
+### lint.rules.table-max-keys
 
 Check if the table has more than the maximum number of keys.
+
+### lint.rules.table-max-keys.disabled
+
+Disable table-max-keys rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.table-max-keys.disabled = true
@@ -186,9 +326,16 @@ key2 = "value2"
 key3 = "value3"  # Exceeds maxProperties in schema
 ```
 
-### `table-min-keys`
+### lint.rules.table-min-keys
 
 Check if the table has less than the minimum number of keys.
+
+### lint.rules.table-min-keys.disabled
+
+Disable table-min-keys rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.table-min-keys.disabled = true
@@ -196,9 +343,16 @@ Check if the table has less than the minimum number of keys.
 # Missing required minimum keys
 ```
 
-### `table-key-required`
+### lint.rules.table-key-required
 
 Check if the required key exists in this table.
+
+### lint.rules.table-key-required.disabled
+
+Disable table-key-required rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.table-key-required.disabled = true
@@ -206,108 +360,192 @@ Check if the required key exists in this table.
 # Missing required 'name' field
 ```
 
-### `string-max-length`
+### lint.rules.string-max-length
 
 Check if the string is longer than the max length.
+
+### lint.rules.string-max-length.disabled
+
+Disable string-max-length rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.string-max-length.disabled = true
 description = "Very long description that exceeds maxLength..."
 ```
 
-### `string-min-length`
+### lint.rules.string-min-length
 
 Check if the string is shorter than the min length.
+
+### lint.rules.string-min-length.disabled
+
+Disable string-min-length rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.string-min-length.disabled = true
 name = "x"  # Too short
 ```
 
-### `string-format`
+### lint.rules.string-format
 
 Check if the string matches the format.
+
+### lint.rules.string-format.disabled
+
+Disable string-format rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.string-format.disabled = true
 email = "invalid-email"  # Doesn't match email format
 ```
 
-### `string-pattern`
+### lint.rules.string-pattern
 
 Check if the string matches the pattern.
+
+### lint.rules.string-pattern.disabled
+
+Disable string-pattern rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.string-pattern.disabled = true
 version = "invalid"  # Doesn't match version pattern
 ```
 
-### `integer-maximum`
+### lint.rules.integer-maximum
 
 Check if the integer is less than or equal to the maximum.
+
+### lint.rules.integer-maximum.disabled
+
+Disable integer-maximum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.integer-maximum.disabled = true
 max-connections = 10000  # Exceeds maximum
 ```
 
-### `integer-minimum`
+### lint.rules.integer-minimum
 
 Check if the integer is greater than or equal to the minimum.
+
+### lint.rules.integer-minimum.disabled
+
+Disable integer-minimum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.integer-minimum.disabled = true
 port = -1  # Below minimum
 ```
 
-### `integer-exclusive-maximum`
+### lint.rules.integer-exclusive-maximum
 
 Check if the integer is less than the maximum.
+
+### lint.rules.integer-exclusive-maximum.disabled
+
+Disable integer-exclusive-maximum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.integer-exclusive-maximum.disabled = true
 value = 100  # Must be less than 100
 ```
 
-### `integer-exclusive-minimum`
+### lint.rules.integer-exclusive-minimum
 
 Check if the integer is greater than the minimum.
+
+### lint.rules.integer-exclusive-minimum.disabled
+
+Disable integer-exclusive-minimum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.integer-exclusive-minimum.disabled = true
 value = 0  # Must be greater than 0
 ```
 
-### `integer-multiple-of`
+### lint.rules.integer-multiple-of
 
 Check if the integer is a multiple of the value.
+
+### lint.rules.integer-multiple-of.disabled
+
+Disable integer-multiple-of rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.integer-multiple-of.disabled = true
 increment = 7  # Must be multiple of 5
 ```
 
-### `array-max-values`
+### lint.rules.array-max-values
 
 Check if the array has more than the maximum number of values.
+
+### lint.rules.array-max-values.disabled
+
+Disable array-max-values rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.array-max-values.disabled = true
 items = [1, 2, 3, 4, 5, 6]  # Exceeds maxItems
 ```
 
-### `array-min-values`
+### lint.rules.array-min-values
 
 Check if the array has less than the minimum number of values.
+
+### lint.rules.array-min-values.disabled
+
+Disable array-min-values rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.array-min-values.disabled = true
 items = []  # Below minItems
 ```
 
-### `array-unique-values`
+### lint.rules.array-unique-values
 
 Check if the array has duplicate values.
+
+### lint.rules.array-unique-values.disabled
+
+Disable array-unique-values rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
 
 ```toml
 # tombi: lint.rules.array-unique-values.disabled = true

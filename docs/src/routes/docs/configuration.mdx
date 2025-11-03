@@ -2,12 +2,10 @@
 
 Learn how to configure Tombi using the `tombi.toml` configuration file.
 
-## Configuration File
-
 Tombi uses a TOML configuration file named `tombi.toml`.
 Also, we supports `[tool.tombi]` in `pyproject.toml`.
 
-### Search Priority
+## Search Priority
 
 1. `tombi.toml` in the current directory
 2. `[tool.tombi]` in `pyproject.toml` in the current directory
@@ -69,9 +67,51 @@ path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
 ```
 
-## Configuration Options
+## Available Options
 
-### `toml-version`
+- [toml-version](#toml-version)
+- [files](#files)
+  - [files.include](#files-include)
+  - [files.exclude](#files-exclude)
+- [format](#format)
+- [lint](#lint)
+  - [lint.rules](#lint-rules)
+    - [lint.rules.key-empty](#lint-rules-key-empty)
+    - [lint.rules.dotted-keys-out-of-order](#lint-rules-dotted-keys-out-of-order)
+    - [lint.rules.tables-out-of-order](#lint-rules-tables-out-of-order)
+- [lsp](#lsp)
+  - [lsp.code-action](#lsp-code-action)
+    - [lsp.code-action.enabled](#lsp-code-action-enabled)
+  - [lsp.completion](#lsp-completion)
+    - [lsp.completion.enabled](#lsp-completion-enabled)
+  - [lsp.diagnostic](#lsp-diagnostic)
+    - [lsp.diagnostic.enabled](#lsp-diagnostic-enabled)
+  - [lsp.document-link](#lsp-document-link)
+    - [lsp.document-link.enabled](#lsp-document-link-enabled)
+  - [lsp.formatting](#lsp-formatting)
+    - [lsp.formatting.enabled](#lsp-formatting-enabled)
+  - [lsp.goto-declaration](#lsp-goto-declaration)
+    - [lsp.goto-declaration.enabled](#lsp-goto-declaration-enabled)
+  - [lsp.goto-definition](#lsp-goto-definition)
+    - [lsp.goto-definition.enabled](#lsp-goto-definition-enabled)
+  - [lsp.goto-type-definition](#lsp-goto-type-definition)
+    - [lsp.goto-type-definition.enabled](#lsp-goto-type-definition-enabled)
+  - [lsp.hover](#lsp-hover)
+    - [lsp.hover.enabled](#lsp-hover-enabled)
+  - [lsp.workspace-diagnostic](#lsp-workspace-diagnostic)
+    - [lsp.workspace-diagnostic.enabled](#lsp-workspace-diagnostic-enabled)
+- [schema](#schema)
+  - [schema.enabled](#schema-enabled)
+  - [schema.strict](#schema-strict)
+  - [schema.catalog](#schema-catalog)
+    - [schema.catalog.paths](#schema-catalog-paths)
+- [schemas](#schemas)
+  - [schemas[*].toml-version](#root-schema)
+  - [schemas[*].root](#sub-schema)
+  - [schemas[*].path](#root-schema)
+  - [schemas[*].include](#root-schema)
+
+### toml-version
 
 Specifies the TOML version to use if not specified in the schema and comment directive.
 
@@ -79,36 +119,36 @@ Specifies the TOML version to use if not specified in the schema and comment dir
 - Default: `"v1.0.0"`
 - Valid values: `"v1.0.0"`, `"v1.1.0-preview"`
 
-### `files`
+### files
 
 Configure file patterns for formatting and linting operations.
 
-### `files.include`
+### files.include
 
 The file match pattern to include in formatting and linting. Supports glob pattern.
 
 - Type: `string[]`
 - Default: `["**/*.toml"]`
 
-### `files.exclude`
+### files.exclude
 
 The file match pattern to exclude from formatting and linting. Supports glob pattern.
 
 - Type: `string[]`
 
-### `format`
+### format
 
 Formatter options. To avoid needless discussion of formatting rules, we do not currently have a configuration item for formatting.
 
-### `lint`
+### lint
 
 Linter options for TOML files.
 
-### `lint.rules`
+### lint.rules
 
 Configure individual lint rules with severity levels.
 
-### `lint.rules.key-empty`
+### lint.rules.key-empty
 
 Check if the key is empty.
 
@@ -120,7 +160,7 @@ Check if the key is empty.
 "" = true
 ```
 
-### `lint.rules.dotted-keys-out-of-order`
+### lint.rules.dotted-keys-out-of-order
 
 Check if dotted keys are defined out of order.
 
@@ -141,7 +181,7 @@ orange.type = "fruit"
 orange.skin = "thick"
 ```
 
-### `lint.rules.tables-out-of-order`
+### lint.rules.tables-out-of-order
 
 Check if tables are defined out of order.
 
@@ -160,114 +200,154 @@ Check if tables are defined out of order.
 [animal]
 ```
 
-### `lsp`
+### lsp
 
 Language Server Protocol (LSP) feature configuration. Each feature can be individually enabled or disabled.
 
-### `lsp.code-action`
+### lsp.code-action
 
 Configure code action feature.
 
+### lsp.code-action.enabled
+
+Enable or disable code action feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.completion`
+### lsp.completion
 
 Configure completion feature.
 
+### lsp.completion.enabled
+
+Enable or disable completion feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.diagnostic`
+### lsp.diagnostic
 
 Configure diagnostic feature.
 
+### lsp.diagnostic.enabled
+
+Enable or disable diagnostic feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.document-link`
+### lsp.document-link
 
 Configure document link feature.
 
+### lsp.document-link.enabled
+
+Enable or disable document link feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.formatting`
+### lsp.formatting
 
 Configure formatting feature.
 
+### lsp.formatting.enabled
+
+Enable or disable formatting feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.goto-declaration`
+### lsp.goto-declaration
 
 Configure goto declaration feature.
 
+### lsp.goto-declaration.enabled
+
+Enable or disable goto declaration feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.goto-definition`
+### lsp.goto-definition
 
 Configure goto definition feature.
 
+### lsp.goto-definition.enabled
+
+Enable or disable goto definition feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.goto-type-definition`
+### lsp.goto-type-definition
 
 Configure goto type definition feature.
 
+### lsp.goto-type-definition.enabled
+
+Enable or disable goto type definition feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.hover`
+### lsp.hover
 
 Configure hover feature.
 
+### lsp.hover.enabled
+
+Enable or disable hover feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `lsp.workspace-diagnostic`
+### lsp.workspace-diagnostic
 
 Configure workspace diagnostic feature.
 
+### lsp.workspace-diagnostic.enabled
+
+Enable or disable workspace diagnostic feature.
+
 - Type: `boolean`
 - Default: `true`
 
-### `schema`
+### schema
 
 JSON Schema validation options for TOML files.
 
-### `schema.enabled`
+### schema.enabled
 
 Enable or disable schema validation.
 
 - Type: `boolean`
 - Default: `true`
 
-### `schema.strict`
+### schema.strict
 
 Enable strict schema validation. If `additionalProperties` is not specified in the JSON Schema, the strict mode treats it as `additionalProperties: false`, which is different from the JSON Schema specification.
 
 - Type: `boolean`
 - Default: `true`
 
-### `schema.catalog`
+### schema.catalog
 
 Configure schema catalog for automatic schema detection.
 
-### `schema.catalog.paths`
+### schema.catalog.paths
 
 The schema catalog path/url array. The catalog is evaluated after the schemas specified by `[[schemas]]`. Schemas are loaded in order from the beginning of the catalog list.
 
 - Type: `string[]`
 - Default: `["tombi://json.schemastore.org/api/json/catalog.json", "https://json.schemastore.org/api/json/catalog.json"]`
 
-### `schemas`
+### schemas
 
 Define custom schemas for specific TOML files. You can specify both root schemas and sub-schemas.
 
-#### Root Schema
+### Root Schema
 
 Apply a schema to the entire TOML document.
 
@@ -282,7 +362,7 @@ include = ["example.toml"]
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
 
-#### Sub Schema
+### Sub Schema
 
 Apply a schema to a specific part of the TOML document.
 Sub schemas are mainly provided for configuring extension features, such as the [tool section](https://peps.python.org/pep-0518/#tool-table) in `pyproject.toml` or similar cases where only part of the document should be validated or structured according to an additional schema.
