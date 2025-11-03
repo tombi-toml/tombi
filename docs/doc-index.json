@@ -16,6 +16,10 @@
     "path": "/docs/formatter",
     "children": [
       {
+        "title": "Auto Sorting",
+        "path": "/docs/formatter/auto-sorting"
+      },
+      {
         "title": "Magic Trailing Comma",
         "path": "/docs/formatter/magic-trailing-comma"
       },
