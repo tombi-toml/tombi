@@ -5,25 +5,7 @@ However, Tombi only allows document comment directives at the beginning of the d
 
 ## Usage
 
-```toml
-#:schema tombi://json.schemastore.org/pyproject.json
-
-[project]
-name = "tombi"
-```
-
-The `#:schema` directive must be:
-- Placed at the beginning of the document
-- Followed by a blank line before any TOML content
-- Written in a comment group (consecutive comment lines)
-
-## Schema URIs
-
-You can use various schema URIs:
-
 ### HTTP/HTTPS URLs
-
-Reference schemas from remote URLs:
 
 ```toml
 #:schema https://example.com/my-schema.json
@@ -33,8 +15,6 @@ value = "example"
 ```
 
 ### Local File Paths
-
-Reference local schema files:
 
 ```toml
 #:schema ./schemas/my-schema.json

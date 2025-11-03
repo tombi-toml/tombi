@@ -5,6 +5,10 @@ import { Note } from "~/components/Highlight";
 Value comment directives are comments that apply to a specific value.
 
 ## Format Rules
+Value directives can be used to control automatic sorting behavior.
+This is especially useful as a temporary workaround when the [JSON Schema](https://json-schema.org) provided by [Schema Store](https://json.schemastore.org) contains errors,
+or when you want to customize sorting for configuration files that do not have an associated JSON Schema.
+By specifying sorting rules directly in comments, you can enable or disable automatic sorting according to your needs.
 
 <Note>
 The option corresponding to `x-tombi-table-keys-order-by` is not supported by comment directives.
@@ -12,7 +16,7 @@ The option corresponding to `x-tombi-table-keys-order-by` is not supported by co
 
 ### `format.rules.table-keys-order`
 
-Controls the sorting method of table keys. You can disable automatic sorting applied when using [JSON Schema](/docs/json-schema#formatting) for validation, or enable automatic sorting even if you are not using JSON Schema.
+Controls the sorting method of table keys.
 
 - **Type**: `String ^ { disabled = true }`
 - **Values**:
