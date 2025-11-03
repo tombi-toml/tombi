@@ -186,7 +186,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
             <button
               type="button"
               onClick={() => props.onSelect(method.id)}
-              class="group relative p-2 rounded-xl border-0 bg-white hover:shadow-lg transition-all cursor-pointer dark:bg-gray-800"
+              class="group relative p-2 rounded-xl border-0 bg-white hover:shadow-lg transition-all cursor-pointer dark:bg-gray-900"
             >
               <div class="flex flex-col items-center gap-2">
                 <img
