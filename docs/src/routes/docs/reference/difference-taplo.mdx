@@ -4,7 +4,22 @@
 However, I rewrote a new Language Server for the following purposes.
 
 ## Auto Sorting
-Compared to Taplo, Tombi offers more granular sorting configuration by utilizing [JSON Schema metadata](/docs/json-schema). These configuration options can also be distributed and shared via a [JSON Schema Store](https://json.schemastore.org).
+Compared to Taplo, Tombi offers more granular sorting configuration by utilizing [JSON Schema metadata](/docs/formatter/auto-sorting#json-schema). These configuration options can also be distributed and shared via a [JSON Schema Store](https://json.schemastore.org).
+
+## Rust/uv Workspace Support
+
+Tombi supports Rust/uv workspaces.
+When editing a `Cargo.toml` / `pyproject.toml` file, Tombi can navigate to the workspace definition or to the crate/package definition managed by the workspace.
+Also, some Code Actions are available for workspace management.
+
+See more details: [tombi-extension-cargo](/docs/extensions/tombi-extension-cargo) / [tombi-extension-uv](/docs/extensions/tombi-extension-uv)
+
+## Goto JSON Schema Definition
+
+Tombi supports "Go to Type Definition" feature.
+When editing a TOML file with an applied JSON Schema, Tombi can navigate to the type definition of the JSON Schema.
+
+See more details: [Goto Type Definition](/docs/language-server/goto-definition#goto-json-schema)
 
 ## Magic Trailing Comma
 Formatter inspired by Python's [Black](https://github.com/psf/black) (Support for [magic trailing comma](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#the-magic-trailing-comma))
