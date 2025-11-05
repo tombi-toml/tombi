@@ -335,7 +335,7 @@ mod goto_definition_tests {
             async fn target_build_dependencies_workspace(
                 r#"
                 [target.'cfg(windows)'.build-dependencies]
-                cc = { workspace█ = true }
+                serde = { workspace█ = true }
                 "#,
                 project_root_path().join("crates/tombi-lsp/Cargo.toml"),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
