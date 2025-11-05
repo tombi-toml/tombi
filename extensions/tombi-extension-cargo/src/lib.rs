@@ -158,10 +158,10 @@ fn goto_workspace(
 
     let keys = {
         // Check if this is a target dependency: ["target", platform, "dependencies", crate, "workspace"]
-        let is_target_dependency =
-            matches_accessors!(accessors[..3], ["target", _, "dependencies"])
+        let is_target_dependency = accessors.len() >= 3
+            && (matches_accessors!(accessors[..3], ["target", _, "dependencies"])
                 || matches_accessors!(accessors[..3], ["target", _, "dev-dependencies"])
-                || matches_accessors!(accessors[..3], ["target", _, "build-dependencies"]);
+                || matches_accessors!(accessors[..3], ["target", _, "build-dependencies"]));
 
         let start_index = if is_target_dependency { 2 } else { 0 };
 
