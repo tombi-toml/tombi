@@ -259,6 +259,20 @@ fn document_link_for_crate_cargo_toml(
         {
             total_dependencies.extend(dependencies.key_values());
         }
+        if let Some((_, tombi_document_tree::Value::Table(targets))) =
+            dig_keys(crate_document_tree, &["target"])
+        {
+            for value in targets.values() {
+                let tombi_document_tree::Value::Table(platform) = value else {
+                    continue;
+                };
+                if let Some((_, tombi_document_tree::Value::Table(dependencies))) =
+                    dig_keys(platform, &[key])
+                {
+                    total_dependencies.extend(dependencies.key_values());
+                }
+            }
+        }
     }
 
     let mut total_document_links = vec![];

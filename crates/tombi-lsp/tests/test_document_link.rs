@@ -317,6 +317,71 @@ mod document_link_tests {
                 }
             ]));
         );
+
+        // Tests for platform specific dependencies (Issue #1192)
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_target_dependencies_serde(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = "1.0"
+                "#,
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/serde",
+                    range: 1:0..1:5,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_target_dependencies_with_workspace(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { workspace = true }
+                "#,
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(vec![
+                {
+                    url: "https://crates.io/crates/serde",
+                    range: 1:0..1:5,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CrateIo,
+                },
+                {
+                    path: project_root_path().join("Cargo.toml"),
+                    range: 1:10..1:26,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::WorkspaceCargoToml,
+                }
+            ]));
+        );
+
+        test_document_link!(
+            #[tokio::test]
+            async fn cargo_target_dependencies_with_path(
+                r#"
+                [package]
+                name = "test"
+
+                [target.'cfg(unix)'.dependencies]
+                tombi-ast = { path = "../tombi-ast" }
+                "#,
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+            ) -> Ok(Some(vec![
+                {
+                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    range: 4:0..4:9,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                },
+                {
+                    path: project_root_path().join("crates/tombi-ast/Cargo.toml"),
+                    range: 4:22..4:34,
+                    tooltip: tombi_extension_cargo::DocumentLinkToolTip::CargoToml,
+                }
+            ]));
+        );
     }
 
     mod tombi_schema {

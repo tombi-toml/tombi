@@ -585,5 +585,108 @@ mod refactor_rewrite {
                 "#
             ));
         }
+
+        // Tests for platform specific dependencies (Issue #1192)
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_target_dependencies_convert_to_table_format(
+                r#"
+                [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+                egui-winit█ = "0.33.0"
+                "#,
+                Select(CodeActionRefactorRewriteName::ConvertDependencyToTableFormat),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+                egui-winit = { version = "0.33.0" }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_target_dependencies_inherit_from_workspace(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde█ = "1.0"
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { workspace = true }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_target_dependencies_inline_table_inherit_from_workspace(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { version█ = "1.0" }
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { workspace = true }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_target_dependencies_inline_table_with_features(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { version█ = "1.0", features = ["derive"] }
+                "#,
+                Select(CodeActionRefactorRewriteName::InheritDependencyFromWorkspace),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { workspace = true, features = ["derive"] }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_target_dev_dependencies_convert_to_table_format(
+                r#"
+                [target.'cfg(target_os = "linux")'.dev-dependencies]
+                tokio█ = "1.0"
+                "#,
+                Select(CodeActionRefactorRewriteName::ConvertDependencyToTableFormat),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [target.'cfg(target_os = "linux")'.dev-dependencies]
+                tokio = { version = "1.0" }
+                "#
+            ));
+        }
+
+        test_code_action_refactor_rewrite! {
+            #[tokio::test]
+            async fn cargo_toml_target_build_dependencies_convert_to_table_format(
+                r#"
+                [target.'cfg(windows)'.build-dependencies]
+                cc█ = "1.0"
+                "#,
+                Select(CodeActionRefactorRewriteName::ConvertDependencyToTableFormat),
+                project_root_path().join("crates/subcrate/Cargo.toml"),
+            ) -> Ok(Some(
+                r#"
+                [target.'cfg(windows)'.build-dependencies]
+                cc = { version = "1.0" }
+                "#
+            ));
+        }
     }
 }
