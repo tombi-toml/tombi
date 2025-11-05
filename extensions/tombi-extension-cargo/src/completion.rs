@@ -162,6 +162,9 @@ async fn completion_member(
     if matches_accessors!(accessors, ["dependencies", _, "version"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "version"])
         || matches_accessors!(accessors, ["build-dependencies", _, "version"])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "version"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "version"])
+        || matches_accessors!(accessors, ["target", _, "build-dependencies", _, "version"])
     {
         if let Some(Accessor::Key(c_name)) = accessors.get(accessors.len() - 2) {
             return complete_crate_version(
@@ -176,6 +179,9 @@ async fn completion_member(
     } else if matches_accessors!(accessors, ["dependencies", _])
         || matches_accessors!(accessors, ["dev-dependencies", _])
         || matches_accessors!(accessors, ["build-dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
     {
         if let Some(Accessor::Key(c_name)) = accessors.last() {
             return complete_crate_version(
@@ -192,9 +198,29 @@ async fn completion_member(
         || matches_accessors!(accessors, ["build-dependencies", _, "features", _])
         || matches_accessors!(accessors, ["dependencies", _, "features"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "features"])
-        || matches_accessors!(accessors, ["build-dependencies", _, "features"]))
+        || matches_accessors!(accessors, ["build-dependencies", _, "features"])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "features", _])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "dev-dependencies", _, "features", _]
+        )
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "features", _]
+        )
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "features"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "features"])
+        || matches_accessors!(
+            accessors,
+            ["target", _, "build-dependencies", _, "features"]
+        ))
     {
-        if let Some(Accessor::Key(crate_name)) = accessors.get(1) {
+        let is_target_dependency = accessors.first().map(|a| a.as_key()) == Some(Some("target"));
+        let crate_name_index = if is_target_dependency { 3 } else { 1 };
+        let features_accessor_end = if is_target_dependency { 5 } else { 3 };
+        let feature_index = if is_target_dependency { 5 } else { 3 };
+
+        if let Some(Accessor::Key(crate_name)) = accessors.get(crate_name_index) {
             if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
                 dig_accessors(document_tree, accessors)
             {
@@ -205,10 +231,10 @@ async fn completion_member(
                 crate_name.as_str(),
                 document_tree,
                 cargo_toml_path,
-                &accessors[..3],
+                &accessors[..features_accessor_end],
                 position,
                 toml_version,
-                accessors.get(3).and_then(|_| {
+                accessors.get(feature_index).and_then(|_| {
                     dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
                         if let tombi_document_tree::Value::String(feature_string) = feature {
                             Some(feature_string)

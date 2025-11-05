@@ -284,6 +284,62 @@ mod goto_definition_tests {
                 project_root_path().join("crates/tombi-glob/Cargo.toml"),
             ) -> Ok([project_root_path().join("crates/tombi-glob/src/bin/profile.rs")]);
         );
+
+        // Tests for platform specific dependencies (Issue #1192)
+        test_goto_definition!(
+            #[tokio::test]
+            async fn target_dependencies_serde_workspace(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { workspace█ = true }
+                "#,
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn target_dependencies_tombi_ast_workspace(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                tombi-ast = { workspace█ = true }
+                "#,
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn target_dependencies_path(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                tombi-ast = { path█ = "crates/tombi-ast" }
+                "#,
+                project_root_path().join("Cargo.toml"),
+            ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn target_dev_dependencies_workspace(
+                r#"
+                [target.'cfg(target_os = "linux")'.dev-dependencies]
+                serde = { workspace█ = true }
+                "#,
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
+        );
+
+        test_goto_definition!(
+            #[tokio::test]
+            async fn target_build_dependencies_workspace(
+                r#"
+                [target.'cfg(windows)'.build-dependencies]
+                cc = { workspace█ = true }
+                "#,
+                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+            ) -> Ok([project_root_path().join("Cargo.toml")]);
+        );
     }
 
     mod pyproject_uv_schema {

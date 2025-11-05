@@ -360,19 +360,27 @@ fn use_workspace_dependency_code_action(
         return None;
     }
 
+    let is_target_dependency = matches_accessors!(accessors[..4], ["target", _, "dependencies", _])
+        || matches_accessors!(accessors[..4], ["target", _, "dev-dependencies", _])
+        || matches_accessors!(accessors[..4], ["target", _, "build-dependencies", _]);
+
     if !(matches_accessors!(accessors[..2], ["dependencies", _])
         || matches_accessors!(accessors[..2], ["dev-dependencies", _])
-        || matches_accessors!(accessors[..2], ["build-dependencies", _]))
+        || matches_accessors!(accessors[..2], ["build-dependencies", _])
+        || is_target_dependency)
     {
         return None; // Not a dependency accessor
     }
 
+    let accessor_end = if is_target_dependency { 4 } else { 2 };
+    let context_index = if is_target_dependency { 3 } else { 1 };
+
     let Some((Accessor::Key(crate_name), value)) =
-        dig_accessors(crate_document_tree, &accessors[..2])
+        dig_accessors(crate_document_tree, &accessors[..accessor_end])
     else {
         return None; // Not a string value
     };
-    let AccessorContext::Key(crate_key_context) = &contexts[1] else {
+    let AccessorContext::Key(crate_key_context) = &contexts[context_index] else {
         return None;
     };
 
@@ -485,6 +493,9 @@ fn crate_version_code_action(
         || matches_accessors!(accessors, ["dev-dependencies", _])
         || matches_accessors!(accessors, ["build-dependencies", _])
         || matches_accessors!(accessors, ["workspace", "dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
+        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
     {
         if let Some((_, tombi_document_tree::Value::String(version))) =
             dig_accessors(document_tree, accessors)
@@ -675,16 +686,24 @@ fn add_workspace_dependency_code_action(
         return None;
     }
 
+    let is_target_dependency = matches_accessors!(accessors[..4], ["target", _, "dependencies", _])
+        || matches_accessors!(accessors[..4], ["target", _, "dev-dependencies", _])
+        || matches_accessors!(accessors[..4], ["target", _, "build-dependencies", _]);
+
     if !(matches_accessors!(accessors[..2], ["dependencies", _])
         || matches_accessors!(accessors[..2], ["dev-dependencies", _])
-        || matches_accessors!(accessors[..2], ["build-dependencies", _]))
+        || matches_accessors!(accessors[..2], ["build-dependencies", _])
+        || is_target_dependency)
     {
         return None;
     }
 
+    let accessor_end = if is_target_dependency { 4 } else { 2 };
+    let context_index = if is_target_dependency { 3 } else { 1 };
+
     // Extract crate name and value from member Cargo.toml
     let Some((Accessor::Key(crate_name), crate_value)) =
-        dig_accessors(document_tree, &accessors[..2])
+        dig_accessors(document_tree, &accessors[..accessor_end])
     else {
         return None;
     };
@@ -725,8 +744,12 @@ fn add_workspace_dependency_code_action(
     )?;
 
     // Generate member edit to convert to workspace = true
-    let member_edit =
-        generate_member_workspace_true_edit(line_index, crate_name, crate_value, &contexts[1])?;
+    let member_edit = generate_member_workspace_true_edit(
+        line_index,
+        crate_name,
+        crate_value,
+        &contexts[context_index],
+    )?;
 
     // Build WorkspaceEdit with both file changes
     let workspace_edit = WorkspaceEdit {

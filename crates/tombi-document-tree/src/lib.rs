@@ -72,7 +72,7 @@ where
 ///
 /// NOTE: You cannot follow indices. Use `tombi_accessor::dig_accessors` for that.
 pub fn dig_keys<'a, K>(
-    document_tree: &'a crate::DocumentTree,
+    table: &'a crate::Table,
     keys: &[&K],
 ) -> Option<(&'a crate::Key, &'a crate::Value)>
 where
@@ -81,7 +81,7 @@ where
     if keys.is_empty() {
         return None;
     }
-    let (mut key, mut value) = document_tree.get_key_value(keys[0])?;
+    let (mut key, mut value) = table.get_key_value(keys[0])?;
     for k in keys[1..].iter() {
         let crate::Value::Table(table) = value else {
             return None;

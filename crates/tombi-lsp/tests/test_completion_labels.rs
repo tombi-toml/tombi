@@ -1270,6 +1270,88 @@ mod completion_labels {
                 "$source_url_or_registry_name"
             ]);
         }
+
+        // Tests for platform specific dependencies (Issue #1192)
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_target_dependencies(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                █
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "$crate_name",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_target_dependencies_keys(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                serde = { █ }
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "branch",
+                "default-features",
+                "features",
+                "git",
+                "optional",
+                "package",
+                "path",
+                "registry",
+                "rev",
+                "tag",
+                "version",
+                "workspace",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_target_dependencies_tombi_date_time_features_eq_array_with_path(
+                r#"
+                [target.'cfg(unix)'.dependencies]
+                tombi-date-time = { features=[█], path = "crates/tombi-date-time" }
+                "#,
+                Source(project_root_path().join("Cargo.toml")),
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "\"default\"",
+                "\"chrono\"",
+                "\"serde\"",
+                "\"\"",
+                "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_target_dev_dependencies(
+                r#"
+                [target.'cfg(target_os = "linux")'.dev-dependencies]
+                █
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "$crate_name",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_target_build_dependencies(
+                r#"
+                [target.'cfg(windows)'.build-dependencies]
+                █
+                "#,
+                Schema(cargo_schema_path()),
+            ) -> Ok([
+                "$crate_name",
+            ]);
+        }
     }
 
     mod untagged_union {
