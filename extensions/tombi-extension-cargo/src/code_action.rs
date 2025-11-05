@@ -360,9 +360,10 @@ fn use_workspace_dependency_code_action(
         return None;
     }
 
-    let is_target_dependency = matches_accessors!(accessors[..4], ["target", _, "dependencies", _])
-        || matches_accessors!(accessors[..4], ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors[..4], ["target", _, "build-dependencies", _]);
+    let is_target_dependency = accessors.len() >= 4
+        && (matches_accessors!(accessors[..4], ["target", _, "dependencies", _])
+            || matches_accessors!(accessors[..4], ["target", _, "dev-dependencies", _])
+            || matches_accessors!(accessors[..4], ["target", _, "build-dependencies", _]));
 
     if !(matches_accessors!(accessors[..2], ["dependencies", _])
         || matches_accessors!(accessors[..2], ["dev-dependencies", _])
@@ -686,9 +687,10 @@ fn add_workspace_dependency_code_action(
         return None;
     }
 
-    let is_target_dependency = matches_accessors!(accessors[..4], ["target", _, "dependencies", _])
-        || matches_accessors!(accessors[..4], ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors[..4], ["target", _, "build-dependencies", _]);
+    let is_target_dependency = accessors.len() >= 4
+        && (matches_accessors!(accessors[..4], ["target", _, "dependencies", _])
+            || matches_accessors!(accessors[..4], ["target", _, "dev-dependencies", _])
+            || matches_accessors!(accessors[..4], ["target", _, "build-dependencies", _]));
 
     if !(matches_accessors!(accessors[..2], ["dependencies", _])
         || matches_accessors!(accessors[..2], ["dev-dependencies", _])
