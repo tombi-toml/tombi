@@ -398,7 +398,7 @@ mod document_link_tests {
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
-                    range: 1:20..1:70,
+                    range: 1:20..1:69,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
             ]));
@@ -415,7 +415,7 @@ mod document_link_tests {
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/api/json/catalog.json",
-                    range: 1:22..1:72,
+                    range: 1:22..1:71,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
             ]));
@@ -426,12 +426,12 @@ mod document_link_tests {
             async fn tombi_schemas_path(
                 r#"
                 [[schemas]]
-                path = "www.schemastore.org/tombi.json"
+                path = "json.schemastore.org/tombi.json"
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    path: project_root_path().join("www.schemastore.org/tombi.json"),
+                    path: project_root_path().join("json.schemastore.org/tombi.json"),
                     range: 1:8..1:39,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
                 }
@@ -449,7 +449,7 @@ mod document_link_tests {
             ) -> Ok(Some(vec![
                 {
                     url: "https://www.schemastore.org/cargo-make.json",
-                    range: 1:8..1:52,
+                    range: 1:8..1:51,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
                 }
             ]));
