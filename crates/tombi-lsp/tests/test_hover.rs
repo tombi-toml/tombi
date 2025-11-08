@@ -49,7 +49,7 @@ mod hover_keys_value {
             async fn tombi_schema_catalog_path(
                 r#"
                 [schema.catalog]
-                path = "█https://json.schemastore.org/api/json/catalog.json"
+                path = "█https://www.schemastore.org/api/json/catalog.json"
                 "#,
                 tombi_schema_path()
             ) -> Ok({
@@ -63,7 +63,7 @@ mod hover_keys_value {
             async fn tombi_schema_catalog_path_without_schema(
                 r#"
                 [schema.catalog]
-                path = "█https://json.schemastore.org/api/json/catalog.json"
+                path = "█https://www.schemastore.org/api/json/catalog.json"
                 "#,
             ) -> Ok({
                 "Keys": "schema.catalog.path",

@@ -601,7 +601,7 @@ mod tests {
             #[test]
             fn test_schema_uri(
                 r#"
-                #:schema https://json.schemastore.org/tombi.json
+                #:schema https://www.schemastore.org/tombi.json
                 "#,
             ) -> Ok(_);
         }

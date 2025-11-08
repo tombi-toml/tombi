@@ -22,12 +22,12 @@ mod goto_definition_tests {
             #[tokio::test]
             async fn ignores_http_schema_uri(
                 r#"
-                #:schema http://json.schemastore.org/tombi.json█
+                #:schema http://www.schemastore.org/tombi.json█
 
                 toml-version = "v1.0.0"
                 "#,
                 project_root_path().join("tombi.toml"),
-            ) -> Ok(["http://json.schemastore.org/tombi.json"]);
+            ) -> Ok(["http://www.schemastore.org/tombi.json"]);
         );
 
         test_goto_definition!(
