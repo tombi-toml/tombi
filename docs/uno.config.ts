@@ -22,7 +22,7 @@ export default defineConfig({
         600: "#0000CC",
         700: "#000099",
         800: "#000066",
-        900: "#000066", // Primary color
+        900: "#0A0A44", // Primary color
         brown: "#9C4221",
         focus: "rgba(255,255,255, 0.8)",
       },

@@ -7,7 +7,7 @@ export type HighlightProps = {
 
 const createHighlight = (props: HighlightProps): ParentComponent => {
   return (childProps) => (
-    <div class="my-4 p-4 bg-blue-50 border-l-4 border-blue-500 dark:bg-blue-950 dark:border-blue-400">
+    <div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400">
       <div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2">
         <span>{props.icon}</span>
         <span>{props.title}</span>

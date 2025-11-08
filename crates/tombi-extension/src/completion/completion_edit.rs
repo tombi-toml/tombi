@@ -400,7 +400,7 @@ impl CompletionEdit {
             .unwrap_or("unknown")
             .to_lowercase();
 
-        let schema_uri = format!("https://json.schemastore.org/{file_name}.json",);
+        let schema_uri = format!("https://www.schemastore.org/{file_name}.json",);
 
         Some(Self {
             text_edit: CompletionTextEdit::Edit(TextEdit {
