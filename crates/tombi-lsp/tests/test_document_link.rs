@@ -392,12 +392,12 @@ mod document_link_tests {
             async fn tombi_schema_catalog_paths(
                 r#"
                 [schema]
-                catalog = { path = "https://json.schemastore.org/api/json/catalog.json" }
+                catalog = { path = "https://www.schemastore.org/api/json/catalog.json" }
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://json.schemastore.org/api/json/catalog.json",
+                    url: "https://www.schemastore.org/api/json/catalog.json",
                     range: 1:20..1:70,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
@@ -409,12 +409,12 @@ mod document_link_tests {
             async fn tombi_schema_catalog_path(
                 r#"
                 [schema]
-                catalog = { paths = ["https://json.schemastore.org/api/json/catalog.json"] }
+                catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://json.schemastore.org/api/json/catalog.json",
+                    url: "https://www.schemastore.org/api/json/catalog.json",
                     range: 1:22..1:72,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
@@ -426,12 +426,12 @@ mod document_link_tests {
             async fn tombi_schemas_path(
                 r#"
                 [[schemas]]
-                path = "json.schemastore.org/tombi.json"
+                path = "www.schemastore.org/tombi.json"
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    path: project_root_path().join("json.schemastore.org/tombi.json"),
+                    path: project_root_path().join("www.schemastore.org/tombi.json"),
                     range: 1:8..1:39,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
                 }
@@ -443,12 +443,12 @@ mod document_link_tests {
             async fn tombi_schemas_remote_path(
                 r#"
                 [[schemas]]
-                path = "https://json.schemastore.org/cargo-make.json"
+                path = "https://www.schemastore.org/cargo-make.json"
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://json.schemastore.org/cargo-make.json",
+                    url: "https://www.schemastore.org/cargo-make.json",
                     range: 1:8..1:52,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
                 }

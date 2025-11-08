@@ -32,7 +32,7 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
     }
 
     match schema_uri.host_str() {
-        Some("json.schemastore.org") => match schema_uri.path() {
+        Some("json.schemastore.org" | "www.schemastore.org") => match schema_uri.path() {
             "/api/json/catalog.json" => Some(include_str!(
                 "../../../json.schemastore.org/api/json/catalog.json"
             )),

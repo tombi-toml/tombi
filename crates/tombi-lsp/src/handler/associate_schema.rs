@@ -22,7 +22,7 @@ pub struct AssociateSchemaParams {
 ///     "tomlValidation": [
 ///       {
 ///         "regexMatch": "^.*foo.toml$",
-///         "url": "https://json.schemastore.org/foo.json"
+///         "url": "https://www.schemastore.org/foo.json"
 ///       }
 ///     ]
 ///   }

@@ -192,12 +192,12 @@ mod test {
     use super::*;
 
     #[rstest]
-    #[case("https://json.schemastore.org/tombi.schema.json")]
-    #[case("file://./folder/tombi.schema.json")]
-    #[case("file://./tombi.schema.json")]
-    #[case("file://tombi.schema.json")]
+    #[case("https://www.schemastore.org/tombi.json")]
+    #[case("file://./folder/tombi.json")]
+    #[case("file://./tombi.json")]
+    #[case("file://tombi.json")]
     fn url_content(#[case] url: &str) {
         let url = SchemaUri::from_str(url).unwrap();
-        pretty_assertions::assert_eq!(get_schema_name(&url).unwrap(), "tombi.schema.json");
+        pretty_assertions::assert_eq!(get_schema_name(&url).unwrap(), "tombi.json");
     }
 }

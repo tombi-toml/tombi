@@ -10,24 +10,24 @@ mod goto_definition_tests {
             #[tokio::test]
             async fn relative_schema_path(
                 r#"
-                #:schema ./json.schemastore.org/tombi.json█
+                #:schema ./www.schemastore.org/tombi.json█
 
                 toml-version = "v1.0.0"
                 "#,
                 project_root_path().join("tombi.toml"),
-            ) -> Ok([project_root_path().join("json.schemastore.org/tombi.json")]);
+            ) -> Ok([project_root_path().join("www.schemastore.org/tombi.json")]);
         );
 
         test_goto_definition!(
             #[tokio::test]
             async fn ignores_http_schema_uri(
                 r#"
-                #:schema http://json.schemastore.org/tombi.json█
+                #:schema http://www.schemastore.org/tombi.json█
 
                 toml-version = "v1.0.0"
                 "#,
                 project_root_path().join("tombi.toml"),
-            ) -> Ok(["http://json.schemastore.org/tombi.json"]);
+            ) -> Ok(["http://www.schemastore.org/tombi.json"]);
         );
 
         test_goto_definition!(
@@ -446,10 +446,10 @@ mod goto_definition_tests {
             async fn schema_catalog_path(
                 r#"
                 [[schemas]]
-                path = "█json.schemastore.org/tombi.json"
+                path = "█www.schemastore.org/tombi.json"
                 "#,
                 project_root_path().join("tombi.toml"),
-            ) -> Ok([project_root_path().join("json.schemastore.org/tombi.json")]);
+            ) -> Ok([project_root_path().join("www.schemastore.org/tombi.json")]);
         );
     }
 
