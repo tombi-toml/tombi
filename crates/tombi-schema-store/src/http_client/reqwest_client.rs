@@ -15,6 +15,7 @@ impl HttpClient {
         Self(
             reqwest::Client::builder()
                 .user_agent("tombi-language-server")
+                .timeout(std::time::Duration::from_secs(5))
                 .build()
                 .expect("Failed to create reqwest client"),
         )
