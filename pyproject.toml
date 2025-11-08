@@ -1,4 +1,4 @@
-#:schema tombi://json.schemastore.org/pyproject.json
+#:schema tombi://www.schemastore.org/pyproject.json
 #:tombi toml-version = "v1.0.0"
 
 [project]
@@ -31,8 +31,8 @@ build-backend = "maturin"
 [tool.maturin]
 bindings = "bin"
 include = [
-  { format = "sdist", path = "json.schemastore.org/**/*.json" },
-  { format = "sdist", path = "json.tombi.dev/**/*.json" },
+  { format = "sdist", path = "www.schemastore.org/**/*.json" },
+  { format = "sdist", path = "www.tombi.dev/**/*.json" },
 ]
 manifest-path = "rust/tombi-cli/Cargo.toml"
 module-name = "tombi"

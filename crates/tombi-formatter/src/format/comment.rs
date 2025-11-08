@@ -316,15 +316,15 @@ mod tests {
 
     test_format! {
         #[test]
-        fn schema_comment(r"#:schema https://json.schemastore.org/pyproject.json") -> Ok(
-            "#:schema https://json.schemastore.org/pyproject.json"
+        fn schema_comment(r"#:schema https://www.schemastore.org/pyproject.json") -> Ok(
+            "#:schema https://www.schemastore.org/pyproject.json"
         );
     }
 
     test_format! {
         #[test]
-        fn schema_comment_with_space(r"#:schema  https://json.schemastore.org/pyproject.json  ") -> Ok(
-            "#:schema https://json.schemastore.org/pyproject.json"
+        fn schema_comment_with_space(r"#:schema  https://www.schemastore.org/pyproject.json  ") -> Ok(
+            "#:schema https://www.schemastore.org/pyproject.json"
         );
     }
 

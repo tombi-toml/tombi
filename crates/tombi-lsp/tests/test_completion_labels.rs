@@ -59,7 +59,7 @@ mod completion_labels {
             #[tokio::test]
             async fn schema_comment_directive_and_comment(
                 r#"
-                #:schema https://json.schemastore.org/tombi.json
+                #:schema https://www.schemastore.org/tombi.json
                 # █
                 "#,
                 Schema(tombi_schema_path()),
@@ -91,7 +91,7 @@ mod completion_labels {
             #[tokio::test]
             async fn tombi_comment_directive_and_colon(
                 r#"
-                #:schema https://json.schemastore.org/tombi.json
+                #:schema https://www.schemastore.org/tombi.json
                 #:█
                 "#,
                 Schema(tombi_schema_path()),
@@ -140,7 +140,7 @@ mod completion_labels {
             #[tokio::test]
             async fn tombi_used_toml_version_with_schema_directive(
                 r#"
-                #:schema https://json.schemastore.org/tombi.json
+                #:schema https://www.schemastore.org/tombi.json
 
                 toml-version = "v1.0.0"
                 █
@@ -838,7 +838,7 @@ mod completion_labels {
                 bindings = "bin"
                 include = [
                     █
-                    { path = "json.schemastore.org/**/*.json", format = "sdist" },
+                    { path = "www.schemastore.org/**/*.json", format = "sdist" },
                 ]
                 "#,
                 Schema(pyproject_schema_path()),

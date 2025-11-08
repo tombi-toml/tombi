@@ -392,13 +392,13 @@ mod document_link_tests {
             async fn tombi_schema_catalog_paths(
                 r#"
                 [schema]
-                catalog = { path = "https://json.schemastore.org/api/json/catalog.json" }
+                catalog = { path = "https://www.schemastore.org/api/json/catalog.json" }
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://json.schemastore.org/api/json/catalog.json",
-                    range: 1:20..1:70,
+                    url: "https://www.schemastore.org/api/json/catalog.json",
+                    range: 1:20..1:69,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
             ]));
@@ -409,13 +409,13 @@ mod document_link_tests {
             async fn tombi_schema_catalog_path(
                 r#"
                 [schema]
-                catalog = { paths = ["https://json.schemastore.org/api/json/catalog.json"] }
+                catalog = { paths = ["https://www.schemastore.org/api/json/catalog.json"] }
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://json.schemastore.org/api/json/catalog.json",
-                    range: 1:22..1:72,
+                    url: "https://www.schemastore.org/api/json/catalog.json",
+                    range: 1:22..1:71,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Catalog,
                 }
             ]));
@@ -443,13 +443,13 @@ mod document_link_tests {
             async fn tombi_schemas_remote_path(
                 r#"
                 [[schemas]]
-                path = "https://json.schemastore.org/cargo-make.json"
+                path = "https://www.schemastore.org/cargo-make.json"
                 "#,
                 project_root_path().join("tombi.toml"),
             ) -> Ok(Some(vec![
                 {
-                    url: "https://json.schemastore.org/cargo-make.json",
-                    range: 1:8..1:52,
+                    url: "https://www.schemastore.org/cargo-make.json",
+                    range: 1:8..1:51,
                     tooltip: tombi_extension_tombi::DocumentLinkToolTip::Schema,
                 }
             ]));

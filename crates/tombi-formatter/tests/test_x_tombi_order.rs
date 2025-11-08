@@ -365,7 +365,7 @@ mod table_keys_order {
                 r#"
                 [tool.maturin]
                 include = [
-                  { path = "json.schemastore.org/**/*.json", format = "sdist" },
+                  { path = "www.schemastore.org/**/*.json", format = "sdist" },
                   { path = "json.tombi.dev/**/*.json", format = "sdist" },
                 ]
                 "#,
@@ -374,7 +374,7 @@ mod table_keys_order {
                 r#"
                 [tool.maturin]
                 include = [
-                  { format = "sdist", path = "json.schemastore.org/**/*.json" },
+                  { format = "sdist", path = "www.schemastore.org/**/*.json" },
                   { format = "sdist", path = "json.tombi.dev/**/*.json" },
                 ]
                 "#
