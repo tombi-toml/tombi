@@ -139,7 +139,7 @@ main {
 
 /* Inline code styles */
 .mdx-content code:not(pre code) {
-  background-color: rgba(119, 170, 221, 0.1);
+  background-color: rgba(119, 170, 221, 0.2);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-size: 0.9em;
