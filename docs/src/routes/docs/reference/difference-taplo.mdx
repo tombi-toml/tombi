@@ -6,9 +6,9 @@ However, I rewrote a new Language Server for the following purposes.
 ## Auto Sorting
 Compared to Taplo, Tombi offers more granular sorting configuration by utilizing [JSON Schema metadata](/docs/formatter/auto-sorting#json-schema). These configuration options can also be distributed and shared via a [JSON Schema Store](https://www.schemastore.org).
 
-## Rust/uv Workspace Support
+## Cargo/uv Workspace Support
 
-Tombi supports Rust/uv workspaces.
+Tombi supports Cargo/uv workspaces.
 When editing a `Cargo.toml` / `pyproject.toml` file, Tombi can navigate to the workspace definition or to the crate/package definition managed by the workspace.
 Also, some Code Actions are available for workspace management.
 
@@ -27,6 +27,12 @@ Formatter inspired by Python's [Black](https://github.com/psf/black) (Support fo
 This idea is great, it allows the user's code formatting intent to be expressed in code, not in a configuration.
 
 I wanted to bring this idea to TOML.
+
+## Support Comment Directive
+Tombi supports comment directive.
+This allows the user to specify the TOML version, JSON Schema, lint rules disabled, and other options for the TOML file.
+
+See more details: [Comment Directive](/docs/language-server/comment-directive)
 
 ## Support for TOML v1.1.0 (preview)
 TOML will allow multi-line inline tables and trailing commas in the future v1.1.0.  
