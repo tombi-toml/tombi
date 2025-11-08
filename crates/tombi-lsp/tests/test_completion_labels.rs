@@ -655,6 +655,8 @@ mod completion_labels {
                 "dynamic",
                 "entry-points",
                 "gui-scripts",
+                "import-names",
+                "import-namespaces",
                 "keywords",
                 "license",
                 "license-files",
