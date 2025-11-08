@@ -373,15 +373,14 @@ fn use_workspace_dependency_code_action(
         return None; // Not a dependency accessor
     }
 
-    let accessor_end = if is_target_dependency { 4 } else { 2 };
-    let context_index = if is_target_dependency { 3 } else { 1 };
+    let offset = if is_target_dependency { 2 } else { 0 };
 
     let Some((Accessor::Key(crate_name), value)) =
-        dig_accessors(crate_document_tree, &accessors[..accessor_end])
+        dig_accessors(crate_document_tree, &accessors[..2 + offset])
     else {
         return None; // Not a string value
     };
-    let AccessorContext::Key(crate_key_context) = &contexts[context_index] else {
+    let AccessorContext::Key(crate_key_context) = &contexts[1 + offset] else {
         return None;
     };
 
@@ -700,12 +699,11 @@ fn add_workspace_dependency_code_action(
         return None;
     }
 
-    let accessor_end = if is_target_dependency { 4 } else { 2 };
-    let context_index = if is_target_dependency { 3 } else { 1 };
+    let offset = if is_target_dependency { 2 } else { 0 };
 
     // Extract crate name and value from member Cargo.toml
     let Some((Accessor::Key(crate_name), crate_value)) =
-        dig_accessors(document_tree, &accessors[..accessor_end])
+        dig_accessors(document_tree, &accessors[..2 + offset])
     else {
         return None;
     };
@@ -750,7 +748,7 @@ fn add_workspace_dependency_code_action(
         line_index,
         crate_name,
         crate_value,
-        &contexts[context_index],
+        &contexts[1 + offset],
     )?;
 
     // Build WorkspaceEdit with both file changes
