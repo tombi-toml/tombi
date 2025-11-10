@@ -1,6 +1,6 @@
 # Tombi Cargo Extension
 
-An extension that provides Cargo.toml-specific functionality enhancements for the Tombi Language Server.
+An extension that provides `Cargo.toml`-specific functionality enhancements for the Tombi Language Server.
 
 ## Main Features
 

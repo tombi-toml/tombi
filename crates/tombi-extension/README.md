@@ -35,7 +35,7 @@ The crate provides interfaces for different types of extensions:
 - Language features extensions (completion, hover, etc.)
 - Document analysis extensions
 - Custom commands extensions
-- File format specific extensions (like the Cargo.toml extension)
+- File format specific extensions (like the `Cargo.toml` extension)
 
 Each extension type has its own trait that extends the base `Extension` trait with specific functionality.
 

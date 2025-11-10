@@ -161,7 +161,7 @@ jobs:
             # Copy @tombi-toml/tombi package (follow symlinks)
             cp -Lr typescript/@tombi-toml/tombi/* "$temp_dir/"
 
-            # Update package.json to change the name from @tombi-toml/tombi to tombi
+            # Update `package.json` to change the name from @tombi-toml/tombi to tombi
             cd "$temp_dir"
             jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
 

@@ -107,7 +107,7 @@
     "Cwd": {
       "type": "string",
       "title": "current working directory",
-      "description": "Set the working directory of the task relative to the root of the project (where the pyproject.toml file is)",
+      "description": "Set the working directory of the task relative to the root of the project (where the `pyproject.toml` file is)",
       "minLength": 1
     }
   }
