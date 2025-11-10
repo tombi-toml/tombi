@@ -130,11 +130,11 @@
     "path": "/docs/extensions",
     "children": [
       {
-        "title": "tombi-extension-cargo",
+        "title": "Cargo",
         "path": "/docs/extensions/tombi-extension-cargo"
       },
       {
-        "title": "tombi-extension-uv",
+        "title": "uv",
         "path": "/docs/extensions/tombi-extension-uv"
       }
     ]
@@ -144,15 +144,15 @@
     "path": "/docs/reference",
     "children": [
       {
-        "title": "toml-test",
+        "title": "Conformance Testing",
         "path": "/docs/reference/toml-test"
       },
       {
-        "title": "toml-versions",
+        "title": "TOML Versions",
         "path": "/docs/reference/toml-versions"
       },
       {
-        "title": "difference-taplo",
+        "title": "Differences from Taplo",
         "path": "/docs/reference/difference-taplo"
       }
     ]
