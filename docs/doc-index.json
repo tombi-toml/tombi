@@ -82,7 +82,7 @@
         "path": "/docs/language-server/completion"
       },
       {
-        "title": "Goto Definition",
+        "title": "Go to Definition",
         "path": "/docs/language-server/goto-definition"
       },
       {

@@ -325,7 +325,7 @@
           ]
         },
         "goto-declaration": {
-          "title": "Goto Declaration Feature options",
+          "title": "Go to Declaration Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -336,7 +336,7 @@
           ]
         },
         "goto-definition": {
-          "title": "Goto Definition Feature options",
+          "title": "Go to Definition Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -347,7 +347,7 @@
           ]
         },
         "goto-type-definition": {
-          "title": "Goto Type Definition Feature options",
+          "title": "Go to Type Definition Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -481,8 +481,8 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable goto definition feature",
-          "description": "Whether to enable goto definition.",
+          "title": "Enable go to definition feature",
+          "description": "Whether to enable go to definition.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
