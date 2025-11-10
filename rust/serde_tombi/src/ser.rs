@@ -1006,7 +1006,7 @@ updated_at = "2023-07-20T14:45:30Z"
 
     #[tokio::test]
     async fn test_builder_with_schema_store_cargo_dependencies() {
-        // This test verifies that dependencies in a Cargo.toml file
+        // This test verifies that dependencies in a `Cargo.toml` file
         // are sorted alphabetically when the appropriate schema is used
 
         #[derive(Serialize)]
@@ -1021,7 +1021,7 @@ updated_at = "2023-07-20T14:45:30Z"
             version: String,
         }
 
-        // Create a Cargo.toml with unordered dependencies
+        // Create a `Cargo.toml` with unordered dependencies
         let cargo_toml = CargoToml {
             package: Package {
                 name: "test-package".to_string(),

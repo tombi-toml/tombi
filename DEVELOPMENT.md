@@ -57,7 +57,7 @@ $ ./gradlew check
 
 The easiest way to test a specific test case is to run the code action of the specific test case with [VSCode Rust Analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
 
-When running with cargo nextest, run `RUST_LOG=trace cargo nextest run -- $TEST_NAME` to output detailed logs.
+When running with Cargo nextest, run `RUST_LOG=trace cargo nextest run -- $TEST_NAME` to output detailed logs.
 
 ## toml-test
 

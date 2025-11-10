@@ -4,7 +4,7 @@ This directory contains internal crates that will potentially be released as plu
 
 ## Overview
 
-Tombi is primarily a Language Server for TOML files. However, we recognize that there is a growing demand for more specialized features, particularly for Cargo.toml files, such as:
+Tombi is primarily a Language Server for TOML files. However, we recognize that there is a growing demand for more specialized features, particularly for `Cargo.toml` files, such as:
 - Definition jumping
 - Enhanced completion suggestions
 - Other Cargo-specific functionality

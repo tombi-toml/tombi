@@ -22,7 +22,7 @@ function copyBinaryToNativePackage(platform, arch) {
 	const packageRoot = resolve(PACKAGES_ROOT, buildName);
 	const packageName = `@tombi-toml/${buildName}`;
 
-	// Update the package.json manifest
+	// Update the `package.json` manifest
 	const { version, license, repository, engines, homepage } = rootManifest;
 
 	const manifest = JSON.stringify(
