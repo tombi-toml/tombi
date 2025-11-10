@@ -1,0 +1,16 @@
+- id: tombi-format
+  alias: tombi
+  name: tombi format
+  description: Format TOML files
+  entry: tombi format
+  language: python
+  types: [toml]
+  args: []
+
+- id: tombi-lint
+  name: tombi lint
+  description: Lint TOML files
+  entry: tombi lint
+  language: python
+  types: [toml]
+  args: []
