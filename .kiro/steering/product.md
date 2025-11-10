@@ -59,7 +59,7 @@ First-class JSON Schema support enables intelligent formatting, validation, and 
 
 ### 🔧 Multi-Platform
 Available as:
-- **CLI tool** - Standalone binary via cargo, npm, or PyPI
+- **CLI tool** - Standalone binary via Cargo, npm, or PyPI
 - **Editor extensions** - VS Code, Zed, IntelliJ
 - **WASM module** - Browser and JavaScript runtime integration
 - **Python package** - Integration with Python tooling

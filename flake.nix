@@ -45,7 +45,7 @@
         src = nixpkgs.lib.fileset.toSource {
           root = unfilteredRoot;
           fileset = nixpkgs.lib.fileset.unions [
-            # Default files from crane (Rust and cargo files)
+            # Default files from crane (Rust and Cargo files)
             (craneLib.fileset.commonCargoSources unfilteredRoot)
             # Also keep any JSON files
             (nixpkgs.lib.fileset.fileFilter (file: file.hasExt "json") unfilteredRoot)
