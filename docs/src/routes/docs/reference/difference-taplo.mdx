@@ -34,12 +34,12 @@ Tombi supports more comment directives than Taplo. You can control TOML version,
 See more details: [Comment Directive](/docs/comment-directive/)
 
 ## Support for TOML v1.1.0 (preview)
-TOML will allow multi-line inline tables and trailing commas in the future v1.1.0.  
-This feature makes the magic trailing comma feature more valuable.  
+TOML will allow multi-line inline tables and trailing commas in the future v1.1.0.
+This feature makes the magic trailing comma feature more valuable.
 To provide that experience, Tombi will support TOML v1.1.0 features ahead of time.
 
 ## Stable Behavior Formatting
-Taplo has a fundamental problem with the lexer.  
+Taplo has a fundamental problem with the lexer.
 When formatting an incomplete TOML file, the AST deletes elements.
 
 Tombi does not format invalid syntax.
