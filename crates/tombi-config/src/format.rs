@@ -9,8 +9,8 @@
 
 use crate::{
     ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
-    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, LineEnding, LineWidth, QuoteStyle,
-    TrailingCommentSpaceWidth,
+    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualSpaceWidth, LineEnding,
+    LineWidth, QuoteStyle, TrailingCommentSpaceWidth,
 };
 
 /// # Formatter options
@@ -116,6 +116,14 @@ pub struct FormatOptions {
     )]
     #[cfg_attr(feature = "jsonschema", deprecated)]
     pub inline_table_element_space_width: Option<InlineTableCommaSpaceWidth>,
+
+    /// # The number of spaces after the equal in a key-value pair.
+    ///
+    /// ```toml
+    /// key = "value"
+    /// #  ^ ^  <- this
+    /// ```
+    pub key_value_equal_space_width: Option<KeyValueEqualSpaceWidth>,
 
     /// # The type of line ending
     ///

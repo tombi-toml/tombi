@@ -206,6 +206,15 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
+    pub(crate) fn key_value_equal_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `key_value_equal_space` is `'static`.
+        //         It is guaranteed by the `FormatDefinitions` struct.
+        unsafe {
+            std::mem::transmute::<&str, &'static str>(&self.definitions.key_value_equal_space)
+        }
+    }
+
+    #[inline]
     pub(crate) fn trailing_comment_space(&self) -> &'static str {
         // SAFETY: The lifetime of `trailing_comment_space` is `'static`.
         //         It is guaranteed by the `FormatDefinitions` struct.

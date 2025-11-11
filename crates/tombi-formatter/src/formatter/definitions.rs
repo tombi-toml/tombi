@@ -13,6 +13,7 @@ pub struct FormatDefinitions {
     pub line_ending: &'static str,
     pub indent_style: IndentStyle,
     pub indent_width: u8,
+    pub key_value_equal_space: String,
     pub trailing_comment_space: String,
     pub quote_style: QuoteStyle,
     pub date_time_delimiter: Option<&'static str>,
@@ -29,6 +30,12 @@ impl FormatDefinitions {
             line_ending: options.line_ending.unwrap_or_default().into(),
             indent_style: options.indent_style.unwrap_or_default(),
             indent_width: options.indent_width.unwrap_or_default().value(),
+            key_value_equal_space: " ".repeat(
+                options
+                    .key_value_equal_space_width
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
             trailing_comment_space: " ".repeat(
                 options
                     .trailing_comment_space_width

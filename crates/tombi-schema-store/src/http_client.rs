@@ -1,5 +1,6 @@
 mod error;
 
+#[allow(dead_code)]
 #[inline]
 fn http_timeout_secs() -> u64 {
     const DEFAULT_HTTP_TIMEOUT: u64 = 5;
