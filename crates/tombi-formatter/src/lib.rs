@@ -89,7 +89,7 @@ macro_rules! test_format {
 
 #[cfg(test)]
 mod test {
-    use tombi_config::{QuoteStyle, TomlVersion};
+    use tombi_config::{format::FormatRules, QuoteStyle, TomlVersion};
 
     use super::*;
 
@@ -303,7 +303,10 @@ b = 3
 "#,
     TomlVersion::V1_1_0_Preview,
     &FormatOptions{
-        quote_style: Some(QuoteStyle::Preserve),
+        rules: Some(FormatRules {
+            quote_style: Some(QuoteStyle::Preserve),
+            ..Default::default()
+        }),
         ..Default::default()
     }) -> Ok(source);
     }

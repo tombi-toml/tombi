@@ -168,7 +168,7 @@ fn format_singleline_array(
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use tombi_config::{FormatOptions, QuoteStyle, TomlVersion};
+    use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle, TomlVersion};
 
     use super::*;
     use crate::test_format;
@@ -221,7 +221,10 @@ mod tests {
             r#"string_array = [ "all", 'strings', """are the same""", '''type''' ]"#,
             TomlVersion::default(),
             &FormatOptions {
-                quote_style: Some(QuoteStyle::Preserve),
+                rules: Some(FormatRules {
+                    quote_style: Some(QuoteStyle::Preserve),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(r#"string_array = ["all", 'strings', """are the same""", '''type''']"#);
@@ -459,7 +462,10 @@ mod tests {
             r#"array = [1111111111, 2222222222, 3333333333]"#,
             Default::default(),
             &FormatOptions {
-                line_width: Some(20.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(20.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(
@@ -479,7 +485,10 @@ mod tests {
             r#"array = [[1111111111, 2222222222], [3333333333, 4444444444]]"#,
             Default::default(),
             &FormatOptions {
-                line_width: Some(30.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(
@@ -498,7 +507,10 @@ mod tests {
             r#"array = [{ key1 = 1111111111, key2 = 2222222222 }, { key3 = [3333333333, 4444444444], key4 = [5555555555, 6666666666, 7777777777] }]"#,
             TomlVersion::V1_1_0_Preview,
             &FormatOptions {
-                line_width: Some(35.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(35.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(

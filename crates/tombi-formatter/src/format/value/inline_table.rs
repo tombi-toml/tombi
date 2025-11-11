@@ -173,7 +173,7 @@ fn format_singleline_inline_table(
 
 #[cfg(test)]
 mod tests {
-    use tombi_config::{FormatOptions, TomlVersion};
+    use tombi_config::{format::FormatRules, FormatOptions, TomlVersion};
 
     use crate::test_format;
 
@@ -228,7 +228,10 @@ mod tests {
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_0_0,
             &FormatOptions {
-                line_width: Some(30.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(source);
@@ -240,7 +243,10 @@ mod tests {
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_1_0_Preview,
             &FormatOptions {
-                line_width: Some(30.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(
@@ -260,7 +266,10 @@ mod tests {
             r#"table = { key1 = [1111111111, 2222222222], key2 = [3333333333, 4444444444] }"#,
             TomlVersion::V1_1_0_Preview,
             &FormatOptions {
-                line_width: Some(35.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(35.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(
@@ -279,7 +288,10 @@ mod tests {
             r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222, }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#,
             TomlVersion::V1_1_0_Preview,
             &FormatOptions {
-                line_width: Some(30.try_into().unwrap()),
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(

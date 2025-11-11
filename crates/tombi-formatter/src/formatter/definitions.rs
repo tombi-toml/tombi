@@ -26,37 +26,105 @@ pub struct FormatDefinitions {
 impl FormatDefinitions {
     pub fn new(options: &FormatOptions) -> Self {
         Self {
-            line_width: options.line_width.unwrap_or_default().value(),
-            line_ending: options.line_ending.unwrap_or_default().into(),
-            indent_style: options.indent_style.unwrap_or_default(),
-            indent_width: options.indent_width.unwrap_or_default().value(),
+            line_width: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.line_width)
+                .or_else(|| {
+                    #[allow(deprecated)]
+                    options.line_width
+                })
+                .unwrap_or_default()
+                .value(),
+            line_ending: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.line_ending)
+                .or_else(|| {
+                    #[allow(deprecated)]
+                    options.line_ending
+                })
+                .unwrap_or_default()
+                .into(),
+            indent_style: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.indent_style)
+                .or_else(|| {
+                    #[allow(deprecated)]
+                    options.indent_style
+                })
+                .unwrap_or_default(),
+            indent_width: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.indent_width)
+                .or_else(|| {
+                    #[allow(deprecated)]
+                    options.indent_width
+                })
+                .unwrap_or_default()
+                .value(),
             key_value_equal_space: " ".repeat(
                 options
-                    .key_value_equal_space_width
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.key_value_equal_space_width)
                     .unwrap_or_default()
                     .value() as usize,
             ),
             trailing_comment_space: " ".repeat(
                 options
-                    .trailing_comment_space_width
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.trailing_comment_space_width)
+                    .or_else(|| {
+                        #[allow(deprecated)]
+                        options.trailing_comment_space_width
+                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
-            quote_style: options.quote_style.unwrap_or_default(),
-            date_time_delimiter: match options.date_time_delimiter.unwrap_or_default() {
+            quote_style: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.quote_style)
+                .or_else(|| {
+                    #[allow(deprecated)]
+                    options.quote_style
+                })
+                .unwrap_or_default(),
+            date_time_delimiter: match options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.date_time_delimiter)
+                .or_else(|| {
+                    #[allow(deprecated)]
+                    options.date_time_delimiter
+                })
+                .unwrap_or_default()
+            {
                 DateTimeDelimiter::T => Some("T"),
                 DateTimeDelimiter::Space => Some(" "),
                 DateTimeDelimiter::Preserve => None,
             },
             array_bracket_space: " ".repeat(
                 options
-                    .array_bracket_space_width
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.array_bracket_space_width)
+                    .or_else(|| {
+                        #[allow(deprecated)]
+                        options.array_bracket_space_width
+                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
             array_comma_space: " ".repeat(
                 options
-                    .array_comma_space_width
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.array_comma_space_width)
                     .or_else(|| {
                         #[allow(deprecated)]
                         options.array_element_space_width
@@ -66,13 +134,21 @@ impl FormatDefinitions {
             ),
             inline_table_brace_space: " ".repeat(
                 options
-                    .inline_table_brace_space_width
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.inline_table_brace_space_width)
+                    .or_else(|| {
+                        #[allow(deprecated)]
+                        options.inline_table_brace_space_width
+                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
             inline_table_comma_space: " ".repeat(
                 options
-                    .inline_table_comma_space_width
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.inline_table_comma_space_width)
                     .or_else(|| {
                         #[allow(deprecated)]
                         options.inline_table_element_space_width

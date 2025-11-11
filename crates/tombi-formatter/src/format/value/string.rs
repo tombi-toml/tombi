@@ -74,7 +74,7 @@ impl LiteralNode for tombi_ast::MultiLineLiteralString {
 
 #[cfg(test)]
 mod tests {
-    use tombi_config::{FormatOptions, QuoteStyle, TomlVersion};
+    use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle, TomlVersion};
 
     use crate::test_format;
 
@@ -94,7 +94,10 @@ mod tests {
             r#"key = "value""#,
             TomlVersion::default(),
             &FormatOptions {
-                quote_style: Some(QuoteStyle::Single),
+                rules: Some(FormatRules {
+                    quote_style: Some(QuoteStyle::Single),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(r#"key = 'value'"#);
@@ -106,7 +109,10 @@ mod tests {
             r#"key = "'value'""#,
             TomlVersion::default(),
             &FormatOptions {
-                quote_style: Some(QuoteStyle::Single),
+                rules: Some(FormatRules {
+                    quote_style: Some(QuoteStyle::Single),
+                    ..Default::default()
+                }),
                 ..Default::default()
             }
         ) -> Ok(source);
