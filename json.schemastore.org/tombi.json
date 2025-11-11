@@ -174,6 +174,178 @@
       "description": "To avoid needless discussion of formatting rules,\nwe do not currently have a configuration item for formatting.",
       "type": "object",
       "properties": {
+        "rules": {
+          "title": "Format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "array-bracket-space-width": {
+          "title": "The number of spaces inside the brackets of a single line array.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.array-bracket-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ArrayBracketSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 0
+        },
+        "array-element-space-width": {
+          "title": "The number of spaces after the comma in a single line array.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.array-comma-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ArrayCommaSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 1
+        },
+        "date-time-delimiter": {
+          "title": "The delimiter between date and time",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.date-time-delimiter` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DateTimeDelimiter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": "T"
+        },
+        "indent-style": {
+          "title": "The style of indentation",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.indent-style` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IndentStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": "space"
+        },
+        "indent-width": {
+          "title": "The number of spaces per indentation level",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.indent-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IndentWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 2
+        },
+        "inline-table-brace-space-width": {
+          "title": "The number of spaces inside the brackets of a single line inline table.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.inline-table-brace-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/InlineTableBraceSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 1
+        },
+        "inline-table-element-space-width": {
+          "title": "The number of spaces after the comma in a single line inline table.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.inline-table-comma-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/InlineTableCommaSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 1
+        },
+        "line-ending": {
+          "title": "The type of line ending",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.line-ending` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LineEnding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": "lf"
+        },
+        "line-width": {
+          "title": "The maximum line width",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.line-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LineWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 80
+        },
+        "quote-style": {
+          "title": "The preferred quote character for strings",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.quote-style` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/QuoteStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": "double"
+        },
+        "trailing-comment-space-width": {
+          "title": "The number of spaces before the trailing comment.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.trailing-comment-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TrailingCommentSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
+          "default": 2
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "FormatRules": {
+      "type": "object",
+      "properties": {
         "array-bracket-space-width": {
           "title": "The number of spaces inside the brackets of a single line array.",
           "description": "```toml\nkey = [ 1, 2, 3 ]\n#      ^       ^  <- this\n```",
@@ -198,20 +370,6 @@
               "type": "null"
             }
           ],
-          "default": 1
-        },
-        "array-element-space-width": {
-          "title": "The number of spaces after the comma in a single line array.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `array-comma-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ArrayCommaSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
           "default": 1
         },
         "date-time-delimiter": {
@@ -278,20 +436,6 @@
           ],
           "default": 1
         },
-        "inline-table-element-space-width": {
-          "title": "The number of spaces after the comma in a single line inline table.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `inline-table-comma-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/InlineTableCommaSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 1
-        },
         "key-value-equal-space-width": {
           "title": "The number of spaces after the equal in a key-value pair.",
           "description": "```toml\nkey = \"value\"\n#  ^ ^  <- this\n```",
@@ -302,7 +446,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": 1
         },
         "line-ending": {
           "title": "The type of line ending",
@@ -339,7 +484,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": "double"
         },
         "trailing-comment-space-width": {
           "title": "The number of spaces before the trailing comment.",
