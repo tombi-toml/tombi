@@ -18,6 +18,10 @@ impl Format for tombi_ast::ArrayOfTable {
 
         let key_values = self.key_values().collect_vec();
 
+        if f.indent_table_key_values() {
+            f.inc_indent();
+        }
+
         if key_values.is_empty() {
             let dangling_comments = self.key_values_dangling_comments();
 
@@ -25,8 +29,6 @@ impl Format for tombi_ast::ArrayOfTable {
                 write!(f, "{}", f.line_ending())?;
                 dangling_comments.format(f)?;
             }
-
-            return Ok(());
         } else {
             write!(f, "{}", f.line_ending())?;
 
@@ -40,6 +42,10 @@ impl Format for tombi_ast::ArrayOfTable {
             }
 
             self.key_values_end_dangling_comments().format(f)?;
+        }
+
+        if f.indent_table_key_values() {
+            f.dec_indent();
         }
 
         Ok(())

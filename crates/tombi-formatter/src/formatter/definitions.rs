@@ -12,6 +12,7 @@ pub struct FormatDefinitions {
     pub line_width: u8,
     pub line_ending: &'static str,
     pub indent_style: IndentStyle,
+    pub indent_table_key_values: bool,
     pub indent_width: u8,
     pub key_value_equal_space: String,
     pub trailing_comment_space: String,
@@ -54,6 +55,11 @@ impl FormatDefinitions {
                     #[allow(deprecated)]
                     options.indent_style
                 })
+                .unwrap_or_default(),
+            indent_table_key_values: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.indent_table_key_values)
                 .unwrap_or_default(),
             indent_width: options
                 .rules
