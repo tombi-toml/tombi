@@ -62,7 +62,7 @@
 | Done          | key-value-equal-space-width    | compact_entries       | Omit whitespace around .=                                                              | false          |
 | Done          | line-width                     | column_width          | Target maximum column width after which arrays are expanded into new lines.            | 80             |
 | Not Yet       |                                | indent_tables         | Indent subtables if they come in order.                                                | false          |
-| Done          | ident-table-key-values         | indent_entries        | Indent entries under tables.                                                           | false          |
+| Done          | indent-table-key-values        | indent_entries        | Indent entries under tables.                                                           | false          |
 | Done          | indent-width                   | indent_string         | Indentation to use, should be tabs or spaces but technically could be anything.        | 2 spaces (" ") |
 | Not Supported |                                | trailing_newline      | Add trailing newline to the source.                                                    | true           |
 | Not Supported |                                | reorder_keys          | Alphabetically reorder keys that are not separated by blank lines.                     | false          |
