@@ -1,4 +1,4 @@
-use crate::http_client::error::FetchError;
+use crate::http_client::{error::FetchError, http_timeout_secs};
 use bytes::Bytes;
 
 #[derive(Debug, Clone)]
@@ -15,7 +15,7 @@ impl HttpClient {
         Self(
             reqwest::Client::builder()
                 .user_agent("tombi-language-server")
-                .timeout(std::time::Duration::from_secs(5))
+                .timeout(std::time::Duration::from_secs(http_timeout_secs()))
                 .build()
                 .expect("Failed to create reqwest client"),
         )
