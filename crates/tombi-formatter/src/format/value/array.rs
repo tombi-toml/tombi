@@ -47,7 +47,7 @@ pub(crate) fn exceeds_line_width(
         // Calculate total length
         if !first {
             length += 1; // ","
-            length += f.array_element_space().len();
+            length += f.array_comma_space().len();
         }
         length += f.format_to_string(&value)?.graphemes(true).count();
         first = false;
@@ -150,7 +150,7 @@ fn format_singleline_array(
 
     for (i, value) in array.values().enumerate() {
         if i > 0 {
-            write!(f, ",{}", f.array_element_space())?;
+            write!(f, ",{}", f.array_comma_space())?;
         }
         f.skip_indent();
         value.format(f)?;

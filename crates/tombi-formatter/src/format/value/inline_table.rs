@@ -53,7 +53,7 @@ pub(crate) fn exceeds_line_width(
 
         if !first {
             length += 1; // ","
-            length += f.inline_table_element_space().len();
+            length += f.inline_table_comma_space().len();
         }
         length += f.format_to_string(&key_value)?.graphemes(true).count();
         first = false;
@@ -156,7 +156,7 @@ fn format_singleline_inline_table(
 
     for (i, key_value) in table.key_values().enumerate() {
         if i > 0 {
-            write!(f, ",{}", f.inline_table_element_space())?;
+            write!(f, ",{}", f.inline_table_comma_space())?;
         }
         f.skip_indent();
         key_value.format(f)?;
