@@ -132,7 +132,7 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: macos-13
+          - runner: macos-14
             target: x86_64
           - runner: macos-14
             target: aarch64
