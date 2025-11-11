@@ -24,7 +24,7 @@ use crate::{
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Ascending)))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct FormatOptions {
-    /// # The number of spaces inside the brackets of an single line array.
+    /// # The number of spaces inside the brackets of a single line array.
     ///
     /// ```toml
     /// key = [ 1, 2, 3 ]
@@ -36,7 +36,7 @@ pub struct FormatOptions {
     )]
     pub array_bracket_space_width: Option<ArrayBracketSpaceWidth>,
 
-    /// # The number of spaces after the comma in an single line array.
+    /// # The number of spaces after the comma in a single line array.
     ///
     /// ```toml
     /// key = [ 1, 2, 3 ]
@@ -71,7 +71,7 @@ pub struct FormatOptions {
     #[cfg_attr(feature = "jsonschema", schemars(default = "IndentWidth::default"))]
     pub indent_width: Option<IndentWidth>,
 
-    /// # The number of spaces inside the brackets of an single line inline table.
+    /// # The number of spaces inside the brackets of a single line inline table.
     ///
     /// ```toml
     /// key = { a = 1, b = 2 }
@@ -83,7 +83,7 @@ pub struct FormatOptions {
     )]
     pub inline_table_brace_space_width: Option<InlineTableBraceSpaceWidth>,
 
-    /// # The number of spaces after the comma in an single line inline table.
+    /// # The number of spaces after the comma in a single line inline table.
     ///
     /// ```toml
     /// key = { a = 1, b = 2 }
