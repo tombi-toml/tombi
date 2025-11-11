@@ -29,7 +29,7 @@ pub(crate) fn exceeds_line_width(
 
     let mut length = f.current_line_width();
     length += 2; // '{' and '}'
-    length += f.singleline_inline_table_brace_inner_space().len() * 2;
+    length += f.inline_table_brace_space().len() * 2;
     let mut first = true;
 
     for key_value in node.key_values() {
@@ -53,7 +53,7 @@ pub(crate) fn exceeds_line_width(
 
         if !first {
             length += 1; // ","
-            length += f.singleline_inline_table_space_after_comma().len();
+            length += f.inline_table_element_space().len();
         }
         length += f.format_to_string(&key_value)?.graphemes(true).count();
         first = false;
@@ -152,17 +152,17 @@ fn format_singleline_inline_table(
     table.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
-    write!(f, "{{{}", f.singleline_inline_table_brace_inner_space())?;
+    write!(f, "{{{}", f.inline_table_brace_space())?;
 
     for (i, key_value) in table.key_values().enumerate() {
         if i > 0 {
-            write!(f, ",{}", f.singleline_inline_table_space_after_comma())?;
+            write!(f, ",{}", f.inline_table_element_space())?;
         }
         f.skip_indent();
         key_value.format(f)?;
     }
 
-    write!(f, "{}}}", f.singleline_inline_table_brace_inner_space())?;
+    write!(f, "{}}}", f.inline_table_brace_space())?;
 
     if let Some(comment) = table.trailing_comment() {
         comment.format(f)?;
@@ -173,9 +173,9 @@ fn format_singleline_inline_table(
 
 #[cfg(test)]
 mod tests {
-    use tombi_config::TomlVersion;
+    use tombi_config::{FormatOptions, TomlVersion};
 
-    use crate::{formatter::definitions::FormatDefinitions, test_format};
+    use crate::test_format;
 
     test_format! {
         #[test]
@@ -227,7 +227,7 @@ mod tests {
         fn inline_table_exceeds_line_width_v1_0_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_0_0,
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(30.try_into().unwrap()),
                 ..Default::default()
             }
@@ -239,7 +239,7 @@ mod tests {
         fn inline_table_exceeds_line_width_v1_1_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
             TomlVersion::V1_1_0_Preview,
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(30.try_into().unwrap()),
                 ..Default::default()
             }
@@ -259,7 +259,7 @@ mod tests {
         fn inline_table_with_nested_array_exceeds_line_width(
             r#"table = { key1 = [1111111111, 2222222222], key2 = [3333333333, 4444444444] }"#,
             TomlVersion::V1_1_0_Preview,
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(35.try_into().unwrap()),
                 ..Default::default()
             }
@@ -278,7 +278,7 @@ mod tests {
         fn inline_table_with_nested_inline_table_exceeds_line_width(
             r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222, }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#,
             TomlVersion::V1_1_0_Preview,
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(30.try_into().unwrap()),
                 ..Default::default()
             }

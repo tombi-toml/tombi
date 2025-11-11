@@ -1,6 +1,4 @@
-use tombi_config::{
-    DateTimeDelimiter, IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
-};
+use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, QuoteStyle};
 
 /// FormatDefinitions provides the definition of the format that does not have the freedom set by [`FormatOptions`][crate::FormatOptions].
 ///
@@ -9,118 +7,64 @@ use tombi_config::{
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub struct FormatDefinitions {
-    /// # The style of indentation
-    ///
-    /// Whether to use spaces or tabs for indentation.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "IndentStyle::default"))]
-    pub indent_style: Option<IndentStyle>,
-
-    /// # The number of spaces per indentation level
-    #[cfg_attr(feature = "jsonschema", schemars(default = "IndentWidth::default"))]
-    pub indent_width: Option<IndentWidth>,
-
-    /// # The maximum line width
-    ///
-    /// The formatter will try to keep lines within this width.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "LineWidth::default"))]
-    pub line_width: Option<LineWidth>,
-
-    /// # The type of line ending
-    ///
-    /// In TOML, the line ending must be either `LF` or `CRLF`.
-    ///
-    /// - `lf`: Line Feed only (`\n`), common on Linux and macOS as well as inside git repos.
-    /// - `crlf`: Carriage Return Line Feed (`\r\n`), common on Windows.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "LineEnding::default"))]
-    pub line_ending: Option<LineEnding>,
-
-    /// # The delimiter between date and time
-    ///
-    /// In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.
-    ///
-    /// - `T`: Example: `2001-01-01T00:00:00`
-    /// - `space`: Example: `2001-01-01 00:00:00`
-    /// - `preserve`: Preserve the original delimiter.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "DateTimeDelimiter::default")
-    )]
-    pub date_time_delimiter: Option<DateTimeDelimiter>,
-
-    /// # The preferred quote character for strings
-    pub quote_style: Option<QuoteStyle>,
+    pub line_width: u8,
+    pub line_ending: &'static str,
+    pub indent_style: IndentStyle,
+    pub indent_width: u8,
+    pub trailing_comment_space: String,
+    pub quote_style: QuoteStyle,
+    pub date_time_delimiter: Option<&'static str>,
+    pub array_bracket_space: String,
+    pub array_element_space: String,
+    pub inline_table_brace_space: String,
+    pub inline_table_element_space: String,
 }
 
 impl FormatDefinitions {
-    pub const fn default() -> Self {
+    pub fn new(options: &FormatOptions) -> Self {
         Self {
-            indent_style: None,
-            indent_width: None,
-            line_width: None,
-            line_ending: None,
-            date_time_delimiter: None,
-            quote_style: None,
+            line_width: options.line_width.unwrap_or_default().value(),
+            line_ending: options.line_ending.unwrap_or_default().into(),
+            indent_style: options.indent_style.unwrap_or_default(),
+            indent_width: options.indent_width.unwrap_or_default().value(),
+            trailing_comment_space: " ".repeat(
+                options
+                    .trailing_comment_space_width
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
+            quote_style: options.quote_style.unwrap_or_default(),
+            date_time_delimiter: match options.date_time_delimiter.unwrap_or_default() {
+                DateTimeDelimiter::T => Some("T"),
+                DateTimeDelimiter::Space => Some(" "),
+                DateTimeDelimiter::Preserve => None,
+            },
+            array_bracket_space: " ".repeat(
+                options
+                    .array_bracket_space_width
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
+            array_element_space: " ".repeat(
+                options
+                    .array_element_space_width
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
+            inline_table_brace_space: " ".repeat(
+                options
+                    .inline_table_brace_space_width
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
+            inline_table_element_space: " ".repeat(
+                options
+                    .inline_table_element_space_width
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
         }
-    }
-
-    /// Returns the space before the trailing comment.
-    ///
-    /// ```toml
-    /// key = "value"  # trailing comment
-    /// #            ^^  <- this
-    /// ```
-    #[inline]
-    pub const fn trailing_comment_space(&self) -> &'static str {
-        "  "
-    }
-
-    /// Returns the space inside the brackets of an array.
-    ///
-    /// ```toml
-    /// key = [ 1, 2, 3 ]
-    /// #      ^       ^  <- this
-    #[inline]
-    pub const fn singleline_array_bracket_inner_space(&self) -> &'static str {
-        ""
-    }
-
-    /// Returns the space after the comma in an array.
-    ///
-    /// ```toml
-    /// key = [ 1, 2, 3 ]
-    /// #         ^  ^    <- this
-    #[inline]
-    pub const fn singleline_array_space_after_comma(&self) -> &'static str {
-        " "
-    }
-
-    /// Returns the space inside the brackets of an inline table.
-    ///
-    /// ```toml
-    /// key = { a = 1, b = 2 }
-    /// #      ^            ^  <- this
-    /// ```
-    #[inline]
-    pub const fn singleline_inline_table_brace_inner_space(&self) -> &'static str {
-        " "
-    }
-
-    /// Returns the space after the comma in an inline table.
-    ///
-    /// ```toml
-    /// key = { a = 1, b = 2 }
-    /// #             ^  <- this
-    /// ```
-    #[inline]
-    pub const fn singleline_inline_table_space_after_comma(&self) -> &'static str {
-        " "
-    }
-}
-
-impl Default for FormatDefinitions {
-    fn default() -> Self {
-        Self::default()
     }
 }
