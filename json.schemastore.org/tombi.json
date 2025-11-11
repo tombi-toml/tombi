@@ -398,6 +398,15 @@
           ],
           "default": "space"
         },
+        "indent-table-key-values": {
+          "title": "Whether to indent the table key-value pairs",
+          "description": "If `true`, the table key-value pairs will be indented.\n\n```toml\n[table]\n    key = \"value\"\n# ^^  <- this\n```",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        },
         "indent-width": {
           "title": "The number of spaces per indentation level",
           "anyOf": [

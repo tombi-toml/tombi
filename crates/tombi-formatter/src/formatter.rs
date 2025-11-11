@@ -206,6 +206,11 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
+    pub(crate) const fn indent_table_key_values(&self) -> bool {
+        self.definitions.indent_table_key_values
+    }
+
+    #[inline]
     pub(crate) fn key_value_equal_space(&self) -> &'static str {
         // SAFETY: The lifetime of `key_value_equal_space` is `'static`.
         //         It is guaranteed by the `FormatDefinitions` struct.
