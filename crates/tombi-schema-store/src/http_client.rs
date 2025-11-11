@@ -1,5 +1,16 @@
 mod error;
 
+#[inline]
+fn http_timeout_secs() -> u64 {
+    const DEFAULT_HTTP_TIMEOUT: u64 = 5;
+
+    std::env::var("TOMBI_HTTP_TIMEOUT")
+        .ok()
+        .or_else(|| std::env::var("HTTP_TIMEOUT").ok())
+        .and_then(|timeout| timeout.parse().ok())
+        .unwrap_or(DEFAULT_HTTP_TIMEOUT)
+}
+
 #[cfg(feature = "reqwest01")]
 mod reqwest_client;
 #[cfg(feature = "reqwest01")]
