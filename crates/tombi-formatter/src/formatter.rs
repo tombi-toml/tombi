@@ -221,28 +221,53 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) const fn trailing_comment_space(&self) -> &'static str {
-        self.definitions.trailing_comment_space()
+    pub(crate) fn trailing_comment_space(&self) -> String {
+        " ".repeat(
+            self.options
+                .trailing_comment_space_width
+                .unwrap_or_default()
+                .value() as usize,
+        )
     }
 
     #[inline]
-    pub(crate) const fn singleline_array_bracket_inner_space(&self) -> &'static str {
-        self.definitions.singleline_array_bracket_inner_space()
+    pub(crate) fn array_bracket_space(&self) -> String {
+        " ".repeat(
+            self.options
+                .array_bracket_space_width
+                .unwrap_or_default()
+                .value() as usize,
+        )
     }
 
     #[inline]
-    pub(crate) const fn singleline_array_space_after_comma(&self) -> &'static str {
-        self.definitions.singleline_array_space_after_comma()
+    pub(crate) fn array_element_space(&self) -> String {
+        " ".repeat(
+            self.options
+                .array_element_space_width
+                .unwrap_or_default()
+                .value() as usize,
+        )
     }
 
     #[inline]
-    pub(crate) const fn singleline_inline_table_brace_inner_space(&self) -> &'static str {
-        self.definitions.singleline_inline_table_brace_inner_space()
+    pub(crate) fn inline_table_brace_space(&self) -> String {
+        " ".repeat(
+            self.options
+                .inline_table_brace_space_width
+                .unwrap_or_default()
+                .value() as usize,
+        )
     }
 
     #[inline]
-    pub(crate) const fn singleline_inline_table_space_after_comma(&self) -> &'static str {
-        self.definitions.singleline_inline_table_space_after_comma()
+    pub(crate) fn inline_table_element_space(&self) -> String {
+        " ".repeat(
+            self.options
+                .inline_table_element_space_width
+                .unwrap_or_default()
+                .value() as usize,
+        )
     }
 
     #[inline]

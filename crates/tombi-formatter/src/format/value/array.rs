@@ -24,7 +24,7 @@ pub(crate) fn exceeds_line_width(
 ) -> Result<bool, std::fmt::Error> {
     let mut length = f.current_line_width();
     length += 2; // '[' and ']'
-    length += f.singleline_array_bracket_inner_space().len() * 2; // Space after '[' and before ']'
+    length += f.array_bracket_space().len() * 2; // Space after '[' and before ']'
     let mut first = true;
 
     for value in node.values() {
@@ -47,7 +47,7 @@ pub(crate) fn exceeds_line_width(
         // Calculate total length
         if !first {
             length += 1; // ","
-            length += f.singleline_array_space_after_comma().len();
+            length += f.array_element_space().len();
         }
         length += f.format_to_string(&value)?.graphemes(true).count();
         first = false;
@@ -146,17 +146,17 @@ fn format_singleline_array(
     array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
-    write!(f, "[{}", f.singleline_array_bracket_inner_space())?;
+    write!(f, "[{}", f.array_bracket_space())?;
 
     for (i, value) in array.values().enumerate() {
         if i > 0 {
-            write!(f, ",{}", f.singleline_array_space_after_comma())?;
+            write!(f, ",{}", f.array_element_space())?;
         }
         f.skip_indent();
         value.format(f)?;
     }
 
-    write!(f, "{}]", f.singleline_array_bracket_inner_space())?;
+    write!(f, "{}]", f.array_bracket_space())?;
 
     if let Some(comment) = array.trailing_comment() {
         comment.format(f)?;
