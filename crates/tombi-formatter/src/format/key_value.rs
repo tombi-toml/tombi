@@ -12,7 +12,12 @@ impl Format for tombi_ast::KeyValue {
         f.write_indent()?;
         self.keys().unwrap().format(f)?;
 
-        write!(f, " = ")?;
+        write!(
+            f,
+            "{}={}",
+            f.key_value_equal_space(),
+            f.key_value_equal_space()
+        )?;
 
         f.skip_indent();
         self.value().unwrap().format(f)?;
