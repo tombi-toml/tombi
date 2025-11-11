@@ -4,7 +4,6 @@ use js_sys::Promise;
 use serde_wasm_bindgen;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::Diagnostic;
-use tombi_formatter::FormatDefinitions;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
 
@@ -67,12 +66,10 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
         }
 
         let format_options = config.format.clone().unwrap_or_default();
-        let format_definitions = FormatDefinitions::default();
 
         let file_path_buf = file_path.map(|path| std::path::PathBuf::from(path));
         match tombi_formatter::Formatter::new(
             toml_version,
-            &format_definitions,
             &format_options,
             file_path_buf
                 .as_deref()

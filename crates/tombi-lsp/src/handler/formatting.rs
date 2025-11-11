@@ -1,6 +1,5 @@
 use itertools::{Either, Itertools};
 use tombi_config::FormatOptions;
-use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::{IntoLsp, Position, Range};
 use tower_lsp::lsp_types::{
@@ -63,11 +62,9 @@ pub async fn handle_formatting(
     };
 
     let toml_version = document_source.toml_version;
-    let formatter_definitions = FormatDefinitions::default();
 
     match tombi_formatter::Formatter::new(
         toml_version,
-        &formatter_definitions,
         config.format.as_ref().unwrap_or(&FormatOptions::default()),
         Some(Either::Left(&text_document_uri)),
         &schema_store,

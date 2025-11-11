@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use itertools::Either;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-use tombi_config::{DateTimeDelimiter, IndentStyle, TomlVersion};
+use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -15,7 +15,7 @@ pub struct Formatter<'a> {
     indent_depth: u8,
     skip_indent: bool,
     single_line_mode: bool,
-    definitions: &'a crate::FormatDefinitions,
+    definitions: crate::FormatDefinitions,
     #[allow(dead_code)]
     options: &'a crate::FormatOptions,
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
@@ -27,7 +27,6 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub fn new(
         toml_version: TomlVersion,
-        definitions: &'a crate::FormatDefinitions,
         options: &'a crate::FormatOptions,
         source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
         schema_store: &'a tombi_schema_store::SchemaStore,
@@ -37,7 +36,7 @@ impl<'a> Formatter<'a> {
             indent_depth: 0,
             skip_indent: false,
             single_line_mode: false,
-            definitions,
+            definitions: crate::FormatDefinitions::new(options),
             options,
             source_uri_or_path,
             schema_store,
@@ -187,18 +186,8 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn toml_version(&self) -> TomlVersion {
+    pub(crate) const fn toml_version(&self) -> TomlVersion {
         self.toml_version
-    }
-
-    #[inline]
-    pub(crate) fn line_width(&self) -> u8 {
-        self.options.line_width.unwrap_or_default().value()
-    }
-
-    #[inline]
-    pub fn line_ending(&self) -> &'static str {
-        self.options.line_ending.unwrap_or_default().into()
     }
 
     #[inline]
@@ -207,75 +196,54 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn date_time_delimiter(&self) -> Option<&'static str> {
-        match self.options.date_time_delimiter.unwrap_or_default() {
-            DateTimeDelimiter::T => Some("T"),
-            DateTimeDelimiter::Space => Some(" "),
-            DateTimeDelimiter::Preserve => None,
-        }
+    pub(crate) const fn line_width(&self) -> u8 {
+        self.definitions.line_width
     }
 
     #[inline]
-    pub(crate) fn quote_style(&self) -> tombi_config::QuoteStyle {
-        self.options.quote_style.unwrap_or_default()
+    pub const fn line_ending(&self) -> &'static str {
+        self.definitions.line_ending
     }
 
     #[inline]
     pub(crate) fn trailing_comment_space(&self) -> String {
-        " ".repeat(
-            self.options
-                .trailing_comment_space_width
-                .unwrap_or_default()
-                .value() as usize,
-        )
+        self.definitions.trailing_comment_space.clone()
+    }
+
+    #[inline]
+    pub(crate) fn quote_style(&self) -> tombi_config::QuoteStyle {
+        self.definitions.quote_style
+    }
+
+    #[inline]
+    pub(crate) fn date_time_delimiter(&self) -> Option<&str> {
+        self.definitions.date_time_delimiter
     }
 
     #[inline]
     pub(crate) fn array_bracket_space(&self) -> String {
-        " ".repeat(
-            self.options
-                .array_bracket_space_width
-                .unwrap_or_default()
-                .value() as usize,
-        )
+        self.definitions.array_bracket_space.clone()
     }
 
     #[inline]
     pub(crate) fn array_element_space(&self) -> String {
-        " ".repeat(
-            self.options
-                .array_element_space_width
-                .unwrap_or_default()
-                .value() as usize,
-        )
+        self.definitions.array_element_space.clone()
     }
 
     #[inline]
     pub(crate) fn inline_table_brace_space(&self) -> String {
-        " ".repeat(
-            self.options
-                .inline_table_brace_space_width
-                .unwrap_or_default()
-                .value() as usize,
-        )
+        self.definitions.inline_table_brace_space.clone()
     }
 
     #[inline]
     pub(crate) fn inline_table_element_space(&self) -> String {
-        " ".repeat(
-            self.options
-                .inline_table_element_space_width
-                .unwrap_or_default()
-                .value() as usize,
-        )
+        self.definitions.inline_table_element_space.clone()
     }
 
     #[inline]
     pub(crate) fn ident(&self, depth: u8) -> String {
-        match self.options.indent_style.unwrap_or_default() {
-            IndentStyle::Space => {
-                " ".repeat((self.options.indent_width.unwrap_or_default().value() * depth) as usize)
-            }
+        match self.definitions.indent_style {
+            IndentStyle::Space => " ".repeat((self.definitions.indent_width * depth) as usize),
             IndentStyle::Tab => "\t".repeat(depth as usize),
         }
     }

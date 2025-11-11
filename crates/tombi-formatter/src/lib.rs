@@ -36,7 +36,6 @@ macro_rules! test_format {
 
             match $crate::Formatter::new(
                 $toml_version,
-                &$crate::FormatDefinitions::default(),
                 $options,
                 None,
                 &tombi_schema_store::SchemaStore::new()
@@ -75,7 +74,6 @@ macro_rules! test_format {
 
             match $crate::Formatter::new(
                 $toml_version,
-                &$crate::FormatDefinitions::default(),
                 $options,
                 None,
                 &tombi_schema_store::SchemaStore::new()

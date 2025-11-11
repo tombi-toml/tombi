@@ -4,7 +4,6 @@ use similar::{ChangeTag, TextDiff};
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
 use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
-use tombi_formatter::formatter::definitions::FormatDefinitions;
 use tombi_glob::{FileInputType, FileSearch};
 
 use crate::app::CommonArgs;
@@ -254,13 +253,11 @@ where
     crate::Error: Print<P>,
 {
     let mut source = String::new();
-    let format_definitions = FormatDefinitions::default();
     if let Err(err) = file.read_to_string(&mut source).await {
         return Err(crate::Error::Io(err));
     }
     match tombi_formatter::Formatter::new(
         toml_version,
-        &format_definitions,
         format_options,
         file.source().map(itertools::Either::Right),
         schema_store,
@@ -309,13 +306,11 @@ where
     crate::Error: Print<P>,
 {
     let mut source = String::new();
-    let format_definitions = FormatDefinitions::default();
     if let Err(err) = file.read_to_string(&mut source).await {
         return Err(crate::Error::Io(err));
     }
     match tombi_formatter::Formatter::new(
         toml_version,
-        &format_definitions,
         format_options,
         Some(itertools::Either::Right(source_path)),
         schema_store,
