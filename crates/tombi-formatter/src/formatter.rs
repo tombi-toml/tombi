@@ -193,12 +193,12 @@ impl<'a> Formatter<'a> {
 
     #[inline]
     pub(crate) fn line_width(&self) -> u8 {
-        self.definitions.line_width.unwrap_or_default().value()
+        self.options.line_width.unwrap_or_default().value()
     }
 
     #[inline]
     pub fn line_ending(&self) -> &'static str {
-        self.definitions.line_ending.unwrap_or_default().into()
+        self.options.line_ending.unwrap_or_default().into()
     }
 
     #[inline]
@@ -208,7 +208,7 @@ impl<'a> Formatter<'a> {
 
     #[inline]
     pub(crate) fn date_time_delimiter(&self) -> Option<&'static str> {
-        match self.definitions.date_time_delimiter.unwrap_or_default() {
+        match self.options.date_time_delimiter.unwrap_or_default() {
             DateTimeDelimiter::T => Some("T"),
             DateTimeDelimiter::Space => Some(" "),
             DateTimeDelimiter::Preserve => None,
@@ -217,7 +217,7 @@ impl<'a> Formatter<'a> {
 
     #[inline]
     pub(crate) fn quote_style(&self) -> tombi_config::QuoteStyle {
-        self.definitions.quote_style.unwrap_or_default()
+        self.options.quote_style.unwrap_or_default()
     }
 
     #[inline]
@@ -247,10 +247,10 @@ impl<'a> Formatter<'a> {
 
     #[inline]
     pub(crate) fn ident(&self, depth: u8) -> String {
-        match self.definitions.indent_style.unwrap_or_default() {
-            IndentStyle::Space => " ".repeat(
-                (self.definitions.indent_width.unwrap_or_default().value() * depth) as usize,
-            ),
+        match self.options.indent_style.unwrap_or_default() {
+            IndentStyle::Space => {
+                " ".repeat((self.options.indent_width.unwrap_or_default().value() * depth) as usize)
+            }
             IndentStyle::Tab => "\t".repeat(depth as usize),
         }
     }

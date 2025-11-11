@@ -17,8 +17,8 @@ macro_rules! test_format {
         $crate::test_format!(#[test] fn $name($source, $toml_version) -> Ok($source););
     };
 
-    (#[test] fn $name:ident($source:expr, $toml_version:expr, $definition:expr) -> Ok(source);) => {
-        $crate::test_format!(#[test] fn $name($source, $toml_version, $definition) -> Ok($source););
+    (#[test] fn $name:ident($source:expr, $toml_version:expr, $config:expr) -> Ok(source);) => {
+        $crate::test_format!(#[test] fn $name($source, $toml_version, $config) -> Ok($source););
     };
 
     (#[test] fn $name:ident($source:expr) -> Ok($expected:expr);) => {
@@ -26,21 +26,17 @@ macro_rules! test_format {
     };
 
     (#[test] fn $name:ident($source:expr, $toml_version:expr) -> Ok($expected:expr);) => {
-        $crate::test_format!(#[test] fn $name($source, $toml_version, &$crate::FormatDefinitions::default()) -> Ok($expected););
+        $crate::test_format!(#[test] fn $name($source, $toml_version, &$crate::FormatOptions::default()) -> Ok($expected););
     };
 
-    (#[test] fn $name:ident($source:expr, $toml_version:expr, $definitions:expr) -> Ok($expected:expr);) => {
-        $crate::test_format!(#[test] fn $name($source, $toml_version, $definitions, &$crate::FormatOptions::default()) -> Ok($expected););
-    };
-
-    (#[test] fn $name:ident($source:expr, $toml_version:expr, $definitions:expr, $options:expr) -> Ok($expected:expr);) => {
+    (#[test] fn $name:ident($source:expr, $toml_version:expr, $options:expr) -> Ok($expected:expr);) => {
         #[tokio::test]
         async fn $name() {
             tombi_test_lib::init_tracing();
 
             match $crate::Formatter::new(
                 $toml_version,
-                $definitions,
+                &$crate::FormatDefinitions::default(),
                 $options,
                 None,
                 &tombi_schema_store::SchemaStore::new()
@@ -79,7 +75,7 @@ macro_rules! test_format {
 
             match $crate::Formatter::new(
                 $toml_version,
-                $definitions,
+                &$crate::FormatDefinitions::default(),
                 $options,
                 None,
                 &tombi_schema_store::SchemaStore::new()
@@ -98,7 +94,6 @@ mod test {
     use tombi_config::{QuoteStyle, TomlVersion};
 
     use super::*;
-    use crate::FormatDefinitions;
 
     test_format! {
         #[test]
@@ -309,7 +304,7 @@ b = 3
 # table key values end dangling comment4
 "#,
     TomlVersion::V1_1_0_Preview,
-    &FormatDefinitions{
+    &FormatOptions{
         quote_style: Some(QuoteStyle::Preserve),
         ..Default::default()
     }) -> Ok(source);

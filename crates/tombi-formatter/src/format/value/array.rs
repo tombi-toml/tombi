@@ -168,10 +168,10 @@ fn format_singleline_array(
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use tombi_config::{QuoteStyle, TomlVersion};
+    use tombi_config::{FormatOptions, QuoteStyle, TomlVersion};
 
     use super::*;
-    use crate::{formatter::definitions::FormatDefinitions, test_format};
+    use crate::test_format;
 
     test_format! {
         #[test]
@@ -220,7 +220,7 @@ mod tests {
         fn singleline_array7(
             r#"string_array = [ "all", 'strings', """are the same""", '''type''' ]"#,
             TomlVersion::default(),
-            &FormatDefinitions {
+            &FormatOptions {
                 quote_style: Some(QuoteStyle::Preserve),
                 ..Default::default()
             }
@@ -458,7 +458,7 @@ mod tests {
         fn array_exceeds_line_width(
             r#"array = [1111111111, 2222222222, 3333333333]"#,
             Default::default(),
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(20.try_into().unwrap()),
                 ..Default::default()
             }
@@ -478,7 +478,7 @@ mod tests {
         fn array_with_nested_array_exceeds_line_width(
             r#"array = [[1111111111, 2222222222], [3333333333, 4444444444]]"#,
             Default::default(),
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(30.try_into().unwrap()),
                 ..Default::default()
             }
@@ -497,7 +497,7 @@ mod tests {
         fn array_with_nested_inline_table_exceeds_line_width(
             r#"array = [{ key1 = 1111111111, key2 = 2222222222 }, { key3 = [3333333333, 4444444444], key4 = [5555555555, 6666666666, 7777777777] }]"#,
             TomlVersion::V1_1_0_Preview,
-            &FormatDefinitions {
+            &FormatOptions {
                 line_width: Some(35.try_into().unwrap()),
                 ..Default::default()
             }

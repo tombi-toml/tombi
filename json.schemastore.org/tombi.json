@@ -173,8 +173,151 @@
       "title": "Formatter options",
       "description": "To avoid needless discussion of formatting rules,\nwe do not currently have a configuration item for formatting.",
       "type": "object",
+      "properties": {
+        "date-time-delimiter": {
+          "title": "The delimiter between date and time",
+          "description": "In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.\n\n- `T`: Example: `2001-01-01T00:00:00`\n- `space`: Example: `2001-01-01 00:00:00`\n- `preserve`: Preserve the original delimiter.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DateTimeDelimiter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "T"
+        },
+        "indent-style": {
+          "title": "The style of indentation",
+          "description": "Whether to use spaces or tabs for indentation.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IndentStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "space"
+        },
+        "indent-width": {
+          "title": "The number of spaces per indentation level",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IndentWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 2
+        },
+        "line-ending": {
+          "title": "The type of line ending",
+          "description": "In TOML, the line ending must be either `LF` or `CRLF`.\n\n- `lf`: Line Feed only (`\\n`), common on Linux and macOS as well as inside git repos.\n- `crlf`: Carriage Return Line Feed (`\\r\\n`), common on Windows.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LineEnding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "lf"
+        },
+        "line-width": {
+          "title": "The maximum line width",
+          "description": "The formatter will try to keep lines within this width.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LineWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 80
+        },
+        "quote-style": {
+          "title": "The preferred quote character for strings",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/QuoteStyle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
       "additionalProperties": false,
-      "x-tombi-table-keys-order": "schema"
+      "x-tombi-table-keys-order": "ascending"
+    },
+    "DateTimeDelimiter": {
+      "description": "DateTime delimiter",
+      "oneOf": [
+        {
+          "description": "Example: `2021-01-01T00:00:00`",
+          "type": "string",
+          "const": "T"
+        },
+        {
+          "description": "Example: `2021-01-01 00:00:00`",
+          "type": "string",
+          "const": "space"
+        },
+        {
+          "description": "Preserve the source delimiter",
+          "type": "string",
+          "const": "preserve"
+        }
+      ]
+    },
+    "IndentStyle": {
+      "type": "string",
+      "enum": [
+        "space",
+        "tab"
+      ]
+    },
+    "IndentWidth": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "LineEnding": {
+      "type": "string",
+      "enum": [
+        "lf",
+        "crlf"
+      ]
+    },
+    "LineWidth": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 1,
+      "maximum": 255
+    },
+    "QuoteStyle": {
+      "description": "The preferred quote character for strings.",
+      "oneOf": [
+        {
+          "description": "Prefer the double quote",
+          "type": "string",
+          "const": "double"
+        },
+        {
+          "description": "Prefer the single quote",
+          "type": "string",
+          "const": "single"
+        },
+        {
+          "description": "Preserve the source quote",
+          "type": "string",
+          "const": "preserve"
+        }
+      ]
     },
     "LintOptions": {
       "type": "object",
@@ -325,7 +468,7 @@
           ]
         },
         "goto-declaration": {
-          "title": "Go to Declaration Feature options",
+          "title": "Goto Declaration Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -336,7 +479,7 @@
           ]
         },
         "goto-definition": {
-          "title": "Go to Definition Feature options",
+          "title": "Goto Definition Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -347,7 +490,7 @@
           ]
         },
         "goto-type-definition": {
-          "title": "Go to Type Definition Feature options",
+          "title": "Goto Type Definition Feature options",
           "anyOf": [
             {
               "$ref": "#/definitions/LspGotoDefinition"
@@ -481,8 +624,8 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "title": "Enable go to definition feature",
-          "description": "Whether to enable go to definition.",
+          "title": "Enable goto definition feature",
+          "description": "Whether to enable goto definition.",
           "anyOf": [
             {
               "$ref": "#/definitions/BoolDefaultTrue"
