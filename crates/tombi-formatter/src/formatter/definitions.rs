@@ -17,9 +17,9 @@ pub struct FormatDefinitions {
     pub quote_style: QuoteStyle,
     pub date_time_delimiter: Option<&'static str>,
     pub array_bracket_space: String,
-    pub array_element_space: String,
+    pub array_comma_space: String,
     pub inline_table_brace_space: String,
-    pub inline_table_element_space: String,
+    pub inline_table_comma_space: String,
 }
 
 impl FormatDefinitions {
@@ -47,9 +47,13 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
-            array_element_space: " ".repeat(
+            array_comma_space: " ".repeat(
                 options
-                    .array_element_space_width
+                    .array_comma_space_width
+                    .or_else(|| {
+                        #[allow(deprecated)]
+                        options.array_element_space_width
+                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
@@ -59,9 +63,13 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
-            inline_table_element_space: " ".repeat(
+            inline_table_comma_space: " ".repeat(
                 options
-                    .inline_table_element_space_width
+                    .inline_table_comma_space_width
+                    .or_else(|| {
+                        #[allow(deprecated)]
+                        options.inline_table_element_space_width
+                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),

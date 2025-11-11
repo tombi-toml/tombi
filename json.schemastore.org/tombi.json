@@ -187,17 +187,31 @@
           ],
           "default": 0
         },
-        "array-element-space-width": {
+        "array-comma-space-width": {
           "title": "The number of spaces after the comma in a single line array.",
           "description": "```toml\nkey = [ 1, 2, 3 ]\n#         ^  ^    <- this\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/ArrayElementSpaceWidth"
+              "$ref": "#/definitions/ArrayCommaSpaceWidth"
             },
             {
               "type": "null"
             }
           ],
+          "default": 1
+        },
+        "array-element-space-width": {
+          "title": "The number of spaces after the comma in a single line array.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `array-comma-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ArrayCommaSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
           "default": 1
         },
         "date-time-delimiter": {
@@ -251,17 +265,31 @@
           ],
           "default": 1
         },
-        "inline-table-element-space-width": {
+        "inline-table-comma-space-width": {
           "title": "The number of spaces after the comma in a single line inline table.",
           "description": "```toml\nkey = { a = 1, b = 2 }\n#             ^  <- this\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/InlineTableElementSpaceWidth"
+              "$ref": "#/definitions/InlineTableCommaSpaceWidth"
             },
             {
               "type": "null"
             }
           ],
+          "default": 1
+        },
+        "inline-table-element-space-width": {
+          "title": "The number of spaces after the comma in a single line inline table.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `inline-table-comma-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/InlineTableCommaSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
           "default": 1
         },
         "line-ending": {
@@ -324,7 +352,7 @@
       "minimum": 0,
       "maximum": 255
     },
-    "ArrayElementSpaceWidth": {
+    "ArrayCommaSpaceWidth": {
       "type": "integer",
       "format": "uint8",
       "minimum": 0,
@@ -369,7 +397,7 @@
       "minimum": 0,
       "maximum": 255
     },
-    "InlineTableElementSpaceWidth": {
+    "InlineTableCommaSpaceWidth": {
       "type": "integer",
       "format": "uint8",
       "minimum": 0,

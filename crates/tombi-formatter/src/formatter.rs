@@ -232,10 +232,10 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn array_element_space(&self) -> &'static str {
-        // SAFETY: The lifetime of `array_element_space` is `'static`.
+    pub(crate) fn array_comma_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `array_comma_space` is `'static`.
         //         It is guaranteed by the `FormatDefinitions` struct.
-        unsafe { std::mem::transmute::<&str, &'static str>(&self.definitions.array_element_space) }
+        unsafe { std::mem::transmute::<&str, &'static str>(&self.definitions.array_comma_space) }
     }
 
     #[inline]
@@ -248,11 +248,11 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn inline_table_element_space(&self) -> &'static str {
-        // SAFETY: The lifetime of `inline_table_element_space` is `'static`.
+    pub(crate) fn inline_table_comma_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `inline_table_comma_space` is `'static`.
         //         It is guaranteed by the `FormatDefinitions` struct.
         unsafe {
-            std::mem::transmute::<&str, &'static str>(&self.definitions.inline_table_element_space)
+            std::mem::transmute::<&str, &'static str>(&self.definitions.inline_table_comma_space)
         }
     }
 

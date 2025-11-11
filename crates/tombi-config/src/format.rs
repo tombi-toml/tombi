@@ -8,8 +8,8 @@
 //! this structure is currently empty.
 
 use crate::{
-    ArrayBracketSpaceWidth, ArrayElementSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
-    InlineTableBraceSpaceWidth, InlineTableElementSpaceWidth, LineEnding, LineWidth, QuoteStyle,
+    ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
+    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, LineEnding, LineWidth, QuoteStyle,
     TrailingCommentSpaceWidth,
 };
 
@@ -44,9 +44,20 @@ pub struct FormatOptions {
     /// ```
     #[cfg_attr(
         feature = "jsonschema",
-        schemars(default = "ArrayElementSpaceWidth::default")
+        schemars(default = "ArrayCommaSpaceWidth::default")
     )]
-    pub array_element_space_width: Option<ArrayElementSpaceWidth>,
+    pub array_comma_space_width: Option<ArrayCommaSpaceWidth>,
+
+    /// # The number of spaces after the comma in a single line array.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `array-comma-space-width` instead.
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(default = "ArrayCommaSpaceWidth::default")
+    )]
+    #[cfg_attr(feature = "jsonschema", deprecated)]
+    pub array_element_space_width: Option<ArrayCommaSpaceWidth>,
 
     /// # The delimiter between date and time
     ///
@@ -91,9 +102,20 @@ pub struct FormatOptions {
     /// ```
     #[cfg_attr(
         feature = "jsonschema",
-        schemars(default = "InlineTableElementSpaceWidth::default")
+        schemars(default = "InlineTableCommaSpaceWidth::default")
     )]
-    pub inline_table_element_space_width: Option<InlineTableElementSpaceWidth>,
+    pub inline_table_comma_space_width: Option<InlineTableCommaSpaceWidth>,
+
+    /// # The number of spaces after the comma in a single line inline table.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `inline-table-comma-space-width` instead.
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(default = "InlineTableCommaSpaceWidth::default")
+    )]
+    #[cfg_attr(feature = "jsonschema", deprecated)]
+    pub inline_table_element_space_width: Option<InlineTableCommaSpaceWidth>,
 
     /// # The type of line ending
     ///
