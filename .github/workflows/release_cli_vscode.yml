@@ -27,9 +27,9 @@ jobs:
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:
-            name: |
-              tombi-cli-0.0.0-*
-              tombi-vscode-0.0.0-*
+          name: |
+            tombi-cli-0.0.0-*
+            tombi-vscode-0.0.0-*
 
   release-cli-and-vscode:
     name: dist (${{ matrix.target }})
@@ -53,7 +53,7 @@ jobs:
           - os: windows-latest
             target: aarch64-pc-windows-msvc
             vscode_target: win32-arm64
-          - os: macos-13
+          - os: macos-14
             target: x86_64-apple-darwin
             vscode_target: darwin-x64
           - os: macos-14
@@ -78,8 +78,8 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
+          node-version-file: ".node-version"
+          cache: "pnpm"
 
       - name: Update apt repositories
         if: matrix.target == 'arm-unknown-linux-gnueabihf'
