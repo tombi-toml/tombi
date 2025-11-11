@@ -206,8 +206,12 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn trailing_comment_space(&self) -> String {
-        self.definitions.trailing_comment_space.clone()
+    pub(crate) fn trailing_comment_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `trailing_comment_space` is `'static`.
+        //         It is guaranteed by the `FormatDefinitions` struct.
+        unsafe {
+            std::mem::transmute::<&str, &'static str>(&self.definitions.trailing_comment_space)
+        }
     }
 
     #[inline]
@@ -221,23 +225,35 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn array_bracket_space(&self) -> String {
-        self.definitions.array_bracket_space.clone()
+    pub(crate) fn array_bracket_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `array_bracket_space` is `'static`.
+        //         It is guaranteed by the `FormatDefinitions` struct.
+        unsafe { std::mem::transmute::<&str, &'static str>(&self.definitions.array_bracket_space) }
     }
 
     #[inline]
-    pub(crate) fn array_element_space(&self) -> String {
-        self.definitions.array_element_space.clone()
+    pub(crate) fn array_element_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `array_element_space` is `'static`.
+        //         It is guaranteed by the `FormatDefinitions` struct.
+        unsafe { std::mem::transmute::<&str, &'static str>(&self.definitions.array_element_space) }
     }
 
     #[inline]
-    pub(crate) fn inline_table_brace_space(&self) -> String {
-        self.definitions.inline_table_brace_space.clone()
+    pub(crate) fn inline_table_brace_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `inline_table_brace_space` is `'static`.
+        //         It is guaranteed by the `FormatDefinitions` struct.
+        unsafe {
+            std::mem::transmute::<&str, &'static str>(&self.definitions.inline_table_brace_space)
+        }
     }
 
     #[inline]
-    pub(crate) fn inline_table_element_space(&self) -> String {
-        self.definitions.inline_table_element_space.clone()
+    pub(crate) fn inline_table_element_space(&self) -> &'static str {
+        // SAFETY: The lifetime of `inline_table_element_space` is `'static`.
+        //         It is guaranteed by the `FormatDefinitions` struct.
+        unsafe {
+            std::mem::transmute::<&str, &'static str>(&self.definitions.inline_table_element_space)
+        }
     }
 
     #[inline]

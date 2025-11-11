@@ -264,6 +264,7 @@ mod completion_labels {
                 Schema(tombi_schema_path()),
             ) -> Ok([
                 "files",
+                "format",
                 "lint",
                 "lsp",
                 "schema",
