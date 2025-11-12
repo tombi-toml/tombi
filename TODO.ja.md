@@ -49,7 +49,7 @@
 |-------------|-----------------------------------|-----------------------|----------------------------------------------------------------------------------------|----------------|
 | Done        | key-value-equal-alignment         | align_entries         | Align entries vertically. Entries that have table headers,                             | false          |
 |             |                                   |                       | comments, or blank lines between them are not aligned.                                 |                |
-| Not Yet     | trailing-comment-alignment        | align_comments        | Align consecutive comments after entries and items vertically.                         | true           |
+| Done        | trailing-comment-alignment        | align_comments        | Align consecutive comments after entries and items vertically.                         | true           |
 |             |                                   |                       | This applies to comments that are after entries or array items.                        |                |
 | Not Planned |                                   | array_trailing_comma  | Put trailing commas for multiline arrays.                                              | true           |
 | Not Planned |                                   | array_auto_expand     | Automatically expand arrays to multiple lines when they exceed characters.column_width | true           |
