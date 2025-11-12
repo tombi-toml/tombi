@@ -158,53 +158,53 @@ enum Header {
 
 #[cfg(test)]
 mod test {
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn empty_table_space_on_own_subtable(
+        #[tokio::test]
+        async fn empty_table_space_on_own_subtable(
             r#"
             [foo]
             [foo.bar]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_table_space_on_other_table(
+        #[tokio::test]
+        async fn empty_table_space_on_other_table(
             r#"
             [foo]
 
             [bar.baz]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_table_space_on_own_array_of_subtables(
+        #[tokio::test]
+        async fn empty_table_space_on_own_array_of_subtables(
             r#"
             [foo]
             [[foo.bar]]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_table_space_on_other_array_of_tables(
+        #[tokio::test]
+        async fn empty_table_space_on_other_array_of_tables(
             r#"
             [foo]
 
             [[bar.baz]]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_table_space_on_other_array_of_tables_with_comments(
+        #[tokio::test]
+        async fn empty_table_space_on_other_array_of_tables_with_comments(
             r#"
             [foo]  # header table comment
             # table dangling comment 1-1
@@ -220,22 +220,22 @@ mod test {
             # table header leading comment2
             [[bar.baz]]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_array_of_tables_space_on_own_subtable(
+        #[tokio::test]
+        async fn empty_array_of_tables_space_on_own_subtable(
             r#"
             [[foo]]
             [foo.bar]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_array_of_tables_space_on_own_subtable_with_comments(
+        #[tokio::test]
+        async fn empty_array_of_tables_space_on_own_subtable_with_comments(
             r#"
             [[foo]]  # header trailing comment
             # table dangling comment 1-1
@@ -251,23 +251,23 @@ mod test {
             # table header leading comment2
             [foo.bar]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_array_of_tables_space_on_other_subtable(
+        #[tokio::test]
+        async fn empty_array_of_tables_space_on_other_subtable(
             r#"
             [[foo]]
 
             [bar.baz]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_array_of_tables_space_on_other_subtable_with_comments(
+        #[tokio::test]
+        async fn empty_array_of_tables_space_on_other_subtable_with_comments(
             r#"
             [[foo]]  # header trailing comment
             # table dangling comment 1-1
@@ -281,23 +281,23 @@ mod test {
 
             [bar.baz]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_array_of_tables_space_on_same_array_of_tables(
+        #[tokio::test]
+        async fn empty_array_of_tables_space_on_same_array_of_tables(
             r#"
             [[foo]]
 
             [[foo]]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn empty_array_of_tables_space_on_same_array_of_tables_with_comment(
+        #[tokio::test]
+        async fn empty_array_of_tables_space_on_same_array_of_tables_with_comment(
             r#"
             [[foo]]  # header trailing comment
             # table dangling comment 1-1
@@ -313,21 +313,21 @@ mod test {
             # table header leading comment2
             [[foo]]
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn only_dangling_comment1(
+        #[tokio::test]
+        async fn only_dangling_comment1(
             r#"
             # root dangling comment
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn only_dangling_comment2(
+        #[tokio::test]
+        async fn only_dangling_comment2(
             r#"
             # root dangling comment 1-1
             # root dangling comment 1-2
@@ -338,6 +338,6 @@ mod test {
 
             # root dangling comment 3-1
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 }

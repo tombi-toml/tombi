@@ -60,43 +60,43 @@ impl Format for tombi_ast::Table {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn table_only_header(
+        #[tokio::test]
+        async fn table_only_header(
             r#"[package]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_only_header_with_basic_string_key(
+        #[tokio::test]
+        async fn table_only_header_with_basic_string_key(
             r#"[dependencies."unicase"]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_only_header_nested_keys(
+        #[tokio::test]
+        async fn table_only_header_nested_keys(
             r#"[dependencies.unicase]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table(
+        #[tokio::test]
+        async fn table(
             r#"
             [package]
             name = "toml-rs"
             version = "0.4.0"
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_with_full_comment(
+        #[tokio::test]
+        async fn table_with_full_comment(
             r#"
             # header leading comment1
             # header leading comment2
@@ -114,12 +114,12 @@ mod tests {
             # key value leading comment2
             key = "value"  # key trailing comment
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_begin_dangling_comment1(
+        #[tokio::test]
+        async fn table_begin_dangling_comment1(
             r#"
             [header]
             # key values begin dangling comment group 1-1
@@ -135,12 +135,12 @@ mod tests {
             # key values leading comment2
             key = "value"  # key trailing comment
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_end_dangling_comment1(
+        #[tokio::test]
+        async fn table_end_dangling_comment1(
             r#"
             [header]
             key = "value"  # key trailing comment
@@ -148,12 +148,12 @@ mod tests {
             # key values end dangling comment 1-1
             # key values end dangling comment 1-2
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_end_dangling_comment2(
+        #[tokio::test]
+        async fn table_end_dangling_comment2(
             r#"
             [header]
             key = "value"  # key trailing comment
@@ -167,12 +167,12 @@ mod tests {
 
             # key values end dangling comment 3-1
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn table_end_dangling_comment3(
+        #[tokio::test]
+        async fn table_end_dangling_comment3(
             r#"
             [header]
             key = "value"  # key trailing comment
@@ -180,6 +180,6 @@ mod tests {
             # key values end dangling comment1
             # key values end dangling comment2
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 }

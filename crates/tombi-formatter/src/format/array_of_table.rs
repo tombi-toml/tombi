@@ -60,43 +60,43 @@ impl Format for tombi_ast::ArrayOfTable {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn array_of_table_only_header(
+        #[tokio::test]
+        async fn array_of_table_only_header(
             r#"[[package]]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn array_of_table_only_header_with_basic_string_key(
+        #[tokio::test]
+        async fn array_of_table_only_header_with_basic_string_key(
             r#"[[dependencies."unicase"]]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn array_of_table_only_header_nested_keys(
+        #[tokio::test]
+        async fn array_of_table_only_header_nested_keys(
             r#"[[dependencies.unicase]]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn array_of_table(
+        #[tokio::test]
+        async fn array_of_table(
             r#"
             [[package]]
             name = "toml-rs"
             version = "0.4.0"
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn array_of_table_with_full_comment1(
+        #[tokio::test]
+        async fn array_of_table_with_full_comment1(
             r#"
             # header leading comment1
             # header leading comment2
@@ -114,6 +114,6 @@ mod tests {
             # key value leading comment2
             key = "value"  # key trailing comment
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 }

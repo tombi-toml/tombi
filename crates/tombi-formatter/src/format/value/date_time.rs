@@ -53,60 +53,60 @@ impl LiteralNode for tombi_ast::LocalTime {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn offset_datetime_key_value1("odt1 = 1979-05-27T07:32:00Z") -> Ok(source);
+        #[tokio::test]
+        async fn offset_datetime_key_value1("odt1 = 1979-05-27T07:32:00Z") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn offset_datetime_key_value2("odt2 = 1979-05-27T00:32:00-07:00") -> Ok(source);
+        #[tokio::test]
+        async fn offset_datetime_key_value2("odt2 = 1979-05-27T00:32:00-07:00") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn offset_datetime_key_value3("odt3 = 1979-05-27T00:32:00.999999-07:00") -> Ok(source);
+        #[tokio::test]
+        async fn offset_datetime_key_value3("odt3 = 1979-05-27T00:32:00.999999-07:00") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn offset_datetime_key_value4("odt4 = 1979-05-27 00:32:00.999999-07:00") -> Ok("odt4 = 1979-05-27T00:32:00.999999-07:00");
+        #[tokio::test]
+        async fn offset_datetime_key_value4("odt4 = 1979-05-27 00:32:00.999999-07:00") -> Ok("odt4 = 1979-05-27T00:32:00.999999-07:00")
     }
 
     test_format! {
-        #[test]
-        fn local_datetime_key_value1("ldt1 = 1979-05-27T07:32:00") -> Ok(source);
+        #[tokio::test]
+        async fn local_datetime_key_value1("ldt1 = 1979-05-27T07:32:00") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn local_datetime_key_value2("ldt2 = 1979-05-27T00:32:00.999999") -> Ok(source);
+        #[tokio::test]
+        async fn local_datetime_key_value2("ldt2 = 1979-05-27T00:32:00.999999") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn local_datetime_key_value3("ldt3 = 1979-05-27 00:32:00.999999") -> Ok("ldt3 = 1979-05-27T00:32:00.999999");
+        #[tokio::test]
+        async fn local_datetime_key_value3("ldt3 = 1979-05-27 00:32:00.999999") -> Ok("ldt3 = 1979-05-27T00:32:00.999999")
     }
 
     test_format! {
-        #[test]
-        fn valid_local_date_key_value("ld1 = 1979-05-27") -> Ok(source);
+        #[tokio::test]
+        async fn valid_local_date_key_value("ld1 = 1979-05-27") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn valid_local_time_key_value1("lt1 = 07:32:00") -> Ok(source);
+        #[tokio::test]
+        async fn valid_local_time_key_value1("lt1 = 07:32:00") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn valid_local_time_key_value2("lt2 = 00:32:00.999999") -> Ok(source);
+        #[tokio::test]
+        async fn valid_local_time_key_value2("lt2 = 00:32:00.999999") -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn retain_pico_seconds("lt2 = 00:00:00.999999999999") -> Ok(source);
+        #[tokio::test]
+        async fn retain_pico_seconds("lt2 = 00:00:00.999999999999") -> Ok(source)
     }
 }

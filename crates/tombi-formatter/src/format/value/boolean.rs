@@ -10,15 +10,15 @@ impl LiteralNode for Boolean {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn boolean_true(r#"boolean = true"#) -> Ok(source);
+        #[tokio::test]
+        async fn boolean_true(r#"boolean = true"#) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn boolean_false(r#"boolean = false"#) -> Ok(source);
+        #[tokio::test]
+        async fn boolean_false(r#"boolean = false"#) -> Ok(source)
     }
 }
