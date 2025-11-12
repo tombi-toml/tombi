@@ -261,7 +261,7 @@ pub struct FormatRules {
     /// key3.key4 = "value3"  # comment 3
     /// ```
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
-    pub key_value_align_trailing_comments: Option<bool>,
+    pub trailing_comment_alignment: Option<bool>,
 
     /// # The number of spaces after the equal in a key-value pair.
     ///

@@ -219,6 +219,19 @@ impl<'a> Formatter<'a> {
         }
     }
 
+    #[allow(dead_code)]
+    #[inline]
+    pub(crate) fn trailing_comment_alignment_width(
+        &self,
+        values: impl Iterator<Item = &'a str>,
+    ) -> Option<AlignmentWidth> {
+        if self.definitions.trailing_comment_alignment {
+            values.map(|value| AlignmentWidth::new(value)).max()
+        } else {
+            None
+        }
+    }
+
     #[inline]
     pub(crate) fn trailing_comment_space(&self) -> &'static str {
         // SAFETY: The lifetime of `trailing_comment_space` is `'static`.

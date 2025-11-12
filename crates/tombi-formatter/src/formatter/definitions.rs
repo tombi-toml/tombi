@@ -14,10 +14,10 @@ pub struct FormatDefinitions {
     pub indent_style: IndentStyle,
     pub indent_table_key_values: bool,
     pub indent_width: u8,
-    pub key_value_align_trailing_comments: bool,
+    pub trailing_comment_alignment: bool,
+    pub trailing_comment_space: String,
     pub key_value_equal_alignment: bool,
     pub key_value_equal_space: String,
-    pub trailing_comment_space: String,
     pub quote_style: QuoteStyle,
     pub date_time_delimiter: Option<&'static str>,
     pub array_bracket_space: String,
@@ -73,11 +73,23 @@ impl FormatDefinitions {
                 })
                 .unwrap_or_default()
                 .value(),
-            key_value_align_trailing_comments: options
+            trailing_comment_alignment: options
                 .rules
                 .as_ref()
-                .and_then(|rules| rules.key_value_align_trailing_comments)
+                .and_then(|rules| rules.trailing_comment_alignment)
                 .unwrap_or_default(),
+            trailing_comment_space: " ".repeat(
+                options
+                    .rules
+                    .as_ref()
+                    .and_then(|rules| rules.trailing_comment_space_width)
+                    .or_else(|| {
+                        #[allow(deprecated)]
+                        options.trailing_comment_space_width
+                    })
+                    .unwrap_or_default()
+                    .value() as usize,
+            ),
             key_value_equal_alignment: options
                 .rules
                 .as_ref()
@@ -88,18 +100,6 @@ impl FormatDefinitions {
                     .rules
                     .as_ref()
                     .and_then(|rules| rules.key_value_equal_space_width)
-                    .unwrap_or_default()
-                    .value() as usize,
-            ),
-            trailing_comment_space: " ".repeat(
-                options
-                    .rules
-                    .as_ref()
-                    .and_then(|rules| rules.trailing_comment_space_width)
-                    .or_else(|| {
-                        #[allow(deprecated)]
-                        options.trailing_comment_space_width
-                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
