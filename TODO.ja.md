@@ -61,7 +61,7 @@
 | Not Planned |                                   | inline_table_expand   | Expand values (e.g. arrays) inside inline tables.                                      | true           |
 | Done        | key-value-equal-space-width       | compact_entries       | Omit whitespace around .=                                                              | false          |
 | Done        | line-width                        | column_width          | Target maximum column width after which arrays are expanded into new lines.            | 80             |
-| Not Yet     |                                   | indent_tables         | Indent subtables if they come in order.                                                | false          |
+| Not Yet     | indent-sub-tables                 | indent_tables         | Indent subtables if they come in order.                                                | false          |
 | Done        | indent-table-key-values           | indent_entries        | Indent entries under tables.                                                           | false          |
 | Done        | indent-width                      | indent_string         | Indentation to use, should be tabs or spaces but technically could be anything.        | 2 spaces (" ") |
 | Not Planned |                                   | trailing_newline      | Add trailing newline to the source.                                                    | true           |

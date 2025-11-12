@@ -99,7 +99,7 @@ impl crate::ArrayOfTable {
             && position <= self.double_bracket_end().unwrap().range().start
     }
 
-    /// Returns an iterator over the subtables of this table.
+    /// Returns an iterator over the sub-tables of this table.
     ///
     /// ```toml
     /// [[foo]]  # <- This is a self array of table
@@ -111,7 +111,7 @@ impl crate::ArrayOfTable {
     /// [[foo.baz]]  # <- This is also a subtable
     /// key = true
     /// ```
-    pub fn subtables(&self) -> impl Iterator<Item = TableOrArrayOfTable> + '_ {
+    pub fn sub_tables(&self) -> impl Iterator<Item = TableOrArrayOfTable> + '_ {
         support::node::next_siblings_nodes(self)
             .skip(1)
             .take_while(|t: &TableOrArrayOfTable| {
