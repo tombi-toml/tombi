@@ -171,68 +171,69 @@ mod tests {
     use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle, TomlVersion};
 
     use super::*;
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn singleline_array1(
+        #[tokio::test]
+        async fn singleline_array1(
             "array=[1,2,3]"
-        ) -> Ok("array = [1, 2, 3]");
+        ) -> Ok("array = [1, 2, 3]")
     }
 
     test_format! {
-        #[test]
-        fn singleline_array2(
+        #[tokio::test]
+        async fn singleline_array2(
             "array=[ 1 ]"
-        ) -> Ok("array = [1]");
+        ) -> Ok("array = [1]")
     }
 
     test_format! {
-        #[test]
-        fn singleline_array3(
+        #[tokio::test]
+        async fn singleline_array3(
             "array=[ 1, 2, 3 ]"
-        ) -> Ok("array = [1, 2, 3]");
+        ) -> Ok("array = [1, 2, 3]")
     }
 
     test_format! {
-        #[test]
-        fn singleline_array4(
+        #[tokio::test]
+        async fn singleline_array4(
             r#"colors = [ "red", "yellow", "green" ]"#
-        ) -> Ok(r#"colors = ["red", "yellow", "green"]"#);
+        ) -> Ok(r#"colors = ["red", "yellow", "green"]"#)
     }
 
     test_format! {
-        #[test]
-        fn singleline_array5(
+        #[tokio::test]
+        async fn singleline_array5(
             "nested_arrays_of_ints = [ [ 1, 2 ], [ 3, 4, 5 ] ]"
-        ) -> Ok("nested_arrays_of_ints = [[1, 2], [3, 4, 5]]");
+        ) -> Ok("nested_arrays_of_ints = [[1, 2], [3, 4, 5]]")
     }
 
     test_format! {
-        #[test]
-        fn singleline_array6(
+        #[tokio::test]
+        async fn singleline_array6(
             r#"nested_mixed_array = [ [ 1, 2 ], [ "a", "b", "c" ] ]"#
-        ) -> Ok(r#"nested_mixed_array = [[1, 2], ["a", "b", "c"]]"#);
+        ) -> Ok(r#"nested_mixed_array = [[1, 2], ["a", "b", "c"]]"#)
     }
 
     test_format! {
-        #[test]
-        fn singleline_array7(
+        #[tokio::test]
+        async fn singleline_array7(
             r#"string_array = [ "all", 'strings', """are the same""", '''type''' ]"#,
-            TomlVersion::default(),
-            &FormatOptions {
-                rules: Some(FormatRules {
-                    quote_style: Some(QuoteStyle::Preserve),
+            FormatOptions(
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        quote_style: Some(QuoteStyle::Preserve),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            }
-        ) -> Ok(r#"string_array = ["all", 'strings', """are the same""", '''type''']"#);
+                }
+            )
+        ) -> Ok(r#"string_array = ["all", 'strings', """are the same""", '''type''']"#)
     }
 
     test_format! {
-        #[test]
-        fn multiline_array1(
+        #[tokio::test]
+        async fn multiline_array1(
             "array = [1, 2, 3,]"
         ) -> Ok(
             r#"
@@ -242,12 +243,12 @@ mod tests {
               3,
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn multiline_array2(
+        #[tokio::test]
+        async fn multiline_array2(
             "array = [1, ]"
         ) -> Ok(
             r#"
@@ -255,12 +256,12 @@ mod tests {
               1,
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn multiline_array3(
+        #[tokio::test]
+        async fn multiline_array3(
             r#"
             array = [
               1  # comment
@@ -272,12 +273,12 @@ mod tests {
               1,  # comment
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn multiline_array4(
+        #[tokio::test]
+        async fn multiline_array4(
             r#"
             array = [
               1,  # comment
@@ -289,12 +290,12 @@ mod tests {
               1,  # comment
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn multiline_array5(
+        #[tokio::test]
+        async fn multiline_array5(
             r#"
             array = [
               1  # comment
@@ -307,12 +308,12 @@ mod tests {
               1,  # comment
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn multiline_array_with_full_comment(
+        #[tokio::test]
+        async fn multiline_array_with_full_comment(
             r#"
             # array leading comment1
             # array leading comment2
@@ -369,12 +370,12 @@ mod tests {
               # array end dangling comment group 2-1
             ]  # array trailing comment
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn nested_multiline_array(
+        #[tokio::test]
+        async fn nested_multiline_array(
             "array = [ [1,2,3,], [4,5,6], [7,8,9,] ]"
         ) -> Ok(
             r#"
@@ -392,12 +393,12 @@ mod tests {
               ]
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn nested_multiline_array_with_trailing_comma(
+        #[tokio::test]
+        async fn nested_multiline_array_with_trailing_comma(
             "array = [ [1,2,3,], [4,5,6], [7,8,9,], ]"
         ) -> Ok(
             r#"
@@ -415,22 +416,22 @@ mod tests {
               ],
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn array_only_inner_comment_only1(
+        #[tokio::test]
+        async fn array_only_inner_comment_only1(
             r#"
             array = [
               # comment
             ]"#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn array_only_inner_comment_only2(
+        #[tokio::test]
+        async fn array_only_inner_comment_only2(
             r#"
             array = [
               # comment 1-1
@@ -442,32 +443,22 @@ mod tests {
 
               # comment 3-1
             ]"#
-        ) -> Ok(source);
-    }
-
-    #[rstest]
-    #[case("[1, 2, 3,]", true)]
-    #[case("[1, 2, 3]", false)]
-    fn has_last_value_trailing_comma(#[case] source: &str, #[case] expected: bool) {
-        let p = tombi_parser::parse_as::<tombi_ast::Array>(source, TomlVersion::default());
-        pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
-
-        let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
-        pretty_assertions::assert_eq!(ast.has_last_value_trailing_comma(), expected);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn array_exceeds_line_width(
+        #[tokio::test]
+        async fn array_exceeds_line_width(
             r#"array = [1111111111, 2222222222, 3333333333]"#,
-            Default::default(),
-            &FormatOptions {
-                rules: Some(FormatRules {
-                    line_width: Some(20.try_into().unwrap()),
+            FormatOptions(
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        line_width: Some(20.try_into().unwrap()),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            }
+                }
+            )
         ) -> Ok(
             r#"
             array = [
@@ -476,21 +467,21 @@ mod tests {
               3333333333
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn array_with_nested_array_exceeds_line_width(
+        #[tokio::test]
+        async fn array_with_nested_array_exceeds_line_width(
             r#"array = [[1111111111, 2222222222], [3333333333, 4444444444]]"#,
-            Default::default(),
-            &FormatOptions {
+            FormatOptions(
+                FormatOptions {
                 rules: Some(FormatRules {
                     line_width: Some(30.try_into().unwrap()),
                     ..Default::default()
                 }),
                 ..Default::default()
-            }
+            })
         ) -> Ok(
             r#"
             array = [
@@ -498,21 +489,23 @@ mod tests {
               [3333333333, 4444444444]
             ]
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn array_with_nested_inline_table_exceeds_line_width(
+        #[tokio::test]
+        async fn array_with_nested_inline_table_exceeds_line_width(
             r#"array = [{ key1 = 1111111111, key2 = 2222222222 }, { key3 = [3333333333, 4444444444], key4 = [5555555555, 6666666666, 7777777777] }]"#,
-            TomlVersion::V1_1_0_Preview,
-            &FormatOptions {
-                rules: Some(FormatRules {
-                    line_width: Some(35.try_into().unwrap()),
+            TomlVersion(TomlVersion::V1_1_0_Preview),
+            FormatOptions(
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        line_width: Some(35.try_into().unwrap()),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            }
+                }
+            )
         ) -> Ok(
             r#"
             array = [
@@ -530,6 +523,17 @@ mod tests {
               }
             ]
             "#
-        );
+        )
+    }
+
+    #[rstest]
+    #[case("[1, 2, 3,]", true)]
+    #[case("[1, 2, 3]", false)]
+    fn has_last_value_trailing_comma(#[case] source: &str, #[case] expected: bool) {
+        let p = tombi_parser::parse_as::<tombi_ast::Array>(source, TomlVersion::default());
+        pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
+
+        let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
+        pretty_assertions::assert_eq!(ast.has_last_value_trailing_comma(), expected);
     }
 }

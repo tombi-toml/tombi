@@ -74,47 +74,48 @@ impl LiteralNode for tombi_ast::MultiLineLiteralString {
 
 #[cfg(test)]
 mod tests {
-    use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle, TomlVersion};
-
-    use crate::test_format;
+    use crate::{test_format, Formatter};
+    use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle};
 
     test_format! {
-        #[test]
-        fn basic_string_value1(r#"key = "value""#) -> Ok(source);
+        #[tokio::test]
+        async fn basic_string_value1(r#"key = "value""#) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn basic_string_value2(r#"key    = "value""#) -> Ok(r#"key = "value""#);
+        #[tokio::test]
+        async fn basic_string_value2(r#"key    = "value""#) -> Ok(r#"key = "value""#)
     }
 
     test_format! {
-        #[test]
-        fn basic_string_value_quote_style_single1(
+        #[tokio::test]
+        async fn basic_string_value_quote_style_single1(
             r#"key = "value""#,
-            TomlVersion::default(),
-            &FormatOptions {
-                rules: Some(FormatRules {
-                    quote_style: Some(QuoteStyle::Single),
+            FormatOptions(
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        quote_style: Some(QuoteStyle::Single),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            }
-        ) -> Ok(r#"key = 'value'"#);
+                }
+            )
+        ) -> Ok(r#"key = 'value'"#)
     }
 
     test_format! {
-        #[test]
-        fn basic_string_value_quote_style_single2(
+        #[tokio::test]
+        async fn basic_string_value_quote_style_single2(
             r#"key = "'value'""#,
-            TomlVersion::default(),
-            &FormatOptions {
-                rules: Some(FormatRules {
-                    quote_style: Some(QuoteStyle::Single),
+            FormatOptions(
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        quote_style: Some(QuoteStyle::Single),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            }
-        ) -> Ok(source);
+                }
+            )
+        ) -> Ok(source)
     }
 }

@@ -164,118 +164,118 @@ fn format_comment(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_format;
+    use crate::{test_format, Formatter};
 
     test_format! {
-        #[test]
-        fn comment_without_space(r"#comment") -> Ok("# comment");
+        #[tokio::test]
+        async fn comment_without_space(r"#comment") -> Ok("# comment")
     }
 
     test_format! {
-        #[test]
-        fn empty_comment(r"#") -> Ok(source);
-    }
-
-    test_format! {
-        // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn empty_comment_document_features(r"#!") -> Ok(source);
+        #[tokio::test]
+        async fn empty_comment(r"#") -> Ok(source)
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn empty_comment_document_features2(r"##") -> Ok(source);
-    }
-
-    test_format! {
-        #[test]
-        fn only_space_comment1(r"# ") -> Ok(r"#");
-    }
-
-    test_format! {
-        #[test]
-        fn only_long_space_comment(r"#      ") -> Ok(r"#");
+        #[tokio::test]
+        async fn empty_comment_document_features(r"#!") -> Ok(source)
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn only_space_comment_document_features(r"#! ") -> Ok(r"#!");
+        #[tokio::test]
+        async fn empty_comment_document_features2(r"##") -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn only_space_comment1(r"# ") -> Ok(r"#")
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn only_long_space_comment(r"#      ") -> Ok(r"#")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn only_space_comment_document_features2(r"## ") -> Ok(r"##");
+        #[tokio::test]
+        async fn only_space_comment_document_features(r"#! ") -> Ok(r"#!")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn only_long_space_comment_document_features(r"#!       ") -> Ok(r"#!");
+        #[tokio::test]
+        async fn only_space_comment_document_features2(r"## ") -> Ok(r"##")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn only_long_space_comment_document_features2(r"##      ") -> Ok(r"##");
-    }
-
-    test_format! {
-        #[test]
-        fn strip_prefix_space(r"#    hello") -> Ok(r"# hello");
+        #[tokio::test]
+        async fn only_long_space_comment_document_features(r"#!       ") -> Ok(r"#!")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn strip_prefix_space_document_features(r"#!      hello") -> Ok(r"#! hello");
+        #[tokio::test]
+        async fn only_long_space_comment_document_features2(r"##      ") -> Ok(r"##")
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn strip_prefix_space(r"#    hello") -> Ok(r"# hello")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn strip_prefix_space_document_features2(r"##      hello") -> Ok(r"## hello");
+        #[tokio::test]
+        async fn strip_prefix_space_document_features(r"#!      hello") -> Ok(r"#! hello")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn strip_prefix_space_document_features_double_bang(r"#!!  hello") -> Ok(r"#! !  hello");
+        #[tokio::test]
+        async fn strip_prefix_space_document_features2(r"##      hello") -> Ok(r"## hello")
     }
 
     test_format! {
         // Reference: https://crates.io/crates/document-features
-        #[test]
-        fn strip_prefix_space_document_features_double_sharp(r"###  hello") -> Ok(r"## #  hello");
+        #[tokio::test]
+        async fn strip_prefix_space_document_features_double_bang(r"#!!  hello") -> Ok(r"#! !  hello")
     }
 
     test_format! {
-        #[test]
-        fn multiline_comment_with_ident(
+        // Reference: https://crates.io/crates/document-features
+        #[tokio::test]
+        async fn strip_prefix_space_document_features_double_sharp(r"###  hello") -> Ok(r"## #  hello")
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn multiline_comment_with_ident(
             r#"
             # NOTE: Tombi preserves spaces at the beginning of a comment line.
             #       This allows for multi-line indentation to be preserved.
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn end_dangling_comment(
+        #[tokio::test]
+        async fn end_dangling_comment(
             r#"
             [dependencies]
             serde = "^1.0"
             # serde_json = "^1.0"
             # serde-yaml = "^0.10"
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn end_dangling_comment_starts_with_line_break(
+        #[tokio::test]
+        async fn end_dangling_comment_starts_with_line_break(
             r#"
             key = "value"
 
@@ -285,12 +285,12 @@ mod tests {
             # end dangling comment3
             # end dangling comment4
             "#
-        ) -> Ok(source);
+        ) -> Ok(source)
     }
 
     test_format! {
-        #[test]
-        fn end_dangling_comment_starts_with_multi_line_break(
+        #[tokio::test]
+        async fn end_dangling_comment_starts_with_multi_line_break(
             r#"
             key = "value"
 
@@ -311,27 +311,27 @@ mod tests {
             # end dangling comment3
             # end dangling comment4
             "#
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn schema_comment(r"#:schema https://www.schemastore.org/pyproject.json") -> Ok(
+        #[tokio::test]
+        async fn schema_comment(r"#:schema https://www.schemastore.org/pyproject.json") -> Ok(
             "#:schema https://www.schemastore.org/pyproject.json"
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn schema_comment_with_space(r"#:schema  https://www.schemastore.org/pyproject.json  ") -> Ok(
+        #[tokio::test]
+        async fn schema_comment_with_space(r"#:schema  https://www.schemastore.org/pyproject.json  ") -> Ok(
             "#:schema https://www.schemastore.org/pyproject.json"
-        );
+        )
     }
 
     test_format! {
-        #[test]
-        fn tombi_comment_directive(r"#:tombi   toml-version   = 'v1.0.0'  ") -> Ok(
+        #[tokio::test]
+        async fn tombi_comment_directive(r"#:tombi   toml-version   = 'v1.0.0'  ") -> Ok(
             "#:tombi toml-version = \"v1.0.0\""
-        );
+        )
     }
 }

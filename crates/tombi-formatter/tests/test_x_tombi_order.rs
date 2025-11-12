@@ -1,8 +1,8 @@
 mod table_keys_order {
-    use super::*;
+    use tombi_formatter::{test_format, Formatter};
 
     mod pyproject {
-        use super::test_format;
+        use super::*;
         use tombi_test_lib::pyproject_schema_path;
 
         test_format! {
@@ -19,7 +19,7 @@ mod table_keys_order {
                     {name = "Test Author", email = "test@example.com"}
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -44,7 +44,7 @@ mod table_keys_order {
                 requires-python = ">=3.10"
                 dependencies = ["tombi-cli>=0.0.0", "maturin>=1.5,<2.0"]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -53,7 +53,7 @@ mod table_keys_order {
                 description = "Reserved package for tombi"
                 requires-python = ">=3.10"
                 dependencies = ["maturin>=1.5,<2.0", "tombi-cli>=0.0.0"]
-                "#,
+                "#
             )
         }
 
@@ -68,7 +68,7 @@ mod table_keys_order {
                 requires-python = ">=3.10"
                 dependencies = ["tombi-cli>=0.0.0", "maturin>=1.5,<2.0",]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -80,7 +80,7 @@ mod table_keys_order {
                   "maturin>=1.5,<2.0",
                   "tombi-cli>=0.0.0",
                 ]
-                "#,
+                "#
             )
         }
 
@@ -100,7 +100,7 @@ mod table_keys_order {
                   "tombi-cli>=0.0.0"
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -114,7 +114,7 @@ mod table_keys_order {
                   "tombi-formatter>=0.0.0",
                   "tombi-linter>=0.0.0"
                 ]
-                "#,
+                "#
             )
         }
 
@@ -139,7 +139,7 @@ mod table_keys_order {
                   ,
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -157,7 +157,7 @@ mod table_keys_order {
                   "tombi-formatter>=0.0.0",
                   "tombi-linter>=0.0.0",
                 ]
-                "#,
+                "#
             )
         }
 
@@ -177,7 +177,7 @@ mod table_keys_order {
                   "ruff>=0.7.4"
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -191,7 +191,7 @@ mod table_keys_order {
                   "pytest>=8.3.3",  # pytest trailing comment
                   "ruff>=0.7.4"
                 ]
-                "#,
+                "#
             )
         }
 
@@ -220,7 +220,7 @@ mod table_keys_order {
                   "pytest-stub>=1.1.0",
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -243,7 +243,7 @@ mod table_keys_order {
                 stub = [
                   "pytest-stub>=1.1.0",
                 ]
-                "#,
+                "#
             )
         }
 
@@ -267,7 +267,7 @@ mod table_keys_order {
                   "pytest-stub>=1.1.0",
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -285,7 +285,7 @@ mod table_keys_order {
                 stub = [
                   "pytest-stub>=1.1.0",
                 ]
-                "#,
+                "#
             )
         }
 
@@ -305,7 +305,7 @@ mod table_keys_order {
                 pydantic = "^2.5"
                 pandas = "^2.2.0"
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -340,7 +340,7 @@ mod table_keys_order {
                 ]
                 ignore_errors = true
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [[tool.mypy.overrides]]
@@ -369,7 +369,7 @@ mod table_keys_order {
                   { path = "json.tombi.dev/**/*.json", format = "sdist" },
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [tool.maturin]
@@ -399,7 +399,7 @@ mod table_keys_order {
                 repository.workspace = true
                 version.workspace = true
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [package]
@@ -425,7 +425,7 @@ mod table_keys_order {
                 repository = { workspace = true }
                 version = { workspace = true }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [package]
@@ -452,7 +452,7 @@ mod table_keys_order {
                 repository = { workspace = true }
                 version = { workspace = true }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 # tombi: format.rules.table-keys-order.disabled = true
@@ -480,7 +480,7 @@ mod table_keys_order {
                 repository = { workspace = true }
                 version = { workspace = true }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 # tombi: format.rules.table-keys-order = "ascending"
@@ -507,7 +507,7 @@ mod table_keys_order {
                 serde = { features = ["derive"], version = "^1.0.0" }
                 clap = { version = "4.5.0" }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -531,7 +531,7 @@ mod table_keys_order {
                 default = ["clap", "native"]
                 native = ["tombi-schema-store/native"]
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [features]
@@ -550,7 +550,7 @@ mod table_keys_order {
                 [dependencies]
                 serde = { features = ["derive"], version = "^1.0.0" }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -566,7 +566,7 @@ mod table_keys_order {
                 [dependencies]
                 serde = { features = ["std", "derive",], version = "^1.0.0" }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -589,7 +589,7 @@ mod table_keys_order {
                   "std", "derive",
                 ], version = "^1.0.0" }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -612,7 +612,7 @@ mod table_keys_order {
                 serde.features = ["derive"]
                 serde.workspace = true
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [workspace.dependencies]
@@ -637,7 +637,7 @@ mod table_keys_order {
                 reqwest.version = "0.12.9"
                 reqwest.features = ["json", "rustls-tls"]
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [workspace.dependencies]
@@ -655,7 +655,7 @@ mod table_keys_order {
     }
 
     mod tombi {
-        use super::test_format;
+        use super::*;
         use tombi_test_lib::tombi_schema_path;
 
         test_format! {
@@ -666,7 +666,7 @@ mod table_keys_order {
                 include = ["*.toml"]
                 path = "pyproject.toml"
                 "#,
-              tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok(
                 r#"
                 [[schemas]]
@@ -680,7 +680,7 @@ mod table_keys_order {
     mod type_test {
         use tombi_test_lib::type_test_schema_path;
 
-        use super::test_format;
+        use super::*;
 
         test_format! {
             #[tokio::test]
@@ -698,7 +698,7 @@ mod table_keys_order {
                 [[array]]
                 integer = 3
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Ok(source)
         }
 
@@ -727,13 +727,13 @@ mod table_keys_order {
                 [[array1]]
                 integer = 3
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Ok(source)
         }
     }
 
     mod non_schema {
-        use super::test_format;
+        use super::*;
 
         test_format! {
             #[tokio::test]
@@ -1044,7 +1044,7 @@ mod table_keys_order {
     }
 
     mod file_schema {
-        use super::test_format;
+        use super::*;
 
         test_format! {
             #[tokio::test]
