@@ -233,7 +233,7 @@ pub struct FormatRules {
     ///
     /// ```toml
     /// # BEFORE
-    /// key = "value"
+    /// key = "value1"
     /// key2 = "value2"
     /// key3.key4 = "value3"
     ///
@@ -251,9 +251,9 @@ pub struct FormatRules {
     ///
     /// ```toml
     /// # BEFORE
-    /// key = "value"  # comment 1
-    /// key2 = "value2" # comment 2
-    /// key3.key4 = "value3" # comment 3
+    /// key = "value1"  # comment 1
+    /// key2 = "value2"  # comment 2
+    /// key3.key4 = "value3"  # comment 3
     ///
     /// # AFTER
     /// key = "value1"        # comment 1

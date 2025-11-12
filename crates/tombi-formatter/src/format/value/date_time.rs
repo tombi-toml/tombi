@@ -11,7 +11,7 @@ macro_rules! impl_date_time_format {
         impl Format for $type {
             #[inline]
             fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-                WithAlignmentHint::new_without_hint(self).format(f)
+                WithAlignmentHint::new(self).format(f)
             }
         }
 

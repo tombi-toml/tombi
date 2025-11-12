@@ -447,7 +447,7 @@
         },
         "key-value-equal-alignment": {
           "title": "Whether to align the equal sign in the key-value pairs.",
-          "description": "If `true`, the equal sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside single line inline tables.\n\n```toml\n# BEFORE\nkey = \"value\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
+          "description": "If `true`, the equal sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside single line inline tables.\n\n```toml\n# BEFORE\nkey = \"value1\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
           "type": [
             "boolean",
             "null"
@@ -456,7 +456,7 @@
         },
         "trailing-comment-alignment": {
           "title": "Whether to align the trailing comments in the key-value pairs.",
-          "description": "If `true`, the trailing comments in the key-value pairs will be aligned.\n\n```toml\n# BEFORE\nkey = \"value\"  # comment 1\nkey2 = \"value2\" # comment 2\nkey3.key4 = \"value3\" # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
+          "description": "If `true`, the trailing comments in the key-value pairs will be aligned.\n\n```toml\n# BEFORE\nkey = \"value1\"  # comment 1\nkey2 = \"value2\"  # comment 2\nkey3.key4 = \"value3\"  # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
           "type": [
             "boolean",
             "null"
