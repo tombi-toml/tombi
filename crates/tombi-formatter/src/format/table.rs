@@ -2,14 +2,25 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use crate::{types::WithAlignmentHint, Format};
+use crate::{format::filter_map_unique_keys, types::WithAlignmentHint, Format};
 
 impl Format for tombi_ast::Table {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let header = self.header().unwrap();
+        let toml_version = f.toml_version();
+
+        if f.indent_sub_tables() {
+            filter_map_unique_keys(
+                header.keys(),
+                self.parent_table_or_array_of_table_keys(toml_version),
+                toml_version,
+            )
+            .for_each(|_| f.inc_indent());
+        }
 
         self.header_leading_comments().collect_vec().format(f)?;
 
+        f.write_indent()?;
         write!(f, "[{header}]")?;
 
         if let Some(comment) = self.header_trailing_comment() {
@@ -55,6 +66,15 @@ impl Format for tombi_ast::Table {
 
         if f.indent_table_key_values() {
             f.dec_indent();
+        }
+
+        if f.indent_sub_tables() {
+            filter_map_unique_keys(
+                header.keys(),
+                self.parent_table_or_array_of_table_keys(toml_version),
+                toml_version,
+            )
+            .for_each(|_| f.dec_indent());
         }
 
         Ok(())

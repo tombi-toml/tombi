@@ -398,6 +398,15 @@
           ],
           "default": "space"
         },
+        "indent-sub-tables": {
+          "title": "Whether to indent the sub-tables",
+          "description": "If `true`, the sub-table will be indented.\n\n```toml\n[table]\n    [table.sub-table]\n        key = \"value\"\n# ^^  <- this\n```",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        },
         "indent-table-key-values": {
           "title": "Whether to indent the table key-value pairs",
           "description": "If `true`, the table key-value pairs will be indented.\n\n```toml\n[table]\n    key = \"value\"\n# ^^  <- this\n```",

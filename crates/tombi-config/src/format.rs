@@ -184,9 +184,9 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "IndentStyle::default"))]
     pub indent_style: Option<IndentStyle>,
 
-    /// # Whether to indent the sub-table key-value pairs
+    /// # Whether to indent the sub-tables
     ///
-    /// If `true`, the sub-table key-value pairs will be indented.
+    /// If `true`, the sub-table will be indented.
     ///
     /// ```toml
     /// [table]
