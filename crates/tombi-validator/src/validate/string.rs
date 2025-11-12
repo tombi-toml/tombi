@@ -9,7 +9,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{format, push_deprecated, type_mismatch},
+    validate::{format, push_deprecated_value, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -325,7 +325,7 @@ async fn validate_string(
     }
 
     if diagnostics.is_empty() && string_schema.deprecated == Some(true) {
-        push_deprecated(
+        push_deprecated_value(
             &mut diagnostics,
             accessors,
             string_value,

@@ -6,7 +6,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{push_deprecated, type_mismatch},
+    validate::{push_deprecated_value, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -285,7 +285,7 @@ async fn validate_integer_schema(
     }
 
     if diagnostics.is_empty() && integer_schema.deprecated == Some(true) {
-        push_deprecated(
+        push_deprecated_value(
             &mut diagnostics,
             accessors,
             integer_value,
@@ -472,7 +472,7 @@ async fn validate_float_schema_for_integer(
     }
 
     if diagnostics.is_empty() && float_schema.deprecated == Some(true) {
-        push_deprecated(
+        push_deprecated_value(
             &mut diagnostics,
             accessors,
             integer_value,
