@@ -433,6 +433,139 @@ mod format_options {
         }
     }
 
+    mod key_value_align_equals {
+        use super::*;
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_value_align_equals_false(
+                r#"
+                key = "value"
+                key2 = "value2"
+                key3.key4 = "value3"
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        key_value_align_equals: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"
+                key2 = "value2"
+                key3.key4 = "value3"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_value_align_equals_true(
+                r#"
+                key = "value"
+                key2 = "value2"
+                key3.key4 = "value3"
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        key_value_align_equals: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key       = "value"
+                key2      = "value2"
+                key3.key4 = "value3"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_value_align_equals_true_in_table(
+                r#"
+                [table]
+                key = "value"
+                key2 = "value2"
+                key3.key4 = "value3"
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        key_value_align_equals: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                [table]
+                key       = "value"
+                key2      = "value2"
+                key3.key4 = "value3"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_value_align_equals_true_in_array_of_table(
+                r#"
+                [[table]]
+                key = "value"
+                key2 = "value2"
+                key3.key4 = "value3"
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        key_value_align_equals: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                [[table]]
+                key       = "value"
+                key2      = "value2"
+                key3.key4 = "value3"
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_key_value_align_equals_true_in_multi_line_inline_table(
+                r#"
+                inline-table = {
+                  key = "value",
+                  key2 = "value2",
+                  key3.key4 = "value3",
+                }
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        key_value_align_equals: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                inline-table = {
+                  key       = "value",
+                  key2      = "value2",
+                  key3.key4 = "value3",
+                }
+                "#
+            )
+        }
+    }
+
     mod key_value_equal_space_width {
         use super::*;
 
@@ -587,58 +720,6 @@ mod format_options {
             ) -> Ok(
                 r#"
                 key = "value"
-                "#
-            )
-        }
-    }
-
-    mod key_value_align_equals {
-        use super::*;
-
-        test_format! {
-            #[tokio::test]
-            async fn test_key_value_align_equals_false(
-                r#"
-                key = "value"
-                key2 = "value2"
-                key3.key4 = "value3"
-                "#,
-                FormatOptions(FormatOptions{
-                    rules: Some(FormatRules {
-                        key_value_align_equals: Some(false),
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                })
-            ) -> Ok(
-                r#"
-                key = "value"
-                key2 = "value2"
-                key3.key4 = "value3"
-                "#
-            )
-        }
-
-        test_format! {
-            #[tokio::test]
-            async fn test_key_value_align_equals_true(
-                r#"
-                key = "value"
-                key2 = "value2"
-                key3.key4 = "value3"
-                "#,
-                FormatOptions(FormatOptions{
-                    rules: Some(FormatRules {
-                        key_value_align_equals: Some(true),
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                })
-            ) -> Ok(
-                r#"
-                key       = "value"
-                key2      = "value2"
-                key3.key4 = "value3"
                 "#
             )
         }
