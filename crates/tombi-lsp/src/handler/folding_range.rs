@@ -361,7 +361,7 @@ impl GetRegionFoldingRange for tombi_ast::Table {
         match (first_child, last_child) {
             (Some(first), Some(last)) => Some(tombi_text::Range::new(
                 first.range().start,
-                self.subtables()
+                self.sub_tables()
                     .last()
                     .and_then(|t| t.get_folding_range())
                     .unwrap_or(last.range())
@@ -388,7 +388,7 @@ impl GetRegionFoldingRange for tombi_ast::ArrayOfTable {
         match (first_child, last_child) {
             (Some(first), Some(last)) => Some(tombi_text::Range::new(
                 first.range().start,
-                self.subtables()
+                self.sub_tables()
                     .last()
                     .and_then(|t| t.get_folding_range())
                     .unwrap_or(last.range())

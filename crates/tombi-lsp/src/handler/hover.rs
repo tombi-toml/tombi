@@ -194,7 +194,7 @@ pub async fn get_hover_keys_with_range(
                 {
                     let mut range = table.syntax().range();
                     if let Some(max_end) = table
-                        .subtables()
+                        .sub_tables()
                         .map(|subtable| subtable.syntax().range().end)
                         .max()
                     {
@@ -238,7 +238,7 @@ pub async fn get_hover_keys_with_range(
                 {
                     let mut range = array_of_table.syntax().range();
                     if let Some(max_end) = array_of_table
-                        .subtables()
+                        .sub_tables()
                         .map(|subtable| subtable.syntax().range().end)
                         .max()
                     {

@@ -226,6 +226,11 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
+    pub(crate) const fn indent_sub_tables(&self) -> bool {
+        self.definitions.indent_sub_tables
+    }
+
+    #[inline]
     pub(crate) const fn indent_table_key_values(&self) -> bool {
         self.definitions.indent_table_key_values
     }

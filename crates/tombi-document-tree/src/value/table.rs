@@ -565,7 +565,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
         }
 
         let array_of_table_keys = get_array_of_tables_keys(
-            self.array_of_tables_keys(toml_version),
+            self.parent_array_of_tables_keys(toml_version),
             toml_version,
             &mut errors,
         );
@@ -698,8 +698,11 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
             }
         }
 
-        let array_of_table_keys =
-            get_array_of_tables_keys(self.array_of_tables_keys(), toml_version, &mut errors);
+        let array_of_table_keys = get_array_of_tables_keys(
+            self.parrent_array_of_tables_keys(),
+            toml_version,
+            &mut errors,
+        );
 
         if let Some(mut key) = header_keys.pop() {
             key.comment_directives = table.comment_directives.clone();

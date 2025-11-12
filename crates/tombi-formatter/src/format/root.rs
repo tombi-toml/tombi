@@ -187,7 +187,7 @@ mod test {
 
     test_format! {
         #[tokio::test]
-        async fn empty_table_space_on_own_array_of_subtables(
+        async fn empty_table_space_on_own_array_of_sub_tables(
             r#"
             [foo]
             [[foo.bar]]

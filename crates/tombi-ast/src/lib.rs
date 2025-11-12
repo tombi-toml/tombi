@@ -97,7 +97,7 @@ pub trait GetHeaderAccessors {
 impl GetHeaderAccessors for crate::Table {
     fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
-            .array_of_tables_keys(toml_version)
+            .parent_array_of_tables_keys(toml_version)
             .map(|keys| {
                 keys.into_iter()
                     .map(|key| key.to_raw_text(toml_version))
@@ -127,7 +127,7 @@ impl GetHeaderAccessors for crate::Table {
 impl GetHeaderAccessors for crate::ArrayOfTable {
     fn get_header_accessors(&self, toml_version: TomlVersion) -> Option<Vec<Accessor>> {
         let array_of_tables_keys = self
-            .array_of_tables_keys()
+            .parrent_array_of_tables_keys()
             .map(|keys| {
                 keys.into_iter()
                     .map(|key| key.to_raw_text(toml_version))
