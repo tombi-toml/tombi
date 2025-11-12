@@ -88,6 +88,31 @@ fn push_deprecated(
     .push_diagnostic_with_level(level, &mut diagnostics);
 }
 
+fn push_deprecated_value<T: tombi_document_tree::ValueImpl + ToString>(
+    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    accessors: &[tombi_schema_store::Accessor],
+    value: &T,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) {
+    let level = common_rules
+        .and_then(|rules| {
+            rules
+                .deprecated
+                .as_ref()
+                .map(SeverityLevelDefaultWarn::from)
+        })
+        .unwrap_or_default();
+
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
+            tombi_schema_store::SchemaAccessors::from(accessors),
+            value.to_string(),
+        )),
+        range: value.range(),
+    }
+    .push_diagnostic_with_level(level, &mut diagnostics);
+}
+
 fn type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,

@@ -335,6 +335,26 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_tombi_schema_format_array_bracket_space_width_eq_0(
+                r#"
+                [format]
+                array-bracket-space-width = 0
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::Deprecated(
+                    tombi_schema_store::SchemaAccessors::from(
+                        vec![
+                            tombi_schema_store::SchemaAccessor::Key("format".to_string()),
+                            tombi_schema_store::SchemaAccessor::Key("array-bracket-space-width".to_string()),
+                        ]
+                    ),
+                )
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_tombi_schema_invalid_root(
                 r#"
                 [[schemas]]
@@ -344,7 +364,7 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::DiagnosticKind::Deprecated(
+                tombi_validator::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(
                         vec![
                             tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
@@ -352,6 +372,7 @@ mod tests {
                             tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
                         ]
                     ),
+                    "\"tool.taskipy\"".to_string(),
                 )
             ]);
         }
@@ -690,12 +711,13 @@ mod tests {
                 #:tombi lint.disable = true
                 "#,
             ) -> Err([
-                tombi_validator::DiagnosticKind::Deprecated(
+                tombi_validator::DiagnosticKind::DeprecatedValue(
                     tombi_schema_store::SchemaAccessors::from(
                         vec![
                         tombi_schema_store::SchemaAccessor::Key("lint".to_string()),
                         tombi_schema_store::SchemaAccessor::Key("disable".to_string()),
                     ]),
+                    "true".to_string(),
                 )
             ]);
         }

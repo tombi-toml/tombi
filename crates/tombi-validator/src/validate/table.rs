@@ -15,7 +15,7 @@ use crate::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
-    validate::{push_deprecated, type_mismatch},
+    validate::{push_deprecated, push_deprecated_value, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -285,7 +285,7 @@ async fn validate_table(
                     .inspect_err(|err| tracing::warn!("{err}"))
                 {
                     if current_schema.value_schema.deprecated().await == Some(true) {
-                        push_deprecated(
+                        push_deprecated_value(
                             &mut total_diagnostics,
                             &new_accessors,
                             value,
