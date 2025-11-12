@@ -957,5 +957,41 @@ mod format_options {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_and_indent_table_key_values_true_in_inline_table(
+                r#"
+                [table]
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = {
+                    a = 1, # comment 3-1
+                    b = 2, # comment 3-2
+                    c = 3, # comment 3-3
+                } # comment 4
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        indent_table_key_values: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                [table]
+                  key = "value"    # comment 1
+                  key2 = "value2"  # comment 2
+                  key3.key4 = {
+                    a = 1,         # comment 3-1
+                    b = 2,         # comment 3-2
+                    c = 3,         # comment 3-3
+                  }                # comment 4
+                "#
+            )
+        }
     }
 }
