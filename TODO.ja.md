@@ -64,7 +64,7 @@
 | Not Yet     |                                   | indent_tables         | Indent subtables if they come in order.                                                | false          |
 | Done        | indent-table-key-values           | indent_entries        | Indent entries under tables.                                                           | false          |
 | Done        | indent-width                      | indent_string         | Indentation to use, should be tabs or spaces but technically could be anything.        | 2 spaces (" ") |
-| Not Yet     |                                   | trailing_newline      | Add trailing newline to the source.                                                    | true           |
+| Not Planned |                                   | trailing_newline      | Add trailing newline to the source.                                                    | true           |
 | Not Planned |                                   | reorder_keys          | Alphabetically reorder keys that are not separated by blank lines.                     | false          |
 | Not Planned |                                   | reorder_arrays        | Alphabetically reorder array values that are not separated by blank lines.             | false          |
 | Not Planned |                                   | reorder_inline_tables | Alphabetically reorder inline tables.                                                  | false          |
