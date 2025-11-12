@@ -6,10 +6,11 @@ use tombi_comment_directive::value::ArrayCommonLintRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    comment_directive::get_tombi_array_comment_directive_and_diagnostics, validate::type_mismatch,
+    comment_directive::get_tombi_array_comment_directive_and_diagnostics,
+    validate::{push_deprecated, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -243,23 +244,12 @@ async fn validate_array(
     }
 
     if total_diagnostics.is_empty() && array_schema.deprecated == Some(true) {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .deprecated
-                    .as_ref()
-                    .map(SeverityLevelDefaultWarn::from)
-            })
-            .unwrap_or_default();
-
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Deprecated(
-                tombi_schema_store::SchemaAccessors::from(accessors),
-            )),
-            range: array_value.range(),
-        }
-        .push_diagnostic_with_level(level, &mut total_diagnostics);
+        push_deprecated(
+            &mut total_diagnostics,
+            accessors,
+            array_value,
+            lint_rules.as_ref().map(|rules| &rules.common),
+        );
     }
 
     if total_diagnostics.is_empty() {
