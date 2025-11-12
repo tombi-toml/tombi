@@ -433,12 +433,12 @@ mod format_options {
         }
     }
 
-    mod key_value_align_equals {
+    mod key_value_equal_alignment {
         use super::*;
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_align_equals_false(
+            async fn test_key_value_equal_alignment_false(
                 r#"
                 key = "value"
                 key2 = "value2"
@@ -446,7 +446,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_align_equals: Some(false),
+                        key_value_equal_alignment: Some(false),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -462,7 +462,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_align_equals_true(
+            async fn test_key_value_equal_alignment_true(
                 r#"
                 key = "value"
                 key2 = "value2"
@@ -470,7 +470,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_align_equals: Some(true),
+                        key_value_equal_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -486,7 +486,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_align_equals_true_in_table(
+            async fn test_key_value_equal_alignment_true_in_table(
                 r#"
                 [table]
                 key = "value"
@@ -495,7 +495,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_align_equals: Some(true),
+                        key_value_equal_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -512,7 +512,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_align_equals_true_in_array_of_table(
+            async fn test_key_value_equal_alignment_true_in_array_of_table(
                 r#"
                 [[table]]
                 key = "value"
@@ -521,7 +521,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_align_equals: Some(true),
+                        key_value_equal_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -538,7 +538,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_align_equals_true_in_multi_line_inline_table(
+            async fn test_key_value_equal_alignment_true_in_multi_line_inline_table(
                 r#"
                 inline-table = {
                   key = "value",
@@ -549,7 +549,7 @@ mod format_options {
                 TomlVersion(TomlVersion::V1_1_0_Preview),
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_align_equals: Some(true),
+                        key_value_equal_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -720,6 +720,276 @@ mod format_options {
             ) -> Ok(
                 r#"
                 key = "value"
+                "#
+            )
+        }
+    }
+
+    mod trailing_comment_alignment {
+        use super::*;
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_false(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = "value3" # comment 3
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = "value3"  # comment 3
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = "value3" # comment 3
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"         # comment 1
+                key2 = "value2"       # comment 2
+                key3.key4 = "value3"  # comment 3
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_table(
+                r#"
+                [table]
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = "value3" # comment 3
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                [table]
+                key = "value"         # comment 1
+                key2 = "value2"       # comment 2
+                key3.key4 = "value3"  # comment 3
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_array_of_table(
+                r#"
+                [[table]]
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = "value3" # comment 3
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                [[table]]
+                key = "value"         # comment 1
+                key2 = "value2"       # comment 2
+                key3.key4 = "value3"  # comment 3
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_array(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = [
+                  1, # comment 3-1
+                  2, # comment 3-2
+                  3 # comment 3-3
+                ] # comment 4
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = [
+                  1,             # comment 3-1
+                  2,             # comment 3-2
+                  3,             # comment 3-3
+                ]                # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_array_with_trailing_comma(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = [
+                  1, # comment 3-1
+                  2, # comment 3-2
+                  3, # comment 3-3
+                ] # comment 4
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = [
+                  1,             # comment 3-1
+                  2,             # comment 3-2
+                  3,             # comment 3-3
+                ]                # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_inline_table(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = {
+                    a = 1, # comment 3-1
+                    b = 2, # comment 3-2
+                    c = 3  # comment 3-3
+                } # comment 4
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = {
+                  a = 1,         # comment 3-1
+                  b = 2,         # comment 3-2
+                  c = 3,         # comment 3-3
+                }                # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_inline_table_with_trailing_comma(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = {
+                    a = 1, # comment 3-1
+                    b = 2, # comment 3-2
+                    c = 3, # comment 3-3
+                } # comment 4
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = {
+                  a = 1,         # comment 3-1
+                  b = 2,         # comment 3-2
+                  c = 3,         # comment 3-3
+                }                # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_and_indent_table_key_values_true_in_inline_table(
+                r#"
+                [table]
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = {
+                    a = 1, # comment 3-1
+                    b = 2, # comment 3-2
+                    c = 3, # comment 3-3
+                } # comment 4
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        indent_table_key_values: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                [table]
+                  key = "value"    # comment 1
+                  key2 = "value2"  # comment 2
+                  key3.key4 = {
+                    a = 1,         # comment 3-1
+                    b = 2,         # comment 3-2
+                    c = 3,         # comment 3-3
+                  }                # comment 4
                 "#
             )
         }

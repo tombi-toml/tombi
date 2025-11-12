@@ -5,14 +5,25 @@ use tombi_ast::AstNode;
 use tombi_config::QuoteStyle;
 
 use super::LiteralNode;
-use crate::format::Format;
+use crate::{
+    format::{write_trailing_comment_alignment_space, Format},
+    types::WithAlignmentHint,
+};
 
 impl Format for tombi_ast::BasicString {
+    #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        self.leading_comments().collect_vec().format(f)?;
+        WithAlignmentHint::new(self).format(f)
+    }
+}
+
+impl Format for WithAlignmentHint<'_, tombi_ast::BasicString> {
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        let value = self.value;
+        value.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
-        let text = self.token().unwrap().text().to_owned();
+        let text = value.token().unwrap().text().to_owned();
         let text = match f.quote_style() {
             QuoteStyle::Double | QuoteStyle::Preserve => text,
             QuoteStyle::Single => {
@@ -26,7 +37,10 @@ impl Format for tombi_ast::BasicString {
         };
         write!(f, "{text}")?;
 
-        if let Some(comment) = self.trailing_comment() {
+        if let Some(comment) = value.trailing_comment() {
+            if let Some(trailing_comment_alignment_width) = self.trailing_comment_alignment_width {
+                write_trailing_comment_alignment_space(f, trailing_comment_alignment_width)?;
+            }
             comment.format(f)?;
         }
 
@@ -36,10 +50,17 @@ impl Format for tombi_ast::BasicString {
 
 impl Format for tombi_ast::LiteralString {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        self.leading_comments().collect_vec().format(f)?;
+        WithAlignmentHint::new(self).format(f)
+    }
+}
+
+impl Format for WithAlignmentHint<'_, tombi_ast::LiteralString> {
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        let value = self.value;
+        value.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
-        let text = self.token().unwrap().text().to_owned();
+        let text = value.token().unwrap().text().to_owned();
         let text = match f.quote_style() {
             QuoteStyle::Single | QuoteStyle::Preserve => text,
             QuoteStyle::Double => {
@@ -53,7 +74,10 @@ impl Format for tombi_ast::LiteralString {
         };
         write!(f, "{text}")?;
 
-        if let Some(comment) = self.trailing_comment() {
+        if let Some(comment) = value.trailing_comment() {
+            if let Some(trailing_comment_alignment_width) = self.trailing_comment_alignment_width {
+                write_trailing_comment_alignment_space(f, trailing_comment_alignment_width)?;
+            }
             comment.format(f)?;
         }
 

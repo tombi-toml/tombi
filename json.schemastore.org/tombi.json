@@ -445,6 +445,24 @@
           ],
           "default": 1
         },
+        "key-value-equal-alignment": {
+          "title": "Whether to align the equal sign in the key-value pairs.",
+          "description": "If `true`, the equal sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside single line inline tables.\n\n```toml\n# BEFORE\nkey = \"value1\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        },
+        "trailing-comment-alignment": {
+          "title": "Whether to align the trailing comments in the key-value pairs.",
+          "description": "If `true`, the trailing comments in the key-value pairs will be aligned.\n\n```toml\n# BEFORE\nkey = \"value1\"  # comment 1\nkey2 = \"value2\"  # comment 2\nkey3.key4 = \"value3\"  # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        },
         "key-value-equal-space-width": {
           "title": "The number of spaces after the equal in a key-value pair.",
           "description": "```toml\nkey = \"value\"\n#  ^ ^  <- this\n```",
@@ -495,15 +513,6 @@
             }
           ],
           "default": "double"
-        },
-        "key-value-align-equals": {
-          "title": "Whether to align the equal sign in the key-value pairs.",
-          "description": "If `true`, the equal sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside inline tables.\n\n```toml\n# BEFORE\nkey = \"value\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "default": false
         },
         "trailing-comment-space-width": {
           "title": "The number of spaces before the trailing comment.",

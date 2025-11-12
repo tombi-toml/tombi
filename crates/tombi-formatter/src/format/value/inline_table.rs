@@ -5,12 +5,20 @@ use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{types::KeyValueWithAlignmentHint, Format};
+use crate::{format::write_trailing_comment_alignment_space, types::WithAlignmentHint, Format};
 
 impl Format for tombi_ast::InlineTable {
+    #[inline]
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        WithAlignmentHint::new(self).format(f)
+    }
+}
+
+impl Format for WithAlignmentHint<'_, tombi_ast::InlineTable> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
-            && (self.should_be_multiline(f.toml_version()) || exceeds_line_width(self, f)?)
+            && (self.value.should_be_multiline(f.toml_version())
+                || exceeds_line_width(self.value, f)?)
         {
             format_multiline_inline_table(self, f)
         } else {
@@ -71,7 +79,11 @@ pub(crate) fn exceeds_line_width(
 }
 
 fn format_multiline_inline_table(
-    table: &tombi_ast::InlineTable,
+    WithAlignmentHint {
+        value: table,
+        trailing_comment_alignment_width,
+        ..
+    }: &WithAlignmentHint<'_, tombi_ast::InlineTable>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     table.leading_comments().collect_vec().format(f)?;
@@ -100,9 +112,10 @@ fn format_multiline_inline_table(
                 if i > 0 {
                     write!(f, "{}", f.line_ending())?;
                 }
-                KeyValueWithAlignmentHint {
+                WithAlignmentHint {
                     value: &key_value,
                     equal_alignment_width,
+                    trailing_comment_alignment_width: *trailing_comment_alignment_width,
                 }
                 .format(f)?;
             }
@@ -131,6 +144,13 @@ fn format_multiline_inline_table(
                 }
 
                 if let Some(comment) = comma_trailing_comment {
+                    if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width
+                    {
+                        write_trailing_comment_alignment_space(
+                            f,
+                            *trailing_comment_alignment_width,
+                        )?;
+                    }
                     comment.format(f)?;
                 }
             }
@@ -146,6 +166,9 @@ fn format_multiline_inline_table(
     write!(f, "}}")?;
 
     if let Some(comment) = table.trailing_comment() {
+        if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
+            write_trailing_comment_alignment_space(f, *trailing_comment_alignment_width)?;
+        }
         comment.format(f)?;
     }
 
@@ -153,7 +176,11 @@ fn format_multiline_inline_table(
 }
 
 fn format_singleline_inline_table(
-    table: &tombi_ast::InlineTable,
+    WithAlignmentHint {
+        value: table,
+        trailing_comment_alignment_width,
+        ..
+    }: &WithAlignmentHint<'_, tombi_ast::InlineTable>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     table.leading_comments().collect_vec().format(f)?;
@@ -166,12 +193,19 @@ fn format_singleline_inline_table(
             write!(f, ",{}", f.inline_table_comma_space())?;
         }
         f.skip_indent();
-        key_value.format(f)?;
+        WithAlignmentHint::new_with_trailing_comment_alignment_width(
+            &key_value,
+            *trailing_comment_alignment_width,
+        )
+        .format(f)?;
     }
 
     write!(f, "{}}}", f.inline_table_brace_space())?;
 
     if let Some(comment) = table.trailing_comment() {
+        if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
+            write_trailing_comment_alignment_space(f, *trailing_comment_alignment_width)?;
+        }
         comment.format(f)?;
     }
 

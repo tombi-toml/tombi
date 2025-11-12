@@ -8,12 +8,16 @@ use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{types::AlignmentWidth, Format};
+use crate::{
+    types::{AlignmentWidth, WithAlignmentHint},
+    Format,
+};
 
 pub struct Formatter<'a> {
     toml_version: TomlVersion,
     indent_depth: u8,
     skip_indent: bool,
+    skip_comment: bool,
     single_line_mode: bool,
     definitions: crate::FormatDefinitions,
     #[allow(dead_code)]
@@ -35,6 +39,7 @@ impl<'a> Formatter<'a> {
             toml_version,
             indent_depth: 0,
             skip_indent: false,
+            skip_comment: false,
             single_line_mode: false,
             definitions: crate::FormatDefinitions::new(options),
             options,
@@ -170,6 +175,16 @@ impl<'a> Formatter<'a> {
         Ok(result)
     }
 
+    pub(crate) fn format_to_string_without_comment<T: Format>(
+        &mut self,
+        node: &T,
+    ) -> Result<String, std::fmt::Error> {
+        self.skip_comment = true;
+        let result = self.format_to_string(node)?;
+        self.skip_comment = false;
+        Ok(result)
+    }
+
     pub(crate) fn format_tombi_comment_directive_content(
         &mut self,
         content: &str,
@@ -188,6 +203,11 @@ impl<'a> Formatter<'a> {
     #[inline]
     pub(crate) const fn toml_version(&self) -> TomlVersion {
         self.toml_version
+    }
+
+    #[inline]
+    pub(crate) fn skip_comment(&self) -> bool {
+        self.skip_comment
     }
 
     #[inline]
@@ -216,6 +236,33 @@ impl<'a> Formatter<'a> {
         //         It is guaranteed by the `FormatDefinitions` struct.
         unsafe {
             std::mem::transmute::<&str, &'static str>(&self.definitions.key_value_equal_space)
+        }
+    }
+
+    #[allow(dead_code)]
+    #[inline]
+    pub(crate) fn trailing_comment_alignment_width<'b, T: Format + Sized + 'b>(
+        &mut self,
+        values: impl Iterator<Item = &'b T>,
+        equal_alignment_width: Option<AlignmentWidth>,
+    ) -> Result<Option<AlignmentWidth>, std::fmt::Error>
+    where
+        WithAlignmentHint<'b, T>: Format,
+    {
+        if self.definitions.trailing_comment_alignment {
+            let mut widths = vec![];
+            for value in values {
+                let formatted = self.format_to_string_without_comment(
+                    &WithAlignmentHint::new_with_equal_alignment_width(
+                        value,
+                        equal_alignment_width,
+                    ),
+                )?;
+                widths.push(AlignmentWidth::new(&formatted));
+            }
+            Ok(widths.into_iter().max())
+        } else {
+            Ok(None)
         }
     }
 
@@ -275,7 +322,7 @@ impl<'a> Formatter<'a> {
         &self,
         key_values: impl Iterator<Item = &'a tombi_ast::KeyValue>,
     ) -> Option<AlignmentWidth> {
-        if self.definitions.key_value_align_equals {
+        if self.definitions.key_value_equal_alignment {
             key_values
                 .filter_map(|key_value| key_value.keys())
                 .map(|keys| AlignmentWidth::new(&keys.to_string()))

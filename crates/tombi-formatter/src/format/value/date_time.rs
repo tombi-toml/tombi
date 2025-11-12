@@ -4,15 +4,23 @@ use std::fmt::Write;
 use tombi_ast::AstNode;
 
 use super::LiteralNode;
-use crate::format::Format;
+use crate::{format::write_trailing_comment_alignment_space, types::WithAlignmentHint, Format};
 
 macro_rules! impl_date_time_format {
     (impl Format for $type:ty;) => {
         impl Format for $type {
+            #[inline]
             fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-                self.leading_comments().collect_vec().format(f)?;
+                WithAlignmentHint::new(self).format(f)
+            }
+        }
 
-                let token = self.token().unwrap();
+        impl Format for WithAlignmentHint<'_, $type> {
+            fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+                let value = self.value;
+                value.leading_comments().collect_vec().format(f)?;
+
+                let token = value.token().unwrap();
                 let mut text = token.text().to_string();
                 if let Some(delimiter) = f.date_time_delimiter() {
                     text.replace_range(10..11, &delimiter.to_string());
@@ -21,7 +29,15 @@ macro_rules! impl_date_time_format {
                 f.write_indent()?;
                 write!(f, "{}", text)?;
 
-                if let Some(comment) = self.trailing_comment() {
+                if let Some(comment) = value.trailing_comment() {
+                    if let Some(trailing_comment_alignment_width) =
+                        self.trailing_comment_alignment_width
+                    {
+                        write_trailing_comment_alignment_space(
+                            f,
+                            trailing_comment_alignment_width,
+                        )?;
+                    }
                     comment.format(f)?;
                 }
 
