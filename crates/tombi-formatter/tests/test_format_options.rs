@@ -837,6 +837,38 @@ mod format_options {
                 key3.key4 = [
                   1, # comment 3-1
                   2, # comment 3-2
+                  3 # comment 3-3
+                ] # comment 4
+                "#,
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = [
+                  1,             # comment 3-1
+                  2,             # comment 3-2
+                  3,             # comment 3-3
+                ]                # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_array_with_trailing_comma(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = [
+                  1, # comment 3-1
+                  2, # comment 3-2
                   3, # comment 3-3
                 ] # comment 4
                 "#,
@@ -863,6 +895,39 @@ mod format_options {
         test_format! {
             #[tokio::test]
             async fn test_trailing_comment_alignment_true_in_inline_table(
+                r#"
+                key = "value"  # comment 1
+                key2 = "value2" # comment 2
+                key3.key4 = {
+                    a = 1, # comment 3-1
+                    b = 2, # comment 3-2
+                    c = 3  # comment 3-3
+                } # comment 4
+                "#,
+                TomlVersion(TomlVersion::V1_1_0_Preview),
+                FormatOptions(FormatOptions{
+                    rules: Some(FormatRules {
+                        trailing_comment_alignment: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            ) -> Ok(
+                r#"
+                key = "value"    # comment 1
+                key2 = "value2"  # comment 2
+                key3.key4 = {
+                  a = 1,         # comment 3-1
+                  b = 2,         # comment 3-2
+                  c = 3,         # comment 3-3
+                }                # comment 4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_trailing_comment_alignment_true_in_inline_table_with_trailing_comma(
                 r#"
                 key = "value"  # comment 1
                 key2 = "value2" # comment 2
