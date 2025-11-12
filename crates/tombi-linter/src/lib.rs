@@ -335,6 +335,26 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_tombi_schema_format_array_bracket_space_width_eq_0(
+                r#"
+                [format]
+                array-bracket-space-width = 0
+                "#,
+                tombi_schema_path(),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::Deprecated(
+                    tombi_schema_store::SchemaAccessors::from(
+                        vec![
+                            tombi_schema_store::SchemaAccessor::Key("format".to_string()),
+                            tombi_schema_store::SchemaAccessor::Key("array-bracket-space-width".to_string()),
+                        ]
+                    ),
+                )
+            ]);
+        }
+
+        test_lint! {
+            #[test]
             fn test_tombi_schema_invalid_root(
                 r#"
                 [[schemas]]
