@@ -14,6 +14,8 @@ pub struct FormatDefinitions {
     pub indent_style: IndentStyle,
     pub indent_table_key_values: bool,
     pub indent_width: u8,
+    pub key_value_align_trailing_comments: bool,
+    pub key_value_equal_alignment: bool,
     pub key_value_equal_space: String,
     pub trailing_comment_space: String,
     pub quote_style: QuoteStyle,
@@ -22,7 +24,6 @@ pub struct FormatDefinitions {
     pub array_comma_space: String,
     pub inline_table_brace_space: String,
     pub inline_table_comma_space: String,
-    pub key_value_align_equals: bool,
 }
 
 impl FormatDefinitions {
@@ -72,6 +73,16 @@ impl FormatDefinitions {
                 })
                 .unwrap_or_default()
                 .value(),
+            key_value_align_trailing_comments: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.key_value_align_trailing_comments)
+                .unwrap_or_default(),
+            key_value_equal_alignment: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.key_value_equal_alignment)
+                .unwrap_or_default(),
             key_value_equal_space: " ".repeat(
                 options
                     .rules
@@ -163,11 +174,6 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
-            key_value_align_equals: options
-                .rules
-                .as_ref()
-                .and_then(|rules| rules.key_value_align_equals)
-                .unwrap_or_default(),
         }
     }
 }

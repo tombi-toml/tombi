@@ -275,7 +275,7 @@ impl<'a> Formatter<'a> {
         &self,
         key_values: impl Iterator<Item = &'a tombi_ast::KeyValue>,
     ) -> Option<AlignmentWidth> {
-        if self.definitions.key_value_align_equals {
+        if self.definitions.key_value_equal_alignment {
             key_values
                 .filter_map(|key_value| key_value.keys())
                 .map(|keys| AlignmentWidth::new(&keys.to_string()))
