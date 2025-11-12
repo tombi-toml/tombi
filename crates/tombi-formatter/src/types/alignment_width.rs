@@ -18,8 +18,13 @@ pub struct AlignmentWidth(u32);
 
 impl AlignmentWidth {
     #[inline]
-    pub fn new(keys: &str) -> Self {
-        Self(UnicodeSegmentation::graphemes(keys, true).count() as u32)
+    pub fn new(text: &str) -> Self {
+        Self(
+            text.split('\n')
+                .map(|line| UnicodeSegmentation::graphemes(line, true).count() as u32)
+                .max()
+                .unwrap(),
+        )
     }
 
     #[inline]

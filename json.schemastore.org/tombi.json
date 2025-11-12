@@ -454,7 +454,7 @@
           ],
           "default": false
         },
-        "key-value-align-trailing-comments": {
+        "trailing-comment-alignment": {
           "title": "Whether to align the trailing comments in the key-value pairs.",
           "description": "If `true`, the trailing comments in the key-value pairs will be aligned.\n\n```toml\n# BEFORE\nkey = \"value\"  # comment 1\nkey2 = \"value2\" # comment 2\nkey3.key4 = \"value3\" # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
           "type": [

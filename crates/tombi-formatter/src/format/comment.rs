@@ -9,6 +9,9 @@ use super::Format;
 impl Format for Vec<Vec<DanglingComment>> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        if f.skip_comment() {
+            return Ok(());
+        }
         for (i, comments) in self.iter().enumerate() {
             assert!(!comments.is_empty());
             if i != 0 {
@@ -33,6 +36,9 @@ impl Format for Vec<Vec<DanglingComment>> {
 impl Format for Vec<Vec<BeginDanglingComment>> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        if f.skip_comment() {
+            return Ok(());
+        }
         for comments in self {
             assert!(!comments.is_empty());
 
@@ -55,7 +61,7 @@ impl Format for Vec<Vec<BeginDanglingComment>> {
 impl Format for Vec<Vec<EndDanglingComment>> {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        if self.is_empty() {
+        if f.skip_comment() || self.is_empty() {
             return Ok(());
         }
 
@@ -80,6 +86,10 @@ impl Format for Vec<Vec<EndDanglingComment>> {
 
 impl Format for Vec<LeadingComment> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        if f.skip_comment() {
+            return Ok(());
+        }
+
         for (i, comment) in self.iter().enumerate() {
             f.write_indent()?;
             if i == 0 {
@@ -96,6 +106,10 @@ impl Format for Vec<LeadingComment> {
 impl Format for TrailingComment {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        if f.skip_comment() {
+            return Ok(());
+        }
+
         write!(f, "{}", f.trailing_comment_space())?;
         format_comment(f, self.as_ref(), true)
     }

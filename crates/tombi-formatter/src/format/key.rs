@@ -4,11 +4,11 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 
 use crate::{
-    types::{AlignmentWidth, KeyValueWithAlignmentHint},
+    types::{AlignmentWidth, WithAlignmentHint},
     Format,
 };
 
-impl Format for KeyValueWithAlignmentHint<'_, tombi_ast::Keys> {
+impl Format for WithAlignmentHint<'_, tombi_ast::Keys> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let keys = self.value;
         let mut keys_string = keys

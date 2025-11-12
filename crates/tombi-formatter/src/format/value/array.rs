@@ -4,12 +4,20 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::Format;
+use crate::{format::write_trailing_comment_alignment_space, types::WithAlignmentHint, Format};
 
 impl Format for tombi_ast::Array {
+    #[inline]
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        WithAlignmentHint::new_without_hint(self).format(f)
+    }
+}
+
+impl Format for WithAlignmentHint<'_, tombi_ast::Array> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
-            && (self.should_be_multiline(f.toml_version()) || exceeds_line_width(self, f)?)
+            && (self.value.should_be_multiline(f.toml_version())
+                || exceeds_line_width(self.value, f)?)
         {
             format_multiline_array(self, f)
         } else {
@@ -65,7 +73,11 @@ pub(crate) fn exceeds_line_width(
 }
 
 fn format_multiline_array(
-    array: &tombi_ast::Array,
+    WithAlignmentHint {
+        value: array,
+        trailing_comment_alignment_width,
+        ..
+    }: &WithAlignmentHint<'_, tombi_ast::Array>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     array.leading_comments().collect_vec().format(f)?;
@@ -91,7 +103,12 @@ fn format_multiline_array(
                 if i > 0 {
                     write!(f, "{}", f.line_ending())?;
                 }
-                value.format(f)?;
+                WithAlignmentHint {
+                    value: &value,
+                    equal_alignment_width: None,
+                    trailing_comment_alignment_width: *trailing_comment_alignment_width,
+                }
+                .format(f)?;
             }
 
             // comma format
@@ -118,6 +135,13 @@ fn format_multiline_array(
                 }
 
                 if let Some(comment) = comma_trailing_comment {
+                    if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width
+                    {
+                        write_trailing_comment_alignment_space(
+                            f,
+                            *trailing_comment_alignment_width,
+                        )?;
+                    }
                     comment.format(f)?;
                 }
             }
@@ -133,6 +157,9 @@ fn format_multiline_array(
     write!(f, "]")?;
 
     if let Some(comment) = array.trailing_comment() {
+        if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
+            write_trailing_comment_alignment_space(f, *trailing_comment_alignment_width)?;
+        }
         comment.format(f)?;
     }
 
@@ -140,7 +167,11 @@ fn format_multiline_array(
 }
 
 fn format_singleline_array(
-    array: &tombi_ast::Array,
+    WithAlignmentHint {
+        value: array,
+        trailing_comment_alignment_width,
+        ..
+    }: &WithAlignmentHint<'_, tombi_ast::Array>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     array.leading_comments().collect_vec().format(f)?;
@@ -159,6 +190,9 @@ fn format_singleline_array(
     write!(f, "{}]", f.array_bracket_space())?;
 
     if let Some(comment) = array.trailing_comment() {
+        if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
+            write_trailing_comment_alignment_space(f, *trailing_comment_alignment_width)?;
+        }
         comment.format(f)?;
     }
 

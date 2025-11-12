@@ -3,29 +3,26 @@ use std::fmt::Write;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 
-use crate::{types::KeyValueWithAlignmentHint, Format};
+use crate::{types::WithAlignmentHint, Format};
 
 impl Format for tombi_ast::KeyValue {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        KeyValueWithAlignmentHint {
-            value: self,
-            equal_alignment_width: None,
-        }
-        .format(f)
+        WithAlignmentHint::new_without_hint(self).format(f)
     }
 }
 
-impl Format for KeyValueWithAlignmentHint<'_, tombi_ast::KeyValue> {
+impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let key_value = self.value;
         key_value.leading_comments().collect_vec().format(f)?;
 
         f.write_indent()?;
 
-        KeyValueWithAlignmentHint {
+        WithAlignmentHint {
             value: &key_value.keys().unwrap(),
             equal_alignment_width: self.equal_alignment_width,
+            trailing_comment_alignment_width: None,
         }
         .format(f)?;
 
@@ -37,7 +34,13 @@ impl Format for KeyValueWithAlignmentHint<'_, tombi_ast::KeyValue> {
         )?;
 
         f.skip_indent();
-        key_value.value().unwrap().format(f)?;
+
+        WithAlignmentHint {
+            value: &key_value.value().unwrap(),
+            equal_alignment_width: None,
+            trailing_comment_alignment_width: self.trailing_comment_alignment_width,
+        }
+        .format(f)?;
 
         // NOTE: trailing comment is output by `value.fmt(f)`.
 
