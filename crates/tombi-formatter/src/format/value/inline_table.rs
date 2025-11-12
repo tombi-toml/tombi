@@ -5,7 +5,7 @@ use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::Format;
+use crate::{types::KeyValueWithAlignmentHint, Format};
 
 impl Format for tombi_ast::InlineTable {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -91,13 +91,20 @@ fn format_multiline_inline_table(
         let has_last_key_value_trailing_comma = table.has_last_key_value_trailing_comma();
         let key_values_len = key_values_with_comma.len();
 
+        let equal_alignment_width = f.key_value_equal_alignment_width(
+            key_values_with_comma.iter().map(|(key_value, _)| key_value),
+        );
         for (i, (key_value, comma)) in key_values_with_comma.into_iter().enumerate() {
             // value format
             {
                 if i > 0 {
                     write!(f, "{}", f.line_ending())?;
                 }
-                key_value.format(f)?;
+                KeyValueWithAlignmentHint {
+                    value: &key_value,
+                    equal_alignment_width,
+                }
+                .format(f)?;
             }
 
             // comma format

@@ -1,5 +1,6 @@
 mod format;
 pub mod formatter;
+mod types;
 
 use format::Format;
 pub use formatter::definitions::FormatDefinitions;

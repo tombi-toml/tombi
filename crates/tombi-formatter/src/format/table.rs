@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use crate::Format;
+use crate::{types::KeyValueWithAlignmentHint, Format};
 
 impl Format for tombi_ast::Table {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -34,11 +34,17 @@ impl Format for tombi_ast::Table {
 
             self.key_values_begin_dangling_comments().format(f)?;
 
-            for (i, key_value) in key_values.into_iter().enumerate() {
+            let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
+
+            for (i, key_value) in key_values.iter().enumerate() {
                 if i != 0 {
                     write!(f, "{}", f.line_ending())?;
                 }
-                key_value.format(f)?;
+                KeyValueWithAlignmentHint {
+                    value: key_value,
+                    equal_alignment_width,
+                }
+                .format(f)?;
             }
 
             self.key_values_end_dangling_comments().format(f)?;
