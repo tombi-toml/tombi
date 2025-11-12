@@ -157,7 +157,7 @@ impl CompletionContent {
         Self {
             label: label.into(),
             kind,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: CompletionContentPriority::TypeHint,
             detail: Some(detail.into()),
             documentation: None,
@@ -178,7 +178,7 @@ impl CompletionContent {
         Self {
             label: value.to_string(),
             kind: CompletionKind::Boolean,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: if value {
                 CompletionContentPriority::TypeHintTrue
             } else {
@@ -205,7 +205,7 @@ impl CompletionContent {
         Self {
             label: format!("{quote}{quote}"),
             kind,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: CompletionContentPriority::TypeHint,
             detail: Some(detail.into()),
             documentation: None,
@@ -226,7 +226,7 @@ impl CompletionContent {
         Self {
             label: "{}".to_string(),
             kind: CompletionKind::Table,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: CompletionContentPriority::TypeHint,
             detail: Some("InlineTable".to_string()),
             documentation: None,
@@ -250,7 +250,7 @@ impl CompletionContent {
         Self {
             label: "$key".to_string(),
             kind: CompletionKind::Table,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: CompletionContentPriority::TypeHintKey,
             detail: Some("Key".to_string()),
             documentation: None,
@@ -271,7 +271,7 @@ impl CompletionContent {
         Self {
             label: "$key".to_string(),
             kind: CompletionKind::Key,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: CompletionContentPriority::TypeHintKey,
             detail: Some("Key".to_string()),
             documentation: None,
@@ -404,7 +404,7 @@ impl CompletionContent {
             .map(|(trigger, detail)| Self {
                 label: trigger.to_string(),
                 kind: CompletionKind::MagicTrigger,
-                emoji_icon: Some('🦅'),
+                emoji_icon: None,
                 priority: CompletionContentPriority::TypeHint,
                 detail: Some(detail.to_string()),
                 documentation: None,
@@ -437,7 +437,7 @@ impl CompletionContent {
         Self {
             label: directive_name.to_string(),
             kind: CompletionKind::CommentDirective,
-            emoji_icon: Some('🦅'),
+            emoji_icon: None,
             priority: CompletionContentPriority::Key,
             detail: Some(detail.into()),
             documentation: Some(documentation.into()),
