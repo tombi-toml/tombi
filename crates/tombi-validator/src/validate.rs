@@ -65,7 +65,7 @@ pub trait Validate {
 }
 
 fn push_deprecated(
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     accessors: &[tombi_schema_store::Accessor],
     value: &impl tombi_document_tree::ValueImpl,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
