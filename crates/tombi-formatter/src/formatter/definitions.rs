@@ -22,6 +22,7 @@ pub struct FormatDefinitions {
     pub array_comma_space: String,
     pub inline_table_brace_space: String,
     pub inline_table_comma_space: String,
+    pub key_value_align_equals: bool,
 }
 
 impl FormatDefinitions {
@@ -162,6 +163,11 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
+            key_value_align_equals: options
+                .rules
+                .as_ref()
+                .and_then(|rules| rules.key_value_align_equals)
+                .unwrap_or_default(),
         }
     }
 }

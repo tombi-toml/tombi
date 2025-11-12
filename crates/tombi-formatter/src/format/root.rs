@@ -2,6 +2,8 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
+use crate::types::KeyValueWithAlignmentHint;
+
 use super::Format;
 
 impl Format for tombi_ast::Root {
@@ -15,11 +17,16 @@ impl Format for tombi_ast::Root {
         if !key_values.is_empty() {
             self.key_values_begin_dangling_comments().format(f)?;
 
+            let alignment_width = f.key_value_equal_alignment_width(key_values.iter());
             for (i, key_value) in key_values.iter().enumerate() {
                 if i != 0 {
                     write!(f, "{}", f.line_ending())?;
                 }
-                key_value.format(f)?;
+                KeyValueWithAlignmentHint {
+                    value: key_value,
+                    equal_alignment_width: alignment_width,
+                }
+                .format(f)?;
             }
 
             self.key_values_end_dangling_comments().format(f)?;

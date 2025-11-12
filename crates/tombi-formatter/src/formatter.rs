@@ -8,7 +8,7 @@ use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::Format;
+use crate::{types::AlignmentWidth, Format};
 
 pub struct Formatter<'a> {
     toml_version: TomlVersion,
@@ -267,6 +267,21 @@ impl<'a> Formatter<'a> {
         //         It is guaranteed by the `FormatDefinitions` struct.
         unsafe {
             std::mem::transmute::<&str, &'static str>(&self.definitions.inline_table_comma_space)
+        }
+    }
+
+    #[inline]
+    pub(crate) fn key_value_equal_alignment_width(
+        &self,
+        key_values: impl Iterator<Item = &'a tombi_ast::KeyValue>,
+    ) -> Option<AlignmentWidth> {
+        if self.definitions.key_value_align_equals {
+            key_values
+                .filter_map(|key_value| key_value.keys())
+                .map(|keys| AlignmentWidth::new(&keys.to_string()))
+                .max()
+        } else {
+            None
         }
     }
 

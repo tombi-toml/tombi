@@ -255,6 +255,27 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "QuoteStyle::default"))]
     pub quote_style: Option<QuoteStyle>,
 
+    /// # Whether to align the equal sign in the key-value pairs.
+    ///
+    /// If `true`, the equal sign in the key-value pairs will be aligned.
+    ///
+    /// ⚠️ **WARNING** ⚠️\
+    /// This feature does **not** apply to key-value pairs inside inline tables.
+    ///
+    /// ```toml
+    /// # BEFORE
+    /// key = "value"
+    /// key2 = "value2"
+    /// key3.key4 = "value3"
+    ///
+    /// # AFTER
+    /// key       = "value1"
+    /// key2      = "value2"
+    /// key3.key4 = "value3"
+    /// ```
+    #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
+    pub key_value_align_equals: Option<bool>,
+
     /// # The number of spaces before the trailing comment.
     ///
     /// ```toml

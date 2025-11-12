@@ -3,17 +3,27 @@ use std::fmt::Write;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 
-use crate::Format;
+use crate::{
+    types::{AlignmentWidth, KeyValueWithAlignmentHint},
+    Format,
+};
 
-impl Format for tombi_ast::Keys {
+impl Format for KeyValueWithAlignmentHint<'_, tombi_ast::Keys> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        let keys = self
+        let keys = self.value;
+        let mut keys_string = keys
             .keys()
             .map(|key| key.syntax().text().to_string())
             .collect_vec()
             .join(".");
 
-        write!(f, "{keys}")
+        if let Some(keys_alignment_width) = self.equal_alignment_width {
+            keys_string.push_str(&" ".repeat(
+                (keys_alignment_width.value() - AlignmentWidth::new(&keys_string).value()) as usize,
+            ));
+        }
+
+        write!(f, "{keys_string}")
     }
 }
 

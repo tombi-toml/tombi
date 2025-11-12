@@ -496,6 +496,15 @@
           ],
           "default": "double"
         },
+        "key-value-align-equals": {
+          "title": "Whether to align the equal sign in the key-value pairs.",
+          "description": "If `true`, the equal sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside inline tables.\n\n```toml\n# BEFORE\nkey = \"value\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        },
         "trailing-comment-space-width": {
           "title": "The number of spaces before the trailing comment.",
           "description": "```toml\nkey = \"value\"  # trailing comment\n#            ^^  <- this\n```",

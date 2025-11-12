@@ -45,28 +45,28 @@
 
 ### Taplo の formatter のオプションの対応状況
 
-| Progress    | Tombi Option                   | Taplo Option          | Description                                                                            | Default Value  |
-|-------------|--------------------------------|-----------------------|----------------------------------------------------------------------------------------|----------------|
-| Not Yet     |                                | align_entries         | Align entries vertically. Entries that have table headers,                             | false          |
-|             |                                |                       | comments, or blank lines between them are not aligned.                                 |                |
-| Not Yet     |                                | align_comments        | Align consecutive comments after entries and items vertically.                         | true           |
-|             |                                |                       | This applies to comments that are after entries or array items.                        |                |
-| Not Planned |                                | array_trailing_comma  | Put trailing commas for multiline arrays.                                              | true           |
-| Not Planned |                                | array_auto_expand     | Automatically expand arrays to multiple lines when they exceed characters.column_width | true           |
-| Not Planned |                                | array_auto_collapse   | Automatically collapse arrays if they fit in one line.                                 | true           |
-| Done        | array-comma-space-width        | compact_arrays        | Omit whitespace padding inside single-line arrays.                                     | true           |
-|             | array-bracket-space-width      |                       |                                                                                        |                |
-| Done        | inline-table-comma-space-width | compact_inline_tables | Omit whitespace padding inside inline tables.                                          | false          |
-|             | inline-table-brace-space-width |                       |                                                                                        |                |
-| Not Planned |                                | inline_table_expand   | Expand values (e.g. arrays) inside inline tables.                                      | true           |
-| Done        | key-value-equal-space-width    | compact_entries       | Omit whitespace around .=                                                              | false          |
-| Done        | line-width                     | column_width          | Target maximum column width after which arrays are expanded into new lines.            | 80             |
-| Not Yet     |                                | indent_tables         | Indent subtables if they come in order.                                                | false          |
-| Done        | indent-table-key-values        | indent_entries        | Indent entries under tables.                                                           | false          |
-| Done        | indent-width                   | indent_string         | Indentation to use, should be tabs or spaces but technically could be anything.        | 2 spaces (" ") |
-| Not Planned |                                | trailing_newline      | Add trailing newline to the source.                                                    | true           |
-| Not Planned |                                | reorder_keys          | Alphabetically reorder keys that are not separated by blank lines.                     | false          |
-| Not Planned |                                | reorder_arrays        | Alphabetically reorder array values that are not separated by blank lines.             | false          |
-| Not Planned |                                | reorder_inline_tables | Alphabetically reorder inline tables.                                                  | false          |
-| Not Planned |                                | allowed_blank_lines   | The maximum amount of consecutive blank lines allowed.                                 | 2              |
-| Done        | line-ending                    | crlf                  | Use CRLF line endings.                                                                 | false          |
+| Progress    | Tombi Option                      | Taplo Option          | Description                                                                            | Default Value  |
+|-------------|-----------------------------------|-----------------------|----------------------------------------------------------------------------------------|----------------|
+| Done        | key-value-align-equals            | align_entries         | Align entries vertically. Entries that have table headers,                             | false          |
+|             |                                   |                       | comments, or blank lines between them are not aligned.                                 |                |
+| Not Yet     | key-value-align-trailing-comments | align_comments        | Align consecutive comments after entries and items vertically.                         | true           |
+|             |                                   |                       | This applies to comments that are after entries or array items.                        |                |
+| Not Planned |                                   | array_trailing_comma  | Put trailing commas for multiline arrays.                                              | true           |
+| Not Planned |                                   | array_auto_expand     | Automatically expand arrays to multiple lines when they exceed characters.column_width | true           |
+| Not Planned |                                   | array_auto_collapse   | Automatically collapse arrays if they fit in one line.                                 | true           |
+| Done        | array-comma-space-width           | compact_arrays        | Omit whitespace padding inside single-line arrays.                                     | true           |
+|             | array-bracket-space-width         |                       |                                                                                        |                |
+| Done        | inline-table-comma-space-width    | compact_inline_tables | Omit whitespace padding inside inline tables.                                          | false          |
+|             | inline-table-brace-space-width    |                       |                                                                                        |                |
+| Not Planned |                                   | inline_table_expand   | Expand values (e.g. arrays) inside inline tables.                                      | true           |
+| Done        | key-value-equal-space-width       | compact_entries       | Omit whitespace around .=                                                              | false          |
+| Done        | line-width                        | column_width          | Target maximum column width after which arrays are expanded into new lines.            | 80             |
+| Not Yet     |                                   | indent_tables         | Indent subtables if they come in order.                                                | false          |
+| Done        | indent-table-key-values           | indent_entries        | Indent entries under tables.                                                           | false          |
+| Done        | indent-width                      | indent_string         | Indentation to use, should be tabs or spaces but technically could be anything.        | 2 spaces (" ") |
+| Not Yet     |                                   | trailing_newline      | Add trailing newline to the source.                                                    | true           |
+| Not Planned |                                   | reorder_keys          | Alphabetically reorder keys that are not separated by blank lines.                     | false          |
+| Not Planned |                                   | reorder_arrays        | Alphabetically reorder array values that are not separated by blank lines.             | false          |
+| Not Planned |                                   | reorder_inline_tables | Alphabetically reorder inline tables.                                                  | false          |
+| Not Planned |                                   | allowed_blank_lines   | The maximum amount of consecutive blank lines allowed.                                 | 2              |
+| Done        | line-ending                       | crlf                  | Use CRLF line endings.                                                                 | false          |
