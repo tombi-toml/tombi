@@ -9,7 +9,7 @@ use crate::{format::write_trailing_comment_alignment_space, types::WithAlignment
 impl Format for tombi_ast::Array {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 
@@ -103,11 +103,10 @@ fn format_multiline_array(
                 if i > 0 {
                     write!(f, "{}", f.line_ending())?;
                 }
-                WithAlignmentHint {
-                    value: &value,
-                    equal_alignment_width: None,
-                    trailing_comment_alignment_width: *trailing_comment_alignment_width,
-                }
+                WithAlignmentHint::new_with_trailing_comment_alignment_width(
+                    &value,
+                    *trailing_comment_alignment_width,
+                )
                 .format(f)?;
             }
 
@@ -184,7 +183,11 @@ fn format_singleline_array(
             write!(f, ",{}", f.array_comma_space())?;
         }
         f.skip_indent();
-        value.format(f)?;
+        WithAlignmentHint::new_with_trailing_comment_alignment_width(
+            &value,
+            *trailing_comment_alignment_width,
+        )
+        .format(f)?;
     }
 
     write!(f, "{}]", f.array_bracket_space())?;

@@ -8,7 +8,7 @@ use crate::{types::WithAlignmentHint, Format};
 impl Format for tombi_ast::KeyValue {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 
@@ -19,11 +19,10 @@ impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
 
         f.write_indent()?;
 
-        WithAlignmentHint {
-            value: &key_value.keys().unwrap(),
-            equal_alignment_width: self.equal_alignment_width,
-            trailing_comment_alignment_width: None,
-        }
+        WithAlignmentHint::new_with_equal_alignment_width(
+            &key_value.keys().unwrap(),
+            self.equal_alignment_width,
+        )
         .format(f)?;
 
         write!(
@@ -35,11 +34,10 @@ impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
 
         f.skip_indent();
 
-        WithAlignmentHint {
-            value: &key_value.value().unwrap(),
-            equal_alignment_width: None,
-            trailing_comment_alignment_width: self.trailing_comment_alignment_width,
-        }
+        WithAlignmentHint::new_with_trailing_comment_alignment_width(
+            &key_value.value().unwrap(),
+            self.trailing_comment_alignment_width,
+        )
         .format(f)?;
 
         // NOTE: trailing comment is output by `value.fmt(f)`.

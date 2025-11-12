@@ -13,7 +13,7 @@ use crate::{
 impl Format for tombi_ast::BasicString {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 
@@ -50,7 +50,7 @@ impl Format for WithAlignmentHint<'_, tombi_ast::BasicString> {
 
 impl Format for tombi_ast::LiteralString {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 

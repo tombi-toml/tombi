@@ -15,7 +15,7 @@ use crate::{format::write_trailing_comment_alignment_space, types::WithAlignment
 
 impl Format for tombi_ast::Value {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 
@@ -132,7 +132,7 @@ where
 {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 

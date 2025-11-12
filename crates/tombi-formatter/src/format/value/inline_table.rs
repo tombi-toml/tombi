@@ -10,7 +10,7 @@ use crate::{format::write_trailing_comment_alignment_space, types::WithAlignment
 impl Format for tombi_ast::InlineTable {
     #[inline]
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        WithAlignmentHint::new_without_hint(self).format(f)
+        WithAlignmentHint::new(self).format(f)
     }
 }
 
@@ -193,11 +193,10 @@ fn format_singleline_inline_table(
             write!(f, ",{}", f.inline_table_comma_space())?;
         }
         f.skip_indent();
-        WithAlignmentHint {
-            value: &key_value,
-            equal_alignment_width: None,
-            trailing_comment_alignment_width: *trailing_comment_alignment_width,
-        }
+        WithAlignmentHint::new_with_trailing_comment_alignment_width(
+            &key_value,
+            *trailing_comment_alignment_width,
+        )
         .format(f)?;
     }
 

@@ -252,11 +252,12 @@ impl<'a> Formatter<'a> {
         if self.definitions.trailing_comment_alignment {
             let mut widths = vec![];
             for value in values {
-                let formatted = self.format_to_string_without_comment(&WithAlignmentHint {
-                    value: value,
-                    equal_alignment_width,
-                    trailing_comment_alignment_width: None,
-                })?;
+                let formatted = self.format_to_string_without_comment(
+                    &WithAlignmentHint::new_with_equal_alignment_width(
+                        value,
+                        equal_alignment_width,
+                    ),
+                )?;
                 widths.push(AlignmentWidth::new(&formatted));
             }
             Ok(widths.into_iter().max())
