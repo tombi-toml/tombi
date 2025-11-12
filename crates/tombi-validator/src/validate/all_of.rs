@@ -1,8 +1,11 @@
 use std::fmt::Debug;
 
 use tombi_comment_directive::value::CommonLintRules;
+use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
+
+use crate::validate::push_deprecated;
 
 use super::Validate;
 
@@ -12,11 +15,10 @@ pub fn validate_all_of<'a: 'b, 'b, T>(
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-
-    _common_rules: Option<&'a CommonLintRules>,
+    common_rules: Option<&'a CommonLintRules>,
 ) -> BoxFuture<'b, Result<(), crate::Error>>
 where
-    T: Validate + Sync + Send + Debug,
+    T: Validate + ValueImpl + Sync + Send + Debug,
 {
     tracing::trace!("value = {:?}", value);
     tracing::trace!("all_of_schema = {:?}", all_of_schema);
@@ -46,6 +48,10 @@ where
             {
                 total_diagnostics.extend(diagnostics);
             }
+        }
+
+        if total_diagnostics.is_empty() && all_of_schema.deprecated == Some(true) {
+            push_deprecated(&mut total_diagnostics, accessors, value, common_rules);
         }
 
         if total_diagnostics.is_empty() {

@@ -8,14 +8,14 @@ use tombi_schema_store::{
     Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, SchemaAccessors,
     ValueSchema,
 };
-use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
 
 use crate::{
     comment_directive::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
-    validate::type_mismatch,
+    validate::{push_deprecated, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -285,24 +285,12 @@ async fn validate_table(
                     .inspect_err(|err| tracing::warn!("{err}"))
                 {
                     if current_schema.value_schema.deprecated().await == Some(true) {
-                        let level = lint_rules
-                            .map(|rules| &rules.common)
-                            .and_then(|rules| {
-                                rules
-                                    .deprecated
-                                    .as_ref()
-                                    .map(SeverityLevelDefaultWarn::from)
-                            })
-                            .unwrap_or_default();
-
-                        crate::Diagnostic {
-                            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
-                                SchemaAccessors::from(&new_accessors),
-                                value.to_string(),
-                            )),
-                            range: key.range() + value.range(),
-                        }
-                        .push_diagnostic_with_level(level, &mut total_diagnostics);
+                        push_deprecated(
+                            &mut total_diagnostics,
+                            &new_accessors,
+                            value,
+                            lint_rules.as_ref().map(|rules| &rules.common),
+                        );
                     }
 
                     if let Err(crate::Error { diagnostics, .. }) = value
@@ -423,23 +411,12 @@ async fn validate_table(
     }
 
     if total_diagnostics.is_empty() && table_schema.deprecated == Some(true) {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .deprecated
-                    .as_ref()
-                    .map(SeverityLevelDefaultWarn::from)
-            })
-            .unwrap_or_default();
-
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Deprecated(
-                tombi_schema_store::SchemaAccessors::from(accessors),
-            )),
-            range: table_value.range(),
-        }
-        .push_diagnostic_with_level(level, &mut total_diagnostics);
+        push_deprecated(
+            &mut total_diagnostics,
+            accessors,
+            table_value,
+            lint_rules.as_ref().map(|rules| &rules.common),
+        );
     }
 
     if total_diagnostics.is_empty() {

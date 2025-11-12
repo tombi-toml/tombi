@@ -7,7 +7,9 @@ use tombi_schema_store::{CurrentSchema, OneOfSchema, ValueSchema};
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use super::Validate;
-use crate::validate::{all_of::validate_all_of, any_of::validate_any_of, type_mismatch};
+use crate::validate::{
+    all_of::validate_all_of, any_of::validate_any_of, push_deprecated, type_mismatch,
+};
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
     value: &'a T,
@@ -154,7 +156,7 @@ where
 
             unreachable!("one_of_schema must have exactly one valid schema");
         } else {
-            let error = each_results
+            let mut error = each_results
                 .into_iter()
                 .fold(crate::Error::new(), |mut a, b| {
                     if let Err(error) = b {
@@ -162,7 +164,19 @@ where
                     }
                     a
                 });
-            if error.diagnostics.is_empty() && valid_count > 1 {
+
+            if error.diagnostics.is_empty() && one_of_schema.deprecated == Some(true) {
+                push_deprecated(&mut error.diagnostics, accessors, value, common_rules);
+            }
+
+            if error
+                .diagnostics
+                .iter()
+                .filter(|d| d.level() == tombi_diagnostic::Level::ERROR)
+                .count()
+                == 0
+                && valid_count > 1
+            {
                 let mut diagnostics = vec![];
 
                 crate::Diagnostic {

@@ -4,10 +4,11 @@ use tombi_comment_directive::value::{
 use tombi_document_tree::{OffsetDateTime, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::ValueSchema;
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    comment_directive::get_tombi_key_table_value_rules_and_diagnostics, validate::type_mismatch,
+    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
+    validate::{push_deprecated, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -162,24 +163,12 @@ async fn validate_offset_date_time(
     }
 
     if diagnostics.is_empty() && offset_date_time_schema.deprecated == Some(true) {
-        let level = lint_rules
-            .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .deprecated
-                    .as_ref()
-                    .map(SeverityLevelDefaultWarn::from)
-            })
-            .unwrap_or_default();
-
-        crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
-                tombi_schema_store::SchemaAccessors::from(accessors),
-                value_string,
-            )),
-            range,
-        }
-        .push_diagnostic_with_level(level, &mut diagnostics);
+        push_deprecated(
+            &mut diagnostics,
+            accessors,
+            offset_date_time_value,
+            lint_rules.as_ref().map(|rules| &rules.common),
+        );
     }
 
     if diagnostics.is_empty() {

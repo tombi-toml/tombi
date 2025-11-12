@@ -344,11 +344,15 @@ mod tests {
                 "#,
                 tombi_schema_path(),
             ) -> Err([
-                tombi_validator::DiagnosticKind::DeprecatedValue(tombi_schema_store::SchemaAccessors::from(vec![
-                    tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
-                    tombi_schema_store::SchemaAccessor::Index,
-                    tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
-                ]), "\"tool.taskipy\"".to_string()),
+                tombi_validator::DiagnosticKind::Deprecated(
+                    tombi_schema_store::SchemaAccessors::from(
+                        vec![
+                            tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
+                            tombi_schema_store::SchemaAccessor::Index,
+                            tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
+                        ]
+                    ),
+                )
             ]);
         }
 
@@ -686,12 +690,12 @@ mod tests {
                 #:tombi lint.disable = true
                 "#,
             ) -> Err([
-                tombi_validator::DiagnosticKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::from(vec![
+                tombi_validator::DiagnosticKind::Deprecated(
+                    tombi_schema_store::SchemaAccessors::from(
+                        vec![
                         tombi_schema_store::SchemaAccessor::Key("lint".to_string()),
                         tombi_schema_store::SchemaAccessor::Key("disable".to_string()),
                     ]),
-                    "true".to_string()
                 )
             ]);
         }

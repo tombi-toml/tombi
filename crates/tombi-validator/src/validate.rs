@@ -22,7 +22,7 @@ use itertools::Itertools;
 pub use one_of::validate_one_of;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
-use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 pub fn validate<'a: 'b, 'b>(
     tree: tombi_document_tree::DocumentTree,
@@ -62,6 +62,30 @@ pub trait Validate {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>>;
+}
+
+fn push_deprecated(
+    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    accessors: &[tombi_schema_store::Accessor],
+    value: &impl tombi_document_tree::ValueImpl,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) {
+    let level = common_rules
+        .and_then(|rules| {
+            rules
+                .deprecated
+                .as_ref()
+                .map(SeverityLevelDefaultWarn::from)
+        })
+        .unwrap_or_default();
+
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::Deprecated(
+            tombi_schema_store::SchemaAccessors::from(accessors),
+        )),
+        range: value.range(),
+    }
+    .push_diagnostic_with_level(level, &mut diagnostics);
 }
 
 fn type_mismatch(
