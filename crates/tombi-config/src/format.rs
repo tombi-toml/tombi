@@ -181,6 +181,9 @@ pub struct FormatRules {
     /// # The style of indentation
     ///
     /// Whether to use spaces or tabs for indentation.
+    ///
+    /// - `space`: Use spaces for indentation.
+    /// - `tab`: Use tabs for indentation.
     #[cfg_attr(feature = "jsonschema", schemars(default = "IndentStyle::default"))]
     pub indent_style: Option<IndentStyle>,
 
@@ -210,6 +213,9 @@ pub struct FormatRules {
     pub indent_table_key_values: Option<bool>,
 
     /// # The number of spaces per indentation level
+    ///
+    /// ⚠️ **WARNING** ⚠️\
+    /// This option is only used when the indentation style is `space`.
     #[cfg_attr(feature = "jsonschema", schemars(default = "IndentWidth::default"))]
     pub indent_width: Option<IndentWidth>,
 
@@ -260,7 +266,10 @@ pub struct FormatRules {
 
     /// # Whether to align the trailing comments in the key-value pairs.
     ///
-    /// If `true`, the trailing comments in the key-value pairs will be aligned.
+    /// If `true`, the trailing comments in value/key-value pairs will be aligned.
+    ///
+    /// **📝 NOTE 📝**\
+    /// The trailing comments of table header are not targeted by alignment.
     ///
     /// ```toml
     /// # BEFORE

@@ -1,3 +1,5 @@
+import { Tip, Warning, Note } from "~/components/Highlight";
+
 # Configuration
 
 Learn how to configure Tombi using the `tombi.toml` configuration file.
@@ -25,6 +27,23 @@ include = ["**/*.toml"]
 exclude = []
 
 [format]
+[format.rules]
+array-bracket-space-width = 0
+array-comma-space-width = 1
+date-time-delimiter = "T"
+indent-style = "space"
+indent-sub-tables = false
+indent-table-key-values = false
+indent-width = 2
+inline-table-brace-space-width = 1
+inline-table-comma-space-width = 1
+key-value-equal-alignment = false
+key-value-equal-space-width = 1
+line-ending = "lf"
+line-width = 80
+quote-style = "double"
+trailing-comment-alignment = false
+trailing-comment-space-width = 2
 
 [lint]
 [lint.rules]
@@ -74,6 +93,23 @@ include = ["pyproject.toml"]
   - [files.include](#files-include)
   - [files.exclude](#files-exclude)
 - [format](#format)
+  - [format.rules](#format-rules)
+    - [format.rules.array-bracket-space-width](#format-rules-array-bracket-space-width)
+    - [format.rules.array-comma-space-width](#format-rules-array-comma-space-width)
+    - [format.rules.date-time-delimiter](#format-rules-date-time-delimiter)
+    - [format.rules.indent-style](#format-rules-indent-style)
+    - [format.rules.indent-sub-tables](#format-rules-indent-sub-tables)
+    - [format.rules.indent-table-key-values](#format-rules-indent-table-key-values)
+    - [format.rules.indent-width](#format-rules-indent-width)
+    - [format.rules.inline-table-brace-space-width](#format-rules-inline-table-brace-space-width)
+    - [format.rules.inline-table-comma-space-width](#format-rules-inline-table-comma-space-width)
+    - [format.rules.key-value-equal-alignment](#format-rules-key-value-equal-alignment)
+    - [format.rules.key-value-equal-space-width](#format-rules-key-value-equal-space-width)
+    - [format.rules.line-ending](#format-rules-line-ending)
+    - [format.rules.line-width](#format-rules-line-width)
+    - [format.rules.quote-style](#format-rules-quote-style)
+    - [format.rules.trailing-comment-alignment](#format-rules-trailing-comment-alignment)
+    - [format.rules.trailing-comment-space-width](#format-rules-trailing-comment-space-width)
 - [lint](#lint)
   - [lint.rules](#lint-rules)
     - [lint.rules.key-empty](#lint-rules-key-empty)
@@ -115,9 +151,8 @@ include = ["pyproject.toml"]
 
 Specifies the TOML version to use if not specified in the schema and comment directive.
 
-- Type: `string`
+- Type: `"v1.0.0" | "v1.1.0-preview"`
 - Default: `"v1.0.0"`
-- Valid values: `"v1.0.0"`, `"v1.1.0-preview"`
 
 ### files
 
@@ -127,18 +162,241 @@ Configure file patterns for formatting and linting operations.
 
 The file match pattern to include in formatting and linting. Supports glob pattern.
 
-- Type: `string[]`
+- Type: `String[]`
 - Default: `["**/*.toml"]`
 
 ### files.exclude
 
 The file match pattern to exclude from formatting and linting. Supports glob pattern.
 
-- Type: `string[]`
+- Type: `String[]`
 
 ### format
 
-Formatter options. To avoid needless discussion of formatting rules, we do not currently have a configuration item for formatting.
+Formatter options for TOML files.
+
+### format.rules
+
+Configure formatting styles.
+
+### format.rules.array-bracket-space-width
+
+The number of spaces inside the brackets of a single line array.
+
+- Type: `Number`
+- Default: `0`
+
+```toml
+key = [ 1, 2, 3 ]
+#      ^       ^  <- this
+```
+
+### format.rules.array-comma-space-width
+
+The number of spaces after the comma in a single line array.
+
+- Type: `Number`
+- Default: `1`
+
+```toml
+key = [ 1, 2, 3 ]
+#         ^  ^  <- this
+```
+
+### format.rules.date-time-delimiter
+
+The delimiter between date and time
+
+In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.
+
+- Type: `"T" | "space" | "preserve"`
+- Default: `"T"`
+- Enumerated:
+  - `T`: Use `T` between date and time like `2001-01-01T00:00:00`
+  - `space`: Use space between date and time like `2001-01-01 00:00:00`
+  - `preserve`: Preserve the original delimiter.
+
+### format.rules.indent-style
+
+The style of indentation
+
+Whether to use spaces or tabs for indentation.
+
+- Type: `"space" | "tab"`
+- Default: `"space"`
+- Enumerated:
+  - `space`: Use spaces for indentation.
+  - `tab`: Use tabs for indentation.
+
+### format.rules.indent-sub-tables
+
+Whether to indent the sub-tables.
+
+If `true`, the sub-table will be indented.
+
+- Type: `Boolean`
+- Default: `false`
+
+```toml
+[table]
+    [table.sub-table]
+        key = "value"
+# ^^  <- this
+```
+
+### format.rules.indent-table-key-values
+
+Whether to indent the table key-value pairs.
+
+If `true`, the table key-value pairs will be indented.
+
+- Type: `Boolean`
+- Default: `false`
+
+```toml
+[table]
+    key = "value"
+# ^^  <- this
+```
+
+### format.rules.indent-width
+
+The number of spaces per indentation level.
+
+- Type: `Number`
+- Default: `2`
+
+<Warning>
+This option is only used when the indentation style is `space`.
+</Warning>
+
+### format.rules.inline-table-brace-space-width
+
+The number of spaces inside the brackets of a single line inline table.
+
+- Type: `Number`
+- Default: `1`
+
+```toml
+key = { a = 1, b = 2 }
+#      ^            ^  <- this
+```
+
+### format.rules.inline-table-comma-space-width
+
+The number of spaces after the comma in a single line inline table.
+
+- Type: `Number`
+- Default: `1`
+
+```toml
+key = { a = 1, b = 2 }
+#             ^  <- this
+```
+
+### format.rules.key-value-equal-alignment
+
+Whether to align the equal sign in the key-value pairs.
+
+If `true`, the equal sign in the key-value pairs will be aligned.
+
+- Type: `Boolean`
+- Default: `false`
+
+```toml
+# BEFORE
+key = "value1"
+key2 = "value2"
+key3.key4 = "value3"
+
+# AFTER
+key       = "value1"
+key2      = "value2"
+key3.key4 = "value3"
+```
+
+<Warning>
+This feature does **not** apply to key-value pairs inside single line inline tables.
+</Warning>
+
+### format.rules.trailing-comment-alignment
+
+Whether to align the trailing comments in the key-value pairs.
+
+If `true`, the trailing comments in value/key-value pairs will be aligned.
+
+- Type: `Boolean`
+- Default: `false`
+
+```toml
+# BEFORE
+key = "value1"  # comment 1
+key2 = "value2"  # comment 2
+key3.key4 = "value3"  # comment 3
+
+# AFTER
+key = "value1"        # comment 1
+key2 = "value2"       # comment 2
+key3.key4 = "value3"  # comment 3
+```
+
+<Note>
+The trailing comments of table header are not targeted by alignment.
+</Note>
+
+### format.rules.key-value-equal-space-width
+
+The number of spaces after the equal in a key-value pair.
+
+- Type: `Number`
+- Default: `1`
+
+```toml
+key = "value"
+#  ^ ^  <- this
+```
+
+### format.rules.line-ending
+
+The type of line ending.
+
+- Type: `"lf" | "crlf"`
+- Default: `"lf"`
+- Enumerated:
+  - `lf`: Line Feed only (`\n`), common on Linux and macOS as well as inside git repos.
+  - `crlf`: Carriage Return Line Feed (`\r\n`), common on Windows.
+
+### format.rules.line-width
+
+The maximum line width.
+
+The formatter will try to keep lines within this width.
+
+- Type: `Number`
+- Default: `80`
+
+### format.rules.quote-style
+
+The preferred quote character for strings.
+
+- Type: `"double" | "single" | "preserve"`
+- Default: `"double"`
+- Enumerated:
+  - `double`: Prefer the double quote like `"value"`
+  - `single`: Prefer the single quote like `'value'`
+  - `preserve`: Preserve the original quote
+
+### format.rules.trailing-comment-space-width
+
+The number of spaces before the trailing comment.
+
+- Type: `Number`
+- Default: `2`
+
+```toml
+key = "value"  # trailing comment
+#            ^^  <- this
+```
 
 ### lint
 
@@ -212,7 +470,7 @@ Configure code action feature.
 
 Enable or disable code action feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.completion
@@ -223,7 +481,7 @@ Configure completion feature.
 
 Enable or disable completion feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.diagnostic
@@ -234,7 +492,7 @@ Configure diagnostic feature.
 
 Enable or disable diagnostic feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.document-link
@@ -245,7 +503,7 @@ Configure document link feature.
 
 Enable or disable document link feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.formatting
@@ -256,7 +514,7 @@ Configure formatting feature.
 
 Enable or disable formatting feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.goto-declaration
@@ -267,7 +525,7 @@ Configure go to declaration feature.
 
 Enable or disable go to declaration feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.goto-definition
@@ -278,7 +536,7 @@ Configure go to definition feature.
 
 Enable or disable go to definition feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.goto-type-definition
@@ -289,7 +547,7 @@ Configure go to type definition feature.
 
 Enable or disable go to type definition feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.hover
@@ -300,7 +558,7 @@ Configure hover feature.
 
 Enable or disable hover feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### lsp.workspace-diagnostic
@@ -311,7 +569,7 @@ Configure workspace diagnostic feature.
 
 Enable or disable workspace diagnostic feature.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### schema
@@ -322,14 +580,14 @@ JSON Schema validation options for TOML files.
 
 Enable or disable schema validation.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### schema.strict
 
 Enable strict schema validation. If `additionalProperties` is not specified in the JSON Schema, the strict mode treats it as `additionalProperties: false`, which is different from the JSON Schema specification.
 
-- Type: `boolean`
+- Type: `Boolean`
 - Default: `true`
 
 ### schema.catalog
@@ -340,7 +598,7 @@ Configure schema catalog for automatic schema detection.
 
 The schema catalog path/url array. The catalog is evaluated after the schemas specified by `[[schemas]]`. Schemas are loaded in order from the beginning of the catalog list.
 
-- Type: `string[]`
+- Type: `String[]`
 - Default: `["tombi://www.schemastore.org/api/json/catalog.json", "https://www.schemastore.org/api/json/catalog.json"]`
 
 ### schemas
