@@ -43,3 +43,124 @@ Taplo has a fundamental problem with the lexer.
 When formatting an incomplete TOML file, the AST deletes elements.
 
 Tombi does not format invalid syntax.
+
+## Migration from Taplo
+
+Tombi provides several formatting options to make it easy for Taplo users to migrate.  
+The following table shows the correspondence between [Taplo's options](https://taplo.tamasfe.dev/configuration/formatter-options.html) and [Tombi's options](/docs/configuration#available-options):
+
+<table>
+  <thead>
+    <tr>
+      <th>Taplo Option</th>
+      <th>Tombi Option</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>align_entries</code></td>
+      <td>[`key-value-equal-alignment`](/docs/configuration#format-rules-key-value-equal-alignment)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>align_comments</code></td>
+      <td>[`trailing-comment-alignment`](/docs/configuration#format-rules-trailing-comment-alignment)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>array_trailing_comma</code></td>
+      <td>Not supported</td>
+      <td>Please use [Magic Trailing Comma](/docs/formatter/magic-trailing-comma).</td>
+    </tr>
+    <tr>
+      <td><code>array_auto_expand</code></td>
+      <td>Not supported</td>
+      <td>Fixed `true` value.</td>
+    </tr>
+    <tr>
+      <td><code>array_auto_collapse</code></td>
+      <td>Not supported</td>
+      <td>Please use [Magic Trailing Comma](/docs/formatter/magic-trailing-comma).</td>
+    </tr>
+    <tr>
+      <td><code>compact_arrays</code></td>
+      <td>
+        [`array-comma-space-width`](/docs/configuration#format-rules-array-comma-space-width), <br />
+        [`array-bracket-space-width`](/docs/configuration#format-rules-array-bracket-space-width)
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>compact_inline_tables</code></td>
+      <td>
+        [`inline-table-comma-space-width`](/docs/configuration#format-rules-inline-table-comma-space-width), <br />
+        [`inline-table-brace-space-width`](/docs/configuration#format-rules-inline-table-brace-space-width)
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>inline_table_expand</code></td>
+      <td>Not supported</td>
+      <td>Fixed `true` value.</td>
+    </tr>
+    <tr>
+      <td><code>compact_entries</code></td>
+      <td>[`key-value-equal-space-width`](/docs/configuration#format-rules-key-value-equal-space-width)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>column_width</code></td>
+      <td>[`line-width`](/docs/configuration#format-rules-line-width)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>indent_tables</code></td>
+      <td>[`indent-sub-tables`](/docs/configuration#format-rules-indent-sub-tables)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>indent_entries</code></td>
+      <td>[`indent-table-key-values`](/docs/configuration#format-rules-indent-table-key-values)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>indent_string</code></td>
+      <td>
+        [`indent-width`](/docs/configuration#format-rules-indent-width), <br />
+        [`indent-style`](/docs/configuration#format-rules-indent-style)
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>trailing_newline</code></td>
+      <td>Not supported</td>
+      <td>Fixed `true` value.</td>
+    </tr>
+    <tr>
+      <td><code>reorder_keys</code></td>
+      <td>Not supported</td>
+      <td>See [Auto Sorting](/docs/formatter/auto-sorting).</td>
+    </tr>
+    <tr>
+      <td><code>reorder_arrays</code></td>
+      <td>Not supported</td>
+      <td>See [Auto Sorting](/docs/formatter/auto-sorting).</td>
+    </tr>
+    <tr>
+      <td><code>reorder_inline_tables</code></td>
+      <td>Not supported</td>
+      <td>See [Auto Sorting](/docs/formatter/auto-sorting).</td>
+    </tr>
+    <tr>
+      <td><code>allowed_blank_lines</code></td>
+      <td>Not supported</td>
+      <td>For [Auto Sorting](/docs/formatter/auto-sorting).</td>
+    </tr>
+    <tr>
+      <td><code>crlf</code></td>
+      <td><a href="/docs/configuration#format-rules-line-ending">line-ending</a></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>

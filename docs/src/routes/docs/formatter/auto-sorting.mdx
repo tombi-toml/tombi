@@ -1,9 +1,25 @@
-import { Warning } from "~/components/Highlight";
+import { Tip, Warning } from "~/components/Highlight";
 
 # Auto Sorting
 
 One of Tombi's most distinctive features is automatic sorting.
 It can automatically sort content including comments, using its [own unique treatment of comments](/docs/formatter/treatment-of-comments).
+
+<Tip>
+Tombi cannot insert empty newlines between key-value pairs, but that is a trade-off for automatic sorting.
+
+```toml
+# BEFORE
+key1 = "value1"
+
+key2 = "value2"
+
+# AFTER
+key1 = "value1"
+key2 = "value2"
+```
+
+</Tip>
 
 <Warning>
 If you don't like the automatic sorting provided by Tombi, we recommend adding a Tombi configuration file and disabling the formatter.

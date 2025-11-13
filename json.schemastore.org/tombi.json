@@ -387,7 +387,7 @@
         },
         "indent-style": {
           "title": "The style of indentation",
-          "description": "Whether to use spaces or tabs for indentation.",
+          "description": "Whether to use spaces or tabs for indentation.\n\n- `space`: Use spaces for indentation.\n- `tab`: Use tabs for indentation.",
           "anyOf": [
             {
               "$ref": "#/definitions/IndentStyle"
@@ -418,6 +418,7 @@
         },
         "indent-width": {
           "title": "The number of spaces per indentation level",
+          "description": "⚠️ **WARNING** ⚠️\\\nThis option is only used when the indentation style is `space`.",
           "anyOf": [
             {
               "$ref": "#/definitions/IndentWidth"
@@ -465,7 +466,7 @@
         },
         "trailing-comment-alignment": {
           "title": "Whether to align the trailing comments in the key-value pairs.",
-          "description": "If `true`, the trailing comments in the key-value pairs will be aligned.\n\n```toml\n# BEFORE\nkey = \"value1\"  # comment 1\nkey2 = \"value2\"  # comment 2\nkey3.key4 = \"value3\"  # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
+          "description": "If `true`, the trailing comments in value/key-value pairs will be aligned.\n\n**📝 NOTE 📝**\\\nThe trailing comments of table header are not targeted by alignment.\n\n```toml\n# BEFORE\nkey = \"value1\"  # comment 1\nkey2 = \"value2\"  # comment 2\nkey3.key4 = \"value3\"  # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
           "type": [
             "boolean",
             "null"
