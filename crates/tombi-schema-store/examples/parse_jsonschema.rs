@@ -14,7 +14,7 @@ fn main() {
         eprintln!();
         eprintln!("Examples:");
         eprintln!("  # From local file");
-        eprintln!("  cargo run --example parse_schema json.schemastore.org/tombi.json");
+        eprintln!("  cargo run --example parse_schema ./tombi.json");
         eprintln!();
         eprintln!("  # From URL");
         eprintln!("  cargo run --example parse_schema https://json.schemastore.org/tombi.json");
