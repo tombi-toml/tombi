@@ -30,7 +30,23 @@ You can configure the extension through Zed's LSP settings. For example, to spec
 }
 ```
 
-## Offline Mode
+### Format settings
+If you cannot format your TOML files, please try to set the following settings.
+
+```json
+{
+  "lsp": {
+    "tombi": {
+      "binary": {
+        "arguments": ["lsp", "-vv"],
+        "env": { "NO_COLOR": "true" }
+      }
+    }
+  }
+}
+```
+
+### Offline Mode
 
 You can set offline mode in the Zed settings file.
 
