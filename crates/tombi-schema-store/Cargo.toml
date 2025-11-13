@@ -34,6 +34,7 @@ tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
+reqwest = { workspace = true, features = ["blocking"] }
 
 [features]
 default = ["native"]
