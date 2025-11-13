@@ -6,9 +6,14 @@
   "lsp": {
     "tombi": {
       "binary": {
-        "arguments": ["lsp", "-vv"],
+        "arguments": ["lsp", "-v"],
         "env": { "NO_COLOR": "true" }
       }
+    }
+  },
+  "languages": {
+    "TOML": {
+      "formatter": { "language_server": { "name": "tombi" } }
     }
   }
 }
