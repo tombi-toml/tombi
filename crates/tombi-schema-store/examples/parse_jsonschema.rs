@@ -67,12 +67,13 @@ fn read_content(input: &str) -> Result<(String, tombi_uri::SchemaUri), Box<dyn s
         let content = fs::read_to_string(input)?;
         Ok((
             content,
-            tombi_uri::SchemaUri::from_file_path(std::path::Path::new(input)).map_err(|_| {
-                Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Invalid file path",
-                ))
-            })?,
+            tombi_uri::SchemaUri::from_file_path(std::path::Path::new(input).canonicalize()?)
+                .map_err(|_| {
+                    Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Invalid file path",
+                    ))
+                })?,
         ))
     }
 }
