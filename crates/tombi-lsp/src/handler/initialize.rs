@@ -52,10 +52,8 @@ pub async fn handle_initialize(
     let mut backend_capabilities = backend.capabilities.write().await;
     backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref() {
-        if let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref() {
-            if diagnostic_capabilities.dynamic_registration == Some(true) {
-                backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
-            }
+        if text_document_capabilities.diagnostic.is_some() {
+            backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
         }
     }
 
