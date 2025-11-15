@@ -95,9 +95,21 @@ where
         }) = current_schema
         {
             match value_schema.as_ref() {
-                ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                ValueSchema::OneOf(OneOfSchema {
+                    schemas,
+                    keys_order,
+                    ..
+                })
+                | ValueSchema::AnyOf(AnyOfSchema {
+                    schemas,
+                    keys_order,
+                    ..
+                })
+                | ValueSchema::AllOf(AllOfSchema {
+                    schemas,
+                    keys_order,
+                    ..
+                }) => {
                     for schema in schemas.write().await.iter_mut() {
                         if let Ok(Some(current_schema)) = schema
                             .resolve(
@@ -119,7 +131,7 @@ where
                                     targets.clone(),
                                     Some(&current_schema),
                                     schema_context,
-                                    order,
+                                    order.or(*keys_order),
                                 )
                                 .await;
                             }
