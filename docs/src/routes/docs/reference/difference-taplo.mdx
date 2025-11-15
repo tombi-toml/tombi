@@ -33,10 +33,17 @@ Tombi supports more comment directives than Taplo. You can control TOML version,
 
 See more details: [Comment Directive](/docs/comment-directive/)
 
+## Support sub-schema
+Tombi can apply JSON Schema to specific keys such as `tools.*` in pyproject.toml from its configuration file. This is useful when utilizing extensions that are not registered in JSON Schema.
+
+See more details: [Sub Schema](/docs/configuration#sub-schema)
+
 ## Support for TOML v1.1.0 (preview)
 TOML will allow multi-line inline tables and trailing commas in the future v1.1.0.
 This feature makes the magic trailing comma feature more valuable.
 To provide that experience, Tombi will support TOML v1.1.0 features ahead of time.
+
+See more details: [TOML Versions](/docs/reference/toml-versions)
 
 ## Stable Behavior Formatting
 Taplo has a fundamental problem with the lexer.
