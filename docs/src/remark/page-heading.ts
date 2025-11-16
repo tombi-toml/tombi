@@ -38,7 +38,7 @@ function getPageUrl(vfile: { path?: string }): string {
   if (!match) return DEFAULT_URL;
 
   const routePath = match[1];
-  return `${DEFAULT_URL}/${routePath}`;
+  return `${DEFAULT_URL}${routePath}`;
 }
 
 // Find description from doc-index.json recursively
@@ -98,7 +98,7 @@ export function remarkPageHeading() {
     const routePath = match ? match[1] : "";
 
     // Generate metadata
-    const url = getPageUrl(vfile);
+    const og_url = getPageUrl(vfile);
     const description = getPageDescription(routePath);
 
     // Create PageHeading JSX component attributes
@@ -115,8 +115,8 @@ export function remarkPageHeading() {
       },
       {
         type: "mdxJsxAttribute",
-        name: "url",
-        value: url,
+        name: "og_url",
+        value: og_url,
       },
     ];
 
