@@ -1,9 +1,10 @@
-import { Title } from "@solidjs/meta";
 import { FaSolidFeather } from "solid-icons/fa";
 import { TbBrandGithubFilled } from "solid-icons/tb";
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { LinkButton } from "~/components/button/LinkButton";
 import { FeatureCard } from "~/components/FeatureCard";
+import { PageHeading } from "~/components/PageHeading";
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE } from "~/remark/page-heading";
 
 const FEATURES = [
   {
@@ -62,8 +63,7 @@ export default function Home() {
 
   return (
     <div>
-      <Title>Tombi - TOML Toolkit</Title>
-
+      <PageHeading title={DEFAULT_TITLE} description={DEFAULT_DESCRIPTION} />
       <section class="text-center mb-24">
         <h1 class="sr-only">Tombi</h1>
         <div class="relative py-8 w-screen -mx-[calc((100vw-100%)/2)] overflow-hidden bg-gradient-to-b from-gray-900 to-gray-500">

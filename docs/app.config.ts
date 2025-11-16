@@ -6,6 +6,7 @@ import unocssPlugin from "unocss/vite";
 import { remarkBaseUrl } from "./src/remark/base-url";
 import { remarkCode } from "./src/remark/code";
 import { remarkHeadingAnchor } from "./src/remark/heading-anchor";
+import { remarkPageHeading } from "./src/remark/page-heading";
 
 const { default: mdx } = pkg;
 
@@ -32,6 +33,7 @@ export default defineConfig({
           [remarkGfm, { tablePipeAlign: false }],
           remarkBaseUrl,
           remarkCode,
+          remarkPageHeading, // Add page heading with meta tags
           remarkHeadingAnchor,
         ],
       }),

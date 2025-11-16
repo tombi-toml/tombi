@@ -5,3 +5,4 @@ export { CodeBlock } from "./CodeBlock";
 export { Note, Tip } from "./Highlight";
 export { InstallationMethodGrid } from "./InstallationMethodGrid";
 export { LinkCard } from "./LinkCard";
+export { PageHeading } from "./PageHeading";

@@ -1,11 +1,13 @@
 export type DicIndex = {
   title: string;
+  description: string;
   path: string;
   children?: DicIndex[];
 };
 
 export type FlattenedDocPage = {
   title: string;
+  description: string;
   path: string;
 };
 
