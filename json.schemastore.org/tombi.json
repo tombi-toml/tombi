@@ -313,10 +313,10 @@
         },
         "quote-style": {
           "title": "The preferred quote character for strings",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.quote-style` instead.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.string-quote-style` instead.",
           "anyOf": [
             {
-              "$ref": "#/definitions/QuoteStyle"
+              "$ref": "#/definitions/StringQuoteStyle"
             },
             {
               "type": "null"
@@ -464,6 +464,18 @@
           ],
           "default": false
         },
+        "string-quote-style": {
+          "title": "The preferred quote character for strings",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringQuoteStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "double"
+        },
         "trailing-comment-alignment": {
           "title": "Whether to align the trailing comments in the key-value pairs.",
           "description": "If `true`, the trailing comments in value/key-value pairs will be aligned.\n\n**📝 NOTE 📝**\\\nThe trailing comments of table header are not targeted by alignment.\n\n```toml\n# BEFORE\nkey = \"value1\"  # comment 1\nkey2 = \"value2\"  # comment 2\nkey3.key4 = \"value3\"  # comment 3\n\n# AFTER\nkey = \"value1\"        # comment 1\nkey2 = \"value2\"       # comment 2\nkey3.key4 = \"value3\"  # comment 3\n```",
@@ -514,14 +526,16 @@
         },
         "quote-style": {
           "title": "The preferred quote character for strings",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.string-quote-style` instead.",
           "anyOf": [
             {
-              "$ref": "#/definitions/QuoteStyle"
+              "$ref": "#/definitions/StringQuoteStyle"
             },
             {
               "type": "null"
             }
           ],
+          "deprecated": true,
           "default": "double"
         },
         "trailing-comment-space-width": {
@@ -598,26 +612,7 @@
       "minimum": 0,
       "maximum": 255
     },
-    "KeyValueEqualSpaceWidth": {
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 0,
-      "maximum": 255
-    },
-    "LineEnding": {
-      "type": "string",
-      "enum": [
-        "lf",
-        "crlf"
-      ]
-    },
-    "LineWidth": {
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 1,
-      "maximum": 255
-    },
-    "QuoteStyle": {
+    "StringQuoteStyle": {
       "description": "The preferred quote character for strings.",
       "oneOf": [
         {
@@ -636,6 +631,25 @@
           "const": "preserve"
         }
       ]
+    },
+    "KeyValueEqualSpaceWidth": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "LineEnding": {
+      "type": "string",
+      "enum": [
+        "lf",
+        "crlf"
+      ]
+    },
+    "LineWidth": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 1,
+      "maximum": 255
     },
     "TrailingCommentSpaceWidth": {
       "type": "integer",

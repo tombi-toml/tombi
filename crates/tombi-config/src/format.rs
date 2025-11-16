@@ -117,7 +117,7 @@ pub struct FormatOptions {
     /// # The preferred quote character for strings
     ///
     /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.quote-style` instead.
+    /// Please use `format.rules.string-quote-style` instead.
     #[cfg_attr(
         feature = "jsonschema",
         schemars(default = "StringQuoteStyle::default")
