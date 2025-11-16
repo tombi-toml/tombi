@@ -31,7 +31,7 @@ pub async fn handle_did_change_watched_files(
             }
             FileChangeType::CREATED | FileChangeType::CHANGED => {
                 if upsert_document_source(backend, uri.clone()).await {
-                    push_diagnostics(backend, uri.clone(), None).await;
+                    push_diagnostics(backend, uri).await;
                 }
             }
             _ => {

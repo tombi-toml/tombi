@@ -18,6 +18,8 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
         return;
     };
 
+    let need_publish_diagnostics = document.version < Some(text_document.version);
+
     for content_change in content_changes {
         if let Some(range) = content_change.range {
             tracing::warn!("Range change is not supported: {:?}", range);
@@ -29,10 +31,14 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
             document.set_text(content_change.text, toml_version);
         }
     }
+    document.version = Some(text_document.version);
+
     drop(document_sources);
 
-    // Publish diagnostics for the changed document
-    backend
-        .push_diagnostics(text_document_uri, Some(text_document.version))
-        .await;
+    if need_publish_diagnostics {
+        // Publish diagnostics for the changed document
+        backend.push_diagnostics(text_document_uri).await;
+    } else {
+        tracing::debug!("No need to publish diagnostics for the changed document");
+    }
 }

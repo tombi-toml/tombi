@@ -8,31 +8,21 @@ use tombi_text::IntoLsp;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
-pub async fn publish_diagnostics(
-    backend: &Backend,
-    text_document_uri: tombi_uri::Uri,
-    version: Option<i32>,
-) {
-    let Some(DiagnosticsResult {
-        diagnostics,
-        version: old_version,
-    }) = get_diagnostics_result(backend, &text_document_uri).await
-    else {
+pub async fn publish_diagnostics(backend: &Backend, text_document_uri: tombi_uri::Uri) {
+    let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await else {
         return;
     };
 
-    // Preventing the publishing of duplicate diagnoses.
-    if old_version.is_some() || version.is_none() {
-        return;
-    }
+    tracing::trace!(?diagnostics_result);
+
+    let DiagnosticsResult {
+        diagnostics,
+        version,
+    } = diagnostics_result;
 
     backend
         .client
-        .publish_diagnostics(
-            text_document_uri.into(),
-            diagnostics,
-            version.or(old_version),
-        )
+        .publish_diagnostics(text_document_uri.into(), diagnostics, version)
         .await
 }
 

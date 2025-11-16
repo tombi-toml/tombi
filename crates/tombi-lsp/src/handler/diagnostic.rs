@@ -1,10 +1,10 @@
 use tower_lsp::lsp_types::{
     DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, TextDocumentIdentifier,
+    FullDocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,
 };
 
 use crate::{
-    backend::{Backend, DiagnosticMode},
+    backend::Backend,
     diagnostic::{get_diagnostics_result, publish_diagnostics},
 };
 
@@ -34,30 +34,29 @@ pub async fn handle_diagnostic(
 }
 
 /// Push diagnostics
-pub async fn push_diagnostics(
-    backend: &Backend,
-    text_document_uri: tombi_uri::Uri,
-    version: Option<i32>,
-) {
-    if backend.capabilities.read().await.diagnostic_mode != DiagnosticMode::Push {
+pub async fn push_diagnostics(backend: &Backend, text_document_uri: tombi_uri::Uri) {
+    if !backend.is_diagnostic_mode_push().await {
         return;
     }
 
     #[derive(Debug)]
     struct PushDiagnosticsParams {
         text_document: TextDocumentIdentifier,
-        version: Option<i32>,
+    }
+
+    #[derive(Debug)]
+    struct TextDocumentIdentifier {
+        uri: tombi_uri::Uri,
     }
 
     let params = PushDiagnosticsParams {
         text_document: TextDocumentIdentifier {
             uri: text_document_uri.into(),
         },
-        version,
     };
 
     tracing::info!("push_diagnostics");
     tracing::trace!(?params);
 
-    publish_diagnostics(backend, params.text_document.uri.into(), params.version).await;
+    publish_diagnostics(backend, params.text_document.uri.into()).await;
 }

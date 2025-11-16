@@ -3,7 +3,9 @@ use tombi_glob::search_pattern_matched_paths;
 
 use crate::{
     backend::Backend,
-    diagnostic::{get_workspace_configs, publish_diagnostics, WorkspaceConfig},
+    diagnostic::{
+        get_diagnostics_result, get_workspace_configs, DiagnosticsResult, WorkspaceConfig,
+    },
     document::DocumentSource,
 };
 
@@ -12,8 +14,8 @@ pub async fn push_workspace_diagnostics(
 ) -> Result<(), tower_lsp::jsonrpc::Error> {
     tracing::info!("push_workspace_diagnostics");
 
-    for target_path in collect_workspace_diagnostic_targets(backend).await {
-        publish_diagnostics(backend, target_path.into(), None).await;
+    for text_document_uri in collect_workspace_diagnostic_targets(backend).await {
+        publish_workspace_diagnostics(backend, text_document_uri).await;
     }
 
     Ok(())
@@ -65,6 +67,31 @@ async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_ur
     }
 
     targets.into_iter().collect()
+}
+
+async fn publish_workspace_diagnostics(backend: &Backend, text_document_uri: tombi_uri::Uri) {
+    let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await else {
+        return;
+    };
+
+    tracing::trace!(?diagnostics_result);
+
+    let DiagnosticsResult {
+        diagnostics,
+        version,
+    } = diagnostics_result;
+
+    if version.is_some() {
+        tracing::debug!(
+            "Skip publishing workspace diagnostics because version is some: {text_document_uri}"
+        );
+        return;
+    }
+
+    backend
+        .client
+        .publish_diagnostics(text_document_uri.into(), diagnostics, version)
+        .await
 }
 
 /// Check if workspace diagnostic is enabled for the given workspace config
