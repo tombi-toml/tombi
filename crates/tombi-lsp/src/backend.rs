@@ -93,6 +93,11 @@ impl Backend {
     }
 
     #[inline]
+    pub async fn is_diagnostic_mode_push(&self) -> bool {
+        self.capabilities.read().await.diagnostic_mode == DiagnosticMode::Push
+    }
+
+    #[inline]
     pub async fn config(&self, text_document_uri: &tombi_uri::Uri) -> Config {
         self.config_manager
             .config_schema_store_for_uri(text_document_uri)
@@ -219,8 +224,8 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn push_diagnostics(&self, text_document_uri: tombi_uri::Uri, version: Option<i32>) {
-        push_diagnostics(self, text_document_uri, version).await
+    pub async fn push_diagnostics(&self, text_document_uri: tombi_uri::Uri) {
+        push_diagnostics(self, text_document_uri).await
     }
 }
 

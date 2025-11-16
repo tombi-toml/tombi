@@ -14,6 +14,8 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
 
     let text_document_uri = text_document.uri.into();
 
+    let mut need_publish_diagnostics = { backend.is_diagnostic_mode_push().await };
+
     if let Some(text) = text {
         let mut document_sources = backend.document_sources.write().await;
 
@@ -22,11 +24,17 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
             .await;
 
         if let Some(document) = document_sources.get_mut(&text_document_uri) {
+            if need_publish_diagnostics && document.text() == &text {
+                need_publish_diagnostics = false;
+            }
+
             document.set_text(text, toml_version);
-        }
+        };
         drop(document_sources);
-    }
+    };
 
     // Publish diagnostics for the saved document
-    backend.push_diagnostics(text_document_uri, None).await
+    if need_publish_diagnostics {
+        backend.push_diagnostics(text_document_uri).await
+    }
 }
