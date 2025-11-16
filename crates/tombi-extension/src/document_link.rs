@@ -33,11 +33,14 @@ pub fn get_tombi_github_uri(uri: &tombi_uri::Uri) -> Option<tombi_uri::Uri> {
             } else {
                 format!("refs/tags/v{version}")
             };
+            let mut host = uri.host_str().unwrap();
+            if host == "www.schemastore.org" {
+                host = "json.schemastore.org";
+            }
 
             if uri.path().ends_with("/json/catalog.json") {
                 tombi_uri::Uri::from_str(&format!(
                     "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/{host}/api/json/catalog.json",
-                    host = uri.host_str().unwrap()
                 ))
                 .ok()
             } else if let Some(schema_filename) = uri
@@ -46,7 +49,6 @@ pub fn get_tombi_github_uri(uri: &tombi_uri::Uri) -> Option<tombi_uri::Uri> {
             {
                 tombi_uri::Uri::from_str(&format!(
                     "https://raw.githubusercontent.com/tombi-toml/tombi/{branch}/{host}/{schema_filename}",
-                    host = uri.host_str().unwrap()
                 )).ok()
             } else {
                 None
