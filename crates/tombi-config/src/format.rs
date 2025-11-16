@@ -169,8 +169,8 @@ pub struct FormatRules {
     ///
     /// In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.
     ///
-    /// - `T`: Example: `2001-01-01T00:00:00`
-    /// - `space`: Example: `2001-01-01 00:00:00`
+    /// - `T`: Use `T` between date and time like `2001-01-01T00:00:00`
+    /// - `space`: Use space between date and time like `2001-01-01 00:00:00`
     /// - `preserve`: Preserve the original delimiter.
     #[cfg_attr(
         feature = "jsonschema",
