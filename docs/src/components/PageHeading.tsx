@@ -1,6 +1,6 @@
 import { Meta, Title } from "@solidjs/meta";
 import type { Component, JSX } from "solid-js";
-import { DEFAULT_URL } from "~/remark/page-heading";
+import { DEFAULT_IMAGE, DEFAULT_URL } from "~/remark/page-heading";
 
 interface PageHeadingProps {
   title: string;
@@ -9,8 +9,6 @@ interface PageHeadingProps {
   og_image?: string;
   children?: JSX.Element;
 }
-
-export const DEFAULT_IMAGE = `${import.meta.env.BASE_URL}/ogp.png`;
 
 export const PageHeading: Component<PageHeadingProps> = (props) => {
   const og_url = props.og_url || DEFAULT_URL;

@@ -6,6 +6,7 @@ export const DEFAULT_TITLE = "Tombi";
 export const DEFAULT_DESCRIPTION =
   "a TOML toolkit that provides Formatter, Linter, and Language Server.";
 export const DEFAULT_URL = "https://tombi-toml.github.io/tombi/";
+export const DEFAULT_IMAGE = "https://tombi-toml.github.io/tombi/ogp.png";
 
 interface DocIndexItem {
   title: string;
