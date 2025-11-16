@@ -6,7 +6,7 @@ export default function Playground() {
       <PageHeading
         title="Playground"
         description="Tombi's interactive playground."
-        url={`${import.meta.env.BASE_URL}/playground`}
+        og_url={`${import.meta.env.BASE_URL}/playground`}
       />
       <div class="flex flex-col items-center justify-center min-h-[60vh]">
         <h1 class="text-4xl font-bold mb-4">🚧 Planned Feature 🚧</h1>
