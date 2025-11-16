@@ -169,13 +169,7 @@ impl Referable<ValueSchema> {
                             // Offline Mode
                             return Ok(None);
                         }
-                    } else if is_online_url(reference) {
-                        let schema_uri = SchemaUri::from_str(reference).map_err(|_| {
-                            crate::Error::InvalidSchemaUri {
-                                schema_uri: reference.to_owned(),
-                            }
-                        })?;
-
+                    } else if let Ok(schema_uri) = SchemaUri::from_str(reference) {
                         if let Some(mut document_schema) =
                             schema_store.try_get_document_schema(&schema_uri).await?
                         {
@@ -212,7 +206,7 @@ impl Referable<ValueSchema> {
                     } else {
                         return Err(crate::Error::UnsupportedReference {
                             reference: reference.to_owned(),
-                            schema_uri: schema_uri.as_ref().clone(),
+                            schema_uri: schema_uri.as_ref().to_owned(),
                         });
                     }
 
