@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::fmt::Write;
 
 use tombi_ast::AstNode;
-use tombi_config::QuoteStyle;
+use tombi_config::StringQuoteStyle;
 
 use super::LiteralNode;
 use crate::{
@@ -24,9 +24,9 @@ impl Format for WithAlignmentHint<'_, tombi_ast::BasicString> {
 
         f.write_indent()?;
         let text = value.token().unwrap().text().to_owned();
-        let text = match f.quote_style() {
-            QuoteStyle::Double | QuoteStyle::Preserve => text,
-            QuoteStyle::Single => {
+        let text = match f.string_quote_style() {
+            StringQuoteStyle::Double | StringQuoteStyle::Preserve => text,
+            StringQuoteStyle::Single => {
                 // TODO: Only supports simple conditions, so it needs to be changed to behavior closer to black
                 if text.contains("\\") || text.contains("'") {
                     text
@@ -61,9 +61,9 @@ impl Format for WithAlignmentHint<'_, tombi_ast::LiteralString> {
 
         f.write_indent()?;
         let text = value.token().unwrap().text().to_owned();
-        let text = match f.quote_style() {
-            QuoteStyle::Single | QuoteStyle::Preserve => text,
-            QuoteStyle::Double => {
+        let text = match f.string_quote_style() {
+            StringQuoteStyle::Single | StringQuoteStyle::Preserve => text,
+            StringQuoteStyle::Double => {
                 // TODO: Only supports simple conditions, so it needs to be changed to behavior closer to black
                 if text.contains("\\") || text.contains("\"") {
                     text
@@ -99,7 +99,7 @@ impl LiteralNode for tombi_ast::MultiLineLiteralString {
 #[cfg(test)]
 mod tests {
     use crate::{test_format, Formatter};
-    use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle};
+    use tombi_config::{format::FormatRules, FormatOptions, StringQuoteStyle};
 
     test_format! {
         #[tokio::test]
@@ -118,7 +118,7 @@ mod tests {
             FormatOptions(
                 FormatOptions {
                     rules: Some(FormatRules {
-                        quote_style: Some(QuoteStyle::Single),
+                        string_quote_style: Some(StringQuoteStyle::Single),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -134,7 +134,7 @@ mod tests {
             FormatOptions(
                 FormatOptions {
                     rules: Some(FormatRules {
-                        quote_style: Some(QuoteStyle::Single),
+                        string_quote_style: Some(StringQuoteStyle::Single),
                         ..Default::default()
                     }),
                     ..Default::default()

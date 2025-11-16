@@ -205,7 +205,7 @@ fn format_singleline_array(
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use tombi_config::{format::FormatRules, FormatOptions, QuoteStyle, TomlVersion};
+    use tombi_config::{format::FormatRules, FormatOptions, StringQuoteStyle, TomlVersion};
 
     use super::*;
     use crate::{test_format, Formatter};
@@ -259,7 +259,7 @@ mod tests {
             FormatOptions(
                 FormatOptions {
                     rules: Some(FormatRules {
-                        quote_style: Some(QuoteStyle::Preserve),
+                        string_quote_style: Some(StringQuoteStyle::Preserve),
                         ..Default::default()
                     }),
                     ..Default::default()

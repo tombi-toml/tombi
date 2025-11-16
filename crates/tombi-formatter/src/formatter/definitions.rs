@@ -1,4 +1,4 @@
-use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, QuoteStyle};
+use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, StringQuoteStyle};
 
 /// FormatDefinitions provides the definition of the format that does not have the freedom set by [`FormatOptions`][crate::FormatOptions].
 ///
@@ -15,11 +15,11 @@ pub struct FormatDefinitions {
     pub indent_sub_tables: bool,
     pub indent_table_key_values: bool,
     pub indent_width: u8,
+    pub string_quote_style: StringQuoteStyle,
     pub trailing_comment_alignment: bool,
     pub trailing_comment_space: String,
     pub key_value_equal_alignment: bool,
     pub key_value_equal_space: String,
-    pub quote_style: QuoteStyle,
     pub date_time_delimiter: Option<&'static str>,
     pub array_bracket_space: String,
     pub array_comma_space: String,
@@ -109,10 +109,15 @@ impl FormatDefinitions {
                     .unwrap_or_default()
                     .value() as usize,
             ),
-            quote_style: options
+            string_quote_style: options
                 .rules
                 .as_ref()
-                .and_then(|rules| rules.quote_style)
+                .and_then(|rules| {
+                    rules.string_quote_style.or_else(|| {
+                        #[allow(deprecated)]
+                        rules.quote_style
+                    })
+                })
                 .or_else(|| {
                     #[allow(deprecated)]
                     options.quote_style
