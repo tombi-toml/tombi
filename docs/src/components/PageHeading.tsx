@@ -13,35 +13,27 @@ interface PageHeadingProps {
 export const DEFAULT_IMAGE = `${import.meta.env.BASE_URL}/ogp.png`;
 
 export const PageHeading: Component<PageHeadingProps> = (props) => {
-  const title = () => {
-    return props.title;
-  };
-
-  const description = () => {
-    return props.description;
-  };
-
   const og_url = props.og_url || DEFAULT_URL;
   const og_image = props.og_image || DEFAULT_IMAGE;
 
   return (
     <>
-      <Title>{title()}</Title>
-      <Meta name="description" content={description()} />
+      <Title>{props.title}</Title>
+      <Meta name="description" content={props.description} />
 
       {/* Open Graph / Facebook */}
       <Meta property="og:type" content="website" />
       <Meta property="og:url" content={og_url} />
-      <Meta property="og:title" content={title()} />
-      <Meta property="og:description" content={description()} />
+      <Meta property="og:title" content={props.title} />
+      <Meta property="og:description" content={props.description} />
       <Meta property="og:image" content={og_image} />
       <Meta property="og:site_name" content="Tombi" />
 
       {/* Twitter */}
       <Meta property="twitter:card" content="summary_large_image" />
       <Meta property="twitter:url" content={og_url} />
-      <Meta property="twitter:title" content={title()} />
-      <Meta property="twitter:description" content={description()} />
+      <Meta property="twitter:title" content={props.title} />
+      <Meta property="twitter:description" content={props.description} />
       <Meta property="twitter:image" content={og_image} />
     </>
   );
