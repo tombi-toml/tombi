@@ -374,7 +374,7 @@
         },
         "date-time-delimiter": {
           "title": "The delimiter between date and time",
-          "description": "In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.\n\n- `T`: Example: `2001-01-01T00:00:00`\n- `space`: Example: `2001-01-01 00:00:00`\n- `preserve`: Preserve the original delimiter.",
+          "description": "In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), you can use `T` or space character between date and time.\n\n- `T`: Use `T` between date and time like `2001-01-01T00:00:00`\n- `space`: Use space between date and time like `2001-01-01 00:00:00`\n- `preserve`: Preserve the original delimiter.",
           "anyOf": [
             {
               "$ref": "#/definitions/DateTimeDelimiter"
