@@ -36,9 +36,5 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
     // Publish diagnostics for the saved document
     if need_publish_diagnostics {
         backend.push_diagnostics(text_document_uri).await
-    } else {
-        // Outputting this information at trace level because in Pull mode,
-        // diagnostics do not need to be manually published and this is for low-verbosity debugging.
-        tracing::trace!("No need to publish diagnostics for the saved document");
     }
 }
