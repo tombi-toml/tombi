@@ -1,114 +1,140 @@
 [
   {
     "title": "Overview",
+    "description": "a TOML toolkit that provides Formatter, Linter, and Language Server.",
     "path": "/docs"
   },
   {
     "title": "Installation",
+    "description": "Install via CLI, Homebrew, pip, npm, or IDE extensions.",
     "path": "/docs/installation"
   },
   {
     "title": "Concepts",
+    "description": "Core concepts and features of Tombi.",
     "path": "/docs/concepts"
   },
   {
     "title": "Formatter",
+    "description": "Auto sorting and human-friendly formatting for TOML.",
     "path": "/docs/formatter",
     "children": [
       {
         "title": "Auto Sorting",
+        "description": "Automatically sort keys using JSON Schema metadata.",
         "path": "/docs/formatter/auto-sorting"
       },
       {
         "title": "Magic Trailing Comma",
+        "description": "black-inspired formatting with magic trailing comma.",
         "path": "/docs/formatter/magic-trailing-comma"
       },
       {
         "title": "Treatment of Comments",
+        "description": "How Tombi handles comments during formatting.",
         "path": "/docs/formatter/treatment-of-comments"
       },
       {
         "title": "Json Schema",
+        "description": "Schema-driven formatting configuration and options.",
         "path": "/docs/formatter/json-schema"
       }
     ]
   },
   {
     "title": "Linter",
+    "description": "Syntax checking and JSON Schema validation for TOML.",
     "path": "/docs/linter",
     "children": [
       {
         "title": "JSON Schema",
+        "description": "Validate TOML files against JSON Schema definitions.",
         "path": "/docs/linter/json-schema"
       }
     ]
   },
   {
     "title": "CLI",
+    "description": "Command-line interface for Formatter and Linter.",
     "path": "/docs/cli",
     "children": [
       {
         "title": "Formatter",
+        "description": "Format TOML files from the command line.",
         "path": "/docs/cli/formatter"
       },
       {
         "title": "Linter",
+        "description": "Lint TOML files from the command line.",
         "path": "/docs/cli/linter"
       },
       {
         "title": "Offline Mode",
+        "description": "Use Tombi without internet connection.",
         "path": "/docs/cli/offline-mode"
       }
     ]
   },
   {
     "title": "Language Server",
+    "description": "LSP features with completion, diagnostics, and more.",
     "path": "/docs/language-server",
     "children": [
       {
         "title": "Formatting",
+        "description": "Format TOML files via Language Server Protocol.",
         "path": "/docs/language-server/formatting"
       },
       {
         "title": "Diagnostics",
+        "description": "Real-time syntax and validation error diagnostics.",
         "path": "/docs/language-server/diagnostics"
       },
       {
         "title": "Hover",
+        "description": "Hover tooltips with documentation and type info.",
         "path": "/docs/language-server/hover"
       },
       {
         "title": "Completion",
+        "description": "Smart autocompletion for keys and values.",
         "path": "/docs/language-server/completion"
       },
       {
         "title": "Go to Definition",
+        "description": "Navigate to schema definitions and references.",
         "path": "/docs/language-server/goto-definition"
       },
       {
         "title": "Code Action",
+        "description": "Quick fixes and refactoring suggestions for TOML.",
         "path": "/docs/language-server/code-action"
       },
       {
         "title": "VSCode Extension",
+        "description": "Tombi extension for Visual Studio Code.",
         "path": "/docs/language-server/vscode-extension"
       },
       {
         "title": "Zed Extension",
+        "description": "Tombi extension for Zed editor.",
         "path": "/docs/language-server/zed-extension"
       }
     ]
   },
   {
     "title": "Configuration",
+    "description": "Configure Tombi using tombi.toml or pyproject.toml.",
     "path": "/docs/configuration"
   },
   {
     "title": "JSON Schema",
+    "description": "Schema validation and completion with SchemaStore.",
     "path": "/docs/json-schema"
   },
   {
     "title": "Comment Directive",
+    "description": "Control formatting and schema using special comments.",
     "path": "/docs/comment-directive",
     "children": [
       {
@@ -117,42 +143,51 @@
       },
       {
         "title": "Tombi Document Directive",
+        "description": "Control document-level configuration via comments.",
         "path": "/docs/comment-directive/tombi-document-directive"
       },
       {
         "title": "Tombi Value Directive",
+        "description": "Control value-level configuration via comments.",
         "path": "/docs/comment-directive/tombi-value-directive"
       }
     ]
   },
   {
     "title": "Extensions",
+    "description": "Project-specific extensions for Cargo and uv.",
     "path": "/docs/extensions",
     "children": [
       {
         "title": "Cargo",
+        "description": "Rust Cargo.toml specific features and validations.",
         "path": "/docs/extensions/tombi-extension-cargo"
       },
       {
         "title": "uv",
+        "description": "Python uv project specific features and validations.",
         "path": "/docs/extensions/tombi-extension-uv"
       }
     ]
   },
   {
     "title": "Reference",
+    "description": "Technical reference, testing, and version information.",
     "path": "/docs/reference",
     "children": [
       {
         "title": "Conformance Testing",
+        "description": "TOML specification conformance test results.",
         "path": "/docs/reference/toml-test"
       },
       {
         "title": "TOML Versions",
+        "description": "Supported TOML versions and their differences.",
         "path": "/docs/reference/toml-versions"
       },
       {
         "title": "Differences from Taplo",
+        "description": "Key differences between Tombi and Taplo and migration guide.",
         "path": "/docs/reference/difference-taplo"
       }
     ]
