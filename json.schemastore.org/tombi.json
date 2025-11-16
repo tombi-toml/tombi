@@ -400,7 +400,7 @@
         },
         "indent-sub-tables": {
           "title": "Whether to indent the sub-tables",
-          "description": "If `true`, the sub-table will be indented.\n\n```toml\n[table]\n    [table.sub-table]\n        key = \"value\"\n# ^^  <- this\n```",
+          "description": "If `true`, the sub-table will be indented.\n\n```toml\n[table]\n    [table.sub-table]\n    key = \"value\"\n# ^^  <- this\n```",
           "type": [
             "boolean",
             "null"
