@@ -3,7 +3,7 @@
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum QuoteStyle {
+pub enum StringQuoteStyle {
     /// Prefer the double quote
     #[default]
     Double,

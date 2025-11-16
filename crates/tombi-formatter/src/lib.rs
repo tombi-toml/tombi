@@ -404,7 +404,7 @@ macro_rules! test_format {
 #[cfg(test)]
 mod test {
     use super::*;
-    use tombi_config::{format::FormatRules, QuoteStyle};
+    use tombi_config::{format::FormatRules, StringQuoteStyle};
 
     test_format! {
         #[tokio::test]
@@ -617,7 +617,7 @@ b = 3
         TomlVersion(TomlVersion::V1_1_0_Preview),
         FormatOptions(FormatOptions{
             rules: Some(FormatRules {
-                quote_style: Some(QuoteStyle::Preserve),
+                string_quote_style: Some(StringQuoteStyle::Preserve),
                 ..Default::default()
             }),
             ..Default::default()

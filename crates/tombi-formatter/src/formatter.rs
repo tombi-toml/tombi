@@ -281,8 +281,8 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn quote_style(&self) -> tombi_config::QuoteStyle {
-        self.definitions.quote_style
+    pub(crate) fn string_quote_style(&self) -> tombi_config::StringQuoteStyle {
+        self.definitions.string_quote_style
     }
 
     #[inline]

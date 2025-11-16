@@ -1,6 +1,7 @@
 mod format_options {
     use tombi_config::{
-        format::FormatRules, DateTimeDelimiter, FormatOptions, IndentStyle, LineEnding, QuoteStyle,
+        format::FormatRules, DateTimeDelimiter, FormatOptions, IndentStyle, LineEnding,
+        StringQuoteStyle,
     };
     use tombi_formatter::{test_format, Formatter};
 
@@ -661,18 +662,18 @@ mod format_options {
         }
     }
 
-    mod quote_style {
+    mod string_quote_style {
         use super::*;
 
         test_format! {
             #[tokio::test]
-            async fn test_quote_style_double(
+            async fn test_string_quote_style_double(
                 r#"
                 key = 'value'
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        quote_style: Some(QuoteStyle::Double),
+                        string_quote_style: Some(StringQuoteStyle::Double),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -686,13 +687,13 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_quote_style_single(
+            async fn test_string_quote_style_single(
                 r#"
                 key = "value"
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        quote_style: Some(QuoteStyle::Single),
+                        string_quote_style: Some(StringQuoteStyle::Single),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -706,13 +707,13 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_quote_style_preserve(
+            async fn test_string_quote_style_preserve(
                 r#"
                 key = "value"
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        quote_style: Some(QuoteStyle::Preserve),
+                        string_quote_style: Some(StringQuoteStyle::Preserve),
                         ..Default::default()
                     }),
                     ..Default::default()

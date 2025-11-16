@@ -10,7 +10,7 @@
 use crate::{
     ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
     InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualSpaceWidth, LineEnding,
-    LineWidth, QuoteStyle, TrailingCommentSpaceWidth,
+    LineWidth, StringQuoteStyle, TrailingCommentSpaceWidth,
 };
 
 /// # Formatter options
@@ -118,9 +118,12 @@ pub struct FormatOptions {
     ///
     /// **🚧 Deprecated 🚧**\
     /// Please use `format.rules.quote-style` instead.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "QuoteStyle::default"))]
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(default = "StringQuoteStyle::default")
+    )]
     #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub quote_style: Option<QuoteStyle>,
+    pub quote_style: Option<StringQuoteStyle>,
 
     /// # The number of spaces before the trailing comment.
     ///
@@ -264,6 +267,13 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
     pub key_value_equal_alignment: Option<bool>,
 
+    /// # The preferred quote character for strings
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(default = "StringQuoteStyle::default")
+    )]
+    pub string_quote_style: Option<StringQuoteStyle>,
+
     /// # Whether to align the trailing comments in the key-value pairs.
     ///
     /// If `true`, the trailing comments in value/key-value pairs will be aligned.
@@ -313,8 +323,15 @@ pub struct FormatRules {
     pub line_width: Option<LineWidth>,
 
     /// # The preferred quote character for strings
-    #[cfg_attr(feature = "jsonschema", schemars(default = "QuoteStyle::default"))]
-    pub quote_style: Option<QuoteStyle>,
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `format.rules.string-quote-style` instead.
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(default = "StringQuoteStyle::default")
+    )]
+    #[deprecated]
+    pub quote_style: Option<StringQuoteStyle>,
 
     /// # The number of spaces before the trailing comment.
     ///
