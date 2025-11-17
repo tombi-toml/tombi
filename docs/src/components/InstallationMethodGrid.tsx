@@ -66,6 +66,12 @@ const installationMethods: InstallationMethod[] = [
     category: "editor",
   },
   {
+    id: "helix",
+    name: "Helix",
+    image: "/helix.svg",
+    category: "editor",
+  },
+  {
     id: "jetbrains-ide",
     name: "JetBrains IDE",
     image: "/jetbrains.png",
