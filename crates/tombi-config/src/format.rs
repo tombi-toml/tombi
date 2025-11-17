@@ -197,7 +197,7 @@ pub struct FormatRules {
     /// ```toml
     /// [table]
     ///     [table.sub-table]
-    ///         key = "value"
+    ///     key = "value"
     /// # ^^  <- this
     /// ```
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
