@@ -46,7 +46,7 @@ export default function ImageTabs(props: ImageTabsProps) {
         </For>
       </div>
       <img
-        src={current()?.src || ""}
+        src={`${import.meta.env.BASE_URL}${current()?.src || ""}`}
         alt={current()?.alt || ""}
         style="display: block; margin: 0 auto; width: 80%"
       />
