@@ -16,9 +16,9 @@ Tombi は、TOML ファイルのための総合的な開発ツールキットで
 
 Tombi は [Taplo](https://taplo.tamasfe.dev/) というツールに触発されて開発され、AST（抽象構文木）の実装には [Rust Analyzer](https://rust-analyzer.github.io/) の設計を参考にしています。
 
-## 4 段階のデータ変換フロー
+## Tombi が TOML テキストを解釈する仕組み
 
-Tombi の最大の特徴は、TOML ファイルを段階的に異なるデータ構造へ変換していく点です。このアプローチにより、各機能に最適なデータ構造を選択できます。
+Tombi は TOML ファイルを読み込んで解釈する際、段階的に異なるデータ構造へ変換していきます。各段階で異なる目的に特化したデータ構造を使うことで、Formatter、Linter、Language Server といった様々な機能を効率的に実現しています。
 
 ```
 TOML テキスト → Token[] → AST → DocumentTree → Document
