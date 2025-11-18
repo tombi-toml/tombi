@@ -17,6 +17,13 @@ export default function ImageTabs(props: ImageTabsProps) {
     props.defaultKey || props.tabs[0].key,
   );
   const current = () => props.tabs.find((tab) => tab.key === active());
+  const currentSrc = () => {
+    let src = current()?.src || "";
+    if (src.startsWith("/")) {
+      src = `${import.meta.env.BASE_URL}${src}`;
+    }
+    return src;
+  };
 
   return (
     <div>
@@ -46,7 +53,7 @@ export default function ImageTabs(props: ImageTabsProps) {
         </For>
       </div>
       <img
-        src={`${import.meta.env.BASE_URL}${current()?.src || ""}`}
+        src={currentSrc()}
         alt={current()?.alt || ""}
         style="display: block; margin: 0 auto; width: 80%"
       />
