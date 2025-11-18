@@ -108,11 +108,14 @@ DocumentTree をさらに変換したものが Document です。これは、位
 ```rust
 fn format(source: &str, config: &Config) -> Result<String, Vec<Error>> {
     let ast = tombi_parser::parse(source)?;
-    // AST を使って整形処理を行う
+    // AST Editor がスキーマ情報を使って AST を編集
+    let edited_ast = edit_with_schema(ast, schema_context)?;
+    // 編集された AST を使って整形処理を行う
+    format_ast(edited_ast)
 }
 ```
 
-ただし、Tombi は JSON Schema から自動ソートの情報を取得するため、**DocumentTree も同時に生成**します。これにより、スキーマで定義された順序でキーをソートすることができます。
+Tombi は JSON Schema からキーの順序やソート情報を取得し、**AST Editor** がこのスキーマ情報を使って AST を編集します。その後、編集された AST を使って整形処理を行います。これにより、スキーマで定義された順序でキーをソートすることができます。
 
 ### Linter（リンター）
 
@@ -133,13 +136,13 @@ JSON Schema を使った検証を行うため、DocumentTree への変換が必�
 
 ### Language Server（言語サーバー）
 
-Language Server は、エディタでコード補完やホバー情報などを提供する機能です。**AST と DocumentTree の両方**を使い分けます。
+Language Server は、エディタでコード補完やホバー情報などを提供する機能です。**AST、DocumentTree、スキーマ情報**を使い分けます。
 
 各機能で使用するデータ構造：
 
 | LSP 機能               | 利用データ構造  |
 |------------------------|-----------------|
-| `textDocument/formatting`          | AST, DocumentTree |
+| `textDocument/formatting`          | AST, スキーマ情報 |
 | `textDocument/diagnostic`          | DocumentTree      |
 | `textDocument/completion`          | DocumentTree      |
 | `textDocument/hover`               | DocumentTree      |
@@ -150,8 +153,9 @@ Language Server は、エディタでコード補完やホバー情報などを�
 
 - テキスト編集を行う場合 → **AST**
 - スキーマをもとに判断する必要がある場合 → **DocumentTree**
+- スキーマ情報を使った AST 編集が必要な場合 → **AST + スキーマ情報**
 
-例えば、シンタックスハイライト（`semanticTokens/full`）はテキストの装飾なので AST を使い、コード補完（`completion`）はスキーマから候補を探すので DocumentTree を使います。
+例えば、シンタックスハイライト（`semanticTokens/full`）はテキストの装飾なので AST を使い、コード補完（`completion`）はスキーマから候補を探すので DocumentTree を使います。フォーマット（`formatting`）はスキーマに基づいてキーを並べ替えた後に AST を整形します。
 
 ## 不完全な構文への対応
 
@@ -185,7 +189,8 @@ Tombi は、TOML ファイルを段階的に変換することで、Formatter、
 
 - **AST** はテキスト編集に強い
 - **DocumentTree** はスキーマ検証に強く、不完全な構文にも対応できる
-- 各機能は最適なデータ構造を選択して実装されている
+- **スキーマ情報**は AST の編集やバリデーションに活用される
+- 各機能は最適なデータ構造とスキーマ情報を組み合わせて実装されている
 
 この設計により、Tombi は高速で堅牢な TOML 開発体験を提供しています。
 
