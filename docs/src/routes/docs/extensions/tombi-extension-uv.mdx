@@ -1,4 +1,5 @@
 import { Note, Warning } from "~/components/Highlight";
+import ImageTabs from "~/components/ImageTabs";
 
 # uv Extension
 
@@ -57,42 +58,49 @@ When editing member `pyproject.toml` files, additional refactor actions help you
 
 #### Use Workspace Dependency
 
-If the workspace already pins the dependency, select "Use Workspace Dependency" to strip the version requirement (and keep extras) so the member follows the workspace definition:
+If the workspace already pins the dependency, select "Use Workspace Dependency" to strip the version requirement (and keep extras) so the member follows the workspace definition.
 
-```toml
-# Before
-[project]
-dependencies = ["pydantic>=2.10,<3.0"]
-
-# After applying "Use Workspace Dependency"
-[project]
-dependencies = ["pydantic"]
-```
+<ImageTabs
+  tabs={[
+    {
+      key: "before",
+      label: "Before",
+      src: "/uv_CodeAction_UseWorkspaceDependency_Before.png",
+      alt: "Before",
+    },
+    {
+      key: "after",
+      label: "After",
+      src: "/uv_CodeAction_UseWorkspaceDependency_After.png",
+      alt: "After",
+    },
+  ]}
+  defaultKey="before"
+/>
 
 The action also works inside `[project.optional-dependencies.*]` groups.
 
 #### Add to Workspace and Use Workspace Dependency
 
-When the workspace has not registered the dependency yet, this action adds the current versioned requirement to the workspace's `[project.dependencies]` array and rewrites the member entry to use the shared dependency:
+When the workspace has not registered the dependency yet, this action adds the current versioned requirement to the workspace's `[project.dependencies]` array and rewrites the member entry to use the shared dependency.
 
-```toml
-# Before
-# Workspace pyproject.toml
-[project]
-dependencies = []
-
-# Member pyproject.toml
-[project]
-dependencies = ["pydantic>=2.10,<3.0"]
-
-# After applying "Add to Workspace and Use Workspace Dependency"
-[project]
-dependencies = ["pydantic>=2.10,<3.0"]
-
-# Member pyproject.toml
-[project]
-dependencies = ["pydantic"]
-```
+<ImageTabs
+  tabs={[
+    {
+      key: "before",
+      label: "Before",
+      src: "/uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency_Before.png",
+      alt: "Before",
+    },
+    {
+      key: "after",
+      label: "After",
+      src: "/uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency_After.png",
+      alt: "After",
+    },
+  ]}
+  defaultKey="before"
+/>
 
 ### Document Links
 

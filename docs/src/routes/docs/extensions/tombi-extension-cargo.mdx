@@ -1,4 +1,5 @@
 import { Note } from "~/components/Highlight";
+import ImageTabs from "~/components/ImageTabs";
 
 # Cargo Extension
 
@@ -107,53 +108,69 @@ authors.workspace = true
 
 #### Inherit Dependency from Workspace
 
-Convert dependencies to use workspace versions:
+Convert dependencies to use workspace versions.
 
-```toml
-# Before
-[dependencies]
-serde = "1.0"
-
-# After applying "Inherit dependency from workspace"
-[dependencies]
-serde = { workspace = true }
-```
+<ImageTabs
+  tabs={[
+    {
+      key: "before",
+      label: "Before",
+      src: "/Cargo_CodeAction_InheritDependencyFromWorkspace_Before.png",
+      alt: "Before",
+    },
+    {
+      key: "after",
+      label: "After",
+      src: "/Cargo_CodeAction_InheritDependencyFromWorkspace_After.png",
+      alt: "After",
+    },
+  ]}
+  defaultKey="before"
+/>
 
 #### Convert Dependency to Table Format
 
-Transform simple string dependencies to table format for adding additional fields:
+Transform simple string dependencies to table format for adding additional fields.
 
-```toml
-# Before
-[dependencies]
-serde = "1.0"
-
-# After applying "Convert to table format"
-[dependencies]
-serde = { version = "1.0" }
-```
+<ImageTabs
+  tabs={[
+    {
+      key: "before",
+      label: "Before",
+      src: "/Cargo_CodeAction_ConevrtDependencyToTableFormat_Before.png",
+      alt: "Before",
+    },
+    {
+      key: "after",
+      label: "After",
+      src: "/Cargo_CodeAction_ConevrtDependencyToTableFormat_After.png",
+      alt: "After",
+    },
+  ]}
+  defaultKey="before"
+/>
 
 #### Add to Workspace and Inherit Dependency
 
-Promote versioned dependencies into the workspace while switching members to use the shared entry:
+Promote versioned dependencies into the workspace while switching members to use the shared entry.
 
-```toml
-# Before
-# Workspace Cargo.toml
-[workspace.dependencies]
-# (serde not present)
-
-# Member Cargo.toml
-[dependencies]
-serde = "1.0"
-
-# After applying "Add to Workspace and Inherit Dependency"
-[workspace.dependencies]
-serde = "1.0"
-
-[dependencies]
-serde = { workspace = true }
-```
+<ImageTabs
+  tabs={[
+    {
+      key: "before",
+      label: "Before",
+      src: "/Cargo_CodeAction_AddToWorkspaceAndInheritDependency_Before.png",
+      alt: "Before",
+    },
+    {
+      key: "after",
+      label: "After",
+      src: "/Cargo_CodeAction_AddToWorkspaceAndInheritDependency_After.png",
+      alt: "After",
+    },
+  ]}
+  defaultKey="before"
+/>
 
 The workspace entry keeps the original requirement, and the member now follows the workspace-managed version.
 
