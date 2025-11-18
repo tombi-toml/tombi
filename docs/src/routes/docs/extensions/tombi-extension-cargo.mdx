@@ -92,19 +92,25 @@ When working with `Cargo.toml` files, additional code actions are available.
 
 #### Inherit from Workspace
 
-Convert package fields to inherit from workspace configuration:
+Convert package fields to inherit from workspace configuration.
 
-```toml
-# Before
-[package]
-version = "1.0.0"
-authors = ["John Doe"]
-
-# After applying "Inherit from workspace"
-[package]
-version.workspace = true
-authors.workspace = true
-```
+<ImageTabs
+  tabs={[
+    {
+      key: "before",
+      label: "Before",
+      src: "/Cargo_CodeAction_InheritFromWorkspace_Before.png",
+      alt: "Before",
+    },
+    {
+      key: "after",
+      label: "After",
+      src: "/Cargo_CodeAction_InheritFromWorkspace_After.png",
+      alt: "After",
+    },
+  ]}
+  defaultKey="before"
+/>
 
 #### Inherit Dependency from Workspace
 
