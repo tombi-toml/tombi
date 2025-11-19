@@ -67,7 +67,12 @@ impl FormatDefinitions {
             indent_table_key_values: options
                 .rules
                 .as_ref()
-                .and_then(|rules| rules.indent_table_key_values)
+                .and_then(|rules| {
+                    rules.indent_table_key_value_pairs.or_else(|| {
+                        #[allow(deprecated)]
+                        rules.indent_table_key_values
+                    })
+                })
                 .unwrap_or_default(),
             indent_width: options
                 .rules
@@ -99,13 +104,23 @@ impl FormatDefinitions {
             key_value_equal_alignment: options
                 .rules
                 .as_ref()
-                .and_then(|rules| rules.key_value_equal_alignment)
+                .and_then(|rules| {
+                    rules.key_value_equals_sign_alignment.or_else(|| {
+                        #[allow(deprecated)]
+                        rules.key_value_equal_alignment
+                    })
+                })
                 .unwrap_or_default(),
             key_value_equal_space: " ".repeat(
                 options
                     .rules
                     .as_ref()
-                    .and_then(|rules| rules.key_value_equal_space_width)
+                    .and_then(|rules| {
+                        rules.key_value_equals_sign_space_width.or_else(|| {
+                            #[allow(deprecated)]
+                            rules.key_value_equal_space_width
+                        })
+                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),

@@ -33,12 +33,12 @@ array-comma-space-width = 1
 date-time-delimiter = "T"
 indent-style = "space"
 indent-sub-tables = false
-indent-table-key-values = false
+indent-table-key-value-pairs = false
 indent-width = 2
 inline-table-brace-space-width = 1
 inline-table-comma-space-width = 1
-key-value-equal-alignment = false
-key-value-equal-space-width = 1
+key-value-equals-sign-alignment = false
+key-value-equals-sign-space-width = 1
 line-ending = "lf"
 line-width = 80
 string-quote-style = "double"
@@ -99,12 +99,12 @@ include = ["pyproject.toml"]
     - [format.rules.date-time-delimiter](#format-rules-date-time-delimiter)
     - [format.rules.indent-style](#format-rules-indent-style)
     - [format.rules.indent-sub-tables](#format-rules-indent-sub-tables)
-    - [format.rules.indent-table-key-values](#format-rules-indent-table-key-values)
+    - [format.rules.indent-table-key-value-pairs](#format-rules-indent-table-key-value-pairs)
     - [format.rules.indent-width](#format-rules-indent-width)
     - [format.rules.inline-table-brace-space-width](#format-rules-inline-table-brace-space-width)
     - [format.rules.inline-table-comma-space-width](#format-rules-inline-table-comma-space-width)
-    - [format.rules.key-value-equal-alignment](#format-rules-key-value-equal-alignment)
-    - [format.rules.key-value-equal-space-width](#format-rules-key-value-equal-space-width)
+    - [format.rules.key-value-equals-sign-alignment](#format-rules-key-value-equals-sign-alignment)
+    - [format.rules.key-value-equals-sign-space-width](#format-rules-key-value-equals-sign-space-width)
     - [format.rules.line-ending](#format-rules-line-ending)
     - [format.rules.line-width](#format-rules-line-width)
     - [format.rules.string-quote-style](#format-rules-string-quote-style)
@@ -244,7 +244,7 @@ If `true`, the sub-table will be indented.
 # ^^  <- this
 ```
 
-### format.rules.indent-table-key-values
+### format.rules.indent-table-key-value-pairs
 
 Whether to indent the table key-value pairs.
 
@@ -294,9 +294,9 @@ key = { a = 1, b = 2 }
 #             ^  <- this
 ```
 
-### format.rules.key-value-equal-alignment
+### format.rules.key-value-equals-sign-alignment
 
-Whether to align the equal sign in the key-value pairs.
+Whether to align the equals sign in the key-value pairs.
 
 If `true`, the equal sign in the key-value pairs will be aligned.
 
@@ -344,9 +344,9 @@ key3.key4 = "value3"  # comment 3
 The trailing comments of table header are not targeted by alignment.
 </Note>
 
-### format.rules.key-value-equal-space-width
+### format.rules.key-value-equals-sign-space-width
 
-The number of spaces after the equal in a key-value pair.
+The number of spaces around the equals sign in a key-value pair.
 
 - Type: `Number`
 - Default: `1`
