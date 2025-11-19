@@ -115,9 +115,7 @@ where
                     {
                         Ok(()) => valid_hover_value_contents.push(hover_value_content.clone()),
                         Err(tombi_validator::Error { diagnostics, .. })
-                            if diagnostics.iter().all(|diagnostic| {
-                                diagnostic.level() == tombi_diagnostic::Level::WARNING
-                            }) =>
+                            if diagnostics.iter().all(|diagnostic| diagnostic.is_warning()) =>
                         {
                             valid_hover_value_contents.push(hover_value_content.clone());
                         }

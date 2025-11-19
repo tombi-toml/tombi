@@ -208,29 +208,31 @@ where
     R: AsyncReadExt + Unpin + Send,
 {
     let mut source = String::new();
-    if reader.read_to_string(&mut source).await.is_ok() {
-        match tombi_linter::Linter::new(
-            toml_version,
-            lint_options,
-            source_path.map(itertools::Either::Right),
-            schema_store,
-        )
-        .lint(&source)
-        .await
-        {
-            Ok(()) => {
-                return true;
-            }
-            Err(diagnostics) => if let Some(source_path) = source_path {
-                diagnostics
-                    .into_iter()
-                    .map(|diagnostic| diagnostic.with_source_file(source_path))
-                    .collect()
-            } else {
-                diagnostics
-            }
-            .print(&mut printer, use_ansi_color),
-        }
+    if reader.read_to_string(&mut source).await.is_err() {
+        return false;
     }
-    false
+    let Err(diagnostics) = tombi_linter::Linter::new(
+        toml_version,
+        lint_options,
+        source_path.map(itertools::Either::Right),
+        schema_store,
+    )
+    .lint(&source)
+    .await
+    else {
+        return true;
+    };
+
+    let diagnostics = if let Some(source_path) = source_path {
+        diagnostics
+            .into_iter()
+            .map(|diagnostic| diagnostic.with_source_file(source_path))
+            .collect()
+    } else {
+        diagnostics
+    };
+
+    diagnostics.print(&mut printer, use_ansi_color);
+
+    diagnostics.iter().all(|diagnostic| diagnostic.is_warning())
 }

@@ -58,6 +58,16 @@ impl Diagnostic {
     }
 
     #[inline]
+    pub fn is_warning(&self) -> bool {
+        self.level == level::Level::WARNING
+    }
+
+    #[inline]
+    pub fn is_error(&self) -> bool {
+        self.level == level::Level::ERROR
+    }
+
+    #[inline]
     pub fn code(&self) -> &str {
         &self.code
     }
