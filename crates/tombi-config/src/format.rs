@@ -9,8 +9,8 @@
 
 use crate::{
     ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
-    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualSpaceWidth, LineEnding,
-    LineWidth, StringQuoteStyle, TrailingCommentSpaceWidth,
+    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualsSignSpaceWidth,
+    LineEnding, LineWidth, StringQuoteStyle, TrailingCommentSpaceWidth,
 };
 
 /// # Formatter options
@@ -213,6 +213,14 @@ pub struct FormatRules {
     /// # ^^  <- this
     /// ```
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
+    pub indent_table_key_value_pairs: Option<bool>,
+
+    /// # Whether to indent the table key-value pairs
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `format.rules.indent-table-key-value-pairs` instead.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
+    #[deprecated]
     pub indent_table_key_values: Option<bool>,
 
     /// # The number of spaces per indentation level
@@ -246,9 +254,9 @@ pub struct FormatRules {
     )]
     pub inline_table_comma_space_width: Option<InlineTableCommaSpaceWidth>,
 
-    /// # Whether to align the equal sign in the key-value pairs.
+    /// # Whether to align the equals sign in the key-value pairs.
     ///
-    /// If `true`, the equal sign in the key-value pairs will be aligned.
+    /// If `true`, the equals sign in the key-value pairs will be aligned.
     ///
     /// ⚠️ **WARNING** ⚠️\
     /// This feature does **not** apply to key-value pairs inside single line inline tables.
@@ -265,6 +273,14 @@ pub struct FormatRules {
     /// key3.key4 = "value3"
     /// ```
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
+    pub key_value_equals_sign_alignment: Option<bool>,
+
+    /// # Whether to align the equal sign in the key-value pairs.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `format.rules.key-value-equals-sign-alignment` instead.
+    #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
+    #[deprecated]
     pub key_value_equal_alignment: Option<bool>,
 
     /// # The preferred quote character for strings
@@ -295,7 +311,7 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
     pub trailing_comment_alignment: Option<bool>,
 
-    /// # The number of spaces after the equal in a key-value pair.
+    /// # The number of spaces around the equals sign in a key-value pair.
     ///
     /// ```toml
     /// key = "value"
@@ -303,9 +319,20 @@ pub struct FormatRules {
     /// ```
     #[cfg_attr(
         feature = "jsonschema",
-        schemars(default = "KeyValueEqualSpaceWidth::default")
+        schemars(default = "KeyValueEqualsSignSpaceWidth::default")
     )]
-    pub key_value_equal_space_width: Option<KeyValueEqualSpaceWidth>,
+    pub key_value_equals_sign_space_width: Option<KeyValueEqualsSignSpaceWidth>,
+
+    /// # The number of spaces after the equal in a key-value pair.
+    ///
+    /// **🚧 Deprecated 🚧**\
+    /// Please use `format.rules.key-value-equals-sign-space-width` instead.
+    #[cfg_attr(
+        feature = "jsonschema",
+        schemars(default = "KeyValueEqualsSignSpaceWidth::default")
+    )]
+    #[deprecated]
+    pub key_value_equal_space_width: Option<KeyValueEqualsSignSpaceWidth>,
 
     /// # The type of line ending
     ///

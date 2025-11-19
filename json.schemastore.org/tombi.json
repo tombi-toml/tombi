@@ -407,13 +407,23 @@
           ],
           "default": false
         },
-        "indent-table-key-values": {
+        "indent-table-key-value-pairs": {
           "title": "Whether to indent the table key-value pairs",
           "description": "If `true`, the table key-value pairs will be indented.\n\n```toml\n[table]\n    key = \"value\"\n# ^^  <- this\n```",
           "type": [
             "boolean",
             "null"
           ],
+          "default": false
+        },
+        "indent-table-key-values": {
+          "title": "Whether to indent the table key-value pairs",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.indent-table-key-value-pairs` instead.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "deprecated": true,
           "default": false
         },
         "indent-width": {
@@ -455,13 +465,23 @@
           ],
           "default": 1
         },
-        "key-value-equal-alignment": {
-          "title": "Whether to align the equal sign in the key-value pairs.",
-          "description": "If `true`, the equal sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside single line inline tables.\n\n```toml\n# BEFORE\nkey = \"value1\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
+        "key-value-equals-sign-alignment": {
+          "title": "Whether to align the equals sign in the key-value pairs.",
+          "description": "If `true`, the equals sign in the key-value pairs will be aligned.\n\n⚠️ **WARNING** ⚠️\\\nThis feature does **not** apply to key-value pairs inside single line inline tables.\n\n```toml\n# BEFORE\nkey = \"value1\"\nkey2 = \"value2\"\nkey3.key4 = \"value3\"\n\n# AFTER\nkey       = \"value1\"\nkey2      = \"value2\"\nkey3.key4 = \"value3\"\n```",
           "type": [
             "boolean",
             "null"
           ],
+          "default": false
+        },
+        "key-value-equal-alignment": {
+          "title": "Whether to align the equal sign in the key-value pairs.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.key-value-equals-sign-alignment` instead.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "deprecated": true,
           "default": false
         },
         "string-quote-style": {
@@ -485,17 +505,31 @@
           ],
           "default": false
         },
-        "key-value-equal-space-width": {
-          "title": "The number of spaces after the equal in a key-value pair.",
+        "key-value-equals-sign-space-width": {
+          "title": "The number of spaces around the equals sign in a key-value pair.",
           "description": "```toml\nkey = \"value\"\n#  ^ ^  <- this\n```",
           "anyOf": [
             {
-              "$ref": "#/definitions/KeyValueEqualSpaceWidth"
+              "$ref": "#/definitions/KeyValueEqualsSignSpaceWidth"
             },
             {
               "type": "null"
             }
           ],
+          "default": 1
+        },
+        "key-value-equal-space-width": {
+          "title": "The number of spaces after the equal in a key-value pair.",
+          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.key-value-equals-sign-space-width` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/KeyValueEqualsSignSpaceWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true,
           "default": 1
         },
         "line-ending": {
@@ -632,7 +666,7 @@
         }
       ]
     },
-    "KeyValueEqualSpaceWidth": {
+    "KeyValueEqualsSignSpaceWidth": {
       "type": "integer",
       "format": "uint8",
       "minimum": 0,
