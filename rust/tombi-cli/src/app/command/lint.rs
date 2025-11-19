@@ -234,5 +234,5 @@ where
 
     diagnostics.print(&mut printer, use_ansi_color);
 
-    diagnostics.iter().all(|diagnostic| diagnostic.is_warning())
+    diagnostics.iter().all(Diagnostic::is_warning)
 }
