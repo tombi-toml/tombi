@@ -200,6 +200,8 @@ dependencies = ["pydantic>=2.10,<3.0"]  # 💡 コードアクション利用可
 dependencies = ["pydantic"]  # バージョン指定が削除され、ワークスペース参照になる
 ```
 
+![Use Workspace Dependency の実行例](workspace_blog/images/uv_CodeAction_UseWorkspaceDependency.gif)
+
 #### uv: "Add to Workspace and Use Workspace Dependency"
 
 依存関係がワークスペースに存在しない場合、ワークスペースに追加し、メンバーパッケージはそれを参照するように変換できます。
@@ -230,6 +232,8 @@ dependencies = [
 dependencies = ["requests"]
 ```
 
+![Add to Workspace and Use Workspace Dependency の実行例](workspace_blog/images/uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency.gif)
+
 #### Cargo: "Use Workspace Dependency"
 
 Cargo でも同様に、ワークスペース依存関係への変換がサポートされています。
@@ -253,6 +257,8 @@ serde = { version = "1.0", features = ["derive"] }  # 💡 コードアクショ
 [dependencies]
 serde = { workspace = true }
 ```
+
+![Cargo: Use Workspace Dependency の実行例](workspace_blog/images/Cargo_CodeAction_InheritDependencyFromWorkspace.gif)
 
 #### Cargo: "Add to Workspace and Inherit Dependency"
 
@@ -280,6 +286,8 @@ tokio = { version = "1.0", features = ["full"] }
 [dependencies]
 tokio = { workspace = true }
 ```
+
+![Add to Workspace and Inherit Dependency の実行例](workspace_blog/images/Cargo_CodeAction_AddToWorkspaceAndInheritDependency.gif)
 
 ### 実装の詳細
 
@@ -337,13 +345,11 @@ Tombi を使用することで、ワークスペースベースのプロジェ�
 
 ### Tombi を試してみる
 
+uv を利用すると、簡単に Tombi を試すことができます。
+
 ```bash
 # CLI として使用
-cargo install tombi-cli
 uvx tombi format Cargo.toml
-
-# VS Code 拡張をインストール
-# Marketplace から "Tombi" を検索
 ```
 
-詳細は [GitHub リポジトリ](https://github.com/tombi-toml/tombi)をご覧ください。
+エディタで利用したい場合などは、[Tombi のインストール方法](https://tombi-toml.github.io/tombi/docs/installation)をご覧ください。
