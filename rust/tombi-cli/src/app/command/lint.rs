@@ -21,6 +21,12 @@ pub struct Args {
     #[arg(long)]
     stdin_filename: Option<String>,
 
+    /// Error code on warnings
+    ///
+    /// If `true`, the program will exit with error code if there are warnings.
+    #[arg(long, default_value_t = false)]
+    error_on_warnings: bool,
+
     #[command(flatten)]
     common: CommonArgs,
 }
@@ -114,6 +120,7 @@ where
                     &lint_options,
                     &schema_store,
                     use_ansi_color,
+                    args.error_on_warnings,
                 )
                 .await
                 {
@@ -144,6 +151,7 @@ where
                                             &options,
                                             &schema_store,
                                             use_ansi_color,
+                                            args.error_on_warnings,
                                         )
                                         .await
                                     });
@@ -200,6 +208,7 @@ async fn lint_file<R, P>(
     lint_options: &LintOptions,
     schema_store: &tombi_schema_store::SchemaStore,
     use_ansi_color: bool,
+    error_on_warnings: bool,
 ) -> bool
 where
     Diagnostic: Print<P>,
@@ -234,5 +243,9 @@ where
 
     diagnostics.print(&mut printer, use_ansi_color);
 
-    diagnostics.iter().all(Diagnostic::is_warning)
+    if error_on_warnings {
+        diagnostics.is_empty()
+    } else {
+        diagnostics.iter().all(Diagnostic::is_warning)
+    }
 }
