@@ -348,7 +348,6 @@ Tombi を使用することで、ワークスペースベースのプロジェ�
 uv を利用すると、簡単に Tombi を試すことができます。
 
 ```bash
-# CLI として使用
 uvx tombi format Cargo.toml
 ```
 
