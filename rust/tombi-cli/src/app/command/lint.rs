@@ -21,7 +21,7 @@ pub struct Args {
     #[arg(long)]
     stdin_filename: Option<String>,
 
-    /// Error code on warnings
+    /// Exit with error code on warnings
     ///
     /// If `true`, the program will exit with error code if there are warnings.
     #[arg(long, default_value_t = false)]
