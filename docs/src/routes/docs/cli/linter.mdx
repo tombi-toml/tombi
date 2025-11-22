@@ -22,3 +22,9 @@ tombi lint **/*.toml
 # Lint from standard input
 cat Cargo.toml | tombi lint -
 ```
+
+
+<Note>
+If only warnings are found during linting, Tombi will exit successfully by default.  
+However, you can use the `--error-on-warnings` option to make Tombi exit with an error when warnings are present.
+</Note>
