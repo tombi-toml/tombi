@@ -84,6 +84,41 @@ include = ["example.toml"]
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
+
+# Override config
+[[overrides]]
+[overrides.files]
+include = ["specific/**/*.toml"]
+exclude = ["specific/**/ignored.toml"]
+
+[overrides.format]
+enabled = true
+
+[overrides.format.rules]
+array-bracket-space-width = 1
+array-comma-space-width = 1
+date-time-delimiter = "space"
+indent-style = "tab"
+indent-sub-tables = true
+indent-table-key-value-pairs = true
+indent-width = 4
+inline-table-brace-space-width = 0
+inline-table-comma-space-width = 1
+key-value-equals-sign-alignment = true
+key-value-equals-sign-space-width = 1
+line-ending = "crlf"
+line-width = 120
+string-quote-style = "single"
+trailing-comment-alignment = true
+trailing-comment-space-width = 1
+
+[overrides.lint]
+enabled = true
+
+[overrides.lint.rules]
+dotted-keys-out-of-order = "error"
+key-empty = "error"
+tables-out-of-order = "error"
 ```
 
 ## Available Options
@@ -146,6 +181,16 @@ include = ["pyproject.toml"]
   - [schemas[*].root](#sub-schema)
   - [schemas[*].path](#root-schema)
   - [schemas[*].include](#root-schema)
+- [overrides](#overrides)
+  - [overrides[*].files](#overrides-files)
+    - [overrides[*].files.include](#overrides-files-include)
+    - [overrides[*].files.exclude](#overrides-files-exclude)
+  - [overrides[*].format](#overrides-format)
+    - [overrides[*].format.enabled](#overrides-format-enabled)
+    - [overrides[*].format.rules](#overrides-format-rules)
+  - [overrides[*].lint](#overrides-lint)
+    - [overrides[*].lint.enabled](#overrides-lint-enabled)
+    - [overrides[*].lint.rules](#overrides-lint-rules)
 
 ### toml-version
 
@@ -635,3 +680,85 @@ include = ["pyproject.toml"]
 - `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"items[0].name"`)
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+
+### overrides
+
+Override configuration settings for specific file patterns. You can define multiple override rules, and matching settings will be applied to files.
+
+### overrides[*].files
+
+Specify file patterns to which the override should be applied.
+
+- Type: `Table`
+- Required: `true`
+
+### overrides[*].files.include
+
+File patterns to apply the override. Supports glob patterns.
+
+- Type: `String[]`
+- Required: `true`
+
+### overrides[*].files.exclude
+
+File patterns to exclude from the override. Supports glob patterns.
+
+- Type: `String[]`
+
+### overrides[*].format
+
+Override format settings.
+
+### overrides[*].format.enabled
+
+Enable or disable formatting feature.
+
+- Type: `Boolean`
+- Default: `true`
+
+### overrides[*].format.rules
+
+Override format rules. Only the specified rules will be overridden, and the rest will use the base configuration.
+
+Available rules are the same as [format.rules](#format-rules).
+
+```toml
+[[overrides]]
+[overrides.files]
+include = ["tests/**/*.toml"]
+
+[overrides.format]
+enabled = true
+[overrides.format.rules]
+indent-width = 4
+line-width = 120
+```
+
+### overrides[*].lint
+
+Override lint settings.
+
+### overrides[*].lint.enabled
+
+Enable or disable linting feature.
+
+- Type: `Boolean`
+- Default: `true`
+
+### overrides[*].lint.rules
+
+Override lint rules. Only the specified rules will be overridden, and the rest will use the base configuration.
+
+Available rules are the same as [lint.rules](#lint-rules).
+
+```toml
+[[overrides]]
+[overrides.files]
+include = ["legacy/**/*.toml"]
+
+[overrides.lint]
+enabled = true
+[overrides.lint.rules]
+key-empty = "off"
+dotted-keys-out-of-order = "off"
+```
