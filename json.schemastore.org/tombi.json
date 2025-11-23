@@ -55,7 +55,6 @@
       ]
     },
     "format": {
-      "title": "Formatter options",
       "anyOf": [
         {
           "$ref": "#/definitions/FormatOptions"
@@ -66,7 +65,6 @@
       ]
     },
     "lint": {
-      "title": "Linter options",
       "anyOf": [
         {
           "$ref": "#/definitions/LintOptions"
@@ -77,7 +75,6 @@
       ]
     },
     "lsp": {
-      "title": "Language Server options",
       "anyOf": [
         {
           "$ref": "#/definitions/LspOptions"
@@ -101,10 +98,9 @@
       "deprecated": true
     },
     "schema": {
-      "title": "Schema options",
       "anyOf": [
         {
-          "$ref": "#/definitions/SchemaOptions"
+          "$ref": "#/definitions/SchemaOverviewOptions"
         },
         {
           "type": "null"
@@ -112,13 +108,23 @@
       ]
     },
     "schemas": {
-      "title": "Schema catalog items",
+      "title": "Schema items",
       "type": [
         "array",
         "null"
       ],
       "items": {
-        "$ref": "#/definitions/Schema"
+        "$ref": "#/definitions/SchemaItem"
+      }
+    },
+    "overrides": {
+      "title": "Override config items",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/OverrideItem"
       }
     }
   },
@@ -171,7 +177,6 @@
     },
     "FormatOptions": {
       "title": "Formatter options",
-      "description": "To avoid needless discussion of formatting rules,\nwe do not currently have a configuration item for formatting.",
       "type": "object",
       "properties": {
         "rules": {
@@ -692,6 +697,7 @@
       "maximum": 255
     },
     "LintOptions": {
+      "title": "Linter options",
       "type": "object",
       "properties": {
         "rules": {
@@ -769,6 +775,7 @@
       ]
     },
     "LspOptions": {
+      "title": "Language Server options",
       "type": "object",
       "properties": {
         "code-action": {
@@ -1057,7 +1064,8 @@
       },
       "additionalProperties": false
     },
-    "SchemaOptions": {
+    "SchemaOverviewOptions": {
+      "title": "Schema overview options",
       "type": "object",
       "properties": {
         "enabled": {
@@ -1166,7 +1174,8 @@
         }
       ]
     },
-    "Schema": {
+    "SchemaItem": {
+      "title": "Schema item",
       "anyOf": [
         {
           "$ref": "#/definitions/RootSchema"
@@ -1282,6 +1291,137 @@
         "include",
         "root-keys"
       ],
+      "x-tombi-table-keys-order": "schema"
+    },
+    "OverrideItem": {
+      "title": "Override config item",
+      "type": "object",
+      "properties": {
+        "files": {
+          "title": "Files options to override",
+          "allOf": [
+            {
+              "$ref": "#/definitions/OverrideFilesOptions"
+            }
+          ]
+        },
+        "format": {
+          "title": "Format options to override",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/OverrideFormatOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lint": {
+          "title": "Lint options to override",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/OverrideLintOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "files"
+      ],
+      "x-tombi-table-keys-order": "schema"
+    },
+    "OverrideFilesOptions": {
+      "title": "Files options to override",
+      "type": "object",
+      "properties": {
+        "include": {
+          "title": "File patterns to include",
+          "description": "The file match pattern to include in formatting and linting.\nSupports glob pattern.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "exclude": {
+          "title": "File patterns to exclude",
+          "description": "The file match pattern to exclude from formatting and linting.\nSupports glob pattern.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "include"
+      ],
+      "x-tombi-table-keys-order": "schema"
+    },
+    "OverrideFormatOptions": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Format enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rules": {
+          "title": "Format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "x-tombi-table-keys-order": "schema"
+    },
+    "OverrideLintOptions": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Lint enabled",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BoolDefaultTrue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rules": {
+          "title": "Lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
       "x-tombi-table-keys-order": "schema"
     }
   }

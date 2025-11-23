@@ -654,8 +654,8 @@ optional_string = "provided"
             config.toml_version,
             Some(tombi_toml_version::TomlVersion::V1_0_0)
         );
-        assert!(config.format.is_some());
-        assert!(config.lint.is_some());
+        assert!(config.format(None).rules.is_some(),);
+        assert!(config.lint(None).rules.is_some(),);
         assert!(config.lsp().is_some());
         assert!(config.schema.is_some());
         assert!(config.schemas.is_some());

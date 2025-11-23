@@ -5,13 +5,14 @@ use crate::{
     TOMBI_SCHEMASTORE_CATALOG_URL,
 };
 
+/// # Schema overview options
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct SchemaOptions {
+pub struct SchemaOverviewOptions {
     /// # Enable the schema validation
     pub enabled: Option<BoolDefaultTrue>,
 
@@ -26,7 +27,7 @@ pub struct SchemaOptions {
     pub catalog: Option<SchemaCatalog>,
 }
 
-impl SchemaOptions {
+impl SchemaOverviewOptions {
     pub const fn default() -> Self {
         Self {
             enabled: None,
@@ -126,17 +127,18 @@ pub struct SchemaCatalogOld {
     pub path: Option<OneOrMany<SchemaCatalogPath>>,
 }
 
+/// # Schema item
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq)]
-pub enum Schema {
+pub enum SchemaItem {
     Root(RootSchema),
     Sub(SubSchema),
     OldSub(OldSubSchema),
 }
 
-impl Schema {
+impl SchemaItem {
     pub fn path(&self) -> &str {
         match self {
             Self::Root(item) => &item.path,
@@ -255,7 +257,7 @@ mod tests {
 
     #[test]
     fn schema_catalog_paths_default() {
-        let schema = SchemaOptions::default();
+        let schema = SchemaOverviewOptions::default();
         let expected = Some(vec![
             TOMBI_SCHEMASTORE_CATALOG_URL.into(),
             JSON_SCHEMASTORE_CATALOG_URL.into(),
@@ -267,7 +269,7 @@ mod tests {
 
     #[test]
     fn schema_catalog_paths_empty() {
-        let schema = SchemaOptions {
+        let schema = SchemaOverviewOptions {
             catalog: Some(SchemaCatalog::New(NewSchemaCatalog {
                 paths: Some(vec![]),
             })),

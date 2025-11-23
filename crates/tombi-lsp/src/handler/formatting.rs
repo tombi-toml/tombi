@@ -1,5 +1,4 @@
 use itertools::{Either, Itertools};
-use tombi_config::FormatOptions;
 use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::{IntoLsp, Position, Range};
 use tower_lsp::lsp_types::{
@@ -63,9 +62,23 @@ pub async fn handle_formatting(
 
     let toml_version = document_source.toml_version;
 
+    // Get format options with override support
+    let text_document_path = text_document_uri.to_file_path().ok();
+    let Some(format_options) = tombi_glob::get_format_options(
+        &config,
+        text_document_path.as_deref(),
+        config_path.as_deref(),
+    ) else {
+        tracing::debug!(
+            "Formatting disabled for {:?} by override",
+            text_document_path
+        );
+        return Ok(None);
+    };
+
     match tombi_formatter::Formatter::new(
         toml_version,
-        config.format.as_ref().unwrap_or(&FormatOptions::default()),
+        &format_options,
         Some(Either::Left(&text_document_uri)),
         &schema_store,
     )

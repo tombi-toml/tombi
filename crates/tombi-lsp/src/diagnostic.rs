@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
-use tombi_config::{Config, LintOptions};
+use tombi_config::Config;
 use tombi_glob::{matches_file_patterns, MatchResult};
 use tombi_text::IntoLsp;
 
@@ -75,25 +75,38 @@ pub async fn get_diagnostics_result(
     let document_sources = backend.document_sources.read().await;
 
     match document_sources.get(text_document_uri) {
-        Some(document_source) => Some(DiagnosticsResult {
-            diagnostics: match tombi_linter::Linter::new(
-                document_source.toml_version,
-                config.lint.as_ref().unwrap_or(&LintOptions::default()),
-                Some(Either::Left(text_document_uri)),
-                &schema_store,
-            )
-            .lint(document_source.text())
-            .await
-            {
-                Ok(_) => Vec::with_capacity(0),
-                Err(diagnostics) => diagnostics
-                    .into_iter()
-                    .unique()
-                    .map(|diagnostic| diagnostic.into_lsp(document_source.line_index()))
-                    .collect_vec(),
-            },
-            version: document_source.version,
-        }),
+        Some(document_source) => {
+            // Get lint options with override support
+            let text_document_path = text_document_uri.to_file_path().ok();
+            let Some(lint_options) = tombi_glob::get_lint_options(
+                &config,
+                text_document_path.as_deref(),
+                config_path.as_deref(),
+            ) else {
+                tracing::debug!("Linting disabled for {:?} by override", text_document_path);
+                return None;
+            };
+
+            Some(DiagnosticsResult {
+                diagnostics: match tombi_linter::Linter::new(
+                    document_source.toml_version,
+                    &lint_options,
+                    Some(Either::Left(text_document_uri)),
+                    &schema_store,
+                )
+                .lint(document_source.text())
+                .await
+                {
+                    Ok(_) => Vec::with_capacity(0),
+                    Err(diagnostics) => diagnostics
+                        .into_iter()
+                        .unique()
+                        .map(|diagnostic| diagnostic.into_lsp(document_source.line_index()))
+                        .collect_vec(),
+                },
+                version: document_source.version,
+            })
+        }
         None => None,
     }
 }

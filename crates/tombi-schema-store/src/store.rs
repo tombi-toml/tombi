@@ -10,7 +10,7 @@ use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
 use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
-use tombi_config::{Schema, SchemaOptions};
+use tombi_config::{SchemaItem, SchemaOverviewOptions};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
@@ -97,7 +97,7 @@ impl SchemaStore {
         let base_dir_path = config_path.and_then(|p| p.parent());
         let schema_options = match &config.schema {
             Some(schema) => schema,
-            None => &SchemaOptions::default(),
+            None => &SchemaOverviewOptions::default(),
         };
 
         if schema_options.enabled.unwrap_or_default().value() {
@@ -140,7 +140,7 @@ impl SchemaStore {
 
     pub async fn load_config_schemas(
         &self,
-        schemas: &[Schema],
+        schemas: &[SchemaItem],
         base_dir_path: Option<&std::path::Path>,
     ) {
         futures::future::join_all(schemas.iter().map(|schema| async move {

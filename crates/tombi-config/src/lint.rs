@@ -1,5 +1,6 @@
 use tombi_severity_level::SeverityLevelDefaultWarn;
 
+/// # Linter options
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -69,4 +70,18 @@ pub struct LintRules {
     /// [animal]
     /// ```
     pub tables_out_of_order: Option<SeverityLevelDefaultWarn>,
+}
+
+impl LintRules {
+    pub fn override_with(self, override_rules: &Self) -> Self {
+        Self {
+            key_empty: self.key_empty.or(override_rules.key_empty),
+            dotted_keys_out_of_order: self
+                .dotted_keys_out_of_order
+                .or(override_rules.dotted_keys_out_of_order),
+            tables_out_of_order: self
+                .tables_out_of_order
+                .or(override_rules.tables_out_of_order),
+        }
+    }
 }

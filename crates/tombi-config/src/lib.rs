@@ -3,17 +3,19 @@ mod files;
 pub mod format;
 mod level;
 mod lint;
+mod overrides;
 mod schema;
 mod server;
 mod types;
 
 pub use error::Error;
 pub use files::FilesOptions;
-pub use format::FormatOptions;
+pub use format::*;
 pub use level::ConfigLevel;
-pub use lint::LintOptions;
-pub use schema::SchemaOptions;
-pub use schema::{RootSchema, Schema, SubSchema};
+pub use lint::*;
+pub use overrides::*;
+pub use schema::SchemaOverviewOptions;
+pub use schema::{RootSchema, SchemaItem, SubSchema};
 pub use server::{LspCompletion, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
@@ -62,13 +64,10 @@ pub struct Config {
 
     pub files: Option<FilesOptions>,
 
-    /// # Formatter options
-    pub format: Option<FormatOptions>,
+    format: Option<FormatOptions>,
 
-    /// # Linter options
-    pub lint: Option<LintOptions>,
+    lint: Option<LintOptions>,
 
-    /// # Language Server options
     lsp: Option<LspOptions>,
 
     /// # Language Server options
@@ -78,11 +77,13 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", deprecated)]
     server: Option<LspOptions>,
 
-    /// # Schema options
-    pub schema: Option<SchemaOptions>,
+    pub schema: Option<SchemaOverviewOptions>,
 
-    /// # Schema catalog items
-    pub schemas: Option<Vec<Schema>>,
+    /// # Schema items
+    pub schemas: Option<Vec<SchemaItem>>,
+
+    /// # Override config items
+    overrides: Option<Vec<OverrideItem>>,
 }
 
 impl Config {
@@ -105,5 +106,58 @@ impl Config {
     pub fn lsp(&self) -> Option<&LspOptions> {
         #[allow(deprecated)]
         self.lsp.as_ref().or(self.server.as_ref())
+    }
+
+    pub fn overrides(&self) -> Option<&Vec<OverrideItem>> {
+        self.overrides.as_ref()
+    }
+
+    pub fn format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {
+        let options = self.format.clone().unwrap_or_default();
+        let base_rules = options.rules.unwrap_or_default();
+
+        let rules = if let Some(override_rules) = override_options
+            .as_ref()
+            .and_then(|options| options.rules.as_ref())
+        {
+            base_rules.override_with(override_rules)
+        } else {
+            base_rules
+        };
+
+        #[allow(deprecated)]
+        FormatOptions {
+            rules: Some(rules),
+            array_bracket_space_width: options.array_bracket_space_width,
+            array_element_space_width: options.array_element_space_width,
+            date_time_delimiter: options.date_time_delimiter,
+            indent_style: options.indent_style,
+            indent_width: options.indent_width,
+            inline_table_brace_space_width: options.inline_table_brace_space_width,
+            inline_table_element_space_width: options.inline_table_element_space_width,
+            line_ending: options.line_ending,
+            line_width: options.line_width,
+            quote_style: options.quote_style,
+            trailing_comment_space_width: options.trailing_comment_space_width,
+        }
+    }
+
+    pub fn lint(&self, override_options: Option<&OverrideLintOptions>) -> LintOptions {
+        let base_rules = self
+            .lint
+            .clone()
+            .and_then(|lint| lint.rules)
+            .unwrap_or_default();
+
+        let rules = if let Some(override_rules) = override_options
+            .as_ref()
+            .and_then(|options| options.rules.as_ref())
+        {
+            base_rules.override_with(override_rules)
+        } else {
+            base_rules
+        };
+
+        LintOptions { rules: Some(rules) }
     }
 }
