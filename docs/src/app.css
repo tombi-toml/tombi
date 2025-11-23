@@ -151,6 +151,17 @@ main {
   color: #e6e6e6;
 }
 
+/* Prevent focus on code elements */
+.mdx-content code,
+.mdx-content pre {
+  outline: none;
+}
+
+.mdx-content code:focus,
+.mdx-content pre:focus {
+  outline: none;
+}
+
 /* Table Styles */
 .mdx-content table {
   border-collapse: collapse;
