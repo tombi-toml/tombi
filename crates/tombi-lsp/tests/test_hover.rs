@@ -512,7 +512,7 @@ mod hover_keys_value {
                         .config_manager
                         .load_config_schemas(
                             &[
-                                tombi_config::Schema::Root(
+                                tombi_config::SchemaItem::Root(
                                     tombi_config::RootSchema {
                                         toml_version: None,
                                         path: schema_file_url.to_string(),

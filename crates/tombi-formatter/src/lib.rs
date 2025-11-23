@@ -294,7 +294,7 @@ macro_rules! test_format {
                 // Load schemas
                 schema_store
                     .load_config_schemas(
-                        &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path,
                             include: vec!["*.toml".to_string()],
@@ -369,7 +369,7 @@ macro_rules! test_format {
                 // Load schemas
                 schema_store
                     .load_config_schemas(
-                        &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path,
                             include: vec!["*.toml".to_string()],

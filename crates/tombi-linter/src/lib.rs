@@ -85,7 +85,7 @@ macro_rules! test_lint {
                 // Load schemas
                 schema_store
                     .load_config_schemas(
-                        &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path: schema_path.to_string_lossy().to_string(),
                             include: vec!["*.toml".to_string()],
@@ -190,7 +190,7 @@ macro_rules! test_lint {
                 // Load schemas
                 schema_store
                     .load_config_schemas(
-                        &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path: schema_path.to_string_lossy().to_string(),
                             include: vec!["*.toml".to_string()],

@@ -473,7 +473,7 @@ mod goto_type_definition_tests {
                     backend
                         .config_manager
                         .load_config_schemas(
-                            &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                            &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                                 toml_version: None,
                                 path: schema_file_url.to_string(),
                                 include: vec!["*.toml".to_string()],
