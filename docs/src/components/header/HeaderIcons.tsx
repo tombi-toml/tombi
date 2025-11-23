@@ -1,11 +1,18 @@
+import {
+  TbBrandGithubFilled,
+  TbMoonFilled,
+  TbSearch,
+  TbSunFilled,
+  TbX,
+} from "solid-icons/tb";
 import { createSignal, onMount } from "solid-js";
-import { TbBrandGithubFilled, TbMoonFilled, TbSunFilled, TbSearch, TbX } from "solid-icons/tb";
-import { LinkIconButton } from "../button/LinkIconButton";
 import { IconButton } from "../button/IconButton";
+import { LinkIconButton } from "../button/LinkIconButton";
 
 interface HeaderIconsProps {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
+  savePreviousActiveElement?: () => void;
 }
 
 export function HeaderIcons(props: HeaderIconsProps) {
@@ -37,7 +44,15 @@ export function HeaderIcons(props: HeaderIconsProps) {
   return (
     <div class="flex items-center md:pl-4 pr-4 space-x-1">
       <IconButton
-        onClick={() => props.setIsSearchOpen(!props.isSearchOpen)}
+        onMouseDown={() => {
+          if (!props.isSearchOpen) {
+            // Save the currently focused element before the button gets focus
+            props.savePreviousActiveElement?.();
+          }
+        }}
+        onClick={() => {
+          props.setIsSearchOpen(!props.isSearchOpen);
+        }}
         class="md:hidden py-1 relative"
         alt={props.isSearchOpen ? "Close Search" : "Search"}
       >

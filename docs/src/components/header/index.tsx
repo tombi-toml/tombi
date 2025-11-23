@@ -10,6 +10,7 @@ import { HeaderTab } from "./HeaderTab";
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = createSignal(false);
   const location = useLocation();
+  let previousActiveElement: HTMLElement | null = null;
 
   const getPageTitle = () => {
     const base = import.meta.env.BASE_URL;
@@ -23,6 +24,16 @@ export function Header() {
     const flattenedPages = flattenDocPages(docIndex as DocIndex[]);
     const page = flattenedPages.find((page) => page.path === path);
     return page?.title || "Tombi";
+  };
+
+  const savePreviousActiveElement = () => {
+    previousActiveElement = document.activeElement as HTMLElement;
+  };
+
+  const getPreviousActiveElement = () => previousActiveElement;
+
+  const clearPreviousActiveElement = () => {
+    previousActiveElement = null;
   };
 
   return (
@@ -44,10 +55,14 @@ export function Header() {
           <HeaderSearch
             isSearchOpen={isSearchOpen()}
             setIsSearchOpen={setIsSearchOpen}
+            getPreviousActiveElement={getPreviousActiveElement}
+            savePreviousActiveElement={savePreviousActiveElement}
+            clearPreviousActiveElement={clearPreviousActiveElement}
           />
           <HeaderIcons
             isSearchOpen={isSearchOpen()}
             setIsSearchOpen={setIsSearchOpen}
+            savePreviousActiveElement={savePreviousActiveElement}
           />
         </div>
       </nav>

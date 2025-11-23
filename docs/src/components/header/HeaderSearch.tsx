@@ -8,6 +8,9 @@ import { SearchResults } from "../search/SearchResults";
 interface HeaderSearchProps {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
+  getPreviousActiveElement?: () => HTMLElement | null;
+  savePreviousActiveElement?: () => void;
+  clearPreviousActiveElement?: () => void;
 }
 
 export function HeaderSearch(props: HeaderSearchProps) {
@@ -31,6 +34,8 @@ export function HeaderSearch(props: HeaderSearchProps) {
       document.addEventListener("keydown", (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "k") {
           e.preventDefault();
+          // Save the currently focused element before opening search
+          props.savePreviousActiveElement?.();
           searchInputRef?.focus();
           props.setIsSearchOpen(true);
         }
@@ -54,6 +59,23 @@ export function HeaderSearch(props: HeaderSearchProps) {
       }
     } else {
       setSearchResults([]);
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && props.isSearchOpen) {
+      e.preventDefault();
+      setSearchQuery("");
+      setSearchResults([]);
+      props.setIsSearchOpen(false);
+      // Restore focus to the previously focused element
+      setTimeout(() => {
+        const previousElement = props.getPreviousActiveElement?.();
+        if (previousElement && typeof previousElement.focus === "function") {
+          previousElement.focus();
+        }
+        props.clearPreviousActiveElement?.();
+      }, 100);
     }
   };
 
@@ -84,6 +106,7 @@ export function HeaderSearch(props: HeaderSearchProps) {
             placeholder="Search"
             value={searchQuery()}
             onInput={(e) => handleSearch(e.currentTarget.value)}
+            onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             class="w-full h-11 pl-12 bg-white/20 text-white placeholder-white/60 text-lg focus:bg-white/30 outline-none border-none box-border rounded-2"
