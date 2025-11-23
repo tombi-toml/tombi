@@ -1,11 +1,11 @@
 import { A, useLocation } from "@solidjs/router";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "solid-icons/bi";
-import { flattenDocPages } from "~/utils/doc-index";
+import { type DocIndex, flattenDocPages } from "~/utils/doc-index";
 import docIndex from "../../doc-index.json";
 
 export function DocNavigation() {
   const location = useLocation();
-  const flatPages = flattenDocPages(docIndex);
+  const flatPages = flattenDocPages(docIndex as DocIndex[]);
   const currentIndex = () =>
     flatPages.findIndex(
       (page) => `${import.meta.env.BASE_URL}${page.path}` === location.pathname,
