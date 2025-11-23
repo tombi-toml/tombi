@@ -18,7 +18,7 @@ export const LinkCard: Component<LinkCardProps> = (props) => {
     >
       <a
         href={props.url}
-        class="block text-inherit no-underline p-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-tombi-primary focus-visible:ring-offset-2"
+        class="block text-inherit no-underline p-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         target="_blank"
         rel="noopener noreferrer"
       >
