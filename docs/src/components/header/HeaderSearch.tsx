@@ -1,10 +1,9 @@
-import { TbSearch, TbX, TbLoaderQuarter } from "solid-icons/tb";
+import { TbLoaderQuarter, TbSearch } from "solid-icons/tb";
 import { createSignal, onMount } from "solid-js";
 import { detectOperatingSystem } from "~/utils/platform";
-import { IconButton } from "../button/IconButton";
-import { searchDocumentation, type SearchResult } from "~/utils/search";
-import { SearchResults } from "../search/SearchResults";
+import { type SearchResult, searchDocumentation } from "~/utils/search";
 import breakpoints from "../../../breakpoints.json";
+import { SearchResults } from "../search/SearchResults";
 
 interface HeaderSearchProps {
   isSearchOpen: boolean;
