@@ -369,3 +369,62 @@ pub struct FormatRules {
     )]
     pub trailing_comment_space_width: Option<TrailingCommentSpaceWidth>,
 }
+
+impl FormatRules {
+    pub fn override_with(self, override_rules: &Self) -> Self {
+        Self {
+            array_bracket_space_width: self
+                .array_bracket_space_width
+                .or(override_rules.array_bracket_space_width),
+            array_comma_space_width: self
+                .array_comma_space_width
+                .or(override_rules.array_comma_space_width),
+            date_time_delimiter: self
+                .date_time_delimiter
+                .or(override_rules.date_time_delimiter),
+            indent_style: self.indent_style.or(override_rules.indent_style),
+            indent_sub_tables: self.indent_sub_tables.or(override_rules.indent_sub_tables),
+            indent_table_key_value_pairs: self
+                .indent_table_key_value_pairs
+                .or(override_rules.indent_table_key_value_pairs),
+            #[allow(deprecated)]
+            indent_table_key_values: self
+                .indent_table_key_values
+                .or(override_rules.indent_table_key_values),
+            indent_width: self.indent_width.or(override_rules.indent_width),
+            inline_table_brace_space_width: self
+                .inline_table_brace_space_width
+                .or(override_rules.inline_table_brace_space_width),
+            inline_table_comma_space_width: self
+                .inline_table_comma_space_width
+                .or(override_rules.inline_table_comma_space_width),
+            key_value_equals_sign_alignment: self
+                .key_value_equals_sign_alignment
+                .or(override_rules.key_value_equals_sign_alignment),
+            #[allow(deprecated)]
+            key_value_equal_alignment: self
+                .key_value_equal_alignment
+                .or(override_rules.key_value_equal_alignment),
+            string_quote_style: self
+                .string_quote_style
+                .or(override_rules.string_quote_style),
+            trailing_comment_alignment: self
+                .trailing_comment_alignment
+                .or(override_rules.trailing_comment_alignment),
+            key_value_equals_sign_space_width: self
+                .key_value_equals_sign_space_width
+                .or(override_rules.key_value_equals_sign_space_width),
+            #[allow(deprecated)]
+            key_value_equal_space_width: self
+                .key_value_equal_space_width
+                .or(override_rules.key_value_equal_space_width),
+            line_ending: self.line_ending.or(override_rules.line_ending),
+            line_width: self.line_width.or(override_rules.line_width),
+            #[allow(deprecated)]
+            quote_style: self.quote_style.or(override_rules.quote_style),
+            trailing_comment_space_width: self
+                .trailing_comment_space_width
+                .or(override_rules.trailing_comment_space_width),
+        }
+    }
+}

@@ -10,17 +10,16 @@ mod types;
 
 pub use error::Error;
 pub use files::FilesOptions;
-pub use format::FormatOptions;
+pub use format::*;
 pub use level::ConfigLevel;
-pub use lint::LintOptions;
+pub use lint::*;
+pub use overrides::*;
 pub use schema::SchemaOverviewOptions;
 pub use schema::{RootSchema, SchemaItem, SubSchema};
 pub use server::{LspCompletion, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
-
-use crate::overrides::OverrideItem;
 
 pub const TOMBI_TOML_FILENAME: &str = "tombi.toml";
 pub const CONFIG_TOML_FILENAME: &str = "config.toml";
@@ -65,9 +64,9 @@ pub struct Config {
 
     pub files: Option<FilesOptions>,
 
-    pub format: Option<FormatOptions>,
+    format: Option<FormatOptions>,
 
-    pub lint: Option<LintOptions>,
+    lint: Option<LintOptions>,
 
     lsp: Option<LspOptions>,
 
@@ -107,5 +106,43 @@ impl Config {
     pub fn lsp(&self) -> Option<&LspOptions> {
         #[allow(deprecated)]
         self.lsp.as_ref().or(self.server.as_ref())
+    }
+
+    pub fn overrides(&self) -> Option<&Vec<OverrideItem>> {
+        self.overrides.as_ref()
+    }
+
+    pub fn format_rules(&self, override_options: Option<&OverrideFormatOptions>) -> FormatRules {
+        let base_rules = self
+            .format
+            .clone()
+            .and_then(|format| format.rules)
+            .unwrap_or_default();
+
+        let Some(override_rules) = override_options
+            .as_ref()
+            .and_then(|options| options.rules.as_ref())
+        else {
+            return base_rules;
+        };
+
+        base_rules.override_with(override_rules)
+    }
+
+    pub fn lint_rules(&self, override_options: Option<&OverrideLintOptions>) -> LintRules {
+        let base_rules = self
+            .lint
+            .clone()
+            .and_then(|lint| lint.rules)
+            .unwrap_or_default();
+
+        let Some(override_rules) = override_options
+            .as_ref()
+            .and_then(|options| options.rules.as_ref())
+        else {
+            return base_rules;
+        };
+
+        base_rules.override_with(override_rules)
     }
 }

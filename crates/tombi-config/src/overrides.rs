@@ -9,13 +9,13 @@ use crate::{format::FormatRules, lint::LintRules, BoolDefaultTrue};
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 pub struct OverrideItem {
     /// # Files options to override
-    pub(crate) files: OverrideFilesOptions,
+    pub files: OverrideFilesOptions,
 
     /// # Format options to override
-    pub(crate) format: Option<OverrideFormatOptions>,
+    pub format: Option<OverrideFormatOptions>,
 
     /// # Lint options to override
-    pub(crate) lint: Option<OverrideLintOptions>,
+    pub lint: Option<OverrideLintOptions>,
 }
 
 /// # Files options to override
