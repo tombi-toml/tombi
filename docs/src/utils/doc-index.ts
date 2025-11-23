@@ -1,8 +1,8 @@
-export type DicIndex = {
+export type DocIndex = {
   title: string;
   description: string;
   path: string;
-  children?: DicIndex[];
+  children?: DocIndex[];
 };
 
 export type FlattenedDocPage = {
@@ -11,7 +11,7 @@ export type FlattenedDocPage = {
   path: string;
 };
 
-export function flattenDocPages(pages: DicIndex[]): FlattenedDocPage[] {
+export function flattenDocPages(pages: DocIndex[]): FlattenedDocPage[] {
   return pages.reduce<FlattenedDocPage[]>((acc, page) => {
     acc.push(page);
     if (page.children) {
