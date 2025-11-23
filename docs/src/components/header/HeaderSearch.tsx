@@ -61,8 +61,8 @@ export function HeaderSearch(props: HeaderSearchProps) {
   return (
     <div
       class={`
-        ${props.isSearchOpen ? "w-full" : "w-10"}
-        flex justify-end md:w-full items-center max-w-200 gap-2
+        ${props.isSearchOpen ? "w-full" : "w-0"}
+        md:w-full flex justify-end items-center max-w-200 gap-2
       `}
     >
       <div
@@ -111,28 +111,6 @@ export function HeaderSearch(props: HeaderSearchProps) {
           <SearchResults results={searchResults()} />
         </div>
       </div>
-      <IconButton
-        onClick={() => {
-          props.setIsSearchOpen(!props.isSearchOpen);
-          if (!props.isSearchOpen) {
-            setSearchQuery("");
-            setSearchResults([]);
-          }
-        }}
-        class="md:hidden sm:mr-0 ml-2 mr-4 py-1 relative"
-        alt={props.isSearchOpen ? "Close Search" : "Search"}
-      >
-        <div
-          class={`absolute transition-all duration-300 ${props.isSearchOpen ? "opacity-100 rotate-0" : "opacity-0 -rotate-90"}`}
-        >
-          <TbX size={24} />
-        </div>
-        <div
-          class={`transition-all duration-300 ${props.isSearchOpen ? "opacity-0 rotate-90" : "opacity-100 rotate-0"}`}
-        >
-          <TbSearch size={24} />
-        </div>
-      </IconButton>
     </div>
   );
 }

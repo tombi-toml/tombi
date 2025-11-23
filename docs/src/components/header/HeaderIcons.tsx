@@ -1,9 +1,14 @@
 import { createSignal, onMount } from "solid-js";
-import { TbBrandGithubFilled, TbMoonFilled, TbSunFilled } from "solid-icons/tb";
+import { TbBrandGithubFilled, TbMoonFilled, TbSunFilled, TbSearch, TbX } from "solid-icons/tb";
 import { LinkIconButton } from "../button/LinkIconButton";
 import { IconButton } from "../button/IconButton";
 
-export function HeaderIcons() {
+interface HeaderIconsProps {
+  isSearchOpen: boolean;
+  setIsSearchOpen: (open: boolean) => void;
+}
+
+export function HeaderIcons(props: HeaderIconsProps) {
   const [isDark, setIsDark] = createSignal(false);
   const [rotation, setRotation] = createSignal(0);
 
@@ -30,12 +35,28 @@ export function HeaderIcons() {
   };
 
   return (
-    <div class="hidden sm:flex items-center md:pl-4 sm:pl-0 pr-4 space-x-1">
+    <div class="flex items-center md:pl-4 pr-4 space-x-1">
+      <IconButton
+        onClick={() => props.setIsSearchOpen(!props.isSearchOpen)}
+        class="md:hidden py-1 relative"
+        alt={props.isSearchOpen ? "Close Search" : "Search"}
+      >
+        <div
+          class={`absolute transition-all duration-300 ${props.isSearchOpen ? "opacity-100 rotate-0" : "opacity-0 -rotate-90"}`}
+        >
+          <TbX size={24} />
+        </div>
+        <div
+          class={`transition-all duration-300 ${props.isSearchOpen ? "opacity-0 rotate-90" : "opacity-100 rotate-0"}`}
+        >
+          <TbSearch size={24} />
+        </div>
+      </IconButton>
       <IconButton
         id="dark-mode-toggle"
         onClick={toggleDarkMode}
         alt="Toggle dark mode"
-        class="flex items-center justify-center transition-transform duration-300 ease-out forwards"
+        class="hidden sm:flex items-center justify-center transition-transform duration-300 ease-out forwards"
         style={`transform: rotate(${rotation()}deg)`}
       >
         {isDark() ? <TbMoonFilled size={28} /> : <TbSunFilled size={28} />}
@@ -43,7 +64,7 @@ export function HeaderIcons() {
       <LinkIconButton
         href="https://x.com/tombi_toml"
         alt="X (Twitter)"
-        class="w-6 h-6"
+        class="hidden sm:block w-6 h-6"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -60,7 +81,7 @@ export function HeaderIcons() {
       <LinkIconButton
         href="https://github.com/tombi-toml/tombi"
         alt="GitHub"
-        class="w-6 h-6"
+        class="hidden sm:block w-6 h-6"
       >
         <TbBrandGithubFilled size={28} aria-label="GitHub" />
       </LinkIconButton>
