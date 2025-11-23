@@ -3,6 +3,7 @@ mod files;
 pub mod format;
 mod level;
 mod lint;
+mod overrides;
 mod schema;
 mod server;
 mod types;
@@ -12,12 +13,14 @@ pub use files::FilesOptions;
 pub use format::FormatOptions;
 pub use level::ConfigLevel;
 pub use lint::LintOptions;
-pub use schema::SchemaOptions;
-pub use schema::{RootSchema, Schema, SubSchema};
+pub use schema::SchemaOverviewOptions;
+pub use schema::{RootSchema, SchemaItem, SubSchema};
 pub use server::{LspCompletion, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
+
+use crate::overrides::OverrideItem;
 
 pub const TOMBI_TOML_FILENAME: &str = "tombi.toml";
 pub const CONFIG_TOML_FILENAME: &str = "config.toml";
@@ -62,13 +65,10 @@ pub struct Config {
 
     pub files: Option<FilesOptions>,
 
-    /// # Formatter options
     pub format: Option<FormatOptions>,
 
-    /// # Linter options
     pub lint: Option<LintOptions>,
 
-    /// # Language Server options
     lsp: Option<LspOptions>,
 
     /// # Language Server options
@@ -78,11 +78,13 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", deprecated)]
     server: Option<LspOptions>,
 
-    /// # Schema options
-    pub schema: Option<SchemaOptions>,
+    pub schema: Option<SchemaOverviewOptions>,
 
-    /// # Schema catalog items
-    pub schemas: Option<Vec<Schema>>,
+    /// # Schema items
+    pub schemas: Option<Vec<SchemaItem>>,
+
+    /// # Override config items
+    overrides: Option<Vec<OverrideItem>>,
 }
 
 impl Config {

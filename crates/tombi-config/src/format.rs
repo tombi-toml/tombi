@@ -14,9 +14,6 @@ use crate::{
 };
 
 /// # Formatter options
-///
-/// To avoid needless discussion of formatting rules,
-/// we do not currently have a configuration item for formatting.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
