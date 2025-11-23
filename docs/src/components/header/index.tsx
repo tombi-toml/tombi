@@ -37,7 +37,7 @@ export function Header() {
           <h1
             class={`${
               !isSearchOpen() ? "opacity-100" : "opacity-0"
-            } absolute left-1/2 transform -translate-x-1/2 text-white text-lg font-bold text-center md:hidden pointer-events-none transition-opacity duration-200`}
+            } absolute left-1/2 transform -translate-x-1/2 text-white text-lg font-bold text-center md:hidden pointer-events-none transition-opacity duration-200 px-20 max-w-full overflow-hidden text-ellipsis whitespace-nowrap`}
           >
             {getPageTitle()}
           </h1>
@@ -45,7 +45,10 @@ export function Header() {
             isSearchOpen={isSearchOpen()}
             setIsSearchOpen={setIsSearchOpen}
           />
-          <HeaderIcons />
+          <HeaderIcons
+            isSearchOpen={isSearchOpen()}
+            setIsSearchOpen={setIsSearchOpen}
+          />
         </div>
       </nav>
     </header>

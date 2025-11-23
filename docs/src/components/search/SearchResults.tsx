@@ -73,7 +73,7 @@ export function SearchResults(props: SearchResultsProps) {
   return (
     <Show when={props.results.length > 0}>
       <div
-        class="fixed left-0 right-0 mt-2 mx-auto max-w-150 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-h-[80vh] overflow-y-auto z-[60]"
+        class="fixed left-0 right-0 mt-2 mx-auto max-w-150 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-[80vh] overflow-y-auto z-[60]"
         style={{ top: "calc(5rem + 4px)" }}
       >
         <div class="p-4">
@@ -81,7 +81,7 @@ export function SearchResults(props: SearchResultsProps) {
             {(result) => (
               <A
                 href={result.url}
-                class="block p-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg mb-2 transition-colors"
+                class="block p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg mb-2 transition-colors border border-transparent dark:border-gray-800"
               >
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                   <HighlightedText
