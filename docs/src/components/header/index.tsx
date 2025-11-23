@@ -1,6 +1,6 @@
 import { useLocation } from "@solidjs/router";
 import { createSignal } from "solid-js";
-import { type DicIndex, flattenDocPages } from "~/utils/doc-index";
+import { type DocIndex, flattenDocPages } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
 import { HeaderIcons } from "./HeaderIcons";
 import { HeaderLogo } from "./HeaderLogo";
@@ -20,7 +20,7 @@ export function Header() {
     if (path === "/") return "Tombi";
     if (path === "/playground") return "Playground";
 
-    const flattenedPages = flattenDocPages(docIndex as DicIndex[]);
+    const flattenedPages = flattenDocPages(docIndex as DocIndex[]);
     const page = flattenedPages.find((page) => page.path === path);
     return page?.title || "Tombi";
   };

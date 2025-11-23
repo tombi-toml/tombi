@@ -1,12 +1,12 @@
 import { A, useLocation } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
 import { createMemo, createSignal, For } from "solid-js";
-import type { DicIndex } from "~/utils/doc-index";
+import type { DocIndex } from "~/utils/doc-index";
 import docIndex from "../../doc-index.json";
 
-const docIndexs: DicIndex[] = docIndex;
+const docIndexs: DocIndex[] = docIndex;
 
-const TreeItem = (props: { item: DicIndex; level: number }) => {
+const TreeItem = (props: { item: DocIndex; level: number }) => {
   const location = useLocation();
   const isCurrentPage = createMemo(
     () => location.pathname === `${import.meta.env.BASE_URL}${props.item.path}`,

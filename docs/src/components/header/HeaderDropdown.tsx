@@ -1,7 +1,7 @@
 import type { Accessor } from "solid-js";
 import { createEffect, For } from "solid-js";
 import { isServer } from "solid-js/web";
-import type { DicIndex } from "~/utils/doc-index";
+import type { DocIndex } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
 import { HeaderDropdownItem } from "./HeaderDropdownItem";
 
@@ -10,7 +10,7 @@ interface HeaderDropdownProps {
   onSelect: () => void;
 }
 
-const menuItems: DicIndex[] = [
+const menuItems: DocIndex[] = [
   { title: "Home", path: "/" },
   { title: "Docs", path: "/docs", children: docIndex },
   { title: "Playground", path: "/playground" },
