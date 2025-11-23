@@ -6,18 +6,18 @@ mod walk_dir;
 use std::path::Path;
 
 use fast_glob::glob_match;
-use tombi_config::{FormatRules, LintRules, OverrideFilesOptions};
+use tombi_config::{FormatOptions, LintOptions, OverrideFilesOptions};
 
 pub use error::Error;
 pub use file_match::{matches_file_patterns, MatchResult};
 pub use file_search::{search_pattern_matched_paths, FileInputType, FileSearch};
 pub use walk_dir::WalkDir;
 
-pub fn get_format_rules(
+pub fn get_format_options(
     config: &tombi_config::Config,
     text_document_path: Option<&Path>,
     config_path: Option<&Path>,
-) -> Option<FormatRules> {
+) -> Option<FormatOptions> {
     if let Some(text_document_path) = text_document_path {
         // Check overrides
         if let Some(overrides) = config.overrides() {
@@ -30,7 +30,7 @@ pub fn get_format_rules(
                                 return None;
                             }
                         }
-                        return Some(config.format_rules(Some(format)));
+                        return Some(config.format(Some(format)));
                     }
                     break;
                 }
@@ -38,14 +38,14 @@ pub fn get_format_rules(
         }
     }
 
-    Some(config.format_rules(None))
+    Some(config.format(None))
 }
 
-pub fn get_lint_rules(
+pub fn get_lint_options(
     config: &tombi_config::Config,
     text_document_path: Option<&Path>,
     config_path: Option<&Path>,
-) -> Option<LintRules> {
+) -> Option<LintOptions> {
     if let Some(text_document_path) = text_document_path {
         // Check overrides
         if let Some(overrides) = config.overrides() {
@@ -58,7 +58,7 @@ pub fn get_lint_rules(
                                 return None;
                             }
                         }
-                        return Some(config.lint_rules(Some(lint)));
+                        return Some(config.lint(Some(lint)));
                     }
                     break;
                 }
@@ -66,7 +66,7 @@ pub fn get_lint_rules(
         }
     }
 
-    Some(config.lint_rules(None))
+    Some(config.lint(None))
 }
 
 /// Check if a path matches override files patterns

@@ -112,37 +112,52 @@ impl Config {
         self.overrides.as_ref()
     }
 
-    pub fn format_rules(&self, override_options: Option<&OverrideFormatOptions>) -> FormatRules {
-        let base_rules = self
-            .format
-            .clone()
-            .and_then(|format| format.rules)
-            .unwrap_or_default();
+    pub fn format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {
+        let options = self.format.clone().unwrap_or_default();
+        let base_rules = options.rules.unwrap_or_default();
 
-        let Some(override_rules) = override_options
+        let rules = if let Some(override_rules) = override_options
             .as_ref()
             .and_then(|options| options.rules.as_ref())
-        else {
-            return base_rules;
+        {
+            base_rules.override_with(override_rules)
+        } else {
+            base_rules
         };
 
-        base_rules.override_with(override_rules)
+        #[allow(deprecated)]
+        FormatOptions {
+            rules: Some(rules),
+            array_bracket_space_width: options.array_bracket_space_width,
+            array_element_space_width: options.array_element_space_width,
+            date_time_delimiter: options.date_time_delimiter,
+            indent_style: options.indent_style,
+            indent_width: options.indent_width,
+            inline_table_brace_space_width: options.inline_table_brace_space_width,
+            inline_table_element_space_width: options.inline_table_element_space_width,
+            line_ending: options.line_ending,
+            line_width: options.line_width,
+            quote_style: options.quote_style,
+            trailing_comment_space_width: options.trailing_comment_space_width,
+        }
     }
 
-    pub fn lint_rules(&self, override_options: Option<&OverrideLintOptions>) -> LintRules {
+    pub fn lint(&self, override_options: Option<&OverrideLintOptions>) -> LintOptions {
         let base_rules = self
             .lint
             .clone()
             .and_then(|lint| lint.rules)
             .unwrap_or_default();
 
-        let Some(override_rules) = override_options
+        let rules = if let Some(override_rules) = override_options
             .as_ref()
             .and_then(|options| options.rules.as_ref())
-        else {
-            return base_rules;
+        {
+            base_rules.override_with(override_rules)
+        } else {
+            base_rules
         };
 
-        base_rules.override_with(override_rules)
+        LintOptions { rules: Some(rules) }
     }
 }

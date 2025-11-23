@@ -96,8 +96,6 @@ where
     };
 
     runtime.block_on(async {
-        let lint_options = config.lint.clone().unwrap_or_default();
-
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
@@ -112,10 +110,21 @@ where
         match input {
             FileSearch::Stdin => {
                 tracing::debug!("linting... stdin input");
+                let stdin_path = args.stdin_filename.as_deref().map(std::path::Path::new);
+
+                // Get lint options with override support
+                let Some(lint_options) =
+                    tombi_glob::get_lint_options(&config, stdin_path, config_path.as_deref())
+                else {
+                    tracing::debug!("Linting disabled for stdin by override");
+                    success_num += 1;
+                    return Ok((success_num, error_num));
+                };
+
                 if lint_file(
                     tokio::io::stdin(),
                     printer,
-                    args.stdin_filename.as_deref().map(std::path::Path::new),
+                    stdin_path,
                     toml_version,
                     &lint_options,
                     &schema_store,
@@ -136,10 +145,24 @@ where
                     match file {
                         Ok(source_path) => {
                             tracing::debug!("linting... {:?}", source_path);
+
+                            // Get lint options with override support
+                            let Some(lint_options) = tombi_glob::get_lint_options(
+                                &config,
+                                Some(source_path.as_ref()),
+                                config_path.as_deref(),
+                            ) else {
+                                tracing::debug!(
+                                    "Linting disabled for {:?} by override",
+                                    source_path
+                                );
+                                success_num += 1;
+                                continue;
+                            };
+
                             match tokio::fs::File::open(&source_path).await {
                                 Ok(file) => {
                                     let printer = printer.clone();
-                                    let options = lint_options.clone();
                                     let schema_store = schema_store.clone();
 
                                     tasks.spawn(async move {
@@ -148,7 +171,7 @@ where
                                             printer,
                                             Some(source_path.as_ref()),
                                             toml_version,
-                                            &options,
+                                            &lint_options,
                                             &schema_store,
                                             use_ansi_color,
                                             args.error_on_warnings,
