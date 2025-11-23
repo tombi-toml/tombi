@@ -161,7 +161,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
         <button
           type="button"
           onClick={() => setSelectedCategory(null)}
-          class={`px-4 py-2 rounded-lg border-0 transition-all btn-focus ${
+          class={`px-4 py-2 rounded-lg border-0 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
             !selectedCategory()
               ? "bg-tombi-primary text-white shadow-lg hover:shadow-xl"
               : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
@@ -174,7 +174,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
             <button
               type="button"
               onClick={() => setSelectedCategory(category.id)}
-              class={`px-4 py-2 rounded-lg border-0 transition-all flex items-center gap-2 btn-focus ${
+              class={`px-4 py-2 rounded-lg border-0 transition-all flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
                 selectedCategory() === category.id
                   ? "bg-tombi-primary text-white shadow-lg hover:shadow-xl"
                   : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
@@ -192,7 +192,7 @@ export const InstallationMethodGrid: Component<InstallationMethodGridProps> = (
             <button
               type="button"
               onClick={() => props.onSelect(method.id)}
-              class="group relative p-2 rounded-xl border-0 bg-white hover:shadow-lg transition-all cursor-pointer dark:bg-gray-900"
+              class="group relative p-2 rounded-xl border-0 bg-white hover:shadow-lg transition-all cursor-pointer dark:bg-gray-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2"
             >
               <div class="flex flex-col items-center gap-2">
                 <img
