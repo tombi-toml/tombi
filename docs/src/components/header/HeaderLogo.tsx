@@ -30,7 +30,9 @@ const logoProps: LogoProps[] = [
 export function HeaderLogo() {
   const [isOpen, setIsOpen] = createSignal(false);
 
-  const toggleMenu = () => {
+  const toggleMenu = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsOpen(!isOpen());
   };
 
@@ -38,21 +40,33 @@ export function HeaderLogo() {
     setIsOpen(false);
   };
 
+  const handleLogoClick = (e: MouseEvent, props: LogoProps) => {
+    if (props.preventDefault) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMenu(e);
+    }
+  };
+
+  const handleLogoKeyDown = (e: KeyboardEvent, props: LogoProps) => {
+    if (props.preventDefault && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMenu(e);
+    }
+  };
+
   return (
     <div class="flex-shrink-0 flex items-center relative">
-      <button
-        type="button"
-        onClick={toggleMenu}
-        onKeyUp={toggleMenu}
-        class="cursor-pointer md:cursor-default ml-4 menu-toggle bg-transparent border-none p-0"
-      >
+      <div class="ml-4 menu-toggle">
         <For each={logoProps}>
           {(props) => (
             <A
               id={props.id}
               href="/"
-              class={`${props.linkClass} outline-none items-center no-underline transition-all duration-300 ease-in-out focus-visible:ring-2 focus-visible:ring-tombi-focus focus:rounded-lg relative`}
-              onClick={(e) => props.preventDefault && e.preventDefault()}
+              class={`${props.linkClass} outline-none items-center no-underline transition-all duration-300 ease-in-out focus-visible:ring-2 focus-visible:ring-tombi-focus focus:rounded-lg relative cursor-pointer md:cursor-default`}
+              onClick={(e) => handleLogoClick(e, props)}
+              onKeyDown={(e) => handleLogoKeyDown(e, props)}
             >
               <img
                 src={props.src}
@@ -62,7 +76,7 @@ export function HeaderLogo() {
             </A>
           )}
         </For>
-      </button>
+      </div>
 
       <HeaderDropdown isExpanded={isOpen} onSelect={handleSelect} />
     </div>
