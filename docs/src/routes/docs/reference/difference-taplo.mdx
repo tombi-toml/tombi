@@ -176,8 +176,9 @@ The following table shows the correspondence between [Taplo's options](https://t
 ### Override Config
 
 Taplo's [`[[rule]]`](https://taplo.tamasfe.dev/configuration/file.html#rules) corresponds to Tombi's [`[[overrides]]`](/docs/configuration#overrides).
+Both allow overriding settings for specific files using `include`/`exclude` patterns.
 
-In Taplo, you can use `include`/`exclude` patterns and `keys` to override formatting and schema settings for specific files or specific parts of TOML documents.
-Similarly, Tombi's `[[overrides]]` allows you to override settings on a per-file basis using `files.include`/`files.exclude` patterns.
-
-However, Tombi does not currently support the equivalent of Taplo's `keys` feature (overriding settings for specific key paths within TOML documents).
+Tombi does not support Taplo's `keys` feature (per-key-path overrides).
+The `keys` feature was primarily used for selective reordering,
+but Tombi uses [schema-based auto sorting](/docs/formatter/auto-sorting) instead.
+For applying schemas to specific key paths, use [`schemas[*].root`](/docs/configuration#sub-schema).
