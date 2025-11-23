@@ -1,4 +1,5 @@
 import { A, useLocation } from "@solidjs/router";
+import { BiSolidLeftArrow, BiSolidRightArrow } from "solid-icons/bi";
 import { flattenDocPages } from "~/utils/doc-index";
 import docIndex from "../../doc-index.json";
 
@@ -32,7 +33,7 @@ export function DocNavigation() {
               href={prev.path}
               class="no-underline text-blue-500 hover:text-blue-600"
             >
-              ← {prev.title}
+              <BiSolidLeftArrow size={12} /> {prev.title}
             </A>
           )
         );
@@ -45,7 +46,7 @@ export function DocNavigation() {
               href={next.path}
               class="no-underline text-blue-500 hover:text-blue-600 ml-auto"
             >
-              {next.title} →
+              {next.title} <BiSolidRightArrow size={12} />
             </A>
           )
         );
