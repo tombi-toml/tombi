@@ -11,8 +11,9 @@ export const CodeBlock: ParentComponent<CodeBlockProps> = (props) => {
     <div class="code-block-wrapper relative max-w-full overflow-hidden my-4">
       <pre
         class={`language-${props.language || "text"} overflow-x-auto max-w-full pr-20`}
+        tabindex="-1"
       >
-        <code class={`language-${props.language || "text"}`}>
+        <code class={`language-${props.language || "text"}`} tabindex="-1">
           {`${props.code}`}
         </code>
       </pre>
