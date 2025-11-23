@@ -685,6 +685,18 @@ include = ["pyproject.toml"]
 
 Override configuration settings for specific file patterns. You can define multiple override rules, and matching settings will be applied to files.
 
+```toml
+[[overrides]]
+files.include = ["tests/**/*.toml"]
+
+[overrides.format.rules]
+indent-width = 4
+line-width = 120
+
+[overrides.lint.rules]
+key-empty = "off"
+```
+
 ### overrides[*].files
 
 Specify file patterns to which the override should be applied.
@@ -722,18 +734,6 @@ Override format rules. Only the specified rules will be overridden, and the rest
 
 Available rules are the same as [format.rules](#format-rules).
 
-```toml
-[[overrides]]
-[overrides.files]
-include = ["tests/**/*.toml"]
-
-[overrides.format]
-enabled = true
-[overrides.format.rules]
-indent-width = 4
-line-width = 120
-```
-
 ### overrides[*].lint
 
 Override lint settings.
@@ -750,15 +750,3 @@ Enable or disable linting feature.
 Override lint rules. Only the specified rules will be overridden, and the rest will use the base configuration.
 
 Available rules are the same as [lint.rules](#lint-rules).
-
-```toml
-[[overrides]]
-[overrides.files]
-include = ["legacy/**/*.toml"]
-
-[overrides.lint]
-enabled = true
-[overrides.lint.rules]
-key-empty = "off"
-dotted-keys-out-of-order = "off"
-```
