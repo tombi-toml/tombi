@@ -675,6 +675,32 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tombi_schemas_multiple(
+                r#"
+                [[schemas]]
+                include = ["type-test.toml"]
+                path = "schemas/type-test.schema.json"
+
+                [[schemas]]
+                include = ["type-test.toml"]
+                path = "schemas/type-test.schema.json"
+                "#,
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(
+                r#"
+                [[schemas]]
+                path = "schemas/type-test.schema.json"
+                include = ["type-test.toml"]
+
+                [[schemas]]
+                path = "schemas/type-test.schema.json"
+                include = ["type-test.toml"]
+                "#
+            )
+        }
     }
 
     mod type_test {
