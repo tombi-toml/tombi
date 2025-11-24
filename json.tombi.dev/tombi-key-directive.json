@@ -128,6 +128,18 @@
             }
           ]
         },
+        "not-schema-match": {
+          "title": "Not schema match",
+          "description": "Check if the value does not match the `not` schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "key-empty": {
           "title": "Key empty",
           "description": "Check if the key is empty.\n\n```toml\n# VALID BUT DISCOURAGED\n\"\" = true\n```",

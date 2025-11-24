@@ -1232,7 +1232,7 @@
           "title": "The accessors to apply the sub schema",
           "type": "string",
           "examples": [
-            "tools.tombi",
+            "tool.tombi",
             "items[0].name"
           ],
           "minLength": 1

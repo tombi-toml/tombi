@@ -205,7 +205,7 @@ pub struct RootSchema {
 pub struct SubSchema {
     /// # The accessors to apply the sub schema
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    #[cfg_attr(feature = "jsonschema", schemars(example = "tools.tombi"))]
+    #[cfg_attr(feature = "jsonschema", schemars(example = "tool.tombi"))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "items[0].name"))]
     pub root: String,
 
