@@ -174,7 +174,7 @@ pub async fn lint_source_schema_from_ast(
         .resolve_source_schema_from_ast(root, source_uri_or_path)
         .await
     {
-        Ok(Some(schema)) => (Some(schema), None),
+        Ok(Some(source_schema)) => (Some(source_schema), None),
         Ok(None) => (None, None),
         Err(error_with_range) => {
             let source_schema = if let Some(source_uri_or_path) = source_uri_or_path {
