@@ -137,14 +137,14 @@ impl GetHeaderAccessors for crate::ArrayOfTable {
 
         let mut accessors = vec![];
         let mut header_keys = vec![];
-        let keys = self.header()?.keys();
-        let keys_count = keys.clone().count();
+        let keys = self.header()?.keys().collect_vec();
+        let keys_len = keys.len();
         for key in keys {
             let key_text = key.to_raw_text(toml_version);
             accessors.push(Accessor::Key(key_text.clone()));
             header_keys.push(key_text);
 
-            if header_keys.len() == keys_count {
+            if header_keys.len() == keys_len {
                 break;
             }
             if let Some(index) = array_of_tables_keys
