@@ -15,7 +15,7 @@ use crate::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
-    validate::{push_deprecated, push_deprecated_value, type_mismatch},
+    validate::{not_schema::validate_not, push_deprecated, push_deprecated_value, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -140,6 +140,18 @@ async fn validate_table(
 ) -> Result<(), crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
+
+    if let Some(not_schema) = table_schema.not.as_ref() {
+        validate_not(
+            table_value,
+            accessors,
+            not_schema,
+            current_schema,
+            schema_context,
+            lint_rules.as_ref().map(|rules| &rules.common),
+        )
+        .await?;
+    }
 
     for (key, value) in table_value.key_values() {
         let key_rules = if let Some(directives) = key.comment_directives() {

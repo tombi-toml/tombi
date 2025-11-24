@@ -6,6 +6,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, ValueSchema};
 
 use super::Validate;
+use crate::validate::not_schema::validate_not;
 use crate::validate::{all_of::validate_all_of, one_of::validate_one_of};
 use crate::validate::{push_deprecated, type_mismatch};
 
@@ -24,6 +25,18 @@ where
     tracing::trace!("any_of_schema = {:?}", any_of_schema);
 
     async move {
+        if let Some(not_schema) = any_of_schema.not.as_ref() {
+            validate_not(
+                value,
+                accessors,
+                not_schema,
+                current_schema,
+                schema_context,
+                common_rules,
+            )
+            .await?;
+        }
+
         let mut schemas = any_of_schema.schemas.write().await;
         let mut total_error = crate::Error::new();
 

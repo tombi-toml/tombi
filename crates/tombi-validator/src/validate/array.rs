@@ -10,7 +10,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
-    validate::{push_deprecated, type_mismatch},
+    validate::{not_schema::validate_not, push_deprecated, type_mismatch},
 };
 
 use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
@@ -132,6 +132,18 @@ async fn validate_array(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     lint_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<(), crate::Error> {
+    if let Some(not_schema) = array_schema.not.as_ref() {
+        validate_not(
+            array_value,
+            accessors,
+            not_schema,
+            current_schema,
+            schema_context,
+            lint_rules.as_ref().map(|rules| &rules.common),
+        )
+        .await?;
+    }
+
     let mut total_diagnostics = vec![];
 
     if let Some(items) = &array_schema.items {

@@ -438,4 +438,10 @@ pub struct CommonLintRules {
     /// Check if more than one schema in the `oneOf` is valid.
     ///
     pub one_of_multiple_match: Option<ErrorRuleOptions>,
+
+    /// # Not schema match
+    ///
+    /// Check if the value does not match the `not` schema.
+    ///
+    pub not_schema_match: Option<ErrorRuleOptions>,
 }

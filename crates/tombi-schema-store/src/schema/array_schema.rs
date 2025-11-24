@@ -9,7 +9,7 @@ use super::{
     CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUri,
     ValueSchema,
 };
-use crate::{Accessor, SchemaStore};
+use crate::{schema::not_schema::NotSchema, Accessor, SchemaStore};
 
 #[derive(Debug, Default, Clone)]
 pub struct ArraySchema {
@@ -26,6 +26,7 @@ pub struct ArraySchema {
     pub examples: Option<Vec<tombi_json::Value>>,
     pub values_order: Option<XTombiArrayValuesOrder>,
     pub deprecated: Option<bool>,
+    pub not: Option<NotSchema>,
 }
 
 impl ArraySchema {
@@ -71,6 +72,7 @@ impl ArraySchema {
                 .and_then(XTombiArrayValuesOrder::new),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
             range: object.range,
+            not: NotSchema::new(object, string_formats),
         }
     }
 

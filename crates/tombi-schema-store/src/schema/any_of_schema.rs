@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{ReferableValueSchemas, ValueSchema};
-use crate::Referable;
+use crate::{schema::not_schema::NotSchema, Referable};
 
 #[derive(Debug, Default, Clone)]
 pub struct AnyOfSchema {
@@ -17,6 +17,7 @@ pub struct AnyOfSchema {
     pub examples: Option<Vec<tombi_json::Value>>,
     pub deprecated: Option<bool>,
     pub keys_order: Option<TableKeysOrder>,
+    pub not: Option<NotSchema>,
 }
 
 impl AnyOfSchema {
@@ -56,6 +57,7 @@ impl AnyOfSchema {
             keys_order: object
                 .get(X_TOMBI_TABLE_KEYS_ORDER)
                 .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
+            not: NotSchema::new(object, string_formats),
         }
     }
 

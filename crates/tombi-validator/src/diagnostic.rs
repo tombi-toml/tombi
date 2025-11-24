@@ -115,6 +115,9 @@ or set `schema.strict = false` in your `tombi.toml`."#
         valid_count: usize,
         total_count: usize,
     },
+
+    #[error("\"not\" schema is matched")]
+    NotSchemaMatch,
 }
 
 #[derive(Debug)]
@@ -157,6 +160,7 @@ impl Diagnostic {
             DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
             DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
             DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
+            DiagnosticKind::NotSchemaMatch => "not-schema-match",
         }
     }
 

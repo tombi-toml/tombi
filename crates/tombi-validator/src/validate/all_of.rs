@@ -5,7 +5,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
-use crate::validate::push_deprecated;
+use crate::validate::{not_schema::validate_not, push_deprecated};
 
 use super::Validate;
 
@@ -24,6 +24,18 @@ where
     tracing::trace!("all_of_schema = {:?}", all_of_schema);
 
     async move {
+        if let Some(not_schema) = all_of_schema.not.as_ref() {
+            validate_not(
+                value,
+                accessors,
+                not_schema,
+                current_schema,
+                schema_context,
+                common_rules,
+            )
+            .await?;
+        }
+
         let mut total_diagnostics = vec![];
 
         let mut schemas = all_of_schema.schemas.write().await;

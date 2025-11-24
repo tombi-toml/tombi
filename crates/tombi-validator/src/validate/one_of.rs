@@ -8,7 +8,8 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use super::Validate;
 use crate::validate::{
-    all_of::validate_all_of, any_of::validate_any_of, push_deprecated, type_mismatch,
+    all_of::validate_all_of, any_of::validate_any_of, not_schema::validate_not, push_deprecated,
+    type_mismatch,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -23,6 +24,18 @@ where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
     async move {
+        if let Some(not_schema) = one_of_schema.not.as_ref() {
+            validate_not(
+                value,
+                accessors,
+                not_schema,
+                current_schema,
+                schema_context,
+                common_rules,
+            )
+            .await?;
+        }
+
         let mut valid_count = 0;
 
         let mut schemas = one_of_schema.schemas.write().await;

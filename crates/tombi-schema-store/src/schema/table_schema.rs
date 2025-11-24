@@ -13,7 +13,7 @@ use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
-use crate::{Accessor, Referable, SchemaProperties, SchemaStore};
+use crate::{schema::not_schema::NotSchema, Accessor, Referable, SchemaProperties, SchemaStore};
 
 use tombi_json::StringNode;
 
@@ -40,6 +40,7 @@ pub struct TableSchema {
     pub examples: Option<Vec<tombi_json::Object>>,
     pub deprecated: Option<bool>,
     pub additional_key_label: Option<String>,
+    pub not: Option<NotSchema>,
 }
 
 impl TableSchema {
@@ -193,6 +194,7 @@ impl TableSchema {
             additional_key_label: object_node
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
+            not: NotSchema::new(object_node, string_formats),
         }
     }
 
