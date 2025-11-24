@@ -159,12 +159,12 @@
     "path": "/docs/extensions",
     "children": [
       {
-        "title": "Cargo",
+        "title": "Cargo Extension",
         "description": "Rust Cargo.toml specific features and validations.",
         "path": "/docs/extensions/tombi-extension-cargo"
       },
       {
-        "title": "uv",
+        "title": "uv Extension",
         "description": "Python uv project specific features and validations.",
         "path": "/docs/extensions/tombi-extension-uv"
       }
