@@ -264,6 +264,18 @@
             }
           ]
         },
+        "not-schema-match": {
+          "title": "Not schema match",
+          "description": "Check if the value does not match the `not` schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "array-max-values": {
           "title": "Max values",
           "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
