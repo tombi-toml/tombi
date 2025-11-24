@@ -510,10 +510,22 @@ impl SchemaStore {
     async fn try_get_source_schema_from_remote_url(
         &self,
         schema_uri: &SchemaUri,
+        source_path: Option<&std::path::Path>,
     ) -> Result<Option<SourceSchema>, crate::Error> {
+        let source_schema = if let Some(source_path) = source_path {
+            self.resolve_source_schema_from_path(source_path)
+                .await
+                .ok()
+                .flatten()
+        } else {
+            None
+        };
+
         Ok(Some(SourceSchema {
             root_schema: self.try_get_document_schema(schema_uri).await?,
-            sub_schema_uri_map: Default::default(),
+            sub_schema_uri_map: source_schema
+                .map(|source_schema| source_schema.sub_schema_uri_map)
+                .unwrap_or_default(),
         }))
     }
 
@@ -527,7 +539,9 @@ impl SchemaStore {
                 "file" => tombi_uri::Uri::to_file_path(url).ok(),
                 _ => None,
             },
-            Some(Either::Right(path)) => Some(path.to_path_buf()),
+            Some(Either::Right(path)) => {
+                Some(std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()))
+            }
             None => None,
         };
 
@@ -546,7 +560,7 @@ impl SchemaStore {
                 }
             };
             return self
-                .try_get_source_schema_from_remote_url(&schema_uri)
+                .try_get_source_schema_from_remote_url(&schema_uri, source_path.as_deref())
                 .await
                 .map_err(|err| (err, uri_range));
         }
