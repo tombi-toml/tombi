@@ -8,6 +8,7 @@ mod integer;
 mod local_date;
 mod local_date_time;
 mod local_time;
+mod not_schema;
 mod offset_date_time;
 mod one_of;
 mod string;
