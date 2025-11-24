@@ -24,19 +24,8 @@ where
     tracing::trace!("all_of_schema = {:?}", all_of_schema);
 
     async move {
-        if let Some(not_schema) = all_of_schema.not.as_ref() {
-            validate_not(
-                value,
-                accessors,
-                not_schema,
-                current_schema,
-                schema_context,
-                common_rules,
-            )
-            .await?;
-        }
-
         let mut total_diagnostics = vec![];
+        let mut total_score = 0;
 
         let mut schemas = all_of_schema.schemas.write().await;
         for referable_schema in schemas.iter_mut() {
@@ -54,11 +43,12 @@ where
                 continue;
             };
 
-            if let Err(crate::Error { diagnostics, .. }) = value
+            if let Err(crate::Error { diagnostics, score }) = value
                 .validate(accessors, Some(&current_schema), schema_context)
                 .await
             {
                 total_diagnostics.extend(diagnostics);
+                total_score += score;
             }
         }
 
@@ -66,10 +56,28 @@ where
             push_deprecated(&mut total_diagnostics, accessors, value, common_rules);
         }
 
+        if let Some(not_schema) = all_of_schema.not.as_ref() {
+            if let Err(error) = validate_not(
+                value,
+                accessors,
+                not_schema,
+                current_schema,
+                schema_context,
+                common_rules,
+            )
+            .await
+            {
+                total_diagnostics.extend(error.diagnostics);
+            }
+        }
+
         if total_diagnostics.is_empty() {
             Ok(())
         } else {
-            Err(total_diagnostics.into())
+            Err(crate::Error {
+                score: total_score,
+                diagnostics: total_diagnostics,
+            })
         }
     }
     .boxed()
