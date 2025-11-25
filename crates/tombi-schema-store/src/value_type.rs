@@ -141,7 +141,7 @@ impl ValueType {
                             } else if !non_nulls.is_empty() {
                                 flattened.insert(match value_type {
                                     $(ValueType::$other_variant(_) => ValueType::$other_variant(non_nulls),)+
-                                    _ => unreachable!("unexpected value type: {value_type:?}"),
+                                    _ => value_type.simplify(),
                                 });
                             }
                         }
