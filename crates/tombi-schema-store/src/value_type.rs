@@ -122,29 +122,28 @@ impl ValueType {
                                 }
                             }
                         }
-                        // Handle nested types of other composite variants
-                        $(ValueType::$other_variant(nested_value_types))|+ => {
-                            let non_nulls = nested_value_types
-                                .into_iter()
-                                .filter_map(|nested_value_type| {
-                                    if matches!(nested_value_type, ValueType::Null) {
-                                        has_null = true;
-                                        None
-                                    } else {
-                                        Some(nested_value_type)
-                                    }
-                                })
-                                .collect_vec();
+                        // Handle nested types of other composite variants (one match arm per variant)
+                        $(
+                            ValueType::$other_variant(nested_value_types) => {
+                                let non_nulls = nested_value_types
+                                    .into_iter()
+                                    .filter_map(|nested_value_type| {
+                                        if matches!(nested_value_type, ValueType::Null) {
+                                            has_null = true;
+                                            None
+                                        } else {
+                                            Some(nested_value_type)
+                                        }
+                                    })
+                                    .collect_vec();
 
-                            if non_nulls.len() == 1 {
-                                flattened.insert(non_nulls.into_iter().next().unwrap());
-                            } else if !non_nulls.is_empty() {
-                                flattened.insert(match value_type {
-                                    $(ValueType::$other_variant(_) => ValueType::$other_variant(non_nulls),)+
-                                    _ => value_type.simplify(),
-                                });
+                                if non_nulls.len() == 1 {
+                                    flattened.insert(non_nulls.into_iter().next().unwrap());
+                                } else if !non_nulls.is_empty() {
+                                    flattened.insert(ValueType::$other_variant(non_nulls));
+                                }
                             }
-                        }
+                        )+
                         other => {
                             flattened.insert(other);
                         }
