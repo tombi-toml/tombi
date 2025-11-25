@@ -521,11 +521,18 @@ impl SchemaStore {
             None
         };
 
+        let (root_schema, sub_schema_uri_map) = if let Some(source_schema) = source_schema {
+            (source_schema.root_schema, source_schema.sub_schema_uri_map)
+        } else {
+            (None, Default::default())
+        };
+
         Ok(Some(SourceSchema {
-            root_schema: self.try_get_document_schema(schema_uri).await?,
-            sub_schema_uri_map: source_schema
-                .map(|source_schema| source_schema.sub_schema_uri_map)
-                .unwrap_or_default(),
+            root_schema: self
+                .try_get_document_schema(schema_uri)
+                .await?
+                .or(root_schema),
+            sub_schema_uri_map,
         }))
     }
 
