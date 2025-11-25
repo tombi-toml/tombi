@@ -103,197 +103,162 @@ impl ValueType {
     /// For example, `OneOf([OneOf([A, B]), C])` will be simplified to `OneOf([A, B, C])`.
     /// Also, if `Null` is included, it is taken out at the end of the outermost. This always displays `? at the end of type display.
     pub fn simplify(&self) -> Self {
-        match self {
-            ValueType::OneOf(types) => {
-                let mut simplified_types = IndexSet::new();
-                for t in types {
-                    match t.simplify() {
-                        ValueType::OneOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.extend(nested_types.into_iter().filter_map(|t| {
-                                if let ValueType::Null = t {
-                                    has_nullable = true;
-                                    None
+        let simplified = match self {
+            ValueType::OneOf(value_types) => {
+                let mut flattened = IndexSet::new();
+                let mut has_null = false;
+                for value_type in value_types {
+                    match value_type.simplify() {
+                        ValueType::Null => has_null = true,
+                        ValueType::OneOf(nested_value_types) => {
+                            for nested_value_type in nested_value_types {
+                                if matches!(nested_value_type, ValueType::Null) {
+                                    has_null = true;
                                 } else {
-                                    Some(t)
+                                    flattened.insert(nested_value_type);
                                 }
-                            }));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
                             }
                         }
-                        ValueType::AnyOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.insert(ValueType::AnyOf(
-                                nested_types
-                                    .into_iter()
-                                    .filter_map(|t| {
-                                        if let ValueType::Null = t {
-                                            has_nullable = true;
-                                            None
-                                        } else {
-                                            Some(t)
-                                        }
-                                    })
-                                    .collect(),
-                            ));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
-                            }
-                        }
-                        ValueType::AllOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.insert(ValueType::AllOf(
-                                nested_types
-                                    .into_iter()
-                                    .filter_map(|t| {
-                                        if let ValueType::Null = t {
-                                            has_nullable = true;
-                                            None
-                                        } else {
-                                            Some(t)
-                                        }
-                                    })
-                                    .collect(),
-                            ));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
+                        ValueType::AnyOf(nested_value_types)
+                        | ValueType::AllOf(nested_value_types) => {
+                            let non_nulls = nested_value_types
+                                .into_iter()
+                                .filter_map(|nested_value_type| {
+                                    if matches!(nested_value_type, ValueType::Null) {
+                                        has_null = true;
+                                        None
+                                    } else {
+                                        Some(nested_value_type)
+                                    }
+                                })
+                                .collect_vec();
+
+                            if non_nulls.len() == 1 {
+                                flattened.insert(non_nulls.into_iter().next().unwrap());
+                            } else if !non_nulls.is_empty() {
+                                flattened.insert(match value_type {
+                                    ValueType::AnyOf(_) => ValueType::AnyOf(non_nulls),
+                                    _ => ValueType::AllOf(non_nulls),
+                                });
                             }
                         }
                         other => {
-                            simplified_types.insert(other);
+                            flattened.insert(other);
                         }
                     }
                 }
-                ValueType::OneOf(simplified_types.into_iter().collect())
+                if has_null {
+                    flattened.insert(ValueType::Null);
+                }
+                ValueType::OneOf(flattened.into_iter().collect())
             }
-            ValueType::AnyOf(types) => {
-                let mut simplified_types = IndexSet::new();
-                for t in types {
-                    match t.simplify() {
-                        ValueType::OneOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.insert(ValueType::OneOf(
-                                nested_types
-                                    .into_iter()
-                                    .filter_map(|t| {
-                                        if let ValueType::Null = t {
-                                            has_nullable = true;
-                                            None
-                                        } else {
-                                            Some(t)
-                                        }
-                                    })
-                                    .collect(),
-                            ));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
-                            }
-                        }
-                        ValueType::AnyOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.extend(nested_types.into_iter().filter_map(|t| {
-                                if let ValueType::Null = t {
-                                    has_nullable = true;
-                                    None
+            ValueType::AnyOf(value_types) => {
+                let mut flattened = IndexSet::new();
+                let mut has_null = false;
+                for value_type in value_types {
+                    match value_type.simplify() {
+                        ValueType::Null => has_null = true,
+                        ValueType::AnyOf(nested_value_types) => {
+                            for nested_value_type in nested_value_types {
+                                if matches!(nested_value_type, ValueType::Null) {
+                                    has_null = true;
                                 } else {
-                                    Some(t)
+                                    flattened.insert(nested_value_type);
                                 }
-                            }));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
                             }
                         }
-                        ValueType::AllOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.insert(ValueType::AllOf(
-                                nested_types
-                                    .into_iter()
-                                    .filter_map(|t| {
-                                        if let ValueType::Null = t {
-                                            has_nullable = true;
-                                            None
-                                        } else {
-                                            Some(t)
-                                        }
-                                    })
-                                    .collect(),
-                            ));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
+                        ValueType::OneOf(nested_value_types)
+                        | ValueType::AllOf(nested_value_types) => {
+                            let non_nulls = nested_value_types
+                                .into_iter()
+                                .filter_map(|nested_value_type| {
+                                    if matches!(nested_value_type, ValueType::Null) {
+                                        has_null = true;
+                                        None
+                                    } else {
+                                        Some(nested_value_type)
+                                    }
+                                })
+                                .collect_vec();
+                            if non_nulls.len() == 1 {
+                                flattened.insert(non_nulls.into_iter().next().unwrap());
+                            } else if !non_nulls.is_empty() {
+                                flattened.insert(match value_type {
+                                    ValueType::OneOf(_) => ValueType::OneOf(non_nulls),
+                                    _ => ValueType::AllOf(non_nulls),
+                                });
                             }
                         }
                         other => {
-                            simplified_types.insert(other);
+                            flattened.insert(other);
                         }
                     }
                 }
-                ValueType::AnyOf(simplified_types.into_iter().collect())
+                if has_null {
+                    flattened.insert(ValueType::Null);
+                }
+                ValueType::AnyOf(flattened.into_iter().collect())
             }
-            ValueType::AllOf(types) => {
-                let mut simplified_types = IndexSet::new();
-                for t in types {
-                    match t.simplify() {
-                        ValueType::OneOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.insert(ValueType::OneOf(
-                                nested_types
-                                    .into_iter()
-                                    .filter_map(|t| {
-                                        if let ValueType::Null = t {
-                                            has_nullable = true;
-                                            None
-                                        } else {
-                                            Some(t)
-                                        }
-                                    })
-                                    .collect(),
-                            ));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
-                            }
-                        }
-                        ValueType::AnyOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.insert(ValueType::AnyOf(
-                                nested_types
-                                    .into_iter()
-                                    .filter_map(|t| {
-                                        if let ValueType::Null = t {
-                                            has_nullable = true;
-                                            None
-                                        } else {
-                                            Some(t)
-                                        }
-                                    })
-                                    .collect(),
-                            ));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
-                            }
-                        }
-                        ValueType::AllOf(nested_types) => {
-                            let mut has_nullable = false;
-                            simplified_types.extend(nested_types.into_iter().filter_map(|t| {
-                                if let ValueType::Null = t {
-                                    has_nullable = true;
-                                    None
+            ValueType::AllOf(value_types) => {
+                let mut flattened = IndexSet::new();
+                let mut has_null = false;
+                for value_type in value_types {
+                    match value_type.simplify() {
+                        ValueType::Null => has_null = true,
+                        ValueType::AllOf(nested_value_types) => {
+                            for nested_value_type in nested_value_types {
+                                if matches!(nested_value_type, ValueType::Null) {
+                                    has_null = true;
                                 } else {
-                                    Some(t)
+                                    flattened.insert(nested_value_type);
                                 }
-                            }));
-                            if has_nullable {
-                                simplified_types.insert(ValueType::Null);
+                            }
+                        }
+                        ValueType::OneOf(nested_value_types)
+                        | ValueType::AnyOf(nested_value_types) => {
+                            let non_nulls = nested_value_types
+                                .into_iter()
+                                .filter_map(|nested_value_type| {
+                                    if matches!(nested_value_type, ValueType::Null) {
+                                        has_null = true;
+                                        None
+                                    } else {
+                                        Some(nested_value_type)
+                                    }
+                                })
+                                .collect_vec();
+                            if non_nulls.len() == 1 {
+                                flattened.insert(non_nulls.into_iter().next().unwrap());
+                            } else if !non_nulls.is_empty() {
+                                flattened.insert(match value_type {
+                                    ValueType::OneOf(_) => ValueType::OneOf(non_nulls),
+                                    _ => ValueType::AnyOf(non_nulls),
+                                });
                             }
                         }
                         other => {
-                            simplified_types.insert(other);
+                            flattened.insert(other);
                         }
                     }
                 }
-                ValueType::AllOf(simplified_types.into_iter().collect())
+                if has_null {
+                    flattened.insert(ValueType::Null);
+                }
+                ValueType::AllOf(flattened.into_iter().collect())
             }
             other => other.to_owned(),
+        };
+
+        // Further simplify single-element composite types
+        match simplified {
+            ValueType::OneOf(value_types)
+            | ValueType::AnyOf(value_types)
+            | ValueType::AllOf(value_types)
+                if value_types.len() == 1 =>
+            {
+                value_types.into_iter().next().unwrap()
+            }
+            _ => simplified,
         }
     }
 }
@@ -427,6 +392,34 @@ mod test {
         let value_type =
             ValueType::AllOf(vec![ValueType::Array, ValueType::Table, ValueType::Null]);
         pretty_assertions::assert_eq!(value_type.to_string(), "(Array & Table)?");
+    }
+
+    #[test]
+    fn same_type_one_of() {
+        let value_type = ValueType::OneOf(vec![
+            ValueType::OneOf(vec![ValueType::Boolean, ValueType::Null]),
+            ValueType::Boolean,
+        ]);
+        pretty_assertions::assert_eq!(value_type.to_string(), "Boolean?");
+    }
+
+    #[test]
+    fn same_type_any_of() {
+        let value_type = ValueType::AnyOf(vec![
+            ValueType::OneOf(vec![ValueType::Boolean, ValueType::Null]),
+            ValueType::OneOf(vec![ValueType::Boolean, ValueType::Null]),
+        ]);
+        pretty_assertions::assert_eq!(value_type.to_string(), "Boolean?");
+    }
+
+    #[test]
+    fn same_type_all_of() {
+        let value_type = ValueType::AllOf(vec![
+            ValueType::OneOf(vec![ValueType::Boolean, ValueType::Null]),
+            ValueType::Boolean,
+            ValueType::Null,
+        ]);
+        pretty_assertions::assert_eq!(value_type.to_string(), "Boolean?");
     }
 
     #[test]
