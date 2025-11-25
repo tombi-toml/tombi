@@ -33,6 +33,7 @@ where
         let mut value_type_set = indexmap::IndexSet::new();
         let mut constraints = None;
         let mut enumerate_values = Vec::new();
+        let mut result_accessors = tombi_schema_store::Accessors::from(accessors.to_vec());
         let default = all_of_schema
             .default
             .as_ref()
@@ -83,6 +84,13 @@ where
 
                         if let Some(c) = hover_value_content.constraints {
                             constraints = Some(c);
+                        }
+
+                        // Use the accessors from the successfully resolved schema if they're more specific
+                        if hover_value_content.accessors.as_ref().len()
+                            > result_accessors.as_ref().len()
+                        {
+                            result_accessors = hover_value_content.accessors;
                         }
                     }
                     HoverContent::Directive(hover_content) => {
@@ -143,7 +151,7 @@ where
         Some(HoverContent::Value(HoverValueContent {
             title,
             description,
-            accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
+            accessors: result_accessors,
             value_type,
             constraints,
             schema_uri: Some(schema_uri.to_owned()),
