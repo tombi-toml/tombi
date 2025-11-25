@@ -162,6 +162,12 @@ main {
   outline: none;
 }
 
+/* Ensure consistent code block font size */
+.mdx-content pre,
+.mdx-content pre code {
+  font-size: 0.875rem !important;
+}
+
 /* Table Styles */
 .mdx-content table {
   border-collapse: collapse;
