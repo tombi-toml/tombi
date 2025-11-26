@@ -16,6 +16,7 @@ GitHub = "https://github.com/tombi-toml/tombi"
 dev = [
   "pytest>=8.3.3",
   "ruff>=0.7.4",
+  "ty>=0.0.1a28",
   { include-group = "stub" },
 ]
 stub = [
