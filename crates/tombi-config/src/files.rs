@@ -28,6 +28,11 @@ fn default_include_patterns() -> Option<Vec<String>> {
 }
 
 fn default_exclude_patterns() -> Option<Vec<String>> {
+    // NOTE: For consistency between the VSCode extension and CLI,
+    //       files that are considered TOML but do not have a *.toml extension
+    //       are excluded by default.
+    //
+    //       See more details: https://github.com/tombi-toml/tombi/issues/1290
     Some(vec![
         "Cargo.lock".to_string(),
         "Gopkg.lock".to_string(),
