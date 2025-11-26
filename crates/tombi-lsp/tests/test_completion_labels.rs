@@ -27,7 +27,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
                 "toml-version",
             ]);
         }
@@ -133,7 +132,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }
@@ -157,7 +155,6 @@ mod completion_labels {
                 "lsp",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }
@@ -181,7 +178,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }
@@ -231,7 +227,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -252,7 +247,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -275,7 +269,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -298,7 +291,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -315,7 +307,6 @@ mod completion_labels {
                 "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -472,7 +463,6 @@ mod completion_labels {
             ) -> Ok([
                 "code-action",
                 "diagnostic",
-                "diagnostics",
                 "document-link",
                 "formatting",
                 "goto-declaration",
@@ -496,7 +486,6 @@ mod completion_labels {
             ) -> Ok([
                 "code-action",
                 "diagnostic",
-                "diagnostics",
                 "document-link",
                 "goto-declaration",
                 "goto-definition",
@@ -520,7 +509,6 @@ mod completion_labels {
             ) -> Ok([
                 "completion",
                 "diagnostic",
-                "diagnostics",
                 "document-link",
                 "goto-declaration",
                 "goto-definition",
