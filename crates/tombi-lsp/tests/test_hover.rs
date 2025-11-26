@@ -46,15 +46,15 @@ mod hover_keys_value {
 
         test_hover_keys_value!(
             #[tokio::test]
-            async fn tombi_schema_catalog_path(
+            async fn tombi_schema_catalog_paths(
                 r#"
                 [schema.catalog]
-                path = "█https://www.schemastore.org/api/json/catalog.json"
+                paths = ["█https://www.schemastore.org/api/json/catalog.json"]
                 "#,
                 tombi_schema_path()
             ) -> Ok({
-                "Keys": "schema.catalog.path",
-                "Value": "(String | Array)?"
+                "Keys": "schema.catalog.paths[0]",
+                "Value": "String"
             });
         );
 

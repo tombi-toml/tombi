@@ -18,10 +18,8 @@ mod completion_labels {
                 "█",
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "lsp",
                 "overrides",
@@ -123,10 +121,8 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "lsp",
                 "overrides",
@@ -155,6 +151,7 @@ mod completion_labels {
                 "lsp",
                 "schema",
                 "schemas",
+                "server",
                 // "toml-version",
             ]);
         }
@@ -170,10 +167,8 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "overrides",
                 "schema",
@@ -584,7 +579,6 @@ mod completion_labels {
                 "include",
                 "path",
                 "root",
-                "root-keys",
                 "toml-version",
             ]);
         }
