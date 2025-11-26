@@ -169,15 +169,7 @@
           "items": {
             "type": "string"
           },
-          "minItems": 1,
-          "default": [
-            "Cargo.lock",
-            "Gopkg.lock",
-            "Pipfile",
-            "pdm.lock",
-            "poetry.lock",
-            "uv.lock"
-          ]
+          "minItems": 1
         }
       },
       "additionalProperties": false,

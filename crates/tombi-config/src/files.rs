@@ -19,28 +19,11 @@ pub struct FilesOptions {
     /// The file match pattern to exclude from formatting and linting.
     /// Supports glob pattern.
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    #[cfg_attr(feature = "serde", serde(default = "default_exclude_patterns"))]
     pub exclude: Option<Vec<String>>,
 }
 
 fn default_include_patterns() -> Option<Vec<String>> {
     Some(vec!["**/*.toml".to_string()])
-}
-
-fn default_exclude_patterns() -> Option<Vec<String>> {
-    // NOTE: For consistency between the VSCode extension and CLI,
-    //       files that are considered TOML but do not have a *.toml extension
-    //       are excluded by default.
-    //
-    //       See more details: https://github.com/tombi-toml/tombi/issues/1290
-    Some(vec![
-        "Cargo.lock".to_string(),
-        "Gopkg.lock".to_string(),
-        "Pipfile".to_string(),
-        "pdm.lock".to_string(),
-        "poetry.lock".to_string(),
-        "uv.lock".to_string(),
-    ])
 }
 
 impl Default for FilesOptions {

@@ -15,14 +15,12 @@ pub fn matches_file_patterns(
     config_path: Option<&Path>,
     config: &Config,
 ) -> MatchResult {
-    let Some(files) = config.files.as_ref() else {
-        return MatchResult::Matched;
-    };
-
     let text_document_absolute_path = match text_document_path.canonicalize() {
         Ok(path) => path,
         Err(_) => text_document_path.to_path_buf(),
     };
+
+    let files = config.files.clone().unwrap_or_default();
 
     // Determine the path to use for pattern matching
     let path_for_patterns = relative_document_text_path(&text_document_absolute_path, config_path);
