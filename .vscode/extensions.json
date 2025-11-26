@@ -5,7 +5,8 @@
     "ms-python.python",
     "rust-lang.rust-analyzer",
     "tombi-toml.tombi",
-    "unifiedjs.vscode-mdx"
+    "unifiedjs.vscode-mdx",
+    "astral-sh.ty"
   ],
   "unwantedRecommendations": ["tamasfe.even-better-toml"]
 }

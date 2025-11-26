@@ -13,6 +13,7 @@
     "source.organizeImports.biome": "explicit",
     "source.fixAll.biome": "explicit"
   },
+  "python.languageServer": "None", // Use ty type checker instead.
   // NOTE: It's too slow!! Manually run `cargo clippy`
   // "rust-analyzer.check.command": "clippy",
   "rust-analyzer.runnables.extraEnv": {
