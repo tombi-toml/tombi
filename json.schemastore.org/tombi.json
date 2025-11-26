@@ -18,32 +18,6 @@
       ],
       "default": "v1.0.0"
     },
-    "include": {
-      "title": "File patterns to include",
-      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.include` instead.",
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "type": "string"
-      },
-      "deprecated": true,
-      "minItems": 1
-    },
-    "exclude": {
-      "title": "File patterns to exclude",
-      "description": "**🚧 Deprecated 🚧**\\\nPlease use `files.exclude` instead.",
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "type": "string"
-      },
-      "deprecated": true,
-      "minItems": 1
-    },
     "files": {
       "anyOf": [
         {
@@ -83,19 +57,6 @@
           "type": "null"
         }
       ]
-    },
-    "server": {
-      "title": "Language Server options",
-      "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp` instead.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/LspOptions"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "deprecated": true
     },
     "schema": {
       "anyOf": [
@@ -189,160 +150,6 @@
               "type": "null"
             }
           ]
-        },
-        "array-bracket-space-width": {
-          "title": "The number of spaces inside the brackets of a single line array.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.array-bracket-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ArrayBracketSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 0
-        },
-        "array-element-space-width": {
-          "title": "The number of spaces after the comma in a single line array.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.array-comma-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ArrayCommaSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 1
-        },
-        "date-time-delimiter": {
-          "title": "The delimiter between date and time",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.date-time-delimiter` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/DateTimeDelimiter"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": "T"
-        },
-        "indent-style": {
-          "title": "The style of indentation",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.indent-style` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/IndentStyle"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": "space"
-        },
-        "indent-width": {
-          "title": "The number of spaces per indentation level",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.indent-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/IndentWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 2
-        },
-        "inline-table-brace-space-width": {
-          "title": "The number of spaces inside the brackets of a single line inline table.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.inline-table-brace-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/InlineTableBraceSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 1
-        },
-        "inline-table-element-space-width": {
-          "title": "The number of spaces after the comma in a single line inline table.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.inline-table-comma-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/InlineTableCommaSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 1
-        },
-        "line-ending": {
-          "title": "The type of line ending",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.line-ending` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/LineEnding"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": "lf"
-        },
-        "line-width": {
-          "title": "The maximum line width",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.line-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/LineWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 80
-        },
-        "quote-style": {
-          "title": "The preferred quote character for strings",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.string-quote-style` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringQuoteStyle"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": "double"
-        },
-        "trailing-comment-space-width": {
-          "title": "The number of spaces before the trailing comment.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.trailing-comment-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/TrailingCommentSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 2
         }
       },
       "additionalProperties": false,
@@ -421,16 +228,6 @@
           ],
           "default": false
         },
-        "indent-table-key-values": {
-          "title": "Whether to indent the table key-value pairs",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.indent-table-key-value-pairs` instead.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "deprecated": true,
-          "default": false
-        },
         "indent-width": {
           "title": "The number of spaces per indentation level",
           "description": "⚠️ **WARNING** ⚠️\\\nThis option is only used when the indentation style is `space`.",
@@ -479,16 +276,6 @@
           ],
           "default": false
         },
-        "key-value-equal-alignment": {
-          "title": "Whether to align the equal sign in the key-value pairs.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.key-value-equals-sign-alignment` instead.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "deprecated": true,
-          "default": false
-        },
         "string-quote-style": {
           "title": "The preferred quote character for strings",
           "anyOf": [
@@ -523,20 +310,6 @@
           ],
           "default": 1
         },
-        "key-value-equal-space-width": {
-          "title": "The number of spaces after the equal in a key-value pair.",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.key-value-equals-sign-space-width` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/KeyValueEqualsSignSpaceWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": 1
-        },
         "line-ending": {
           "title": "The type of line ending",
           "description": "In TOML, the line ending must be either `LF` or `CRLF`.\n\n- `lf`: Line Feed only (`\\n`), common on Linux and macOS as well as inside git repos.\n- `crlf`: Carriage Return Line Feed (`\\r\\n`), common on Windows.",
@@ -562,20 +335,6 @@
             }
           ],
           "default": 80
-        },
-        "quote-style": {
-          "title": "The preferred quote character for strings",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.rules.string-quote-style` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringQuoteStyle"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": "double"
         },
         "trailing-comment-space-width": {
           "title": "The number of spaces before the trailing comment.",
@@ -811,19 +570,6 @@
             }
           ]
         },
-        "diagnostics": {
-          "title": "Diagnostic Feature options",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `lsp.diagnostic` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/LspDiagnostic"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true
-        },
         "document-link": {
           "title": "Document Link Feature options",
           "anyOf": [
@@ -1049,17 +795,6 @@
               "type": "null"
             }
           ]
-        },
-        "throttle-seconds": {
-          "title": "Throttle interval in seconds",
-          "description": "**🚧 Deprecated 🚧**\\\nDon't need to use this option.",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint64",
-          "minimum": 0,
-          "deprecated": true
         }
       },
       "additionalProperties": false
@@ -1107,16 +842,6 @@
       "x-tombi-table-keys-order": "schema"
     },
     "SchemaCatalog": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/NewSchemaCatalog"
-        },
-        {
-          "$ref": "#/definitions/SchemaCatalogOld"
-        }
-      ]
-    },
-    "NewSchemaCatalog": {
       "type": "object",
       "properties": {
         "paths": {
@@ -1141,39 +866,6 @@
       "description": "Generic value that can be either single or multiple",
       "type": "string"
     },
-    "SchemaCatalogOld": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "title": "The schema catalog path or url",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `schema.catalog.paths` instead.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/OneOrMany"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "deprecated": true,
-          "default": "https://www.schemastore.org/api/json/catalog.json"
-        }
-      },
-      "additionalProperties": false
-    },
-    "OneOrMany": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/SchemaCatalogPath"
-        },
-        {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/SchemaCatalogPath"
-          }
-        }
-      ]
-    },
     "SchemaItem": {
       "title": "Schema item",
       "anyOf": [
@@ -1182,9 +874,6 @@
         },
         {
           "$ref": "#/definitions/SubSchema"
-        },
-        {
-          "$ref": "#/definitions/OldSubSchema"
         }
       ]
     },
@@ -1256,40 +945,6 @@
         "root",
         "path",
         "include"
-      ],
-      "x-tombi-table-keys-order": "schema"
-    },
-    "OldSubSchema": {
-      "title": "The schema for the old sub value",
-      "description": "This is for backward compatibility.",
-      "type": "object",
-      "properties": {
-        "path": {
-          "title": "The sub schema path",
-          "type": "string"
-        },
-        "include": {
-          "title": "The file match pattern of the sub schema",
-          "description": "The file match pattern to include the target to apply the sub schema.\nSupports glob pattern.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
-        },
-        "root-keys": {
-          "title": "The keys to apply the sub schema",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `schemas[*].root` instead.",
-          "type": "string",
-          "deprecated": true,
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "path",
-        "include",
-        "root-keys"
       ],
       "x-tombi-table-keys-order": "schema"
     },

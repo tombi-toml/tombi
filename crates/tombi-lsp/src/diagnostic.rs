@@ -46,8 +46,9 @@ pub async fn get_diagnostics_result(
         .await;
 
     if !config
-        .lsp()
-        .and_then(|lsp| lsp.diagnostic())
+        .lsp
+        .as_ref()
+        .and_then(|lsp| lsp.diagnostic.as_ref())
         .and_then(|diagnostic| diagnostic.enabled)
         .unwrap_or_default()
         .value()

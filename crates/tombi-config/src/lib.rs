@@ -46,36 +46,13 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
 
-    /// # File patterns to include
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `files.include` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    include: Option<Vec<String>>,
-
-    /// # File patterns to exclude
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `files.exclude` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    exclude: Option<Vec<String>>,
-
     pub files: Option<FilesOptions>,
 
     format: Option<FormatOptions>,
 
     lint: Option<LintOptions>,
 
-    lsp: Option<LspOptions>,
-
-    /// # Language Server options
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `lsp` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    server: Option<LspOptions>,
+    pub lsp: Option<LspOptions>,
 
     pub schema: Option<SchemaOverviewOptions>,
 
@@ -88,24 +65,11 @@ pub struct Config {
 
 impl Config {
     pub fn include(&self) -> Option<&Vec<String>> {
-        #[allow(deprecated)]
-        self.files
-            .as_ref()
-            .and_then(|files| files.include.as_ref())
-            .or(self.include.as_ref())
+        self.files.as_ref().and_then(|files| files.include.as_ref())
     }
 
     pub fn exclude(&self) -> Option<&Vec<String>> {
-        #[allow(deprecated)]
-        self.files
-            .as_ref()
-            .and_then(|files| files.exclude.as_ref())
-            .or(self.exclude.as_ref())
-    }
-
-    pub fn lsp(&self) -> Option<&LspOptions> {
-        #[allow(deprecated)]
-        self.lsp.as_ref().or(self.server.as_ref())
+        self.files.as_ref().and_then(|files| files.exclude.as_ref())
     }
 
     pub fn overrides(&self) -> Option<&Vec<OverrideItem>> {
@@ -125,21 +89,7 @@ impl Config {
             base_rules
         };
 
-        #[allow(deprecated)]
-        FormatOptions {
-            rules: Some(rules),
-            array_bracket_space_width: options.array_bracket_space_width,
-            array_element_space_width: options.array_element_space_width,
-            date_time_delimiter: options.date_time_delimiter,
-            indent_style: options.indent_style,
-            indent_width: options.indent_width,
-            inline_table_brace_space_width: options.inline_table_brace_space_width,
-            inline_table_element_space_width: options.inline_table_element_space_width,
-            line_ending: options.line_ending,
-            line_width: options.line_width,
-            quote_style: options.quote_style,
-            trailing_comment_space_width: options.trailing_comment_space_width,
-        }
+        FormatOptions { rules: Some(rules) }
     }
 
     pub fn lint(&self, override_options: Option<&OverrideLintOptions>) -> LintOptions {

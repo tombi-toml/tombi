@@ -656,7 +656,7 @@ optional_string = "provided"
         );
         assert!(config.format(None).rules.is_some(),);
         assert!(config.lint(None).rules.is_some(),);
-        assert!(config.lsp().is_some());
+        assert!(config.lsp.as_ref().is_some());
         assert!(config.schema.is_some());
         assert!(config.schemas.is_some());
 

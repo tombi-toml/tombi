@@ -30,7 +30,8 @@ pub async fn handle_goto_declaration(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.goto_declaration.as_ref())
         .and_then(|goto_declaration| goto_declaration.enabled)
         .unwrap_or_default()

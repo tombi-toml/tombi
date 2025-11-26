@@ -29,7 +29,8 @@ pub async fn handle_goto_definition(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.goto_definition.as_ref())
         .and_then(|goto_definition| goto_definition.enabled)
         .unwrap_or_default()

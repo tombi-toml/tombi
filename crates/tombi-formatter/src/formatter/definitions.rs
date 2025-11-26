@@ -34,30 +34,18 @@ impl FormatDefinitions {
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.line_width)
-                .or_else(|| {
-                    #[allow(deprecated)]
-                    options.line_width
-                })
                 .unwrap_or_default()
                 .value(),
             line_ending: options
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.line_ending)
-                .or_else(|| {
-                    #[allow(deprecated)]
-                    options.line_ending
-                })
                 .unwrap_or_default()
                 .into(),
             indent_style: options
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.indent_style)
-                .or_else(|| {
-                    #[allow(deprecated)]
-                    options.indent_style
-                })
                 .unwrap_or_default(),
             indent_sub_tables: options
                 .rules
@@ -67,21 +55,12 @@ impl FormatDefinitions {
             indent_table_key_values: options
                 .rules
                 .as_ref()
-                .and_then(|rules| {
-                    rules.indent_table_key_value_pairs.or_else(|| {
-                        #[allow(deprecated)]
-                        rules.indent_table_key_values
-                    })
-                })
+                .and_then(|rules| rules.indent_table_key_value_pairs)
                 .unwrap_or_default(),
             indent_width: options
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.indent_width)
-                .or_else(|| {
-                    #[allow(deprecated)]
-                    options.indent_width
-                })
                 .unwrap_or_default()
                 .value(),
             trailing_comment_alignment: options
@@ -94,58 +73,31 @@ impl FormatDefinitions {
                     .rules
                     .as_ref()
                     .and_then(|rules| rules.trailing_comment_space_width)
-                    .or_else(|| {
-                        #[allow(deprecated)]
-                        options.trailing_comment_space_width
-                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
             key_value_equal_alignment: options
                 .rules
                 .as_ref()
-                .and_then(|rules| {
-                    rules.key_value_equals_sign_alignment.or_else(|| {
-                        #[allow(deprecated)]
-                        rules.key_value_equal_alignment
-                    })
-                })
+                .and_then(|rules| rules.key_value_equals_sign_alignment)
                 .unwrap_or_default(),
             key_value_equal_space: " ".repeat(
                 options
                     .rules
                     .as_ref()
-                    .and_then(|rules| {
-                        rules.key_value_equals_sign_space_width.or_else(|| {
-                            #[allow(deprecated)]
-                            rules.key_value_equal_space_width
-                        })
-                    })
+                    .and_then(|rules| rules.key_value_equals_sign_space_width)
                     .unwrap_or_default()
                     .value() as usize,
             ),
             string_quote_style: options
                 .rules
                 .as_ref()
-                .and_then(|rules| {
-                    rules.string_quote_style.or_else(|| {
-                        #[allow(deprecated)]
-                        rules.quote_style
-                    })
-                })
-                .or_else(|| {
-                    #[allow(deprecated)]
-                    options.quote_style
-                })
+                .and_then(|rules| rules.string_quote_style)
                 .unwrap_or_default(),
             date_time_delimiter: match options
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.date_time_delimiter)
-                .or_else(|| {
-                    #[allow(deprecated)]
-                    options.date_time_delimiter
-                })
                 .unwrap_or_default()
             {
                 DateTimeDelimiter::T => Some("T"),
@@ -157,10 +109,6 @@ impl FormatDefinitions {
                     .rules
                     .as_ref()
                     .and_then(|rules| rules.array_bracket_space_width)
-                    .or_else(|| {
-                        #[allow(deprecated)]
-                        options.array_bracket_space_width
-                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
@@ -169,10 +117,6 @@ impl FormatDefinitions {
                     .rules
                     .as_ref()
                     .and_then(|rules| rules.array_comma_space_width)
-                    .or_else(|| {
-                        #[allow(deprecated)]
-                        options.array_element_space_width
-                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
@@ -181,10 +125,6 @@ impl FormatDefinitions {
                     .rules
                     .as_ref()
                     .and_then(|rules| rules.inline_table_brace_space_width)
-                    .or_else(|| {
-                        #[allow(deprecated)]
-                        options.inline_table_brace_space_width
-                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
@@ -193,10 +133,6 @@ impl FormatDefinitions {
                     .rules
                     .as_ref()
                     .and_then(|rules| rules.inline_table_comma_space_width)
-                    .or_else(|| {
-                        #[allow(deprecated)]
-                        options.inline_table_element_space_width
-                    })
                     .unwrap_or_default()
                     .value() as usize,
             ),
