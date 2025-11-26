@@ -75,16 +75,6 @@
             true
           ],
           "default": false
-        },
-        "disable": {
-          "title": "Format disabled",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `format.disabled` instead.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "deprecated": true,
-          "default": false
         }
       },
       "additionalProperties": false
@@ -102,16 +92,6 @@
           "enum": [
             true
           ],
-          "default": false
-        },
-        "disable": {
-          "title": "Lint disabled",
-          "description": "**🚧 Deprecated 🚧**\\\nPlease use `lint.disabled` instead.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "deprecated": true,
           "default": false
         }
       },

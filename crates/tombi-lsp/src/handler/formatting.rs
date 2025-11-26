@@ -29,7 +29,8 @@ pub async fn handle_formatting(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.formatting.as_ref())
         .and_then(|formatting| formatting.enabled)
         .unwrap_or_default()

@@ -44,7 +44,8 @@ pub async fn handle_completion(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.completion.as_ref())
         .and_then(|completion| completion.enabled)
         .unwrap_or_default()

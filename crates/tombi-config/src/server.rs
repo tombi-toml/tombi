@@ -15,14 +15,7 @@ pub struct LspOptions {
     pub completion: Option<LspCompletion>,
 
     /// # Diagnostic Feature options
-    diagnostic: Option<LspDiagnostic>,
-
-    /// # Diagnostic Feature options
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `lsp.diagnostic` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    diagnostics: Option<LspDiagnostic>,
+    pub diagnostic: Option<LspDiagnostic>,
 
     /// # Document Link Feature options
     pub document_link: Option<LspDocumentLink>,
@@ -52,8 +45,6 @@ impl LspOptions {
             code_action: None,
             completion: None,
             diagnostic: None,
-            #[allow(deprecated)]
-            diagnostics: None,
             document_link: None,
             formatting: None,
             goto_declaration: None,
@@ -62,13 +53,6 @@ impl LspOptions {
             hover: None,
             workspace_diagnostic: None,
         }
-    }
-
-    pub fn diagnostic(&self) -> Option<&LspDiagnostic> {
-        self.diagnostic.as_ref().or({
-            #[allow(deprecated)]
-            self.diagnostics.as_ref()
-        })
     }
 }
 
@@ -166,12 +150,4 @@ pub struct LspWorkspaceDiagnostic {
     ///
     /// Whether to enable workspace diagnostic.
     pub enabled: Option<BoolDefaultTrue>,
-
-    /// # Throttle interval in seconds
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Don't need to use this option.
-    ///
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub throttle_seconds: Option<u64>,
 }

@@ -33,25 +33,31 @@ then configure Gradle.
 When a pull request is opened, the plugin will be built automatically.
 The plugin artifact can then be downloaded from the corresponding workflow run.
 
-### Building the plugin
+### Building the IntelliJ plugin
 
 ```shell
 $ cd editors/intellij
 $ ./gradlew buildPlugin
 ```
 
-### Running tests
+### Running the IntelliJ plugin tests
 
 ```shell
 $ cd editors/intellij
 $ ./gradlew check
 ```
 
-### Resources
+### IntelliJ plugin development resources
 
 * [IntelliJ Platform SDK Documentation](https://plugins.jetbrains.com/docs/intellij/welcome.html)
 * [JetBrains Marketplace Documentation](https://plugins.jetbrains.com/docs/marketplace/discover-jetbrains-marketplace.html)
 * [InteliJ Platform Explorer](https://plugins.jetbrains.com/intellij-platform-explorer/extensions)
+
+## Build Tombi JSON Schemas
+
+```sh
+cargo xtask codegen jsonschema
+```
 
 ## Rust tests
 
