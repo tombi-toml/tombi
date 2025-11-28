@@ -19,6 +19,18 @@ key1 = "value1"
 key2 = "value2"
 ```
 
+If you would like to have a blank line between key-value pairs, we recommend inserting an empty comment line. For example:
+
+```toml
+key1 = "value1"
+#
+# ↑ Add an empty comment line here for separation instead of newlines
+key2 = "value2"
+```
+
+This way, Tombi's formatter will preserve the separation without interfering with auto sorting.
+
+
 </Tip>
 
 <Warning>
@@ -46,7 +58,7 @@ Auto-sorting methods are available in the following order of priority:
 
 ### Comment Directives
 
-You can specify auto-sorting methods using [comment directives](/docs/comment-directive#format-rules).
+You can specify auto-sorting methods using [comment directives](/docs/comment-directive/tombi-value-directive#format-rules).
 This has higher priority than [JSON Schema](/docs/json-schema#formatting) specifications.
 
 <Warning>

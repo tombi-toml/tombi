@@ -121,8 +121,6 @@ where
     };
 
     runtime.block_on(async {
-        let format_options = config.format.clone().unwrap_or_default();
-
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
@@ -138,8 +136,21 @@ where
         match input {
             FileSearch::Stdin => {
                 tracing::debug!("Formatting... stdin input");
+                let stdin_path = args.stdin_filename.as_ref().map(std::path::PathBuf::from);
+
+                // Get format options with override support
+                let Some(format_options) = tombi_glob::get_format_options(
+                    &config,
+                    stdin_path.as_deref(),
+                    config_path.as_deref(),
+                ) else {
+                    tracing::debug!("Formatting disabled for stdin by override");
+                    not_needed_num += 1;
+                    return Ok((success_num, not_needed_num, error_num));
+                };
+
                 match format_stdin(
-                    FormatFile::from_stdin(args.stdin_filename.map(std::path::PathBuf::from)),
+                    FormatFile::from_stdin(stdin_path),
                     printer,
                     toml_version,
                     args.check,
@@ -162,10 +173,24 @@ where
                     match file {
                         Ok(source_path) => {
                             tracing::debug!("Formatting... {:?}", &source_path);
+
+                            // Get format options with override support
+                            let Some(format_options) = tombi_glob::get_format_options(
+                                &config,
+                                Some(source_path.as_ref()),
+                                config_path.as_deref(),
+                            ) else {
+                                tracing::debug!(
+                                    "Formatting disabled for {:?} by override",
+                                    source_path
+                                );
+                                not_needed_num += 1;
+                                continue;
+                            };
+
                             match FormatFile::from_file(&source_path).await {
                                 Ok(file) => {
                                     let printer = printer.clone();
-                                    let format_options = format_options.clone();
                                     let schema_store = schema_store.clone();
 
                                     tasks.spawn(async move {

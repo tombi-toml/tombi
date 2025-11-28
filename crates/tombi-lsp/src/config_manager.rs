@@ -335,7 +335,7 @@ impl ConfigManager {
 
     pub async fn load_config_schemas(
         &self,
-        schemas: &[tombi_config::Schema],
+        schemas: &[tombi_config::SchemaItem],
         base_dir_path: Option<&std::path::Path>,
     ) {
         let mut config_schema_stores = self.config_schema_stores.write().await;

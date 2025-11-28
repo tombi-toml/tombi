@@ -18,15 +18,13 @@ mod completion_labels {
                 "█",
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
                 "toml-version",
             ]);
         }
@@ -123,15 +121,13 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }
@@ -171,14 +167,12 @@ mod completion_labels {
                 "#,
                 Schema(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }
@@ -225,9 +219,9 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -245,9 +239,9 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -267,9 +261,9 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -289,9 +283,9 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -305,9 +299,9 @@ mod completion_labels {
                 "format",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
             ]);
         }
 
@@ -464,7 +458,6 @@ mod completion_labels {
             ) -> Ok([
                 "code-action",
                 "diagnostic",
-                "diagnostics",
                 "document-link",
                 "formatting",
                 "goto-declaration",
@@ -488,7 +481,6 @@ mod completion_labels {
             ) -> Ok([
                 "code-action",
                 "diagnostic",
-                "diagnostics",
                 "document-link",
                 "goto-declaration",
                 "goto-definition",
@@ -512,7 +504,6 @@ mod completion_labels {
             ) -> Ok([
                 "completion",
                 "diagnostic",
-                "diagnostics",
                 "document-link",
                 "goto-declaration",
                 "goto-definition",
@@ -588,7 +579,6 @@ mod completion_labels {
                 "include",
                 "path",
                 "root",
-                "root-keys",
                 "toml-version",
             ]);
         }
@@ -1708,7 +1698,7 @@ mod completion_labels {
                         .config_manager
                         .load_config_schemas(
                             &[
-                                tombi_config::Schema::Root(
+                                tombi_config::SchemaItem::Root(
                                     tombi_config::RootSchema {
                                         toml_version: None,
                                         path: schema_uri.to_string(),
@@ -1962,7 +1952,7 @@ mod completion_labels {
                         .config_manager
                         .load_config_schemas(
                             &[
-                                tombi_config::Schema::Root(
+                                tombi_config::SchemaItem::Root(
                                     tombi_config::RootSchema {
                                         toml_version: None,
                                         path: schema_uri.to_string(),
@@ -1988,7 +1978,7 @@ mod completion_labels {
                     .config_manager
                     .load_config_schemas(
                         &[
-                            tombi_config::Schema::Sub(
+                            tombi_config::SchemaItem::Sub(
                                 tombi_config::SubSchema {
                                     path: subschema_uri.to_string(),
                                     include: vec!["*.toml".to_string()],

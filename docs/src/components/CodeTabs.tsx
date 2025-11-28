@@ -26,13 +26,13 @@ export default function CodeTabs(props: CodeTabsProps) {
           <button
             type="button"
             onClick={() => setActive(tab.key)}
-            class={`px-4 font-semibold text-base cursor-pointer bg-transparent border-0 relative
+            class={`px-4 font-semibold text-base cursor-pointer bg-transparent border-0 relative transition-colors
                 ${
                   active() === tab.key
                     ? "text-gray-800 dark:text-gray-100"
                     : "text-gray-500 dark:text-gray-400"
                 }
-                focus-visible:outline-none
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:rounded
               `}
             style="min-width: 64px; height: 40px;"
             data-key={tab.key}

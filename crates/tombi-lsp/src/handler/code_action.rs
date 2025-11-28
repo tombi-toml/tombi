@@ -30,7 +30,8 @@ pub async fn handle_code_action(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.code_action.as_ref())
         .and_then(|code_action| code_action.enabled)
         .unwrap_or_default()

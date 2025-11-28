@@ -19,6 +19,7 @@ serde-wasm-bindgen = "0.6.5"
 tombi-config.workspace = true
 tombi-diagnostic = { workspace = true, features = ["wasm"] }
 tombi-formatter.workspace = true
+tombi-glob = { workspace = true }
 tombi-linter.workspace = true
 tombi-schema-store = { workspace = true, features = ["wasm"] }
 wasm-bindgen.workspace = true

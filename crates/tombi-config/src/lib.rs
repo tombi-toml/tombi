@@ -3,17 +3,19 @@ mod files;
 pub mod format;
 mod level;
 mod lint;
+mod overrides;
 mod schema;
 mod server;
 mod types;
 
 pub use error::Error;
 pub use files::FilesOptions;
-pub use format::FormatOptions;
+pub use format::*;
 pub use level::ConfigLevel;
-pub use lint::LintOptions;
-pub use schema::SchemaOptions;
-pub use schema::{RootSchema, Schema, SubSchema};
+pub use lint::*;
+pub use overrides::*;
+pub use schema::SchemaOverviewOptions;
+pub use schema::{RootSchema, SchemaItem, SubSchema};
 pub use server::{LspCompletion, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
@@ -44,66 +46,68 @@ pub struct Config {
     #[cfg_attr(feature = "jsonschema", schemars(default = "TomlVersion::default"))]
     pub toml_version: Option<TomlVersion>,
 
-    /// # File patterns to include
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `files.include` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    include: Option<Vec<String>>,
-
-    /// # File patterns to exclude
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `files.exclude` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    exclude: Option<Vec<String>>,
-
     pub files: Option<FilesOptions>,
 
-    /// # Formatter options
-    pub format: Option<FormatOptions>,
+    format: Option<FormatOptions>,
 
-    /// # Linter options
-    pub lint: Option<LintOptions>,
+    lint: Option<LintOptions>,
 
-    /// # Language Server options
-    lsp: Option<LspOptions>,
+    pub lsp: Option<LspOptions>,
 
-    /// # Language Server options
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `lsp` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    server: Option<LspOptions>,
+    pub schema: Option<SchemaOverviewOptions>,
 
-    /// # Schema options
-    pub schema: Option<SchemaOptions>,
+    /// # Schema items
+    pub schemas: Option<Vec<SchemaItem>>,
 
-    /// # Schema catalog items
-    pub schemas: Option<Vec<Schema>>,
+    /// # Override config items
+    overrides: Option<Vec<OverrideItem>>,
 }
 
 impl Config {
     pub fn include(&self) -> Option<&Vec<String>> {
-        #[allow(deprecated)]
-        self.files
-            .as_ref()
-            .and_then(|files| files.include.as_ref())
-            .or(self.include.as_ref())
+        self.files.as_ref().and_then(|files| files.include.as_ref())
     }
 
     pub fn exclude(&self) -> Option<&Vec<String>> {
-        #[allow(deprecated)]
-        self.files
-            .as_ref()
-            .and_then(|files| files.exclude.as_ref())
-            .or(self.exclude.as_ref())
+        self.files.as_ref().and_then(|files| files.exclude.as_ref())
     }
 
-    pub fn lsp(&self) -> Option<&LspOptions> {
-        #[allow(deprecated)]
-        self.lsp.as_ref().or(self.server.as_ref())
+    pub fn overrides(&self) -> Option<&Vec<OverrideItem>> {
+        self.overrides.as_ref()
+    }
+
+    pub fn format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {
+        let options = self.format.clone().unwrap_or_default();
+        let base_rules = options.rules.unwrap_or_default();
+
+        let rules = if let Some(override_rules) = override_options
+            .as_ref()
+            .and_then(|options| options.rules.as_ref())
+        {
+            base_rules.override_with(override_rules)
+        } else {
+            base_rules
+        };
+
+        FormatOptions { rules: Some(rules) }
+    }
+
+    pub fn lint(&self, override_options: Option<&OverrideLintOptions>) -> LintOptions {
+        let base_rules = self
+            .lint
+            .clone()
+            .and_then(|lint| lint.rules)
+            .unwrap_or_default();
+
+        let rules = if let Some(override_rules) = override_options
+            .as_ref()
+            .and_then(|options| options.rules.as_ref())
+        {
+            base_rules.override_with(override_rules)
+        } else {
+            base_rules
+        };
+
+        LintOptions { rules: Some(rules) }
     }
 }

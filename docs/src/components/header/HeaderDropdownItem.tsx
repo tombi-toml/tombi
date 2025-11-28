@@ -2,14 +2,14 @@ import { A } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
 import type { ParentProps } from "solid-js";
 import { createEffect, createSignal, For, onCleanup, onMount } from "solid-js";
-import type { DicIndex } from "~/utils/doc-index";
+import type { DocIndex } from "~/utils/doc-index";
 
 interface HeaderDropdownItemProps {
   href: string;
   hasBorder?: boolean;
   onSelect: () => void;
   onChildrenResize?: () => void;
-  childrenItems?: DicIndex[];
+  childrenItems?: DocIndex[];
   level?: number;
   isExpanded: boolean;
 }

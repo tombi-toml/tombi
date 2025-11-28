@@ -4168,6 +4168,7 @@ dependencies = [
  "tombi-config",
  "tombi-diagnostic",
  "tombi-formatter",
+ "tombi-glob",
  "tombi-linter",
  "tombi-schema-store",
  "wasm-bindgen",

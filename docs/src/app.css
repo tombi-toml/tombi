@@ -142,7 +142,7 @@ main {
   background-color: rgba(119, 170, 221, 0.2);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  font-size: 0.9em;
+  font-size: 0.875rem;
   font-family: 'Fira Code', 'Consolas', monospace;
 }
 
@@ -151,10 +151,30 @@ main {
   color: #e6e6e6;
 }
 
+/* Prevent focus on code elements */
+.mdx-content code,
+.mdx-content pre {
+  outline: none;
+}
+
+.mdx-content code:focus,
+.mdx-content pre:focus {
+  outline: none;
+}
+
+/* Ensure consistent code block font size */
+.mdx-content pre,
+.mdx-content pre code {
+  font-size: 0.875rem !important;
+}
+
 /* Table Styles */
 .mdx-content table {
   border-collapse: collapse;
   margin: 1rem 0rem;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .mdx-content th,
@@ -170,6 +190,24 @@ main {
   background-color: rgba(119, 170, 221, 0.2);
 }
 
+/* First row corners */
+.mdx-content thead tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.mdx-content thead tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+
+/* Last row corners */
+.mdx-content tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+
+.mdx-content tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
+
 :root.dark .mdx-content th,
 :root.dark .mdx-content td {
   background-color: rgba(119, 170, 221, 0.05);
@@ -177,6 +215,31 @@ main {
 
 :root.dark .mdx-content th {
   background-color: rgba(119, 170, 221, 0.1);
+}
+
+/* Table scrollbar styles for better UX */
+.mdx-content table::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mdx-content table::-webkit-scrollbar-track {
+  background: rgba(119, 170, 221, 0.1);
+  border-radius: 3px;
+}
+
+.mdx-content table::-webkit-scrollbar-thumb {
+  background: rgba(119, 170, 221, 0.3);
+  border-radius: 3px;
+}
+
+.mdx-content table::-webkit-scrollbar-thumb:hover {
+  background: rgba(119, 170, 221, 0.5);
+}
+
+/* Firefox */
+.mdx-content table {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(119, 170, 221, 0.3) rgba(119, 170, 221, 0.1);
 }
 
 /* List Styles */

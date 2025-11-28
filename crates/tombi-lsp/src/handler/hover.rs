@@ -39,7 +39,8 @@ pub async fn handle_hover(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.hover.as_ref())
         .and_then(|hover| hover.enabled)
         .unwrap_or_default()

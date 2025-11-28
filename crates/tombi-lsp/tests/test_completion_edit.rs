@@ -765,7 +765,7 @@ mod completion_edit {
                         .config_manager
                         .load_config_schemas(
                             &[
-                                tombi_config::Schema::Root(tombi_config::RootSchema {
+                                tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                                     toml_version: None,
                                     path: schema_uri.to_string(),
                                     include: vec!["*.toml".to_string()],

@@ -43,22 +43,7 @@ pub struct FormatOptions {
     /// If `true`, formatting is disabled for this document.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
-    disabled: Option<bool>,
-
-    /// # Format disabled
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.disabled` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
-    disable: Option<bool>,
-}
-
-impl FormatOptions {
-    pub fn disabled(&self) -> Option<bool> {
-        #[allow(deprecated)]
-        self.disabled.or(self.disable)
-    }
+    pub disabled: Option<bool>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -71,22 +56,7 @@ pub struct LintOptions {
     /// If `true`, linting is disabled for this document.
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
-    disabled: Option<bool>,
-
-    /// # Lint disabled
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `lint.disabled` instead.
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
-    disable: Option<bool>,
-}
-
-impl LintOptions {
-    pub fn disabled(&self) -> Option<bool> {
-        #[allow(deprecated)]
-        self.disabled.or(self.disable)
-    }
+    pub disabled: Option<bool>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

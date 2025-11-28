@@ -65,9 +65,18 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
             return Err(FormatError::Error { error });
         }
 
-        let format_options = config.format.clone().unwrap_or_default();
-
         let file_path_buf = file_path.map(|path| std::path::PathBuf::from(path));
+
+        // Get format options with override support
+        let Some(format_options) = tombi_glob::get_format_options(
+            &config,
+            file_path_buf.as_deref(),
+            config_path.as_deref(),
+        ) else {
+            // If formatting is disabled, return the source as-is
+            return Ok(source);
+        };
+
         match tombi_formatter::Formatter::new(
             toml_version,
             &format_options,
@@ -145,9 +154,16 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             return Err(LintError::Error { error });
         }
 
-        let lint_options = config.lint.clone().unwrap_or_default();
-
         let file_path_buf = file_path.map(|path| std::path::PathBuf::from(path));
+
+        // Get lint options with override support
+        let Some(lint_options) =
+            tombi_glob::get_lint_options(&config, file_path_buf.as_deref(), config_path.as_deref())
+        else {
+            // If linting is disabled, return success
+            return Ok(());
+        };
+
         match tombi_linter::Linter::new(
             toml_version,
             &lint_options,

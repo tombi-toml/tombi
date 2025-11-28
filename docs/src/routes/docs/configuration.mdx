@@ -33,12 +33,12 @@ array-comma-space-width = 1
 date-time-delimiter = "T"
 indent-style = "space"
 indent-sub-tables = false
-indent-table-key-values = false
+indent-table-key-value-pairs = false
 indent-width = 2
 inline-table-brace-space-width = 1
 inline-table-comma-space-width = 1
-key-value-equal-alignment = false
-key-value-equal-space-width = 1
+key-value-equals-sign-alignment = false
+key-value-equals-sign-space-width = 1
 line-ending = "lf"
 line-width = 80
 string-quote-style = "double"
@@ -84,6 +84,41 @@ include = ["example.toml"]
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
+
+# Override config
+[[overrides]]
+[overrides.files]
+include = ["specific/**/*.toml"]
+exclude = ["specific/**/ignored.toml"]
+
+[overrides.format]
+enabled = true
+
+[overrides.format.rules]
+array-bracket-space-width = 1
+array-comma-space-width = 1
+date-time-delimiter = "space"
+indent-style = "tab"
+indent-sub-tables = true
+indent-table-key-value-pairs = true
+indent-width = 4
+inline-table-brace-space-width = 0
+inline-table-comma-space-width = 1
+key-value-equals-sign-alignment = true
+key-value-equals-sign-space-width = 1
+line-ending = "crlf"
+line-width = 120
+string-quote-style = "single"
+trailing-comment-alignment = true
+trailing-comment-space-width = 1
+
+[overrides.lint]
+enabled = true
+
+[overrides.lint.rules]
+dotted-keys-out-of-order = "error"
+key-empty = "error"
+tables-out-of-order = "error"
 ```
 
 ## Available Options
@@ -99,12 +134,12 @@ include = ["pyproject.toml"]
     - [format.rules.date-time-delimiter](#format-rules-date-time-delimiter)
     - [format.rules.indent-style](#format-rules-indent-style)
     - [format.rules.indent-sub-tables](#format-rules-indent-sub-tables)
-    - [format.rules.indent-table-key-values](#format-rules-indent-table-key-values)
+    - [format.rules.indent-table-key-value-pairs](#format-rules-indent-table-key-value-pairs)
     - [format.rules.indent-width](#format-rules-indent-width)
     - [format.rules.inline-table-brace-space-width](#format-rules-inline-table-brace-space-width)
     - [format.rules.inline-table-comma-space-width](#format-rules-inline-table-comma-space-width)
-    - [format.rules.key-value-equal-alignment](#format-rules-key-value-equal-alignment)
-    - [format.rules.key-value-equal-space-width](#format-rules-key-value-equal-space-width)
+    - [format.rules.key-value-equals-sign-alignment](#format-rules-key-value-equals-sign-alignment)
+    - [format.rules.key-value-equals-sign-space-width](#format-rules-key-value-equals-sign-space-width)
     - [format.rules.line-ending](#format-rules-line-ending)
     - [format.rules.line-width](#format-rules-line-width)
     - [format.rules.string-quote-style](#format-rules-string-quote-style)
@@ -146,6 +181,16 @@ include = ["pyproject.toml"]
   - [schemas[*].root](#sub-schema)
   - [schemas[*].path](#root-schema)
   - [schemas[*].include](#root-schema)
+- [overrides](#overrides)
+  - [overrides[*].files](#overrides-files)
+    - [overrides[*].files.include](#overrides-files-include)
+    - [overrides[*].files.exclude](#overrides-files-exclude)
+  - [overrides[*].format](#overrides-format)
+    - [overrides[*].format.enabled](#overrides-format-enabled)
+    - [overrides[*].format.rules](#overrides-format-rules)
+  - [overrides[*].lint](#overrides-lint)
+    - [overrides[*].lint.enabled](#overrides-lint-enabled)
+    - [overrides[*].lint.rules](#overrides-lint-rules)
 
 ### toml-version
 
@@ -244,7 +289,7 @@ If `true`, the sub-table will be indented.
 # ^^  <- this
 ```
 
-### format.rules.indent-table-key-values
+### format.rules.indent-table-key-value-pairs
 
 Whether to indent the table key-value pairs.
 
@@ -294,11 +339,11 @@ key = { a = 1, b = 2 }
 #             ^  <- this
 ```
 
-### format.rules.key-value-equal-alignment
+### format.rules.key-value-equals-sign-alignment
 
-Whether to align the equal sign in the key-value pairs.
+Whether to align the equals sign in the key-value pairs.
 
-If `true`, the equal sign in the key-value pairs will be aligned.
+If `true`, the equals sign in the key-value pairs will be aligned.
 
 - Type: `Boolean`
 - Default: `false`
@@ -344,9 +389,9 @@ key3.key4 = "value3"  # comment 3
 The trailing comments of table header are not targeted by alignment.
 </Note>
 
-### format.rules.key-value-equal-space-width
+### format.rules.key-value-equals-sign-space-width
 
-The number of spaces after the equal in a key-value pair.
+The number of spaces around the equals sign in a key-value pair.
 
 - Type: `Number`
 - Default: `1`
@@ -635,3 +680,73 @@ include = ["pyproject.toml"]
 - `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"items[0].name"`)
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+
+### overrides
+
+Override configuration settings for specific file patterns. You can define multiple override rules, and matching settings will be applied to files.
+
+```toml
+[[overrides]]
+files.include = ["tests/**/*.toml"]
+
+[overrides.format.rules]
+indent-width = 4
+line-width = 120
+
+[overrides.lint.rules]
+key-empty = "off"
+```
+
+### overrides[*].files
+
+Specify file patterns to which the override should be applied.
+
+- Type: `Table`
+- Required: `true`
+
+### overrides[*].files.include
+
+File patterns to apply the override. Supports glob patterns.
+
+- Type: `String[]`
+- Required: `true`
+
+### overrides[*].files.exclude
+
+File patterns to exclude from the override. Supports glob patterns.
+
+- Type: `String[]`
+
+### overrides[*].format
+
+Override format settings.
+
+### overrides[*].format.enabled
+
+Enable or disable formatting feature.
+
+- Type: `Boolean`
+- Default: `true`
+
+### overrides[*].format.rules
+
+Override format rules. Only the specified rules will be overridden, and the rest will use the base configuration.
+
+Available rules are the same as [format.rules](#format-rules).
+
+### overrides[*].lint
+
+Override lint settings.
+
+### overrides[*].lint.enabled
+
+Enable or disable linting feature.
+
+- Type: `Boolean`
+- Default: `true`
+
+### overrides[*].lint.rules
+
+Override lint rules. Only the specified rules will be overridden, and the rest will use the base configuration.
+
+Available rules are the same as [lint.rules](#lint-rules).

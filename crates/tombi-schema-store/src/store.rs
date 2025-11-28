@@ -10,7 +10,7 @@ use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
 use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
-use tombi_config::{Schema, SchemaOptions};
+use tombi_config::{SchemaItem, SchemaOverviewOptions};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
@@ -97,7 +97,7 @@ impl SchemaStore {
         let base_dir_path = config_path.and_then(|p| p.parent());
         let schema_options = match &config.schema {
             Some(schema) => schema,
-            None => &SchemaOptions::default(),
+            None => &SchemaOverviewOptions::default(),
         };
 
         if schema_options.enabled.unwrap_or_default().value() {
@@ -140,7 +140,7 @@ impl SchemaStore {
 
     pub async fn load_config_schemas(
         &self,
-        schemas: &[Schema],
+        schemas: &[SchemaItem],
         base_dir_path: Option<&std::path::Path>,
     ) {
         futures::future::join_all(schemas.iter().map(|schema| async move {
@@ -510,10 +510,29 @@ impl SchemaStore {
     async fn try_get_source_schema_from_remote_url(
         &self,
         schema_uri: &SchemaUri,
+        source_path: Option<&std::path::Path>,
     ) -> Result<Option<SourceSchema>, crate::Error> {
+        let source_schema = if let Some(source_path) = source_path {
+            self.resolve_source_schema_from_path(source_path)
+                .await
+                .ok()
+                .flatten()
+        } else {
+            None
+        };
+
+        let (root_schema, sub_schema_uri_map) = if let Some(source_schema) = source_schema {
+            (source_schema.root_schema, source_schema.sub_schema_uri_map)
+        } else {
+            (None, Default::default())
+        };
+
         Ok(Some(SourceSchema {
-            root_schema: self.try_get_document_schema(schema_uri).await?,
-            sub_schema_uri_map: Default::default(),
+            root_schema: self
+                .try_get_document_schema(schema_uri)
+                .await?
+                .or(root_schema),
+            sub_schema_uri_map,
         }))
     }
 
@@ -527,7 +546,9 @@ impl SchemaStore {
                 "file" => tombi_uri::Uri::to_file_path(url).ok(),
                 _ => None,
             },
-            Some(Either::Right(path)) => Some(path.to_path_buf()),
+            Some(Either::Right(path)) => {
+                Some(std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()))
+            }
             None => None,
         };
 
@@ -546,7 +567,7 @@ impl SchemaStore {
                 }
             };
             return self
-                .try_get_source_schema_from_remote_url(&schema_uri)
+                .try_get_source_schema_from_remote_url(&schema_uri, source_path.as_deref())
                 .await
                 .map_err(|err| (err, uri_range));
         }

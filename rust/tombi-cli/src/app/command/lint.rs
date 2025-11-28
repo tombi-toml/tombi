@@ -21,6 +21,12 @@ pub struct Args {
     #[arg(long)]
     stdin_filename: Option<String>,
 
+    /// Exit with error code on warnings
+    ///
+    /// If `true`, the program will exit with error code if there are warnings.
+    #[arg(long, default_value_t = false)]
+    error_on_warnings: bool,
+
     #[command(flatten)]
     common: CommonArgs,
 }
@@ -90,8 +96,6 @@ where
     };
 
     runtime.block_on(async {
-        let lint_options = config.lint.clone().unwrap_or_default();
-
         // Run schema loading and file discovery concurrently
         let (schema_result, input) = tokio::join!(
             schema_store.load_config(&config, config_path.as_deref()),
@@ -106,14 +110,26 @@ where
         match input {
             FileSearch::Stdin => {
                 tracing::debug!("linting... stdin input");
+                let stdin_path = args.stdin_filename.as_deref().map(std::path::Path::new);
+
+                // Get lint options with override support
+                let Some(lint_options) =
+                    tombi_glob::get_lint_options(&config, stdin_path, config_path.as_deref())
+                else {
+                    tracing::debug!("Linting disabled for stdin by override");
+                    success_num += 1;
+                    return Ok((success_num, error_num));
+                };
+
                 if lint_file(
                     tokio::io::stdin(),
                     printer,
-                    args.stdin_filename.as_deref().map(std::path::Path::new),
+                    stdin_path,
                     toml_version,
                     &lint_options,
                     &schema_store,
                     use_ansi_color,
+                    args.error_on_warnings,
                 )
                 .await
                 {
@@ -129,10 +145,24 @@ where
                     match file {
                         Ok(source_path) => {
                             tracing::debug!("linting... {:?}", source_path);
+
+                            // Get lint options with override support
+                            let Some(lint_options) = tombi_glob::get_lint_options(
+                                &config,
+                                Some(source_path.as_ref()),
+                                config_path.as_deref(),
+                            ) else {
+                                tracing::debug!(
+                                    "Linting disabled for {:?} by override",
+                                    source_path
+                                );
+                                success_num += 1;
+                                continue;
+                            };
+
                             match tokio::fs::File::open(&source_path).await {
                                 Ok(file) => {
                                     let printer = printer.clone();
-                                    let options = lint_options.clone();
                                     let schema_store = schema_store.clone();
 
                                     tasks.spawn(async move {
@@ -141,9 +171,10 @@ where
                                             printer,
                                             Some(source_path.as_ref()),
                                             toml_version,
-                                            &options,
+                                            &lint_options,
                                             &schema_store,
                                             use_ansi_color,
+                                            args.error_on_warnings,
                                         )
                                         .await
                                     });
@@ -200,6 +231,7 @@ async fn lint_file<R, P>(
     lint_options: &LintOptions,
     schema_store: &tombi_schema_store::SchemaStore,
     use_ansi_color: bool,
+    error_on_warnings: bool,
 ) -> bool
 where
     Diagnostic: Print<P>,
@@ -208,29 +240,35 @@ where
     R: AsyncReadExt + Unpin + Send,
 {
     let mut source = String::new();
-    if reader.read_to_string(&mut source).await.is_ok() {
-        match tombi_linter::Linter::new(
-            toml_version,
-            lint_options,
-            source_path.map(itertools::Either::Right),
-            schema_store,
-        )
-        .lint(&source)
-        .await
-        {
-            Ok(()) => {
-                return true;
-            }
-            Err(diagnostics) => if let Some(source_path) = source_path {
-                diagnostics
-                    .into_iter()
-                    .map(|diagnostic| diagnostic.with_source_file(source_path))
-                    .collect()
-            } else {
-                diagnostics
-            }
-            .print(&mut printer, use_ansi_color),
-        }
+    if reader.read_to_string(&mut source).await.is_err() {
+        return false;
     }
-    false
+    let Err(diagnostics) = tombi_linter::Linter::new(
+        toml_version,
+        lint_options,
+        source_path.map(itertools::Either::Right),
+        schema_store,
+    )
+    .lint(&source)
+    .await
+    else {
+        return true;
+    };
+
+    let diagnostics = if let Some(source_path) = source_path {
+        diagnostics
+            .into_iter()
+            .map(|diagnostic| diagnostic.with_source_file(source_path))
+            .collect()
+    } else {
+        diagnostics
+    };
+
+    diagnostics.print(&mut printer, use_ansi_color);
+
+    if error_on_warnings {
+        diagnostics.is_empty()
+    } else {
+        diagnostics.iter().all(Diagnostic::is_warning)
+    }
 }

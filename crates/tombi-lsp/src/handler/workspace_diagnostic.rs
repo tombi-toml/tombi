@@ -99,7 +99,8 @@ async fn publish_workspace_diagnostics(backend: &Backend, text_document_uri: tom
 fn is_workspace_diagnostic_enabled(workspace_config: &WorkspaceConfig) -> bool {
     workspace_config
         .config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|lsp| lsp.workspace_diagnostic.as_ref())
         .and_then(|workspace_diagnostic| workspace_diagnostic.enabled)
         .unwrap_or_default()

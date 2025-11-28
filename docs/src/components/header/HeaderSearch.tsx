@@ -1,14 +1,16 @@
-import { TbSearch, TbX, TbLoaderQuarter } from "solid-icons/tb";
+import { TbLoaderQuarter, TbSearch } from "solid-icons/tb";
 import { createSignal, onMount } from "solid-js";
 import { detectOperatingSystem } from "~/utils/platform";
-import { IconButton } from "../button/IconButton";
-import { searchDocumentation, type SearchResult } from "~/utils/search";
-import { SearchResults } from "../search/SearchResults";
+import { type SearchResult, searchDocumentation } from "~/utils/search";
 import breakpoints from "../../../breakpoints.json";
+import { SearchResults } from "../search/SearchResults";
 
 interface HeaderSearchProps {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
+  getPreviousActiveElement?: () => HTMLElement | null;
+  savePreviousActiveElement?: () => void;
+  clearPreviousActiveElement?: () => void;
 }
 
 export function HeaderSearch(props: HeaderSearchProps) {
@@ -32,6 +34,8 @@ export function HeaderSearch(props: HeaderSearchProps) {
       document.addEventListener("keydown", (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "k") {
           e.preventDefault();
+          // Save the currently focused element before opening search
+          props.savePreviousActiveElement?.();
           searchInputRef?.focus();
           props.setIsSearchOpen(true);
         }
@@ -58,11 +62,28 @@ export function HeaderSearch(props: HeaderSearchProps) {
     }
   };
 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && props.isSearchOpen) {
+      e.preventDefault();
+      setSearchQuery("");
+      setSearchResults([]);
+      props.setIsSearchOpen(false);
+      // Restore focus to the previously focused element
+      setTimeout(() => {
+        const previousElement = props.getPreviousActiveElement?.();
+        if (previousElement && typeof previousElement.focus === "function") {
+          previousElement.focus();
+        }
+        props.clearPreviousActiveElement?.();
+      }, 100);
+    }
+  };
+
   return (
     <div
       class={`
-        ${props.isSearchOpen ? "w-full" : "w-10"}
-        flex justify-end md:w-full items-center max-w-200 gap-2
+        ${props.isSearchOpen ? "w-full" : "w-0"}
+        md:w-full flex justify-end items-center max-w-200 gap-2
       `}
     >
       <div
@@ -85,6 +106,7 @@ export function HeaderSearch(props: HeaderSearchProps) {
             placeholder="Search"
             value={searchQuery()}
             onInput={(e) => handleSearch(e.currentTarget.value)}
+            onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             class="w-full h-11 pl-12 bg-white/20 text-white placeholder-white/60 text-lg focus:bg-white/30 outline-none border-none box-border rounded-2"
@@ -111,28 +133,6 @@ export function HeaderSearch(props: HeaderSearchProps) {
           <SearchResults results={searchResults()} />
         </div>
       </div>
-      <IconButton
-        onClick={() => {
-          props.setIsSearchOpen(!props.isSearchOpen);
-          if (!props.isSearchOpen) {
-            setSearchQuery("");
-            setSearchResults([]);
-          }
-        }}
-        class="md:hidden sm:mr-0 ml-2 mr-4 py-1 relative"
-        alt={props.isSearchOpen ? "Close Search" : "Search"}
-      >
-        <div
-          class={`absolute transition-all duration-300 ${props.isSearchOpen ? "opacity-100 rotate-0" : "opacity-0 -rotate-90"}`}
-        >
-          <TbX size={24} />
-        </div>
-        <div
-          class={`transition-all duration-300 ${props.isSearchOpen ? "opacity-0 rotate-90" : "opacity-100 rotate-0"}`}
-        >
-          <TbSearch size={24} />
-        </div>
-      </IconButton>
     </div>
   );
 }

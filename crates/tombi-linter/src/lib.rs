@@ -85,7 +85,7 @@ macro_rules! test_lint {
                 // Load schemas
                 schema_store
                     .load_config_schemas(
-                        &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path: schema_path.to_string_lossy().to_string(),
                             include: vec!["*.toml".to_string()],
@@ -190,7 +190,7 @@ macro_rules! test_lint {
                 // Load schemas
                 schema_store
                     .load_config_schemas(
-                        &[tombi_config::Schema::Root(tombi_config::RootSchema {
+                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
                             path: schema_path.to_string_lossy().to_string(),
                             include: vec!["*.toml".to_string()],
@@ -335,46 +335,13 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_tombi_schema_format_array_bracket_space_width_eq_0(
+            fn test_tombi_schema_format_rules_array_bracket_space_width_eq_0(
                 r#"
-                [format]
+                [format.rules]
                 array-bracket-space-width = 0
                 "#,
                 tombi_schema_path(),
-            ) -> Err([
-                tombi_validator::DiagnosticKind::Deprecated(
-                    tombi_schema_store::SchemaAccessors::from(
-                        vec![
-                            tombi_schema_store::SchemaAccessor::Key("format".to_string()),
-                            tombi_schema_store::SchemaAccessor::Key("array-bracket-space-width".to_string()),
-                        ]
-                    ),
-                )
-            ]);
-        }
-
-        test_lint! {
-            #[test]
-            fn test_tombi_schema_invalid_root(
-                r#"
-                [[schemas]]
-                path = "schemas/partial-taskipy.schema.json"
-                include = ["pyproject.toml"]
-                root-keys = "tool.taskipy"
-                "#,
-                tombi_schema_path(),
-            ) -> Err([
-                tombi_validator::DiagnosticKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::from(
-                        vec![
-                            tombi_schema_store::SchemaAccessor::Key("schemas".to_string()),
-                            tombi_schema_store::SchemaAccessor::Index,
-                            tombi_schema_store::SchemaAccessor::Key("root-keys".to_string()),
-                        ]
-                    ),
-                    "\"tool.taskipy\"".to_string(),
-                )
-            ]);
+            ) -> Ok(_);
         }
 
         test_lint! {
@@ -701,24 +668,6 @@ mod tests {
                 "#,
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed { key: "not-exist".to_string() }
-            ]);
-        }
-
-        test_lint! {
-            #[test]
-            fn test_tombi_document_comment_directive_lint_disable_eq_true(
-                r#"
-                #:tombi lint.disable = true
-                "#,
-            ) -> Err([
-                tombi_validator::DiagnosticKind::DeprecatedValue(
-                    tombi_schema_store::SchemaAccessors::from(
-                        vec![
-                        tombi_schema_store::SchemaAccessor::Key("lint".to_string()),
-                        tombi_schema_store::SchemaAccessor::Key("disable".to_string()),
-                    ]),
-                    "true".to_string(),
-                )
             ]);
         }
     }

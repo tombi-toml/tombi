@@ -9,14 +9,11 @@
 
 use crate::{
     ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, DateTimeDelimiter, IndentStyle, IndentWidth,
-    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualSpaceWidth, LineEnding,
-    LineWidth, StringQuoteStyle, TrailingCommentSpaceWidth,
+    InlineTableBraceSpaceWidth, InlineTableCommaSpaceWidth, KeyValueEqualsSignSpaceWidth,
+    LineEnding, LineWidth, StringQuoteStyle, TrailingCommentSpaceWidth,
 };
 
 /// # Formatter options
-///
-/// To avoid needless discussion of formatting rules,
-/// we do not currently have a configuration item for formatting.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -26,115 +23,6 @@ use crate::{
 pub struct FormatOptions {
     /// # Format rules
     pub rules: Option<FormatRules>,
-
-    /// # The number of spaces inside the brackets of a single line array.
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.array-bracket-space-width` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "ArrayBracketSpaceWidth::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub array_bracket_space_width: Option<ArrayBracketSpaceWidth>,
-
-    /// # The number of spaces after the comma in a single line array.
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.array-comma-space-width` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "ArrayCommaSpaceWidth::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub array_element_space_width: Option<ArrayCommaSpaceWidth>,
-
-    /// # The delimiter between date and time
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.date-time-delimiter` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "DateTimeDelimiter::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub date_time_delimiter: Option<DateTimeDelimiter>,
-
-    /// # The style of indentation
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.indent-style` instead.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "IndentStyle::default"))]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub indent_style: Option<IndentStyle>,
-
-    /// # The number of spaces per indentation level
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.indent-width` instead.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "IndentWidth::default"))]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub indent_width: Option<IndentWidth>,
-
-    /// # The number of spaces inside the brackets of a single line inline table.
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.inline-table-brace-space-width` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "InlineTableBraceSpaceWidth::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub inline_table_brace_space_width: Option<InlineTableBraceSpaceWidth>,
-
-    /// # The number of spaces after the comma in a single line inline table.
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.inline-table-comma-space-width` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "InlineTableCommaSpaceWidth::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub inline_table_element_space_width: Option<InlineTableCommaSpaceWidth>,
-
-    /// # The type of line ending
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.line-ending` instead.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "LineEnding::default"))]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub line_ending: Option<LineEnding>,
-
-    /// # The maximum line width
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.line-width` instead.
-    #[cfg_attr(feature = "jsonschema", schemars(default = "LineWidth::default"))]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub line_width: Option<LineWidth>,
-
-    /// # The preferred quote character for strings
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.string-quote-style` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "StringQuoteStyle::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub quote_style: Option<StringQuoteStyle>,
-
-    /// # The number of spaces before the trailing comment.
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.trailing-comment-space-width` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "TrailingCommentSpaceWidth::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub trailing_comment_space_width: Option<TrailingCommentSpaceWidth>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -213,7 +101,7 @@ pub struct FormatRules {
     /// # ^^  <- this
     /// ```
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
-    pub indent_table_key_values: Option<bool>,
+    pub indent_table_key_value_pairs: Option<bool>,
 
     /// # The number of spaces per indentation level
     ///
@@ -246,9 +134,9 @@ pub struct FormatRules {
     )]
     pub inline_table_comma_space_width: Option<InlineTableCommaSpaceWidth>,
 
-    /// # Whether to align the equal sign in the key-value pairs.
+    /// # Whether to align the equals sign in the key-value pairs.
     ///
-    /// If `true`, the equal sign in the key-value pairs will be aligned.
+    /// If `true`, the equals sign in the key-value pairs will be aligned.
     ///
     /// ⚠️ **WARNING** ⚠️\
     /// This feature does **not** apply to key-value pairs inside single line inline tables.
@@ -265,7 +153,7 @@ pub struct FormatRules {
     /// key3.key4 = "value3"
     /// ```
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
-    pub key_value_equal_alignment: Option<bool>,
+    pub key_value_equals_sign_alignment: Option<bool>,
 
     /// # The preferred quote character for strings
     #[cfg_attr(
@@ -295,7 +183,7 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "bool::default"))]
     pub trailing_comment_alignment: Option<bool>,
 
-    /// # The number of spaces after the equal in a key-value pair.
+    /// # The number of spaces around the equals sign in a key-value pair.
     ///
     /// ```toml
     /// key = "value"
@@ -303,9 +191,9 @@ pub struct FormatRules {
     /// ```
     #[cfg_attr(
         feature = "jsonschema",
-        schemars(default = "KeyValueEqualSpaceWidth::default")
+        schemars(default = "KeyValueEqualsSignSpaceWidth::default")
     )]
-    pub key_value_equal_space_width: Option<KeyValueEqualSpaceWidth>,
+    pub key_value_equals_sign_space_width: Option<KeyValueEqualsSignSpaceWidth>,
 
     /// # The type of line ending
     ///
@@ -322,17 +210,6 @@ pub struct FormatRules {
     #[cfg_attr(feature = "jsonschema", schemars(default = "LineWidth::default"))]
     pub line_width: Option<LineWidth>,
 
-    /// # The preferred quote character for strings
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `format.rules.string-quote-style` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "StringQuoteStyle::default")
-    )]
-    #[deprecated]
-    pub quote_style: Option<StringQuoteStyle>,
-
     /// # The number of spaces before the trailing comment.
     ///
     /// ```toml
@@ -344,4 +221,49 @@ pub struct FormatRules {
         schemars(default = "TrailingCommentSpaceWidth::default")
     )]
     pub trailing_comment_space_width: Option<TrailingCommentSpaceWidth>,
+}
+
+impl FormatRules {
+    pub fn override_with(self, override_rules: &Self) -> Self {
+        Self {
+            array_bracket_space_width: self
+                .array_bracket_space_width
+                .or(override_rules.array_bracket_space_width),
+            array_comma_space_width: self
+                .array_comma_space_width
+                .or(override_rules.array_comma_space_width),
+            date_time_delimiter: self
+                .date_time_delimiter
+                .or(override_rules.date_time_delimiter),
+            indent_style: self.indent_style.or(override_rules.indent_style),
+            indent_sub_tables: self.indent_sub_tables.or(override_rules.indent_sub_tables),
+            indent_table_key_value_pairs: self
+                .indent_table_key_value_pairs
+                .or(override_rules.indent_table_key_value_pairs),
+            indent_width: self.indent_width.or(override_rules.indent_width),
+            inline_table_brace_space_width: self
+                .inline_table_brace_space_width
+                .or(override_rules.inline_table_brace_space_width),
+            inline_table_comma_space_width: self
+                .inline_table_comma_space_width
+                .or(override_rules.inline_table_comma_space_width),
+            key_value_equals_sign_alignment: self
+                .key_value_equals_sign_alignment
+                .or(override_rules.key_value_equals_sign_alignment),
+            string_quote_style: self
+                .string_quote_style
+                .or(override_rules.string_quote_style),
+            trailing_comment_alignment: self
+                .trailing_comment_alignment
+                .or(override_rules.trailing_comment_alignment),
+            key_value_equals_sign_space_width: self
+                .key_value_equals_sign_space_width
+                .or(override_rules.key_value_equals_sign_space_width),
+            line_ending: self.line_ending.or(override_rules.line_ending),
+            line_width: self.line_width.or(override_rules.line_width),
+            trailing_comment_space_width: self
+                .trailing_comment_space_width
+                .or(override_rules.trailing_comment_space_width),
+        }
+    }
 }

@@ -1,17 +1,17 @@
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    BoolDefaultTrue, OneOrMany, SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL,
-    TOMBI_SCHEMASTORE_CATALOG_URL,
+    BoolDefaultTrue, SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL,
 };
 
+/// # Schema overview options
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct SchemaOptions {
+pub struct SchemaOverviewOptions {
     /// # Enable the schema validation
     pub enabled: Option<BoolDefaultTrue>,
 
@@ -26,7 +26,7 @@ pub struct SchemaOptions {
     pub catalog: Option<SchemaCatalog>,
 }
 
-impl SchemaOptions {
+impl SchemaOverviewOptions {
     pub const fn default() -> Self {
         Self {
             enabled: None,
@@ -40,7 +40,7 @@ impl SchemaOptions {
             self.catalog
                 .clone()
                 .unwrap_or_default()
-                .paths()
+                .paths
                 .as_ref()
                 .map(|path| path.to_vec())
         } else {
@@ -52,38 +52,13 @@ impl SchemaOptions {
         self.strict.as_ref().map(|strict| strict.value())
     }
 }
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "serde", serde(untagged))]
-#[derive(Debug, Clone, PartialEq)]
-pub enum SchemaCatalog {
-    New(NewSchemaCatalog),
-    Old(SchemaCatalogOld),
-}
-
-impl Default for SchemaCatalog {
-    fn default() -> Self {
-        Self::New(NewSchemaCatalog::default())
-    }
-}
-impl SchemaCatalog {
-    pub fn paths(&self) -> Option<&[SchemaCatalogPath]> {
-        match self {
-            Self::New(item) => item.paths.as_deref(),
-            #[allow(deprecated)]
-            Self::Old(item) => item.path.as_ref().map(|v| v.as_ref()),
-        }
-    }
-}
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq)]
-pub struct NewSchemaCatalog {
+pub struct SchemaCatalog {
     /// # The schema catalog path/url array
     ///
     /// The catalog is evaluated after the schemas specified by [[schemas]].\
@@ -93,7 +68,7 @@ pub struct NewSchemaCatalog {
     pub paths: Option<Vec<SchemaCatalogPath>>,
 }
 
-impl Default for NewSchemaCatalog {
+impl Default for SchemaCatalog {
     fn default() -> Self {
         Self {
             paths: catalog_paths_default(),
@@ -108,40 +83,21 @@ fn catalog_paths_default() -> Option<Vec<SchemaCatalogPath>> {
     ])
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct SchemaCatalogOld {
-    /// # The schema catalog path or url
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `schema.catalog.paths` instead.
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(default = "OneOrMany::<SchemaCatalogPath>::default")
-    )]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub path: Option<OneOrMany<SchemaCatalogPath>>,
-}
-
+/// # Schema item
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq)]
-pub enum Schema {
+pub enum SchemaItem {
     Root(RootSchema),
     Sub(SubSchema),
-    OldSub(OldSubSchema),
 }
 
-impl Schema {
+impl SchemaItem {
     pub fn path(&self) -> &str {
         match self {
             Self::Root(item) => &item.path,
             Self::Sub(item) => &item.path,
-            Self::OldSub(item) => &item.path,
         }
     }
 
@@ -149,7 +105,6 @@ impl Schema {
         match self {
             Self::Root(item) => &item.include,
             Self::Sub(item) => &item.include,
-            Self::OldSub(item) => &item.include,
         }
     }
 
@@ -157,7 +112,6 @@ impl Schema {
         match self {
             Self::Root(item) => item.toml_version,
             Self::Sub(_) => None,
-            Self::OldSub(_) => None,
         }
     }
 
@@ -165,8 +119,6 @@ impl Schema {
         match self {
             Self::Root(_) => None,
             Self::Sub(item) => Some(&item.root),
-            #[allow(deprecated)]
-            Self::OldSub(item) => Some(&item.root_keys),
         }
     }
 }
@@ -203,7 +155,7 @@ pub struct RootSchema {
 pub struct SubSchema {
     /// # The accessors to apply the sub schema
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    #[cfg_attr(feature = "jsonschema", schemars(example = "tools.tombi"))]
+    #[cfg_attr(feature = "jsonschema", schemars(example = "tool.tombi"))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "items[0].name"))]
     pub root: String,
 
@@ -218,35 +170,6 @@ pub struct SubSchema {
     pub include: Vec<String>,
 }
 
-/// # The schema for the old sub value
-///
-/// This is for backward compatibility.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
-#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[derive(Debug, Clone, PartialEq)]
-pub struct OldSubSchema {
-    /// # The sub schema path
-    pub path: String,
-
-    /// # The file match pattern of the sub schema
-    ///
-    /// The file match pattern to include the target to apply the sub schema.
-    /// Supports glob pattern.
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    pub include: Vec<String>,
-
-    /// # The keys to apply the sub schema
-    ///
-    /// **🚧 Deprecated 🚧**\
-    /// Please use `schemas[*].root` instead.
-    #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
-    #[cfg_attr(feature = "jsonschema", deprecated)]
-    pub root_keys: String,
-}
-
 #[cfg(test)]
 mod tests {
     use crate::JSON_SCHEMASTORE_CATALOG_URL;
@@ -255,7 +178,7 @@ mod tests {
 
     #[test]
     fn schema_catalog_paths_default() {
-        let schema = SchemaOptions::default();
+        let schema = SchemaOverviewOptions::default();
         let expected = Some(vec![
             TOMBI_SCHEMASTORE_CATALOG_URL.into(),
             JSON_SCHEMASTORE_CATALOG_URL.into(),
@@ -267,10 +190,10 @@ mod tests {
 
     #[test]
     fn schema_catalog_paths_empty() {
-        let schema = SchemaOptions {
-            catalog: Some(SchemaCatalog::New(NewSchemaCatalog {
+        let schema = SchemaOverviewOptions {
+            catalog: Some(SchemaCatalog {
                 paths: Some(vec![]),
-            })),
+            }),
             ..Default::default()
         };
 

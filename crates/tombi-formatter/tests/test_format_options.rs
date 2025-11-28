@@ -245,19 +245,19 @@ mod format_options {
         }
     }
 
-    mod indent_table_key_values {
+    mod indent_table_key_value_pairs {
         use super::*;
 
         test_format! {
             #[tokio::test]
-            async fn test_indent_table_key_values_false(
+            async fn test_indent_table_key_value_pairs_false(
                 r#"
                 [table]
                 key = "value"
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        indent_table_key_values: Some(false),
+                        indent_table_key_value_pairs: Some(false),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -272,14 +272,14 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_indent_table_key_values_true(
+            async fn test_indent_table_key_value_pairs_true(
                 r#"
                 [table]
                 key = "value"
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        indent_table_key_values: Some(true),
+                        indent_table_key_value_pairs: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -434,12 +434,12 @@ mod format_options {
         }
     }
 
-    mod key_value_equal_alignment {
+    mod key_value_equals_sign_alignment {
         use super::*;
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_alignment_false(
+            async fn test_key_value_equals_sign_alignment_false(
                 r#"
                 key = "value"
                 key2 = "value2"
@@ -447,7 +447,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_alignment: Some(false),
+                        key_value_equals_sign_alignment: Some(false),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -463,7 +463,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_alignment_true(
+            async fn test_key_value_equals_sign_alignment_true(
                 r#"
                 key = "value"
                 key2 = "value2"
@@ -471,7 +471,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_alignment: Some(true),
+                        key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -487,7 +487,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_alignment_true_in_table(
+            async fn test_key_value_equals_sign_alignment_true_in_table(
                 r#"
                 [table]
                 key = "value"
@@ -496,7 +496,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_alignment: Some(true),
+                        key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -513,7 +513,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_alignment_true_in_array_of_table(
+            async fn test_key_value_equals_sign_alignment_true_in_array_of_table(
                 r#"
                 [[table]]
                 key = "value"
@@ -522,7 +522,7 @@ mod format_options {
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_alignment: Some(true),
+                        key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -539,7 +539,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_alignment_true_in_multi_line_inline_table(
+            async fn test_key_value_equals_sign_alignment_true_in_multi_line_inline_table(
                 r#"
                 inline-table = {
                   key = "value",
@@ -550,7 +550,7 @@ mod format_options {
                 TomlVersion(TomlVersion::V1_1_0_Preview),
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_alignment: Some(true),
+                        key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -567,18 +567,18 @@ mod format_options {
         }
     }
 
-    mod key_value_equal_space_width {
+    mod key_value_equals_sign_space_width {
         use super::*;
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_space_width_one(
+            async fn test_key_value_equals_sign_space_width_one(
                 r#"
                 key="value"
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_space_width: Some(1.into()),
+                        key_value_equals_sign_space_width: Some(1.into()),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -592,13 +592,13 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_key_value_equal_space_width_two(
+            async fn test_key_value_equals_sign_space_width_two(
                 r#"
                 key="value"
                 "#,
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
-                        key_value_equal_space_width: Some(2.into()),
+                        key_value_equals_sign_space_width: Some(2.into()),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -961,7 +961,7 @@ mod format_options {
 
         test_format! {
             #[tokio::test]
-            async fn test_trailing_comment_alignment_and_indent_table_key_values_true_in_inline_table(
+            async fn test_trailing_comment_alignment_and_indent_table_key_value_pairs_true_in_inline_table(
                 r#"
                 [table]
                 key = "value"  # comment 1
@@ -976,7 +976,7 @@ mod format_options {
                 FormatOptions(FormatOptions{
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
-                        indent_table_key_values: Some(true),
+                        indent_table_key_value_pairs: Some(true),
                         ..Default::default()
                     }),
                     ..Default::default()

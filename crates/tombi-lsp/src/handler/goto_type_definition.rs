@@ -41,7 +41,8 @@ pub async fn handle_goto_type_definition(
         .await;
 
     if !config
-        .lsp()
+        .lsp
+        .as_ref()
         .and_then(|server| server.goto_type_definition.as_ref())
         .and_then(|goto_type_definition| goto_type_definition.enabled)
         .unwrap_or_default()

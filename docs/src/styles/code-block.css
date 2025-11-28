@@ -15,6 +15,7 @@ pre {
   padding: 1rem;
   background: #1e1e1e;
   border-radius: 0.5rem;
+  font-size: 0.875rem !important;
 }
 
 /* Ensure code doesn't wrap */
@@ -25,6 +26,7 @@ pre code {
   white-space: pre;
   word-break: normal;
   word-wrap: normal;
+  font-size: 0.875rem !important;
 }
 
 /* Copy button positioning */
@@ -38,7 +40,6 @@ pre code {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   pre {
-    font-size: 0.875rem;
     padding: 0.75rem;
   }
 }
