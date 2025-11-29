@@ -5,7 +5,10 @@ from PIL import Image, ImageDraw, ImageFont
 import sys
 from pathlib import Path
 
-def add_label_to_image(img: Image.Image, label: str, font_size: int = 80) -> Image.Image:
+
+def add_label_to_image(
+    img: Image.Image, label: str, font_size: int = 80
+) -> Image.Image:
     """
     Add a bold red label to the top-left corner of an image.
 
@@ -45,7 +48,9 @@ def add_label_to_image(img: Image.Image, label: str, font_size: int = 80) -> Ima
         if font is None:
             # Try to load default font with larger size
             try:
-                font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", font_size)
+                font = ImageFont.truetype(
+                    "/System/Library/Fonts/Helvetica.ttc", font_size
+                )
             except:
                 # Last resort: default font
                 font = ImageFont.load_default()
@@ -63,7 +68,10 @@ def add_label_to_image(img: Image.Image, label: str, font_size: int = 80) -> Ima
 
     return labeled_img
 
-def create_gif(before_path: Path, after_path: Path, output_path: Path, duration: int = 1500):
+
+def create_gif(
+    before_path: Path, after_path: Path, output_path: Path, duration: int = 1500
+):
     """
     Create a GIF animation from before and after images with labels.
 
@@ -88,7 +96,7 @@ def create_gif(before_path: Path, after_path: Path, output_path: Path, duration:
             save_all=True,
             append_images=[after_labeled],
             duration=duration,
-            loop=0  # Loop forever
+            loop=0,  # Loop forever
         )
 
         print(f"✓ Created: {output_path.name}")
@@ -96,10 +104,12 @@ def create_gif(before_path: Path, after_path: Path, output_path: Path, duration:
     except Exception as e:
         print(f"✗ Error creating {output_path.name}: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         return False
 
     return True
+
 
 def main():
     # Use relative paths from script location
@@ -116,33 +126,33 @@ def main():
         (
             "uv_CodeAction_UseWorkspaceDependency_Before.png",
             "uv_CodeAction_UseWorkspaceDependency_After.png",
-            "uv_CodeAction_UseWorkspaceDependency.gif"
+            "uv_CodeAction_UseWorkspaceDependency.gif",
         ),
         (
             "uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency_Before.png",
             "uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency_After.png",
-            "uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency.gif"
+            "uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency.gif",
         ),
         # Cargo CodeActions
         (
             "Cargo_CodeAction_InheritFromWorkspace_Before.png",
             "Cargo_CodeAction_InheritFromWorkspace_After.png",
-            "Cargo_CodeAction_InheritFromWorkspace.gif"
+            "Cargo_CodeAction_InheritFromWorkspace.gif",
         ),
         (
             "Cargo_CodeAction_InheritDependencyFromWorkspace_Before.png",
             "Cargo_CodeAction_InheritDependencyFromWorkspace_After.png",
-            "Cargo_CodeAction_InheritDependencyFromWorkspace.gif"
+            "Cargo_CodeAction_InheritDependencyFromWorkspace.gif",
         ),
         (
             "Cargo_CodeAction_ConevrtDependencyToTableFormat_Before.png",
             "Cargo_CodeAction_ConevrtDependencyToTableFormat_After.png",
-            "Cargo_CodeAction_ConvertDependencyToTableFormat.gif"
+            "Cargo_CodeAction_ConvertDependencyToTableFormat.gif",
         ),
         (
             "Cargo_CodeAction_AddToWorkspaceAndInheritDependency_Before.png",
             "Cargo_CodeAction_AddToWorkspaceAndInheritDependency_After.png",
-            "Cargo_CodeAction_AddToWorkspaceAndInheritDependency.gif"
+            "Cargo_CodeAction_AddToWorkspaceAndInheritDependency.gif",
         ),
     ]
 
@@ -170,6 +180,7 @@ def main():
 
     print()
     print(f"Successfully created {success_count}/{len(image_pairs)} GIF files.")
+
 
 if __name__ == "__main__":
     main()
