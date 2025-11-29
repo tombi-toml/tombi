@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Create GIF animations from before/after screenshot pairs with labels."""
 
-from PIL import Image, ImageDraw, ImageFont
 import sys
 from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
 
 
 def add_label_to_image(
@@ -42,7 +43,7 @@ def add_label_to_image(
             try:
                 font = ImageFont.truetype(font_path, font_size)
                 break
-            except:
+            except Exception:
                 continue
 
         if font is None:
@@ -51,10 +52,10 @@ def add_label_to_image(
                 font = ImageFont.truetype(
                     "/System/Library/Fonts/Helvetica.ttc", font_size
                 )
-            except:
+            except Exception:
                 # Last resort: default font
                 font = ImageFont.load_default()
-    except:
+    except Exception:
         font = ImageFont.load_default()
 
     # Position: adjusted position (up 20px, right 50px from original)
@@ -156,7 +157,7 @@ def main():
         ),
     ]
 
-    print(f"Creating GIF animations...")
+    print("Creating GIF animations...")
     print(f"Source: {source_dir}")
     print(f"Output: {output_dir}")
     print()
