@@ -1,0 +1,7 @@
+[project]
+name = "app1"
+version = "0.1.0"
+dependencies = ["app2", "pydantic"]
+
+[tool.uv.sources]
+app2 = { workspace = true }
