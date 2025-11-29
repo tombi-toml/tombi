@@ -1,0 +1,7 @@
+[project]
+name = "my-project"
+version = "0.1.0"
+dependencies = ["pandas>=2.2.3", "pydantic>=2.10"]
+
+[tool.uv.workspace]
+members = ["packages/*"]
