@@ -1,354 +1,100 @@
-# Rust/Python のモノレポでワークスペース開発を快適に
+本記事では、私が開発している TOML ツールキット [Tombi](https://github.com/tombi-toml/tombi)のワークスペースに関連する機能を紹介します。
+Tombi は TOML のための Formatter, Linter, Language Server を包含した統合ツールです。
 
-Rust の Cargo と Python の uv はモノレポ開発を便利にするワークスペース機能に対応しています。
+私たちのチームでは、パッケージ管理ツールを [Poetry](https://python-poetry.org/) から [uv](https://docs.astral.sh/uv/) へ移行したことを機に、[VSCode Multi-root Workspaces](https://code.visualstudio.com/docs/editing/workspaces/multi-root-workspaces) から [uvのワークスペース機能](https://docs.astral.sh/uv/concepts/projects/workspaces/) を利用したモノレポ開発に切り替えました。
+この記事を参考にすることで、依存関係のバージョン管理をルートの pyproject.toml に集約し、さらに Tombi の機能を用いることで快適なワークスペース管理ができるようになります。
 
-Tombi はワークスペースを用いた開発をサポートする便利な定義移動とコードアクション機能を提供しています。本記事では、Cargo と uv のワークスペース機能を解説し、Tombi がどのようにワークスペース開発をサポートしているかを紹介します。
+## ワークスペース機能とは
 
-## ワークスペース機能とは？
+ワークスペース機能とは、モノレポ（単一リポジトリ）開発において、レポジトリに存在する複数のプロジェクトを管理するための仕組みです。
 
-ワークスペース（Workspace）とは、複数の関連するパッケージやクレートを一つのリポジトリ内で管理するための仕組みです。モノレポ（Monorepo）とも呼ばれるこのアプローチには、以下のような利点があります：
+VSCode などエディタレベルでサポートするものもありますが、最近では各プログラミング言語のパッケージマネージャーレベルで採用される傾向が増えています。
+TOMLを設定ファイルに採用し、ワークスペース機能を備えた言語として、RustとPythonが有名です。
 
-- **依存関係の一元管理**: すべてのパッケージで同じバージョンの依存関係を使用できる
-- **ビルドの効率化**: 共通の出力ディレクトリを使用し、ビルド成果物を共有
-- **コードの再利用性向上**: 関連するパッケージ間でコードを簡単に共有
-- **プロジェクトの構造が明確**: 関連するコンポーネントをまとめて管理
+- **Rust：**Cargo が[サポート](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html)。ルートの Cargo.toml でワークスペースを定義し、その依存関係をメンバークレートが継承することで、データの共通化を容易にします。
+- **Python：**uv が[サポート](https://docs.astral.sh/uv/concepts/projects/workspaces/)。Cargo を参考に開発されており、ルートの pyproject.toml でワークスペースを定義し、リポジトリ内の相互依存パッケージを統一された仮想環境で扱うことができます。
 
-## Rust におけるワークスペース機能
+今回は Python を中心に説明しますが、 Cargo でも同様のことができます。
 
-### Cargo ワークスペースの基本
+### uvのワークスペース機能を利用したディレクトリ構成
 
-Cargo のワークスペースは、複数のクレートを一つのプロジェクトとして管理する機能です。共通の `Cargo.lock` ファイルと出力ディレクトリを共有することで、依存関係の一貫性を保ちながら、各クレートを個別にビルド・テストできます。
+それでは、Python でのワークスペースを用いたモノレポ開発のディレクトリ構成について簡単に説明しましょう。
+ワークスペース機能を利用したディレクトリ構造は、次のようにルートにワークスペース全体の設定をするための pyproject.toml を用意し、 packages に自分たちのパッケージを配置します。
+uv のワークスペース機能を利用した場合、プロジェクトのルートに唯一の uv.lock が作成され、そこで全てのパッケージが管理されます。また、この uv.lock に基づいた一つの仮想環境がワークスペース上に作成されます。
 
-### ワークスペースの設定例
-
-ルートディレクトリの `Cargo.toml` でワークスペースを定義します：
-
-```toml
-[workspace]
-resolver = "2"
-members = [
-  "crates/*",
-  "extensions/*",
-]
-
-[workspace.package]
-version = "0.1.0"
-authors = ["Your Name <you@example.com>"]
-edition = "2021"
-
-[workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.0", features = ["full"] }
+```plaintext
+my_project
+├── packages
+│ ├── app1
+│ │ └── pyproject.toml
+│ └── app2
+│   └── pyproject.toml
+├── uv.lock
+└── pyproject.toml
 ```
 
-### ワークスペース依存関係の継承
-
-Cargo では `workspace.dependencies` に定義した依存関係を、メンバークレートから継承できます：
-
-```toml
-# メンバークレートの Cargo.toml
-[dependencies]
-serde = { workspace = true }
-tokio = { workspace = true }
-```
-
-このアプローチにより、すべてのメンバークレートで同じバージョンの依存関係を使用でき、バージョン管理が容易になります。
-
-### Tombi プロジェクトの例
-
-Tombi 自体も Cargo ワークスペースを使用しています。30以上のクレートを一元管理し、LSP サーバー、フォーマッター、リンターなどの機能を分離しています：
-
-```toml
-[workspace]
-members = [
-  "crates/*",           # tombi-ast, tombi-lsp など30以上のクレート
-  "editors/zed",        # Zed エディタ拡張
-  "extensions/*",       # tombi-extension-cargo, tombi-extension-uv など
-  "rust/*",             # CLI、WASM バインディングなど
-]
-```
-
-## Python におけるワークスペース機能
-
-### uv ワークスペースの基本
-
-uv は Rust で書かれた高速な Python パッケージマネージャーで、2024年にワークスペース機能のサポートを追加しました。複数の Python パッケージを一つのリポジトリで管理し、依存関係を効率的に解決します。
-
-### ワークスペースの設定例
-
-ルートディレクトリの `pyproject.toml` でワークスペースを定義します：
+次に、各 pyproject.toml を見てみましょう。まずはルートの pyproject.toml です。
+ここでは全てのメンバーのパッケージのパスと、利用する全てのサードパーティ製のパッケージのバージョンが管理されます。
+`tool.uv.workspace.members` にワークスペース上で利用するメンバーのパッケージを指定します。
 
 ```toml
 [project]
-name = "my-workspace"
+name = "my_project"
 version = "0.1.0"
-dependencies = [
-  "pydantic>=2.10",
-  "anyio>=4.0",
-]
+dependencies = ["pandas>=2.2.3", "pydantic>=2.10"]
 
 [tool.uv.workspace]
-members = [
-  "packages/app",
-  "packages/lib",
-]
+members = ["packages/*"]
 ```
 
-### ワークスペース依存関係の参照
-
-メンバーパッケージでは、バージョン指定を省略することで、ワークスペースで定義された依存関係を使用できます：
+続いて、各メンバーパッケージの pyproject.toml です。
+`tool.uv.sources` にワークスペースから利用したい他のメンバーパッケージを指定します。
 
 ```toml
-# メンバーパッケージの pyproject.toml
 [project]
-name = "app"
+name = "app1"
 version = "0.1.0"
-dependencies = [
-  "pydantic",  # ワークスペースで定義されたバージョンを使用
-  "anyio",
-]
-```
+dependencies = ["app2", "pydantic"]
 
-### ワークスペースメンバー間の依存
-
-ワークスペース内のメンバー同士を依存関係として参照することもできます：
-
-```toml
 [tool.uv.sources]
-my-lib = { workspace = true }
-
-[project]
-dependencies = [
-  "my-lib",  # 同じワークスペース内のパッケージを参照
-]
+app2 = { workspace = true }
 ```
-
-## Tombi によるワークスペース開発のサポート
-
-Tombi は、Cargo と uv のワークスペース開発を支援する強力な機能を提供しています。
-
-### 1. 定義へ移動（Goto Definition/Declaration）
-
-ワークスペース依存関係の宣言から、実際の定義箇所へジャンプできます。
-
-#### Cargo での例
-
-```toml
-[dependencies]
-serde = { workspace = true }  # ここから Cmd/Ctrl + Click
-```
-
-↓ ワークスペースルートの `Cargo.toml` にジャンプ
-
-```toml
-[workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }  # ここへ移動
-```
-
-#### uv での例
 
 ```toml
 [project]
-dependencies = [
-  "pydantic",  # ここから Cmd/Ctrl + Click
-]
+name = "app2"
+version = "0.1.0"
+dependencies = ["pandas", "pydantic"]
 ```
 
-↓ ワークスペースルートの `pyproject.toml` にジャンプ
+ここで重要なのは、メンバーの pyproject.toml では**サードパーティ製のパッケージのバージョンを指定しない**ことです。バージョンはルートの pyproject.toml で指定されているので、 uv はそのバージョン指定を元にバージョンを決定できます。
+もし、メンバーでもバージョン指定を記述しているとバージョン制約の不整合が起こり、依存関係の解決が失敗しやすくなります。なるべくワークスペース側でバージョンを管理するようにしましょう。
 
-```toml
-[project]
-dependencies = [
-  "pydantic>=2.10",  # ここへ移動
-]
-```
+## Tombiによるワークスペース開発の強力なサポート
 
-#### 実装の仕組み
+Tombi は上記の構成に従ったワークスペース開発の編集を快適にする、2つの主要機能を提供します。
 
-Tombi の `tombi-extension-uv` と `tombi-extension-cargo` は、以下の手順で定義箇所を見つけます：
+### コードアクション（Code Action）
 
-1. カーソル位置の依存関係名を解析（PEP 508 パーサーなどを使用）
-2. 現在のファイルからワークスペースルートを探索
-3. ワークスペースの設定ファイルをパースして依存関係定義を検索
-4. 該当する定義の位置情報（URI + Range）を LSP クライアントに返す
+ワークスペース内での依存関係を整理するための自動変換機能です。メンバーパッケージの開発中に新しくサードパーティのパッケージを追加したときに利用します。
 
-### 2. コードアクション：ワークスペース依存関係への変換
+- **"Add to Workspace and Use Dependency"**: メンバーパッケージにのみ存在するサードパーティ製のパッケージを**自動でワークスペースルートに追加**し、その上でメンバーファイルの記述をワークスペース参照形式に変換します。これにより、依存関係の中央集権化を支援します。
 
-Tombi の最も便利な機能の一つが、依存関係をワークスペース形式に自動変換するコードアクションです。
+![Add to Workspace and Use Dependency Code Action](./workspace_blog/images/uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency.gif)
 
-#### uv: "Use Workspace Dependency"
+- **"Use Workspace Dependency"**: これは、すでにサードパーティ製のパッケージがワークスペースで管理されている場合に利用でき、ワークスペース側を参照する形に自動変換します。
 
-メンバーパッケージでバージョン付き依存関係が定義されており、ワークスペースにも同じパッケージが定義されている場合、ワークスペース参照に変換できます。
+![Use Workspace Dependency Code Action](./workspace_blog/images/uv_CodeAction_UseWorkspaceDependency.gif)
 
-**実行前:**
+### 定義へ移動（Goto Definition）
 
-```toml
-# ワークスペースルート
-[project]
-dependencies = ["pydantic>=2.10,<3.0"]
+Tombi はワークスペースパッケージ↔︎メンバーパッケージの定義移動をサポートしており、パッケージの定義元、参照元への移動を容易にしています。また、この機能でサードパーティ製のライブラリがどれだけ利用されているかも確認することができます。
 
-# メンバーパッケージ
-[project]
-dependencies = ["pydantic>=2.10,<3.0"]  # 💡 コードアクション利用可能
-```
-
-**"Use Workspace Dependency" を実行:**
-
-```toml
-# メンバーパッケージ
-[project]
-dependencies = ["pydantic"]  # バージョン指定が削除され、ワークスペース参照になる
-```
-
-![Use Workspace Dependency の実行例](workspace_blog/images/uv_CodeAction_UseWorkspaceDependency.gif)
-
-#### uv: "Add to Workspace and Use Workspace Dependency"
-
-依存関係がワークスペースに存在しない場合、ワークスペースに追加し、メンバーパッケージはそれを参照するように変換できます。
-
-**実行前:**
-
-```toml
-# ワークスペースルート
-[project]
-dependencies = []
-
-# メンバーパッケージ
-[project]
-dependencies = ["requests>=2.31.0"]  # 💡 コードアクション利用可能
-```
-
-**"Add to Workspace and Use Workspace Dependency" を実行後:**
-
-```toml
-# ワークスペースルート（自動的に追加される）
-[project]
-dependencies = [
-  "requests>=2.31.0",
-]
-
-# メンバーパッケージ（バージョン指定が削除される）
-[project]
-dependencies = ["requests"]
-```
-
-![Add to Workspace and Use Workspace Dependency の実行例](workspace_blog/images/uv_CodeAction_AddToWorkspaceAndUseWorkspaceDependency.gif)
-
-#### Cargo: "Use Workspace Dependency"
-
-Cargo でも同様に、ワークスペース依存関係への変換がサポートされています。
-
-**実行前:**
-
-```toml
-# ワークスペースルート
-[workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }
-
-# メンバークレート
-[dependencies]
-serde = { version = "1.0", features = ["derive"] }  # 💡 コードアクション利用可能
-```
-
-**"Use Workspace Dependency" を実行後:**
-
-```toml
-# メンバークレート
-[dependencies]
-serde = { workspace = true }
-```
-
-![Cargo: Use Workspace Dependency の実行例](workspace_blog/images/Cargo_CodeAction_InheritDependencyFromWorkspace.gif)
-
-#### Cargo: "Add to Workspace and Inherit Dependency"
-
-ワークスペースに依存関係を追加し、メンバークレートでは `workspace = true` を使用するように変換します。
-
-**実行前:**
-
-```toml
-# ワークスペースルート
-[workspace.dependencies]
-
-# メンバークレート
-[dependencies]
-tokio = { version = "1.0", features = ["full"] }  # 💡 コードアクション利用可能
-```
-
-**"Add to Workspace and Inherit Dependency" を実行後:**
-
-```toml
-# ワークスペースルート（自動的に追加される）
-[workspace.dependencies]
-tokio = { version = "1.0", features = ["full"] }
-
-# メンバークレート
-[dependencies]
-tokio = { workspace = true }
-```
-
-![Add to Workspace and Inherit Dependency の実行例](workspace_blog/images/Cargo_CodeAction_AddToWorkspaceAndInheritDependency.gif)
-
-### 実装の詳細
-
-これらのコードアクションは、複数のファイルを同時に編集する `WorkspaceEdit` を使用して実装されています：
-
-```rust
-// 擬似コード
-let workspace_edit = WorkspaceEdit {
-    document_changes: vec![
-        // ワークスペースルートの変更
-        TextDocumentEdit {
-            uri: workspace_uri,
-            edits: vec![/* 依存関係を追加 */],
-        },
-        // メンバーファイルの変更
-        TextDocumentEdit {
-            uri: member_uri,
-            edits: vec![/* バージョン指定を削除 */],
-        },
-    ],
-};
-```
-
-この仕組みにより、一度のコードアクション実行で、ワークスペースルートとメンバーファイルの両方を適切に更新できます。
-
-## Tombi の技術的特徴
-
-### 拡張システム
-
-Tombi は拡張システムを採用しており、Cargo や uv 固有の機能は独立した拡張として実装されています：
-
-- `tombi-extension-cargo`: Cargo ワークスペースのサポート
-- `tombi-extension-uv`: uv ワークスペースのサポート
-- `tombi-extension-tombi`: Tombi 自体の設定ファイルサポート
-
-この設計により、新しいツールやフォーマットのサポートを容易に追加できます。
-
-### LSP によるエディタ統合
-
-Tombi は Language Server Protocol (LSP) を実装しているため、VS Code、Zed、IntelliJ など、LSP をサポートする任意のエディタで使用できます。
-
-### スキーマ駆動の開発
-
-Tombi は JSON Schema を活用し、TOML ファイルの構造を理解します。これにより、スキーマ定義に基づいた高度な補完や検証が可能になります。
+![Goto Definitoin](./workspace_blog/images/uv_GoToDefinition.png)
 
 ## まとめ
 
-Cargo と uv のワークスペース機能は、モノレポでの開発を大幅に効率化します。Tombi はこれらのワークスペース機能に対する強力なツールサポートを提供します：
+Tombiは、Cargoとuvのワークスペース機能を活用したモノレポ開発において、「ワークスペース依存関係への自動変換」と「定義へ移動」という強力なツールサポートを提供します。
+また、その他にも [JSON Schema Store](https://www.schemastore.org/) に基づいた診断機能・補完機能・[自動ソート機能](https://tombi-toml.github.io/tombi/docs/formatter/auto-sorting)などを提供しています。
 
-- **定義へ移動**: 依存関係の宣言から定義箇所へ瞬時にジャンプ
-- **コードアクション**: ワークスペース依存関係への自動変換
-- **複数ファイル編集**: ワークスペースルートとメンバーファイルを同時に更新
-
-Tombi を使用することで、ワークスペースベースのプロジェクトでの TOML ファイル編集がより快適になります。
-
-### Tombi を試してみる
-
-uv を利用すると、簡単に Tombi を試すことができます。
-
-```bash
-uvx tombi format Cargo.toml
-```
-
-エディタで利用したい場合などは、[Tombi のインストール方法](https://tombi-toml.github.io/tombi/docs/installation)をご覧ください。
+Tombi を応援したい方は是非 [By Me a Coffee](https://buymeacoffee.com/tombi) や [GitHub Sponsor](https://github.com/sponsors/tombi-toml) でサポートをお願いします ☕️
