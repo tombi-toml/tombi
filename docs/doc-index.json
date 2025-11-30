@@ -109,16 +109,23 @@
         "title": "Code Action",
         "description": "Quick fixes and refactoring suggestions for TOML.",
         "path": "/docs/language-server/code-action"
-      },
+      }
+    ]
+  },
+  {
+    "title": "Editors",
+    "description": "Use Tombi in your favorite editor with official extensions.",
+    "path": "/docs/editors",
+    "children": [
       {
         "title": "VSCode Extension",
         "description": "Tombi extension for Visual Studio Code.",
-        "path": "/docs/language-server/vscode-extension"
+        "path": "/docs/editors/vscode-extension"
       },
       {
         "title": "Zed Extension",
         "description": "Tombi extension for Zed editor.",
-        "path": "/docs/language-server/zed-extension"
+        "path": "/docs/editors/zed-extension"
       }
     ]
   },
