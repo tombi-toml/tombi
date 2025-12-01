@@ -34,17 +34,17 @@ This way, Tombi's formatter will preserve the separation without interfering wit
 </Tip>
 
 <Warning>
-If you don't like the automatic sorting provided by Tombi, we recommend adding a Tombi configuration file and disabling the formatter.
+If you don't like the automatic sorting provided by Tombi, we recommend disabling the formatter,
+and instead using another formatter such as [dprint](https://github.com/dprint/dprint) that meets your requirements.
 
 ```toml
 [lsp]
 formatting.enabled = false
 ```
 
-When using Tombi's formatter, completely disabling automatic sorting means you will have to bear significant maintenance costs.
-
-If you still want to use Tombi's formatter without automatic sorting,
-you can create and manage your own JSON Schema that excludes automatic sorting specifications.
+Using Tombi without the auto-sorting feature is extremely high-maintenance.
+To bypass the default sorting, you must either add comment directives throughout your code,
+or build and maintain your own JSON Schema.
 </Warning>
 
 ## How to Specify Auto-Sorting Methods
