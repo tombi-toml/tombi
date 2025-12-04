@@ -62,6 +62,14 @@ pub async fn open_remote_file(
 ) -> Result<Option<tombi_uri::Uri>, tower_lsp::jsonrpc::Error> {
     match uri.scheme() {
         "http" | "https" => {
+            // Check if cache file exists
+            if let Some(cache_path) = tombi_cache::get_cache_file_path(uri).await {
+                if cache_path.is_file() {
+                    if let Ok(cached_uri) = tombi_uri::Uri::from_file_path(&cache_path) {
+                        return Ok(Some(cached_uri));
+                    }
+                }
+            }
             let remote_uri =
                 tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
             let content = fetch_remote_content(uri).await?;
