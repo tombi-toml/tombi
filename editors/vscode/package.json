@@ -49,7 +49,7 @@
     "@types/vscode": "^1.95.0",
     "@vscode/python-extension": "^1.0.6",
     "@vscode/vsce": "^3.6.1",
-    "esbuild": "^0.25.10",
+    "esbuild": "^0.27.1",
     "ovsx": "^0.10.5",
     "vitest": "^4.0.15"
   },
