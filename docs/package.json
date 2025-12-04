@@ -26,7 +26,7 @@
     "mdast-util-gfm-table": "^1.0.0",
     "mdast-util-mdx": "^3.0.0",
     "prismjs": "^1.30.0",
-    "remark-gfm": "^3.0.1",
+    "remark-gfm": "^4.0.1",
     "solid-highlight": "^0.1.26",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.9.2",
