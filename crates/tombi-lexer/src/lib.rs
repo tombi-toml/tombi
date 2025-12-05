@@ -26,7 +26,7 @@ regex!(
     static REGEX_INTEGER_HEX = r"^0x[0-9A-Fa-f](:?_?[0-9A-Fa-f])*$";
     static REGEX_INTEGER_DEC = r"^(:?[1-9](:?_?[0-9])*|0)$";
     static REGEX_FLOAT = r"^[0-9_]+(:?(:?\.[0-9_]+)?[eE][+-]?[0-9_]+|\.[0-9_]+)$";
-    static REGEX_IS_DATE = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}";
+    static REGEX_IS_DATE_TIME = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}";
     static REGEX_OFFSET_DATE_TIME =
         r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ][0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?(?:[Zz]|[+-][0-9]{2}:[0-9]{2})$";
     static REGEX_LOCAL_DATE_TIME = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ][0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?$";
@@ -143,8 +143,8 @@ impl Cursor<'_> {
             }
             // number
             '0'..='9' => {
-                if self.is_date() {
-                    self.datetime()
+                if self.is_date_time() {
+                    self.date_time()
                 } else if self.is_time() {
                     self.time()
                 } else if self.is_number() {
@@ -253,13 +253,13 @@ impl Cursor<'_> {
         self.matches(keyword) && is_token_separator_with_dot(self.peek(keyword.len()))
     }
 
-    fn is_date(&self) -> bool {
+    fn is_date_time(&self) -> bool {
         assert!(self.current().is_ascii_digit());
         assert!("2000-01-01".len() == 10);
-        REGEX_IS_DATE.is_match(&self.peeks_with_current(10))
+        REGEX_IS_DATE_TIME.is_match(&self.peeks_with_current(10))
     }
 
-    fn datetime(&mut self) -> Result<Token, crate::Error> {
+    fn date_time(&mut self) -> Result<Token, crate::Error> {
         assert!(self.current().is_ascii_digit());
 
         let mut pass_local_date_time = false;
