@@ -102,16 +102,18 @@ impl GreenNodeBuilder<'_> {
     #[inline]
     pub fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) {
         let checkpoint = checkpoint.into_inner();
-        assert!(
-            checkpoint <= self.children.len(),
-            "checkpoint no longer valid, was finish_node called early?"
-        );
-
-        if let Some(&(_, first_child)) = self.parents.last() {
+        if cfg!(debug_assertions) {
             assert!(
-                checkpoint >= first_child,
-                "checkpoint no longer valid, was an unmatched start_node_at called?"
+                checkpoint <= self.children.len(),
+                "checkpoint no longer valid, was finish_node called early?"
             );
+
+            if let Some(&(_, first_child)) = self.parents.last() {
+                assert!(
+                    checkpoint >= first_child,
+                    "checkpoint no longer valid, was an unmatched start_node_at called?"
+                );
+            }
         }
 
         self.parents.push((kind, checkpoint));

@@ -18,7 +18,7 @@ impl Parse for tombi_ast::InlineTable {
 
         let begin_range = p.current_range();
 
-        assert!(p.at(T!['{']));
+        debug_assert!(p.at(T!['{']));
 
         p.eat(T!['{']);
 

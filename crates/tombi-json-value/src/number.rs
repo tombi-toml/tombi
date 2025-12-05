@@ -17,7 +17,7 @@ impl Number {
 
     /// Creates a Number from a u64 value
     pub fn from_u64(value: u64) -> Self {
-        assert!(value <= i64::MAX as u64);
+        debug_assert!(value <= i64::MAX as u64);
 
         Number::Integer(value as i64)
     }

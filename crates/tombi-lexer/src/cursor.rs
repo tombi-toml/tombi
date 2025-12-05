@@ -31,7 +31,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn peek(&self, i: usize) -> char {
-        assert!(i != 0, "peek(0) is invalid");
+        debug_assert!(i != 0, "peek(0) is invalid");
 
         // `.next()` optimizes better than `.nth(0)`
         self.chars
@@ -54,7 +54,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn peeks(&self, size: usize) -> String {
-        assert!(size > 0);
+        debug_assert!(size > 0);
         let mut iter = self.chars.clone();
         let mut s = String::with_capacity(size);
         for _ in 0..size {
@@ -68,7 +68,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn peeks_with_current(&self, size: usize) -> String {
-        assert!(size > 0);
+        debug_assert!(size > 0);
         let mut iter = self.chars.clone();
         let mut s = String::with_capacity(size + 1);
         s.push(self.current_char);
@@ -129,7 +129,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub(crate) fn eat_n(&mut self, n: usize) {
-        assert!(n > 0);
+        debug_assert!(n > 0);
         for _ in 0..n {
             if self.bump().is_none() {
                 break;

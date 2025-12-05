@@ -347,7 +347,7 @@ impl<H, T> ThinArc<H, T> {
         // Round up size to alignment.
         let align = mem::align_of::<ArcInner<HeaderSlice<H, [T; 0]>>>();
         let size = usable_size.wrapping_add(align - 1) & !(align - 1);
-        assert!(size >= usable_size, "size overflows");
+        debug_assert!(size >= usable_size, "size overflows");
         let layout = Layout::from_size_align(size, align).expect("invalid layout");
 
         let ptr: *mut ArcInner<HeaderSlice<H, [T; 0]>>;
@@ -389,7 +389,7 @@ impl<H, T> ThinArc<H, T> {
                     );
                     current = current.offset(1);
                 }
-                assert!(
+                debug_assert!(
                     items.next().is_none(),
                     "ExactSizeIterator under-reported length"
                 );
@@ -397,7 +397,7 @@ impl<H, T> ThinArc<H, T> {
                 // We should have consumed the buffer exactly.
                 debug_assert_eq!(current as *mut u8, buffer.add(usable_size));
             }
-            assert!(
+            debug_assert!(
                 items.next().is_none(),
                 "ExactSizeIterator under-reported length"
             );

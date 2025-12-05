@@ -31,7 +31,7 @@ impl LocalDateTime {
         second: u8,
         millisecond: u32,
     ) -> Self {
-        assert!(millisecond < 1_000);
+        debug_assert!(millisecond < 1_000);
 
         Self {
             date: crate::private::Date { year, month, day },
@@ -53,7 +53,7 @@ impl LocalDateTime {
         second: u8,
         nanosecond: u32,
     ) -> Self {
-        assert!(nanosecond < 1_000_000_000);
+        debug_assert!(nanosecond < 1_000_000_000);
         Self {
             date: crate::private::Date { year, month, day },
             time: crate::private::Time {

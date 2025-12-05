@@ -31,7 +31,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn peek(&self, i: usize) -> char {
-        assert!(i != 0, "peek(0) is invalid");
+        debug_assert!(i != 0, "peek(0) is invalid");
 
         self.chars
             .clone()
@@ -86,7 +86,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub(crate) fn eat_n(&mut self, n: usize) {
-        assert!(n > 0);
+        debug_assert!(n > 0);
         for _ in 0..n {
             if self.bump().is_none() {
                 break;

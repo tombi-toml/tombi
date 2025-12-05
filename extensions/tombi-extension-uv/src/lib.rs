@@ -286,7 +286,7 @@ fn goto_workspace_member(
     toml_version: TomlVersion,
     jump_to_package: bool,
 ) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
-    assert!(
+    debug_assert!(
         matches_accessors!(accessors, ["tool", "uv", "sources", _])
             || matches_accessors!(accessors, ["tool", "uv", "sources", _, "workspace"])
     );
