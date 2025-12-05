@@ -24,13 +24,13 @@ pub type TombiKeyLocalTimeDirectiveContent =
 
 impl TombiCommentDirectiveImpl for TombiLocalTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-local-time-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-local-time-directive.json").unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyLocalTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-local-time-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-local-time-directive.json").unwrap()
     }
 }
 

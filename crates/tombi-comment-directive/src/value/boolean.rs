@@ -24,13 +24,13 @@ pub type TombiKeyBooleanDirectiveContent =
 
 impl TombiCommentDirectiveImpl for TombiBooleanDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-boolean-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-boolean-directive.json").unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyBooleanDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-boolean-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-boolean-directive.json").unwrap()
     }
 }
 

@@ -26,13 +26,13 @@ pub type TombiKeyOffsetDateTimeDirectiveContent = TombiValueDirectiveContent<
 
 impl TombiCommentDirectiveImpl for TombiOffsetDateTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-offset-date-time-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-offset-date-time-directive.json").unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyOffsetDateTimeDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-offset-date-time-directive.json")
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-offset-date-time-directive.json")
             .unwrap()
     }
 }

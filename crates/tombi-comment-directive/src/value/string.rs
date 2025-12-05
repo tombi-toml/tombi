@@ -24,13 +24,13 @@ pub type TombiKeyStringDirectiveContent =
 
 impl TombiCommentDirectiveImpl for TombiStringDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-string-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-string-directive.json").unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyStringDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-string-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-string-directive.json").unwrap()
     }
 }
 
