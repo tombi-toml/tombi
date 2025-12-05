@@ -1,4 +1,3 @@
-#:schema tombi://www.schemastore.org/pyproject.json
 #:tombi toml-version = "v1.0.0"
 
 [project]
