@@ -21,6 +21,7 @@ tracing.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 textwrap.workspace = true
+tombi-test-lib.workspace = true
 
 [features]
 default = ["diagnostic"]

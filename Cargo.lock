@@ -4008,6 +4008,7 @@ dependencies = [
  "tombi-lexer",
  "tombi-rg-tree",
  "tombi-syntax",
+ "tombi-test-lib",
  "tombi-text",
  "tracing",
 ]

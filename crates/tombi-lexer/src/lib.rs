@@ -143,7 +143,7 @@ impl Cursor<'_> {
             }
             // number
             '0'..='9' => {
-                if self.is_datetime() {
+                if self.is_date() {
                     self.datetime()
                 } else if self.is_time() {
                     self.time()
@@ -253,7 +253,7 @@ impl Cursor<'_> {
         self.matches(keyword) && is_token_separator_with_dot(self.peek(keyword.len()))
     }
 
-    fn is_datetime(&self) -> bool {
+    fn is_date(&self) -> bool {
         assert!(self.current().is_ascii_digit());
         assert!("2000-01-01".len() == 10);
         REGEX_IS_DATE_TIME.is_match(&self.peeks_with_current(10))

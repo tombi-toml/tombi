@@ -19,6 +19,8 @@ pub(crate) const TS_KEY_FIRST: TokenSet = TokenSet::new(&[
     FLOAT,
     // true = "value"
     BOOLEAN,
+    // 2001-02-08 = "value"
+    LOCAL_DATE,
 ]);
 
 /// A bit-set of `SyntaxKind`s
