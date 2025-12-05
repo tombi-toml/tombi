@@ -93,7 +93,6 @@ tombi-extension = { path = "crates/tombi-extension" }
 tombi-extension-cargo = { path = "extensions/tombi-extension-cargo" }
 tombi-extension-tombi = { path = "extensions/tombi-extension-tombi" }
 tombi-extension-uv = { path = "extensions/tombi-extension-uv" }
-tombi-file-system = { path = "crates/tombi-file-system" }
 tombi-formatter = { path = "crates/tombi-formatter" }
 tombi-future = { path = "crates/tombi-future" }
 tombi-glob = { path = "crates/tombi-glob" }
@@ -138,5 +137,4 @@ ignored = [
   "wasi",
   "wasm-bindgen",
   "wasm-bindgen-futures",
-  "tombi-file-system",
 ]
