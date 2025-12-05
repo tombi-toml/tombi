@@ -145,7 +145,7 @@ fn goto_workspace(
     toml_version: TomlVersion,
     jump_to_subcrate: bool,
 ) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
-    assert!(matches!(
+    debug_assert!(matches!(
         accessors.last(),
         Some(tombi_schema_store::Accessor::Key(key)) if key == "workspace"
     ));
@@ -428,7 +428,7 @@ fn goto_bin_path_target(
     accessors: &[tombi_schema_store::Accessor],
     cargo_toml_path: &std::path::Path,
 ) -> Result<Option<tombi_extension::DefinitionLocation>, tower_lsp::jsonrpc::Error> {
-    assert!(matches_accessors!(accessors, ["bin", _, "path"]));
+    debug_assert!(matches_accessors!(accessors, ["bin", _, "path"]));
 
     let Some((_, tombi_document_tree::Value::String(path_value))) =
         dig_accessors(document_tree, accessors)

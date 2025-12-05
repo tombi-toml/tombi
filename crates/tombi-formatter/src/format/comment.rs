@@ -13,7 +13,7 @@ impl Format for Vec<Vec<DanglingComment>> {
             return Ok(());
         }
         for (i, comments) in self.iter().enumerate() {
-            assert!(!comments.is_empty());
+            debug_assert!(!comments.is_empty());
             if i != 0 {
                 write!(f, "{}{}", f.line_ending(), f.line_ending())?;
             }
@@ -40,7 +40,7 @@ impl Format for Vec<Vec<BeginDanglingComment>> {
             return Ok(());
         }
         for comments in self {
-            assert!(!comments.is_empty());
+            debug_assert!(!comments.is_empty());
 
             for (i, comment) in comments.iter().enumerate() {
                 f.write_indent()?;

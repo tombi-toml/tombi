@@ -508,8 +508,8 @@ impl NodeData {
     }
 
     fn detach(&self) {
-        assert!(self.mutable);
-        assert!(self.rc.get() > 0);
+        debug_assert!(self.mutable);
+        debug_assert!(self.rc.get() > 0);
         let parent_ptr = match self.parent.take() {
             Some(parent) => parent,
             None => return,
@@ -542,8 +542,8 @@ impl NodeData {
         }
     }
     fn attach_child(&self, index: usize, child: &NodeData) {
-        assert!(self.mutable && child.mutable && child.parent().is_none());
-        assert!(self.rc.get() > 0 && child.rc.get() > 0);
+        debug_assert!(self.mutable && child.mutable && child.parent().is_none());
+        debug_assert!(self.rc.get() > 0 && child.rc.get() > 0);
 
         child.index.set(index as u32);
         child.parent.set(Some(self.into()));
@@ -656,7 +656,7 @@ impl SyntaxNode {
     }
 
     pub fn clone_for_update(&self) -> SyntaxNode {
-        assert!(!self.data().mutable);
+        debug_assert!(!self.data().mutable);
         match self.parent() {
             Some(parent) => {
                 let parent = parent.clone_for_update();
@@ -903,7 +903,7 @@ impl SyntaxNode {
         // then switch to token search. We should also replace explicit
         // recursion with a loop.
         let span = self.span();
-        assert!(
+        debug_assert!(
             span.start <= offset && offset <= span.end,
             "Bad offset: span {span:?} offset {offset:?}"
         );
@@ -918,7 +918,7 @@ impl SyntaxNode {
 
         let left = children.next().unwrap();
         let right = children.next();
-        assert!(children.next().is_none());
+        debug_assert!(children.next().is_none());
 
         if let Some(right) = right {
             match (left.token_at_offset(offset), right.token_at_offset(offset)) {
@@ -934,7 +934,7 @@ impl SyntaxNode {
 
     pub fn token_at_position(&self, position: tombi_text::Position) -> TokenAtOffset<SyntaxToken> {
         let range = self.range();
-        assert!(
+        debug_assert!(
             range.start <= position && position <= range.end,
             "Bad position: range {range:?} position {position:?}"
         );
@@ -950,7 +950,7 @@ impl SyntaxNode {
 
         let left = children.next().unwrap();
         let right = children.next();
-        assert!(children.next().is_none());
+        debug_assert!(children.next().is_none());
 
         if let Some(right) = right {
             match (
@@ -970,7 +970,7 @@ impl SyntaxNode {
     pub fn covering_element(&self, span: tombi_text::Span) -> SyntaxElement {
         let mut res: SyntaxElement = self.clone().into();
         loop {
-            assert!(
+            debug_assert!(
                 res.span().contains_span(span),
                 "Bad span: node span {:?}, span {:?}",
                 res.span(),
@@ -1001,7 +1001,7 @@ impl SyntaxNode {
     }
 
     pub fn splice_children(&self, to_delete: Range<usize>, to_insert: Vec<SyntaxElement>) {
-        assert!(self.data().mutable, "immutable tree: {self}");
+        debug_assert!(self.data().mutable, "immutable tree: {self}");
         for (i, child) in self.children_with_tokens().enumerate() {
             if to_delete.contains(&i) {
                 child.detach();
@@ -1015,12 +1015,12 @@ impl SyntaxNode {
     }
 
     pub fn detach(&self) {
-        assert!(self.data().mutable, "immutable tree: {self}");
+        debug_assert!(self.data().mutable, "immutable tree: {self}");
         self.data().detach()
     }
 
     fn attach_child(&self, index: usize, child: SyntaxElement) {
-        assert!(self.data().mutable, "immutable tree: {self}");
+        debug_assert!(self.data().mutable, "immutable tree: {self}");
         child.detach();
         let data = match &child {
             NodeOrToken::Node(it) => it.data(),
@@ -1150,7 +1150,7 @@ impl SyntaxToken {
     }
 
     pub fn detach(&self) {
-        assert!(self.data().mutable, "immutable tree: {self}");
+        debug_assert!(self.data().mutable, "immutable tree: {self}");
         self.data().detach()
     }
 }
@@ -1249,7 +1249,7 @@ impl SyntaxElement {
     }
 
     fn token_at_offset(&self, offset: tombi_text::Offset) -> TokenAtOffset<SyntaxToken> {
-        assert!(self.span().start <= offset && offset <= self.span().end);
+        debug_assert!(self.span().start <= offset && offset <= self.span().end);
         match self {
             NodeOrToken::Token(token) => TokenAtOffset::Single(token.clone()),
             NodeOrToken::Node(node) => node.token_at_offset(offset),
@@ -1257,7 +1257,7 @@ impl SyntaxElement {
     }
 
     fn token_at_position(&self, position: tombi_text::Position) -> TokenAtOffset<SyntaxToken> {
-        assert!(self.range().start <= position && position <= self.range().end);
+        debug_assert!(self.range().start <= position && position <= self.range().end);
         match self {
             NodeOrToken::Token(token) => TokenAtOffset::Single(token.clone()),
             NodeOrToken::Node(node) => node.token_at_position(position),

@@ -23,7 +23,7 @@ impl Range {
 
     #[inline]
     pub fn new(start: Position, end: Position) -> Self {
-        // assert!(start <= end);
+        // debug_assert!(start <= end);
         Self {
             start,
             end: if start <= end {

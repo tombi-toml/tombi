@@ -15,7 +15,7 @@ impl Parse for tombi_ast::Array {
 
         leading_comments(p);
 
-        assert!(p.at(T!['[']));
+        debug_assert!(p.at(T!['[']));
 
         p.eat(T!['[']);
 

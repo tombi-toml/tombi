@@ -57,7 +57,7 @@ impl SyntaxText {
     pub fn slice<S: private::SyntaxTextSpan>(&self, span: S) -> SyntaxText {
         let start = span.start().unwrap_or_default();
         let end = span.end().unwrap_or(tombi_text::Offset::new(self.len()));
-        assert!(start <= end);
+        debug_assert!(start <= end);
         let len = end - start;
         let start = self.span.start + start;
         let end = start + len;

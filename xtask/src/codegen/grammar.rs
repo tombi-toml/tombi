@@ -96,7 +96,7 @@ fn lower_rule(acc: &mut Vec<Field>, grammar: &Grammar, label: Option<&String>, r
             acc.push(field);
         }
         Rule::Token(token) => {
-            assert!(label.is_none());
+            debug_assert!(label.is_none());
             let mut name = clean_token_name(&grammar[*token].name);
             if "[]{}()".contains(&name) {
                 name = format!("'{name}'");
@@ -121,7 +121,7 @@ fn lower_rule(acc: &mut Vec<Field>, grammar: &Grammar, label: Option<&String>, r
             panic!("unhandled rule: {rule:?}")
         }
         Rule::Labeled { label: l, rule } => {
-            assert!(label.is_none());
+            debug_assert!(label.is_none());
             let manually_implemented = matches!(
                 l.as_str(),
                 "lhs"
