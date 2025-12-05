@@ -17,7 +17,7 @@ pub type TombiKeyDirectiveContent =
 
 impl TombiCommentDirectiveImpl for TombiKeyDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-directive.json").unwrap()
     }
 }
 

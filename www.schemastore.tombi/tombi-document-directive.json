@@ -1,5 +1,5 @@
 {
-  "$id": "tombi://json.tombi.dev/tombi-document-directive.json",
+  "$id": "tombi://www.schemastore.tombi/tombi-document-directive.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TombiDocumentDirectiveContent",
   "type": "object",
@@ -56,10 +56,7 @@
     "TomlVersion": {
       "title": "TOML version",
       "type": "string",
-      "enum": [
-        "v1.0.0",
-        "v1.1.0-preview"
-      ]
+      "enum": ["v1.0.0", "v1.1.0-preview"]
     },
     "FormatOptions": {
       "type": "object",
@@ -67,13 +64,8 @@
         "disabled": {
           "title": "Format disabled",
           "description": "If `true`, formatting is disabled for this document.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "enum": [
-            true
-          ],
+          "type": ["boolean", "null"],
+          "enum": [true],
           "default": false
         }
       },
@@ -85,13 +77,8 @@
         "disabled": {
           "title": "Lint disabled",
           "description": "If `true`, linting is disabled for this document.",
-          "type": [
-            "boolean",
-            "null"
-          ],
-          "enum": [
-            true
-          ],
+          "type": ["boolean", "null"],
+          "enum": [true],
           "default": false
         }
       },
@@ -103,10 +90,7 @@
         "strict": {
           "title": "Enable strict schema validation",
           "description": "If `additionalProperties` is not specified in the JSON Schema,\nthe strict mode treats it as `additionalProperties: false`,\nwhich is different from the JSON Schema specification.",
-          "type": [
-            "boolean",
-            "null"
-          ],
+          "type": ["boolean", "null"],
           "default": true
         }
       },

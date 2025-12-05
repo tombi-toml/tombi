@@ -24,13 +24,13 @@ pub type TombiKeyFloatDirectiveContent =
 
 impl TombiCommentDirectiveImpl for TombiFloatDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-float-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-float-directive.json").unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyFloatDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-key-float-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-float-directive.json").unwrap()
     }
 }
 

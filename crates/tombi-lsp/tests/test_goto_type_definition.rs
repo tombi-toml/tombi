@@ -135,7 +135,7 @@ mod goto_type_definition_tests {
                 name = "tombi"
                 "#,
                 pyproject_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
     }
 
@@ -154,7 +154,7 @@ mod goto_type_definition_tests {
                 integer = 42
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
 
         test_goto_type_definition!(
@@ -165,7 +165,7 @@ mod goto_type_definition_tests {
                 integer = 42
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
 
         test_goto_type_definition!(
@@ -178,7 +178,7 @@ mod goto_type_definition_tests {
                 integer = 42
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-document-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-document-directive.json");
         );
 
         test_goto_type_definition!(
@@ -190,7 +190,7 @@ mod goto_type_definition_tests {
                 key = "value"
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-root-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-root-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -202,7 +202,7 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-root-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-root-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -213,7 +213,7 @@ mod goto_type_definition_tests {
                 string = "string"
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-string-directive.json");
         );
 
         test_goto_type_definition!(
@@ -227,7 +227,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-directive.json");
         );
 
         test_goto_type_definition!(
@@ -241,7 +241,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-array-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
         );
 
         test_goto_type_definition!(
@@ -254,7 +254,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
 
         test_goto_type_definition!(
@@ -266,7 +266,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
 
         test_goto_type_definition!(
@@ -278,7 +278,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
 
         test_goto_type_definition!(
@@ -291,7 +291,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-string-directive.json");
         );
 
         test_goto_type_definition!(
@@ -304,7 +304,7 @@ mod goto_type_definition_tests {
                 ]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-array-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
         );
 
         test_goto_type_definition!(
@@ -317,7 +317,7 @@ mod goto_type_definition_tests {
                 ] # tombi: lint.rules.array-min-items█ = "off"
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-directive.json");
         );
 
         test_goto_type_definition!(
@@ -327,7 +327,7 @@ mod goto_type_definition_tests {
                 inline-table = { key = "value", } # tombi: lint.rules.table-min-properties█ = "off"
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-inline-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -338,7 +338,7 @@ mod goto_type_definition_tests {
                 [table]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -349,7 +349,7 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -360,7 +360,7 @@ mod goto_type_definition_tests {
                 [[array]]
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-of-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -370,7 +370,7 @@ mod goto_type_definition_tests {
                 [[array]] # tombi: lint.rules.const-value.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-array-of-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-of-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -381,7 +381,7 @@ mod goto_type_definition_tests {
                 # tombi: lint.rules.const-value.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-table-directive.json");
         );
 
         test_goto_type_definition!(
@@ -391,7 +391,7 @@ mod goto_type_definition_tests {
                 key = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-string-directive.json");
         );
 
         test_goto_type_definition!(
@@ -401,7 +401,7 @@ mod goto_type_definition_tests {
                 key1.key2 = "value"  # tombi: lint.rules.string-pattern.disabled█ = true
                 "#,
                 type_test_schema_path(),
-            ) -> Ok("tombi://json.tombi.dev/tombi-key-string-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-string-directive.json");
         );
     }
 

@@ -4050,6 +4050,7 @@ dependencies = [
  "tombi-document-tree",
  "tombi-future",
  "tombi-json",
+ "tombi-test-lib",
  "tombi-text",
  "tombi-uri",
  "tombi-x-keyword",

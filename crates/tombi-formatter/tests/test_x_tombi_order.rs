@@ -366,7 +366,7 @@ mod table_keys_order {
                 [tool.maturin]
                 include = [
                   { path = "www.schemastore.org/**/*.json", format = "sdist" },
-                  { path = "json.tombi.dev/**/*.json", format = "sdist" },
+                  { path = "www.schemastore.tombi/**/*.json", format = "sdist" },
                 ]
                 "#,
                 SchemaPath(pyproject_schema_path()),
@@ -375,7 +375,7 @@ mod table_keys_order {
                 [tool.maturin]
                 include = [
                   { format = "sdist", path = "www.schemastore.org/**/*.json" },
-                  { format = "sdist", path = "json.tombi.dev/**/*.json" },
+                  { format = "sdist", path = "www.schemastore.tombi/**/*.json" },
                 ]
                 "#
             )

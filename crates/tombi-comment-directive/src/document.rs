@@ -9,7 +9,7 @@ use crate::TombiCommentDirectiveImpl;
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(deny_unknown_fields))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://json.tombi.dev/tombi-document-directive.json")))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "tombi://www.schemastore.tombi/tombi-document-directive.json")))]
 pub struct TombiDocumentDirectiveContent {
     /// # TOML version
     ///
@@ -29,7 +29,7 @@ pub struct TombiDocumentDirectiveContent {
 
 impl TombiCommentDirectiveImpl for TombiDocumentDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://json.tombi.dev/tombi-document-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-document-directive.json").unwrap()
     }
 }
 
