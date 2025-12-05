@@ -179,4 +179,15 @@ mod test {
             SyntaxError(ExpectedValue, 0:4..0:9),
         ])
     }
+
+    test_parser! {
+        #[test]
+        fn date_keys(
+            r#"
+            a.2001-02-08 = 7
+            a.2001-02-09.2001-02-10 = 8
+            2001-02-11.a.2001-02-12 = 9
+            "#
+        ) -> Ok(_)
+    }
 }

@@ -143,8 +143,8 @@ impl Cursor<'_> {
             }
             // number
             '0'..='9' => {
-                if self.is_datetime() {
-                    self.datetime()
+                if self.is_date_time() {
+                    self.date_time()
                 } else if self.is_time() {
                     self.time()
                 } else if self.is_number() {
@@ -253,13 +253,13 @@ impl Cursor<'_> {
         self.matches(keyword) && is_token_separator_with_dot(self.peek(keyword.len()))
     }
 
-    fn is_datetime(&self) -> bool {
+    fn is_date_time(&self) -> bool {
         assert!(self.current().is_ascii_digit());
         assert!("2000-01-01".len() == 10);
         REGEX_IS_DATE_TIME.is_match(&self.peeks_with_current(10))
     }
 
-    fn datetime(&mut self) -> Result<Token, crate::Error> {
+    fn date_time(&mut self) -> Result<Token, crate::Error> {
         assert!(self.current().is_ascii_digit());
 
         let mut pass_local_date_time = false;
