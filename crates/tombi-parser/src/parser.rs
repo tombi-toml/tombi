@@ -162,7 +162,7 @@ impl<'t> Parser<'t> {
 
     /// Consume the next token. Panics if the parser isn't currently at `kind`.
     pub(crate) fn bump(&mut self, kind: SyntaxKind) {
-        debug_assert!(self.eat(kind));
+        assert!(self.eat(kind));
     }
 
     /// Advances the parser by one token
