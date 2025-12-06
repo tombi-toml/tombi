@@ -28,6 +28,7 @@ impl crate::Key {
         &self,
         toml_version: TomlVersion,
     ) -> Result<String, tombi_toml_text::ParseError> {
+        tracing::debug!("token: {:?}", self.token());
         match self {
             Self::BareKey(key) => tombi_toml_text::try_from_bare_key(key.token().unwrap().text()),
             Self::BasicString(key) => {
