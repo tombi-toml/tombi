@@ -180,7 +180,11 @@ impl Cursor<'_> {
                     Ok(Token::new(SyntaxKind::FLOAT, self.pop_span_range()))
                 } else if self.peek(1).is_ascii_digit() {
                     self.bump();
-                    self.number()
+                    if self.is_number() {
+                        self.number()
+                    } else {
+                        self.key()
+                    }
                 } else {
                     self.key()
                 }

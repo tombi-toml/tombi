@@ -190,4 +190,13 @@ mod test {
             "#
         ) -> Ok(_)
     }
+
+    test_parser! {
+        #[test]
+        fn minus_number_keys(
+            r#"
+            -01   = true
+            "#
+        ) -> Ok(_)
+    }
 }
