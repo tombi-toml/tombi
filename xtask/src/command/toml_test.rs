@@ -1,5 +1,6 @@
 use std::io::Write;
 
+use tombi_cli_options::VerbosityLevel;
 use tombi_config::TomlVersion;
 use xshell::Shell;
 
@@ -11,26 +12,36 @@ pub struct Args {
     toml_version: TomlVersion,
 }
 
-pub fn run(sh: &Shell, args: Args) -> anyhow::Result<()> {
+pub fn run(sh: &Shell, verbosity: tombi_cli_options::Verbosity, args: Args) -> anyhow::Result<()> {
     let project_root = project_root_path();
 
     sh.change_dir(&project_root);
 
     xshell::cmd!(sh, "cargo build --bin decode").run()?;
 
-    decode_test(sh, &project_root, args.toml_version);
+    decode_test(sh, &project_root, args.toml_version, verbosity);
 
     Ok(())
 }
 
-fn decode_test(sh: &Shell, project_root: &std::path::Path, toml_version: TomlVersion) {
+fn decode_test(
+    sh: &Shell,
+    project_root: &std::path::Path,
+    toml_version: TomlVersion,
+    verbosity: tombi_cli_options::Verbosity,
+) {
     let toml_test_version = toml_test_version(toml_version);
     let toml_version_str = serde_json::to_string(&toml_version).unwrap_or_default();
     let toml_version_str = toml_version_str.trim_matches('"');
 
+    let mut options = vec![];
+    if verbosity.verbosity_level() != VerbosityLevel::Default {
+        options.push("-v");
+    };
+
     match xshell::cmd!(
         sh,
-        "toml-test -color=never -toml={toml_test_version} -- {project_root}/target/debug/decode --toml-version {toml_version_str}"
+        "toml-test {options...} -color=never -toml={toml_test_version} -- {project_root}/target/debug/decode --toml-version {toml_version_str}"
     ).ignore_status().output() {
         Ok(output) => {
             std::io::stdout().write_all(&output.stdout).unwrap();
