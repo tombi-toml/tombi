@@ -1,5 +1,4 @@
 mod command;
-mod options;
 mod tracing_formatter;
 
 use clap::{
@@ -8,8 +7,6 @@ use clap::{
 };
 use tracing_formatter::TombiFormatter;
 use tracing_subscriber::prelude::*;
-
-use crate::app::options::Verbosity;
 
 #[derive(clap::Parser)]
 #[command(
@@ -24,7 +21,7 @@ pub struct Args {
     pub subcommand: command::TomlCommand,
 
     #[command(flatten)]
-    verbose: Verbosity,
+    verbosity: tombi_cli_options::Verbosity,
 }
 
 impl<I, T> From<I> for Args
@@ -55,7 +52,7 @@ struct CommonArgs {
 
 pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
     let args: Args = args.into();
-    let log_level_filter = args.verbose.log_level_filter();
+    let log_level_filter = args.verbosity.log_level_filter();
     tracing_subscriber::registry()
         .with(
             // Filter out all logs from other crates

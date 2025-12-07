@@ -7,6 +7,9 @@ use crate::command;
 pub struct Args {
     #[clap(subcommand)]
     pub subcommand: command::XTaskCommand,
+
+    #[command(flatten)]
+    verbosity: tombi_cli_options::Verbosity,
 }
 
 impl<I, T> From<I> for Args
@@ -22,6 +25,7 @@ where
 
 pub fn run(args: impl Into<Args>) -> Result<(), anyhow::Error> {
     let args = args.into();
+    let verbosity = args.verbosity;
 
     match args.subcommand {
         command::XTaskCommand::Codegen(subcommand) => match subcommand {
@@ -36,7 +40,7 @@ pub fn run(args: impl Into<Args>) -> Result<(), anyhow::Error> {
             command::set_version::run(&xshell::Shell::new().unwrap())?
         }
         command::XTaskCommand::TomlTest(args) => {
-            command::toml_test::run(&xshell::Shell::new().unwrap(), args)?
+            command::toml_test::run(&xshell::Shell::new().unwrap(), verbosity, args)?
         }
         command::XTaskCommand::Dist => command::dist::run(&xshell::Shell::new().unwrap())?,
     }
