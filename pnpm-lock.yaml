@@ -125,8 +125,8 @@ importers:
         specifier: ^7.7.1
         version: 7.7.1
       '@types/vscode':
-        specifier: ^1.95.0
-        version: 1.104.0
+        specifier: ^1.106.1
+        version: 1.106.1
       '@vscode/python-extension':
         specifier: ^1.0.6
         version: 1.0.6
@@ -2271,8 +2271,8 @@ packages:
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
-  '@types/vscode@1.104.0':
-    resolution: {integrity: sha512-0KwoU2rZ2ecsTGFxo4K1+f+AErRsYW0fsp6A0zufzGuhyczc2IoKqYqcwXidKXmy2u8YB2GsYsOtiI9Izx3Tig==}
+  '@types/vscode@1.106.1':
+    resolution: {integrity: sha512-R/HV8u2h8CAddSbX8cjpdd7B8/GnE4UjgjpuGuHcbp1xV6yh4OeqU4L1pKjlwujCrSFS0MOpwJAIs/NexMB1fQ==}
 
   '@typespec/ts-http-runtime@0.3.1':
     resolution: {integrity: sha512-SnbaqayTVFEA6/tYumdF0UmybY0KHyKwGPBXnyckFlrrKdhWFrL3a2HIPXHjht5ZOElKGcXfD2D63P36btb+ww==}
@@ -7580,7 +7580,7 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
-  '@types/vscode@1.104.0': {}
+  '@types/vscode@1.106.1': {}
 
   '@typespec/ts-http-runtime@0.3.1':
     dependencies:
