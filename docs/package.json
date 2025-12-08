@@ -29,7 +29,7 @@
     "remark-gfm": "^3.0.1",
     "solid-highlight": "^0.1.26",
     "solid-icons": "^1.1.0",
-    "solid-js": "^1.9.2",
+    "solid-js": "^1.9.10",
     "solid-mdx": "^0.0.7",
     "vinxi": "^0.5.3"
   },
