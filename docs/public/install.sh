@@ -109,7 +109,7 @@ create_install_dir() {
 
 # Download and install tombi
 download_and_install() {
-    DOWNLOAD_URL="${GITHUB_RELEASE_URL}/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
+    DOWNLOAD_URL="https://github.com/tombi-toml/tombi/releases/download/v${VERSION}/tombi-cli-${VERSION}-${TARGET}${ARTIFACT_EXTENSION}"
     TEMP_FILE="${TEMP_DIR}/tombi-${VERSION}${ARTIFACT_EXTENSION}"
 
     print_step "Download from ${DOWNLOAD_URL}"
@@ -149,13 +149,16 @@ download_and_install() {
 }
 
 # Version
-REPO="tombi-toml/tombi"
-GITHUB_RELEASE_URL="https://github.com/${REPO}/releases/download"
 if [ -n "${SPECIFIED_VERSION}" ]; then
     VERSION="${SPECIFIED_VERSION}"
     print_step "Using specified version: ${VERSION}"
 else
-    VERSION=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    RELEASE_JSON=$(curl -s "https://api.github.com/repos/tombi-toml/tombi/releases/latest")
+    VERSION=$(echo "${RELEASE_JSON}" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    if [ -z "${VERSION}" ]; then
+        print_error "Failed to get the latest version. Please try again later. API Response: ${RELEASE_JSON}"
+        exit 1
+    fi
     print_step "Using latest version: ${VERSION}"
 fi
 ARTIFACT_EXTENSION=$(artifact_extension)
