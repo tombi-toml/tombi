@@ -44,7 +44,6 @@
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.6",
-    "@types/minimatch": "^6.0.0",
     "@types/semver": "^7.7.1",
     "@types/vscode": "^1.106.1",
     "@vscode/python-extension": "^1.0.6",
