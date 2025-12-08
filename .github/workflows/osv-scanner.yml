@@ -13,13 +13,13 @@ name: OSV-Scanner
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   merge_group:
-    branches: [ "main" ]
+    branches: ["main"]
   schedule:
-    - cron: '25 4 * * 2'
+    - cron: "25 4 * * 2"
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   # Require writing security events to upload SARIF file to security tab
@@ -30,19 +30,19 @@ permissions:
 jobs:
   scan-scheduled:
     if: ${{ github.event_name == 'push' || github.event_name == 'schedule' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@1f1242919d8a60496dd1874b24b62b2370ed4c78" # v1.7.1
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@35ad5af695460e8fc22ee9777485303c8d0a88cf" # v2.3.0
     with:
       # Example of specifying custom arguments
       scan-args: |-
+        --include-git-root
         -r
-        --skip-git
         ./
   scan-pr:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@1f1242919d8a60496dd1874b24b62b2370ed4c78" # v1.7.1
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@35ad5af695460e8fc22ee9777485303c8d0a88cf" # v2.3.0
     with:
       # Example of specifying custom arguments
       scan-args: |-
+        --include-git-root
         -r
-        --skip-git
         ./
