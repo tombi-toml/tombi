@@ -31,13 +31,12 @@ function generateSearchIndex() {
 
     return {
       id: index + 1,
-      title: data.title || url,
+      title: (data as { title?: string }).title ?? url,
       content: extractTextContent(content),
       url,
     };
   });
 
-  // Generate search index file
   const outputPath = join(process.cwd(), "src/search-index.json");
   writeFileSync(outputPath, JSON.stringify(documents, null, 2));
 
