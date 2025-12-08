@@ -153,7 +153,12 @@ if [ -n "${SPECIFIED_VERSION}" ]; then
     VERSION="${SPECIFIED_VERSION}"
     print_step "Using specified version: ${VERSION}"
 else
-    RELEASE_JSON=$(curl -s "https://api.github.com/repos/tombi-toml/tombi/releases/latest")
+    RELEASE_URL="https://api.github.com/repos/tombi-toml/tombi/releases/latest"
+    if [ -n "${GITHUB_TOKEN}" ]; then
+        RELEASE_JSON=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${RELEASE_URL}")
+    else
+        RELEASE_JSON=$(curl -s "${RELEASE_URL}")
+    fi
     VERSION=$(echo "${RELEASE_JSON}" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
     if [ -z "${VERSION}" ]; then
         print_error "Failed to get the latest version. Please try again later. API Response: ${RELEASE_JSON}"
