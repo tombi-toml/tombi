@@ -17,21 +17,19 @@
   "dependencies": {
     "@mdx-js/mdx": "^3.1.1",
     "@solidjs/meta": "^0.29.4",
-    "@solidjs/router": "^0.15.0",
-    "@solidjs/start": "^1.1.0",
-    "@types/flexsearch": "^0.7.6",
+    "@solidjs/router": "^0.15.4",
+    "@solidjs/start": "^1.2.0",
     "@vinxi/plugin-mdx": "^3.7.2",
     "flexsearch": "^0.7.43",
-    "mdast-util-gfm": "^2.0.0",
-    "mdast-util-gfm-table": "^1.0.0",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-gfm-table": "^2.0.0",
     "mdast-util-mdx": "^3.0.0",
     "prismjs": "^1.30.0",
-    "remark-gfm": "^3.0.1",
     "solid-highlight": "^0.1.26",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.9.10",
     "solid-mdx": "^0.0.7",
-    "vinxi": "^0.5.3"
+    "vinxi": "^0.5.8"
   },
   "engines": {
     "node": ">=20"
@@ -42,10 +40,11 @@
     "@types/prismjs": "^1.26.5",
     "glob": "^11.1.0",
     "gray-matter": "^4.0.3",
-    "jsdom": "^26.0.0",
+    "jsdom": "^26.1.0",
     "mdast-util-mdx-jsx": "^3.2.0",
-    "tsx": "^4.19.2",
+    "remark-gfm": "^4.0.0",
+    "tsx": "^4.21.0",
     "unist-util-visit": "^5.0.0",
-    "unocss": "^65.4.3"
+    "unocss": "^65.5.0"
   }
 }

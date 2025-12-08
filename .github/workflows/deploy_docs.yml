@@ -31,7 +31,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.node-version'
+          node-version-file: ".node-version"
 
       - name: Install dependencies
         working-directory: ./docs
@@ -39,7 +39,7 @@ jobs:
 
       - name: Build
         working-directory: ./docs
-        run: pnpm add -D tsx && pnpm run build
+        run: pnpm run build
         env:
           BASE_URL: /tombi
 
@@ -49,7 +49,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs/.output/public'
+          path: "./docs/.output/public"
 
       - name: Deploy to GitHub Pages
         id: deployment
