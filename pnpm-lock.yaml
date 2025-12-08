@@ -122,7 +122,7 @@ importers:
         specifier: ^7.7.1
         version: 7.7.1
       '@types/vscode':
-        specifier: ^1.106.1
+        specifier: ^1.95.0
         version: 1.106.1
       '@vscode/python-extension':
         specifier: ^1.0.6
