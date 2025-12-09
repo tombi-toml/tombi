@@ -4,6 +4,7 @@
 html {
   overflow-x: hidden;
   max-width: 100vw;
+  scroll-padding-top: 100px; /* header height (80px) + offset (20px) */
 }
 
 body {
