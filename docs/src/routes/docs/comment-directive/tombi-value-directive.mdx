@@ -28,10 +28,10 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.key-not-allowed.disabled](#lint-rules-key-not-allowed-disabled)
     - [lint.rules.key-pattern](#lint-rules-key-pattern)
       - [lint.rules.key-pattern.disabled](#lint-rules-key-pattern-disabled)
-    - [lint.rules.tables-out-of-order](#lint-rules-tables-out-of-order)
-      - [lint.rules.tables-out-of-order.disabled](#lint-rules-tables-out-of-order-disabled)
     - [lint.rules.dotted-keys-out-of-order](#lint-rules-dotted-keys-out-of-order)
       - [lint.rules.dotted-keys-out-of-order.disabled](#lint-rules-dotted-keys-out-of-order-disabled)
+    - [lint.rules.tables-out-of-order](#lint-rules-tables-out-of-order)
+      - [lint.rules.tables-out-of-order.disabled](#lint-rules-tables-out-of-order-disabled)
     - [lint.rules.table-max-keys](#lint-rules-table-max-keys)
       - [lint.rules.table-max-keys.disabled](#lint-rules-table-max-keys-disabled)
     - [lint.rules.table-min-keys](#lint-rules-table-min-keys)
@@ -255,6 +255,30 @@ Disable key-pattern rule.
 Invalid-Key = "value"  # Key doesn't match pattern
 ```
 
+### lint.rules.dotted-keys-out-of-order
+
+Check if dotted keys are defined out of order (Warning level).
+
+<Note>
+If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for this rule are automatically disabled.
+</Note>
+
+### lint.rules.dotted-keys-out-of-order.disabled
+
+Disable dotted-keys-out-of-order rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.dotted-keys-out-of-order.disabled = true
+# VALID BUT DISCOURAGED
+apple.type = "fruit"
+orange.type = "fruit"
+apple.skin = "thin"    # Out of order
+orange.skin = "thick"
+```
+
 ### lint.rules.tables-out-of-order
 
 Check if tables are defined out of order (Warning level).
@@ -281,30 +305,6 @@ Disable tables-out-of-order rule.
 [fruit.apple]
 [fruit.orange]
 [animal]
-```
-
-### lint.rules.dotted-keys-out-of-order
-
-Check if dotted keys are defined out of order (Warning level).
-
-<Note>
-If `tombi: format.rules.table-keys-order.disabled = true` is set, warnings for this rule are automatically disabled.
-</Note>
-
-### lint.rules.dotted-keys-out-of-order.disabled
-
-Disable dotted-keys-out-of-order rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.dotted-keys-out-of-order.disabled = true
-# VALID BUT DISCOURAGED
-apple.type = "fruit"
-orange.type = "fruit"
-apple.skin = "thin"    # Out of order
-orange.skin = "thick"
 ```
 
 ### lint.rules.table-max-keys
