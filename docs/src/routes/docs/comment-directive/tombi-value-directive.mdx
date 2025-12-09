@@ -22,6 +22,8 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.deprecated.disabled](#lint-rules-deprecated-disabled)
     - [lint.rules.one-of-multiple-match](#lint-rules-one-of-multiple-match)
       - [lint.rules.one-of-multiple-match.disabled](#lint-rules-one-of-multiple-match-disabled)
+    - [lint.rules.not-schema-match](#lint-rules-not-schema-match)
+      - [lint.rules.not-schema-match.disabled](#lint-rules-not-schema-match-disabled)
     - [lint.rules.key-empty](#lint-rules-key-empty)
       - [lint.rules.key-empty.disabled](#lint-rules-key-empty-disabled)
     - [lint.rules.key-not-allowed](#lint-rules-key-not-allowed)
@@ -32,20 +34,18 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.dotted-keys-out-of-order.disabled](#lint-rules-dotted-keys-out-of-order-disabled)
     - [lint.rules.tables-out-of-order](#lint-rules-tables-out-of-order)
       - [lint.rules.tables-out-of-order.disabled](#lint-rules-tables-out-of-order-disabled)
+    - [lint.rules.table-key-required](#lint-rules-table-key-required)
+      - [lint.rules.table-key-required.disabled](#lint-rules-table-key-required-disabled)
     - [lint.rules.table-max-keys](#lint-rules-table-max-keys)
       - [lint.rules.table-max-keys.disabled](#lint-rules-table-max-keys-disabled)
     - [lint.rules.table-min-keys](#lint-rules-table-min-keys)
       - [lint.rules.table-min-keys.disabled](#lint-rules-table-min-keys-disabled)
-    - [lint.rules.table-key-required](#lint-rules-table-key-required)
-      - [lint.rules.table-key-required.disabled](#lint-rules-table-key-required-disabled)
-    - [lint.rules.string-max-length](#lint-rules-string-max-length)
-      - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
-    - [lint.rules.string-min-length](#lint-rules-string-min-length)
-      - [lint.rules.string-min-length.disabled](#lint-rules-string-min-length-disabled)
-    - [lint.rules.string-format](#lint-rules-string-format)
-      - [lint.rules.string-format.disabled](#lint-rules-string-format-disabled)
-    - [lint.rules.string-pattern](#lint-rules-string-pattern)
-      - [lint.rules.string-pattern.disabled](#lint-rules-string-pattern-disabled)
+    - [lint.rules.array-unique-values](#lint-rules-array-unique-values)
+      - [lint.rules.array-unique-values.disabled](#lint-rules-array-unique-values-disabled)
+    - [lint.rules.array-max-values](#lint-rules-array-max-values)
+      - [lint.rules.array-max-values.disabled](#lint-rules-array-max-values-disabled)
+    - [lint.rules.array-min-values](#lint-rules-array-min-values)
+      - [lint.rules.array-min-values.disabled](#lint-rules-array-min-values-disabled)
     - [lint.rules.integer-maximum](#lint-rules-integer-maximum)
       - [lint.rules.integer-maximum.disabled](#lint-rules-integer-maximum-disabled)
     - [lint.rules.integer-minimum](#lint-rules-integer-minimum)
@@ -56,12 +56,24 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.integer-exclusive-minimum.disabled](#lint-rules-integer-exclusive-minimum-disabled)
     - [lint.rules.integer-multiple-of](#lint-rules-integer-multiple-of)
       - [lint.rules.integer-multiple-of.disabled](#lint-rules-integer-multiple-of-disabled)
-    - [lint.rules.array-max-values](#lint-rules-array-max-values)
-      - [lint.rules.array-max-values.disabled](#lint-rules-array-max-values-disabled)
-    - [lint.rules.array-min-values](#lint-rules-array-min-values)
-      - [lint.rules.array-min-values.disabled](#lint-rules-array-min-values-disabled)
-    - [lint.rules.array-unique-values](#lint-rules-array-unique-values)
-      - [lint.rules.array-unique-values.disabled](#lint-rules-array-unique-values-disabled)
+    - [lint.rules.float-maximum](#lint-rules-float-maximum)
+      - [lint.rules.float-maximum.disabled](#lint-rules-float-maximum-disabled)
+    - [lint.rules.float-minimum](#lint-rules-float-minimum)
+      - [lint.rules.float-minimum.disabled](#lint-rules-float-minimum-disabled)
+    - [lint.rules.float-exclusive-maximum](#lint-rules-float-exclusive-maximum)
+      - [lint.rules.float-exclusive-maximum.disabled](#lint-rules-float-exclusive-maximum-disabled)
+    - [lint.rules.float-exclusive-minimum](#lint-rules-float-exclusive-minimum)
+      - [lint.rules.float-exclusive-minimum.disabled](#lint-rules-float-exclusive-minimum-disabled)
+    - [lint.rules.float-multiple-of](#lint-rules-float-multiple-of)
+      - [lint.rules.float-multiple-of.disabled](#lint-rules-float-multiple-of-disabled)
+    - [lint.rules.string-max-length](#lint-rules-string-max-length)
+      - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
+    - [lint.rules.string-min-length](#lint-rules-string-min-length)
+      - [lint.rules.string-min-length.disabled](#lint-rules-string-min-length-disabled)
+    - [lint.rules.string-format](#lint-rules-string-format)
+      - [lint.rules.string-format.disabled](#lint-rules-string-format-disabled)
+    - [lint.rules.string-pattern](#lint-rules-string-pattern)
+      - [lint.rules.string-pattern.disabled](#lint-rules-string-pattern-disabled)
 
 ## Format Rules
 Value directives can be used to control automatic sorting behavior.
@@ -175,7 +187,7 @@ license = "Unknown"  # Not in enum list
 
 ### lint.rules.deprecated
 
-Check if the value is deprecated (Warning level).
+Check if the value is [deprecated](https://json-schema.org/understanding-json-schema/keywords#deprecated) (Warning level).
 
 ### lint.rules.deprecated.disabled
 
@@ -191,7 +203,7 @@ old-field = "value"  # Deprecated field
 
 ### lint.rules.one-of-multiple-match
 
-Check if more than one schema in the `oneOf` is valid.
+Check if more than one schema in the [`oneOf`](https://json-schema.org/understanding-json-schema/reference/combining#oneOf) is valid.
 
 ### lint.rules.one-of-multiple-match.disabled
 
@@ -203,6 +215,22 @@ Disable one-of-multiple-match rule.
 ```toml
 # tombi: lint.rules.one-of-multiple-match.disabled = true
 ambiguous-field = "value"
+```
+
+### lint.rules.not-schema-match
+
+Check if the value does not match the [`not`](https://json-schema.org/understanding-json-schema/reference/combining#not) schema.
+
+### lint.rules.not-schema-match.disabled
+
+Disable not-schema-match rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.not-schema-match.disabled = true
+forbidden-pattern = "value"  # Matches a pattern that should be rejected
 ```
 
 ### lint.rules.key-empty
@@ -307,6 +335,23 @@ Disable tables-out-of-order rule.
 [animal]
 ```
 
+### lint.rules.table-key-required
+
+Check if the required key exists in this table.
+
+### lint.rules.table-key-required.disabled
+
+Disable table-key-required rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.table-key-required.disabled = true
+[project]
+# Missing required 'name' field
+```
+
 ### lint.rules.table-max-keys
 
 Check if the table has more than the maximum number of keys.
@@ -343,85 +388,52 @@ Disable table-min-keys rule.
 # Missing required minimum keys
 ```
 
-### lint.rules.table-key-required
+### lint.rules.array-unique-values
 
-Check if the required key exists in this table.
+Check if the array has duplicate values.
 
-### lint.rules.table-key-required.disabled
+### lint.rules.array-unique-values.disabled
 
-Disable table-key-required rule.
+Disable array-unique-values rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.table-key-required.disabled = true
-[project]
-# Missing required 'name' field
+# tombi: lint.rules.array-unique-values.disabled = true
+tags = ["tag1", "tag2", "tag1"]  # Duplicate values
 ```
 
-### lint.rules.string-max-length
+### lint.rules.array-max-values
 
-Check if the string is longer than the max length.
+Check if the array has more than the maximum number of values.
 
-### lint.rules.string-max-length.disabled
+### lint.rules.array-max-values.disabled
 
-Disable string-max-length rule.
+Disable array-max-values rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.string-max-length.disabled = true
-description = "Very long description that exceeds maxLength..."
+# tombi: lint.rules.array-max-values.disabled = true
+items = [1, 2, 3, 4, 5, 6]  # Exceeds maxItems
 ```
 
-### lint.rules.string-min-length
+### lint.rules.array-min-values
 
-Check if the string is shorter than the min length.
+Check if the array has less than the minimum number of values.
 
-### lint.rules.string-min-length.disabled
+### lint.rules.array-min-values.disabled
 
-Disable string-min-length rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.string-min-length.disabled = true
-name = "x"  # Too short
-```
-
-### lint.rules.string-format
-
-Check if the string matches the format.
-
-### lint.rules.string-format.disabled
-
-Disable string-format rule.
+Disable array-min-values rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.string-format.disabled = true
-email = "invalid-email"  # Doesn't match email format
-```
-
-### lint.rules.string-pattern
-
-Check if the string matches the pattern.
-
-### lint.rules.string-pattern.disabled
-
-Disable string-pattern rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.string-pattern.disabled = true
-version = "invalid"  # Doesn't match version pattern
+# tombi: lint.rules.array-min-values.disabled = true
+items = []  # Below minItems
 ```
 
 ### lint.rules.integer-maximum
@@ -504,50 +516,146 @@ Disable integer-multiple-of rule.
 increment = 7  # Must be multiple of 5
 ```
 
-### lint.rules.array-max-values
+### lint.rules.float-maximum
 
-Check if the array has more than the maximum number of values.
+Check if the float is less than or equal to the maximum.
 
-### lint.rules.array-max-values.disabled
+### lint.rules.float-maximum.disabled
 
-Disable array-max-values rule.
+Disable float-maximum rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.array-max-values.disabled = true
-items = [1, 2, 3, 4, 5, 6]  # Exceeds maxItems
+# tombi: lint.rules.float-maximum.disabled = true
+ratio = 100.5  # Exceeds maximum
 ```
 
-### lint.rules.array-min-values
+### lint.rules.float-minimum
 
-Check if the array has less than the minimum number of values.
+Check if the float is greater than or equal to the minimum.
 
-### lint.rules.array-min-values.disabled
+### lint.rules.float-minimum.disabled
 
-Disable array-min-values rule.
+Disable float-minimum rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.array-min-values.disabled = true
-items = []  # Below minItems
+# tombi: lint.rules.float-minimum.disabled = true
+threshold = -0.5  # Below minimum
 ```
 
-### lint.rules.array-unique-values
+### lint.rules.float-exclusive-maximum
 
-Check if the array has duplicate values.
+Check if the float is less than the maximum.
 
-### lint.rules.array-unique-values.disabled
+### lint.rules.float-exclusive-maximum.disabled
 
-Disable array-unique-values rule.
+Disable float-exclusive-maximum rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.array-unique-values.disabled = true
-tags = ["tag1", "tag2", "tag1"]  # Duplicate values
+# tombi: lint.rules.float-exclusive-maximum.disabled = true
+percentage = 100.0  # Must be less than 100.0
+```
+
+### lint.rules.float-exclusive-minimum
+
+Check if the float is greater than the minimum.
+
+### lint.rules.float-exclusive-minimum.disabled
+
+Disable float-exclusive-minimum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-exclusive-minimum.disabled = true
+probability = 0.0  # Must be greater than 0.0
+```
+
+### lint.rules.float-multiple-of
+
+Check if the float is a multiple of the value.
+
+### lint.rules.float-multiple-of.disabled
+
+Disable float-multiple-of rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-multiple-of.disabled = true
+step = 0.3  # Must be multiple of 0.1
+```
+
+### lint.rules.string-max-length
+
+Check if the string is longer than the max length.
+
+### lint.rules.string-max-length.disabled
+
+Disable string-max-length rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-max-length.disabled = true
+description = "Very long description that exceeds maxLength..."
+```
+
+### lint.rules.string-min-length
+
+Check if the string is shorter than the min length.
+
+### lint.rules.string-min-length.disabled
+
+Disable string-min-length rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-min-length.disabled = true
+name = "x"  # Too short
+```
+
+### lint.rules.string-format
+
+Check if the string matches the format.
+
+### lint.rules.string-format.disabled
+
+Disable string-format rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-format.disabled = true
+email = "invalid-email"  # Doesn't match email format
+```
+
+### lint.rules.string-pattern
+
+Check if the string matches the pattern.
+
+### lint.rules.string-pattern.disabled
+
+Disable string-pattern rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-pattern.disabled = true
+version = "invalid"  # Doesn't match version pattern
 ```
