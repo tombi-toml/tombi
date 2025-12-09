@@ -44,14 +44,6 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.array-max-values.disabled](#lint-rules-array-max-values-disabled)
     - [lint.rules.array-min-values](#lint-rules-array-min-values)
       - [lint.rules.array-min-values.disabled](#lint-rules-array-min-values-disabled)
-    - [lint.rules.string-max-length](#lint-rules-string-max-length)
-      - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
-    - [lint.rules.string-min-length](#lint-rules-string-min-length)
-      - [lint.rules.string-min-length.disabled](#lint-rules-string-min-length-disabled)
-    - [lint.rules.string-format](#lint-rules-string-format)
-      - [lint.rules.string-format.disabled](#lint-rules-string-format-disabled)
-    - [lint.rules.string-pattern](#lint-rules-string-pattern)
-      - [lint.rules.string-pattern.disabled](#lint-rules-string-pattern-disabled)
     - [lint.rules.integer-maximum](#lint-rules-integer-maximum)
       - [lint.rules.integer-maximum.disabled](#lint-rules-integer-maximum-disabled)
     - [lint.rules.integer-minimum](#lint-rules-integer-minimum)
@@ -62,6 +54,14 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.integer-exclusive-minimum.disabled](#lint-rules-integer-exclusive-minimum-disabled)
     - [lint.rules.integer-multiple-of](#lint-rules-integer-multiple-of)
       - [lint.rules.integer-multiple-of.disabled](#lint-rules-integer-multiple-of-disabled)
+    - [lint.rules.string-max-length](#lint-rules-string-max-length)
+      - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
+    - [lint.rules.string-min-length](#lint-rules-string-min-length)
+      - [lint.rules.string-min-length.disabled](#lint-rules-string-min-length-disabled)
+    - [lint.rules.string-format](#lint-rules-string-format)
+      - [lint.rules.string-format.disabled](#lint-rules-string-format-disabled)
+    - [lint.rules.string-pattern](#lint-rules-string-pattern)
+      - [lint.rules.string-pattern.disabled](#lint-rules-string-pattern-disabled)
 
 ## Format Rules
 Value directives can be used to control automatic sorting behavior.
@@ -408,70 +408,6 @@ Disable array-min-values rule.
 items = []  # Below minItems
 ```
 
-### lint.rules.string-max-length
-
-Check if the string is longer than the max length.
-
-### lint.rules.string-max-length.disabled
-
-Disable string-max-length rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.string-max-length.disabled = true
-description = "Very long description that exceeds maxLength..."
-```
-
-### lint.rules.string-min-length
-
-Check if the string is shorter than the min length.
-
-### lint.rules.string-min-length.disabled
-
-Disable string-min-length rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.string-min-length.disabled = true
-name = "x"  # Too short
-```
-
-### lint.rules.string-format
-
-Check if the string matches the format.
-
-### lint.rules.string-format.disabled
-
-Disable string-format rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.string-format.disabled = true
-email = "invalid-email"  # Doesn't match email format
-```
-
-### lint.rules.string-pattern
-
-Check if the string matches the pattern.
-
-### lint.rules.string-pattern.disabled
-
-Disable string-pattern rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.string-pattern.disabled = true
-version = "invalid"  # Doesn't match version pattern
-```
-
 ### lint.rules.integer-maximum
 
 Check if the integer is less than or equal to the maximum.
@@ -550,4 +486,68 @@ Disable integer-multiple-of rule.
 ```toml
 # tombi: lint.rules.integer-multiple-of.disabled = true
 increment = 7  # Must be multiple of 5
+```
+
+### lint.rules.string-max-length
+
+Check if the string is longer than the max length.
+
+### lint.rules.string-max-length.disabled
+
+Disable string-max-length rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-max-length.disabled = true
+description = "Very long description that exceeds maxLength..."
+```
+
+### lint.rules.string-min-length
+
+Check if the string is shorter than the min length.
+
+### lint.rules.string-min-length.disabled
+
+Disable string-min-length rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-min-length.disabled = true
+name = "x"  # Too short
+```
+
+### lint.rules.string-format
+
+Check if the string matches the format.
+
+### lint.rules.string-format.disabled
+
+Disable string-format rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-format.disabled = true
+email = "invalid-email"  # Doesn't match email format
+```
+
+### lint.rules.string-pattern
+
+Check if the string matches the pattern.
+
+### lint.rules.string-pattern.disabled
+
+Disable string-pattern rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.string-pattern.disabled = true
+version = "invalid"  # Doesn't match version pattern
 ```
