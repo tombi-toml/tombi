@@ -32,12 +32,18 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.dotted-keys-out-of-order.disabled](#lint-rules-dotted-keys-out-of-order-disabled)
     - [lint.rules.tables-out-of-order](#lint-rules-tables-out-of-order)
       - [lint.rules.tables-out-of-order.disabled](#lint-rules-tables-out-of-order-disabled)
+    - [lint.rules.table-key-required](#lint-rules-table-key-required)
+      - [lint.rules.table-key-required.disabled](#lint-rules-table-key-required-disabled)
     - [lint.rules.table-max-keys](#lint-rules-table-max-keys)
       - [lint.rules.table-max-keys.disabled](#lint-rules-table-max-keys-disabled)
     - [lint.rules.table-min-keys](#lint-rules-table-min-keys)
       - [lint.rules.table-min-keys.disabled](#lint-rules-table-min-keys-disabled)
-    - [lint.rules.table-key-required](#lint-rules-table-key-required)
-      - [lint.rules.table-key-required.disabled](#lint-rules-table-key-required-disabled)
+    - [lint.rules.array-unique-values](#lint-rules-array-unique-values)
+      - [lint.rules.array-unique-values.disabled](#lint-rules-array-unique-values-disabled)
+    - [lint.rules.array-max-values](#lint-rules-array-max-values)
+      - [lint.rules.array-max-values.disabled](#lint-rules-array-max-values-disabled)
+    - [lint.rules.array-min-values](#lint-rules-array-min-values)
+      - [lint.rules.array-min-values.disabled](#lint-rules-array-min-values-disabled)
     - [lint.rules.string-max-length](#lint-rules-string-max-length)
       - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
     - [lint.rules.string-min-length](#lint-rules-string-min-length)
@@ -56,12 +62,6 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.integer-exclusive-minimum.disabled](#lint-rules-integer-exclusive-minimum-disabled)
     - [lint.rules.integer-multiple-of](#lint-rules-integer-multiple-of)
       - [lint.rules.integer-multiple-of.disabled](#lint-rules-integer-multiple-of-disabled)
-    - [lint.rules.array-max-values](#lint-rules-array-max-values)
-      - [lint.rules.array-max-values.disabled](#lint-rules-array-max-values-disabled)
-    - [lint.rules.array-min-values](#lint-rules-array-min-values)
-      - [lint.rules.array-min-values.disabled](#lint-rules-array-min-values-disabled)
-    - [lint.rules.array-unique-values](#lint-rules-array-unique-values)
-      - [lint.rules.array-unique-values.disabled](#lint-rules-array-unique-values-disabled)
 
 ## Format Rules
 Value directives can be used to control automatic sorting behavior.
@@ -307,6 +307,23 @@ Disable tables-out-of-order rule.
 [animal]
 ```
 
+### lint.rules.table-key-required
+
+Check if the required key exists in this table.
+
+### lint.rules.table-key-required.disabled
+
+Disable table-key-required rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.table-key-required.disabled = true
+[project]
+# Missing required 'name' field
+```
+
 ### lint.rules.table-max-keys
 
 Check if the table has more than the maximum number of keys.
@@ -343,21 +360,52 @@ Disable table-min-keys rule.
 # Missing required minimum keys
 ```
 
-### lint.rules.table-key-required
+### lint.rules.array-unique-values
 
-Check if the required key exists in this table.
+Check if the array has duplicate values.
 
-### lint.rules.table-key-required.disabled
+### lint.rules.array-unique-values.disabled
 
-Disable table-key-required rule.
+Disable array-unique-values rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.table-key-required.disabled = true
-[project]
-# Missing required 'name' field
+# tombi: lint.rules.array-unique-values.disabled = true
+tags = ["tag1", "tag2", "tag1"]  # Duplicate values
+```
+
+### lint.rules.array-max-values
+
+Check if the array has more than the maximum number of values.
+
+### lint.rules.array-max-values.disabled
+
+Disable array-max-values rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.array-max-values.disabled = true
+items = [1, 2, 3, 4, 5, 6]  # Exceeds maxItems
+```
+
+### lint.rules.array-min-values
+
+Check if the array has less than the minimum number of values.
+
+### lint.rules.array-min-values.disabled
+
+Disable array-min-values rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.array-min-values.disabled = true
+items = []  # Below minItems
 ```
 
 ### lint.rules.string-max-length
@@ -502,52 +550,4 @@ Disable integer-multiple-of rule.
 ```toml
 # tombi: lint.rules.integer-multiple-of.disabled = true
 increment = 7  # Must be multiple of 5
-```
-
-### lint.rules.array-max-values
-
-Check if the array has more than the maximum number of values.
-
-### lint.rules.array-max-values.disabled
-
-Disable array-max-values rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.array-max-values.disabled = true
-items = [1, 2, 3, 4, 5, 6]  # Exceeds maxItems
-```
-
-### lint.rules.array-min-values
-
-Check if the array has less than the minimum number of values.
-
-### lint.rules.array-min-values.disabled
-
-Disable array-min-values rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.array-min-values.disabled = true
-items = []  # Below minItems
-```
-
-### lint.rules.array-unique-values
-
-Check if the array has duplicate values.
-
-### lint.rules.array-unique-values.disabled
-
-Disable array-unique-values rule.
-
-- **Type**: `boolean`
-- **Values**: `true`
-
-```toml
-# tombi: lint.rules.array-unique-values.disabled = true
-tags = ["tag1", "tag2", "tag1"]  # Duplicate values
 ```
