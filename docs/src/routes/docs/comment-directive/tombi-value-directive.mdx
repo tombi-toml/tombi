@@ -22,6 +22,8 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.deprecated.disabled](#lint-rules-deprecated-disabled)
     - [lint.rules.one-of-multiple-match](#lint-rules-one-of-multiple-match)
       - [lint.rules.one-of-multiple-match.disabled](#lint-rules-one-of-multiple-match-disabled)
+    - [lint.rules.not-schema-match](#lint-rules-not-schema-match)
+      - [lint.rules.not-schema-match.disabled](#lint-rules-not-schema-match-disabled)
     - [lint.rules.key-empty](#lint-rules-key-empty)
       - [lint.rules.key-empty.disabled](#lint-rules-key-empty-disabled)
     - [lint.rules.key-not-allowed](#lint-rules-key-not-allowed)
@@ -54,6 +56,16 @@ Value comment directives are comments that apply to a specific value.
       - [lint.rules.integer-exclusive-minimum.disabled](#lint-rules-integer-exclusive-minimum-disabled)
     - [lint.rules.integer-multiple-of](#lint-rules-integer-multiple-of)
       - [lint.rules.integer-multiple-of.disabled](#lint-rules-integer-multiple-of-disabled)
+    - [lint.rules.float-maximum](#lint-rules-float-maximum)
+      - [lint.rules.float-maximum.disabled](#lint-rules-float-maximum-disabled)
+    - [lint.rules.float-minimum](#lint-rules-float-minimum)
+      - [lint.rules.float-minimum.disabled](#lint-rules-float-minimum-disabled)
+    - [lint.rules.float-exclusive-maximum](#lint-rules-float-exclusive-maximum)
+      - [lint.rules.float-exclusive-maximum.disabled](#lint-rules-float-exclusive-maximum-disabled)
+    - [lint.rules.float-exclusive-minimum](#lint-rules-float-exclusive-minimum)
+      - [lint.rules.float-exclusive-minimum.disabled](#lint-rules-float-exclusive-minimum-disabled)
+    - [lint.rules.float-multiple-of](#lint-rules-float-multiple-of)
+      - [lint.rules.float-multiple-of.disabled](#lint-rules-float-multiple-of-disabled)
     - [lint.rules.string-max-length](#lint-rules-string-max-length)
       - [lint.rules.string-max-length.disabled](#lint-rules-string-max-length-disabled)
     - [lint.rules.string-min-length](#lint-rules-string-min-length)
@@ -175,7 +187,7 @@ license = "Unknown"  # Not in enum list
 
 ### lint.rules.deprecated
 
-Check if the value is deprecated (Warning level).
+Check if the value is [deprecated](https://json-schema.org/understanding-json-schema/keywords#deprecated) (Warning level).
 
 ### lint.rules.deprecated.disabled
 
@@ -191,7 +203,7 @@ old-field = "value"  # Deprecated field
 
 ### lint.rules.one-of-multiple-match
 
-Check if more than one schema in the `oneOf` is valid.
+Check if more than one schema in the [`oneOf`](https://json-schema.org/understanding-json-schema/reference/combining#oneOf) is valid.
 
 ### lint.rules.one-of-multiple-match.disabled
 
@@ -203,6 +215,22 @@ Disable one-of-multiple-match rule.
 ```toml
 # tombi: lint.rules.one-of-multiple-match.disabled = true
 ambiguous-field = "value"
+```
+
+### lint.rules.not-schema-match
+
+Check if the value does not match the [`not`](https://json-schema.org/understanding-json-schema/reference/combining#not) schema.
+
+### lint.rules.not-schema-match.disabled
+
+Disable not-schema-match rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.not-schema-match.disabled = true
+forbidden-pattern = "value"  # Matches a pattern that should be rejected
 ```
 
 ### lint.rules.key-empty
@@ -486,6 +514,86 @@ Disable integer-multiple-of rule.
 ```toml
 # tombi: lint.rules.integer-multiple-of.disabled = true
 increment = 7  # Must be multiple of 5
+```
+
+### lint.rules.float-maximum
+
+Check if the float is less than or equal to the maximum.
+
+### lint.rules.float-maximum.disabled
+
+Disable float-maximum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-maximum.disabled = true
+ratio = 100.5  # Exceeds maximum
+```
+
+### lint.rules.float-minimum
+
+Check if the float is greater than or equal to the minimum.
+
+### lint.rules.float-minimum.disabled
+
+Disable float-minimum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-minimum.disabled = true
+threshold = -0.5  # Below minimum
+```
+
+### lint.rules.float-exclusive-maximum
+
+Check if the float is less than the maximum.
+
+### lint.rules.float-exclusive-maximum.disabled
+
+Disable float-exclusive-maximum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-exclusive-maximum.disabled = true
+percentage = 100.0  # Must be less than 100.0
+```
+
+### lint.rules.float-exclusive-minimum
+
+Check if the float is greater than the minimum.
+
+### lint.rules.float-exclusive-minimum.disabled
+
+Disable float-exclusive-minimum rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-exclusive-minimum.disabled = true
+probability = 0.0  # Must be greater than 0.0
+```
+
+### lint.rules.float-multiple-of
+
+Check if the float is a multiple of the value.
+
+### lint.rules.float-multiple-of.disabled
+
+Disable float-multiple-of rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.float-multiple-of.disabled = true
+step = 0.3  # Must be multiple of 0.1
 ```
 
 ### lint.rules.string-max-length
