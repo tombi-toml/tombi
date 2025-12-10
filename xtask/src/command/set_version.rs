@@ -101,10 +101,6 @@ fn set_snapcraft_yaml_version(sh: &Shell, version: &str) -> anyhow::Result<()> {
         &format!(r#"version: "{DEV_VERSION}""#),
         &format!(r#"version: "{version}""#),
     );
-    patch.replace(
-        &format!(r#"source-tag: "v{DEV_VERSION}""#),
-        &format!(r#"source-tag: "v{version}""#),
-    );
     patch.commit(sh)?;
     Ok(())
 }

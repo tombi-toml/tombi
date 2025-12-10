@@ -7,13 +7,15 @@ description: |
   Language Server to help you maintain clean and consistent TOML files
 grade: stable
 confinement: classic
+platforms:
+  amd64:
+  arm64:
+  armhf:
 
 parts:
   tombi:
     plugin: rust
-    source-type: git
-    source: https://github.com/tombi-toml/tombi
-    source-tag: "v0.0.0-dev"
+    source: .
     rust-use-global-lto: true
     rust-inherit-ldflags: true
     build-attributes:
