@@ -73,7 +73,7 @@ impl<L: Language> RedToken<L> {
     }
 
     /// Iterator over all the ancestors of this token excluding itself.
-    pub fn parent_ancestors(&self) -> impl Iterator<Item = RedNode<L>> {
+    pub fn parent_ancestors(&self) -> impl Iterator<Item = RedNode<L>> + use<'_, L> {
         self.raw.ancestors().map(RedNode::from)
     }
 

@@ -4,7 +4,7 @@ macro_rules! matches_accessors {
         false
     };
     ($accessors:expr, [$($pattern:tt),+ $(,)?]) => {{
-        let patterns_len = 0 $(+ { let _ = stringify!($pattern); 1 })*;
+        let patterns_len = $crate::matches_accessors_count!($($pattern),*);
         if $accessors.len() != patterns_len {
             false
         } else {
@@ -15,32 +15,49 @@ macro_rules! matches_accessors {
 }
 
 #[macro_export]
+macro_rules! matches_accessors_count {
+    () => { 0 };
+    (_) => { 1 };
+    ($pattern:tt) => { 1 };
+    (_, $($rest:tt),*) => { 1 + $crate::matches_accessors_count!($($rest),*) };
+    ($pattern:tt, $($rest:tt),*) => { 1 + $crate::matches_accessors_count!($($rest),*) };
+}
+
+#[macro_export]
 macro_rules! matches_accessors_inner {
     ($iter:expr) => {
         $iter.next().is_none()
     };
-    ($iter:expr, $key:expr) => {
-        match $iter.next() {
-            Some($crate::Accessor::Key(k)) if k == $key => $iter.next().is_none(),
-            _ => false,
-        }
-    };
     ($iter:expr, _) => {
         match $iter.next() {
-            Some(_) => $iter.next().is_none(),
+            Some(_) => {
+                $crate::matches_accessors_inner!($iter)
+            },
             None => false,
         }
     };
-    ($iter:expr, $key:expr, $($rest:tt),* $(,)?) => {
+    ($iter:expr, _ $(, $($rest:tt),*)?) => {
         match $iter.next() {
-            Some($crate::Accessor::Key(k)) if k == $key => $crate::matches_accessors_inner!($iter, $($rest),*),
+            Some(_) => {
+                $crate::matches_accessors_inner!($iter $(, $($rest),*)?)
+            },
+            None => false,
+        }
+    };
+    ($iter:expr, $key:tt) => {
+        match $iter.next() {
+            Some($crate::Accessor::Key(k)) if k == $key => {
+                $crate::matches_accessors_inner!($iter)
+            },
             _ => false,
         }
     };
-    ($iter:expr, _, $($rest:tt),* $(,)?) => {
+    ($iter:expr, $key:tt $(, $($rest:tt),*)?) => {
         match $iter.next() {
-            Some(_) => $crate::matches_accessors_inner!($iter, $($rest),*),
-            None => false,
+            Some($crate::Accessor::Key(k)) if k == $key => {
+                $crate::matches_accessors_inner!($iter $(, $($rest),*)?)
+            },
+            _ => false,
         }
     };
 }

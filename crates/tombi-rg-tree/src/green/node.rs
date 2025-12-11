@@ -293,9 +293,11 @@ impl GreenNode {
 
     #[inline]
     pub(crate) unsafe fn from_raw(ptr: ptr::NonNull<GreenNodeData>) -> GreenNode {
-        let arc = Arc::from_raw(&ptr.as_ref().data as *const ReprThin);
-        let arc = mem::transmute::<Arc<ReprThin>, ThinArc<GreenNodeHead, GreenChild>>(arc);
-        GreenNode { ptr: arc }
+        unsafe {
+            let arc = Arc::from_raw(&ptr.as_ref().data as *const ReprThin);
+            let arc = mem::transmute::<Arc<ReprThin>, ThinArc<GreenNodeHead, GreenChild>>(arc);
+            GreenNode { ptr: arc }
+        }
     }
 }
 

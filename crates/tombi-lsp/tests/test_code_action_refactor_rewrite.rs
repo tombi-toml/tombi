@@ -183,11 +183,11 @@ macro_rules! test_code_action_refactor_rewrite {
                         // Sort by range.start in descending order to apply edits from the end of the text.
                         all_edits.sort_by(|a, b| {
                             let a = match a {
-                                tower_lsp::lsp_types::OneOf::Left(ref e) => &e.range.start,
+                                tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
                                 _ => return std::cmp::Ordering::Equal,
                             };
                             let b = match b {
-                                tower_lsp::lsp_types::OneOf::Left(ref e) => &e.range.start,
+                                tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
                                 _ => return std::cmp::Ordering::Equal,
                             };
                             b.line.cmp(&a.line).then(b.character.cmp(&a.character))
