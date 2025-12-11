@@ -22,13 +22,18 @@ print_success() {
 }
 
 # Parse command line options
-SPECIFIED_VERSION=""
+__SPECIFIED_VERSION=""
+__SPECIFIED_INSTALL_DIR=""
 while [ $# -gt 0 ]; do
     case $1 in
     --version)
         if [ "$2" != "latest" ]; then
-            SPECIFIED_VERSION="${2#v}"
+            __SPECIFIED_VERSION="${2#v}"
         fi
+        shift 2
+        ;;
+    --install-dir)
+        __SPECIFIED_INSTALL_DIR="$2"
         shift 2
         ;;
     *)
@@ -99,7 +104,13 @@ artifact_extension() {
 
 # Create installation directories
 create_install_dir() {
-    BIN_DIR="${HOME}/.local/bin"
+    if [ -n "${__SPECIFIED_INSTALL_DIR}" ]; then
+        BIN_DIR="${__SPECIFIED_INSTALL_DIR}"
+    elif [ -n "${TOMBI_INSTALL_DIR}" ]; then
+        BIN_DIR="${TOMBI_INSTALL_DIR}"
+    else
+        BIN_DIR="${HOME}/.local/bin"
+    fi
     mkdir -p "${BIN_DIR}"
 
     if ! echo ":$PATH:" | grep -q ":${BIN_DIR}:"; then
@@ -149,8 +160,8 @@ download_and_install() {
 }
 
 # Version
-if [ -n "${SPECIFIED_VERSION}" ]; then
-    VERSION="${SPECIFIED_VERSION}"
+if [ -n "${__SPECIFIED_VERSION}" ]; then
+    VERSION="${__SPECIFIED_VERSION}"
     print_step "Using specified version: ${VERSION}"
 else
     RELEASE_URL="https://api.github.com/repos/tombi-toml/tombi/releases/latest"
