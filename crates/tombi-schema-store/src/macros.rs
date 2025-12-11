@@ -36,7 +36,6 @@ macro_rules! matches_accessors_inner {
             None => false,
         }
     };
-    // Handle wildcard followed by more patterns
     ($iter:expr, _ $(, $($rest:tt),*)?) => {
         match $iter.next() {
             Some(_) => {
@@ -45,9 +44,6 @@ macro_rules! matches_accessors_inner {
             None => false,
         }
     };
-
-    // Head/Tails pattern: Head is a key expression (not wildcard)
-    // Process the first pattern (head) and recursively process the rest (tails)
     ($iter:expr, $key:tt) => {
         match $iter.next() {
             Some($crate::Accessor::Key(k)) if k == $key => {
@@ -56,7 +52,6 @@ macro_rules! matches_accessors_inner {
             _ => false,
         }
     };
-    // Handle key followed by more patterns
     ($iter:expr, $key:tt $(, $($rest:tt),*)?) => {
         match $iter.next() {
             Some($crate::Accessor::Key(k)) if k == $key => {
