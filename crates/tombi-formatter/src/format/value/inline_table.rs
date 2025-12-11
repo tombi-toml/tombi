@@ -5,7 +5,7 @@ use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{format::write_trailing_comment_alignment_space, types::WithAlignmentHint, Format};
+use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 impl Format for tombi_ast::InlineTable {
     #[inline]
@@ -214,9 +214,9 @@ fn format_singleline_inline_table(
 
 #[cfg(test)]
 mod tests {
-    use tombi_config::{format::FormatRules, FormatOptions};
+    use tombi_config::{FormatOptions, format::FormatRules};
 
-    use crate::{test_format, Formatter};
+    use crate::{Formatter, test_format};
 
     test_format! {
         #[tokio::test]
@@ -356,6 +356,36 @@ mod tests {
               }
             }
             "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_with_nested_inline_table_exceeds_line_width_v1_0_0(
+            r#"
+            table = {
+              t1 = {
+                key1 = 1111111111,
+                key2 = 2222222222,
+              },
+              t2 = {
+                key3 = 3333333333,
+                key4 = 4444444444
+              }
+            }
+            "#,
+            TomlVersion(TomlVersion::V1_0_0),
+            FormatOptions(
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        line_width: Some(30.try_into().unwrap()),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }
+            )
+        ) -> Ok(
+            r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222 }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#
         )
     }
 }

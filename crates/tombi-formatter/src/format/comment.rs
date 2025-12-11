@@ -178,7 +178,32 @@ fn format_comment(
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_format, Formatter};
+    use crate::{Formatter, test_format};
+
+    test_format! {
+        #[tokio::test]
+        async fn test_only_comment1(
+            r#"
+            # comment1
+            # comment2
+            "#,
+            TomlVersion(TomlVersion::V1_0_0)
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn test_only_comment2(
+            r#"
+            # comment1
+            # comment2
+
+            # comment3
+            # comment4
+            "#,
+            TomlVersion(TomlVersion::V1_0_0)
+        ) -> Ok(source)
+    }
 
     test_format! {
         #[tokio::test]
