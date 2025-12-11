@@ -348,10 +348,11 @@ async fn validate_table(
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
                 continue;
-            } else if key_rules
-                .and_then(|rules| rules.key_not_allowed.as_ref())
-                .and_then(|rules| rules.disabled)
-                == Some(true)
+            } else if schema_context.strict()
+                && key_rules
+                    .and_then(|rules| rules.key_not_allowed.as_ref())
+                    .and_then(|rules| rules.disabled)
+                    == Some(true)
             {
                 unused_lint_disabled(
                     &mut total_diagnostics,
