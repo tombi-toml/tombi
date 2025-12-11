@@ -95,10 +95,10 @@ use std::{
 use countme::Count;
 
 use crate::{
+    Direction, GreenNode, GreenToken, NodeOrToken, SyntaxText, TokenAtOffset, WalkEvent,
     green::{GreenChild, GreenElementRef, GreenNodeData, GreenTokenData, SyntaxKind},
     sll,
     utility_types::Delta,
-    Direction, GreenNode, GreenToken, NodeOrToken, SyntaxText, TokenAtOffset, WalkEvent,
 };
 
 enum Green {
@@ -199,32 +199,34 @@ impl Drop for SyntaxToken {
 
 #[inline(never)]
 unsafe fn free(mut data: ptr::NonNull<NodeData>) {
-    loop {
-        debug_assert_eq!(data.as_ref().rc.get(), 0);
-        debug_assert!(data.as_ref().first.get().is_null());
-        let node = Box::from_raw(data.as_ptr());
-        match node.parent.take() {
-            Some(parent) => {
-                debug_assert!(parent.as_ref().rc.get() > 0);
-                if node.mutable {
-                    sll::unlink(&parent.as_ref().first, &*node)
+    unsafe {
+        loop {
+            debug_assert_eq!(data.as_ref().rc.get(), 0);
+            debug_assert!(data.as_ref().first.get().is_null());
+            let node = Box::from_raw(data.as_ptr());
+            match node.parent.take() {
+                Some(parent) => {
+                    debug_assert!(parent.as_ref().rc.get() > 0);
+                    if node.mutable {
+                        sll::unlink(&parent.as_ref().first, &*node)
+                    }
+                    if parent.as_ref().dec_rc() {
+                        data = parent;
+                    } else {
+                        break;
+                    }
                 }
-                if parent.as_ref().dec_rc() {
-                    data = parent;
-                } else {
+                None => {
+                    match &node.green {
+                        Green::Node { ptr } => {
+                            let _ = GreenNode::from_raw(ptr.get());
+                        }
+                        Green::Token { ptr } => {
+                            let _ = GreenToken::from_raw(*ptr);
+                        }
+                    }
                     break;
                 }
-            }
-            None => {
-                match &node.green {
-                    Green::Node { ptr } => {
-                        let _ = GreenNode::from_raw(ptr.get());
-                    }
-                    Green::Token { ptr } => {
-                        let _ = GreenToken::from_raw(*ptr);
-                    }
-                }
-                break;
             }
         }
     }
@@ -575,25 +577,27 @@ impl NodeData {
         }
     }
     unsafe fn respine(&self, mut new_green: GreenNode) {
-        let mut node = self;
-        loop {
-            let old_green = match &node.green {
-                Green::Node { ptr } => ptr.replace(ptr::NonNull::from(&*new_green)),
-                Green::Token { .. } => unreachable!(),
-            };
-            match node.parent() {
-                Some(parent) => match parent.green() {
-                    NodeOrToken::Node(parent_green) => {
-                        new_green =
-                            parent_green.replace_child(node.index() as usize, new_green.into());
-                        node = parent;
+        unsafe {
+            let mut node = self;
+            loop {
+                let old_green = match &node.green {
+                    Green::Node { ptr } => ptr.replace(ptr::NonNull::from(&*new_green)),
+                    Green::Token { .. } => unreachable!(),
+                };
+                match node.parent() {
+                    Some(parent) => match parent.green() {
+                        NodeOrToken::Node(parent_green) => {
+                            new_green =
+                                parent_green.replace_child(node.index() as usize, new_green.into());
+                            node = parent;
+                        }
+                        _ => unreachable!(),
+                    },
+                    None => {
+                        mem::forget(new_green);
+                        let _ = GreenNode::from_raw(old_green);
+                        break;
                     }
-                    _ => unreachable!(),
-                },
-                None => {
-                    mem::forget(new_green);
-                    let _ = GreenNode::from_raw(old_green);
-                    break;
                 }
             }
         }

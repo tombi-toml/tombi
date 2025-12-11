@@ -22,7 +22,7 @@ pub fn ancestors_at_offset(
     offset: tombi_text::Offset,
 ) -> impl Iterator<Item = SyntaxNode> {
     node.token_at_offset(offset)
-        .map(|token| token.parent_ancestors())
+        .map(|token| token.parent_ancestors().collect_vec())
         .kmerge_by(|node1, node2| node1.span().len() < node2.span().len())
         .dedup_by(|node1, node2| node1 == node2)
 }
@@ -32,7 +32,7 @@ pub fn ancestors_at_position(
     position: tombi_text::Position,
 ) -> impl Iterator<Item = SyntaxNode> {
     node.token_at_position(position)
-        .map(|token| token.parent_ancestors())
+        .map(|token| token.parent_ancestors().collect_vec())
         .kmerge_by(|node1, node2| node1.span().len() <= node2.span().len())
         .dedup_by(|node1, node2| node1 == node2)
 }

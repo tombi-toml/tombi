@@ -121,7 +121,7 @@ impl Referable<ValueSchema> {
                     if let Some(definition_schema) = definitions.read().await.get(reference) {
                         let mut referable_schema = definition_schema.to_owned();
                         if let Referable::Resolved {
-                            value: ref mut value_schema,
+                            value: value_schema,
                             ..
                         } = &mut referable_schema
                         {
