@@ -47,7 +47,7 @@ impl From<url::Url> for SchemaUri {
 
 impl From<SchemaUri> for url::Url {
     fn from(uri: SchemaUri) -> Self {
-        uri.0 .0
+        uri.0.0
     }
 }
 

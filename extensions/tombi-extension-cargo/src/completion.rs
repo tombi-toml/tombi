@@ -10,9 +10,9 @@ use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
 use tombi_future::Boxable;
-use tombi_schema_store::matches_accessors;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
+use tombi_schema_store::matches_accessors;
 use tombi_version_sort::version_sort;
 use tower_lsp::lsp_types::InsertTextFormat;
 

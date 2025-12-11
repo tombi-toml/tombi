@@ -1,6 +1,6 @@
 use nu_ansi_term::{Color, Style};
 
-use crate::{printer::Simple, Diagnostic, Level, Print};
+use crate::{Diagnostic, Level, Print, printer::Simple};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pretty;

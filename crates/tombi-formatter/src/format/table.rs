@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use crate::{format::filter_map_unique_keys, types::WithAlignmentHint, Format};
+use crate::{Format, format::filter_map_unique_keys, types::WithAlignmentHint};
 
 impl Format for tombi_ast::Table {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -83,7 +83,7 @@ impl Format for tombi_ast::Table {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_format, Formatter};
+    use crate::{Formatter, test_format};
 
     test_format! {
         #[tokio::test]

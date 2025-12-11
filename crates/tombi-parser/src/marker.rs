@@ -1,7 +1,7 @@
 use drop_bomb::DropBomb;
 use tombi_syntax::SyntaxKind;
 
-use crate::{parser::Parser, Event};
+use crate::{Event, parser::Parser};
 
 pub(crate) struct Marker {
     event_index: u32,

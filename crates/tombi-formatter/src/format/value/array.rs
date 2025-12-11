@@ -4,7 +4,7 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{format::write_trailing_comment_alignment_space, types::WithAlignmentHint, Format};
+use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 impl Format for tombi_ast::Array {
     #[inline]
@@ -205,10 +205,10 @@ fn format_singleline_array(
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use tombi_config::{format::FormatRules, FormatOptions, StringQuoteStyle, TomlVersion};
+    use tombi_config::{FormatOptions, StringQuoteStyle, TomlVersion, format::FormatRules};
 
     use super::*;
-    use crate::{test_format, Formatter};
+    use crate::{Formatter, test_format};
 
     test_format! {
         #[tokio::test]

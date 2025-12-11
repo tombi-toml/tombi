@@ -32,8 +32,8 @@ use tombi_schema_store::{
 };
 
 use super::{
-    schema_completion::SchemaCompletion, CompletionCandidate, CompletionContent, CompletionHint,
-    FindCompletionContents,
+    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    schema_completion::SchemaCompletion,
 };
 
 impl FindCompletionContents for tombi_document_tree::Value {

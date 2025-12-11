@@ -141,9 +141,11 @@ orange.color = "orange"
         assert_eq!(diagnostics.len(), 6);
 
         // All warnings should have the same message
-        assert!(diagnostics
-            .iter()
-            .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged"));
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged")
+        );
     }
 
     #[tokio::test]
@@ -195,9 +197,11 @@ lsp.formatting.enabled = true
         assert_eq!(diagnostics.len(), 3);
 
         // The warning should have the correct message
-        assert!(diagnostics
-            .iter()
-            .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged"));
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged")
+        );
     }
 
     #[tokio::test]
@@ -247,8 +251,10 @@ lsp.formatting.enabled = true
         assert_eq!(diagnostics.len(), 3);
 
         // All warnings should have the same message
-        assert!(diagnostics
-            .iter()
-            .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged"));
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message() == "Defining dotted keys out-of-order is discouraged")
+        );
     }
 }

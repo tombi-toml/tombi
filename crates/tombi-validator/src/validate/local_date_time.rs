@@ -11,7 +11,7 @@ use crate::{
     validate::{push_deprecated_value, type_mismatch},
 };
 
-use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
+use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
 impl Validate for LocalDateTime {
     fn validate<'a: 'b, 'b>(

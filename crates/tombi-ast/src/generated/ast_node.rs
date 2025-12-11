@@ -1,8 +1,8 @@
 //! Generated file, do not edit by hand, see `xtask/src/codegen`
 
-use crate::support;
 use crate::AstChildren;
 use crate::AstNode;
+use crate::support;
 use tombi_syntax::{SyntaxKind, SyntaxKind::*, SyntaxNode, SyntaxToken, T};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

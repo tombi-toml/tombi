@@ -18,7 +18,7 @@ use crate::{
     validate::{not_schema::validate_not, push_deprecated, push_deprecated_value, type_mismatch},
 };
 
-use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
+use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 use crate::diagnostic::Patterns;
 
 impl Validate for tombi_document_tree::Table {

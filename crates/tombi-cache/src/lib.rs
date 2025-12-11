@@ -1,7 +1,7 @@
 mod error;
 mod options;
 pub use error::Error;
-pub use options::{Options, DEFAULT_CACHE_TTL};
+pub use options::{DEFAULT_CACHE_TTL, Options};
 
 pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
     if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {

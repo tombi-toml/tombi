@@ -4,12 +4,12 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
+use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     ArrayLintRules, ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WarnRuleOptions,
     WithCommonExtensibleLintRules, WithCommonFormatRules, WithCommonLintRules, WithKeyFormatRules,
     WithKeyLintRules,
 };
-use crate::TombiCommentDirectiveImpl;
 
 pub type TableCommonFormatRules = WithCommonFormatRules<TableFormatRules>;
 pub type TableCommonLintRules = WithCommonLintRules<TableLintRules>;
@@ -86,31 +86,36 @@ impl TombiCommentDirectiveImpl for TombiKeyArrayOfTableDirectiveContent {
 
 impl TombiCommentDirectiveImpl for TombiArrayOfTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-array-of-table-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-array-of-table-directive.json")
+            .unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyInlineTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json")
+            .unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiInlineTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-inline-table-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-inline-table-directive.json")
+            .unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiParentTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-parent-table-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-parent-table-directive.json")
+            .unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiRootTableDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-root-table-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-root-table-directive.json")
+            .unwrap()
     }
 }
 

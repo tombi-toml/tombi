@@ -9,14 +9,15 @@ use tombi_schema_store::{
 };
 
 use super::{
-    all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
-    one_of::find_one_of_completion_items, type_hint_value, CompletionHint, FindCompletionContents,
+    CompletionHint, FindCompletionContents, all_of::find_all_of_completion_items,
+    any_of::find_any_of_completion_items, one_of::find_one_of_completion_items, type_hint_value,
 };
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
     completion::{
+        CompletionContent, CompletionEdit,
         comment::get_tombi_comment_directive_content_completion_contents,
-        schema_completion::SchemaCompletion, CompletionContent, CompletionEdit,
+        schema_completion::SchemaCompletion,
     },
 };
 

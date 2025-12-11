@@ -27,7 +27,7 @@ pub use line_ending::LineEnding;
 pub use line_width::LineWidth;
 pub use one_or_many::OneOrMany;
 pub use schema_catalog_path::{
-    SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL,
+    JSON_SCHEMASTORE_CATALOG_URL, SchemaCatalogPath, TOMBI_SCHEMASTORE_CATALOG_URL,
 };
 pub use string_quote_style::StringQuoteStyle;
 pub use trailing_comment_space_width::TrailingCommentSpaceWidth;

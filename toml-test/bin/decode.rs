@@ -4,7 +4,7 @@ use clap::Parser;
 use tombi_ast::AstNode;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_toml_version::TomlVersion;
-use toml_test::{IntoValue, Value, INVALID_MESSAGE};
+use toml_test::{INVALID_MESSAGE, IntoValue, Value};
 
 #[derive(Debug, clap::Parser, Default)]
 #[command(disable_help_subcommand(true))]

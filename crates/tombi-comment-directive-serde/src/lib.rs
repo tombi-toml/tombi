@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use tombi_comment_directive::{
-    value::TombiValueDirectiveContent, TombiCommentDirectiveImpl,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
+    value::TombiValueDirectiveContent,
 };
 use tombi_document::IntoDocument;
 use tombi_document_tree::TryIntoDocumentTree;

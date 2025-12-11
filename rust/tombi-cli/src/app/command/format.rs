@@ -3,7 +3,7 @@ use nu_ansi_term::{Color, Style};
 use similar::{ChangeTag, TextDiff};
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
-use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
+use tombi_diagnostic::{Diagnostic, Print, printer::Pretty};
 use tombi_glob::{FileInputType, FileSearch};
 
 use crate::app::CommonArgs;

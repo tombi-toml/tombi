@@ -40,7 +40,7 @@ pub mod handler {
     mod update_schema;
     mod workspace_diagnostic;
 
-    pub use associate_schema::{handle_associate_schema, AssociateSchemaParams};
+    pub use associate_schema::{AssociateSchemaParams, handle_associate_schema};
     pub use code_action::handle_code_action;
     pub use completion::handle_completion;
     pub use diagnostic::{handle_diagnostic, push_diagnostics};
@@ -54,9 +54,9 @@ pub mod handler {
     pub use document_symbol::handle_document_symbol;
     pub use folding_range::handle_folding_range;
     pub use formatting::handle_formatting;
-    pub use get_status::{handle_get_status, GetStatusResponse};
+    pub use get_status::{GetStatusResponse, handle_get_status};
     pub use get_toml_version::{
-        handle_get_toml_version, GetTomlVersionResponse, TomlVersionSource,
+        GetTomlVersionResponse, TomlVersionSource, handle_get_toml_version,
     };
     pub use goto_declaration::handle_goto_declaration;
     pub use goto_definition::handle_goto_definition;
@@ -64,7 +64,7 @@ pub mod handler {
     pub use hover::{get_hover_keys_with_range, handle_hover};
     pub use initialize::handle_initialize;
     pub use initialized::handle_initialized;
-    pub use refresh_cache::{handle_refresh_cache, RefreshCacheParams};
+    pub use refresh_cache::{RefreshCacheParams, handle_refresh_cache};
     pub use semantic_tokens_full::handle_semantic_tokens_full;
     pub use shutdown::handle_shutdown;
     pub use update_config::handle_update_config;

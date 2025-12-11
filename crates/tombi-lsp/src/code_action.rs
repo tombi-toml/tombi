@@ -1,5 +1,5 @@
 use tombi_ast::AstNode;
-use tombi_document_tree::{dig_accessors, TableKind};
+use tombi_document_tree::{TableKind, dig_accessors};
 use tombi_schema_store::{Accessor, AccessorContext, AccessorKeyKind};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{

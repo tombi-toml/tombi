@@ -78,13 +78,13 @@ macro_rules! test_code_action_refactor_rewrite {
         #[tokio::test]
         async fn $name() -> Result<(), Box<dyn std::error::Error>> {
             use itertools::Itertools;
+            use tombi_lsp::Backend;
             use tombi_lsp::handler::handle_code_action;
             use tombi_lsp::handler::handle_did_open;
-            use tombi_lsp::Backend;
             use tombi_text::IntoLsp;
+            use tower_lsp::LspService;
             use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
             use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
-            use tower_lsp::LspService;
 
             tombi_test_lib::init_tracing();
 

@@ -1,6 +1,6 @@
 use indexmap::{
-    map::{Entry, MutableKeys},
     IndexMap,
+    map::{Entry, MutableKeys},
 };
 use itertools::Itertools;
 use tombi_ast::{AstChildren, AstNode, TombiValueCommentDirective};

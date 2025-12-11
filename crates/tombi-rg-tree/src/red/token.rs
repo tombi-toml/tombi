@@ -1,10 +1,9 @@
 use std::{fmt, marker::PhantomData};
 
 use crate::{
-    cursor,
+    Direction, Language, NodeOrToken, cursor,
     green::{GreenNode, GreenToken, GreenTokenData},
     red::{RedElement, RedNode},
-    Direction, Language, NodeOrToken,
 };
 
 #[derive(Clone, PartialEq, Eq, Hash)]

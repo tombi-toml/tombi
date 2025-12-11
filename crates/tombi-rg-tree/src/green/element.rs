@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use super::GreenTokenData;
 use crate::{
-    green::{GreenNode, GreenToken, SyntaxKind},
     GreenNodeData, NodeOrToken,
+    green::{GreenNode, GreenToken, SyntaxKind},
 };
 
 pub(super) type GreenElement = NodeOrToken<GreenNode, GreenToken>;

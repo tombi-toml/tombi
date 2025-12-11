@@ -1,7 +1,7 @@
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_ast::AstNode;
 use tombi_extension::CodeActionOrCommand;
-use tombi_schema_store::{matches_accessors, Accessor};
+use tombi_schema_store::{Accessor, matches_accessors};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, DocumentChanges, OneOf, OptionalVersionedTextDocumentIdentifier,
@@ -9,8 +9,8 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    collect_dependency_requirements_from_document_tree, find_workspace_pyproject_toml,
-    parse_dependency_requirement, parse_requirement, DependencyRequirement,
+    DependencyRequirement, collect_dependency_requirements_from_document_tree,
+    find_workspace_pyproject_toml, parse_dependency_requirement, parse_requirement,
 };
 
 pub enum CodeActionRefactorRewriteName {

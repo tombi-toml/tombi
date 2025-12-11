@@ -1,6 +1,6 @@
 use tokio::io::AsyncReadExt;
 use tombi_config::{LintOptions, TomlVersion};
-use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
+use tombi_diagnostic::{Diagnostic, Print, printer::Pretty};
 use tombi_glob::FileSearch;
 
 use crate::app::CommonArgs;

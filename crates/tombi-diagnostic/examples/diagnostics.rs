@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use tombi_diagnostic::{printer::Pretty, Diagnostic, Print};
+use tombi_diagnostic::{Diagnostic, Print, printer::Pretty};
 use tracing_subscriber::prelude::*;
 
 #[derive(clap::Parser)]

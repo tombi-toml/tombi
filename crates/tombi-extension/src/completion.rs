@@ -7,7 +7,7 @@ use std::ops::Deref;
 pub use completion_edit::{CompletionEdit, CompletionTextEdit, InsertReplaceEdit};
 pub use completion_hint::{AddLeadingComma, AddTrailingComma, CommaHint, CompletionHint};
 pub use completion_kind::CompletionKind;
-use tombi_schema_store::{get_schema_name, SchemaUri};
+use tombi_schema_store::{SchemaUri, get_schema_name};
 use tombi_text::{FromLsp, IntoLsp};
 
 use crate::get_tombi_github_uri;

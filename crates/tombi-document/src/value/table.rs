@@ -1,4 +1,4 @@
-use indexmap::{map::Entry, IndexMap};
+use indexmap::{IndexMap, map::Entry};
 use serde::forward_to_deserialize_any;
 
 use crate::{IntoDocument, Key, Value};

@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use serde::Deserialize;
 use tombi_comment_directive::{
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     value::{
         ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules,
         ArrayOfTableCommonLintRules, ArrayOfTableLintRules, InlineTableCommonFormatRules,
@@ -12,7 +13,6 @@ use tombi_comment_directive::{
         WithCommonExtensibleLintRules, WithCommonLintRules, WithKeyFormatRules, WithKeyLintRules,
         WithKeyTableLintRules,
     },
-    TombiCommentDirectiveImpl, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_diagnostic::SetDiagnostics;

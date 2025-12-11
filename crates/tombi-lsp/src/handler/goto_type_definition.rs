@@ -7,7 +7,7 @@ use crate::{
     backend::Backend,
     config_manager::ConfigSchemaStore,
     goto_type_definition::{
-        get_tombi_document_comment_directive_type_definition, get_type_definition, TypeDefinition,
+        TypeDefinition, get_tombi_document_comment_directive_type_definition, get_type_definition,
     },
     handler::hover::get_hover_keys_with_range,
 };

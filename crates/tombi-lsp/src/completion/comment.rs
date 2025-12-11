@@ -1,18 +1,18 @@
 use itertools::Itertools;
 use tombi_ast::AstToken;
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
+    document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_uri::{SchemaUri, Uri};
 
 use crate::{
-    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
-    completion::{extract_keys_and_hint, find_completion_contents_with_tree},
     DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
     DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
+    comment_directive::{CommentDirectiveContext, GetCommentDirectiveContext},
+    completion::{extract_keys_and_hint, find_completion_contents_with_tree},
 };
 
 use super::{CompletionContent, CompletionEdit};

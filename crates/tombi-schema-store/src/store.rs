@@ -1,9 +1,9 @@
 use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
-    get_tombi_schemastore_content, http_client::HttpClient, json::JsonCatalog, AllOfSchema,
-    AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor, SchemaAccessors,
-    SourceSchema, ValueSchema,
+    AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor,
+    SchemaAccessors, SourceSchema, ValueSchema, get_tombi_schemastore_content,
+    http_client::HttpClient, json::JsonCatalog,
 };
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
@@ -259,7 +259,7 @@ impl SchemaStore {
                         return Err(crate::Error::InvalidJsonFormat {
                             uri: catalog_uri.deref().clone(),
                             reason: err.to_string(),
-                        })
+                        });
                     }
                 }
             }

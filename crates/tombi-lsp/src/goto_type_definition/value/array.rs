@@ -8,9 +8,10 @@ use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, DocumentSchema, V
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
     goto_type_definition::{
-        all_of::get_all_of_type_definition, any_of::get_any_of_type_definition,
+        GetTypeDefinition, TypeDefinition, all_of::get_all_of_type_definition,
+        any_of::get_any_of_type_definition,
         comment::get_tombi_value_comment_directive_type_definition,
-        one_of::get_one_of_type_definition, GetTypeDefinition, TypeDefinition,
+        one_of::get_one_of_type_definition,
     },
 };
 
@@ -137,7 +138,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             &current_schema.definitions,
                             schema_context,
                         )
-                        .await
+                        .await;
                     }
                     ValueSchema::AnyOf(any_of_schema) => {
                         return get_any_of_type_definition(
@@ -150,7 +151,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             &current_schema.definitions,
                             schema_context,
                         )
-                        .await
+                        .await;
                     }
                     ValueSchema::AllOf(all_of_schema) => {
                         return get_all_of_type_definition(
@@ -163,7 +164,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             &current_schema.definitions,
                             schema_context,
                         )
-                        .await
+                        .await;
                     }
                     _ => {}
                 }

@@ -13,9 +13,9 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
+    Backend,
     backend::{BackendCapabilities, DiagnosticMode},
     semantic_tokens::SUPPORTED_TOKEN_TYPES,
-    Backend,
 };
 
 #[tracing::instrument(level = "debug", skip_all)]

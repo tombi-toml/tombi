@@ -6,7 +6,7 @@ use tombi_config::StringQuoteStyle;
 
 use super::LiteralNode;
 use crate::{
-    format::{write_trailing_comment_alignment_space, Format},
+    format::{Format, write_trailing_comment_alignment_space},
     types::WithAlignmentHint,
 };
 
@@ -98,8 +98,8 @@ impl LiteralNode for tombi_ast::MultiLineLiteralString {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_format, Formatter};
-    use tombi_config::{format::FormatRules, FormatOptions, StringQuoteStyle};
+    use crate::{Formatter, test_format};
+    use tombi_config::{FormatOptions, StringQuoteStyle, format::FormatRules};
 
     test_format! {
         #[tokio::test]

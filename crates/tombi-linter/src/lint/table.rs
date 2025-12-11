@@ -1,6 +1,6 @@
 use tombi_future::Boxable;
 
-use crate::{rule::Rule, Lint};
+use crate::{Lint, rule::Rule};
 
 impl Lint for tombi_ast::Table {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {

@@ -13,7 +13,7 @@ use crate::{
     validate::{not_schema::validate_not, push_deprecated, type_mismatch},
 };
 
-use super::{validate_all_of, validate_any_of, validate_one_of, Validate};
+use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
 
 impl Validate for tombi_document_tree::Array {
     fn validate<'a: 'b, 'b>(

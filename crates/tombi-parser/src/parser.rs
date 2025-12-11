@@ -3,7 +3,7 @@ use tombi_syntax::{
     T,
 };
 
-use crate::{marker::Marker, token_set::TokenSet, Event};
+use crate::{Event, marker::Marker, token_set::TokenSet};
 
 #[derive(Debug)]
 pub(crate) struct Parser<'t> {

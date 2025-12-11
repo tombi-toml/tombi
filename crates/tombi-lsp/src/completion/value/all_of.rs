@@ -3,8 +3,8 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, AllOfSchema, CurrentSchema, ReferableValueSchemas};
 
 use crate::completion::{
-    tombi_json_value_to_completion_default_item, CompletionCandidate, CompletionContent,
-    CompletionHint, CompositeSchemaImpl, FindCompletionContents,
+    CompletionCandidate, CompletionContent, CompletionHint, CompositeSchemaImpl,
+    FindCompletionContents, tombi_json_value_to_completion_default_item,
 };
 
 impl CompositeSchemaImpl for AllOfSchema {

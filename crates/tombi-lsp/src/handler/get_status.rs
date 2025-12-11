@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use tombi_config::TomlVersion;
-use tombi_glob::{matches_file_patterns, MatchResult};
+use tombi_glob::{MatchResult, matches_file_patterns};
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};

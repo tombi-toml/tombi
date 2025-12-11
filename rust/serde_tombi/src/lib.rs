@@ -93,13 +93,13 @@ mod de;
 mod document;
 mod ser;
 
-pub use de::{from_document, from_str_async, Deserializer};
+pub use de::{Deserializer, from_document, from_str_async};
 pub use document::{
     Array, ArrayKind, Boolean, Document, Float, Integer, IntegerKind, Key, LocalDate,
     LocalDateTime, LocalTime, OffsetDateTime, String, StringKind, Table, TableKind, Value,
 };
 
-pub use ser::{to_document, to_string_async, Serializer};
+pub use ser::{Serializer, to_document, to_string_async};
 use std::fmt;
 use thiserror::Error;
 

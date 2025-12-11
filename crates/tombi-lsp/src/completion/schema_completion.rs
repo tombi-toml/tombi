@@ -2,10 +2,10 @@ use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, ValueSchema};
 
 use super::{
+    CompletionContent, CompletionHint, FindCompletionContents,
     value::{
         find_all_of_completion_items, find_any_of_completion_items, find_one_of_completion_items,
     },
-    CompletionContent, CompletionHint, FindCompletionContents,
 };
 
 /// A tag data that indicates that only schema information is used for completion.

@@ -2,7 +2,7 @@ mod node;
 mod parser;
 
 pub use node::{ArrayNode, BoolNode, NullNode, NumberNode, ObjectNode, StringNode, ValueNode};
-pub use parser::{parse, Error as ParserError};
+pub use parser::{Error as ParserError, parse};
 pub use tombi_json_value::{Number, Object, Value};
 pub use tombi_text::Range;
 

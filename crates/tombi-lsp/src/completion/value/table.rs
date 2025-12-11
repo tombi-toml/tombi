@@ -4,19 +4,19 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    is_online_url, Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema,
-    Referable, SchemaAccessor, SchemaStore, TableSchema, ValueSchema,
+    Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema, Referable,
+    SchemaAccessor, SchemaStore, TableSchema, ValueSchema, is_online_url,
 };
 
 use crate::{
     comment_directive::get_table_comment_directive_content_with_schema_uri,
     completion::{
+        CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
         comment::get_tombi_comment_directive_content_completion_contents,
         value::{
             all_of::find_all_of_completion_items, any_of::find_any_of_completion_items,
             one_of::find_one_of_completion_items, type_hint_value,
         },
-        CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
     },
 };
 

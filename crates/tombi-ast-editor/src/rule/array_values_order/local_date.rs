@@ -4,7 +4,7 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext};
 use crate::{
     node::make_comma,
     rule::array_values_order::{
-        try_array_values_order_by_from_item_schema, SortFailReason, SortableValues,
+        SortFailReason, SortableValues, try_array_values_order_by_from_item_schema,
     },
 };
 

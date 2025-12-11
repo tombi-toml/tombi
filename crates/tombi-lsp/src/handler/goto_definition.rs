@@ -1,9 +1,9 @@
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{GotoDefinitionParams, TextDocumentPositionParams};
 
+use crate::Backend;
 use crate::config_manager::ConfigSchemaStore;
 use crate::handler::hover::get_hover_keys_with_range;
-use crate::Backend;
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_goto_definition(

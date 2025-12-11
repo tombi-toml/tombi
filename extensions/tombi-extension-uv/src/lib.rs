@@ -13,7 +13,7 @@ use itertools::Itertools;
 use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
 use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_accessors, dig_keys, TryIntoDocumentTree};
+use tombi_document_tree::{TryIntoDocumentTree, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
 
 #[derive(Debug, Clone)]

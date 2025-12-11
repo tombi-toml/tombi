@@ -1,7 +1,7 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
 use super::Parse;
-use crate::{parser::Parser, token_set::TS_KEY_FIRST, ErrorKind::*};
+use crate::{ErrorKind::*, parser::Parser, token_set::TS_KEY_FIRST};
 
 impl Parse for tombi_ast::Keys {
     fn parse(p: &mut Parser<'_>) {

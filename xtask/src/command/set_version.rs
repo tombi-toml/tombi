@@ -14,7 +14,9 @@ pub fn run(sh: &Shell) -> anyhow::Result<()> {
                 github_ref.trim_start_matches("refs/tags/v").to_owned()
             }
             _ => {
-                eprint!("INFO: If you want to set a specific version, please use the GITHUB_REF environment variable.\n\n");
+                eprint!(
+                    "INFO: If you want to set a specific version, please use the GITHUB_REF environment variable.\n\n"
+                );
                 eprint!("      $ GITHUB_REF=refs/tags/v1.2.3 cargo xtask set-version\n\n");
                 DEV_VERSION.to_owned()
             }

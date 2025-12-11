@@ -15,7 +15,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{features::lsp::EncodingKind, IntoLsp, LineIndex};
+    use crate::{IntoLsp, LineIndex, features::lsp::EncodingKind};
 
     #[test]
     fn test_ascii_into_lsp() {

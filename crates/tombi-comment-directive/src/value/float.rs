@@ -2,11 +2,11 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
+use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     EmptyFormatRules, ErrorRuleOptions, TombiValueDirectiveContent, WithCommonFormatRules,
     WithCommonLintRules, WithKeyFormatRules, WithKeyTableLintRules,
 };
-use crate::TombiCommentDirectiveImpl;
 
 pub type FloatFormatRules = EmptyFormatRules;
 

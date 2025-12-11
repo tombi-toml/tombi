@@ -1,10 +1,10 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
 use super::{
-    begin_dangling_comments, end_dangling_comments, invalid_line, leading_comments,
-    peek_leading_comments, trailing_comment, Parse, TS_LINE_END,
+    Parse, TS_LINE_END, begin_dangling_comments, end_dangling_comments, invalid_line,
+    leading_comments, peek_leading_comments, trailing_comment,
 };
-use crate::{parser::Parser, token_set::TS_KEY_FIRST, ErrorKind::*};
+use crate::{ErrorKind::*, parser::Parser, token_set::TS_KEY_FIRST};
 
 impl Parse for tombi_ast::Root {
     fn parse(p: &mut Parser<'_>) {

@@ -2,8 +2,8 @@ use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support::float::try_from_float, value::collect_comment_directives_and_errors,
     DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
+    support::float::try_from_float, value::collect_comment_directives_and_errors,
 };
 
 #[derive(Debug, Clone, PartialEq)]

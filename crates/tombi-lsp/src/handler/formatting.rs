@@ -1,8 +1,8 @@
 use itertools::{Either, Itertools};
-use tombi_glob::{matches_file_patterns, MatchResult};
+use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_text::{IntoLsp, Position, Range};
 use tower_lsp::lsp_types::{
-    notification::PublishDiagnostics, DocumentFormattingParams, PublishDiagnosticsParams, TextEdit,
+    DocumentFormattingParams, PublishDiagnosticsParams, TextEdit, notification::PublishDiagnostics,
 };
 use unicode_segmentation::UnicodeSegmentation;
 

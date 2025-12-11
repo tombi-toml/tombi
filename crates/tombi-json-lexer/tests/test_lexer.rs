@@ -3,7 +3,7 @@
 // using macros to define test cases in a declarative way.
 
 use itertools::Itertools;
-use tombi_json_lexer::{tokenize, ErrorKind, Token};
+use tombi_json_lexer::{ErrorKind, Token, tokenize};
 use tombi_json_syntax::SyntaxKind::*;
 
 macro_rules! test_tokens {

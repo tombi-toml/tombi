@@ -1,6 +1,6 @@
 use crate::{
-    comment_directive::TombiValueCommentDirective, AstToken, Comment,
-    SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
+    AstToken, Comment, SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
+    comment_directive::TombiValueCommentDirective,
 };
 
 impl Comment {

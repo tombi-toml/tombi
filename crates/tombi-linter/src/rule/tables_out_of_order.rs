@@ -173,9 +173,11 @@ color = "orange"
         assert_eq!(diagnostics.len(), 2);
 
         // All warnings should have the same message
-        assert!(diagnostics
-            .iter()
-            .all(|d| d.message() == "Defining tables out-of-order is discouraged"));
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message() == "Defining tables out-of-order is discouraged")
+        );
     }
 
     #[tokio::test]
@@ -231,9 +233,11 @@ name = "Nail"
         assert_eq!(diagnostics.len(), 2);
 
         // All warnings should have the same message
-        assert!(diagnostics
-            .iter()
-            .all(|d| d.message() == "Defining tables out-of-order is discouraged"));
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message() == "Defining tables out-of-order is discouraged")
+        );
     }
 
     #[tokio::test]
@@ -266,8 +270,10 @@ name = "orange"
         assert_eq!(diagnostics.len(), 3);
 
         // All warnings should have the same message
-        assert!(diagnostics
-            .iter()
-            .all(|d| d.message() == "Defining tables out-of-order is discouraged"));
+        assert!(
+            diagnostics
+                .iter()
+                .all(|d| d.message() == "Defining tables out-of-order is discouraged")
+        );
     }
 }

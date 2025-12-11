@@ -4,10 +4,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use flate2::{write::GzEncoder, Compression};
+use flate2::{Compression, write::GzEncoder};
 use time::OffsetDateTime;
 use xshell::Shell;
-use zip::{write::FileOptions, DateTime, ZipWriter};
+use zip::{DateTime, ZipWriter, write::FileOptions};
 
 use super::set_version::DEV_VERSION;
 use crate::utils::project_root_path;

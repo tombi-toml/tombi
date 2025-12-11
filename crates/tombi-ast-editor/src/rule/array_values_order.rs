@@ -457,7 +457,9 @@ enum SortFailReason {
     #[error("Cannot sort array values because the values are incomplete.")]
     Incomplete,
 
-    #[error("Cannot sort array values because the values only support the following types: [Boolean, Integer, String, OffsetDateTime, LocalDateTime, LocalDate, LocalTime, InlineTable(need `x-tombi-array-values-order-by`)]")]
+    #[error(
+        "Cannot sort array values because the values only support the following types: [Boolean, Integer, String, OffsetDateTime, LocalDateTime, LocalDate, LocalTime, InlineTable(need `x-tombi-array-values-order-by`)]"
+    )]
     UnsupportedTypes,
 
     #[error("Cannot sort array values because the values have different types.")]

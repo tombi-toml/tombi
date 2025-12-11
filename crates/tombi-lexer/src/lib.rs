@@ -423,7 +423,7 @@ impl Cursor<'_> {
         while let Some(c) = self.bump() {
             match c {
                 _ if c == '"' => {
-                    return Ok(Token::new(SyntaxKind::BASIC_STRING, self.pop_span_range()))
+                    return Ok(Token::new(SyntaxKind::BASIC_STRING, self.pop_span_range()));
                 }
                 '\\' if matches!(self.peek(1), '"' | '\\') => {
                     self.bump();
@@ -486,7 +486,7 @@ impl Cursor<'_> {
                     return Ok(Token::new(
                         SyntaxKind::LITERAL_STRING,
                         self.pop_span_range(),
-                    ))
+                    ));
                 }
                 _ if is_line_break(self.peek(1)) => break,
                 _ => {}

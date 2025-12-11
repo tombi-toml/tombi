@@ -172,9 +172,11 @@ fn lower_separated_list(
             (Either::Left(node), repeat, Some(trailing_sep))
         }
         [Rule::Node(node), Rule::Rep(repeat)] => (Either::Left(node), repeat, None),
-        [Rule::Token(token), Rule::Rep(repeat), Rule::Opt(trailing_sep)] => {
-            (Either::Right(token), repeat, Some(trailing_sep))
-        }
+        [
+            Rule::Token(token),
+            Rule::Rep(repeat),
+            Rule::Opt(trailing_sep),
+        ] => (Either::Right(token), repeat, Some(trailing_sep)),
         [Rule::Token(token), Rule::Rep(repeat)] => (Either::Right(token), repeat, None),
         _ => return false,
     };

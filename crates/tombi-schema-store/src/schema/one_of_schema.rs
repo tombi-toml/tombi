@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{ReferableValueSchemas, ValueSchema};
-use crate::{schema::not_schema::NotSchema, Referable};
+use crate::{Referable, schema::not_schema::NotSchema};
 
 #[derive(Debug, Default, Clone)]
 pub struct OneOfSchema {

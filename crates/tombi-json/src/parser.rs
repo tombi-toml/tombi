@@ -2,7 +2,7 @@ mod error;
 
 use crate::{ArrayNode, BoolNode, NullNode, NumberNode, ObjectNode, StringNode, ValueNode};
 pub use error::Error;
-use tombi_json_lexer::{lex, Lexed, Token};
+use tombi_json_lexer::{Lexed, Token, lex};
 use tombi_json_syntax::{SyntaxKind, T};
 use tombi_json_value::Number;
 use tombi_text::Range;
@@ -262,7 +262,7 @@ impl<'a> Parser<'a> {
                     return Err(Error::UnexpectedToken {
                         expected: T![']'],
                         actual: self.peek_kind().unwrap_or(SyntaxKind::EOF),
-                    })
+                    });
                 }
             }
 
@@ -352,7 +352,7 @@ impl<'a> Parser<'a> {
                     return Err(Error::UnexpectedToken {
                         expected: T!['}'],
                         actual: self.peek_kind().unwrap_or(SyntaxKind::EOF),
-                    })
+                    });
                 }
             }
 

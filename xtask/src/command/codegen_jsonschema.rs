@@ -1,4 +1,4 @@
-use schemars::{generate::SchemaSettings, SchemaGenerator};
+use schemars::{SchemaGenerator, generate::SchemaSettings};
 use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_comment_directive::value::{
     TombiArrayDirectiveContent, TombiArrayOfTableDirectiveContent, TombiBooleanDirectiveContent,

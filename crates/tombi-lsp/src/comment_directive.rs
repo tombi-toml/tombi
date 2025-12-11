@@ -2,6 +2,7 @@ use tombi_ast::{
     SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
 };
 use tombi_comment_directive::{
+    TombiCommentDirectiveImpl,
     value::{
         ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules,
         ArrayOfTableCommonLintRules, InlineTableCommonFormatRules, InlineTableCommonLintRules,
@@ -10,7 +11,6 @@ use tombi_comment_directive::{
         TombiRootTableDirectiveContent, TombiTableDirectiveContent, TombiValueDirectiveContent,
         WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
     },
-    TombiCommentDirectiveImpl,
 };
 use tombi_document_tree::{ArrayKind, TableKind};
 use tombi_schema_store::Accessor;

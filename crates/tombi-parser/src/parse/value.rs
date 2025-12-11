@@ -1,7 +1,7 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{key::eat_key, leading_comments, peek_leading_comments, trailing_comment, Parse};
-use crate::{parser::Parser, token_set::TS_COMMEMT_OR_LINE_END, ErrorKind::*};
+use super::{Parse, key::eat_key, leading_comments, peek_leading_comments, trailing_comment};
+use crate::{ErrorKind::*, parser::Parser, token_set::TS_COMMEMT_OR_LINE_END};
 
 impl Parse for tombi_ast::Value {
     fn parse(p: &mut Parser<'_>) {

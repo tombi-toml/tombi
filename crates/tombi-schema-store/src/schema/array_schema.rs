@@ -9,7 +9,7 @@ use super::{
     CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUri,
     ValueSchema,
 };
-use crate::{schema::not_schema::NotSchema, Accessor, SchemaStore};
+use crate::{Accessor, SchemaStore, schema::not_schema::NotSchema};
 
 #[derive(Debug, Default, Clone)]
 pub struct ArraySchema {

@@ -5,8 +5,8 @@ use rustc_hash::FxHasher;
 
 use super::element::GreenElement;
 use crate::{
-    green::GreenElementRef, GreenNode, GreenNodeData, GreenToken, GreenTokenData, NodeOrToken,
-    SyntaxKind,
+    GreenNode, GreenNodeData, GreenToken, GreenTokenData, NodeOrToken, SyntaxKind,
+    green::GreenElementRef,
 };
 
 type HashMap<K, V> = hashbrown::HashMap<K, V, BuildHasherDefault<FxHasher>>;

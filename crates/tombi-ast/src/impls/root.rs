@@ -2,8 +2,8 @@ use itertools::Itertools;
 use tombi_syntax::SyntaxKind;
 
 use crate::{
-    support, AstNode, SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
-    TombiValueCommentDirective,
+    AstNode, SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
+    TombiValueCommentDirective, support,
 };
 
 impl crate::Root {
