@@ -2,7 +2,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_severity_level::SeverityLevelDefaultError;
 
-use crate::Validate;
+use crate::{Validate, validate::unused_lint_disabled};
 
 pub async fn validate_not<'a, T>(
     value: &T,
@@ -10,6 +10,7 @@ pub async fn validate_not<'a, T>(
     not_schema: &tombi_schema_store::NotSchema,
     current_schema: &CurrentSchema<'a>,
     schema_context: &SchemaContext<'a>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<(), crate::Error>
 where
@@ -26,25 +27,34 @@ where
         )
         .await
         .inspect_err(|err| tracing::warn!("{err}"))
-    {
-        if value
+        && value
             .validate(accessors, Some(&current_schema), schema_context)
             .await
             .is_ok()
-        {
-            let mut diagnostics = Vec::with_capacity(1);
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::NotSchemaMatch),
-                range: value.range(),
-            }
-            .push_diagnostic_with_level(
-                common_rules
-                    .and_then(|rules| rules.not_schema_match.as_ref())
-                    .map(SeverityLevelDefaultError::from)
-                    .unwrap_or_default(),
-                &mut diagnostics,
-            );
+    {
+        let mut diagnostics = Vec::with_capacity(1);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::NotSchemaMatch),
+            range: value.range(),
+        }
+        .push_diagnostic_with_level(
+            common_rules
+                .and_then(|rules| rules.not_schema_match.as_ref())
+                .map(SeverityLevelDefaultError::from)
+                .unwrap_or_default(),
+            &mut diagnostics,
+        );
 
+        return Err(diagnostics.into());
+    } else if common_rules
+        .and_then(|rules| rules.not_schema_match.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        let mut diagnostics = Vec::with_capacity(1);
+        unused_lint_disabled(&mut diagnostics, comment_directives, "not-schema-match");
+
+        if !diagnostics.is_empty() {
             return Err(diagnostics.into());
         }
     }

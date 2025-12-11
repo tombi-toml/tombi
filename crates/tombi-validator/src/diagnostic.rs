@@ -6,6 +6,10 @@ use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
+    /// A comment directive was found but not actually used to suppress any diagnostics.
+    #[error("Don't need to use `{rule_name}.disabled = true`. Please remove it.")]
+    UnusedLintDisabled { rule_name: &'static str },
+
     /// The entire Table or Array is deprecated
     #[error("`{0}` is deprecated")]
     Deprecated(SchemaAccessors),
@@ -130,6 +134,7 @@ impl Diagnostic {
     #[inline]
     pub fn code(&self) -> &'static str {
         match *self.kind {
+            DiagnosticKind::UnusedLintDisabled { .. } => "unused-lint-disabled",
             DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
                 "deprecated"
             }

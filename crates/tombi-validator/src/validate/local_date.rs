@@ -6,7 +6,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{push_deprecated_value, type_mismatch},
+    validate::{push_deprecated_value, type_mismatch, unused_lint_disabled},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -43,6 +43,7 @@ impl Validate for LocalDate {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -54,6 +55,7 @@ impl Validate for LocalDate {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -65,6 +67,7 @@ impl Validate for LocalDate {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -109,50 +112,70 @@ async fn validate_local_date(
     let value_string = local_date_value.value().to_string();
     let range = local_date_value.range();
 
-    if let Some(const_value) = &local_date_schema.const_value {
-        if value_string != *const_value {
-            let level = lint_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .const_value
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(const_value) = &local_date_schema.const_value
+        && value_string != *const_value
+    {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .const_value
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Const {
-                    expected: const_value.clone(),
-                    actual: value_string.clone(),
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Const {
+                expected: const_value.clone(),
+                actual: value_string.clone(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.common.const_value.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            local_date_value.comment_directives(),
+            "const-value",
+        );
     }
 
-    if let Some(enumerate) = &local_date_schema.enumerate {
-        if !enumerate.contains(&value_string) {
-            let level = lint_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .enumerate
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(enumerate) = &local_date_schema.enumerate
+        && !enumerate.contains(&value_string)
+    {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .enumerate
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Enumerate {
-                    expected: enumerate.iter().map(ToString::to_string).collect(),
-                    actual: value_string.clone(),
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Enumerate {
+                expected: enumerate.iter().map(ToString::to_string).collect(),
+                actual: value_string.clone(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.common.enumerate.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            local_date_value.comment_directives(),
+            "enumerate",
+        );
     }
 
     if diagnostics.is_empty() && local_date_schema.deprecated == Some(true) {
@@ -161,6 +184,16 @@ async fn validate_local_date(
             accessors,
             local_date_value,
             lint_rules.as_ref().map(|rules| &rules.common),
+        );
+    } else if lint_rules
+        .and_then(|rules| rules.common.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            local_date_value.comment_directives(),
+            "deprecated",
         );
     }
 
