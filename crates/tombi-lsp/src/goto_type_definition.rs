@@ -12,7 +12,7 @@ use itertools::Itertools;
 use tombi_schema_store::{CurrentSchema, SchemaUri};
 use tower_lsp::lsp_types::GotoDefinitionResponse;
 
-use crate::{goto_definition::open_remote_file, Backend};
+use crate::{Backend, goto_definition::open_remote_file};
 
 pub async fn get_type_definition(
     document_tree: &tombi_document_tree::DocumentTree,

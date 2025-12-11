@@ -2,7 +2,7 @@ use itertools::Itertools;
 use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
-use crate::{support, AstNode, TombiValueCommentDirective};
+use crate::{AstNode, TombiValueCommentDirective, support};
 
 impl crate::InlineTable {
     #[inline]

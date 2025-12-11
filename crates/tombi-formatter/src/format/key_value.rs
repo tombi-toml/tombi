@@ -3,7 +3,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 
-use crate::{types::WithAlignmentHint, Format};
+use crate::{Format, types::WithAlignmentHint};
 
 impl Format for tombi_ast::KeyValue {
     #[inline]
@@ -48,7 +48,7 @@ impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_format, Formatter};
+    use crate::{Formatter, test_format};
 
     test_format! {
         #[tokio::test]

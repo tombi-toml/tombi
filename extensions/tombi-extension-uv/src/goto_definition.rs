@@ -1,13 +1,13 @@
 use itertools::Itertools;
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_accessors, dig_keys, Value};
-use tombi_schema_store::{matches_accessors, Accessor};
+use tombi_document_tree::{Value, dig_accessors, dig_keys};
+use tombi_schema_store::{Accessor, matches_accessors};
 
 use crate::{
-    collect_dependency_requirements_from_document_tree, find_member_project_toml,
-    find_workspace_pyproject_toml, get_project_name, goto_definition_for_member_pyproject_toml,
-    goto_definition_for_workspace_pyproject_toml, load_pyproject_toml_document_tree,
-    parse_requirement, DependencyRequirement,
+    DependencyRequirement, collect_dependency_requirements_from_document_tree,
+    find_member_project_toml, find_workspace_pyproject_toml, get_project_name,
+    goto_definition_for_member_pyproject_toml, goto_definition_for_workspace_pyproject_toml,
+    load_pyproject_toml_document_tree, parse_requirement,
 };
 
 pub async fn goto_definition(

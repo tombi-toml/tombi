@@ -4,8 +4,8 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 
 use crate::{
-    types::{AlignmentWidth, WithAlignmentHint},
     Format,
+    types::{AlignmentWidth, WithAlignmentHint},
 };
 
 impl Format for WithAlignmentHint<'_, tombi_ast::Keys> {

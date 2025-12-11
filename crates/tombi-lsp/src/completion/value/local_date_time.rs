@@ -8,8 +8,8 @@ use tombi_schema_store::{Accessor, CurrentSchema, LocalDateTimeSchema, SchemaUri
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     completion::{
-        comment::get_tombi_comment_directive_content_completion_contents, CompletionContent,
-        CompletionEdit, CompletionHint, FindCompletionContents,
+        CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
+        comment::get_tombi_comment_directive_content_completion_contents,
     },
 };
 

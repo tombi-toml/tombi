@@ -200,10 +200,10 @@ pub fn version_sort(a: &str, b: &str) -> std::cmp::Ordering {
                     continue;
                 }
                 (VersionChunk::Underscore | VersionChunk::Hyphen, _) => {
-                    return std::cmp::Ordering::Less
+                    return std::cmp::Ordering::Less;
                 }
                 (_, VersionChunk::Underscore | VersionChunk::Hyphen) => {
-                    return std::cmp::Ordering::Greater
+                    return std::cmp::Ordering::Greater;
                 }
                 (VersionChunk::Str(ca), VersionChunk::Str(cb))
                 | (VersionChunk::Str(ca), VersionChunk::Number { source: cb, .. })

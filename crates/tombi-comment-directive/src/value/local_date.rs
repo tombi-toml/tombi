@@ -2,11 +2,11 @@ use std::str::FromStr;
 
 use tombi_uri::SchemaUri;
 
+use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
     WithKeyFormatRules, WithKeyTableLintRules,
 };
-use crate::TombiCommentDirectiveImpl;
 
 pub type LocalDateFormatRules = EmptyFormatRules;
 
@@ -24,13 +24,15 @@ pub type TombiKeyLocalDateDirectiveContent =
 
 impl TombiCommentDirectiveImpl for TombiLocalDateDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-local-date-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-local-date-directive.json")
+            .unwrap()
     }
 }
 
 impl TombiCommentDirectiveImpl for TombiKeyLocalDateDirectiveContent {
     fn comment_directive_schema_url() -> SchemaUri {
-        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-local-date-directive.json").unwrap()
+        SchemaUri::from_str("tombi://www.schemastore.tombi/tombi-key-local-date-directive.json")
+            .unwrap()
     }
 }
 

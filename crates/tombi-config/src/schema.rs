@@ -1,7 +1,7 @@
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    BoolDefaultTrue, SchemaCatalogPath, JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL,
+    BoolDefaultTrue, JSON_SCHEMASTORE_CATALOG_URL, SchemaCatalogPath, TOMBI_SCHEMASTORE_CATALOG_URL,
 };
 
 /// # Schema overview options

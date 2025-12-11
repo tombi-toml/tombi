@@ -1,5 +1,5 @@
 use itertools::{Either, Itertools};
-use tombi_ast::{algo::ancestors_at_position, AstNode};
+use tombi_ast::{AstNode, algo::ancestors_at_position};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaContext;
 use tombi_text::IntoLsp;
@@ -8,7 +8,7 @@ use tower_lsp::lsp_types::{HoverParams, TextDocumentPositionParams};
 use crate::{
     backend,
     config_manager::ConfigSchemaStore,
-    hover::{get_document_comment_directive_hover_content, get_hover_content, HoverContent},
+    hover::{HoverContent, get_document_comment_directive_hover_content, get_hover_content},
 };
 
 #[tracing::instrument(level = "debug", skip_all)]

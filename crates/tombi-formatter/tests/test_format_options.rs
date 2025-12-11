@@ -1,9 +1,9 @@
 mod format_options {
     use tombi_config::{
-        format::FormatRules, DateTimeDelimiter, FormatOptions, IndentStyle, LineEnding,
-        StringQuoteStyle,
+        DateTimeDelimiter, FormatOptions, IndentStyle, LineEnding, StringQuoteStyle,
+        format::FormatRules,
     };
-    use tombi_formatter::{test_format, Formatter};
+    use tombi_formatter::{Formatter, test_format};
 
     mod array_bracket_space_width {
         use super::*;

@@ -1,9 +1,9 @@
 use std::num::NonZeroUsize;
 
 use crate::{
-    cow_mut::CowMut,
-    green::{node_cache::NodeCache, GreenElement, GreenNode, SyntaxKind},
     NodeOrToken,
+    cow_mut::CowMut,
+    green::{GreenElement, GreenNode, SyntaxKind, node_cache::NodeCache},
 };
 
 /// A checkpoint for maybe wrapping a node. See `GreenNodeBuilder::checkpoint` for details.

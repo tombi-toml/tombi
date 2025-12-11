@@ -83,7 +83,7 @@ where
                                 Err(diagnostics.into())
                             } else {
                                 Ok(())
-                            }
+                            };
                         }
                         Err(error) => error,
                     }
@@ -113,7 +113,7 @@ where
                             Err(diagnostics.into())
                         } else {
                             Ok(())
-                        }
+                        };
                     }
                     Err(error) => error,
                 },
@@ -135,7 +135,7 @@ where
                                 Err(diagnostics.into())
                             } else {
                                 Ok(())
-                            }
+                            };
                         }
                         Err(error) => error,
                     }
@@ -158,7 +158,7 @@ where
                                 Err(diagnostics.into())
                             } else {
                                 Ok(())
-                            }
+                            };
                         }
                         Err(error) => error,
                     }
@@ -181,7 +181,7 @@ where
                                 Err(diagnostics.into())
                             } else {
                                 Ok(())
-                            }
+                            };
                         }
                         Err(error) => error,
                     }

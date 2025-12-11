@@ -7,9 +7,9 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 use crate::HoverContent;
 
 use super::{
+    GetHoverContent, HoverValueContent,
     constraints::ValueConstraints,
     display_value::{DisplayValue, GetEnumerate},
-    GetHoverContent, HoverValueContent,
 };
 
 pub fn get_one_of_hover_content<'a: 'b, 'b, T>(

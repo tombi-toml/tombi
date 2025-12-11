@@ -374,7 +374,7 @@ fn percent_decode(input: &str) -> String {
 mod test {
     use std::str::FromStr;
 
-    use crate::{schema::referable_schema::resolve_json_pointer, ValueSchema};
+    use crate::{ValueSchema, schema::referable_schema::resolve_json_pointer};
 
     #[test]
     fn test_json_pointer_percent_decode() {

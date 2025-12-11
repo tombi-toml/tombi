@@ -9,9 +9,9 @@ use std::{
 use countme::Count;
 
 use crate::{
+    GreenToken, NodeOrToken,
     arc::{Arc, HeaderSlice, ThinArc},
     green::{GreenElement, GreenElementRef, SyntaxKind},
-    GreenToken, NodeOrToken,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

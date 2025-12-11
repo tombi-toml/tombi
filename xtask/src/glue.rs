@@ -10,7 +10,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 
 pub mod fs2 {
     use std::{fs, path::Path};
@@ -199,9 +199,7 @@ impl Env {
     }
     fn pushenv(&mut self, var: OsString, value: OsString) {
         self.pushenv_stack.push((var.clone(), env::var_os(&var)));
-        unsafe {
-            env::set_var(var, value)
-        }
+        unsafe { env::set_var(var, value) }
     }
     fn popenv(&mut self) {
         let (var, value) = self.pushenv_stack.pop().unwrap();

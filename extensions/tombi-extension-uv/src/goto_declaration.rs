@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use pep508_rs::{Requirement, VerbatimUrl};
 use tombi_config::TomlVersion;
-use tombi_document_tree::{dig_accessors, dig_keys, Value};
+use tombi_document_tree::{Value, dig_accessors, dig_keys};
 use tombi_schema_store::matches_accessors;
 
 use crate::{

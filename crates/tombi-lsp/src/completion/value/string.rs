@@ -6,9 +6,9 @@ use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri, StringSchema};
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
     completion::{
+        CompletionContent, CompletionEdit, CompletionHint, FindCompletionContents,
         comment::get_tombi_comment_directive_content_completion_contents,
-        schema_completion::SchemaCompletion, CompletionContent, CompletionEdit, CompletionHint,
-        FindCompletionContents,
+        schema_completion::SchemaCompletion,
     },
 };
 

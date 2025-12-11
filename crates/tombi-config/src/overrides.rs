@@ -1,4 +1,4 @@
-use crate::{format::FormatRules, lint::LintRules, BoolDefaultTrue};
+use crate::{BoolDefaultTrue, format::FormatRules, lint::LintRules};
 
 /// # Override config item
 #[derive(Debug, Clone, PartialEq)]

@@ -1,8 +1,8 @@
 use tower_lsp::lsp_types::InsertTextFormat;
 
 use crate::{
-    completion::completion_hint::{AddLeadingComma, AddTrailingComma},
     TextEdit,
+    completion::completion_hint::{AddLeadingComma, AddTrailingComma},
 };
 
 use super::CompletionHint;

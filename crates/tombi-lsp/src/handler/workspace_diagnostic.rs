@@ -4,7 +4,7 @@ use tombi_glob::search_pattern_matched_paths;
 use crate::{
     backend::Backend,
     diagnostic::{
-        get_diagnostics_result, get_workspace_configs, DiagnosticsResult, WorkspaceConfig,
+        DiagnosticsResult, WorkspaceConfig, get_diagnostics_result, get_workspace_configs,
     },
     document::DocumentSource,
 };

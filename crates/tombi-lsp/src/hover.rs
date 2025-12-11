@@ -13,7 +13,7 @@ use constraints::ValueConstraints;
 
 use tombi_extension::get_tombi_github_uri;
 use tombi_schema_store::{
-    get_schema_name, Accessor, Accessors, CurrentSchema, SchemaUri, ValueType,
+    Accessor, Accessors, CurrentSchema, SchemaUri, ValueType, get_schema_name,
 };
 use tombi_text::{FromLsp, IntoLsp};
 

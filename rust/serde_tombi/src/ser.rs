@@ -802,7 +802,7 @@ mod tests {
 
     use super::*;
     use chrono::{DateTime, TimeZone, Utc};
-    use indexmap::{indexmap, IndexMap};
+    use indexmap::{IndexMap, indexmap};
     use serde::Serialize;
     use tombi_test_lib::toml_text_assert_eq;
 

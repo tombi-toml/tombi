@@ -4,7 +4,7 @@ use std::fmt::Write;
 use tombi_ast::AstNode;
 
 use super::LiteralNode;
-use crate::{format::write_trailing_comment_alignment_space, types::WithAlignmentHint, Format};
+use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 macro_rules! impl_date_time_format {
     (impl Format for $type:ty;) => {
@@ -69,7 +69,7 @@ impl LiteralNode for tombi_ast::LocalTime {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_format, Formatter};
+    use crate::{Formatter, test_format};
 
     test_format! {
         #[tokio::test]

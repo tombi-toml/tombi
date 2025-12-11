@@ -2,9 +2,9 @@ use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
+    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
     support::integer::{try_from_binary, try_from_decimal, try_from_hexadecimal, try_from_octal},
     value::collect_comment_directives_and_errors,
-    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

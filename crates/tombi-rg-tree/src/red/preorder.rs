@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{cursor, language::Language, RedElement, RedNode, WalkEvent};
+use crate::{RedElement, RedNode, WalkEvent, cursor, language::Language};
 
 pub struct Preorder<L: Language> {
     raw: cursor::Preorder,

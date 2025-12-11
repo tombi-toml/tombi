@@ -3,7 +3,7 @@ use tombi_extension::get_tombi_github_uri;
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{DocumentLink, DocumentLinkParams};
 
-use crate::{config_manager::ConfigSchemaStore, Backend};
+use crate::{Backend, config_manager::ConfigSchemaStore};
 
 pub async fn handle_document_link(
     backend: &Backend,

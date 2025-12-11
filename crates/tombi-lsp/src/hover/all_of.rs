@@ -3,10 +3,10 @@ use std::borrow::Cow;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
-use crate::{hover::display_value::GetEnumerate, HoverContent};
+use crate::{HoverContent, hover::display_value::GetEnumerate};
 
 use super::{
-    constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverValueContent,
+    GetHoverContent, HoverValueContent, constraints::ValueConstraints, display_value::DisplayValue,
 };
 
 pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
@@ -94,10 +94,10 @@ where
                         }
                     }
                     HoverContent::Directive(hover_content) => {
-                        return Some(HoverContent::Directive(hover_content))
+                        return Some(HoverContent::Directive(hover_content));
                     }
                     HoverContent::DirectiveContent(hover_content) => {
-                        return Some(HoverContent::DirectiveContent(hover_content))
+                        return Some(HoverContent::DirectiveContent(hover_content));
                     }
                 }
             }

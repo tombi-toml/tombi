@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{cursor, language::Language, NodeOrToken, RedElement};
+use crate::{NodeOrToken, RedElement, cursor, language::Language};
 
 #[derive(Debug, Clone)]
 pub struct RedElementChildren<L: Language> {

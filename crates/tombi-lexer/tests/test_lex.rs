@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_lexer::{tokenize, ErrorKind::*, Token};
+use tombi_lexer::{ErrorKind::*, Token, tokenize};
 use tombi_syntax::SyntaxKind::*;
 
 macro_rules! test_lex_tokens {

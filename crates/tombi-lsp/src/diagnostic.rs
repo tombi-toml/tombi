@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::Config;
-use tombi_glob::{matches_file_patterns, MatchResult};
+use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_text::IntoLsp;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};

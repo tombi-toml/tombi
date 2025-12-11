@@ -2,7 +2,7 @@ use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    support, ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable, TombiValueCommentDirective,
+    ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable, TombiValueCommentDirective, support,
 };
 
 impl crate::ArrayOfTable {

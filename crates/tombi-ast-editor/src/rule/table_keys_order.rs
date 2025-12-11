@@ -447,7 +447,7 @@ async fn sort_table_targets<T>(
                 *order,
                 table_schema,
             )
-            .await
+            .await;
         }
         (Some(XTombiTableKeysOrder::Groups(groups)), Some(table_schema)) => {
             let mut sorted_targets = Vec::with_capacity(sort_targets_map.len());

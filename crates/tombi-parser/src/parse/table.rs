@@ -1,13 +1,13 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
 use crate::{
+    ErrorKind::*,
     parse::{
-        begin_dangling_comments, end_dangling_comments, invalid_line, leading_comments,
-        peek_leading_comments, trailing_comment, Parse, TS_LINE_END,
+        Parse, TS_LINE_END, begin_dangling_comments, end_dangling_comments, invalid_line,
+        leading_comments, peek_leading_comments, trailing_comment,
     },
     parser::Parser,
     token_set::TS_NEXT_SECTION,
-    ErrorKind::*,
 };
 
 impl Parse for tombi_ast::Table {
@@ -63,7 +63,7 @@ impl Parse for tombi_ast::Table {
 
 #[cfg(test)]
 mod test {
-    use crate::{test_parser, ErrorKind::*};
+    use crate::{ErrorKind::*, test_parser};
 
     test_parser! {
         #[test]

@@ -1,6 +1,6 @@
 //! See [`LineIndex`].
 
-use crate::{features::lsp::EncodingKind, Offset, Span};
+use crate::{Offset, Span, features::lsp::EncodingKind};
 
 /// Indexes the start and end offsets of each line in a piece of text.
 #[derive(Debug, Clone, PartialEq, Eq)]

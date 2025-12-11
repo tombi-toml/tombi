@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use nu_ansi_term::Style;
 use tombi_diagnostic::{
-    printer::{Pretty, Simple},
     Level, Print,
+    printer::{Pretty, Simple},
 };
 
 #[derive(thiserror::Error, Debug)]

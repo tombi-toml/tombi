@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use ahash::AHashMap;
 pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
-use tombi_ast::{algo::ancestors_at_position, AstNode, AstToken};
+use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::{

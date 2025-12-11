@@ -1,8 +1,8 @@
 use crate::{
+    Backend,
     code_action::{dot_keys_to_inline_table_code_action, inline_table_to_dot_keys_code_action},
     completion::get_completion_keys_with_context,
     config_manager::ConfigSchemaStore,
-    Backend,
 };
 use tombi_document_tree::get_accessors;
 use tombi_schema_store::build_accessor_contexts;

@@ -2,8 +2,8 @@ mod command;
 mod tracing_formatter;
 
 use clap::{
-    builder::styling::{AnsiColor, Color, Style},
     Parser,
+    builder::styling::{AnsiColor, Color, Style},
 };
 use tracing_formatter::TombiFormatter;
 use tracing_subscriber::prelude::*;

@@ -4,7 +4,7 @@ use tombi_ast::AstNode;
 use tombi_document_tree::TryIntoDocumentTree;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 
-use crate::{change::Change, Edit};
+use crate::{Edit, change::Change};
 
 pub struct Editor<'a> {
     root: tombi_ast::Root,

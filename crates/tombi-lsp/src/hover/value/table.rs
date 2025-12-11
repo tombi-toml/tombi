@@ -9,16 +9,16 @@ use tombi_schema_store::{
 };
 
 use crate::{
+    HoverContent,
     comment_directive::get_table_comment_directive_content_with_schema_uri,
     hover::{
+        GetHoverContent, HoverValueContent,
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{build_enumerate_values, ValueConstraints},
+        constraints::{ValueConstraints, build_enumerate_values},
         one_of::get_one_of_hover_content,
-        GetHoverContent, HoverValueContent,
     },
-    HoverContent,
 };
 
 impl GetHoverContent for tombi_document_tree::Table {

@@ -1,7 +1,7 @@
 use tombi_ast::AstNode;
 use tombi_config::{
-    Config, ConfigLevel, TomlVersion, CONFIG_TOML_FILENAME, PYPROJECT_TOML_FILENAME,
-    TOMBI_CONFIG_TOML_VERSION, TOMBI_TOML_FILENAME,
+    CONFIG_TOML_FILENAME, Config, ConfigLevel, PYPROJECT_TOML_FILENAME, TOMBI_CONFIG_TOML_VERSION,
+    TOMBI_TOML_FILENAME, TomlVersion,
 };
 
 /// Parse the TOML text into a `Config` struct.
@@ -151,7 +151,7 @@ pub fn load_with_path_and_level(
 
                 match try_from_path(&pyproject_toml_path)? {
                     Some(config) => {
-                        return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project))
+                        return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
                     }
                     None => {
                         tracing::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);

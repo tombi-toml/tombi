@@ -13,7 +13,7 @@ use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
-use crate::{schema::not_schema::NotSchema, Accessor, Referable, SchemaProperties, SchemaStore};
+use crate::{Accessor, Referable, SchemaProperties, SchemaStore, schema::not_schema::NotSchema};
 
 use tombi_json::StringNode;
 

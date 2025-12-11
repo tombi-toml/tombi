@@ -29,12 +29,12 @@ pub trait Edit {
 fn edit_recursive<'a: 'b, 'b>(
     node: &'a tombi_document_tree::Value,
     edit_fn: impl FnOnce(
-            &'a tombi_document_tree::Value,
-            Arc<[Accessor]>,
-            Option<tombi_schema_store::CurrentSchema<'a>>,
-        ) -> BoxFuture<'b, Vec<crate::Change>>
-        + std::marker::Send
-        + 'b,
+        &'a tombi_document_tree::Value,
+        Arc<[Accessor]>,
+        Option<tombi_schema_store::CurrentSchema<'a>>,
+    ) -> BoxFuture<'b, Vec<crate::Change>>
+    + std::marker::Send
+    + 'b,
     key_accessors: &'a [Accessor],
     accessors: Arc<[Accessor]>,
     current_schema: Option<tombi_schema_store::CurrentSchema<'a>>,

@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
+use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WithCommonFormatRules,
     WithCommonLintRules, WithKeyFormatRules, WithKeyTableLintRules,
 };
-use crate::TombiCommentDirectiveImpl;
 use tombi_uri::SchemaUri;
 
 pub type ArrayCommonFormatRules = WithCommonFormatRules<ArrayFormatRules>;

@@ -1,6 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{features::lsp::EncodingKind, IntoLsp};
+use crate::{IntoLsp, features::lsp::EncodingKind};
 
 pub trait FromLsp<Input> {
     fn from_lsp(source: Input, line_index: &crate::LineIndex) -> Self;
@@ -99,7 +99,7 @@ fn take_column_text(line_text: &str, target_units: u32, encoding: EncodingKind) 
 #[cfg(test)]
 mod tests {
     use super::FromLsp;
-    use crate::{features::lsp::EncodingKind, LineIndex, Position};
+    use crate::{LineIndex, Position, features::lsp::EncodingKind};
 
     #[test]
     fn converts_utf16_column_to_graphemes() {

@@ -1,10 +1,10 @@
 use tombi_text::IntoLsp;
-use tower_lsp::lsp_types::request::GotoDeclarationParams;
 use tower_lsp::lsp_types::TextDocumentPositionParams;
+use tower_lsp::lsp_types::request::GotoDeclarationParams;
 
+use crate::Backend;
 use crate::config_manager::ConfigSchemaStore;
 use crate::handler::hover::get_hover_keys_with_range;
-use crate::Backend;
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_goto_declaration(

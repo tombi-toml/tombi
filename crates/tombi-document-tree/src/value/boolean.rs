@@ -2,8 +2,8 @@ use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    value::collect_comment_directives_and_errors, DocumentTreeAndErrors, IntoDocumentTreeAndErrors,
-    ValueImpl, ValueType,
+    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
+    value::collect_comment_directives_and_errors,
 };
 
 #[derive(Debug, Clone, PartialEq)]

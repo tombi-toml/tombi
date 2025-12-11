@@ -6,10 +6,6 @@ use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_config::{Config, TomlVersion};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
-    request::{
-        GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
-        GotoTypeDefinitionResponse,
-    },
     CodeActionParams, CodeActionResponse, CompletionParams, CompletionResponse,
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
@@ -18,6 +14,10 @@ use tower_lsp::lsp_types::{
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, InitializeParams,
     InitializeResult, InitializedParams, SemanticTokensParams, SemanticTokensResult,
     TextDocumentIdentifier, Url,
+    request::{
+        GotoDeclarationParams, GotoDeclarationResponse, GotoTypeDefinitionParams,
+        GotoTypeDefinitionResponse,
+    },
 };
 
 use crate::{
@@ -26,15 +26,15 @@ use crate::{
     goto_definition::into_definition_locations,
     goto_type_definition::into_type_definition_locations,
     handler::{
-        handle_associate_schema, handle_code_action, handle_completion, handle_diagnostic,
-        handle_did_change, handle_did_change_configuration, handle_did_change_watched_files,
-        handle_did_close, handle_did_open, handle_did_save, handle_document_link,
-        handle_document_symbol, handle_folding_range, handle_formatting, handle_get_status,
-        handle_get_toml_version, handle_goto_declaration, handle_goto_definition,
-        handle_goto_type_definition, handle_hover, handle_initialize, handle_initialized,
-        handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown, handle_update_config,
-        handle_update_schema, push_diagnostics, AssociateSchemaParams, GetStatusResponse,
-        GetTomlVersionResponse, RefreshCacheParams, TomlVersionSource,
+        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams,
+        TomlVersionSource, handle_associate_schema, handle_code_action, handle_completion,
+        handle_diagnostic, handle_did_change, handle_did_change_configuration,
+        handle_did_change_watched_files, handle_did_close, handle_did_open, handle_did_save,
+        handle_document_link, handle_document_symbol, handle_folding_range, handle_formatting,
+        handle_get_status, handle_get_toml_version, handle_goto_declaration,
+        handle_goto_definition, handle_goto_type_definition, handle_hover, handle_initialize,
+        handle_initialized, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
+        handle_update_config, handle_update_schema, push_diagnostics,
     },
 };
 

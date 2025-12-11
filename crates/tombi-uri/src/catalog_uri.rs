@@ -47,7 +47,7 @@ impl From<url::Url> for CatalogUri {
 
 impl From<CatalogUri> for url::Url {
     fn from(uri: CatalogUri) -> Self {
-        uri.0 .0
+        uri.0.0
     }
 }
 

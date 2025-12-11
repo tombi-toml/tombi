@@ -4,10 +4,9 @@ use itertools::Itertools;
 
 use super::{RedElement, RedToken};
 use crate::{
-    cursor,
+    Direction, Language, NodeOrToken, SyntaxText, TokenAtOffset, WalkEvent, cursor,
     green::{GreenNode, GreenNodeData},
     red::{Preorder, RedElementChildren, RedNodeChildren, RedPreorderWithTokens},
-    Direction, Language, NodeOrToken, SyntaxText, TokenAtOffset, WalkEvent,
 };
 
 #[derive(Clone, PartialEq, Eq, Hash)]

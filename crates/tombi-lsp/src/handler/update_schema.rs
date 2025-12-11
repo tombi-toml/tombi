@@ -1,6 +1,6 @@
 use tombi_schema_store::SchemaUri;
 use tower_lsp::lsp_types::{
-    notification::ShowMessage, MessageType, ShowMessageParams, TextDocumentIdentifier,
+    MessageType, ShowMessageParams, TextDocumentIdentifier, notification::ShowMessage,
 };
 
 use crate::backend::Backend;

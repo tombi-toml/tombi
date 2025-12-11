@@ -1,20 +1,20 @@
 use tombi_comment_directive::{
-    document::TombiDocumentDirectiveContent, TombiCommentDirectiveImpl,
-    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+    TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
+    document::TombiDocumentDirectiveContent,
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_uri::SchemaUri;
 
 use crate::{
+    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
+    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
     comment_directive::{
         CommentDirectiveContext, GetCommentDirectiveContext, VALUE_TOMBI_DIRECTIVE_DESCRIPTION,
         VALUE_TOMBI_DIRECTIVE_TITLE,
     },
     handler::get_hover_keys_with_range,
-    hover::{get_hover_content, HoverContent, HoverDirectiveContent},
-    DOCUMENT_SCHEMA_DIRECTIVE_DESCRIPTION, DOCUMENT_SCHEMA_DIRECTIVE_TITLE,
-    DOCUMENT_TOMBI_DIRECTIVE_DESCRIPTION, DOCUMENT_TOMBI_DIRECTIVE_TITLE,
+    hover::{HoverContent, HoverDirectiveContent, get_hover_content},
 };
 
 pub async fn get_document_comment_directive_hover_content(
@@ -40,7 +40,7 @@ pub async fn get_document_comment_directive_hover_content(
                     description: "The URL/Path of the schema that applies to this document."
                         .to_string(),
                     range: content_range,
-                }))
+                }));
             }
         }
     }

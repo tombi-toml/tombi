@@ -2,12 +2,12 @@ use tombi_config::TomlVersion;
 use tombi_syntax::{SyntaxKind::*, T};
 
 use crate::{
+    ErrorKind::*,
     parse::{
-        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
-        trailing_comment, Parse,
+        Parse, begin_dangling_comments, end_dangling_comments, leading_comments,
+        peek_leading_comments, trailing_comment,
     },
     parser::Parser,
-    ErrorKind::*,
 };
 
 impl Parse for tombi_ast::InlineTable {
@@ -88,7 +88,7 @@ impl Parse for tombi_ast::InlineTable {
 mod test {
     use tombi_config::TomlVersion;
 
-    use crate::{test_parser, ErrorKind::*};
+    use crate::{ErrorKind::*, test_parser};
 
     test_parser! {
         #[test]

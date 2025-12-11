@@ -1,5 +1,5 @@
 mod table_keys_order {
-    use tombi_formatter::{test_format, Formatter};
+    use tombi_formatter::{Formatter, test_format};
 
     mod pyproject {
         use super::*;

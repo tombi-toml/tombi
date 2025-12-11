@@ -7,11 +7,11 @@ use tombi_json::StringNode;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
-    referable_schema::CurrentSchema, AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema,
-    FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema, LocalDateTimeSchema,
-    LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri, StringSchema, TableSchema,
+    AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema, FindSchemaCandidates, FloatSchema,
+    IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
+    OneOfSchema, SchemaUri, StringSchema, TableSchema, referable_schema::CurrentSchema,
 };
-use crate::{schema::not_schema::NotSchema, Accessor, Referable, SchemaDefinitions, SchemaStore};
+use crate::{Accessor, Referable, SchemaDefinitions, SchemaStore, schema::not_schema::NotSchema};
 
 #[derive(Debug, Clone)]
 pub enum ValueSchema {
@@ -38,7 +38,7 @@ impl ValueSchema {
     ) -> Option<Self> {
         match object.get("type") {
             Some(tombi_json::ValueNode::String(type_str)) => {
-                return Self::new_single(type_str.value.as_str(), object, string_formats)
+                return Self::new_single(type_str.value.as_str(), object, string_formats);
             }
             Some(tombi_json::ValueNode::Array(types)) => {
                 let schemas = types
@@ -102,7 +102,7 @@ impl ValueSchema {
                         "date-time" => {
                             return Some(ValueSchema::OffsetDateTime(OffsetDateTimeSchema::new(
                                 object,
-                            )))
+                            )));
                         }
                         "date-time-local" | "partial-date-time" => {
                             // NOTE: It's defined in OpenAPI.
@@ -113,7 +113,7 @@ impl ValueSchema {
                             )));
                         }
                         "date" => {
-                            return Some(ValueSchema::LocalDate(LocalDateSchema::new(object)))
+                            return Some(ValueSchema::LocalDate(LocalDateSchema::new(object)));
                         }
                         "time-local" | "partial-time" => {
                             // NOTE: It's defined in OpenAPI.
@@ -277,11 +277,7 @@ impl ValueSchema {
                             has_deprecated = true;
                         }
                     }
-                    if has_deprecated {
-                        Some(true)
-                    } else {
-                        None
-                    }
+                    if has_deprecated { Some(true) } else { None }
                 }
             }
         }

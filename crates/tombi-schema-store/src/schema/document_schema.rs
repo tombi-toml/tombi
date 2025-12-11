@@ -7,7 +7,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION};
 
 use super::{
-    referable_schema::Referable, FindSchemaCandidates, SchemaDefinitions, SchemaUri, ValueSchema,
+    FindSchemaCandidates, SchemaDefinitions, SchemaUri, ValueSchema, referable_schema::Referable,
 };
 use crate::{Accessor, SchemaStore};
 

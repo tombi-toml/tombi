@@ -26,10 +26,10 @@ pub fn invalid_line(p: &mut Parser<'_>, kind: crate::ErrorKind) {
 
 mod support {
     use crate::{
+        SyntaxKind::*,
         token_set::{
             TS_DANGLING_COMMENTS_KINDS, TS_LEADING_COMMENTS_KINDS, TS_TAILING_COMMENT_KINDS,
         },
-        SyntaxKind::*,
     };
 
     pub fn begin_dangling_comments(p: &mut crate::parser::Parser<'_>) {

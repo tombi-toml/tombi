@@ -1,7 +1,7 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{leading_comments, trailing_comment, Parse, TS_LINE_END};
-use crate::{parser::Parser, ErrorKind::*};
+use super::{Parse, TS_LINE_END, leading_comments, trailing_comment};
+use crate::{ErrorKind::*, parser::Parser};
 
 impl Parse for tombi_ast::KeyValue {
     fn parse(p: &mut Parser) {
@@ -33,7 +33,7 @@ impl Parse for tombi_ast::KeyValue {
 
 #[cfg(test)]
 mod test {
-    use crate::{test_parser, ErrorKind::*};
+    use crate::{ErrorKind::*, test_parser};
 
     test_parser! {
         #[test]

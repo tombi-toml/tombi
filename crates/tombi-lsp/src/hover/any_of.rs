@@ -4,10 +4,10 @@ use tombi_diagnostic::Diagnostic;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaContext, SchemaUri};
 
-use crate::{hover::display_value::GetEnumerate, HoverContent};
+use crate::{HoverContent, hover::display_value::GetEnumerate};
 
 use super::{
-    constraints::ValueConstraints, display_value::DisplayValue, GetHoverContent, HoverValueContent,
+    GetHoverContent, HoverValueContent, constraints::ValueConstraints, display_value::DisplayValue,
 };
 
 pub fn get_any_of_hover_content<'a: 'b, 'b, T>(

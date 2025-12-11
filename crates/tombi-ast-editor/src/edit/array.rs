@@ -151,12 +151,12 @@ impl crate::Edit for tombi_ast::Array {
 fn edit_item<'a: 'b, 'b>(
     node: &'a tombi_document_tree::Array,
     edit_fn: impl FnOnce(
-            &'a tombi_document_tree::Array,
-            Arc<[Accessor]>,
-            Option<tombi_schema_store::CurrentSchema<'a>>,
-        ) -> BoxFuture<'b, Vec<crate::Change>>
-        + std::marker::Send
-        + 'b,
+        &'a tombi_document_tree::Array,
+        Arc<[Accessor]>,
+        Option<tombi_schema_store::CurrentSchema<'a>>,
+    ) -> BoxFuture<'b, Vec<crate::Change>>
+    + std::marker::Send
+    + 'b,
     accessors: Arc<[Accessor]>,
     current_schema: Option<tombi_schema_store::CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
