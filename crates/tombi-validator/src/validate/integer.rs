@@ -6,7 +6,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{push_deprecated_value, type_mismatch},
+    validate::{push_deprecated_value, type_mismatch, unused_lint_disabled},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -57,6 +57,7 @@ impl Validate for tombi_document_tree::Integer {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -68,6 +69,7 @@ impl Validate for tombi_document_tree::Integer {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -79,6 +81,7 @@ impl Validate for tombi_document_tree::Integer {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -123,7 +126,9 @@ async fn validate_integer_schema(
     let value = integer_value.value();
     let range = integer_value.range();
 
-    if let Some(const_value) = &integer_schema.const_value {
+    if let Some(const_value) = &integer_schema.const_value
+        && value != *const_value
+    {
         let level = lint_rules
             .map(|rules| &rules.common)
             .and_then(|rules| {
@@ -134,19 +139,29 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if value != *const_value {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Const {
-                    expected: const_value.to_string(),
-                    actual: value.to_string(),
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Const {
+                expected: const_value.to_string(),
+                actual: value.to_string(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.common.const_value.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "const-value",
+        );
     }
 
-    if let Some(enumerate) = &integer_schema.enumerate {
+    if let Some(enumerate) = &integer_schema.enumerate
+        && !enumerate.contains(&value)
+    {
         let level = lint_rules
             .map(|rules| &rules.common)
             .and_then(|rules| {
@@ -157,19 +172,29 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if !enumerate.contains(&value) {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Enumerate {
-                    expected: enumerate.iter().map(ToString::to_string).collect(),
-                    actual: value.to_string(),
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Enumerate {
+                expected: enumerate.iter().map(ToString::to_string).collect(),
+                actual: value.to_string(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.common.enumerate.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "enumerate",
+        );
     }
 
-    if let Some(maximum) = &integer_schema.maximum {
+    if let Some(maximum) = &integer_schema.maximum
+        && value > *maximum
+    {
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -180,19 +205,29 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if value > *maximum {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::IntegerMaximum {
-                    maximum: *maximum,
-                    actual: value,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::IntegerMaximum {
+                maximum: *maximum,
+                actual: value,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.integer_maximum.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "integer-maximum",
+        );
     }
 
-    if let Some(minimum) = &integer_schema.minimum {
+    if let Some(minimum) = &integer_schema.minimum
+        && value < *minimum
+    {
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -203,19 +238,29 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if value < *minimum {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::IntegerMinimum {
-                    minimum: *minimum,
-                    actual: value,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::IntegerMinimum {
+                minimum: *minimum,
+                actual: value,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.integer_minimum.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "integer-minimum",
+        );
     }
 
-    if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum {
+    if let Some(exclusive_maximum) = &integer_schema.exclusive_maximum
+        && value >= *exclusive_maximum
+    {
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -226,19 +271,29 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if value >= *exclusive_maximum {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMaximum {
-                    maximum: *exclusive_maximum - 1,
-                    actual: value,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMaximum {
+                maximum: *exclusive_maximum - 1,
+                actual: value,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.integer_exclusive_maximum.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "integer-exclusive-maximum",
+        );
     }
 
-    if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum {
+    if let Some(exclusive_minimum) = &integer_schema.exclusive_minimum
+        && value <= *exclusive_minimum
+    {
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -249,19 +304,29 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if value <= *exclusive_minimum {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMinimum {
-                    minimum: *exclusive_minimum + 1,
-                    actual: value,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::IntegerExclusiveMinimum {
+                minimum: *exclusive_minimum + 1,
+                actual: value,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.integer_exclusive_minimum.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "integer-exclusive-minimum",
+        );
     }
 
-    if let Some(multiple_of) = &integer_schema.multiple_of {
+    if let Some(multiple_of) = &integer_schema.multiple_of
+        && value % *multiple_of != 0
+    {
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -272,16 +337,24 @@ async fn validate_integer_schema(
             })
             .unwrap_or_default();
 
-        if value % *multiple_of != 0 {
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::IntegerMultipleOf {
-                    multiple_of: *multiple_of,
-                    actual: value,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::IntegerMultipleOf {
+                multiple_of: *multiple_of,
+                actual: value,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.integer_multiple_of.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "integer-multiple-of",
+        );
     }
 
     if diagnostics.is_empty() && integer_schema.deprecated == Some(true) {
@@ -290,6 +363,16 @@ async fn validate_integer_schema(
             accessors,
             integer_value,
             lint_rules.as_ref().map(|rules| &rules.common),
+        );
+    } else if lint_rules
+        .and_then(|rules| rules.common.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            "deprecated",
         );
     }
 

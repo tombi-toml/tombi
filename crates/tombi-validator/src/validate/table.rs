@@ -15,7 +15,10 @@ use crate::{
         get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
-    validate::{not_schema::validate_not, push_deprecated, push_deprecated_value, type_mismatch},
+    validate::{
+        not_schema::validate_not, push_deprecated, push_deprecated_value, type_mismatch,
+        unused_lint_disabled,
+    },
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -74,6 +77,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -85,6 +89,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -96,6 +101,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -136,7 +142,7 @@ async fn validate_table(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-    lint_rules: Option<&TableCommonLintRules>,
+    table_rules: Option<&TableCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
@@ -267,6 +273,16 @@ async fn validate_table(
                     range: key.range(),
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
+            } else if key_rules
+                .and_then(|rules| rules.key_pattern.as_ref())
+                .and_then(|rules| rules.disabled)
+                == Some(true)
+            {
+                unused_lint_disabled(
+                    &mut total_diagnostics,
+                    table_value.comment_directives(),
+                    "key-pattern",
+                );
             }
         }
 
@@ -289,7 +305,7 @@ async fn validate_table(
                             &mut total_diagnostics,
                             &new_accessors,
                             value,
-                            lint_rules.as_ref().map(|rules| &rules.common),
+                            table_rules.as_ref().map(|rules| &rules.common),
                         );
                     }
 
@@ -332,6 +348,17 @@ async fn validate_table(
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
                 continue;
+            } else if schema_context.strict()
+                && key_rules
+                    .and_then(|rules| rules.key_not_allowed.as_ref())
+                    .and_then(|rules| rules.disabled)
+                    == Some(true)
+            {
+                unused_lint_disabled(
+                    &mut total_diagnostics,
+                    table_value.comment_directives(),
+                    "key-not-allowed",
+                );
             }
         }
     }
@@ -341,7 +368,7 @@ async fn validate_table(
 
         for required_key in required {
             if !keys.contains(&required_key) {
-                let level = lint_rules
+                let level = table_rules
                     .map(|rules| &rules.value)
                     .and_then(|rules| {
                         rules
@@ -359,55 +386,89 @@ async fn validate_table(
                 }
                 .push_diagnostic_with_level(level, &mut total_diagnostics);
             } else {
+                if table_rules
+                    .map(|rules| &rules.value)
+                    .and_then(|rules| rules.table_key_required.as_ref())
+                    .and_then(|rules| rules.disabled)
+                    == Some(true)
+                {
+                    unused_lint_disabled(
+                        &mut total_diagnostics,
+                        table_value.comment_directives(),
+                        "table-key-required",
+                    );
+                }
                 total_score += REQUIRED_KEY_SCORE;
             }
         }
     }
 
-    if let Some(max_properties) = table_schema.max_properties {
-        if table_value.keys().count() > max_properties {
-            let level = lint_rules
-                .map(|rules| &rules.value)
-                .and_then(|rules| {
-                    rules
-                        .table_max_keys
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(max_properties) = table_schema.max_properties
+        && table_value.keys().count() > max_properties
+    {
+        let level = table_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .table_max_keys
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::TableMaxKeys {
-                    max_keys: max_properties,
-                    actual: table_value.keys().count(),
-                }),
-                range: table_value.range(),
-            }
-            .push_diagnostic_with_level(level, &mut total_diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::TableMaxKeys {
+                max_keys: max_properties,
+                actual: table_value.keys().count(),
+            }),
+            range: table_value.range(),
         }
+        .push_diagnostic_with_level(level, &mut total_diagnostics);
+    } else if table_rules
+        .map(|rules| &rules.value)
+        .and_then(|rules| rules.table_max_keys.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut total_diagnostics,
+            table_value.comment_directives(),
+            "table-max-keys",
+        );
     }
 
-    if let Some(min_properties) = table_schema.min_properties {
-        if table_value.keys().count() < min_properties {
-            let level = lint_rules
-                .map(|rules| &rules.value)
-                .and_then(|rules| {
-                    rules
-                        .table_min_keys
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(min_properties) = table_schema.min_properties
+        && table_value.keys().count() < min_properties
+    {
+        let level = table_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .table_min_keys
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::TableMinKeys {
-                    min_keys: min_properties,
-                    actual: table_value.keys().count(),
-                }),
-                range: table_value.range(),
-            }
-            .push_diagnostic_with_level(level, &mut total_diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::TableMinKeys {
+                min_keys: min_properties,
+                actual: table_value.keys().count(),
+            }),
+            range: table_value.range(),
         }
+        .push_diagnostic_with_level(level, &mut total_diagnostics);
+    } else if table_rules
+        .map(|rules| &rules.value)
+        .and_then(|rules| rules.table_min_keys.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut total_diagnostics,
+            table_value.comment_directives(),
+            "table-min-keys",
+        );
     }
 
     if total_diagnostics.is_empty() && table_schema.deprecated == Some(true) {
@@ -415,7 +476,18 @@ async fn validate_table(
             &mut total_diagnostics,
             accessors,
             table_value,
-            lint_rules.as_ref().map(|rules| &rules.common),
+            table_rules.as_ref().map(|rules| &rules.common),
+        );
+    } else if table_rules
+        .map(|rules| &rules.common)
+        .and_then(|rules| rules.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut total_diagnostics,
+            table_value.comment_directives(),
+            "deprecated",
         );
     }
 
@@ -426,7 +498,8 @@ async fn validate_table(
             not_schema,
             current_schema,
             schema_context,
-            lint_rules.as_ref().map(|rules| &rules.common),
+            table_value.comment_directives(),
+            table_rules.as_ref().map(|rules| &rules.common),
         )
         .await
         {

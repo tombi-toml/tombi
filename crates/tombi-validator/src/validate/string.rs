@@ -9,7 +9,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{format, push_deprecated_value, type_mismatch},
+    validate::{format, push_deprecated_value, type_mismatch, unused_lint_disabled},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -45,6 +45,7 @@ impl Validate for tombi_document_tree::String {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -56,6 +57,7 @@ impl Validate for tombi_document_tree::String {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -67,6 +69,7 @@ impl Validate for tombi_document_tree::String {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -111,217 +114,210 @@ async fn validate_string(
     let value = string_value.value().to_string();
     let range = string_value.range();
 
-    if let Some(const_value) = &string_schema.const_value {
-        if value != *const_value {
-            let level = lint_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .const_value
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(const_value) = &string_schema.const_value
+        && value != *const_value
+    {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .const_value
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Const {
-                    expected: format!("\"{const_value}\""),
-                    actual: string_value.to_string(),
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Const {
+                expected: format!("\"{const_value}\""),
+                actual: string_value.to_string(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.common.const_value.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            string_value.comment_directives(),
+            "const-value",
+        );
     }
 
-    if let Some(enumerate) = &string_schema.enumerate {
-        if !enumerate.contains(&value) {
-            let level = lint_rules
-                .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .enumerate
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(enumerate) = &string_schema.enumerate
+        && !enumerate.contains(&value)
+    {
+        let level = lint_rules
+            .map(|rules| &rules.common)
+            .and_then(|rules| {
+                rules
+                    .enumerate
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Enumerate {
-                    expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
-                    actual: string_value.to_string(),
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Enumerate {
+                expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
+                actual: string_value.to_string(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.common.enumerate.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            string_value.comment_directives(),
+            "enumerate",
+        );
     }
 
     let length = UnicodeSegmentation::graphemes(value.as_str(), true).count();
 
-    if let Some(max_length) = &string_schema.max_length {
-        if length > *max_length {
-            let level = lint_rules
-                .map(|rules| &rules.value)
-                .and_then(|rules| {
-                    rules
-                        .string_max_length
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(max_length) = &string_schema.max_length
+        && length > *max_length
+    {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .string_max_length
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::StringMaxLength {
-                    maximum: *max_length,
-                    actual: length,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::StringMaxLength {
+                maximum: *max_length,
+                actual: length,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.string_max_length.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            string_value.comment_directives(),
+            "string-max-length",
+        );
     }
 
-    if let Some(min_length) = &string_schema.min_length {
-        if length < *min_length {
-            let level = lint_rules
-                .map(|rules| &rules.value)
-                .and_then(|rules| {
-                    rules
-                        .string_min_length
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::StringMinLength {
-                    minimum: *min_length,
-                    actual: length,
-                }),
-                range,
-            }
-            .push_diagnostic_with_level(level, &mut diagnostics);
+    if let Some(min_length) = &string_schema.min_length
+        && length < *min_length
+    {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .string_min_length
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::StringMinLength {
+                minimum: *min_length,
+                actual: length,
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.string_min_length.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            string_value.comment_directives(),
+            "string-min-length",
+        );
     }
 
-    if let Some(format) = string_schema.format {
-        match format {
-            StringFormat::Email => {
-                if !format::email::validate_format(&value) {
-                    let level = lint_rules
-                        .map(|rules| &rules.value)
-                        .and_then(|rules| {
-                            rules
-                                .string_format
-                                .as_ref()
-                                .map(SeverityLevelDefaultError::from)
-                        })
-                        .unwrap_or_default();
+    if let Some(format) = string_schema.format
+        && !match format {
+            StringFormat::Email => format::email::validate_format(&value),
+            StringFormat::Hostname => format::hostname::validate_format(&value),
+            StringFormat::Uri => format::uri::validate_format(&value),
+            StringFormat::Uuid => format::uuid::validate_format(&value),
+        }
+    {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .string_format
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::StringFormat {
-                            format,
-                            actual: string_value.to_string(),
-                        }),
-                        range,
-                    }
-                    .push_diagnostic_with_level(level, &mut diagnostics);
-                }
-            }
-            StringFormat::Hostname => {
-                if !format::hostname::validate_format(&value) {
-                    let level = lint_rules
-                        .map(|rules| &rules.value)
-                        .and_then(|rules| {
-                            rules
-                                .string_format
-                                .as_ref()
-                                .map(SeverityLevelDefaultError::from)
-                        })
-                        .unwrap_or_default();
-
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::StringFormat {
-                            format,
-                            actual: string_value.to_string(),
-                        }),
-                        range,
-                    }
-                    .push_diagnostic_with_level(level, &mut diagnostics);
-                }
-            }
-            StringFormat::Uri => {
-                if !format::uri::validate_format(&value) {
-                    let level = lint_rules
-                        .map(|rules| &rules.value)
-                        .and_then(|rules| {
-                            rules
-                                .string_format
-                                .as_ref()
-                                .map(SeverityLevelDefaultError::from)
-                        })
-                        .unwrap_or_default();
-
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::StringFormat {
-                            format,
-                            actual: string_value.to_string(),
-                        }),
-                        range,
-                    }
-                    .push_diagnostic_with_level(level, &mut diagnostics);
-                }
-            }
-            StringFormat::Uuid => {
-                if !format::uuid::validate_format(&value) {
-                    let level = lint_rules
-                        .map(|rules| &rules.value)
-                        .and_then(|rules| {
-                            rules
-                                .string_format
-                                .as_ref()
-                                .map(SeverityLevelDefaultError::from)
-                        })
-                        .unwrap_or_default();
-
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::StringFormat {
-                            format,
-                            actual: string_value.to_string(),
-                        }),
-                        range,
-                    }
-                    .push_diagnostic_with_level(level, &mut diagnostics);
-                }
-            }
-        };
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::StringFormat {
+                format,
+                actual: string_value.to_string(),
+            }),
+            range,
+        }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.string_format.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            string_value.comment_directives(),
+            "string-format",
+        );
     }
 
-    if let Some(pattern) = &string_schema.pattern {
-        if let Ok(regex) = Regex::new(pattern) {
-            if !regex.is_match(&value) {
-                let level = lint_rules
-                    .map(|rules| &rules.value)
-                    .and_then(|rules| {
-                        rules
-                            .string_pattern
-                            .as_ref()
-                            .map(SeverityLevelDefaultError::from)
-                    })
-                    .unwrap_or_default();
+    if let Some(pattern) = &string_schema.pattern
+        && let Ok(regex) = Regex::new(pattern)
+            .inspect_err(|_| tracing::warn!("Invalid regex pattern: {:?}", pattern))
+        && !regex.is_match(&value)
+    {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .string_pattern
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-                crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::StringPattern {
-                        pattern: pattern.clone(),
-                        actual: string_value.to_string(),
-                    }),
-                    range,
-                }
-                .push_diagnostic_with_level(level, &mut diagnostics);
-            }
-        } else {
-            tracing::warn!("Invalid regex pattern: {:?}", pattern);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::StringPattern {
+                pattern: pattern.clone(),
+                actual: string_value.to_string(),
+            }),
+            range,
         }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.string_pattern.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut diagnostics,
+            string_value.comment_directives(),
+            "string-pattern",
+        );
     }
 
     if diagnostics.is_empty() && string_schema.deprecated == Some(true) {

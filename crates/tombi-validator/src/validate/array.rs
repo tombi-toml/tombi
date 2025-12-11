@@ -10,7 +10,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
-    validate::{not_schema::validate_not, push_deprecated, type_mismatch},
+    validate::{not_schema::validate_not, push_deprecated, type_mismatch, unused_lint_disabled},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -68,6 +68,7 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -79,6 +80,7 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -90,6 +92,7 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
+                            self.comment_directives(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -139,6 +142,7 @@ async fn validate_array(
             not_schema,
             current_schema,
             schema_context,
+            array_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         )
         .await?;
@@ -174,53 +178,75 @@ async fn validate_array(
         }
     }
 
-    if let Some(max_items) = array_schema.max_items {
-        if array_value.values().len() > max_items {
-            let level = lint_rules
-                .map(|rules| &rules.value)
-                .and_then(|rules| {
-                    rules
-                        .array_max_values
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(max_items) = array_schema.max_items
+        && array_value.values().len() > max_items
+    {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .array_max_values
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::ArrayMaxValues {
-                    max_values: max_items,
-                    actual: array_value.values().len(),
-                }),
-                range: array_value.range(),
-            }
-            .push_diagnostic_with_level(level, &mut total_diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::ArrayMaxValues {
+                max_values: max_items,
+                actual: array_value.values().len(),
+            }),
+            range: array_value.range(),
         }
+        .push_diagnostic_with_level(level, &mut total_diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.array_max_values.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut total_diagnostics,
+            array_value.comment_directives(),
+            "array-max-values",
+        );
     }
 
-    if let Some(min_items) = array_schema.min_items {
-        if array_value.values().len() < min_items {
-            let level = lint_rules
-                .map(|rules| &rules.value)
-                .and_then(|rules| {
-                    rules
-                        .array_min_values
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
-                .unwrap_or_default();
+    if let Some(min_items) = array_schema.min_items
+        && array_value.values().len() < min_items
+    {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .array_min_values
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
 
-            crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::ArrayMinValues {
-                    min_values: min_items,
-                    actual: array_value.values().len(),
-                }),
-                range: array_value.range(),
-            }
-            .push_diagnostic_with_level(level, &mut total_diagnostics);
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::ArrayMinValues {
+                min_values: min_items,
+                actual: array_value.values().len(),
+            }),
+            range: array_value.range(),
         }
+        .push_diagnostic_with_level(level, &mut total_diagnostics);
+    } else if lint_rules
+        .and_then(|rules| rules.value.array_min_values.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut total_diagnostics,
+            array_value.comment_directives(),
+            "array-min-values",
+        );
     }
 
-    if array_schema.unique_items == Some(true) {
+    if array_schema.unique_items == Some(true)
+        && let Some(duplicated_ranges) = get_duplicated_ranges(array_value)
+    {
         let level = lint_rules
             .map(|rules| &rules.value)
             .and_then(|rules| {
@@ -231,28 +257,23 @@ async fn validate_array(
             })
             .unwrap_or_default();
 
-        let literal_values = array_value
-            .values()
-            .iter()
-            .filter_map(Option::<LiteralValueRef>::from)
-            .counts();
-
-        let duplicated_values = literal_values
-            .iter()
-            .filter_map(|(value, count)| if *count > 1 { Some(value) } else { None })
-            .collect::<AHashSet<_>>();
-
-        for value in array_value.values() {
-            if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
-                if duplicated_values.contains(&literal_value) {
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::ArrayUniqueValues),
-                        range: value.range(),
-                    }
-                    .push_diagnostic_with_level(level, &mut total_diagnostics);
-                }
+        for range in duplicated_ranges {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::ArrayUniqueValues),
+                range,
             }
+            .push_diagnostic_with_level(level, &mut total_diagnostics);
         }
+    } else if lint_rules
+        .and_then(|rules| rules.value.array_unique_values.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_lint_disabled(
+            &mut total_diagnostics,
+            array_value.comment_directives(),
+            "array-unique-values",
+        );
     }
 
     if total_diagnostics.is_empty() && array_schema.deprecated == Some(true) {
@@ -300,5 +321,35 @@ async fn validate_array_without_schema(
         Ok(())
     } else {
         Err(total_diagnostics.into())
+    }
+}
+
+fn get_duplicated_ranges(
+    array_value: &tombi_document_tree::Array,
+) -> Option<Vec<tombi_text::Range>> {
+    let mut duplicated_ranges = vec![];
+    let literal_values = array_value
+        .values()
+        .iter()
+        .filter_map(Option::<LiteralValueRef>::from)
+        .counts();
+
+    let duplicated_values = literal_values
+        .iter()
+        .filter_map(|(value, count)| if *count > 1 { Some(value) } else { None })
+        .collect::<AHashSet<_>>();
+
+    for value in array_value.values() {
+        if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
+            if duplicated_values.contains(&literal_value) {
+                duplicated_ranges.push(value.range());
+            }
+        }
+    }
+
+    if duplicated_ranges.is_empty() {
+        None
+    } else {
+        Some(duplicated_ranges)
     }
 }

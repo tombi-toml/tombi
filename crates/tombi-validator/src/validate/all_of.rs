@@ -15,6 +15,7 @@ pub fn validate_all_of<'a: 'b, 'b, T>(
     all_of_schema: &'a tombi_schema_store::AllOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
 ) -> BoxFuture<'b, Result<(), crate::Error>>
 where
@@ -63,6 +64,7 @@ where
                 not_schema,
                 current_schema,
                 schema_context,
+                comment_directives,
                 common_rules,
             )
             .await

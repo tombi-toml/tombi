@@ -3,7 +3,6 @@ mod any_of;
 mod array;
 mod boolean;
 mod float;
-pub mod format;
 mod integer;
 mod local_date;
 mod local_date_time;
@@ -15,15 +14,25 @@ mod string;
 mod table;
 mod value;
 
+pub mod format {
+    pub mod email;
+    pub mod hostname;
+    pub mod uri;
+    pub mod uuid;
+}
+
 use std::borrow::Cow;
 
 pub use all_of::validate_all_of;
 pub use any_of::validate_any_of;
 use itertools::Itertools;
 pub use one_of::validate_one_of;
+use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
-use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_text::RelativePosition;
 
 pub fn validate<'a: 'b, 'b>(
     tree: tombi_document_tree::DocumentTree,
@@ -144,5 +153,49 @@ fn type_mismatch(
             score: 0,
             diagnostics,
         })
+    }
+}
+
+fn unused_lint_disabled(
+    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    rule_name: &'static str,
+) {
+    let Some(comment_directive) = comment_directives else {
+        return;
+    };
+
+    for tombi_ast::TombiValueCommentDirective {
+        content,
+        content_range,
+        ..
+    } in comment_directive
+    {
+        let Ok(root) =
+            tombi_parser::parse(content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION).try_into_root()
+        else {
+            continue;
+        };
+
+        let Ok(document_tree) = root.try_into_document_tree(TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        else {
+            continue;
+        };
+
+        if let Some((key, value)) =
+            dig_keys(&document_tree, &["lint", "rules", rule_name, "disabled"])
+        {
+            let range = key.range() + value.range();
+            let range = tombi_text::Range::new(
+                content_range.start + RelativePosition::from(range.start),
+                content_range.start + RelativePosition::from(range.end),
+            );
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::UnusedLintDisabled { rule_name }),
+                range,
+            }
+            .push_diagnostic_with_level(SeverityLevel::Warn, &mut diagnostics);
+            return;
+        }
     }
 }

@@ -100,21 +100,6 @@ mod tests {
 
         test_lint! {
             #[test]
-            fn test_array_min_values_with_leading_and_end_dangling_comment_directive(
-                r#"
-                # tombi: lint.rules.array-max-values.disabled = true
-                array = [
-                  1,
-
-                  # tombi: lint.rules.array-min-values.disabled = true
-                ]
-                "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
-        }
-
-        test_lint! {
-            #[test]
             fn test_array_min_values_with_key_leading_and_array_dangling_comment_directive(
                 r#"
                 # tombi: lint.rules.key-empty.disabled = true

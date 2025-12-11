@@ -367,7 +367,7 @@ pub struct WarnRuleOptions {
     ///
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
-    disabled: Option<bool>,
+    pub disabled: Option<bool>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Deserialize)]
@@ -381,7 +381,7 @@ pub struct ErrorRuleOptions {
     ///
     #[cfg_attr(feature = "jsonschema", schemars(default = "crate::default_false"))]
     #[cfg_attr(feature = "jsonschema", schemars(extend("enum" = [true])))]
-    disabled: Option<bool>,
+    pub disabled: Option<bool>,
 }
 
 impl From<&WarnRuleOptions> for SeverityLevelDefaultWarn {
