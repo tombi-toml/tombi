@@ -1,0 +1,43 @@
+name: Release Snap package
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TOMBI_VERSION: ""
+
+jobs:
+  release-snap:
+    name: snapcraft (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64, armhf]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/set-version
+
+      - uses: snapcore/action-build@v1
+        id: build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snap-${{ env.TOMBI_VERSION }}-${{ matrix.arch }}
+          path: ${{ steps.build.outputs.snap }}
+
+      - uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: ${{ github.ref == 'refs/heads/main' && 'edge' || 'stable' }}
