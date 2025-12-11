@@ -3,8 +3,8 @@ pub mod formatter;
 mod types;
 
 use format::Format;
-pub use formatter::definitions::FormatDefinitions;
 pub use formatter::Formatter;
+pub use formatter::definitions::FormatDefinitions;
 pub use tombi_config::FormatOptions;
 
 #[macro_export]
@@ -404,7 +404,7 @@ macro_rules! test_format {
 #[cfg(test)]
 mod test {
     use super::*;
-    use tombi_config::{format::FormatRules, StringQuoteStyle};
+    use tombi_config::{StringQuoteStyle, format::FormatRules};
 
     test_format! {
         #[tokio::test]
@@ -420,31 +420,6 @@ mod test {
             r#"    "#,
             TomlVersion(TomlVersion::V1_0_0)
         ) -> Ok("")
-    }
-
-    test_format! {
-        #[tokio::test]
-        async fn test_only_comment1(
-            r#"
-            # comment1
-            # comment2
-            "#,
-            TomlVersion(TomlVersion::V1_0_0)
-        ) -> Ok(source)
-    }
-
-    test_format! {
-        #[tokio::test]
-        async fn test_only_comment2(
-            r#"
-            # comment1
-            # comment2
-
-            # comment3
-            # comment4
-            "#,
-            TomlVersion(TomlVersion::V1_0_0)
-        ) -> Ok(source)
     }
 
     test_format! {

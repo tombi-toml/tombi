@@ -2,15 +2,15 @@ pub mod definitions;
 
 use std::fmt::Write;
 
-use itertools::Either;
+use itertools::{Either, Itertools};
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    types::{AlignmentWidth, WithAlignmentHint},
     Format,
+    types::{AlignmentWidth, WithAlignmentHint},
 };
 
 pub struct Formatter<'a> {
@@ -104,16 +104,26 @@ impl<'a> Formatter<'a> {
                     .unwrap_or(self.toml_version)
             });
 
-        let root = tombi_parser::parse(source, self.toml_version)
-            .try_into_root()
-            .map_err(|errors| {
-                let mut diagnostics = vec![];
-                for error in errors {
-                    error.set_diagnostics(&mut diagnostics);
-                }
+        let (root, errors) = tombi_parser::parse(source, self.toml_version).into_root_and_errors();
+        let errors = errors
+            .into_iter()
+            .filter(|error| {
+                !matches!(
+                    error.kind(),
+                    tombi_parser::ErrorKind::InlineTableMustSingleLine
+                        | tombi_parser::ErrorKind::ForbiddenInlineTableLastComma
+                )
+            })
+            .collect_vec();
 
-                diagnostics
-            })?;
+        if !errors.is_empty() {
+            let mut diagnostics = vec![];
+            for error in errors {
+                error.set_diagnostics(&mut diagnostics);
+            }
+
+            return Err(diagnostics);
+        }
 
         let source_path = self.source_uri_or_path.and_then(|path| match path {
             Either::Left(url) => url.to_file_path().ok(),
