@@ -308,6 +308,17 @@ async fn validate_table(
                             value,
                             table_rules.as_ref().map(|rules| &rules.common),
                         );
+                    } else if table_rules
+                        .and_then(|rules| rules.common.deprecated.as_ref())
+                        .and_then(|rules| rules.disabled)
+                        == Some(true)
+                    {
+                        unused_noqa(
+                            &mut total_diagnostics,
+                            table_value.comment_directives(),
+                            table_rules.as_ref().map(|rules| &rules.common),
+                            "deprecated",
+                        );
                     }
 
                     if let Err(crate::Error { diagnostics, .. }) = value
@@ -563,6 +574,17 @@ async fn convert_deprecated_diagnostics_range(
     schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
     if current_schema.value_schema.deprecated().await == Some(true) {
+        for diagnostic in schema_diagnostics.iter_mut() {
+            if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
+                *diagnostic = tombi_diagnostic::Diagnostic::new_warning(
+                    diagnostic.message(),
+                    diagnostic.code(),
+                    key.range() + value.range(),
+                );
+                break;
+            }
+        }
+    } else if current_schema.value_schema.deprecated().await == Some(true) {
         for diagnostic in schema_diagnostics.iter_mut() {
             if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
                 *diagnostic = tombi_diagnostic::Diagnostic::new_warning(
