@@ -156,7 +156,7 @@ fn type_mismatch(
     }
 }
 
-fn unused_lint_disabled(
+fn unused_noqa(
     mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
@@ -167,7 +167,7 @@ fn unused_lint_disabled(
     };
 
     if common_rules
-        .and_then(|rules| rules.unused_lint_disabled.as_ref())
+        .and_then(|rules| rules.unused_noqa.as_ref())
         .and_then(|rules| rules.disabled)
         .unwrap_or(false)
     {
@@ -200,7 +200,7 @@ fn unused_lint_disabled(
                 content_range.start + RelativePosition::from(range.end),
             );
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::UnusedLintDisabled { rule_name }),
+                kind: Box::new(crate::DiagnosticKind::UnusedNoqa { rule_name }),
                 range,
             }
             .push_diagnostic_with_level(SeverityLevel::Warn, &mut diagnostics);

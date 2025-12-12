@@ -27,7 +27,7 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
-        project_root_path().join("json.schemastore.org/tombi.json"),
+        project_root_path().join("www.schemastore.org/tombi.json"),
         serde_json::to_string_pretty(
             &generator
                 .clone()

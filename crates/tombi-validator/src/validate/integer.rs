@@ -6,7 +6,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{push_deprecated_value, type_mismatch, unused_lint_disabled},
+    validate::{push_deprecated_value, type_mismatch, unused_noqa},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -152,7 +152,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -186,7 +186,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -220,7 +220,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -254,7 +254,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -288,7 +288,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -322,7 +322,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -356,7 +356,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -376,7 +376,7 @@ async fn validate_integer_schema(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),

@@ -10,7 +10,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
-    validate::{not_schema::validate_not, push_deprecated, type_mismatch, unused_lint_disabled},
+    validate::{not_schema::validate_not, push_deprecated, type_mismatch, unused_noqa},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -204,7 +204,7 @@ async fn validate_array(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut total_diagnostics,
             array_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -238,7 +238,7 @@ async fn validate_array(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut total_diagnostics,
             array_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -271,7 +271,7 @@ async fn validate_array(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut total_diagnostics,
             array_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),

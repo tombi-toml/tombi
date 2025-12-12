@@ -17,7 +17,7 @@ use crate::{
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         not_schema::validate_not, push_deprecated, push_deprecated_value, type_mismatch,
-        unused_lint_disabled,
+        unused_noqa,
     },
 };
 
@@ -278,7 +278,7 @@ async fn validate_table(
                 .and_then(|rules| rules.disabled)
                 == Some(true)
             {
-                unused_lint_disabled(
+                unused_noqa(
                     &mut total_diagnostics,
                     table_value.comment_directives(),
                     table_rules.as_ref().map(|rules| &rules.common),
@@ -355,7 +355,7 @@ async fn validate_table(
                     .and_then(|rules| rules.disabled)
                     == Some(true)
             {
-                unused_lint_disabled(
+                unused_noqa(
                     &mut total_diagnostics,
                     table_value.comment_directives(),
                     table_rules.as_ref().map(|rules| &rules.common),
@@ -394,7 +394,7 @@ async fn validate_table(
                     .and_then(|rules| rules.disabled)
                     == Some(true)
                 {
-                    unused_lint_disabled(
+                    unused_noqa(
                         &mut total_diagnostics,
                         table_value.comment_directives(),
                         table_rules.as_ref().map(|rules| &rules.common),
@@ -433,7 +433,7 @@ async fn validate_table(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut total_diagnostics,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
@@ -468,7 +468,7 @@ async fn validate_table(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut total_diagnostics,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
@@ -489,7 +489,7 @@ async fn validate_table(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut total_diagnostics,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),

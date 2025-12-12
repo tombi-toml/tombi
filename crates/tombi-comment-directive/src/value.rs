@@ -433,11 +433,11 @@ pub struct CommonLintRules {
     ///
     pub deprecated: Option<WarnRuleOptions>,
 
-    /// # Unused lint disabled
+    /// # Unused No Quality Assurance
     ///
     /// Check if the lint is disabled but not actually used.
     ///
-    pub unused_lint_disabled: Option<WarnRuleOptions>,
+    pub unused_noqa: Option<WarnRuleOptions>,
 
     /// # One of multiple match
     ///

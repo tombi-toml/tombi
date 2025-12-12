@@ -9,7 +9,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{format, push_deprecated_value, type_mismatch, unused_lint_disabled},
+    validate::{format, push_deprecated_value, type_mismatch, unused_noqa},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -140,7 +140,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -174,7 +174,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -210,7 +210,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -243,7 +243,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -282,7 +282,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -318,7 +318,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_lint_disabled(
+        unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
