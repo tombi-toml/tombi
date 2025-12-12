@@ -208,3 +208,35 @@ fn unused_noqa(
         }
     }
 }
+
+pub fn handle_deprecated_validation<T>(
+    deprecated: Option<bool>,
+    accessors: &[tombi_schema_store::Accessor],
+    value: &T,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) -> Result<(), crate::Error>
+where
+    T: tombi_document_tree::ValueImpl,
+{
+    if deprecated == Some(true) {
+        let mut diagnostics = Vec::with_capacity(1);
+        push_deprecated(&mut diagnostics, accessors, value, common_rules);
+        Err(diagnostics.into())
+    } else if common_rules
+        .and_then(|rules| rules.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        let mut diagnostics = Vec::with_capacity(1);
+        unused_noqa(
+            &mut diagnostics,
+            comment_directives,
+            common_rules,
+            "deprecated",
+        );
+        Err(diagnostics.into())
+    } else {
+        Ok(())
+    }
+}
