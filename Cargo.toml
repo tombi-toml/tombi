@@ -1,5 +1,4 @@
 [workspace]
-# tombi: lint.rules.deprecated.disabled = true
 resolver = "2"
 members = [
   "crates/*",
