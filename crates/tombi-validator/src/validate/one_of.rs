@@ -9,7 +9,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use super::Validate;
 use crate::validate::{
     all_of::validate_all_of, any_of::validate_any_of, not_schema::validate_not, push_deprecated,
-    type_mismatch,
+    type_mismatch, unused_noqa,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -185,6 +185,17 @@ where
 
             if error.diagnostics.is_empty() && one_of_schema.deprecated == Some(true) {
                 push_deprecated(&mut error.diagnostics, accessors, value, common_rules);
+            } else if common_rules
+                .and_then(|rules| rules.deprecated.as_ref())
+                .and_then(|rules| rules.disabled)
+                == Some(true)
+            {
+                unused_noqa(
+                    &mut error.diagnostics,
+                    comment_directives,
+                    common_rules,
+                    "deprecated",
+                );
             }
 
             if error

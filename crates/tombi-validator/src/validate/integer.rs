@@ -569,6 +569,17 @@ async fn validate_float_schema_for_integer(
             integer_value,
             lint_rules.as_ref().map(|rules| &rules.common),
         );
+    } else if lint_rules
+        .and_then(|rules| rules.common.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        unused_noqa(
+            &mut diagnostics,
+            integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
+            "deprecated",
+        );
     }
 
     if diagnostics.is_empty() {
