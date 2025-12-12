@@ -141,6 +141,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
@@ -174,6 +175,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "enumerate",
         );
     }
@@ -207,6 +209,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "float-maximum",
         );
     }
@@ -240,6 +243,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "float-minimum",
         );
     }
@@ -273,6 +277,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "float-exclusive-maximum",
         );
     }
@@ -306,6 +311,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "float-exclusive-minimum",
         );
     }
@@ -339,6 +345,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "float-multiple-of",
         );
     }
@@ -358,6 +365,7 @@ async fn validate_float(
         unused_lint_disabled(
             &mut diagnostics,
             float_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "deprecated",
         );
     }

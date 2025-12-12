@@ -52,7 +52,12 @@ where
         == Some(true)
     {
         let mut diagnostics = Vec::with_capacity(1);
-        unused_lint_disabled(&mut diagnostics, comment_directives, "not-schema-match");
+        unused_lint_disabled(
+            &mut diagnostics,
+            comment_directives,
+            common_rules,
+            "not-schema-match",
+        );
 
         if !diagnostics.is_empty() {
             return Err(diagnostics.into());

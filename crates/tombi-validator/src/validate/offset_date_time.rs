@@ -148,6 +148,7 @@ async fn validate_offset_date_time(
         unused_lint_disabled(
             &mut diagnostics,
             offset_date_time_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
@@ -181,6 +182,7 @@ async fn validate_offset_date_time(
         unused_lint_disabled(
             &mut diagnostics,
             offset_date_time_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "enumerate",
         );
     }
@@ -200,6 +202,7 @@ async fn validate_offset_date_time(
         unused_lint_disabled(
             &mut diagnostics,
             offset_date_time_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "deprecated",
         );
     }

@@ -207,6 +207,7 @@ async fn validate_array(
         unused_lint_disabled(
             &mut total_diagnostics,
             array_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "array-max-values",
         );
     }
@@ -240,6 +241,7 @@ async fn validate_array(
         unused_lint_disabled(
             &mut total_diagnostics,
             array_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "array-min-values",
         );
     }
@@ -272,6 +274,7 @@ async fn validate_array(
         unused_lint_disabled(
             &mut total_diagnostics,
             array_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "array-unique-values",
         );
     }

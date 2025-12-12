@@ -141,6 +141,7 @@ async fn validate_boolean(
         unused_lint_disabled(
             &mut diagnostics,
             boolean_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
@@ -174,6 +175,7 @@ async fn validate_boolean(
         unused_lint_disabled(
             &mut diagnostics,
             boolean_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "enumerate",
         );
     }
@@ -193,6 +195,7 @@ async fn validate_boolean(
         unused_lint_disabled(
             &mut diagnostics,
             boolean_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "deprecated",
         );
     }

@@ -155,6 +155,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
@@ -188,6 +189,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "enumerate",
         );
     }
@@ -221,6 +223,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "integer-maximum",
         );
     }
@@ -254,6 +257,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "integer-minimum",
         );
     }
@@ -287,6 +291,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "integer-exclusive-maximum",
         );
     }
@@ -320,6 +325,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "integer-exclusive-minimum",
         );
     }
@@ -353,6 +359,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "integer-multiple-of",
         );
     }
@@ -372,6 +379,7 @@ async fn validate_integer_schema(
         unused_lint_disabled(
             &mut diagnostics,
             integer_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "deprecated",
         );
     }

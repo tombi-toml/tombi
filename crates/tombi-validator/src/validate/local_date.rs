@@ -141,6 +141,7 @@ async fn validate_local_date(
         unused_lint_disabled(
             &mut diagnostics,
             local_date_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
@@ -174,6 +175,7 @@ async fn validate_local_date(
         unused_lint_disabled(
             &mut diagnostics,
             local_date_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "enumerate",
         );
     }
@@ -193,6 +195,7 @@ async fn validate_local_date(
         unused_lint_disabled(
             &mut diagnostics,
             local_date_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "deprecated",
         );
     }
