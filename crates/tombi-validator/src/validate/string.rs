@@ -9,7 +9,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{format, push_deprecated_value, type_mismatch, unused_noqa},
+    validate::{format, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -75,7 +75,7 @@ impl Validate for tombi_document_tree::String {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
-                    value_schema => type_mismatch(
+                    value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
@@ -140,7 +140,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -174,7 +174,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -210,7 +210,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -243,7 +243,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -282,7 +282,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -318,7 +318,7 @@ async fn validate_string(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -326,23 +326,14 @@ async fn validate_string(
         );
     }
 
-    if diagnostics.is_empty() && string_schema.deprecated == Some(true) {
-        push_deprecated_value(
+    if diagnostics.is_empty() {
+        handle_deprecated_value(
             &mut diagnostics,
+            string_schema.deprecated,
             accessors,
             string_value,
-            lint_rules.as_ref().map(|rules| &rules.common),
-        );
-    } else if lint_rules
-        .and_then(|rules| rules.common.deprecated.as_ref())
-        .and_then(|rules| rules.disabled)
-        == Some(true)
-    {
-        unused_noqa(
-            &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
-            "deprecated",
         );
     }
 

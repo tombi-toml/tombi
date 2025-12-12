@@ -8,7 +8,7 @@ use tombi_schema_store::{CurrentSchema, ValueSchema};
 use super::Validate;
 use crate::validate::not_schema::validate_not;
 use crate::validate::{all_of::validate_all_of, one_of::validate_one_of};
-use crate::validate::{handle_deprecated_validation, type_mismatch};
+use crate::validate::{handle_deprecated, handle_type_mismatch};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
     value: &'a T,
@@ -79,13 +79,20 @@ where
                         .await
                     {
                         Ok(()) => {
-                            return handle_deprecated_validation(
+                            let mut diagnostics = Vec::with_capacity(1);
+                            handle_deprecated(
+                                &mut diagnostics,
                                 any_of_schema.deprecated,
                                 accessors,
                                 value,
                                 comment_directives,
                                 common_rules,
                             );
+                            return if diagnostics.is_empty() {
+                                Ok(())
+                            } else {
+                                Err(diagnostics.into())
+                            };
                         }
                         Err(error) => error,
                     }
@@ -102,20 +109,27 @@ where
                 | (_, ValueSchema::LocalDate(_))
                 | (_, ValueSchema::LocalTime(_))
                 | (_, ValueSchema::Table(_))
-                | (_, ValueSchema::Array(_)) => match type_mismatch(
+                | (_, ValueSchema::Array(_)) => match handle_type_mismatch(
                     current_schema.value_schema.value_type().await,
                     value.value_type(),
                     value.range(),
                     common_rules,
                 ) {
                     Ok(()) => {
-                        return handle_deprecated_validation(
+                        let mut diagnostics = Vec::with_capacity(1);
+                        handle_deprecated(
+                            &mut diagnostics,
                             any_of_schema.deprecated,
                             accessors,
                             value,
                             comment_directives,
                             common_rules,
                         );
+                        return if diagnostics.is_empty() {
+                            Ok(())
+                        } else {
+                            Err(diagnostics.into())
+                        };
                     }
                     Err(error) => error,
                 },
@@ -132,13 +146,20 @@ where
                     .await
                     {
                         Ok(()) => {
-                            return handle_deprecated_validation(
+                            let mut diagnostics = Vec::with_capacity(1);
+                            handle_deprecated(
+                                &mut diagnostics,
                                 any_of_schema.deprecated,
                                 accessors,
                                 value,
                                 comment_directives,
                                 common_rules,
                             );
+                            return if diagnostics.is_empty() {
+                                Ok(())
+                            } else {
+                                Err(diagnostics.into())
+                            };
                         }
                         Err(error) => error,
                     }
@@ -156,13 +177,20 @@ where
                     .await
                     {
                         Ok(()) => {
-                            return handle_deprecated_validation(
+                            let mut diagnostics = Vec::with_capacity(1);
+                            handle_deprecated(
+                                &mut diagnostics,
                                 any_of_schema.deprecated,
                                 accessors,
                                 value,
                                 comment_directives,
                                 common_rules,
                             );
+                            return if diagnostics.is_empty() {
+                                Ok(())
+                            } else {
+                                Err(diagnostics.into())
+                            };
                         }
                         Err(error) => error,
                     }
@@ -180,13 +208,20 @@ where
                     .await
                     {
                         Ok(()) => {
-                            return handle_deprecated_validation(
+                            let mut diagnostics = Vec::with_capacity(1);
+                            handle_deprecated(
+                                &mut diagnostics,
                                 any_of_schema.deprecated,
                                 accessors,
                                 value,
                                 comment_directives,
                                 common_rules,
                             );
+                            return if diagnostics.is_empty() {
+                                Ok(())
+                            } else {
+                                Err(diagnostics.into())
+                            };
                         }
                         Err(error) => error,
                     }

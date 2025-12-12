@@ -74,56 +74,80 @@ pub trait Validate {
     ) -> BoxFuture<'b, Result<(), crate::Error>>;
 }
 
-fn push_deprecated(
-    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-    accessors: &[tombi_schema_store::Accessor],
-    value: &impl tombi_document_tree::ValueImpl,
-    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
-) {
-    let level = common_rules
-        .and_then(|rules| {
-            rules
-                .deprecated
-                .as_ref()
-                .map(SeverityLevelDefaultWarn::from)
-        })
-        .unwrap_or_default();
-
-    crate::Diagnostic {
-        kind: Box::new(crate::DiagnosticKind::Deprecated(
-            tombi_schema_store::SchemaAccessors::from(accessors),
-        )),
-        range: value.range(),
-    }
-    .push_diagnostic_with_level(level, &mut diagnostics);
-}
-
-fn push_deprecated_value<T: tombi_document_tree::ValueImpl + ToString>(
-    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+pub fn handle_deprecated<T>(
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
-) {
-    let level = common_rules
-        .and_then(|rules| {
-            rules
-                .deprecated
-                .as_ref()
-                .map(SeverityLevelDefaultWarn::from)
-        })
-        .unwrap_or_default();
+) where
+    T: tombi_document_tree::ValueImpl,
+{
+    if deprecated == Some(true) {
+        let level = common_rules
+            .and_then(|rules| {
+                rules
+                    .deprecated
+                    .as_ref()
+                    .map(SeverityLevelDefaultWarn::from)
+            })
+            .unwrap_or_default();
 
-    crate::Diagnostic {
-        kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
-            tombi_schema_store::SchemaAccessors::from(accessors),
-            value.to_string(),
-        )),
-        range: value.range(),
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::Deprecated(
+                tombi_schema_store::SchemaAccessors::from(accessors),
+            )),
+            range: value.range(),
+        }
+        .push_diagnostic_with_level(level, diagnostics);
+    } else if common_rules
+        .and_then(|rules| rules.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        handle_unused_noqa(diagnostics, comment_directives, common_rules, "deprecated");
     }
-    .push_diagnostic_with_level(level, &mut diagnostics);
 }
 
-fn type_mismatch(
+pub fn handle_deprecated_value<T>(
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    deprecated: Option<bool>,
+    accessors: &[tombi_schema_store::Accessor],
+    value: &T,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) where
+    T: tombi_document_tree::ValueImpl + ToString,
+{
+    if deprecated == Some(true) {
+        let level = common_rules
+            .and_then(|rules| {
+                rules
+                    .deprecated
+                    .as_ref()
+                    .map(SeverityLevelDefaultWarn::from)
+            })
+            .unwrap_or_default();
+
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::DeprecatedValue(
+                tombi_schema_store::SchemaAccessors::from(accessors),
+                value.to_string(),
+            )),
+            range: value.range(),
+        }
+        .push_diagnostic_with_level(level, diagnostics);
+    } else if common_rules
+        .and_then(|rules| rules.deprecated.as_ref())
+        .and_then(|rules| rules.disabled)
+        == Some(true)
+    {
+        handle_unused_noqa(diagnostics, comment_directives, common_rules, "deprecated");
+    }
+}
+
+fn handle_type_mismatch(
     expected: tombi_schema_store::ValueType,
     actual: tombi_document_tree::ValueType,
     range: tombi_text::Range,
@@ -156,7 +180,7 @@ fn type_mismatch(
     }
 }
 
-fn unused_noqa(
+fn handle_unused_noqa(
     mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
@@ -206,37 +230,5 @@ fn unused_noqa(
             .push_diagnostic_with_level(SeverityLevel::Warn, &mut diagnostics);
             return;
         }
-    }
-}
-
-pub fn handle_deprecated_validation<T>(
-    deprecated: Option<bool>,
-    accessors: &[tombi_schema_store::Accessor],
-    value: &T,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
-    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
-) -> Result<(), crate::Error>
-where
-    T: tombi_document_tree::ValueImpl,
-{
-    if deprecated == Some(true) {
-        let mut diagnostics = Vec::with_capacity(1);
-        push_deprecated(&mut diagnostics, accessors, value, common_rules);
-        Err(diagnostics.into())
-    } else if common_rules
-        .and_then(|rules| rules.deprecated.as_ref())
-        .and_then(|rules| rules.disabled)
-        == Some(true)
-    {
-        let mut diagnostics = Vec::with_capacity(1);
-        unused_noqa(
-            &mut diagnostics,
-            comment_directives,
-            common_rules,
-            "deprecated",
-        );
-        Err(diagnostics.into())
-    } else {
-        Ok(())
     }
 }

@@ -16,8 +16,10 @@ use crate::{
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
-        not_schema::validate_not, push_deprecated, push_deprecated_value, type_mismatch,
-        unused_noqa,
+        handle_deprecated,
+        handle_deprecated_value, not_schema::validate_not,
+        handle_type_mismatch,
+        handle_unused_noqa,
     },
 };
 
@@ -107,7 +109,7 @@ impl Validate for tombi_document_tree::Table {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
-                    value_schema => type_mismatch(
+                    value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
@@ -278,7 +280,7 @@ async fn validate_table(
                 .and_then(|rules| rules.disabled)
                 == Some(true)
             {
-                unused_noqa(
+                handle_unused_noqa(
                     &mut total_diagnostics,
                     table_value.comment_directives(),
                     table_rules.as_ref().map(|rules| &rules.common),
@@ -301,25 +303,14 @@ async fn validate_table(
                     .await
                     .inspect_err(|err| tracing::warn!("{err}"))
                 {
-                    if current_schema.value_schema.deprecated().await == Some(true) {
-                        push_deprecated_value(
-                            &mut total_diagnostics,
-                            &new_accessors,
-                            value,
-                            table_rules.as_ref().map(|rules| &rules.common),
-                        );
-                    } else if table_rules
-                        .and_then(|rules| rules.common.deprecated.as_ref())
-                        .and_then(|rules| rules.disabled)
-                        == Some(true)
-                    {
-                        unused_noqa(
-                            &mut total_diagnostics,
-                            table_value.comment_directives(),
-                            table_rules.as_ref().map(|rules| &rules.common),
-                            "deprecated",
-                        );
-                    }
+                    handle_deprecated_value(
+                        &mut total_diagnostics,
+                        current_schema.value_schema.deprecated().await,
+                        &new_accessors,
+                        value,
+                        table_value.comment_directives(),
+                        table_rules.as_ref().map(|rules| &rules.common),
+                    );
 
                     if let Err(crate::Error { diagnostics, .. }) = value
                         .validate(&new_accessors, Some(&current_schema), schema_context)
@@ -366,7 +357,7 @@ async fn validate_table(
                     .and_then(|rules| rules.disabled)
                     == Some(true)
             {
-                unused_noqa(
+                handle_unused_noqa(
                     &mut total_diagnostics,
                     table_value.comment_directives(),
                     table_rules.as_ref().map(|rules| &rules.common),
@@ -405,7 +396,7 @@ async fn validate_table(
                     .and_then(|rules| rules.disabled)
                     == Some(true)
                 {
-                    unused_noqa(
+                    handle_unused_noqa(
                         &mut total_diagnostics,
                         table_value.comment_directives(),
                         table_rules.as_ref().map(|rules| &rules.common),
@@ -444,7 +435,7 @@ async fn validate_table(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut total_diagnostics,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
@@ -479,7 +470,7 @@ async fn validate_table(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut total_diagnostics,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
@@ -487,24 +478,14 @@ async fn validate_table(
         );
     }
 
-    if total_diagnostics.is_empty() && table_schema.deprecated == Some(true) {
-        push_deprecated(
+    if total_diagnostics.is_empty() {
+        handle_deprecated(
             &mut total_diagnostics,
+            table_schema.deprecated,
             accessors,
             table_value,
-            table_rules.as_ref().map(|rules| &rules.common),
-        );
-    } else if table_rules
-        .map(|rules| &rules.common)
-        .and_then(|rules| rules.deprecated.as_ref())
-        .and_then(|rules| rules.disabled)
-        == Some(true)
-    {
-        unused_noqa(
-            &mut total_diagnostics,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
-            "deprecated",
         );
     }
 

@@ -6,7 +6,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{push_deprecated_value, type_mismatch, unused_noqa},
+    validate::{handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -72,7 +72,7 @@ impl Validate for tombi_document_tree::Float {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
-                    value_schema => type_mismatch(
+                    value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
@@ -138,7 +138,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -172,7 +172,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -206,7 +206,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -240,7 +240,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -274,7 +274,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -308,7 +308,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -342,7 +342,7 @@ async fn validate_float(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -350,23 +350,14 @@ async fn validate_float(
         );
     }
 
-    if diagnostics.is_empty() && float_schema.deprecated == Some(true) {
-        push_deprecated_value(
+    if diagnostics.is_empty() {
+        handle_deprecated_value(
             &mut diagnostics,
+            float_schema.deprecated,
             accessors,
             float_value,
-            lint_rules.as_ref().map(|rules| &rules.common),
-        );
-    } else if lint_rules
-        .and_then(|rules| rules.common.deprecated.as_ref())
-        .and_then(|rules| rules.disabled)
-        == Some(true)
-    {
-        unused_noqa(
-            &mut diagnostics,
             float_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
-            "deprecated",
         );
     }
 
