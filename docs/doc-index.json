@@ -161,6 +161,11 @@
     ]
   },
   {
+    "title": "Environment Variables",
+    "description": "Configure Tombi using environment variables.",
+    "path": "/docs/environment-variables"
+  },
+  {
     "title": "Extensions",
     "description": "Project-specific extensions for Cargo and uv.",
     "path": "/docs/extensions",

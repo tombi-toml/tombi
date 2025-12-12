@@ -1,0 +1,30 @@
+# Environment Variables
+
+Tombi CLI supports several environment variables to configure its behavior.
+
+## TOMBI_OFFLINE
+
+Disable network access and use only local schema cache.
+
+When set, Tombi will not fetch schemas from remote sources and will only use cached schemas locally. This is useful when working in offline environments or when you want to ensure no network requests are made.
+
+- Type: `true | false`
+- Default: `false`
+
+## TOMBI_NO_CACHE
+
+Disable cache usage and fetch the latest data from remote sources.
+
+When set, Tombi will bypass the cache and fetch the latest schemas from remote sources, then save them to the cache. This is useful when you want to ensure you have the most up-to-date schema data.
+
+- Type: `true | false`
+- Default: `false`
+
+## TOMBI_HTTP_TIMEOUT
+
+Set the HTTP timeout in seconds for fetching remote schemas.
+
+This environment variable controls how long Tombi will wait for HTTP requests to complete before timing out. If `TOMBI_HTTP_TIMEOUT` is not set, Tombi will fall back to `HTTP_TIMEOUT` if available.
+
+- Type: `Integer` (seconds)
+- Default: `5`
