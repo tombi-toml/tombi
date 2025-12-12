@@ -281,6 +281,7 @@ async fn validate_table(
                 unused_lint_disabled(
                     &mut total_diagnostics,
                     table_value.comment_directives(),
+                    table_rules.as_ref().map(|rules| &rules.common),
                     "key-pattern",
                 );
             }
@@ -357,6 +358,7 @@ async fn validate_table(
                 unused_lint_disabled(
                     &mut total_diagnostics,
                     table_value.comment_directives(),
+                    table_rules.as_ref().map(|rules| &rules.common),
                     "key-not-allowed",
                 );
             }
@@ -395,6 +397,7 @@ async fn validate_table(
                     unused_lint_disabled(
                         &mut total_diagnostics,
                         table_value.comment_directives(),
+                        table_rules.as_ref().map(|rules| &rules.common),
                         "table-key-required",
                     );
                 }
@@ -433,6 +436,7 @@ async fn validate_table(
         unused_lint_disabled(
             &mut total_diagnostics,
             table_value.comment_directives(),
+            table_rules.as_ref().map(|rules| &rules.common),
             "table-max-keys",
         );
     }
@@ -467,6 +471,7 @@ async fn validate_table(
         unused_lint_disabled(
             &mut total_diagnostics,
             table_value.comment_directives(),
+            table_rules.as_ref().map(|rules| &rules.common),
             "table-min-keys",
         );
     }
@@ -487,6 +492,7 @@ async fn validate_table(
         unused_lint_disabled(
             &mut total_diagnostics,
             table_value.comment_directives(),
+            table_rules.as_ref().map(|rules| &rules.common),
             "deprecated",
         );
     }

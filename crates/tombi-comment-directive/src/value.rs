@@ -433,6 +433,12 @@ pub struct CommonLintRules {
     ///
     pub deprecated: Option<WarnRuleOptions>,
 
+    /// # Unused lint disabled
+    ///
+    /// Check if the lint is disabled but not actually used.
+    ///
+    pub unused_lint_disabled: Option<WarnRuleOptions>,
+
     /// # One of multiple match
     ///
     /// Check if more than one schema in the `oneOf` is valid.

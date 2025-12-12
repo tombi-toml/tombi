@@ -159,11 +159,20 @@ fn type_mismatch(
 fn unused_lint_disabled(
     mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
     rule_name: &'static str,
 ) {
     let Some(comment_directive) = comment_directives else {
         return;
     };
+
+    if common_rules
+        .and_then(|rules| rules.unused_lint_disabled.as_ref())
+        .and_then(|rules| rules.disabled)
+        .unwrap_or(false)
+    {
+        return;
+    }
 
     for tombi_ast::TombiValueCommentDirective {
         content,

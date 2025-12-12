@@ -143,6 +143,7 @@ async fn validate_string(
         unused_lint_disabled(
             &mut diagnostics,
             string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
@@ -176,6 +177,7 @@ async fn validate_string(
         unused_lint_disabled(
             &mut diagnostics,
             string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "enumerate",
         );
     }
@@ -211,6 +213,7 @@ async fn validate_string(
         unused_lint_disabled(
             &mut diagnostics,
             string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "string-max-length",
         );
     }
@@ -243,6 +246,7 @@ async fn validate_string(
         unused_lint_disabled(
             &mut diagnostics,
             string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "string-min-length",
         );
     }
@@ -281,6 +285,7 @@ async fn validate_string(
         unused_lint_disabled(
             &mut diagnostics,
             string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "string-format",
         );
     }
@@ -316,6 +321,7 @@ async fn validate_string(
         unused_lint_disabled(
             &mut diagnostics,
             string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
             "string-pattern",
         );
     }
