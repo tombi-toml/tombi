@@ -34,8 +34,8 @@ pub fn get_tombi_github_uri(uri: &tombi_uri::Uri) -> Option<tombi_uri::Uri> {
                 format!("refs/tags/v{version}")
             };
             let mut host = uri.host_str().unwrap();
-            if host == "www.schemastore.org" {
-                host = "json.schemastore.org";
+            if host == "json.schemastore.org" {
+                host = "www.schemastore.org";
             }
 
             if uri.path().ends_with("/json/catalog.json") {
