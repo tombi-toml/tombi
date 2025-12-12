@@ -3,7 +3,7 @@
 [project]
 name = "tombi"
 version = "0.0.0-dev"  # We use git tags for versioning. This is just a placeholder.
-description = "🦅 TOML Toolkit 🦅"  # tombi: lint.rules.deprecated.disabled = true
+description = "🦅 TOML Toolkit 🦅"
 readme = "python/tombi/README.md"
 requires-python = ">=3.10"
 dependencies = []
