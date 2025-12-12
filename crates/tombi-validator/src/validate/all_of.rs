@@ -81,17 +81,6 @@ where
             .await
             {
                 total_diagnostics.extend(error.diagnostics);
-            } else if common_rules
-                .and_then(|rules| rules.not_schema_match.as_ref())
-                .and_then(|rules| rules.disabled)
-                == Some(true)
-            {
-                unused_noqa(
-                    &mut total_diagnostics,
-                    comment_directives,
-                    common_rules,
-                    "not-schema-match",
-                );
             }
         }
 
