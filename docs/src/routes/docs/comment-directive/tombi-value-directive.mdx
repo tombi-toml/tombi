@@ -12,6 +12,8 @@ Value comment directives are comments that apply to a specific value.
     - [format.rules.array-values-order](#format-rules-array-values-order)
 - [lint](#lint-rules)
   - [lint.rules](#lint-rules)
+    - [lint.rules.unused-noqa](#lint-rules-unused-noqa)
+      - [lint.rules.unused-noqa.disabled](#lint-rules-unused-noqa-disabled)
     - [lint.rules.type-mismatch](#lint-rules-type-mismatch)
       - [lint.rules.type-mismatch.disabled](#lint-rules-type-mismatch-disabled)
     - [lint.rules.const-value](#lint-rules-const-value)
@@ -136,6 +138,27 @@ Value comment directives allow you to disable specific lint rules for individual
 This disable setting is a temporary workaround for incorrect JSON Schema.  
 Please consider contacting the JSON Schema provider (e.g., [Schema Store](https://www.schemastore.org)) to fix the JSON Schema.
 </Note>
+
+### lint.rules.unused-noqa
+
+Check if the lint is disabled but not actually used (Warning level).
+
+<Note>
+`noqa` is the abbreviation of `NO Quality Assurance`.
+</Note>
+
+### lint.rules.unused-noqa.disabled
+
+Disable unused-noqa rule.
+
+- **Type**: `boolean`
+- **Values**: `true`
+
+```toml
+# tombi: lint.rules.unused-noqa.disabled = true
+# tombi: lint.rules.type-mismatch.disabled = true
+version = "0.1.0"  # `type-mismatch.disabled` rule doesn't need to be here
+```
 
 ### lint.rules.type-mismatch
 
