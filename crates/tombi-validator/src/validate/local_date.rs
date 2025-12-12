@@ -6,7 +6,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{push_deprecated_value, type_mismatch, unused_noqa},
+    validate::{handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -73,7 +73,7 @@ impl Validate for LocalDate {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
-                    value_schema => type_mismatch(
+                    value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),
                         self.range(),
@@ -138,7 +138,7 @@ async fn validate_local_date(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             local_date_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -172,7 +172,7 @@ async fn validate_local_date(
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             local_date_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
@@ -180,23 +180,14 @@ async fn validate_local_date(
         );
     }
 
-    if diagnostics.is_empty() && local_date_schema.deprecated == Some(true) {
-        push_deprecated_value(
+    if diagnostics.is_empty() {
+        handle_deprecated_value(
             &mut diagnostics,
+            local_date_schema.deprecated,
             accessors,
             local_date_value,
-            lint_rules.as_ref().map(|rules| &rules.common),
-        );
-    } else if lint_rules
-        .and_then(|rules| rules.common.deprecated.as_ref())
-        .and_then(|rules| rules.disabled)
-        == Some(true)
-    {
-        unused_noqa(
-            &mut diagnostics,
             local_date_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
-            "deprecated",
         );
     }
 

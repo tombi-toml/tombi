@@ -5,7 +5,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
-use crate::validate::{not_schema::validate_not, push_deprecated, unused_noqa};
+use crate::validate::{handle_deprecated, not_schema::validate_not};
 
 use super::Validate;
 
@@ -53,18 +53,14 @@ where
             }
         }
 
-        if total_diagnostics.is_empty() && all_of_schema.deprecated == Some(true) {
-            push_deprecated(&mut total_diagnostics, accessors, value, common_rules);
-        } else if common_rules
-            .and_then(|rules| rules.deprecated.as_ref())
-            .and_then(|rules| rules.disabled)
-            == Some(true)
-        {
-            unused_noqa(
+        if total_diagnostics.is_empty() {
+            handle_deprecated(
                 &mut total_diagnostics,
+                all_of_schema.deprecated,
+                accessors,
+                value,
                 comment_directives,
                 common_rules,
-                "deprecated",
             );
         }
 

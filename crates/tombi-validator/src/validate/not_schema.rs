@@ -2,7 +2,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_severity_level::SeverityLevelDefaultError;
 
-use crate::{Validate, validate::unused_noqa};
+use crate::{Validate, validate::handle_unused_noqa};
 
 pub async fn validate_not<'a, T>(
     value: &T,
@@ -52,7 +52,7 @@ where
         == Some(true)
     {
         let mut diagnostics = Vec::with_capacity(1);
-        unused_noqa(
+        handle_unused_noqa(
             &mut diagnostics,
             comment_directives,
             common_rules,

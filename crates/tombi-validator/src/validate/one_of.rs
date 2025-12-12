@@ -8,8 +8,8 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use super::Validate;
 use crate::validate::{
-    all_of::validate_all_of, any_of::validate_any_of, not_schema::validate_not, push_deprecated,
-    type_mismatch, unused_noqa,
+    all_of::validate_all_of, any_of::validate_any_of, handle_deprecated, handle_type_mismatch,
+    not_schema::validate_not,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -90,7 +90,7 @@ where
                 | (_, ValueSchema::LocalDate(_))
                 | (_, ValueSchema::LocalTime(_))
                 | (_, ValueSchema::Table(_))
-                | (_, ValueSchema::Array(_)) => type_mismatch(
+                | (_, ValueSchema::Array(_)) => handle_type_mismatch(
                     current_schema.value_schema.value_type().await,
                     value.value_type(),
                     value.range(),
@@ -183,18 +183,14 @@ where
                     a
                 });
 
-            if error.diagnostics.is_empty() && one_of_schema.deprecated == Some(true) {
-                push_deprecated(&mut error.diagnostics, accessors, value, common_rules);
-            } else if common_rules
-                .and_then(|rules| rules.deprecated.as_ref())
-                .and_then(|rules| rules.disabled)
-                == Some(true)
-            {
-                unused_noqa(
+            if error.diagnostics.is_empty() {
+                handle_deprecated(
                     &mut error.diagnostics,
+                    one_of_schema.deprecated,
+                    accessors,
+                    value,
                     comment_directives,
                     common_rules,
-                    "deprecated",
                 );
             }
 
