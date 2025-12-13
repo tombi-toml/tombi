@@ -192,7 +192,7 @@ mod test {
     use super::*;
 
     #[rstest]
-    #[case("https://www.schemastore.org/tombi.json")]
+    #[case(concat!("https://", tombi_uri::schemastore_hostname!(), "/tombi.json"))]
     #[case("file://./folder/tombi.json")]
     #[case("file://./tombi.json")]
     #[case("file://tombi.json")]

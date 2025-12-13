@@ -5,6 +5,27 @@ pub use catalog_uri::CatalogUri;
 pub use schema_uri::SchemaUri;
 pub use url::ParseError;
 
+#[macro_export]
+macro_rules! schemastore_hostname {
+    () => {
+        "www.schemastore.org"
+    };
+}
+
+#[macro_export]
+macro_rules! old_schemastore_hostname {
+    () => {
+        "json.schemastore.org"
+    };
+}
+
+#[macro_export]
+macro_rules! comment_directive_schemastore_hostname {
+    () => {
+        "www.schemastore.tombi"
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Uri(url::Url);
 
