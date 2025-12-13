@@ -17,7 +17,10 @@ fn main() {
         eprintln!("  cargo run --example parse_schema ./tombi.json");
         eprintln!();
         eprintln!("  # From URL");
-        eprintln!("  cargo run --example parse_schema https://json.schemastore.org/tombi.json");
+        eprintln!(
+            "  cargo run --example parse_schema https://{}/tombi.json",
+            tombi_uri::schemastore_hostname!()
+        );
         process::exit(1);
     }
 
