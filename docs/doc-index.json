@@ -77,7 +77,7 @@
         "title": "Environment Variables",
         "description": "Configure Tombi using environment variables.",
         "path": "/docs/cli/environment-variables"
-      },
+      }
     ]
   },
   {
