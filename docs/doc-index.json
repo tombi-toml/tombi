@@ -72,6 +72,11 @@
         "title": "Offline Mode",
         "description": "Use Tombi without internet connection.",
         "path": "/docs/cli/offline-mode"
+      },
+      {
+        "title": "Environment Variables",
+        "description": "Configure Tombi using environment variables.",
+        "path": "/docs/cli/environment-variables"
       }
     ]
   },
@@ -159,11 +164,6 @@
         "path": "/docs/comment-directive/tombi-value-directive"
       }
     ]
-  },
-  {
-    "title": "Environment Variables",
-    "description": "Configure Tombi using environment variables.",
-    "path": "/docs/environment-variables"
   },
   {
     "title": "Extensions",
