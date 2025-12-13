@@ -26,6 +26,11 @@ pub const CONFIG_TOML_FILENAME: &str = "config.toml";
 pub const PYPROJECT_TOML_FILENAME: &str = "pyproject.toml";
 pub const SUPPORTED_CONFIG_FILENAMES: [&str; 2] = [TOMBI_TOML_FILENAME, PYPROJECT_TOML_FILENAME];
 pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
+const TOMBI_CONFIG_TOML_URL: &str = concat!(
+    "https://",
+    tombi_uri::schemastore_hostname!(),
+    "/tombi.json"
+);
 
 /// # Tombi
 ///
@@ -38,7 +43,7 @@ pub const TOMBI_CONFIG_TOML_VERSION: TomlVersion = TomlVersion::V1_1_0_Preview;
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-toml-version" = TOMBI_CONFIG_TOML_VERSION)))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = "https://www.schemastore.org/tombi.json")))]
+#[cfg_attr(feature = "jsonschema", schemars(extend("$id" = TOMBI_CONFIG_TOML_URL)))]
 pub struct Config {
     /// # TOML version
     ///

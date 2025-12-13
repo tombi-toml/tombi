@@ -22,6 +22,7 @@ time = { workspace = true }
 tombi-cli-options = { workspace = true }
 tombi-comment-directive = { workspace = true, features = ["jsonschema"] }
 tombi-config = { workspace = true, features = ["jsonschema"] }
+tombi-uri = { workspace = true }
 ungrammar = { workspace = true }
 xshell = { workspace = true }
 zip = { workspace = true, features = ["deflate", "time"] }

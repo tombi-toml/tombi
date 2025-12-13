@@ -1,7 +1,15 @@
 use super::OneOrMany;
 
-pub const TOMBI_SCHEMASTORE_CATALOG_URL: &str = "tombi://www.schemastore.org/api/json/catalog.json";
-pub const JSON_SCHEMASTORE_CATALOG_URL: &str = "https://www.schemastore.org/api/json/catalog.json";
+pub const TOMBI_SCHEMASTORE_CATALOG_URL: &str = concat!(
+    "tombi://",
+    tombi_uri::schemastore_hostname!(),
+    "/api/json/catalog.json"
+);
+pub const JSON_SCHEMASTORE_CATALOG_URL: &str = concat!(
+    "https://",
+    tombi_uri::schemastore_hostname!(),
+    "/api/json/catalog.json"
+);
 
 /// Generic value that can be either single or multiple
 #[derive(Debug, Clone, PartialEq, Eq)]
