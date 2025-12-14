@@ -20,8 +20,6 @@ pub struct Formatter<'a> {
     skip_comment: bool,
     single_line_mode: bool,
     definitions: crate::FormatDefinitions,
-    #[allow(dead_code)]
-    options: &'a crate::FormatOptions,
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     buf: String,
@@ -42,7 +40,6 @@ impl<'a> Formatter<'a> {
             skip_comment: false,
             single_line_mode: false,
             definitions: crate::FormatDefinitions::new(options),
-            options,
             source_uri_or_path,
             schema_store,
             buf: String::new(),
