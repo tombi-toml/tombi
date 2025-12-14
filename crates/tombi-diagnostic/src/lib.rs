@@ -3,7 +3,6 @@ pub mod printer;
 
 pub use level::Level;
 pub use printer::Print;
-use tower_lsp::lsp_types::NumberOrString;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
@@ -140,7 +139,7 @@ impl tombi_text::FromLsp<Diagnostic> for tower_lsp::lsp_types::Diagnostic {
             }),
             message: source.message().to_string(),
             source: Some("Tombi".to_owned()),
-            code: Some(NumberOrString::String(source.code)),
+            code: Some(tower_lsp::lsp_types::NumberOrString::String(source.code)),
             ..Default::default()
         }
     }
