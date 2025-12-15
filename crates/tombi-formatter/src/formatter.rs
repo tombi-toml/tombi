@@ -350,7 +350,7 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    fn ident(&self, depth: u8) -> String {
+    fn indent(&self, depth: u8) -> String {
         match self.definitions.indent_style {
             IndentStyle::Space => " ".repeat((self.definitions.indent_width * depth) as usize),
             IndentStyle::Tab => "\t".repeat(depth as usize),
@@ -364,7 +364,7 @@ impl<'a> Formatter<'a> {
 
             Ok(())
         } else {
-            write!(self, "{}", self.ident(self.indent_depth))
+            write!(self, "{}", self.indent(self.indent_depth))
         }
     }
 
