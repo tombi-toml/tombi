@@ -130,10 +130,18 @@ jobs:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
 
+      - uses: step-security/wait-for-secrets@v1
+        id: get-otp
+        with:
+          secrets: |
+            OTP:
+              name: 'npm OTP code'
+              description: 'One-time password from your authenticator app'
+
       - name: Generate npm package
         run: node typescript/@tombi-toml/tombi/scripts/generate-packages.mjs
 
-      - name: Publish npm package as latest
+      - name: Publish '@tombi-toml/*' npm packages
         run: |
           set -e
           for package in typescript/@tombi-toml/*; do
@@ -142,13 +150,13 @@ jobs:
               echo "${package}@${TOMBI_VERSION} is already published. Skipping publish."
               continue
             fi
-            npm publish typescript/$package --tag latest --access public --provenance
-            echo npm publish typescript/$package --tag latest --access public --provenance
+            npm publish typescript/$package --tag latest --access public --provenance --otp ${{ steps.get-otp.outputs.OTP }}
+            echo publish ${package}@${TOMBI_VERSION}
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @tombi-toml/tombi as tombi
+      - name: Publish 'tombi' npm package
         run: |
           set -e
           # Check if tombi@${TOMBI_VERSION} is already published
@@ -166,7 +174,7 @@ jobs:
             jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
 
             # Publish as tombi
-            npm publish --tag latest --access public --provenance
+            npm publish --tag latest --access public --provenance --otp ${{ steps.get-otp.outputs.OTP }}
             echo "Published tombi@${TOMBI_VERSION}"
 
             # Clean up
