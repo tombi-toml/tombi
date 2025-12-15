@@ -345,16 +345,16 @@ impl<'a> Formatter<'a> {
     }
 
     #[inline]
-    pub(crate) fn ident(&self, depth: u8) -> String {
+    pub(crate) fn reset(&mut self) {
+        self.reset_indent();
+    }
+
+    #[inline]
+    fn ident(&self, depth: u8) -> String {
         match self.definitions.indent_style {
             IndentStyle::Space => " ".repeat((self.definitions.indent_width * depth) as usize),
             IndentStyle::Tab => "\t".repeat(depth as usize),
         }
-    }
-
-    #[inline]
-    pub(crate) fn reset(&mut self) {
-        self.reset_indent();
     }
 
     #[inline]
