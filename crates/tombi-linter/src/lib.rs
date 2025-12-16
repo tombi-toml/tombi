@@ -14,80 +14,71 @@ pub use tombi_config::LintOptions;
 #[cfg(test)]
 #[macro_export]
 macro_rules! test_lint {
-    (
+    {
         #[test]
-        fn $name:ident(
-            $source:expr$(,)?
-        ) -> Ok(_);
-    ) => {
-        test_lint! {
-            #[test]
-            fn _$name(
-                $source,
-                Option::<std::path::PathBuf>::None,
-                TomlVersion::default(),
-            ) -> Ok(_);
-        }
-    };
-
-    (
-        #[test]
-        fn $name:ident(
-            $source:expr,
-            TomlVersion($toml_version:expr)$(,)?
-        ) -> Ok(_);
-    ) => {
-        test_lint! {
-            #[test]
-            fn _$name(
-                $source,
-                Option::<std::path::PathBuf>::None,
-                $toml_version,
-            ) -> Ok(_);
-        }
-    };
-
-    (
-        #[test]
-        fn $name:ident(
-            $source:expr,
-            $schema_path:expr$(,)?
-        ) -> Ok(_);
-    ) => {
-        test_lint! {
-            #[test]
-            fn _$name(
-                $source,
-                Some($schema_path),
-                TomlVersion::default(),
-            ) -> Ok(_);
-        }
-    };
-
-    (
-        #[test]
-        fn _$name:ident(
-            $source:expr,
-            $schema_path:expr,
-            $toml_version:expr,
-        ) -> Ok(_);
-    ) => {
+        fn $name:ident($source:expr $(, $arg:expr )* $(,)? ) -> Ok(_)
+    } => {
         #[tokio::test]
         async fn $name() {
             use tombi_config::TomlVersion;
 
             tombi_test_lib::init_tracing();
 
+            /// Test-time configuration overridden via `test_lint!` arguments.
+            #[allow(unused)]
+            #[derive(Default)]
+            pub struct TestConfig {
+                pub toml_version: TomlVersion,
+                pub options: $crate::LintOptions,
+                pub schema_path: Option<std::path::PathBuf>,
+            }
+
+            #[allow(unused)]
+            pub trait ApplyTestArg {
+                fn apply(self, config: &mut TestConfig);
+            }
+
+            impl ApplyTestArg for TomlVersion {
+                fn apply(self, config: &mut TestConfig) {
+                    config.toml_version = self;
+                }
+            }
+
+            impl ApplyTestArg for $crate::LintOptions {
+                fn apply(self, config: &mut TestConfig) {
+                    config.options = self;
+                }
+            }
+
+            /// Set schema path for the test case.
+            #[allow(unused)]
+            pub struct SchemaPath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SchemaPath {
+                fn apply(self, config: &mut TestConfig) {
+                    config.schema_path = Some(self.0);
+                }
+            }
+
+            #[allow(unused_mut)]
+            let mut config = TestConfig::default();
+            $(
+                ApplyTestArg::apply($arg, &mut config);
+            )*
+
             // Initialize schema store
             let schema_store = tombi_schema_store::SchemaStore::new();
 
-            if let Some(schema_path) = $schema_path {
+            if let Some(schema_path) = &config.schema_path {
+                let path = tombi_uri::Uri::from_file_path(schema_path.as_path())
+                    .unwrap()
+                    .to_string();
                 // Load schemas
                 schema_store
                     .load_config_schemas(
                         &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
-                            path: schema_path.to_string_lossy().to_string(),
+                            path,
                             include: vec!["*.toml".to_string()],
                         })],
                         None,
@@ -95,12 +86,11 @@ macro_rules! test_lint {
                     .await;
             }
 
-            // Initialize linter with schema if provided
+            // Initialize linter
             let source_path = tombi_test_lib::project_root_path().join("test.toml");
-            let options = $crate::LintOptions::default();
             let linter = $crate::Linter::new(
-                $toml_version,
-                &options,
+                config.toml_version,
+                &config.options,
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -118,64 +108,10 @@ macro_rules! test_lint {
         }
     };
 
-    (
+    {
         #[test]
-        fn $name:ident(
-            $source:expr,
-            $schema_path:expr$(,)?
-        ) -> Err([$( $error:expr ),*$(,)?]);
-    ) => {
-        test_lint! {
-            #[test]
-            fn _$name(
-                $source,
-                Some($schema_path),
-                TomlVersion::default(),
-            ) -> Err([$($error.to_string()),*]);
-        }
-    };
-
-    (
-        #[test]
-        fn $name:ident(
-            $source:expr,
-        ) -> Err([$( $error:expr ),*$(,)?]);
-    ) => {
-        test_lint! {
-            #[test]
-            fn _$name(
-                $source,
-                Option::<std::path::PathBuf>::None,
-                TomlVersion::default(),
-            ) -> Err([$($error.to_string()),*]);
-        }
-    };
-
-    (
-        #[test]
-        fn $name:ident(
-            $source:expr,
-            TomlVersion($toml_version:expr),
-        ) -> Err([$( $error:expr ),*$(,)?]);
-    ) => {
-        test_lint! {
-            #[test]
-            fn _$name(
-                $source,
-                Option::<std::path::PathBuf>::None,
-                $toml_version,
-            ) -> Err([$($error.to_string()),*]);
-        }
-    };
-
-    (
-        #[test]
-        fn _$name:ident(
-            $source:expr,
-            $schema_path:expr,
-            $toml_version:expr,
-        ) -> Err([$( $error:expr ),*$(,)?]);
-    ) => {
+        fn $name:ident($source:expr $(, $arg:expr )* $(,)? ) -> Err([$( $error:expr ),* $(,)?])
+    } => {
         #[tokio::test]
         async fn $name() {
             use tombi_config::TomlVersion;
@@ -183,16 +119,61 @@ macro_rules! test_lint {
 
             tombi_test_lib::init_tracing();
 
+            /// Test-time configuration overridden via `test_lint!` arguments.
+            #[allow(unused)]
+            #[derive(Default)]
+            pub struct TestConfig {
+                pub toml_version: TomlVersion,
+                pub options: $crate::LintOptions,
+                pub schema_path: Option<std::path::PathBuf>,
+            }
+
+            #[allow(unused)]
+            pub trait ApplyTestArg {
+                fn apply(self, config: &mut TestConfig);
+            }
+
+            impl ApplyTestArg for TomlVersion {
+                fn apply(self, config: &mut TestConfig) {
+                    config.toml_version = self;
+                }
+            }
+
+            impl ApplyTestArg for $crate::LintOptions {
+                fn apply(self, config: &mut TestConfig) {
+                    config.options = self;
+                }
+            }
+
+            /// Set schema path for the test case.
+            #[allow(unused)]
+            pub struct SchemaPath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SchemaPath {
+                fn apply(self, config: &mut TestConfig) {
+                    config.schema_path = Some(self.0);
+                }
+            }
+
+            #[allow(unused_mut)]
+            let mut config = TestConfig::default();
+            $(
+                ApplyTestArg::apply($arg, &mut config);
+            )*
+
             // Initialize schema store
             let schema_store = tombi_schema_store::SchemaStore::new();
 
-            if let Some(schema_path) = $schema_path {
+            if let Some(schema_path) = config.schema_path {
+                let path = tombi_uri::Uri::from_file_path(schema_path)
+                    .unwrap()
+                    .to_string();
                 // Load schemas
                 schema_store
                     .load_config_schemas(
                         &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
                             toml_version: None,
-                            path: schema_path.to_string_lossy().to_string(),
+                            path,
                             include: vec!["*.toml".to_string()],
                         })],
                         None,
@@ -200,12 +181,11 @@ macro_rules! test_lint {
                     .await;
             }
 
-            // Initialize linter with schema if provided
+            // Initialize linter
             let source_path = tombi_test_lib::project_root_path().join("test.toml");
-            let options = $crate::LintOptions::default();
             let linter = $crate::Linter::new(
-                $toml_version,
-                &options,
+                config.toml_version,
+                &config.options,
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -246,8 +226,8 @@ mod tests {
                 serde.features = ["derive"]
                 serde.workspace = true
                 "#,
-                cargo_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -257,14 +237,14 @@ mod tests {
                 [workspace]
                 aaa = 1
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Err([tombi_validator::DiagnosticKind::StrictAdditionalKeys {
                 accessors: tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
                 schema_uri: tombi_schema_store::SchemaUri::from_file_path(cargo_schema_path()).unwrap(),
                 key: "aaa".to_string(),
-            }]);
+            }])
         }
 
         test_lint! {
@@ -274,8 +254,8 @@ mod tests {
                 [aaa]
                 bbb = 1
                 "#,
-                cargo_schema_path(),
-            ) -> Err([tombi_validator::DiagnosticKind::KeyNotAllowed { key: "aaa".to_string() }]);
+                SchemaPath(cargo_schema_path()),
+            ) -> Err([tombi_validator::DiagnosticKind::KeyNotAllowed { key: "aaa".to_string() }])
         }
 
         test_lint! {
@@ -285,11 +265,11 @@ mod tests {
                 [package]
                 name = 1
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Err([tombi_validator::DiagnosticKind::TypeMismatch {
                 expected: tombi_schema_store::ValueType::String,
                 actual: tombi_document_tree::ValueType::Integer,
-            }]);
+            }])
         }
 
         test_lint! {
@@ -299,8 +279,8 @@ mod tests {
                 [package]
                 name = 1 # tombi: lint.rules.type-mismatch.disabled = true
                 "#,
-                cargo_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -310,14 +290,14 @@ mod tests {
                 [package]
                 name = 1 # tombi: lint.rules.type-mism.disabled = true
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed { key: "type-mism".to_string() },
                 tombi_validator::DiagnosticKind::TypeMismatch {
                     expected: tombi_schema_store::ValueType::String,
                     actual: tombi_document_tree::ValueType::Integer,
                 }
-            ]);
+            ])
         }
     }
 
@@ -329,8 +309,8 @@ mod tests {
             #[test]
             fn test_tombi_config_in_this_repository(
                 include_str!("../../../tombi.toml"),
-                tombi_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -340,8 +320,8 @@ mod tests {
                 [format.rules]
                 array-bracket-space-width = 0
                 "#,
-                tombi_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -354,12 +334,12 @@ mod tests {
                 include = ["pyproject.toml"]
                 unknown = true
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed {
                     key: "unknown".to_string(),
                 },
-            ]);
+            ])
         }
 
         test_lint! {
@@ -369,13 +349,13 @@ mod tests {
                 [lint.rules]
                 key-empty = "undefined"
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::Enumerate {
                     expected: vec!["\"off\"".to_string(), "\"warn\"".to_string(), "\"error\"".to_string()],
                     actual: "\"undefined\"".to_string()
                 },
-            ]);
+            ])
         }
     }
 
@@ -391,8 +371,8 @@ mod tests {
 
                 favorite_color = "blue"
                 "#,
-                untagged_union_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(untagged_union_schema_path()),
+            ) -> Ok(_)
         }
     }
 
@@ -413,7 +393,7 @@ mod tests {
                 # Flask/Poster dev ONLY settings
                 FLASK_DEBUG=1
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
     }
 
@@ -433,7 +413,7 @@ mod tests {
                 prod.cpu = 10
                 prod.autoscale = { min = 10, max = 20 }
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -444,7 +424,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -453,7 +433,7 @@ mod tests {
                 r#"
                 # tombi: format.rules.table-keys-order = "descending"
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -464,7 +444,7 @@ mod tests {
 
                 key = "value"
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -475,7 +455,7 @@ mod tests {
 
                 [aaa]
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -487,7 +467,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -499,7 +479,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -510,7 +490,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -521,7 +501,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -533,7 +513,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -545,7 +525,7 @@ mod tests {
                 "#,
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
 
         test_lint! {
@@ -568,7 +548,7 @@ mod tests {
                 crate::DiagnosticKind::DottedKeysOutOfOrder,
                 crate::DiagnosticKind::DottedKeysOutOfOrder,
                 crate::DiagnosticKind::DottedKeysOutOfOrder
-            ]);
+            ])
         }
 
         test_lint! {
@@ -586,7 +566,7 @@ mod tests {
                 apple.color = "red"
                 orange.color = "orange"
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -595,7 +575,7 @@ mod tests {
                 r#"
                 #:schema https://www.schemastore.org/tombi.json
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -604,7 +584,7 @@ mod tests {
                 r#"
                 #:schema ./www.schemastore.org/tombi.json
                 "#,
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -618,7 +598,7 @@ mod tests {
                     schema_uri: SchemaUri::from_str("https://does-not-exist.co.jp").unwrap(),
                     reason: "error sending request for url (https://does-not-exist.co.jp/)".to_string(),
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -631,7 +611,7 @@ mod tests {
                 tombi_schema_store::Error::SchemaFileNotFound{
                     schema_path: tombi_test_lib::project_root_path().join("does-not-exist.schema.json"),
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -644,7 +624,7 @@ mod tests {
                 tombi_schema_store::Error::SchemaFileNotFound{
                     schema_path: tombi_test_lib::project_root_path().join("does-not-exist.schema.json"),
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -657,7 +637,7 @@ mod tests {
                 tombi_schema_store::Error::SchemaFileNotFound{
                     schema_path: tombi_test_lib::project_root_path().join("../does-not-exist.schema.json"),
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -668,7 +648,7 @@ mod tests {
                 "#,
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed { key: "not-exist".to_string() }
-            ]);
+            ])
         }
     }
 }

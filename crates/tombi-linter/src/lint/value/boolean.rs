@@ -25,7 +25,7 @@ mod tests {
                 r#"
                 key = "value"  # tombi: lint.rules.string-pattern.disabled = true
                 "#
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -34,7 +34,7 @@ mod tests {
                 r#"
                 key1.key2 = "value"  # tombi: lint.rules.string-pattern.disabled = true
                 "#
-            ) -> Ok(_);
+            ) -> Ok(_)
         }
     }
 }

@@ -28,13 +28,13 @@ mod tests {
                 r#"
                 array = []
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::ArrayMinValues {
                     min_values: 2,
                     actual: 0,
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -44,8 +44,8 @@ mod tests {
                 # tombi: lint.rules.array-min-values.disabled = true
                 array = []
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -54,8 +54,8 @@ mod tests {
                 r#"
                 array = [] # tombi: lint.rules.array-min-values.disabled = true
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -66,8 +66,8 @@ mod tests {
                   # tombi: lint.rules.array-min-values.disabled = true
                 ]
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -80,8 +80,8 @@ mod tests {
                   1,
                 ]
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -94,8 +94,8 @@ mod tests {
                   # tombi: lint.rules.array-min-values.disabled = true
                 ]
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -107,8 +107,8 @@ mod tests {
                   # tombi: lint.rules.array-min-values.disabled = true
                 ]
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -120,10 +120,10 @@ mod tests {
                     # tombi: lint.rules.key-empty.disabled = true
                 ]
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
-            ]);
+            ])
         }
 
         test_lint! {
@@ -134,13 +134,13 @@ mod tests {
                     # tombi: lint.rules.array-min-values.disabled = true
                 ]]
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::ArrayMinValues {
                     min_values: 2,
                     actual: 1,
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -155,10 +155,10 @@ mod tests {
                     ]
                 ]
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
-            ]);
+            ])
         }
 
         test_lint! {
@@ -175,10 +175,10 @@ mod tests {
                     ]
                 ]
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
-            ]);
+            ])
         }
     }
 }
