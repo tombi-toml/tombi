@@ -187,7 +187,7 @@ mod tests {
             # comment1
             # comment2
             "#,
-            TomlVersion(V1_0_0)
+            TomlVersion::V1_0_0
         ) -> Ok(source)
     }
 
@@ -201,7 +201,7 @@ mod tests {
             # comment3
             # comment4
             "#,
-            TomlVersion(V1_0_0)
+            TomlVersion::V1_0_0
         ) -> Ok(source)
     }
 

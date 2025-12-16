@@ -525,7 +525,7 @@ mod tests {
         #[tokio::test]
         async fn array_with_nested_inline_table_exceeds_line_width(
             r#"array = [{ key1 = 1111111111, key2 = 2222222222 }, { key3 = [3333333333, 4444444444], key4 = [5555555555, 6666666666, 7777777777] }]"#,
-            TomlVersion(V1_1_0_Preview),
+            TomlVersion::V1_1_0_Preview,
             FormatOptions {
                 rules: Some(FormatRules {
                     line_width: Some(35.try_into().unwrap()),

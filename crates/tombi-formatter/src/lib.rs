@@ -30,7 +30,7 @@ macro_rules! test_format {
             use textwrap::dedent;
             // Re-export TomlVersion variants for convenience
             #[allow(unused)]
-            use tombi_config::TomlVersion::*;
+            use tombi_config::{FormatOptions, TomlVersion};
             use tombi_schema_store::SchemaStore;
 
 
@@ -59,29 +59,15 @@ macro_rules! test_format {
                 fn apply(self, config: &mut TestConfig);
             }
 
-            /// Set TomlVersion for the test case.
-            /// Can be used as: TomlVersion(tombi_config::TomlVersion::V1_0_0)
-            #[allow(unused)]
-            pub struct TomlVersion(pub tombi_config::TomlVersion);
-
             impl ApplyTestArg for TomlVersion {
                 fn apply(self, config: &mut TestConfig) {
-                    config.toml_version = self.0;
+                    config.toml_version = self;
                 }
-            }
-
-            /// Replace formatter options for the test case.
-            #[allow(unused)]
-            pub struct FormatOptions {
-                pub rules: Option<tombi_config::format::FormatRules>,
             }
 
             impl ApplyTestArg for FormatOptions {
                 fn apply(self, config: &mut TestConfig) {
-                    config.options = tombi_config::FormatOptions {
-                        rules: self.rules,
-                        ..Default::default()
-                    };
+                    config.options = self;
                 }
             }
 
@@ -155,7 +141,7 @@ macro_rules! test_format {
         async fn $name() {
             // Re-export TomlVersion variants for convenience
             #[allow(unused)]
-            use tombi_config::TomlVersion::*;
+            use tombi_config::{FormatOptions, TomlVersion};
             use tombi_schema_store::SchemaStore;
 
 
@@ -164,16 +150,16 @@ macro_rules! test_format {
             /// Test-time configuration overridden via `test_format!` arguments.
             #[allow(unused)]
             pub struct TestConfig {
-                pub toml_version: tombi_config::TomlVersion,
-                pub options: tombi_config::FormatOptions,
+                pub toml_version: TomlVersion,
+                pub options: FormatOptions,
                 pub schema_path: Option<std::path::PathBuf>,
             }
 
             impl Default for TestConfig {
                 fn default() -> Self {
                     Self {
-                        toml_version: tombi_config::TomlVersion::default(),
-                        options: tombi_config::FormatOptions::default(),
+                        toml_version: TomlVersion::default(),
+                        options: FormatOptions::default(),
                         schema_path: None,
                     }
                 }
@@ -184,24 +170,16 @@ macro_rules! test_format {
                 fn apply(self, config: &mut TestConfig);
             }
 
-            /// Set TomlVersion for the test case.
-            /// Can be used as: TomlVersion(tombi_config::TomlVersion::V1_0_0)
-            #[allow(unused)]
-            pub struct TomlVersion(pub tombi_config::TomlVersion);
-
             impl ApplyTestArg for TomlVersion {
                 fn apply(self, config: &mut TestConfig) {
-                    config.toml_version = self.0;
+                    config.toml_version = self;
                 }
             }
 
-            /// Replace formatter options for the test case.
-            #[allow(unused)]
-            pub struct FormatOptions(pub tombi_config::FormatOptions);
 
             impl ApplyTestArg for FormatOptions {
                 fn apply(self, config: &mut TestConfig) {
-                    config.options = self.0;
+                    config.options = self;
                 }
             }
 
@@ -271,7 +249,7 @@ mod test {
         #[tokio::test]
         async fn test_empty(
             r#""#,
-            TomlVersion(V1_0_0)
+            TomlVersion::V1_0_0
         ) -> Ok(source)
     }
 
@@ -279,7 +257,7 @@ mod test {
         #[tokio::test]
         async fn test_whitespace(
             r#"    "#,
-            TomlVersion(V1_0_0)
+            TomlVersion::V1_0_0
         ) -> Ok("")
     }
 
@@ -305,7 +283,7 @@ mod test {
               # comment
             ]
             "#,
-            TomlVersion(V1_1_0_Preview)
+            TomlVersion::V1_1_0_Preview
         ) -> Ok(source)
     }
 
@@ -450,7 +428,7 @@ b = 3
 # table key values end dangling comment3
 # table key values end dangling comment4
 "#,
-        TomlVersion(V1_1_0_Preview),
+        TomlVersion::V1_1_0_Preview,
         FormatOptions {
             rules: Some(FormatRules {
                 string_quote_style: Some(StringQuoteStyle::Preserve),
