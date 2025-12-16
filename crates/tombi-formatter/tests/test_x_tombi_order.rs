@@ -1001,7 +1001,7 @@ mod table_keys_order {
                   key5 = 5, key4 = 4, key3 = 3
                 }
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
+                TomlVersion::V1_1_0_Preview,
             ) -> Ok(
                 r#"
                 key = {
@@ -1023,7 +1023,7 @@ mod table_keys_order {
                   key5 = 5, key4 = 4, key3 = 3,
                 }  # tombi: format.rules.table-keys-order = "ascending"
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
+                TomlVersion::V1_1_0_Preview,
             ) -> Ok(
                 r#"
                 key = {
@@ -1051,7 +1051,7 @@ mod table_keys_order {
                   key3 = 3 # trailing comment4
                 }
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
+                TomlVersion::V1_1_0_Preview,
             ) -> Ok(
                 r#"
                 key = {
@@ -1456,200 +1456,5 @@ mod table_keys_order {
                 "#
             )
         }
-    }
-
-    #[macro_export]
-    macro_rules! test_format {
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                TomlVersion($toml_version:expr),
-                $schema_path:expr$(,)?
-            ) -> Ok(source)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    $toml_version,
-                    Some($schema_path),
-                ) -> Ok($source)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                TomlVersion($toml_version:expr),
-            ) -> Ok(source)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    $toml_version,
-                    Option::<&std::path::Path>::None,
-                ) -> Ok($source)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                $schema_path:expr$(,)?
-            ) -> Ok(source)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    TomlVersion::default(),
-                    Some($schema_path),
-                ) -> Ok($source)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                TomlVersion($toml_version:expr),
-                $schema_path:expr$(,)?
-            ) -> Ok($expected:expr$(,)?)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    $toml_version,
-                    Some($schema_path),
-                ) -> Ok($expected)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                TomlVersion($toml_version:expr),
-            ) -> Ok($expected:expr$(,)?)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    $toml_version,
-                    Option::<&std::path::Path>::None,
-                ) -> Ok($expected)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                $schema_path:expr$(,)?
-            ) -> Ok($expected:expr$(,)?)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    TomlVersion::default(),
-                    Some($schema_path),
-                ) -> Ok($expected)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-            ) -> Ok(source)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    TomlVersion::default(),
-                    Option::<&std::path::Path>::None,
-                ) -> Ok($source)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-            ) -> Ok($expected:expr$(,)?)
-        ) => {
-            test_format! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    TomlVersion::default(),
-                    Option::<&std::path::Path>::None,
-                ) -> Ok($expected)
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn _$name:ident(
-                $source:expr,
-                $toml_version:expr,
-                $schema_path:expr,
-            ) -> Ok($expected:expr$(,)?)
-        ) => {
-            #[tokio::test]
-            async fn $name() {
-                use textwrap::dedent;
-                use tombi_config::TomlVersion;
-                use tombi_formatter::{FormatOptions, Formatter};
-                use tombi_schema_store::SchemaStore;
-
-                tombi_test_lib::init_tracing();
-
-                // Initialize schema store
-                let schema_store = SchemaStore::new();
-
-                if let Some(schema_path) = $schema_path {
-                    let path = tombi_uri::Uri::from_file_path(schema_path)
-                        .unwrap()
-                        .to_string();
-                    // Load schemas
-                    schema_store
-                        .load_config_schemas(
-                            &[tombi_config::Schema::Root(tombi_config::RootSchema {
-                                toml_version: None,
-                                path,
-                                include: vec!["*.toml".to_string()],
-                            })],
-                            None,
-                        )
-                        .await;
-                }
-
-                // Initialize formatter
-                let format_options = FormatOptions::default();
-                let source_path = tombi_test_lib::project_root_path().join("test.toml");
-                let formatter = Formatter::new(
-                    $toml_version,
-                    &format_options,
-                    Some(itertools::Either::Right(source_path.as_path())),
-                    &schema_store,
-                );
-
-                // Test that keys are reordered according to schema order
-                let source = dedent($source).trim().to_string();
-                let expected = dedent($expected).trim().to_string() + "\n";
-
-                let formatted = formatter.format(&source).await.unwrap();
-                pretty_assertions::assert_eq!(formatted, expected);
-            }
-        };
     }
 }

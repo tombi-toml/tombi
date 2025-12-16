@@ -107,7 +107,7 @@ mod tests {
             "#,
         ) -> Err([
             crate::DiagnosticKind::KeyEmpty
-        ]);
+        ])
     }
 
     test_lint! {
@@ -117,7 +117,7 @@ mod tests {
             # tombi: lint.rules.key-empty.disabled = true
             "" = 1
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -126,7 +126,7 @@ mod tests {
             r#"
             "" = 1 # tombi: lint.rules.key-empty.disabled = true
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -137,7 +137,7 @@ mod tests {
             "#,
         ) -> Err([
             crate::DiagnosticKind::KeyEmpty
-        ]);
+        ])
     }
 
     test_lint! {
@@ -147,7 +147,7 @@ mod tests {
             # tombi: lint.rules.key-empty.disabled = true
             a."".b = 1
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -156,7 +156,7 @@ mod tests {
             r#"
             a."".b = 1 # tombi: lint.rules.key-empty.disabled = true
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -167,7 +167,7 @@ mod tests {
             "#,
         ) -> Err([
             crate::DiagnosticKind::KeyEmpty
-        ]);
+        ])
     }
 
     test_lint! {
@@ -179,8 +179,8 @@ mod tests {
               "".b = 1
             }
             "#,
-            TomlVersion(TomlVersion::V1_1_0_Preview),
-        ) -> Ok(_);
+            TomlVersion::V1_1_0_Preview,
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -191,8 +191,8 @@ mod tests {
               "".b = 1  # tombi: lint.rules.key-empty.disabled = true
             }
             "#,
-            TomlVersion(TomlVersion::V1_1_0_Preview),
-        ) -> Ok(_);
+            TomlVersion::V1_1_0_Preview,
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -204,7 +204,7 @@ mod tests {
             "#,
         ) -> Err([
             crate::DiagnosticKind::KeyEmpty
-        ]);
+        ])
     }
 
     test_lint! {
@@ -215,7 +215,7 @@ mod tests {
             # tombi: lint.rules.key-empty.disabled = true
             "" = 1
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -225,7 +225,7 @@ mod tests {
             [table]
             "" = 1 # tombi: lint.rules.key-empty.disabled = true
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -237,7 +237,7 @@ mod tests {
             "#,
         ) -> Err([
             crate::DiagnosticKind::KeyEmpty
-        ]);
+        ])
     }
 
     test_lint! {
@@ -248,7 +248,7 @@ mod tests {
             # tombi: lint.rules.key-empty.disabled = true
             "" = 1
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 
     test_lint! {
@@ -258,6 +258,6 @@ mod tests {
             [[table]]
             "" = 1 # tombi: lint.rules.key-empty.disabled = true
             "#,
-        ) -> Ok(_);
+        ) -> Ok(_)
     }
 }

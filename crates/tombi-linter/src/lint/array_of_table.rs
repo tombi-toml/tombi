@@ -33,13 +33,13 @@ mod tests {
                 boolean = true
                 integer = 1
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::ArrayMinValues {
                     min_values: 2,
                     actual: 1,
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -51,8 +51,8 @@ mod tests {
                 boolean = true
                 integer = 1
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -63,8 +63,8 @@ mod tests {
                 boolean = true
                 integer = 1
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -76,7 +76,7 @@ mod tests {
                 boolean = true
                 integer = 1
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed {
                     key: "array-min-values".to_string()
@@ -85,7 +85,7 @@ mod tests {
                     min_values: 2,
                     actual: 1,
                 }
-            ]);
+            ])
         }
 
         test_lint! {
@@ -102,8 +102,8 @@ mod tests {
                 # tombi: lint.rules.key-empty.disabled = true
                 [array.""]
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -120,10 +120,10 @@ mod tests {
                 [array.""]
                 # tombi: lint.rules.key-empty.disabled = true
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 crate::DiagnosticKind::KeyEmpty
-            ]);
+            ])
         }
     }
 }

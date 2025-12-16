@@ -1,8 +1,8 @@
 mod format_options {
     use tombi_config::{
-        DateTimeDelimiter, FormatOptions, IndentStyle, LineEnding, StringQuoteStyle,
-        format::FormatRules,
+        DateTimeDelimiter, IndentStyle, LineEnding, StringQuoteStyle, format::FormatRules,
     };
+
     use tombi_formatter::{Formatter, test_format};
 
     mod array_bracket_space_width {
@@ -14,13 +14,12 @@ mod format_options {
                 r#"
                 key = [1, 2, 3]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         array_bracket_space_width: Some(0.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [1, 2, 3]
@@ -34,13 +33,12 @@ mod format_options {
                 r#"
                 key = [1, 2, 3]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         array_bracket_space_width: Some(1.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [ 1, 2, 3 ]
@@ -54,13 +52,12 @@ mod format_options {
                 r#"
                 key = [1, 2, 3]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         array_bracket_space_width: Some(2.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [  1, 2, 3  ]
@@ -78,13 +75,12 @@ mod format_options {
                 r#"
                 key = [1, 2,  3]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         array_comma_space_width: Some(0.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [1,2,3]
@@ -98,13 +94,12 @@ mod format_options {
                 r#"
                 key = [1,2,3]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         array_comma_space_width: Some(1.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [1, 2, 3]
@@ -118,13 +113,12 @@ mod format_options {
                 r#"
                 key = [1,2,3]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         array_comma_space_width: Some(2.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [1,  2,  3]
@@ -142,13 +136,12 @@ mod format_options {
                 r#"
                 key = 2024-01-01 10:00:00
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         date_time_delimiter: Some(DateTimeDelimiter::T),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = 2024-01-01T10:00:00
@@ -162,13 +155,12 @@ mod format_options {
                 r#"
                 key = 2024-01-01T10:00:00
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         date_time_delimiter: Some(DateTimeDelimiter::Space),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = 2024-01-01 10:00:00
@@ -182,13 +174,12 @@ mod format_options {
                 r#"
                 key = 2024-01-01T10:00:00
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         date_time_delimiter: Some(DateTimeDelimiter::Preserve),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = 2024-01-01T10:00:00
@@ -207,13 +198,12 @@ mod format_options {
                 [table]
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         indent_style: Some(IndentStyle::Space),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]
@@ -229,13 +219,12 @@ mod format_options {
                 [table]
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         indent_style: Some(IndentStyle::Tab),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]
@@ -255,13 +244,12 @@ mod format_options {
                 [table]
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         indent_table_key_value_pairs: Some(false),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]
@@ -277,13 +265,12 @@ mod format_options {
                 [table]
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         indent_table_key_value_pairs: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]
@@ -327,13 +314,12 @@ mod format_options {
                   3,
                 ]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         indent_width: Some(4.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [
@@ -355,13 +341,12 @@ mod format_options {
                 r#"
                 key = {a = 1, b = 2}
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         inline_table_brace_space_width: Some(0.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = {a = 1, b = 2}
@@ -375,13 +360,12 @@ mod format_options {
                 r#"
                 key = {a = 1, b = 2}
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         inline_table_brace_space_width: Some(1.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = { a = 1, b = 2 }
@@ -399,13 +383,12 @@ mod format_options {
                 r#"
                 key = {a = 1,b = 2}
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         inline_table_comma_space_width: Some(0.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = { a = 1,b = 2 }
@@ -419,13 +402,12 @@ mod format_options {
                 r#"
                 key = {a = 1,b = 2}
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         inline_table_comma_space_width: Some(2.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = { a = 1,  b = 2 }
@@ -445,13 +427,12 @@ mod format_options {
                 key2 = "value2"
                 key3.key4 = "value3"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_alignment: Some(false),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"
@@ -469,13 +450,12 @@ mod format_options {
                 key2 = "value2"
                 key3.key4 = "value3"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key       = "value"
@@ -494,13 +474,12 @@ mod format_options {
                 key2 = "value2"
                 key3.key4 = "value3"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]
@@ -520,13 +499,12 @@ mod format_options {
                 key2 = "value2"
                 key3.key4 = "value3"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [[table]]
@@ -547,14 +525,13 @@ mod format_options {
                   key3.key4 = "value3",
                 }
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
-                FormatOptions(FormatOptions{
+                TomlVersion::V1_1_0_Preview,
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 inline-table = {
@@ -576,13 +553,12 @@ mod format_options {
                 r#"
                 key="value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_space_width: Some(1.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"
@@ -596,13 +572,12 @@ mod format_options {
                 r#"
                 key="value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_space_width: Some(2.into()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key  =  "value"
@@ -620,13 +595,12 @@ mod format_options {
                 r#"
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         line_ending: Some(LineEnding::Lf),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"
@@ -644,13 +618,12 @@ mod format_options {
                 r#"
                 key = ["very long string value that should wrap", "another long string"]
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         line_width: Some(40.try_into().unwrap()),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = [
@@ -671,13 +644,12 @@ mod format_options {
                 r#"
                 key = 'value'
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         string_quote_style: Some(StringQuoteStyle::Double),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"
@@ -691,13 +663,12 @@ mod format_options {
                 r#"
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         string_quote_style: Some(StringQuoteStyle::Single),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = 'value'
@@ -711,13 +682,12 @@ mod format_options {
                 r#"
                 key = "value"
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         string_quote_style: Some(StringQuoteStyle::Preserve),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"
@@ -737,13 +707,12 @@ mod format_options {
                 key2 = "value2" # comment 2
                 key3.key4 = "value3" # comment 3
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(false),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"  # comment 1
@@ -761,13 +730,12 @@ mod format_options {
                 key2 = "value2" # comment 2
                 key3.key4 = "value3" # comment 3
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"         # comment 1
@@ -786,13 +754,12 @@ mod format_options {
                 key2 = "value2" # comment 2
                 key3.key4 = "value3" # comment 3
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]
@@ -812,13 +779,12 @@ mod format_options {
                 key2 = "value2" # comment 2
                 key3.key4 = "value3" # comment 3
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [[table]]
@@ -841,13 +807,12 @@ mod format_options {
                   3 # comment 3-3
                 ] # comment 4
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"    # comment 1
@@ -873,13 +838,12 @@ mod format_options {
                   3, # comment 3-3
                 ] # comment 4
                 "#,
-                FormatOptions(FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"    # comment 1
@@ -905,14 +869,13 @@ mod format_options {
                     c = 3  # comment 3-3
                 } # comment 4
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
-                FormatOptions(FormatOptions{
+                TomlVersion::V1_1_0_Preview,
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"    # comment 1
@@ -938,14 +901,13 @@ mod format_options {
                     c = 3, # comment 3-3
                 } # comment 4
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
-                FormatOptions(FormatOptions{
+                TomlVersion::V1_1_0_Preview,
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 key = "value"    # comment 1
@@ -972,15 +934,14 @@ mod format_options {
                     c = 3, # comment 3-3
                 } # comment 4
                 "#,
-                TomlVersion(TomlVersion::V1_1_0_Preview),
-                FormatOptions(FormatOptions{
+                TomlVersion::V1_1_0_Preview,
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         indent_table_key_value_pairs: Some(true),
                         ..Default::default()
                     }),
-                    ..Default::default()
-                })
+                }
             ) -> Ok(
                 r#"
                 [table]

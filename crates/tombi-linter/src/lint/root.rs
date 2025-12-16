@@ -41,11 +41,11 @@ mod tests {
             fn test_root_table_min_keys(
                 r#"
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([tombi_validator::DiagnosticKind::TableMinKeys {
                 min_keys: 1,
                 actual: 0,
-            }]);
+            }])
         }
 
         test_lint! {
@@ -54,8 +54,8 @@ mod tests {
                 r#"
                 # tombi: lint.rules.table-min-keys.disabled = true
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -64,11 +64,11 @@ mod tests {
                 r#"
                 integer = "1"
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([tombi_validator::DiagnosticKind::TypeMismatch {
                 expected: tombi_schema_store::ValueType::Integer,
                 actual: tombi_document_tree::ValueType::String,
-            }]);
+            }])
         }
 
         test_lint! {
@@ -78,8 +78,8 @@ mod tests {
                 # tombi: lint.rules.type-mismatch.disabled = true
                 integer = "1"
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -88,8 +88,8 @@ mod tests {
                 r#"
                 integer = "1"  # tombi: lint.rules.type-mismatch.disabled = true
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -99,8 +99,8 @@ mod tests {
                 # tombi: lint.rules.key-not-allowed.disabled = true
                 unknown = "value"
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -109,8 +109,8 @@ mod tests {
                 r#"
                 unknown = "value"  # tombi: lint.rules.key-not-allowed.disabled = true
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -121,13 +121,13 @@ mod tests {
 
                 table.unknown = "value"
                 "#,
-                type_test_schema_path(),
+                SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::TableMinKeys {
                     min_keys: 2,
                     actual: 1,
                 },
-            ]);
+            ])
         }
 
         test_lint! {
@@ -140,8 +140,8 @@ mod tests {
                 # tombi: lint.rules.table-min-keys.disabled = true
                 table.unknown = "value"
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
 
         test_lint! {
@@ -153,8 +153,8 @@ mod tests {
                 # tombi: lint.rules.table-min-keys.disabled = true
                 table.unknown = "value"  # tombi: lint.rules.key-not-allowed.disabled = true
                 "#,
-                type_test_schema_path(),
-            ) -> Ok(_);
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
     }
 }

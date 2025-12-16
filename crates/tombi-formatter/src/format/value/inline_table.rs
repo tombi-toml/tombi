@@ -214,7 +214,7 @@ fn format_singleline_inline_table(
 
 #[cfg(test)]
 mod tests {
-    use tombi_config::{FormatOptions, format::FormatRules};
+    use tombi_config::format::FormatRules;
 
     use crate::{Formatter, test_format};
 
@@ -241,7 +241,7 @@ mod tests {
             inline_table = {
               # comment
             }"#,
-            TomlVersion(TomlVersion::V1_1_0_Preview)
+            TomlVersion::V1_1_0_Preview
         ) -> Ok(source)
     }
 
@@ -259,7 +259,7 @@ mod tests {
 
               # comment 3-1
             }"#,
-            TomlVersion(TomlVersion::V1_1_0_Preview)
+            TomlVersion::V1_1_0_Preview
         ) -> Ok(source)
     }
 
@@ -267,16 +267,13 @@ mod tests {
         #[tokio::test]
         async fn inline_table_exceeds_line_width_v1_0_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
-            TomlVersion(TomlVersion::V1_0_0),
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(30.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            TomlVersion::V1_0_0,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(source)
     }
 
@@ -284,16 +281,13 @@ mod tests {
         #[tokio::test]
         async fn inline_table_exceeds_line_width_v1_1_0(
             r#"table = { key1 = 1111111111, key2 = 2222222222, key3 = 3333333333 }"#,
-            TomlVersion(TomlVersion::V1_1_0_Preview),
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(30.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            TomlVersion::V1_1_0_Preview,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(
             r#"
             table = {
@@ -309,16 +303,13 @@ mod tests {
         #[tokio::test]
         async fn inline_table_with_nested_array_exceeds_line_width(
             r#"table = { key1 = [1111111111, 2222222222], key2 = [3333333333, 4444444444] }"#,
-            TomlVersion(TomlVersion::V1_1_0_Preview),
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(35.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            TomlVersion::V1_1_0_Preview,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(35.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(
             r#"
             table = {
@@ -333,16 +324,13 @@ mod tests {
         #[tokio::test]
         async fn inline_table_with_nested_inline_table_exceeds_line_width(
             r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222, }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#,
-            TomlVersion(TomlVersion::V1_1_0_Preview),
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(30.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            TomlVersion::V1_1_0_Preview,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(
             r#"
             table = {
@@ -374,16 +362,13 @@ mod tests {
               }
             }
             "#,
-            TomlVersion(TomlVersion::V1_0_0),
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(30.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            TomlVersion::V1_0_0,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(30.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(
             r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222 }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#
         )
