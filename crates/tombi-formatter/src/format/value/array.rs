@@ -205,7 +205,7 @@ fn format_singleline_array(
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use tombi_config::{FormatOptions, StringQuoteStyle, TomlVersion, format::FormatRules};
+    use tombi_config::{StringQuoteStyle, TomlVersion, format::FormatRules};
 
     use super::*;
     use crate::{Formatter, test_format};
@@ -256,15 +256,12 @@ mod tests {
         #[tokio::test]
         async fn singleline_array7(
             r#"string_array = [ "all", 'strings', """are the same""", '''type''' ]"#,
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        string_quote_style: Some(StringQuoteStyle::Preserve),
-                        ..Default::default()
-                    }),
+            FormatOptions{
+                rules: Some(FormatRules {
+                    string_quote_style: Some(StringQuoteStyle::Preserve),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(r#"string_array = ["all", 'strings', """are the same""", '''type''']"#)
     }
 
@@ -487,15 +484,12 @@ mod tests {
         #[tokio::test]
         async fn array_exceeds_line_width(
             r#"array = [1111111111, 2222222222, 3333333333]"#,
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(20.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(20.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(
             r#"
             array = [
@@ -511,14 +505,12 @@ mod tests {
         #[tokio::test]
         async fn array_with_nested_array_exceeds_line_width(
             r#"array = [[1111111111, 2222222222], [3333333333, 4444444444]]"#,
-            FormatOptions(
-                FormatOptions {
+            FormatOptions {
                 rules: Some(FormatRules {
                     line_width: Some(30.try_into().unwrap()),
                     ..Default::default()
                 }),
-                ..Default::default()
-            })
+            }
         ) -> Ok(
             r#"
             array = [
@@ -533,16 +525,13 @@ mod tests {
         #[tokio::test]
         async fn array_with_nested_inline_table_exceeds_line_width(
             r#"array = [{ key1 = 1111111111, key2 = 2222222222 }, { key3 = [3333333333, 4444444444], key4 = [5555555555, 6666666666, 7777777777] }]"#,
-            TomlVersion(TomlVersion::V1_1_0_Preview),
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        line_width: Some(35.try_into().unwrap()),
-                        ..Default::default()
-                    }),
+            TomlVersion(V1_1_0_Preview),
+            FormatOptions {
+                rules: Some(FormatRules {
+                    line_width: Some(35.try_into().unwrap()),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(
             r#"
             array = [

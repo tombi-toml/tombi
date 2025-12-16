@@ -99,7 +99,8 @@ impl LiteralNode for tombi_ast::MultiLineLiteralString {
 #[cfg(test)]
 mod tests {
     use crate::{Formatter, test_format};
-    use tombi_config::{FormatOptions, StringQuoteStyle, format::FormatRules};
+    use tombi_config::{StringQuoteStyle, format::FormatRules};
+    
 
     test_format! {
         #[tokio::test]
@@ -115,15 +116,12 @@ mod tests {
         #[tokio::test]
         async fn basic_string_value_quote_style_single1(
             r#"key = "value""#,
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        string_quote_style: Some(StringQuoteStyle::Single),
-                        ..Default::default()
-                    }),
+            FormatOptions {
+                rules: Some(FormatRules {
+                    string_quote_style: Some(StringQuoteStyle::Single),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(r#"key = 'value'"#)
     }
 
@@ -131,15 +129,12 @@ mod tests {
         #[tokio::test]
         async fn basic_string_value_quote_style_single2(
             r#"key = "'value'""#,
-            FormatOptions(
-                FormatOptions {
-                    rules: Some(FormatRules {
-                        string_quote_style: Some(StringQuoteStyle::Single),
-                        ..Default::default()
-                    }),
+            FormatOptions {
+                rules: Some(FormatRules {
+                    string_quote_style: Some(StringQuoteStyle::Single),
                     ..Default::default()
-                }
-            )
+                }),
+            }
         ) -> Ok(source)
     }
 }
