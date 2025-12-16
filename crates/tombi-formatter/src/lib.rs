@@ -28,30 +28,19 @@ macro_rules! test_format {
         #[tokio::test]
         async fn $name() {
             use textwrap::dedent;
-            // Re-export TomlVersion variants for convenience
-            #[allow(unused)]
-            use tombi_config::{FormatOptions, TomlVersion};
             use tombi_schema_store::SchemaStore;
+            use tombi_config::{TomlVersion, FormatOptions};
 
 
             tombi_test_lib::init_tracing();
 
             /// Test-time configuration overridden via `test_format!` arguments.
             #[allow(unused)]
+            #[derive(Default)]
             pub struct TestConfig {
-                pub toml_version: tombi_config::TomlVersion,
-                pub options: tombi_config::FormatOptions,
+                pub toml_version: TomlVersion,
+                pub options: FormatOptions,
                 pub schema_path: Option<std::path::PathBuf>,
-            }
-
-            impl Default for TestConfig {
-                fn default() -> Self {
-                    Self {
-                        toml_version: tombi_config::TomlVersion::default(),
-                        options: tombi_config::FormatOptions::default(),
-                        schema_path: None,
-                    }
-                }
             }
 
             #[allow(unused)]
@@ -139,30 +128,19 @@ macro_rules! test_format {
     } => {
         #[tokio::test]
         async fn $name() {
-            // Re-export TomlVersion variants for convenience
-            #[allow(unused)]
-            use tombi_config::{FormatOptions, TomlVersion};
             use tombi_schema_store::SchemaStore;
+            use tombi_config::{FormatOptions, TomlVersion};
 
 
             tombi_test_lib::init_tracing();
 
             /// Test-time configuration overridden via `test_format!` arguments.
             #[allow(unused)]
+            #[derive(Default)]
             pub struct TestConfig {
                 pub toml_version: TomlVersion,
                 pub options: FormatOptions,
                 pub schema_path: Option<std::path::PathBuf>,
-            }
-
-            impl Default for TestConfig {
-                fn default() -> Self {
-                    Self {
-                        toml_version: TomlVersion::default(),
-                        options: FormatOptions::default(),
-                        schema_path: None,
-                    }
-                }
             }
 
             #[allow(unused)]
@@ -175,7 +153,6 @@ macro_rules! test_format {
                     config.toml_version = self;
                 }
             }
-
 
             impl ApplyTestArg for FormatOptions {
                 fn apply(self, config: &mut TestConfig) {

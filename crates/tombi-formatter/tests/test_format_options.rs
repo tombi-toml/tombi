@@ -902,7 +902,7 @@ mod format_options {
                 } # comment 4
                 "#,
                 TomlVersion::V1_1_0_Preview,
-                FormatOptions{
+                FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
                         ..Default::default()
