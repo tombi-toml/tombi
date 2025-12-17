@@ -11,7 +11,7 @@ mod hover_keys_value {
                 r#"
                 toml-version = "█v1.0.0"
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "toml-version",
                 "Value": "String?"
@@ -37,7 +37,7 @@ mod hover_keys_value {
                 [lint.rules]
                 key-empty = "█warn"
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "lint.rules.key-empty",
                 "Value": "String?"
@@ -51,7 +51,7 @@ mod hover_keys_value {
                 [schema.catalog]
                 paths = ["█https://www.schemastore.org/api/json/catalog.json"]
                 "#,
-                tombi_schema_path()
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "schema.catalog.paths[0]",
                 "Value": "String"
@@ -80,7 +80,7 @@ mod hover_keys_value {
                 r#"
                 [[schemas█]]
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "schemas[0]",
                 "Value": "Table"
@@ -106,7 +106,7 @@ mod hover_keys_value {
                 [[schemas]]
                 path = "█schemas/tombi.schema.json"
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "schemas[0].path",
                 "Value": "String"
@@ -121,7 +121,7 @@ mod hover_keys_value {
                 path = "schemas/tombi.schema.json"
                 include█ = ["*.toml"]
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "schemas[0].include",
                 "Value": "Array"
@@ -136,7 +136,7 @@ mod hover_keys_value {
                 path = "schemas/tombi.schema.json"
                 include = ["█*.toml"]
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "schemas[0].include[0]",
                 "Value": "String"
@@ -149,7 +149,7 @@ mod hover_keys_value {
                 r#"
                 #:tombi toml-version█ = "v1.0.0"
                 "#,
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok({
                 "Keys": "toml-version",
                 "Value": "String?"
@@ -167,7 +167,7 @@ mod hover_keys_value {
                 [package]
                 name█ = "tombi"
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "package.name",
                 "Value": "String" // Yes; the value is required.
@@ -181,7 +181,7 @@ mod hover_keys_value {
                 [package]
                 name = █
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "package.name",
                 "Value": "String"
@@ -195,7 +195,7 @@ mod hover_keys_value {
                 [package]
                 readme = "█README.md"
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "package.readme",
                 "Value": "(String | Boolean | Table)?"
@@ -222,7 +222,7 @@ mod hover_keys_value {
                 [dependencies]
                 serde█ = { workspace = true }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde",
                 "Value": "(String | Table)?"
@@ -236,7 +236,7 @@ mod hover_keys_value {
                 [dependencies]
                 serde = "█1.0"
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde",
                 "Value": "(String | Table)?"
@@ -263,7 +263,7 @@ mod hover_keys_value {
                 [dependencies]
                 serde = { workspace█ = true }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.workspace",
                 "Value": "Boolean?"
@@ -290,7 +290,7 @@ mod hover_keys_value {
                 [dependencies]
                 serde = { version = "^1.0.0", features█ = ["derive"] }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.features",
                 "Value": "Array?"
@@ -304,7 +304,7 @@ mod hover_keys_value {
                 [dependencies]
                 serde = { version = "^1.0.0", features = ["derive█"] }
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "dependencies.serde.features[0]",
                 "Value": "String"
@@ -331,7 +331,7 @@ mod hover_keys_value {
                 [profile.release]
                 strip = "debuginfo█"
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "profile.release.strip",
                 "Value": "(String ^ Boolean)?"
@@ -345,7 +345,7 @@ mod hover_keys_value {
                 [profile.release]
                 strip = true█
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "profile.release.strip",
                 "Value": "(String ^ Boolean)?"
@@ -359,7 +359,7 @@ mod hover_keys_value {
                 [profile.release]
                 strip = false█
                 "#,
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok({
                 "Keys": "profile.release.strip",
                 "Value": "(String ^ Boolean)?"
@@ -377,7 +377,7 @@ mod hover_keys_value {
                 [project]
                 readme = "█1.0.0"
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok({
                 "Keys": "project.readme",
                 "Value": "(String ^ Table)?"
@@ -393,7 +393,7 @@ mod hover_keys_value {
                     "█pytest>=8.3.3",
                 ]
                 "#,
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok({
                 "Keys": "dependency-groups.dev[0]",
                 "Value": "String ^ Table"
@@ -451,31 +451,7 @@ mod hover_keys_value {
     #[macro_export]
     macro_rules! test_hover_keys_value {
         (#[tokio::test] async fn $name:ident(
-            $source:expr,
-            $schema_file_path:expr$(,)?
-        ) -> Ok({
-            "Keys": $keys:expr,
-            "Value": $value_type:expr$(,)?
-        });) => {
-            test_hover_keys_value!(#[tokio::test] async fn __$name($source, Some($schema_file_path)) -> Ok({
-                "Keys": $keys,
-                "Value": $value_type
-            }););
-        };
-        (#[tokio::test] async fn $name:ident(
-            $source:expr,
-        ) -> Ok({
-            "Keys": $keys:expr,
-            "Value": $value_type:expr$(,)?
-        });) => {
-            test_hover_keys_value!(#[tokio::test] async fn __$name($source, Option::<std::path::PathBuf>::None ) -> Ok({
-                "Keys": $keys,
-                "Value": $value_type
-            }););
-        };
-        (#[tokio::test] async fn __$name:ident(
-            $source:expr,
-            $schema_file_path:expr$(,)?
+            $source:expr $(, $arg:expr )* $(,)?
         ) -> Ok({
             "Keys": $keys:expr,
             "Value": $value_type:expr$(,)?
@@ -496,41 +472,124 @@ mod hover_keys_value {
 
                 tombi_test_lib::init_tracing();
 
-                let (service, _) = LspService::new(|client| Backend::new(client, &tombi_lsp::backend::Options::default()));
+                #[allow(unused)]
+                #[derive(Default)]
+                struct TestConfig {
+                    source_file_path: Option<std::path::PathBuf>,
+                    schema_file_path: Option<std::path::PathBuf>,
+                    subschemas: Vec<SubSchemaPath>,
+                    backend_options: tombi_lsp::backend::Options,
+                }
+
+                #[allow(unused)]
+                trait ApplyTestArg {
+                    fn apply(self, config: &mut TestConfig);
+                }
+
+                #[allow(unused)]
+                struct SourcePath(std::path::PathBuf);
+
+                impl ApplyTestArg for SourcePath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.source_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SchemaPath(std::path::PathBuf);
+
+                impl ApplyTestArg for SchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.schema_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SubSchemaPath {
+                    pub root: String,
+                    pub path: std::path::PathBuf,
+                }
+
+                impl ApplyTestArg for SubSchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.subschemas.push(self);
+                    }
+                }
+
+                impl ApplyTestArg for tombi_lsp::backend::Options {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.backend_options = self;
+                    }
+                }
+
+                #[allow(unused_mut)]
+                let mut config = TestConfig::default();
+                $(ApplyTestArg::apply($arg, &mut config);)*
+
+                let (service, _) = LspService::new(|client| {
+                    Backend::new(client, &config.backend_options)
+                });
 
                 let backend = service.inner();
 
-                if let Some(schema_file_path) = &$schema_file_path {
-                    let schema_file_url = tombi_schema_store::SchemaUri::from_file_path(schema_file_path).expect(
-                        format!(
-                            "failed to convert schema path to URL: {}",
-                            schema_file_path.display()
-                        )
-                        .as_str(),
-                    );
+                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+                    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
+                        .expect(
+                            format!(
+                                "failed to convert schema path to URL: {}",
+                                schema_file_path.display()
+                            )
+                            .as_str(),
+                        );
+
                     backend
                         .config_manager
                         .load_config_schemas(
-                            &[
-                                tombi_config::SchemaItem::Root(
-                                    tombi_config::RootSchema {
-                                        toml_version: None,
-                                        path: schema_file_url.to_string(),
-                                        include: vec!["*.toml".to_string()],
-                                    }
-                                )
-                            ],
-                            None
+                            &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                                toml_version: None,
+                                path: schema_uri.to_string(),
+                                include: vec!["*.toml".to_string()],
+                            })],
+                            None,
                         )
                         .await;
                 }
 
+                for subschema in &config.subschemas {
+                    let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
+                        .expect(
+                            format!(
+                                "failed to convert subschema path to URL: {}",
+                                subschema.path.display()
+                            )
+                            .as_str(),
+                        );
+
+                    backend
+                        .config_manager
+                        .load_config_schemas(
+                            &[tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                                path: subschema_uri.to_string(),
+                                include: vec!["*.toml".to_string()],
+                                root: subschema.root.clone(),
+                            })],
+                            None,
+                        )
+                        .await;
+                }
+
+                let current_dir = std::env::current_dir().expect("failed to get current directory");
+                let temp_dir = if let Some(source_path) = config.source_file_path.as_ref() {
+                    source_path.parent().ok_or("failed to get parent directory")?
+                } else {
+                    current_dir.as_path()
+                };
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(
-                        ".toml",
-                        std::env::current_dir().expect("failed to get current directory"),
-                    ) else {
-                        return Err("failed to create a temporary file for the test data".into());
-                    };
+                    ".toml",
+                    temp_dir,
+                ) else {
+                    return Err("failed to create a temporary file for the test data".into());
+                };
 
                 let mut toml_text = textwrap::dedent($source).trim().to_string();
 
@@ -586,7 +645,7 @@ mod hover_keys_value {
 
                 tracing::debug!("hover_content: {:#?}", hover_content);
 
-                if $schema_file_path.is_some() {
+                if config.schema_file_path.is_some() {
                     assert!(hover_content.schema_uri.is_some(), "The hover target is not defined in the schema.");
                 } else {
                     assert!(hover_content.schema_uri.is_none(), "The hover target is defined in the schema.");

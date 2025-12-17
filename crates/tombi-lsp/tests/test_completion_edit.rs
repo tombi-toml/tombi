@@ -3,7 +3,6 @@ use tombi_test_lib::{
     today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
 };
 
-struct Select<T>(T);
 mod completion_edit {
     use super::*;
 
@@ -20,7 +19,7 @@ mod completion_edit {
                 completion.█
                 "#,
                 Select("enabled"),
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok(
                 r#"
                 [lsp]
@@ -37,7 +36,7 @@ mod completion_edit {
                 completion=█
                 "#,
                 Select("enabled"),
-                tombi_schema_path(),
+                SchemaPath(tombi_schema_path()),
             ) -> Ok(
                 r#"
                 [lsp]
@@ -60,7 +59,7 @@ mod completion_edit {
                 version=█
                 "#,
                 Select("\"0.1.0\""),
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [package]
@@ -77,7 +76,7 @@ mod completion_edit {
                 serde.work█
                 "#,
                 Select("workspace"),
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -94,7 +93,7 @@ mod completion_edit {
                 serde=work█
                 "#,
                 Select("workspace"),
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -111,7 +110,7 @@ mod completion_edit {
                 serde = { workspace.█ }
                 "#,
                 Select("true"),
-                cargo_schema_path(),
+                SchemaPath(cargo_schema_path()),
             ) -> Ok(
                 r#"
                 [dependencies]
@@ -134,7 +133,7 @@ mod completion_edit {
                 authors.█
                 "#,
                 Select("[]"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -151,7 +150,7 @@ mod completion_edit {
                 authors=█
                 "#,
                 Select("[]"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -168,7 +167,7 @@ mod completion_edit {
                 name = "tombi"  # tombi: lint.█
                 "#,
                 Select("rules"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [project]
@@ -185,7 +184,7 @@ mod completion_edit {
                 dev=[█]
                 "#,
                 Select("''"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -202,7 +201,7 @@ mod completion_edit {
                 dev=[█]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -222,7 +221,7 @@ mod completion_edit {
                 ]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -245,7 +244,7 @@ mod completion_edit {
                 ]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -265,7 +264,7 @@ mod completion_edit {
                 dev=[█,"pyright"]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -282,7 +281,7 @@ mod completion_edit {
                 dev=[█,{ include-group = "ci" }]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -299,7 +298,7 @@ mod completion_edit {
                 dev=["pyright", █]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -316,7 +315,7 @@ mod completion_edit {
                 dev=["pyright" █]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -336,7 +335,7 @@ mod completion_edit {
                 ]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -360,7 +359,7 @@ mod completion_edit {
                 ]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -385,7 +384,7 @@ mod completion_edit {
                 ]
                 "#,
                 Select("include-group"),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [dependency-groups]
@@ -406,7 +405,7 @@ mod completion_edit {
                 key█
                 "#,
                 Select("."),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [tool.mytool]
@@ -423,7 +422,7 @@ mod completion_edit {
                 key█
                 "#,
                 Select("="),
-                pyproject_schema_path(),
+                SchemaPath(pyproject_schema_path()),
             ) -> Ok(
                 r#"
                 [tool.mytool]
@@ -691,46 +690,17 @@ mod completion_edit {
     macro_rules! test_completion_edit {
         (
             #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                $select:expr,
-                $schema_file_path:expr$(,)?
-            ) -> Ok($expected:expr);
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok(source);
         ) => {
             test_completion_edit! {
                 #[tokio::test]
-                async fn _$name(
-                    $source,
-                    $select,
-                    Some($schema_file_path),
-                ) -> Ok($expected);
+                async fn $name($source $(, $arg)*) -> Ok($source);
             }
         };
 
         (
             #[tokio::test]
-            async fn $name:ident(
-                $source:expr,
-                $select:expr$(,)?
-            ) -> Ok($expected:expr);
-        ) => {
-            test_completion_edit! {
-                #[tokio::test]
-                async fn _$name(
-                    $source,
-                    $select,
-                    Option::<std::path::PathBuf>::None,
-                ) -> Ok($expected);
-            }
-        };
-
-        (
-            #[tokio::test]
-            async fn _$name:ident(
-                $source:expr,
-                $select:expr,
-                $schema_file_path:expr$(,)?
-            ) -> Ok($expected:expr);
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok($expected:expr);
         ) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
@@ -749,10 +719,54 @@ mod completion_edit {
 
                 tombi_test_lib::init_tracing();
 
-                let (service, _) = LspService::new(|client| Backend::new(client, &tombi_lsp::backend::Options::default()));
+                #[allow(unused)]
+                #[derive(Default)]
+                struct TestConfig {
+                    select: Option<String>,
+                    schema_file_path: Option<std::path::PathBuf>,
+                    backend_options: tombi_lsp::backend::Options,
+                }
+
+                #[allow(unused)]
+                trait ApplyTestArg {
+                    fn apply(self, config: &mut TestConfig);
+                }
+
+                #[allow(unused)]
+                struct Select<T>(T);
+
+                impl<T: ToString> ApplyTestArg for Select<T> {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.select = Some(self.0.to_string());
+                    }
+                }
+
+                #[allow(unused)]
+                struct SchemaPath(std::path::PathBuf);
+
+                impl ApplyTestArg for SchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.schema_file_path = Some(self.0);
+                    }
+                }
+
+                impl ApplyTestArg for tombi_lsp::backend::Options {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.backend_options = self;
+                    }
+                }
+
+                #[allow(unused_mut)]
+                let mut config = TestConfig::default();
+                $(ApplyTestArg::apply($arg, &mut config);)*
+
+                let (service, _) = LspService::new(|client| {
+                    Backend::new(client, &config.backend_options)
+                });
+
                 let backend = service.inner();
 
-                if let Some(schema_file_path) = $schema_file_path.as_ref() {
+                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                         .expect(
                             format!(
@@ -841,13 +855,14 @@ mod completion_edit {
                     return Err("failed to handle completion".into());
                 };
 
-                let selected = $select.0;
-                let selected: &str = selected.as_ref();
+                let Some(selected) = config.select.as_ref() else {
+                    return Err("no completion item selection provided via Select(..)".into());
+                };
 
                 let Some(completion_content) = completion_contents
                     .clone()
                     .into_iter()
-                    .find(|content| content.label == selected)
+                    .find(|content| content.label == *selected)
                 else {
                     return Err(
                         format!(
