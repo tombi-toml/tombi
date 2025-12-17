@@ -636,7 +636,7 @@ mod refactor_rewrite {
                     }
                     (None, None) => {
                         if config.select.is_some() {
-                            return Err("Select(..) is not expected when no code actions are expected".into());
+                            return Err("Select(..) should not be provided when expecting no code actions (Ok(None))".into());
                         };
                         tracing::debug!("no code actions found, as expected");
                         Ok(())
