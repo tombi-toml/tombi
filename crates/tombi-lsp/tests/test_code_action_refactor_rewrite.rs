@@ -559,11 +559,11 @@ mod refactor_rewrite {
 
                 tracing::debug!(?actions, "code actions found");
 
-                let Some(selected) = config.select.as_ref() else {
-                    return Err("no code action selection provided via Select(..)".into());
-                };
                 match (actions, $expected) {
                     (Some(actions), Some(expected)) => {
+                        let Some(selected) = config.select.as_ref() else {
+                            return Err("no code action selection provided via Select(..)".into());
+                        };
                         let Some(action) = actions.into_iter().find_map(|a| match a {
                             tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
                                 if ca.title == *selected =>
@@ -635,10 +635,16 @@ mod refactor_rewrite {
                         Ok(())
                     }
                     (None, None) => {
+                        if config.select.is_some() {
+                            return Err("Select(..) is not expected when no code actions are expected".into());
+                        };
                         tracing::debug!("no code actions found, as expected");
                         Ok(())
                     }
                     (Some(actions), None) => {
+                        let Some(selected) = config.select.as_ref() else {
+                            return Err("no code action selection provided via Select(..)".into());
+                        };
                         let None = actions.iter().find_map(|a| match a {
                             tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
                                 if ca.title == *selected =>
