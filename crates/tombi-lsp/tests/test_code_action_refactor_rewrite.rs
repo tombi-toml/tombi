@@ -1,79 +1,17 @@
 macro_rules! test_code_action_refactor_rewrite {
     (
         #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-        ) -> Ok($expected:expr);
+        async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok(source);
     ) => {
         test_code_action_refactor_rewrite! {
             #[tokio::test]
-            async fn _$name(
-                $source,
-                "Dummy Code Action",
-                Option::<std::path::PathBuf>::None,
-            ) -> Ok($expected);
+            async fn $name($source $(, $arg)*) -> Ok($source);
         }
     };
 
     (
         #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            Select($select:expr),
-        ) -> Ok($expected:expr);
-    ) => {
-        test_code_action_refactor_rewrite! {
-            #[tokio::test]
-            async fn _$name(
-                $source,
-                $select,
-                Option::<std::path::PathBuf>::None,
-            ) -> Ok($expected);
-        }
-    };
-
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            Select($select:expr),
-            $toml_file_path:expr$(,)?
-        ) -> Ok($expected:expr);
-    ) => {
-        test_code_action_refactor_rewrite! {
-            #[tokio::test]
-            async fn _$name(
-                $source,
-                $select,
-                Some($toml_file_path),
-            ) -> Ok($expected);
-        }
-    };
-
-    (
-        #[tokio::test]
-        async fn $name:ident(
-            $source:expr,
-            $toml_file_path:expr$(,)?
-        ) -> Ok($expected:expr);
-    ) => {
-        test_code_action_refactor_rewrite! {
-            #[tokio::test]
-            async fn _$name(
-                $source,
-                "Dummy Code Action",
-                Some($toml_file_path),
-            ) -> Ok($expected);
-        }
-    };
-
-    (
-        #[tokio::test]
-        async fn _$name:ident(
-            $source:expr,
-            $select:expr,
-            $toml_file_path:expr$(,)?
-        ) -> Ok($expected:expr);
+        async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok($expected:expr);
     ) => {
         #[tokio::test]
         async fn $name() -> Result<(), Box<dyn std::error::Error>> {
@@ -88,8 +26,50 @@ macro_rules! test_code_action_refactor_rewrite {
 
             tombi_test_lib::init_tracing();
 
+            #[allow(unused)]
+            #[derive(Default)]
+            pub struct TestConfig {
+                select: String,
+                toml_file_path: Option<std::path::PathBuf>,
+                backend_options: tombi_lsp::backend::Options,
+            }
+
+            #[allow(unused)]
+            pub trait ApplyTestArg {
+                fn apply(self, config: &mut TestConfig);
+            }
+
+            /// Code action title to select in assertions.
+            #[allow(unused)]
+            pub struct Select<T>(pub T);
+
+            impl<T: ToString> ApplyTestArg for Select<T> {
+                fn apply(self, config: &mut TestConfig) {
+                    config.select = self.0.to_string();
+                }
+            }
+
+            impl ApplyTestArg for tombi_lsp::backend::Options {
+                fn apply(self, config: &mut TestConfig) {
+                    config.backend_options = self;
+                }
+            }
+
+            impl ApplyTestArg for std::path::PathBuf {
+                fn apply(self, config: &mut TestConfig) {
+                    config.toml_file_path = Some(self);
+                }
+            }
+
+            #[allow(unused_mut)]
+            let mut config = TestConfig {
+                select: "Dummy Code Action".to_string(),
+                ..Default::default()
+            };
+            $(ApplyTestArg::apply($arg, &mut config);)*
+
             let (service, _) = LspService::new(|client| {
-                Backend::new(client, &tombi_lsp::backend::Options::default())
+                Backend::new(client, &config.backend_options)
             });
             let backend = service.inner();
             let temp_file = tempfile::NamedTempFile::with_suffix_in(
@@ -110,7 +90,9 @@ macro_rules! test_code_action_refactor_rewrite {
             let line_index =
                 tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
-            let toml_file_url = $toml_file_path
+            let toml_file_url = config
+                .toml_file_path
+                .as_ref()
                 .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
                 .unwrap_or_else(|| {
                     Url::from_file_path(temp_file.path())
@@ -150,14 +132,12 @@ macro_rules! test_code_action_refactor_rewrite {
 
             tracing::debug!(?actions, "code actions found");
 
+            let selected = &config.select;
             match (actions, $expected) {
                 (Some(actions), Some(expected)) => {
-                    let selected = $select;
-                    let selected: &str = &selected.to_string();
-
                     let Some(action) = actions.into_iter().find_map(|a| match a {
                         tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
-                            if ca.title == selected =>
+                            if ca.title == *selected =>
                         {
                             Some(ca)
                         }
@@ -230,12 +210,9 @@ macro_rules! test_code_action_refactor_rewrite {
                     Ok(())
                 }
                 (Some(actions), None) => {
-                    let selected = $select;
-                    let selected: &str = &selected.to_string();
-
                     let None = actions.iter().find_map(|a| match a {
                         tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
-                            if ca.title == selected =>
+                            if ca.title == *selected =>
                         {
                             Some(ca)
                         }
