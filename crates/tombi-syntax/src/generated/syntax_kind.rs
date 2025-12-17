@@ -41,6 +41,7 @@ pub enum SyntaxKind {
     KEY,
     VALUE,
     KEY_VALUE,
+    BARE_KEY,
     ARRAY,
     TABLE,
     INLINE_TABLE,

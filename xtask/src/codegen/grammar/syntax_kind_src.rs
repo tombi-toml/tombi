@@ -36,6 +36,7 @@ pub const NODES: &[&str] = &[
     "KEY",
     "VALUE",
     "KEY_VALUE",
+    "BARE_KEY",
     "ARRAY",
     "TABLE",
     "INLINE_TABLE",
