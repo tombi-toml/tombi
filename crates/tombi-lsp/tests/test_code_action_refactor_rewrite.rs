@@ -1,250 +1,8 @@
-macro_rules! test_code_action_refactor_rewrite {
-    (
-        #[tokio::test]
-        async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok(source);
-    ) => {
-        test_code_action_refactor_rewrite! {
-            #[tokio::test]
-            async fn $name($source $(, $arg)*) -> Ok($source);
-        }
-    };
-
-    (
-        #[tokio::test]
-        async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok($expected:expr);
-    ) => {
-        #[tokio::test]
-        async fn $name() -> Result<(), Box<dyn std::error::Error>> {
-            use itertools::Itertools;
-            use tombi_lsp::Backend;
-            use tombi_lsp::handler::handle_code_action;
-            use tombi_lsp::handler::handle_did_open;
-            use tombi_text::IntoLsp;
-            use tower_lsp::LspService;
-            use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
-            use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
-
-            tombi_test_lib::init_tracing();
-
-            #[allow(unused)]
-            #[derive(Default)]
-            pub struct TestConfig {
-                select: String,
-                toml_file_path: Option<std::path::PathBuf>,
-                backend_options: tombi_lsp::backend::Options,
-            }
-
-            #[allow(unused)]
-            pub trait ApplyTestArg {
-                fn apply(self, config: &mut TestConfig);
-            }
-
-            /// Code action title to select in assertions.
-            #[allow(unused)]
-            pub struct Select<T>(pub T);
-
-            impl<T: ToString> ApplyTestArg for Select<T> {
-                fn apply(self, config: &mut TestConfig) {
-                    config.select = self.0.to_string();
-                }
-            }
-
-            impl ApplyTestArg for tombi_lsp::backend::Options {
-                fn apply(self, config: &mut TestConfig) {
-                    config.backend_options = self;
-                }
-            }
-
-            impl ApplyTestArg for std::path::PathBuf {
-                fn apply(self, config: &mut TestConfig) {
-                    config.toml_file_path = Some(self);
-                }
-            }
-
-            #[allow(unused_mut)]
-            let mut config = TestConfig {
-                select: "Dummy Code Action".to_string(),
-                ..Default::default()
-            };
-            $(ApplyTestArg::apply($arg, &mut config);)*
-
-            let (service, _) = LspService::new(|client| {
-                Backend::new(client, &config.backend_options)
-            });
-            let backend = service.inner();
-            let temp_file = tempfile::NamedTempFile::with_suffix_in(
-                ".toml",
-                std::env::current_dir().expect("failed to get current directory"),
-            )?;
-
-            let mut toml_text = textwrap::dedent($source).trim().to_string();
-            let Some(index) = toml_text.find("█") else {
-                return Err(
-                    "failed to find code action position marker (█) in the test data".into(),
-                );
-            };
-            toml_text.remove(index);
-            tracing::debug!(?toml_text, "test toml text");
-            tracing::debug!(?index, "test toml text index");
-
-            let line_index =
-                tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
-
-            let toml_file_url = config
-                .toml_file_path
-                .as_ref()
-                .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
-                .unwrap_or_else(|| {
-                    Url::from_file_path(temp_file.path())
-                        .expect("failed to convert temp file path to URL")
-                });
-
-            handle_did_open(
-                backend,
-                DidOpenTextDocumentParams {
-                    text_document: TextDocumentItem {
-                        uri: toml_file_url.clone(),
-                        language_id: "toml".to_string(),
-                        version: 0,
-                        text: toml_text.clone(),
-                    },
-                },
-            )
-            .await;
-
-            let params = CodeActionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: toml_file_url.clone(),
-                },
-                range: tombi_text::Range::at(
-                    (tombi_text::Position::default()
-                        + tombi_text::RelativePosition::of(&toml_text[..index])),
-                )
-                .into_lsp(&line_index),
-                context: Default::default(),
-                work_done_progress_params: Default::default(),
-                partial_result_params: Default::default(),
-            };
-
-            let Ok(actions) = handle_code_action(backend, params).await else {
-                return Err("failed to get code actions".into());
-            };
-
-            tracing::debug!(?actions, "code actions found");
-
-            let selected = &config.select;
-            match (actions, $expected) {
-                (Some(actions), Some(expected)) => {
-                    let Some(action) = actions.into_iter().find_map(|a| match a {
-                        tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
-                            if ca.title == *selected =>
-                        {
-                            Some(ca)
-                        }
-                        _ => None,
-                    }) else {
-                        return Err(format!(
-                            "failed to find the selected code action '{}'.",
-                            selected
-                        )
-                        .into());
-                    };
-                    let Some(edit) = action.edit else {
-                        return Err("selected code action has no edit".into());
-                    };
-
-                    let mut new_text = toml_text.clone();
-
-                    if let Some(tower_lsp::lsp_types::DocumentChanges::Edits(edits)) =
-                        edit.document_changes
-                    {
-                        let mut all_edits: Vec<_> =
-                            edits.into_iter().flat_map(|e| e.edits).collect();
-                        // Sort by range.start in descending order to apply edits from the end of the text.
-                        all_edits.sort_by(|a, b| {
-                            let a = match a {
-                                tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
-                                _ => return std::cmp::Ordering::Equal,
-                            };
-                            let b = match b {
-                                tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
-                                _ => return std::cmp::Ordering::Equal,
-                            };
-                            b.line.cmp(&a.line).then(b.character.cmp(&a.character))
-                        });
-                        // Apply all edits using a single string buffer and byte offsets.
-                        let mut line_offsets = Vec::new();
-                        let mut acc = 0;
-                        for line in new_text.lines() {
-                            line_offsets.push(acc);
-                            acc += line.len() + 1; // +1 for '\n'
-                        }
-                        let mut text = new_text.clone();
-                        for text_edit in all_edits {
-                            if let tower_lsp::lsp_types::OneOf::Left(edit) = text_edit {
-                                let start_line = edit.range.start.line as usize;
-                                let start_char = edit.range.start.character as usize;
-                                let end_line = edit.range.end.line as usize;
-                                let end_char = edit.range.end.character as usize;
-                                let start =
-                                    line_offsets.get(start_line).copied().unwrap_or(0) + start_char;
-                                let end =
-                                    line_offsets.get(end_line).copied().unwrap_or(0) + end_char;
-                                text.replace_range(start..end, &edit.new_text);
-                                // Recalculate line offsets after each edit to ensure correct byte positions.
-                                line_offsets.clear();
-                                acc = 0;
-                                for line in text.lines() {
-                                    line_offsets.push(acc);
-                                    acc += line.len() + 1;
-                                }
-                            }
-                        }
-                        new_text = text;
-                    }
-                    pretty_assertions::assert_eq!(new_text, textwrap::dedent(expected).trim());
-                    Ok(())
-                }
-                (None, None) => {
-                    tracing::debug!("no code actions found, as expected");
-                    Ok(())
-                }
-                (Some(actions), None) => {
-                    let None = actions.iter().find_map(|a| match a {
-                        tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
-                            if ca.title == *selected =>
-                        {
-                            Some(ca)
-                        }
-                        _ => None,
-                    }) else {
-                        return Err(format!(
-                            "expected '{}' but not included in {:?}",
-                            selected,
-                            actions
-                                .iter()
-                                .filter_map(|a| match a {
-                                    tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca) =>
-                                        Some(ca.title.clone()),
-                                    _ => None,
-                                })
-                                .collect_vec()
-                        )
-                        .into());
-                    };
-                    Ok(())
-                }
-                (None, Some(_)) => {
-                    return Err("expected code actions, but found none".into());
-                }
-            }
-        }
-    };
-}
-
 mod refactor_rewrite {
     mod common {
         use tombi_lsp::code_action::CodeActionRefactorRewriteName;
+
+        use crate::test_code_action_refactor_rewrite;
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
@@ -388,6 +146,8 @@ mod refactor_rewrite {
     mod cargo_toml {
         use tombi_extension_cargo::CodeActionRefactorRewriteName;
         use tombi_test_lib::project_root_path;
+
+        use crate::test_code_action_refactor_rewrite;
 
         test_code_action_refactor_rewrite! {
             #[tokio::test]
@@ -665,5 +425,249 @@ mod refactor_rewrite {
                 "#
             ));
         }
+    }
+
+    #[macro_export]
+    macro_rules! test_code_action_refactor_rewrite {
+        (
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok(source);
+        ) => {
+            test_code_action_refactor_rewrite! {
+                #[tokio::test]
+                async fn $name($source $(, $arg)*) -> Ok($source);
+            }
+        };
+
+        (
+            #[tokio::test]
+            async fn $name:ident($source:expr $(, $arg:expr )* $(,)?) -> Ok($expected:expr);
+        ) => {
+            #[tokio::test]
+            async fn $name() -> Result<(), Box<dyn std::error::Error>> {
+                use itertools::Itertools;
+                use tombi_lsp::Backend;
+                use tombi_lsp::handler::handle_code_action;
+                use tombi_lsp::handler::handle_did_open;
+                use tombi_text::IntoLsp;
+                use tower_lsp::LspService;
+                use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
+                use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
+
+                tombi_test_lib::init_tracing();
+
+                #[allow(unused)]
+                #[derive(Default)]
+                pub struct TestConfig {
+                    select: Option<String>,
+                    toml_file_path: Option<std::path::PathBuf>,
+                    backend_options: tombi_lsp::backend::Options,
+                }
+
+                #[allow(unused)]
+                pub trait ApplyTestArg {
+                    fn apply(self, config: &mut TestConfig);
+                }
+
+                /// Code action title to select in assertions.
+                #[allow(unused)]
+                pub struct Select<T>(pub T);
+
+                impl<T: ToString> ApplyTestArg for Select<T> {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.select = Some(self.0.to_string());
+                    }
+                }
+
+                impl ApplyTestArg for tombi_lsp::backend::Options {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.backend_options = self;
+                    }
+                }
+
+                impl ApplyTestArg for std::path::PathBuf {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.toml_file_path = Some(self);
+                    }
+                }
+
+                #[allow(unused_mut)]
+                let mut config = TestConfig::default();
+                $(ApplyTestArg::apply($arg, &mut config);)*
+
+                let (service, _) = LspService::new(|client| {
+                    Backend::new(client, &config.backend_options)
+                });
+                let backend = service.inner();
+                let temp_file = tempfile::NamedTempFile::with_suffix_in(
+                    ".toml",
+                    std::env::current_dir().expect("failed to get current directory"),
+                )?;
+
+                let mut toml_text = textwrap::dedent($source).trim().to_string();
+                let Some(index) = toml_text.find("█") else {
+                    return Err(
+                        "failed to find code action position marker (█) in the test data".into(),
+                    );
+                };
+                toml_text.remove(index);
+                tracing::debug!(?toml_text, "test toml text");
+                tracing::debug!(?index, "test toml text index");
+
+                let line_index =
+                    tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
+
+                let toml_file_url = config
+                    .toml_file_path
+                    .as_ref()
+                    .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
+                    .unwrap_or_else(|| {
+                        Url::from_file_path(temp_file.path())
+                            .expect("failed to convert temp file path to URL")
+                    });
+
+                handle_did_open(
+                    backend,
+                    DidOpenTextDocumentParams {
+                        text_document: TextDocumentItem {
+                            uri: toml_file_url.clone(),
+                            language_id: "toml".to_string(),
+                            version: 0,
+                            text: toml_text.clone(),
+                        },
+                    },
+                )
+                .await;
+
+                let params = CodeActionParams {
+                    text_document: TextDocumentIdentifier {
+                        uri: toml_file_url.clone(),
+                    },
+                    range: tombi_text::Range::at(
+                        (tombi_text::Position::default()
+                            + tombi_text::RelativePosition::of(&toml_text[..index])),
+                    )
+                    .into_lsp(&line_index),
+                    context: Default::default(),
+                    work_done_progress_params: Default::default(),
+                    partial_result_params: Default::default(),
+                };
+
+                let Ok(actions) = handle_code_action(backend, params).await else {
+                    return Err("failed to get code actions".into());
+                };
+
+                tracing::debug!(?actions, "code actions found");
+
+                let Some(selected) = config.select.as_ref() else {
+                    return Err("no code action selection provided via Select(..)".into());
+                };
+                match (actions, $expected) {
+                    (Some(actions), Some(expected)) => {
+                        let Some(action) = actions.into_iter().find_map(|a| match a {
+                            tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
+                                if ca.title == *selected =>
+                            {
+                                Some(ca)
+                            }
+                            _ => None,
+                        }) else {
+                            return Err(format!(
+                                "failed to find the selected code action '{}'.",
+                                selected
+                            )
+                            .into());
+                        };
+                        let Some(edit) = action.edit else {
+                            return Err("selected code action has no edit".into());
+                        };
+
+                        let mut new_text = toml_text.clone();
+
+                        if let Some(tower_lsp::lsp_types::DocumentChanges::Edits(edits)) =
+                            edit.document_changes
+                        {
+                            let mut all_edits: Vec<_> =
+                                edits.into_iter().flat_map(|e| e.edits).collect();
+                            // Sort by range.start in descending order to apply edits from the end of the text.
+                            all_edits.sort_by(|a, b| {
+                                let a = match a {
+                                    tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
+                                    _ => return std::cmp::Ordering::Equal,
+                                };
+                                let b = match b {
+                                    tower_lsp::lsp_types::OneOf::Left(e) => &e.range.start,
+                                    _ => return std::cmp::Ordering::Equal,
+                                };
+                                b.line.cmp(&a.line).then(b.character.cmp(&a.character))
+                            });
+                            // Apply all edits using a single string buffer and byte offsets.
+                            let mut line_offsets = Vec::new();
+                            let mut acc = 0;
+                            for line in new_text.lines() {
+                                line_offsets.push(acc);
+                                acc += line.len() + 1; // +1 for '\n'
+                            }
+                            let mut text = new_text.clone();
+                            for text_edit in all_edits {
+                                if let tower_lsp::lsp_types::OneOf::Left(edit) = text_edit {
+                                    let start_line = edit.range.start.line as usize;
+                                    let start_char = edit.range.start.character as usize;
+                                    let end_line = edit.range.end.line as usize;
+                                    let end_char = edit.range.end.character as usize;
+                                    let start =
+                                        line_offsets.get(start_line).copied().unwrap_or(0) + start_char;
+                                    let end =
+                                        line_offsets.get(end_line).copied().unwrap_or(0) + end_char;
+                                    text.replace_range(start..end, &edit.new_text);
+                                    // Recalculate line offsets after each edit to ensure correct byte positions.
+                                    line_offsets.clear();
+                                    acc = 0;
+                                    for line in text.lines() {
+                                        line_offsets.push(acc);
+                                        acc += line.len() + 1;
+                                    }
+                                }
+                            }
+                            new_text = text;
+                        }
+                        pretty_assertions::assert_eq!(new_text, textwrap::dedent(expected).trim());
+                        Ok(())
+                    }
+                    (None, None) => {
+                        tracing::debug!("no code actions found, as expected");
+                        Ok(())
+                    }
+                    (Some(actions), None) => {
+                        let None = actions.iter().find_map(|a| match a {
+                            tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca)
+                                if ca.title == *selected =>
+                            {
+                                Some(ca)
+                            }
+                            _ => None,
+                        }) else {
+                            return Err(format!(
+                                "expected '{}' but not included in {:?}",
+                                selected,
+                                actions
+                                    .iter()
+                                    .filter_map(|a| match a {
+                                        tower_lsp::lsp_types::CodeActionOrCommand::CodeAction(ca) =>
+                                            Some(ca.title.clone()),
+                                        _ => None,
+                                    })
+                                    .collect_vec()
+                            )
+                            .into());
+                        };
+                        Ok(())
+                    }
+                    (None, Some(_)) => {
+                        return Err("expected code actions, but found none".into());
+                    }
+                }
+            }
+        };
     }
 }

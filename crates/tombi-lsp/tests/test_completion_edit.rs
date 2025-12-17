@@ -722,7 +722,7 @@ mod completion_edit {
                 #[allow(unused)]
                 #[derive(Default)]
                 struct TestConfig {
-                    select: String,
+                    select: Option<String>,
                     schema_file_path: Option<std::path::PathBuf>,
                     backend_options: tombi_lsp::backend::Options,
                 }
@@ -737,7 +737,7 @@ mod completion_edit {
 
                 impl<T: ToString> ApplyTestArg for Select<T> {
                     fn apply(self, config: &mut TestConfig) {
-                        config.select = self.0.to_string();
+                        config.select = Some(self.0.to_string());
                     }
                 }
 
@@ -757,10 +757,7 @@ mod completion_edit {
                 }
 
                 #[allow(unused_mut)]
-                let mut config = TestConfig {
-                    select: String::new(),
-                    ..Default::default()
-                };
+                let mut config = TestConfig::default();
                 $(ApplyTestArg::apply($arg, &mut config);)*
 
                 let (service, _) = LspService::new(|client| {
@@ -858,16 +855,14 @@ mod completion_edit {
                     return Err("failed to handle completion".into());
                 };
 
-                let selected: &str = if !config.select.is_empty() {
-                    &config.select
-                } else {
+                let Some(selected) = config.select.as_ref() else {
                     return Err("no completion item selection provided via Select(..)".into());
                 };
 
                 let Some(completion_content) = completion_contents
                     .clone()
                     .into_iter()
-                    .find(|content| content.label == selected)
+                    .find(|content| content.label == *selected)
                 else {
                     return Err(
                         format!(
