@@ -1481,7 +1481,10 @@ mod completion_labels {
                 █
                 "#,
                 SchemaPath(pyproject_schema_path()),
-                SubSchemaPath("tool.type_test".to_string(), type_test_schema_path()),
+                SubSchemaPath {
+                    root: "tool.type_test",
+                    path: type_test_schema_path(),
+                },
             ) -> Ok([
                 "array",
                 "boolean",
@@ -1504,7 +1507,10 @@ mod completion_labels {
                 [aaa.bbb]
                 █
                 "#,
-                SubSchemaPath("aaa.bbb".to_string(), type_test_schema_path()),
+                SubSchemaPath {
+                    root: "aaa.bbb",
+                    path: type_test_schema_path(),
+                },
             ) -> Ok([
                 "array",
                 "boolean",
@@ -1602,7 +1608,10 @@ mod completion_labels {
                 }
 
                 #[allow(unused)]
-                struct SubSchemaPath(pub String, pub std::path::PathBuf);
+                struct SubSchemaPath {
+                    pub root: &'static str,
+                    pub path: std::path::PathBuf,
+                }
 
                 impl ApplyTestArg for SubSchemaPath {
                     fn apply(self, config: &mut TestConfig) {
@@ -1648,11 +1657,11 @@ mod completion_labels {
                 }
 
                 for subschema in &config.subschemas {
-                    let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.1)
+                    let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
                         .expect(
                             format!(
                                 "failed to convert subschema path to URL: {}",
-                                subschema.1.display()
+                                subschema.path.display()
                             )
                             .as_str(),
                         );
@@ -1663,7 +1672,7 @@ mod completion_labels {
                             &[tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
                                 path: subschema_uri.to_string(),
                                 include: vec!["*.toml".to_string()],
-                                root: subschema.0.clone(),
+                                root: subschema.root.to_string(),
                             })],
                             None,
                         )
