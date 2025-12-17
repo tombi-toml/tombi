@@ -14,7 +14,7 @@ mod goto_definition_tests {
 
                 toml-version = "v1.0.0"
                 "#,
-                project_root_path().join("tombi.toml"),
+                SourcePath(project_root_path().join("tombi.toml")),
             ) -> Ok([project_root_path().join("www.schemastore.org/tombi.json")]);
         );
 
@@ -26,7 +26,7 @@ mod goto_definition_tests {
 
                 toml-version = "v1.0.0"
                 "#,
-                project_root_path().join("tombi.toml"),
+                SourcePath(project_root_path().join("tombi.toml")),
             ) -> Ok(["http://www.schemastore.org/tombi.json"]);
         );
 
@@ -38,7 +38,7 @@ mod goto_definition_tests {
 
                 toml-version = "v1.0.0"
                 "#,
-                project_root_path().join("tombi.toml"),
+                SourcePath(project_root_path().join("tombi.toml")),
             ) -> Ok([]);
         );
     }
@@ -53,7 +53,7 @@ mod goto_definition_tests {
                 [dependencies]
                 serde = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -64,7 +64,7 @@ mod goto_definition_tests {
                 [dependencies]
                 serde█ = { workspace = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -75,7 +75,7 @@ mod goto_definition_tests {
                 [dependencies]
                 tombi-ast = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -86,7 +86,7 @@ mod goto_definition_tests {
                 [dependencies]
                 tombi-ast█ = { workspace = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
         );
 
@@ -97,7 +97,7 @@ mod goto_definition_tests {
                 [dev-dependencies]
                 rstest = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -108,7 +108,7 @@ mod goto_definition_tests {
                 [build-dependencies]
                 serde = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -119,7 +119,7 @@ mod goto_definition_tests {
                 [dev-dependencies]
                 tombi-ast█ = { workspace = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
         );
 
@@ -130,7 +130,7 @@ mod goto_definition_tests {
                 [dev-dependencies]
                 tombi-ast = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -141,7 +141,7 @@ mod goto_definition_tests {
                 [build-dependencies]
                 tombi-ast = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -152,7 +152,7 @@ mod goto_definition_tests {
                 [workspace.dependencies]
                 serde█ = { version = "1.0.0" }
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([]);
         );
 
@@ -163,7 +163,7 @@ mod goto_definition_tests {
                 [workspace.dependencies]
                 tombi-ast = { path█ = "crates/tombi-ast" }
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
         );
 
@@ -178,7 +178,7 @@ mod goto_definition_tests {
                 [workspace.dependencies]
                 tombi-ast-editor█ = { path = "crates/tombi-ast-editor" }
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([
                 project_root_path().join("crates/tombi-ast-editor/Cargo.toml"),
                 project_root_path().join("crates/tombi-formatter/Cargo.toml"),
@@ -196,7 +196,7 @@ mod goto_definition_tests {
                 [workspace.dependencies]
                 semver█ = { version = "1.0.23" }
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([
                 project_root_path().join("crates/tombi-lsp/Cargo.toml"),
             ]);
@@ -211,7 +211,7 @@ mod goto_definition_tests {
                     "xtask█"
                 ]
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([project_root_path().join("xtask/Cargo.toml")]);
         );
 
@@ -224,7 +224,7 @@ mod goto_definition_tests {
                     "crates/tombi-ast█"
                 ]
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
         );
 
@@ -237,7 +237,7 @@ mod goto_definition_tests {
                     "extensions/*█"
                 ]
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([
                 project_root_path().join("extensions/tombi-extension-cargo/Cargo.toml"),
                 project_root_path().join("extensions/tombi-extension-tombi/Cargo.toml"),
@@ -253,7 +253,7 @@ mod goto_definition_tests {
                 name = "profile"
                 path = "src/bin/profile.rs█"
                 "#,
-                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-glob/Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-glob/src/bin/profile.rs")]);
         );
 
@@ -265,7 +265,7 @@ mod goto_definition_tests {
                 name = "missing"
                 path = "src/bin/missing.rs█"
                 "#,
-                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-glob/Cargo.toml")),
             ) -> Ok([]);
         );
 
@@ -281,7 +281,7 @@ mod goto_definition_tests {
                 name = "secondary"
                 path = "src/bin/profile.rs█"
                 "#,
-                project_root_path().join("crates/tombi-glob/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-glob/Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-glob/src/bin/profile.rs")]);
         );
 
@@ -293,7 +293,7 @@ mod goto_definition_tests {
                 [target.'cfg(unix)'.dependencies]
                 serde = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -304,7 +304,7 @@ mod goto_definition_tests {
                 [target.'cfg(unix)'.dependencies]
                 tombi-ast = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -315,7 +315,7 @@ mod goto_definition_tests {
                 [target.'cfg(unix)'.dependencies]
                 tombi-ast = { path█ = "crates/tombi-ast" }
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([project_root_path().join("crates/tombi-ast/Cargo.toml")]);
         );
 
@@ -326,7 +326,7 @@ mod goto_definition_tests {
                 [target.'cfg(target_os = "linux")'.dev-dependencies]
                 serde = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -337,7 +337,7 @@ mod goto_definition_tests {
                 [target.'cfg(windows)'.build-dependencies]
                 serde = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/tombi-lsp/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/tombi-lsp/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
     }
@@ -352,7 +352,7 @@ mod goto_definition_tests {
                 [tool.uv.sources]
                 tombi-beta█ = { workspace = true }
                 "#,
-                project_root_path().join("python/tombi-beta/pyproject.toml"),
+                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
             ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
         );
 
@@ -363,7 +363,7 @@ mod goto_definition_tests {
                 [tool.uv.sources]
                 tombi-beta = { workspace█ = true }
                 "#,
-                project_root_path().join("python/tombi-beta/pyproject.toml"),
+                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
         );
 
@@ -374,7 +374,7 @@ mod goto_definition_tests {
                 [tool.uv.workspace]
                 members█ = ["python/tombi-beta"]
                 "#,
-                project_root_path().join("pyproject.toml"),
+                SourcePath(project_root_path().join("pyproject.toml")),
             ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
         );
 
@@ -385,7 +385,7 @@ mod goto_definition_tests {
                 [tool.uv.workspace]
                 members = ["python/tombi-beta█"]
                 "#,
-                project_root_path().join("pyproject.toml"),
+                SourcePath(project_root_path().join("pyproject.toml")),
             ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
         );
     }
@@ -408,7 +408,7 @@ mod goto_definition_tests {
                     "pydantic█"
                 ]
                 "#,
-                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app/pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml")
             ]);
@@ -430,7 +430,7 @@ mod goto_definition_tests {
                     "members/app3",
                 ]
                 "#,
-                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
                 pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
@@ -448,7 +448,7 @@ mod goto_definition_tests {
                 [[schemas]]
                 path = "█www.schemastore.org/tombi.json"
                 "#,
-                project_root_path().join("tombi.toml"),
+                SourcePath(project_root_path().join("tombi.toml")),
             ) -> Ok([project_root_path().join("www.schemastore.org/tombi.json")]);
         );
     }
@@ -456,8 +456,7 @@ mod goto_definition_tests {
     #[macro_export]
     macro_rules! test_goto_definition {
         (#[tokio::test] async fn $name:ident(
-            $source:expr,
-            $file_path:expr,
+            $source:expr $(, $arg:expr )* $(,)?
         ) -> Ok([$($expected_file_path:expr),*$(,)?]);) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
@@ -476,37 +475,121 @@ mod goto_definition_tests {
                 };
                 use tombi_text::IntoLsp;
 
-                trait ToUri {
-                    fn to_uri(&self) -> tombi_uri::Uri;
-                }
-
-                impl ToUri for tombi_uri::Uri {
-                    fn to_uri(&self) -> tombi_uri::Uri {
-                        self.clone()
-                    }
-                }
-
-                impl ToUri for std::path::PathBuf {
-                    fn to_uri(&self) -> tombi_uri::Uri {
-                        tombi_uri::Uri::from_file_path(self).unwrap()
-                    }
-                }
-
-                impl ToUri for &str {
-                    fn to_uri(&self) -> tombi_uri::Uri {
-                        tombi_uri::Uri::from_str(self).unwrap()
-                    }
-                }
-
                 tombi_test_lib::init_tracing();
 
+                #[allow(unused)]
+                #[derive(Default)]
+                struct TestConfig {
+                    source_file_path: Option<std::path::PathBuf>,
+                    schema_file_path: Option<std::path::PathBuf>,
+                    subschemas: Vec<SubSchemaPath>,
+                    backend_options: tombi_lsp::backend::Options,
+                }
+
+                #[allow(unused)]
+                trait ApplyTestArg {
+                    fn apply(self, config: &mut TestConfig);
+                }
+
+                #[allow(unused)]
+                struct SourcePath(std::path::PathBuf);
+
+                impl ApplyTestArg for SourcePath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.source_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SchemaPath(std::path::PathBuf);
+
+                impl ApplyTestArg for SchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.schema_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SubSchemaPath {
+                    pub root: String,
+                    pub path: std::path::PathBuf,
+                }
+
+                impl ApplyTestArg for SubSchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.subschemas.push(self);
+                    }
+                }
+
+                impl ApplyTestArg for tombi_lsp::backend::Options {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.backend_options = self;
+                    }
+                }
+
+                #[allow(unused_mut)]
+                let mut config = TestConfig::default();
+                $(ApplyTestArg::apply($arg, &mut config);)*
+
                 let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &tombi_lsp::backend::Options::default())
+                    Backend::new(client, &config.backend_options)
                 });
 
                 let backend = service.inner();
 
-                let toml_file_url = Url::from_file_path($file_path).expect("failed to convert file path to URL");
+                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+                    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
+                        .expect(
+                            format!(
+                                "failed to convert schema path to URL: {}",
+                                schema_file_path.display()
+                            )
+                            .as_str(),
+                        );
+
+                    backend
+                        .config_manager
+                        .load_config_schemas(
+                            &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                                toml_version: None,
+                                path: schema_uri.to_string(),
+                                include: vec!["*.toml".to_string()],
+                            })],
+                            None,
+                        )
+                        .await;
+                }
+
+                for subschema in &config.subschemas {
+                    let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
+                        .expect(
+                            format!(
+                                "failed to convert subschema path to URL: {}",
+                                subschema.path.display()
+                            )
+                            .as_str(),
+                        );
+
+                    backend
+                        .config_manager
+                        .load_config_schemas(
+                            &[tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                                path: subschema_uri.to_string(),
+                                include: vec!["*.toml".to_string()],
+                                root: subschema.root.clone(),
+                            })],
+                            None,
+                        )
+                        .await;
+                }
+
+                let source_path = config
+                    .source_file_path
+                    .as_ref()
+                    .ok_or("SourcePath must be provided for goto_definition tests")?;
+
+                let toml_file_url = Url::from_file_path(source_path)
+                    .expect("failed to convert source file path to URL");
 
                 let mut toml_text = textwrap::dedent($source).trim().to_string();
                 let Some(index) = toml_text.as_str().find("█") else {
@@ -545,6 +628,28 @@ mod goto_definition_tests {
                 };
 
                 tracing::debug!("goto_definition result: {:#?}", result);
+
+                trait ToUri {
+                    fn to_uri(&self) -> tombi_uri::Uri;
+                }
+
+                impl ToUri for tombi_uri::Uri {
+                    fn to_uri(&self) -> tombi_uri::Uri {
+                        self.clone()
+                    }
+                }
+
+                impl ToUri for std::path::PathBuf {
+                    fn to_uri(&self) -> tombi_uri::Uri {
+                        tombi_uri::Uri::from_file_path(self).unwrap()
+                    }
+                }
+
+                impl ToUri for &str {
+                    fn to_uri(&self) -> tombi_uri::Uri {
+                        tombi_uri::Uri::from_str(self).unwrap()
+                    }
+                }
 
                 let expected_paths: Vec<tombi_uri::Uri> = vec![$($expected_file_path.to_uri()),*];
 
