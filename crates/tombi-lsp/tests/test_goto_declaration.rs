@@ -13,7 +13,7 @@ mod goto_declaration_tests {
                 [dependencies]
                 serde = { workspace█ = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -24,7 +24,7 @@ mod goto_declaration_tests {
                 [dependencies]
                 serde█ = { workspace = true }
                 "#,
-                project_root_path().join("crates/test-crate/Cargo.toml"),
+                SourcePath(project_root_path().join("crates/test-crate/Cargo.toml")),
             ) -> Ok([project_root_path().join("Cargo.toml")]);
         );
 
@@ -35,7 +35,7 @@ mod goto_declaration_tests {
                 [workspace.dependencies]
                 tombi-ast = { path█ = "crates/tombi-ast" }
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([]);
         );
 
@@ -48,7 +48,7 @@ mod goto_declaration_tests {
                     "xtask█"
                 ]
                 "#,
-                project_root_path().join("Cargo.toml"),
+                SourcePath(project_root_path().join("Cargo.toml")),
             ) -> Ok([]);
         );
     }
@@ -67,7 +67,7 @@ mod goto_declaration_tests {
                 [tool.uv.sources]
                 tombi-beta█ = { workspace = true }
                 "#,
-                project_root_path().join("python/tombi-beta/pyproject.toml"),
+                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
         );
 
@@ -78,7 +78,7 @@ mod goto_declaration_tests {
                 [tool.uv.sources]
                 tombi-beta = { workspace█ = true }
                 "#,
-                project_root_path().join("python/tombi-beta/pyproject.toml"),
+                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
             ) -> Ok([project_root_path().join("pyproject.toml")]);
         );
 
@@ -89,7 +89,7 @@ mod goto_declaration_tests {
                 [tool.uv.sources]
                 tombi-beta = { path = "members/app█" }
                 "#,
-                project_root_path().join("python/tombi-beta/pyproject.toml"),
+                SourcePath(project_root_path().join("python/tombi-beta/pyproject.toml")),
             ) -> Ok([project_root_path().join("python/tombi-beta/pyproject.toml")]);
         );
 
@@ -104,7 +104,7 @@ mod goto_declaration_tests {
                     "pydantic█"
                 ]
                 "#,
-                pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
+                SourcePath(pyproject_workspace_fixtures_path().join("members/app/pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("pyproject.toml"),
             ]);
@@ -129,7 +129,7 @@ mod goto_declaration_tests {
                 [dependency-groups]
                 extras = ["pydantic█"]
                 "#,
-                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
             ) -> Ok([]);
         );
 
@@ -140,7 +140,7 @@ mod goto_declaration_tests {
                 [tool.uv.workspace]
                 members = ["members/app█"]
                 "#,
-                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
             ]);
@@ -153,7 +153,7 @@ mod goto_declaration_tests {
                 [tool.uv.workspace]
                 members = ["members/app█*"]
                 "#,
-                pyproject_workspace_fixtures_path().join("pyproject.toml"),
+                SourcePath(pyproject_workspace_fixtures_path().join("pyproject.toml")),
             ) -> Ok([
                 pyproject_workspace_fixtures_path().join("members/app/pyproject.toml"),
                 pyproject_workspace_fixtures_path().join("members/app2/pyproject.toml"),
@@ -165,8 +165,7 @@ mod goto_declaration_tests {
     #[macro_export]
     macro_rules! test_goto_declaration {
         (#[tokio::test] async fn $name:ident(
-            $source:expr,
-            $file_path:expr,
+            $source:expr $(, $arg:expr )* $(,)?
         ) -> Ok([$($expected_file_path:expr),*$(,)?]);) => {
             #[tokio::test]
             async fn $name() -> Result<(), Box<dyn std::error::Error>> {
@@ -185,13 +184,119 @@ mod goto_declaration_tests {
 
                 tombi_test_lib::init_tracing();
 
+                #[allow(unused)]
+                #[derive(Default)]
+                struct TestConfig {
+                    source_file_path: Option<std::path::PathBuf>,
+                    schema_file_path: Option<std::path::PathBuf>,
+                    subschemas: Vec<SubSchemaPath>,
+                    backend_options: tombi_lsp::backend::Options,
+                }
+
+                #[allow(unused)]
+                trait ApplyTestArg {
+                    fn apply(self, config: &mut TestConfig);
+                }
+
+                #[allow(unused)]
+                struct SourcePath(std::path::PathBuf);
+
+                impl ApplyTestArg for SourcePath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.source_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SchemaPath(std::path::PathBuf);
+
+                impl ApplyTestArg for SchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.schema_file_path = Some(self.0);
+                    }
+                }
+
+                #[allow(unused)]
+                struct SubSchemaPath {
+                    pub root: String,
+                    pub path: std::path::PathBuf,
+                }
+
+                impl ApplyTestArg for SubSchemaPath {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.subschemas.push(self);
+                    }
+                }
+
+                impl ApplyTestArg for tombi_lsp::backend::Options {
+                    fn apply(self, config: &mut TestConfig) {
+                        config.backend_options = self;
+                    }
+                }
+
+                #[allow(unused_mut)]
+                let mut config = TestConfig::default();
+                $(ApplyTestArg::apply($arg, &mut config);)*
+
                 let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &tombi_lsp::backend::Options::default())
+                    Backend::new(client, &config.backend_options)
                 });
 
                 let backend = service.inner();
 
-                let toml_file_url = Url::from_file_path($file_path).expect("failed to convert file path to URL");
+                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+                    let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
+                        .expect(
+                            format!(
+                                "failed to convert schema path to URL: {}",
+                                schema_file_path.display()
+                            )
+                            .as_str(),
+                        );
+
+                    backend
+                        .config_manager
+                        .load_config_schemas(
+                            &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                                toml_version: None,
+                                path: schema_uri.to_string(),
+                                include: vec!["*.toml".to_string()],
+                            })],
+                            None,
+                        )
+                        .await;
+                }
+
+                for subschema in &config.subschemas {
+                    let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
+                        .expect(
+                            format!(
+                                "failed to convert subschema path to URL: {}",
+                                subschema.path.display()
+                            )
+                            .as_str(),
+                        );
+
+                    backend
+                        .config_manager
+                        .load_config_schemas(
+                            &[tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                                path: subschema_uri.to_string(),
+                                include: vec!["*.toml".to_string()],
+                                root: subschema.root.clone(),
+                            })],
+                            None,
+                        )
+                        .await;
+                }
+
+                let source_path = config
+                    .source_file_path
+                    .as_ref()
+                    .ok_or("SourcePath must be provided for goto_declaration tests")?;
+
+                let toml_file_url = Url::from_file_path(source_path)
+                    .expect("failed to convert source file path to URL");
 
                 let mut toml_text = textwrap::dedent($source).trim().to_string();
                 let Some(index) = toml_text.as_str().find("█") else {
