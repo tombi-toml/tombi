@@ -1481,7 +1481,7 @@ mod completion_labels {
                 █
                 "#,
                 SchemaPath(pyproject_schema_path()),
-                SubSchemaPath {
+                SubSchema {
                     root: "tool.type_test",
                     path: type_test_schema_path(),
                 },
@@ -1507,7 +1507,7 @@ mod completion_labels {
                 [aaa.bbb]
                 █
                 "#,
-                SubSchemaPath {
+                SubSchema {
                     root: "aaa.bbb",
                     path: type_test_schema_path(),
                 },
@@ -1580,7 +1580,7 @@ mod completion_labels {
                 pub struct TestConfig {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
-                    subschemas: Vec<SubSchemaPath>,
+                    subschemas: Vec<SubSchema>,
                     backend_options: tombi_lsp::backend::Options,
                 }
 
@@ -1608,12 +1608,12 @@ mod completion_labels {
                 }
 
                 #[allow(unused)]
-                struct SubSchemaPath {
+                struct SubSchema {
                     pub root: &'static str,
                     pub path: std::path::PathBuf,
                 }
 
-                impl ApplyTestArg for SubSchemaPath {
+                impl ApplyTestArg for SubSchema {
                     fn apply(self, config: &mut TestConfig) {
                         config.subschemas.push(self);
                     }
