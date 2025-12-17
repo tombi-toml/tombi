@@ -67,7 +67,6 @@ macro_rules! run {
         $crate::glue::run_process(format!($($expr),*), false, Some($stdin))
     };
 }
-pub use crate::run;
 
 pub struct Pushd {
     _p: (),

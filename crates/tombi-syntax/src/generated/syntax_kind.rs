@@ -34,7 +34,6 @@ pub enum SyntaxKind {
     LOCAL_TIME,
     WHITESPACE,
     LINE_BREAK,
-    BARE_KEY,
     COMMENT,
     ERROR,
     ROOT,
