@@ -113,6 +113,24 @@ cache-dir = "~/.cache/uv"
 offline = true
 ```
 
+<Tip>
+If you want to automatically sort the root table of a document,
+you must write the comment directive at the very beginning of the file and insert a blank line afterwards.
+
+If you do not add a blank line, the comment will be treated as a leading comment for the next element,
+not as a comment for the whole document.
+
+```toml
+# tombi: format.rules.table-keys-order = "ascending"
+
+[aaa]
+key = "value"
+
+[bbb]
+key = "value"
+```
+</Tip>
+
 ### format.rules.array-values-order
 
 Controls the sorting method of array values.
