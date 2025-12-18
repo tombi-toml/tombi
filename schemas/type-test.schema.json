@@ -96,7 +96,7 @@
     }
   },
   "additionalProperties": false,
-  "x-tombi-toml-version": "v1.1.0-preview",
+  "x-tombi-toml-version": "v1.1.0",
   "minProperties": 1,
   "definitions": {
     "LiteralValue": {
