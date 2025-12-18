@@ -70,7 +70,6 @@ impl crate::Array {
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
         self.has_last_value_trailing_comma()
             || self.has_multiline_values(toml_version)
-            // || self.has_only_comments()
             || self.has_inner_comments()
     }
 
@@ -102,11 +101,6 @@ impl crate::Array {
             }
             _ => false,
         })
-    }
-
-    #[inline]
-    pub fn has_only_comments(&self) -> bool {
-        support::node::has_only_comments(self.syntax().children_with_tokens(), T!('['), T!(']'))
     }
 
     #[inline]

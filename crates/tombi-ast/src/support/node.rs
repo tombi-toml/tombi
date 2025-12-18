@@ -167,17 +167,6 @@ where
     })
 }
 
-pub fn has_only_comments<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
-    iter: I,
-    start: SyntaxKind,
-    end: SyntaxKind,
-) -> bool {
-    iter.skip_while(|node| node.kind() != start)
-        .skip(1)
-        .take_while(|node| node.kind() != end)
-        .all(|node| matches!(node.kind(), WHITESPACE | COMMENT | LINE_BREAK))
-}
-
 #[inline]
 pub fn has_inner_comments<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
     iter: I,

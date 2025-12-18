@@ -87,7 +87,6 @@ impl crate::InlineTable {
 
         self.has_last_key_value_trailing_comma()
             || self.has_multiline_values(toml_version)
-            // || self.has_only_comments(toml_version)
             || self.has_inner_comments()
     }
 
@@ -121,15 +120,6 @@ impl crate::InlineTable {
                 _ => false,
             })
         })
-    }
-
-    #[inline]
-    pub fn has_only_comments(&self, toml_version: TomlVersion) -> bool {
-        if toml_version == TomlVersion::V1_0_0 {
-            return false;
-        }
-
-        support::node::has_only_comments(self.syntax().children_with_tokens(), T!('{'), T!('}'))
     }
 
     #[inline]
