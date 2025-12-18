@@ -150,7 +150,7 @@ jobs:
               echo "${package}@${TOMBI_VERSION} is already published. Skipping publish."
               continue
             fi
-            npm publish typescript/$package --tag latest --access public --provenance --otp ${{ steps.get-otp.outputs.OTP }}
+            npm publish typescript/$package --tag latest --access public --provenance --otp "${{ steps.get-otp.outputs.OTP }}"
             echo publish ${package}@${TOMBI_VERSION}
           done
         env:
@@ -174,7 +174,7 @@ jobs:
             jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
 
             # Publish as tombi
-            npm publish --tag latest --access public --provenance --otp ${{ steps.get-otp.outputs.OTP }}
+            npm publish --tag latest --access public --provenance --otp "${{ steps.get-otp.outputs.OTP }}"
             echo "Published tombi@${TOMBI_VERSION}"
 
             # Clean up
