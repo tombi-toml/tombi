@@ -1,5 +1,5 @@
 {
-  "$schema": "https://www.schemastore.org/schema-catalog.json",
+  "$schema": "https://raw.githubusercontent.com/tombi-toml/tombi/refs/heads/main/www.schemastore.org/api/json/catalog.json",
   "version": 1,
   "schemas": [
     {
