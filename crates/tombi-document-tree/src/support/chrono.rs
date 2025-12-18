@@ -133,7 +133,7 @@ pub fn try_new_local_time(
     if text.chars().nth(HOUR_MINUTE_SIZE) == Some(':') {
         tombi_date_time::LocalTime::from_str(text)
     } else {
-        if toml_version < TomlVersion::V1_1_0_Preview {
+        if toml_version == TomlVersion::V1_0_0 {
             return Err(crate::Error::ParseLocalTimeError {
                 error: ParseError::OptionalSeconds,
                 range: token.range(),
@@ -162,11 +162,10 @@ fn make_datetime_str(value: &str, toml_version: TomlVersion) -> Result<String, P
         } else if i == DATE_TIME_WITHOUT_SECONDS_SIZE && c != ':' {
             // NOTE: Support optional seconds.
             //       See more infomation: https://github.com/toml-lang/toml/issues/671
-            if toml_version >= TomlVersion::V1_1_0_Preview {
-                datetime_str.push_str(DEFAULT_SECONDS);
-            } else {
+            if toml_version == TomlVersion::V1_0_0 {
                 return Err(ParseError::OptionalSeconds);
             }
+            datetime_str.push_str(DEFAULT_SECONDS);
 
             datetime_str.push(c);
         } else {
@@ -177,11 +176,10 @@ fn make_datetime_str(value: &str, toml_version: TomlVersion) -> Result<String, P
     if datetime_str.len() == DATE_TIME_WITHOUT_SECONDS_SIZE {
         // NOTE: Support optional seconds.
         //       See more infomation: https://github.com/toml-lang/toml/issues/671
-        if toml_version >= TomlVersion::V1_1_0_Preview {
-            datetime_str.push_str(DEFAULT_SECONDS);
-        } else {
+        if toml_version == TomlVersion::V1_0_0 {
             return Err(ParseError::OptionalSeconds);
         }
+        datetime_str.push_str(DEFAULT_SECONDS);
     }
 
     Ok(datetime_str)

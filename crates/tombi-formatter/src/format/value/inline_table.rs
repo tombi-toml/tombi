@@ -31,7 +31,7 @@ pub(crate) fn exceeds_line_width(
     node: &tombi_ast::InlineTable,
     f: &mut crate::Formatter,
 ) -> Result<bool, std::fmt::Error> {
-    if f.toml_version() < TomlVersion::V1_1_0_Preview {
+    if f.toml_version() == TomlVersion::V1_0_0 {
         return Ok(false);
     }
 
