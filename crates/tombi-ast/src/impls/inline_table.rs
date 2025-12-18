@@ -81,15 +81,14 @@ impl crate::InlineTable {
 
     #[inline]
     pub fn should_be_multiline(&self, toml_version: TomlVersion) -> bool {
-        match toml_version {
-            TomlVersion::V1_0_0 => false,
-            TomlVersion::V1_1_0_Preview => {
-                self.has_last_key_value_trailing_comma()
-                    || self.has_multiline_values(toml_version)
-                    // || self.has_only_comments(toml_version)
-                    || self.has_inner_comments()
-            }
+        if toml_version == TomlVersion::V1_0_0 {
+            return false;
         }
+
+        self.has_last_key_value_trailing_comma()
+            || self.has_multiline_values(toml_version)
+            // || self.has_only_comments(toml_version)
+            || self.has_inner_comments()
     }
 
     #[inline]
@@ -126,14 +125,11 @@ impl crate::InlineTable {
 
     #[inline]
     pub fn has_only_comments(&self, toml_version: TomlVersion) -> bool {
-        match toml_version {
-            TomlVersion::V1_0_0 => false,
-            TomlVersion::V1_1_0_Preview => support::node::has_only_comments(
-                self.syntax().children_with_tokens(),
-                T!('{'),
-                T!('}'),
-            ),
+        if toml_version == TomlVersion::V1_0_0 {
+            return false;
         }
+
+        support::node::has_only_comments(self.syntax().children_with_tokens(), T!('{'), T!('}'))
     }
 
     #[inline]
