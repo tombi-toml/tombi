@@ -351,7 +351,7 @@ pub fn run() -> Result<(), anyhow::Error> {
 #[derive(Debug, Default, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
-#[schemars(extend("x-tombi-toml-version" = TomlVersion::V1_1_0_Preview))]
+#[schemars(extend("x-tombi-toml-version" = TomlVersion::V1_1_0))]
 #[schemars(extend("minProperties" = 1))]
 struct TypeTest {
     boolean: Option<bool>,

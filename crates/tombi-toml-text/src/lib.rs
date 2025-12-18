@@ -112,12 +112,11 @@ pub fn parse_basic_string(
                             chars.next();
                         }
                         'e' => {
-                            if toml_version >= TomlVersion::V1_1_0_Preview {
-                                output.push('\u{001B}');
-                                chars.next();
-                            } else {
+                            if toml_version == TomlVersion::V1_0_0 {
                                 return Err(ParseError::EscapeCharacter);
                             }
+                            output.push('\u{001B}');
+                            chars.next();
                         }
                         't' => {
                             output.push('\t');
@@ -184,29 +183,29 @@ pub fn parse_basic_string(
                             }
                         }
                         'x' => {
-                            if toml_version >= TomlVersion::V1_1_0_Preview {
-                                chars.next(); // consume 'x'
+                            if toml_version == TomlVersion::V1_0_0 {
+                                return Err(ParseError::HexEscapeSequence);
+                            }
 
-                                unicode_buf.clear();
-                                for _ in 0..2 {
-                                    if let Some(hex_digit) = chars.next() {
-                                        unicode_buf.push(hex_digit);
-                                    } else {
-                                        return Err(ParseError::InvalidUnicodeEscapeSequence);
-                                    }
-                                }
+                            chars.next(); // consume 'x'
 
-                                if let Ok(code_point) = u32::from_str_radix(&unicode_buf, 16) {
-                                    if let Some(unicode_char) = std::char::from_u32(code_point) {
-                                        output.push(unicode_char);
-                                    } else {
-                                        return Err(ParseError::InvalidUnicodeCodePoint);
-                                    }
+                            unicode_buf.clear();
+                            for _ in 0..2 {
+                                if let Some(hex_digit) = chars.next() {
+                                    unicode_buf.push(hex_digit);
                                 } else {
                                     return Err(ParseError::InvalidUnicodeEscapeSequence);
                                 }
+                            }
+
+                            if let Ok(code_point) = u32::from_str_radix(&unicode_buf, 16) {
+                                if let Some(unicode_char) = std::char::from_u32(code_point) {
+                                    output.push(unicode_char);
+                                } else {
+                                    return Err(ParseError::InvalidUnicodeCodePoint);
+                                }
                             } else {
-                                return Err(ParseError::HexEscapeSequence);
+                                return Err(ParseError::InvalidUnicodeEscapeSequence);
                             }
                         }
                         c if c.is_whitespace() => {

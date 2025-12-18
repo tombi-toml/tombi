@@ -62,7 +62,7 @@ impl Parse for tombi_ast::InlineTable {
         }
 
         if (end_range.start.line - begin_range.start.line) != key_value_lines
-            && p.toml_version < TomlVersion::V1_1_0_Preview
+            && p.toml_version == TomlVersion::V1_0_0
         {
             p.error(crate::Error::new(
                 InlineTableMustSingleLine,
@@ -70,7 +70,7 @@ impl Parse for tombi_ast::InlineTable {
             ));
         }
         if let Some(comma_range) = last_comma_range {
-            if p.toml_version < TomlVersion::V1_1_0_Preview {
+            if p.toml_version == TomlVersion::V1_0_0 {
                 p.error(crate::Error::new(
                     ForbiddenInlineTableLastComma,
                     comma_range,

@@ -59,6 +59,6 @@ fn decode_test(
 const fn toml_test_version(toml_version: TomlVersion) -> &'static str {
     match toml_version {
         TomlVersion::V1_0_0 => "1.0.0",
-        TomlVersion::V1_1_0_Preview => "1.1.0",
+        TomlVersion::V1_1_0_Preview | TomlVersion::V1_1_0 => "1.1.0",
     }
 }
