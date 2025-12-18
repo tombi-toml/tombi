@@ -22,14 +22,18 @@ Tombi supports the following metadata keys in your JSON Schema.
 This key automatically determines the TOML version to use.
 Currently, we support:
 - `v1.0.0` (stable)
-- `v1.1.0-preview` (experimental)
+- `v1.1.0` (latest)
 
 The preview version includes exciting features like trailing comma support in Inline Tables.
 
 <Note>
-Until `v1.1.0` is officially released, we recommend using `v1.0.0`.
+`v1.1.0` has only just been released and is not yet supported by many tools.
+Therefore, `v1.0.0` will be used as the default TOML version for the time being.
 
-For experimental purposes, the JSON Schema in `tombi.toml` is specified as `v1.1.0-preview`.
+If you want to use `v1.1.0`, please specify `toml-version = "v1.1.0"` in your `tombi.toml`,
+or set `x-tombi-toml-version = "v1.1.0"` in your JSON Schema.
+
+For example, the JSON Schema for `tombi.toml` specifies `v1.1.0`.
 </Note>
 
 ### x-tombi-additional-key-label
