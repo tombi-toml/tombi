@@ -15,6 +15,7 @@ jobs:
         toml-version:
           - v1.0.0
           - v1.1.0-preview
+          - v1.1.0
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
