@@ -20,7 +20,7 @@ Also, we supports `[tool.tombi]` in `pyproject.toml`.
 ## Full Structure
 
 ```toml
-toml-version = "1.0.0"
+toml-version = "v1.0.0"
 
 [files]
 include = ["**/*.toml"]
@@ -54,7 +54,7 @@ tables-out-of-order = "warn"
 [lsp]
 code-action.enabled = true
 completion.enabled = true
-diagnostics.enabled = true
+diagnostic.enabled = true
 document-link.enabled = true
 formatting.enabled = true
 goto-declaration.enabled = true
@@ -177,20 +177,20 @@ tables-out-of-order = "error"
   - [schema.catalog](#schema-catalog)
     - [schema.catalog.paths](#schema-catalog-paths)
 - [schemas](#schemas)
-  - [schemas[*].toml-version](#root-schema)
-  - [schemas[*].root](#sub-schema)
-  - [schemas[*].path](#root-schema)
-  - [schemas[*].include](#root-schema)
+  - [schemas[\*].toml-version](#root-schema)
+  - [schemas[\*].root](#sub-schema)
+  - [schemas[\*].path](#root-schema)
+  - [schemas[\*].include](#root-schema)
 - [overrides](#overrides)
-  - [overrides[*].files](#overrides-files)
-    - [overrides[*].files.include](#overrides-files-include)
-    - [overrides[*].files.exclude](#overrides-files-exclude)
-  - [overrides[*].format](#overrides-format)
-    - [overrides[*].format.enabled](#overrides-format-enabled)
-    - [overrides[*].format.rules](#overrides-format-rules)
-  - [overrides[*].lint](#overrides-lint)
-    - [overrides[*].lint.enabled](#overrides-lint-enabled)
-    - [overrides[*].lint.rules](#overrides-lint-rules)
+  - [overrides[\*].files](#overrides-files)
+    - [overrides[\*].files.include](#overrides-files-include)
+    - [overrides[\*].files.exclude](#overrides-files-exclude)
+  - [overrides[\*].format](#overrides-format)
+    - [overrides[\*].format.enabled](#overrides-format-enabled)
+    - [overrides[\*].format.rules](#overrides-format-rules)
+  - [overrides[\*].lint](#overrides-lint)
+    - [overrides[\*].lint.enabled](#overrides-lint-enabled)
+    - [overrides[\*].lint.rules](#overrides-lint-rules)
 
 ### toml-version
 
