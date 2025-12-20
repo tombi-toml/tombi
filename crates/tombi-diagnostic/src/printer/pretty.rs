@@ -3,19 +3,31 @@ use nu_ansi_term::{Color, Style};
 use crate::{Diagnostic, Level, Print, printer::Simple};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Pretty;
+pub struct Pretty {
+    pub use_ansi_color: bool,
+}
+
+impl std::default::Default for Pretty {
+    fn default() -> Self {
+        Self {
+            use_ansi_color: true,
+        }
+    }
+}
 
 impl Print<Pretty> for Level {
-    fn print(&self, _printer: &mut Pretty, use_ansi_color: bool) {
-        self.print(&mut Simple, use_ansi_color);
+    fn print(&self, printer: &mut Pretty) {
+        self.print(&mut Simple {
+            use_ansi_color: printer.use_ansi_color,
+        });
     }
 }
 
 impl Print<Pretty> for Diagnostic {
-    fn print(&self, printer: &mut Pretty, use_ansi_color: bool) {
-        self.level().print(printer, use_ansi_color);
+    fn print(&self, printer: &mut Pretty) {
+        self.level().print(printer);
 
-        let (message_style, at_style, link_style) = if use_ansi_color {
+        let (message_style, at_style, link_style) = if printer.use_ansi_color {
             (
                 Style::new().bold(),
                 Style::new().fg(Color::DarkGray),

@@ -68,20 +68,22 @@ impl std::fmt::Display for NotFormattedError {
 }
 
 impl Print<Pretty> for Error {
-    fn print(&self, _printer: &mut Pretty, use_ansi_color: bool) {
-        self.print(&mut Simple, use_ansi_color);
+    fn print(&self, printer: &mut Pretty) {
+        self.print(&mut Simple {
+            use_ansi_color: printer.use_ansi_color,
+        });
     }
 }
 
 impl Print<Simple> for Error {
-    fn print(&self, printer: &mut Simple, use_ansi_color: bool) {
-        let message_style = if use_ansi_color {
+    fn print(&self, printer: &mut Simple) {
+        let message_style = if printer.use_ansi_color {
             Style::new().bold()
         } else {
             Style::new()
         };
 
-        Level::ERROR.print(printer, use_ansi_color);
+        Level::ERROR.print(printer);
         println!(": {}", message_style.paint(self.to_string()));
     }
 }
