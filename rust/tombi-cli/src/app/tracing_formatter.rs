@@ -69,7 +69,7 @@ where
         mut writer: tracing_subscriber::fmt::format::Writer<'_>,
         event: &Event<'_>,
     ) -> std::fmt::Result {
-        let use_ansi_color = std::env::var("NO_COLOR").map_or(true, |v| v.is_empty());
+        let use_ansi_color = crate::app::use_ansi_color();
         let metadata = event.metadata();
 
         write!(

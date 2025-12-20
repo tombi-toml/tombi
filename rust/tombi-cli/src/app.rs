@@ -126,3 +126,15 @@ const fn app_styles() -> clap::builder::Styles {
                 .fg_color(Some(Color::Ansi(AnsiColor::Red))),
         )
 }
+
+fn use_ansi_color() -> bool {
+    std::env::var("TOMBI_NO_COLOR")
+        .or_else(|_| std::env::var("NO_COLOR"))
+        .map_or(true, |v| v.is_empty())
+}
+
+fn printer() -> tombi_diagnostic::printer::Pretty {
+    tombi_diagnostic::printer::Pretty {
+        use_ansi_color: use_ansi_color(),
+    }
+}

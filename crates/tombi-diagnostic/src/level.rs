@@ -14,7 +14,7 @@ impl Level {
         }
     }
 
-    pub fn as_padded_str(&self) -> &'static str {
+    pub const fn as_padded_str(&self) -> &'static str {
         match self {
             Level::ERROR => "  Error",
             Level::WARNING => "Warning",

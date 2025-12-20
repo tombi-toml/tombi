@@ -1,6 +1,6 @@
 use tokio::io::AsyncReadExt;
 use tombi_config::{LintOptions, TomlVersion};
-use tombi_diagnostic::{Diagnostic, Print, printer::Pretty};
+use tombi_diagnostic::{Diagnostic, Print};
 use tombi_glob::FileSearch;
 
 use crate::app::CommonArgs;
@@ -33,7 +33,7 @@ pub struct Args {
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args) -> Result<(), crate::Error> {
-    let (success_num, error_num) = match inner_run(args, Pretty) {
+    let (success_num, error_num) = match inner_run(args, crate::app::printer()) {
         Ok((success_num, error_num)) => (success_num, error_num),
         Err(error) => {
             tracing::error!("{}", error);
@@ -70,8 +70,6 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let use_ansi_color = std::env::var("NO_COLOR").map_or(true, |v| v.is_empty());
-
     let (config, config_path, config_level) =
         serde_tombi::config::load_with_path_and_level(std::env::current_dir().ok())?;
 
@@ -128,7 +126,6 @@ where
                     toml_version,
                     &lint_options,
                     &schema_store,
-                    use_ansi_color,
                     args.error_on_warnings,
                 )
                 .await
@@ -173,7 +170,6 @@ where
                                             toml_version,
                                             &lint_options,
                                             &schema_store,
-                                            use_ansi_color,
                                             args.error_on_warnings,
                                         )
                                         .await
@@ -184,16 +180,16 @@ where
                                         crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
                                             source_path,
                                         ))
-                                        .print(&mut printer, use_ansi_color);
+                                        .print(&mut printer);
                                     } else {
-                                        crate::Error::Io(err).print(&mut printer, use_ansi_color);
+                                        crate::Error::Io(err).print(&mut printer);
                                     }
                                     error_num += 1;
                                 }
                             }
                         }
                         Err(err) => {
-                            crate::Error::TombiGlob(err).print(&mut printer, use_ansi_color);
+                            crate::Error::TombiGlob(err).print(&mut printer);
                             error_num += 1;
                         }
                     }
@@ -230,7 +226,6 @@ async fn lint_file<R, P>(
     toml_version: TomlVersion,
     lint_options: &LintOptions,
     schema_store: &tombi_schema_store::SchemaStore,
-    use_ansi_color: bool,
     error_on_warnings: bool,
 ) -> bool
 where
@@ -264,7 +259,7 @@ where
         diagnostics
     };
 
-    diagnostics.print(&mut printer, use_ansi_color);
+    diagnostics.print(&mut printer);
 
     if error_on_warnings {
         diagnostics.is_empty()

@@ -3,7 +3,7 @@ use nu_ansi_term::{Color, Style};
 use similar::{ChangeTag, TextDiff};
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
-use tombi_diagnostic::{Diagnostic, Print, printer::Pretty};
+use tombi_diagnostic::{Diagnostic, Print};
 use tombi_glob::{FileInputType, FileSearch};
 
 use crate::app::CommonArgs;
@@ -38,7 +38,7 @@ pub struct Args {
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args) -> Result<(), crate::Error> {
-    let (success_num, not_needed_num, error_num) = match inner_run(args, Pretty) {
+    let (success_num, not_needed_num, error_num) = match inner_run(args, crate::app::printer()) {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
             tracing::error!("{}", error);
@@ -87,8 +87,6 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let use_ansi_color = std::env::var("NO_COLOR").map_or(true, |v| v.is_empty());
-
     let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level(
         std::env::current_dir().ok(),
     )
@@ -157,7 +155,6 @@ where
                     args.diff,
                     &format_options,
                     &schema_store,
-                    use_ansi_color,
                 )
                 .await
                 {
@@ -203,7 +200,6 @@ where
                                             args.diff,
                                             &format_options,
                                             &schema_store,
-                                            use_ansi_color,
                                         )
                                         .await
                                     });
@@ -213,16 +209,16 @@ where
                                         crate::Error::TombiGlob(tombi_glob::Error::FileNotFound(
                                             source_path,
                                         ))
-                                        .print(&mut printer, use_ansi_color);
+                                        .print(&mut printer);
                                     } else {
-                                        crate::Error::Io(err).print(&mut printer, use_ansi_color);
+                                        crate::Error::Io(err).print(&mut printer);
                                     }
                                     error_num += 1;
                                 }
                             }
                         }
                         Err(err) => {
-                            crate::Error::TombiGlob(err).print(&mut printer, use_ansi_color);
+                            crate::Error::TombiGlob(err).print(&mut printer);
                             error_num += 1;
                         }
                     }
@@ -250,7 +246,7 @@ where
 
                 if !errors.is_empty() {
                     for error in errors {
-                        error.print(&mut printer, use_ansi_color);
+                        error.print(&mut printer);
                     }
                 }
             }
@@ -271,7 +267,6 @@ async fn format_stdin<P>(
     diff: bool,
     format_options: &FormatOptions,
     schema_store: &tombi_schema_store::SchemaStore,
-    use_ansi_color: bool,
 ) -> Result<bool, crate::Error>
 where
     Diagnostic: Print<P>,
@@ -309,7 +304,7 @@ where
         }
         Err(diagnostics) => {
             print!("{source}");
-            diagnostics.print(&mut printer, use_ansi_color);
+            diagnostics.print(&mut printer);
             Err(crate::Error::StdinParseFailed)
         }
     }
@@ -324,7 +319,6 @@ async fn format_file<P>(
     diff: bool,
     format_options: &FormatOptions,
     schema_store: &tombi_schema_store::SchemaStore,
-    use_ansi_color: bool,
 ) -> Result<bool, crate::Error>
 where
     Diagnostic: Print<P>,
@@ -368,7 +362,7 @@ where
                 .into_iter()
                 .map(|diagnostic| diagnostic.with_source_file(source_path))
                 .collect_vec()
-                .print(&mut printer, use_ansi_color);
+                .print(&mut printer);
             Err(crate::Error::FileParseFailed(source_path.to_owned()))
         }
     }
