@@ -120,7 +120,7 @@ impl std::fmt::Display for DisplayValue {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{key}: {value}")?;
+                    write!(f, "{key} = {value}")?;
                 }
                 write!(f, " }}")
             }
