@@ -7,7 +7,7 @@ A conversion tool for validating with [toml-test](https://github.com/toml-lang/t
 
 ```sh
 # Please first install toml-test
-go install github.com/toml-lang/toml-test/cmd/toml-test@latest
+go install github.com/toml-lang/toml-test/v2/cmd/toml-test@latest
 
 # Run the toml-test
 cargo xtask toml-test

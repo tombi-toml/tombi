@@ -26,7 +26,7 @@ jobs:
           go-version: '1.21'
 
       - name: Install toml-test
-        run: go install github.com/toml-lang/toml-test/cmd/toml-test@latest
+        run: go install github.com/toml-lang/toml-test/v2/cmd/toml-test@latest
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable

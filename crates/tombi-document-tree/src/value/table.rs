@@ -7,7 +7,8 @@ use tombi_ast::{AstChildren, AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    Array, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Key, Value, ValueImpl, ValueType,
+    Array, ArrayKind, DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Key, Value, ValueImpl,
+    ValueType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -274,7 +275,9 @@ impl Table {
                                 errors.extend(errs);
                             };
                         }
-                        (Value::Array(array1), Value::Array(array2)) => {
+                        (Value::Array(array1), Value::Array(array2))
+                            if can_merge_arrays(array1, &array2) =>
+                        {
                             if let Err(errs) = array1.merge(array2) {
                                 errors.extend(errs);
                             }
@@ -313,7 +316,9 @@ impl Table {
                             errors.extend(errs);
                         }
                     }
-                    (Value::Array(array1), Value::Array(array2)) => {
+                    (Value::Array(array1), Value::Array(array2))
+                        if can_merge_arrays(array1, &array2) =>
+                    {
                         if let Err(errs) = array1.merge(array2) {
                             errors.extend(errs);
                         }
@@ -425,6 +430,11 @@ impl Table {
     pub fn symbol_range(&self) -> tombi_text::Range {
         self.symbol_range
     }
+}
+
+#[inline]
+fn can_merge_arrays(array1: &Array, array2: &Array) -> bool {
+    array1.kind() != ArrayKind::Array && array2.kind() != ArrayKind::Array
 }
 
 impl std::fmt::Display for Table {
