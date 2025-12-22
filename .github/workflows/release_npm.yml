@@ -130,13 +130,8 @@ jobs:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
 
-      - uses: step-security/wait-for-secrets@v1
-        id: get-otp
-        with:
-          secrets: |
-            OTP:
-              name: 'npm OTP code'
-              description: 'One-time password from your authenticator app'
+      - name: Update npm for OIDC trusted publishing
+        run: npm install -g npm@latest
 
       - name: Generate npm package
         run: node typescript/@tombi-toml/tombi/scripts/generate-packages.mjs
@@ -150,11 +145,9 @@ jobs:
               echo "${package}@${TOMBI_VERSION} is already published. Skipping publish."
               continue
             fi
-            npm publish typescript/$package --tag latest --access public --provenance --otp "${{ steps.get-otp.outputs.OTP }}"
+            npm publish typescript/$package --tag latest --access public --provenance
             echo publish ${package}@${TOMBI_VERSION}
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish 'tombi' npm package
         run: |
@@ -174,12 +167,10 @@ jobs:
             jq '.name = "tombi"' package.json > package.json.tmp && mv package.json.tmp package.json
 
             # Publish as tombi
-            npm publish --tag latest --access public --provenance --otp "${{ steps.get-otp.outputs.OTP }}"
+            npm publish --tag latest --access public --provenance
             echo "Published tombi@${TOMBI_VERSION}"
 
             # Clean up
             cd -
             rm -rf "$temp_dir"
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
