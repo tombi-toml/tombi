@@ -33,6 +33,10 @@ fn decode_test(
     let toml_test_version = toml_test_version(toml_version);
     let toml_version_str = serde_json::to_string(&toml_version).unwrap_or_default();
     let toml_version_str = toml_version_str.trim_matches('"');
+    let decoder = format!(
+        "{}/target/debug/decode --toml-version {toml_version_str}",
+        project_root.display()
+    );
 
     let mut options = vec![];
     if verbosity.verbosity_level() != VerbosityLevel::Default {
@@ -41,8 +45,11 @@ fn decode_test(
 
     match xshell::cmd!(
         sh,
-        "toml-test {options...} -color=never -toml={toml_test_version} -- {project_root}/target/debug/decode --toml-version {toml_version_str}"
-    ).ignore_status().output() {
+        "toml-test test {options...} -color=never -toml={toml_test_version} -decoder {decoder}"
+    )
+    .ignore_status()
+    .output()
+    {
         Ok(output) => {
             std::io::stdout().write_all(&output.stdout).unwrap();
             std::io::stderr().write_all(&output.stderr).unwrap();
@@ -58,7 +65,7 @@ fn decode_test(
 
 const fn toml_test_version(toml_version: TomlVersion) -> &'static str {
     match toml_version {
-        TomlVersion::V1_0_0 => "1.0.0",
-        TomlVersion::V1_1_0_Preview | TomlVersion::V1_1_0 => "1.1.0",
+        TomlVersion::V1_0_0 => "1.0",
+        TomlVersion::V1_1_0_Preview | TomlVersion::V1_1_0 => "1.1",
     }
 }
