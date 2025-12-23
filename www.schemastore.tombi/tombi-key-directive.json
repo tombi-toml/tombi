@@ -92,9 +92,9 @@
             }
           ]
         },
-        "enumerate": {
-          "title": "Enumerate",
-          "description": "Check if the value is one of the values in the enumerate.",
+        "enum": {
+          "title": "Enum",
+          "description": "Check if the value is one of the values in the enum.",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -103,6 +103,19 @@
               "type": "null"
             }
           ]
+        },
+        "enumerate": {
+          "title": "Enum",
+          "description": "🚧 Deprecated 🚧\nPlease use `lint.rules.enum` instead.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ErrorRuleOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "deprecated": true
         },
         "deprecated": {
           "title": "Deprecated",

@@ -36,7 +36,7 @@ pub struct TableSchema {
     pub array_values_order_by: Option<ArrayValuesOrderBy>,
     pub default: Option<tombi_json::Object>,
     pub const_value: Option<tombi_json::Object>,
-    pub enumerate: Option<Vec<tombi_json::Object>>,
+    pub r#enum: Option<Vec<tombi_json::Object>>,
     pub examples: Option<Vec<tombi_json::Object>>,
     pub deprecated: Option<bool>,
     pub additional_key_label: Option<String>,
@@ -167,7 +167,7 @@ impl TableSchema {
                 .and_then(|v| v.as_u64().map(|u| u as usize)),
             keys_order,
             array_values_order_by,
-            enumerate: object_node.get("enum").and_then(|v| v.as_array()).map(|v| {
+            r#enum: object_node.get("enum").and_then(|v| v.as_array()).map(|v| {
                 v.items
                     .iter()
                     .filter_map(|v| v.as_object().map(|v| v.into()))

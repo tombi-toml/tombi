@@ -148,29 +148,24 @@ async fn validate_string(
         );
     }
 
-    if let Some(enumerate) = &string_schema.enumerate
-        && !enumerate.contains(&value)
+    if let Some(r#enum) = &string_schema.r#enum
+        && !r#enum.contains(&value)
     {
         let level = lint_rules
             .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .enumerate
-                    .as_ref()
-                    .map(SeverityLevelDefaultError::from)
-            })
+            .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
             .unwrap_or_default();
 
         crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Enumerate {
-                expected: enumerate.iter().map(|s| format!("\"{s}\"")).collect(),
+            kind: Box::new(crate::DiagnosticKind::Enum {
+                expected: r#enum.iter().map(|s| format!("\"{s}\"")).collect(),
                 actual: string_value.to_string(),
             }),
             range,
         }
         .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
-        .and_then(|rules| rules.common.enumerate.as_ref())
+        .and_then(|rules| rules.common.r#enum())
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
@@ -178,7 +173,7 @@ async fn validate_string(
             &mut diagnostics,
             string_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
-            "enumerate",
+            "enum",
         );
     }
 

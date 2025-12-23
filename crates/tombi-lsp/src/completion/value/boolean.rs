@@ -85,13 +85,13 @@ impl FindCompletionContents for BooleanSchema {
                 )];
             }
 
-            if let Some(enumerate) = &self.enumerate {
-                enumerate
+            if let Some(r#enum) = &self.r#enum {
+                r#enum
                     .iter()
                     .map(|value| {
                         let label = value.to_string();
                         let edit = CompletionEdit::new_literal(&label, position, completion_hint);
-                        CompletionContent::new_enumerate_value(
+                        CompletionContent::new_enum_value(
                             CompletionKind::Boolean,
                             value.to_string(),
                             self.title.clone(),

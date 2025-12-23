@@ -16,7 +16,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enumerate_values},
+        constraints::{ValueConstraints, build_enum_values},
         one_of::get_one_of_hover_content,
     },
 };
@@ -525,11 +525,9 @@ impl GetHoverContent for TableSchema {
                 accessors: Accessors::from(accessors.to_vec()),
                 value_type: ValueType::Table,
                 constraints: Some(ValueConstraints {
-                    enumerate: build_enumerate_values(
-                        &self.const_value,
-                        &self.enumerate,
-                        |value| Some(value.into()),
-                    ),
+                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
+                        Some(value.into())
+                    }),
                     default: self.default.as_ref().map(|default| default.into()),
                     examples: self
                         .examples

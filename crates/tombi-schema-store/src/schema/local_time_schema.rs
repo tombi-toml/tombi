@@ -3,7 +3,7 @@ pub struct LocalTimeSchema {
     pub title: Option<String>,
     pub description: Option<String>,
     pub range: tombi_text::Range,
-    pub enumerate: Option<Vec<String>>,
+    pub r#enum: Option<Vec<String>>,
     pub default: Option<String>,
     pub const_value: Option<String>,
     pub examples: Option<Vec<String>>,
@@ -20,7 +20,7 @@ impl LocalTimeSchema {
                 .get("description")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             range: object.range,
-            enumerate: object.get("enum").and_then(|v| v.as_array()).map(|a| {
+            r#enum: object.get("enum").and_then(|v| v.as_array()).map(|a| {
                 a.items
                     .iter()
                     .filter_map(|v| v.as_str())

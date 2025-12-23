@@ -351,7 +351,7 @@ mod tests {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Err([
-                tombi_validator::DiagnosticKind::Enumerate {
+                tombi_validator::DiagnosticKind::Enum {
                     expected: vec!["\"off\"".to_string(), "\"warn\"".to_string(), "\"error\"".to_string()],
                     actual: "\"undefined\"".to_string()
                 },

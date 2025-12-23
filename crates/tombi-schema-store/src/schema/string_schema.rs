@@ -9,7 +9,7 @@ pub struct StringSchema {
     pub max_length: Option<usize>,
     pub format: Option<StringFormat>,
     pub pattern: Option<String>,
-    pub enumerate: Option<Vec<String>>,
+    pub r#enum: Option<Vec<String>>,
     pub examples: Option<Vec<String>>,
     pub default: Option<String>,
     pub const_value: Option<String>,
@@ -36,7 +36,7 @@ impl StringSchema {
             pattern: object
                 .get("pattern")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
-            enumerate: object.get("enum").and_then(|v| v.as_array()).map(|a| {
+            r#enum: object.get("enum").and_then(|v| v.as_array()).map(|a| {
                 a.items
                     .iter()
                     .filter_map(|v| v.as_str())

@@ -48,8 +48,8 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Integer(integer_schema) => {
-                        if let Some(enumerate) = &integer_schema.enumerate {
-                            if !enumerate.contains(&self.value()) {
+                        if let Some(r#enum) = &integer_schema.r#enum {
+                            if !r#enum.contains(&self.value()) {
                                 return None;
                             }
                         }

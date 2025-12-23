@@ -9,7 +9,7 @@ use crate::HoverContent;
 use super::{
     GetHoverContent, HoverValueContent,
     constraints::ValueConstraints,
-    display_value::{DisplayValue, GetEnumerate},
+    display_value::{DisplayValue, GetEnum},
 };
 
 pub fn get_one_of_hover_content<'a: 'b, 'b, T>(
@@ -40,7 +40,7 @@ where
         let mut one_hover_value_contents = ahash::AHashSet::new();
         let mut valid_hover_value_contents = ahash::AHashSet::new();
         let mut value_type_set = indexmap::IndexSet::new();
-        let mut enumerate_values = Vec::new();
+        let mut enum_values = Vec::new();
         let default = one_of_schema
             .default
             .as_ref()
@@ -60,10 +60,10 @@ where
 
             if let Some(values) = value_schema
                 .as_ref()
-                .get_enumerate(schema_uri, definitions, schema_context)
+                .get_enum(schema_uri, definitions, schema_context)
                 .await
             {
-                enumerate_values.extend(values);
+                enum_values.extend(values);
             }
 
             value_type_set.insert(value_schema.value_type().await);
@@ -207,12 +207,12 @@ where
                 }
             }
 
-            if !enumerate_values.is_empty() {
+            if !enum_values.is_empty() {
                 if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                    constraints.enumerate = Some(enumerate_values);
+                    constraints.r#enum = Some(enum_values);
                 } else {
                     hover_value_content.constraints = Some(ValueConstraints {
-                        enumerate: Some(enumerate_values),
+                        r#enum: Some(enum_values),
                         ..Default::default()
                     });
                 }
@@ -240,7 +240,7 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
 
             let mut title_description_set = ahash::AHashSet::new();
             let mut value_type_set = indexmap::IndexSet::new();
-            let mut enumerate_values = Vec::new();
+            let mut enum_values = Vec::new();
             let default = self
                 .default
                 .as_ref()
@@ -272,10 +272,10 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
 
                 if let Some(values) = value_schema
                     .as_ref()
-                    .get_enumerate(&schema_uri, &definitions, schema_context)
+                    .get_enum(&schema_uri, &definitions, schema_context)
                     .await
                 {
-                    enumerate_values.extend(values);
+                    enum_values.extend(values);
                 }
             }
 
@@ -323,12 +323,12 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 }
             }
 
-            if !enumerate_values.is_empty() {
+            if !enum_values.is_empty() {
                 if let Some(constraints) = hover_value_content.constraints.as_mut() {
-                    constraints.enumerate = Some(enumerate_values);
+                    constraints.r#enum = Some(enum_values);
                 } else {
                     hover_value_content.constraints = Some(ValueConstraints {
-                        enumerate: Some(enumerate_values),
+                        r#enum: Some(enum_values),
                         ..Default::default()
                     });
                 }

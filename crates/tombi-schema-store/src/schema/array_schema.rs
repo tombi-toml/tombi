@@ -20,7 +20,7 @@ pub struct ArraySchema {
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
     pub unique_items: Option<bool>,
-    pub enumerate: Option<Vec<tombi_json::Value>>,
+    pub r#enum: Option<Vec<tombi_json::Value>>,
     pub default: Option<tombi_json::Value>,
     pub const_value: Option<tombi_json::Value>,
     pub examples: Option<Vec<tombi_json::Value>>,
@@ -51,7 +51,7 @@ impl ArraySchema {
                 .get("maxItems")
                 .and_then(|v| v.as_u64().map(|n| n as usize)),
             unique_items: object.get("uniqueItems").and_then(|v| v.as_bool()),
-            enumerate: object
+            r#enum: object
                 .get("enum")
                 .and_then(|v| v.as_array())
                 .map(|array| array.items.iter().map(|v| v.into()).collect()),
