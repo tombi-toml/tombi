@@ -9,7 +9,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enumerate_values},
+        constraints::{ValueConstraints, build_enum_values},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
@@ -43,8 +43,8 @@ impl GetHoverContent for tombi_document_tree::Boolean {
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Boolean(boolean_schema) => {
-                        if let Some(enumerate) = &boolean_schema.enumerate {
-                            if !enumerate.contains(&self.value()) {
+                        if let Some(r#enum) = &boolean_schema.r#enum {
+                            if !r#enum.contains(&self.value()) {
                                 return None;
                             }
                         }
@@ -140,11 +140,9 @@ impl GetHoverContent for BooleanSchema {
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::Boolean,
                 constraints: Some(ValueConstraints {
-                    enumerate: build_enumerate_values(
-                        &self.const_value,
-                        &self.enumerate,
-                        |value| Some(DisplayValue::Boolean(*value)),
-                    ),
+                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
+                        Some(DisplayValue::Boolean(*value))
+                    }),
                     default: self.default.map(DisplayValue::Boolean),
                     examples: self.examples.as_ref().map(|examples| {
                         examples

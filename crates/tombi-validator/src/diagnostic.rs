@@ -45,7 +45,7 @@ or set `schema.strict = false` in your `tombi.toml`."#
     Const { expected: String, actual: String },
 
     #[error("The value must be one of [{}], but found {actual}", .expected.join(", "))]
-    Enumerate {
+    Enum {
         expected: Vec<String>,
         actual: String,
     },
@@ -142,7 +142,7 @@ impl Diagnostic {
             DiagnosticKind::KeyPattern { .. } => "key-pattern",
             DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
             DiagnosticKind::Const { .. } => "const",
-            DiagnosticKind::Enumerate { .. } => "enumerate",
+            DiagnosticKind::Enum { .. } => "enum",
             DiagnosticKind::IntegerMaximum { .. } => "integer-maximum",
             DiagnosticKind::IntegerMinimum { .. } => "integer-minimum",
             DiagnosticKind::IntegerExclusiveMaximum { .. } => "integer-exclusive-maximum",

@@ -264,7 +264,7 @@ In accordance with [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339), yo
 
 - Type: `"T" | "space" | "preserve"`
 - Default: `"T"`
-- Enumerated:
+- Enum Values:
   - `T`: Use `T` between date and time like `2001-01-01T00:00:00`
   - `space`: Use space between date and time like `2001-01-01 00:00:00`
   - `preserve`: Preserve the original delimiter.
@@ -277,7 +277,7 @@ Whether to use spaces or tabs for indentation.
 
 - Type: `"space" | "tab"`
 - Default: `"space"`
-- Enumerated:
+- Enum Values:
   - `space`: Use spaces for indentation.
   - `tab`: Use tabs for indentation.
 
@@ -415,7 +415,7 @@ The type of line ending.
 
 - Type: `"lf" | "crlf"`
 - Default: `"lf"`
-- Enumerated:
+- Enum Values:
   - `lf`: Line Feed only (`\n`), common on Linux and macOS as well as inside git repos.
   - `crlf`: Carriage Return Line Feed (`\r\n`), common on Windows.
 
@@ -434,7 +434,7 @@ The preferred quote character for strings.
 
 - Type: `"double" | "single" | "preserve"`
 - Default: `"double"`
-- Enumerated:
+- Enum Values:
   - `double`: Prefer the double quote like `"value"`
   - `single`: Prefer the single quote like `'value'`
   - `preserve`: Preserve the original quote

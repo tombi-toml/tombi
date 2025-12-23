@@ -97,7 +97,7 @@ impl CompletionContent {
         }
     }
 
-    pub fn new_enumerate_value(
+    pub fn new_enum_value(
         kind: CompletionKind,
         label: String,
         detail: Option<String>,

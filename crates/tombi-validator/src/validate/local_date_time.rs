@@ -153,29 +153,24 @@ async fn validate_local_date_time(
         );
     }
 
-    if let Some(enumerate) = &local_date_time_schema.enumerate
-        && !enumerate.contains(&value_string)
+    if let Some(r#enum) = &local_date_time_schema.r#enum
+        && !r#enum.contains(&value_string)
     {
         let level = lint_rules
             .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .enumerate
-                    .as_ref()
-                    .map(SeverityLevelDefaultError::from)
-            })
+            .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
             .unwrap_or_default();
 
         crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Enumerate {
-                expected: enumerate.iter().map(ToString::to_string).collect(),
+            kind: Box::new(crate::DiagnosticKind::Enum {
+                expected: r#enum.iter().map(ToString::to_string).collect(),
                 actual: value_string.clone(),
             }),
             range,
         }
         .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
-        .and_then(|rules| rules.common.enumerate.as_ref())
+        .and_then(|rules| rules.common.r#enum())
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
@@ -183,7 +178,7 @@ async fn validate_local_date_time(
             &mut diagnostics,
             local_date_time_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
-            "enumerate",
+            "enum",
         );
     }
 

@@ -128,8 +128,8 @@ impl std::fmt::Display for DisplayValue {
     }
 }
 
-pub trait GetEnumerate {
-    fn get_enumerate<'a: 'b, 'b>(
+pub trait GetEnum {
+    fn get_enum<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
@@ -137,8 +137,8 @@ pub trait GetEnumerate {
     ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>>;
 }
 
-impl GetEnumerate for ValueSchema {
-    fn get_enumerate<'a: 'b, 'b>(
+impl GetEnum for ValueSchema {
+    fn get_enum<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
@@ -147,152 +147,149 @@ impl GetEnumerate for ValueSchema {
         async move {
             match self {
                 ValueSchema::Boolean(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     // Add const_value if present
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::Boolean(*const_value));
+                        enum_values.push(DisplayValue::Boolean(*const_value));
                     }
 
-                    // Add enumerate values if present
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values
-                            .extend(enumerate.iter().map(|v| DisplayValue::Boolean(*v)));
+                    // Add enum values if present
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::Boolean(*v)));
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::Integer(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::Integer(*const_value));
+                        enum_values.push(DisplayValue::Integer(*const_value));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values
-                            .extend(enumerate.iter().map(|v| DisplayValue::Integer(*v)));
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::Integer(*v)));
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::Float(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::Float(*const_value));
+                        enum_values.push(DisplayValue::Float(*const_value));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values.extend(enumerate.iter().map(|v| DisplayValue::Float(*v)));
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::Float(*v)));
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::String(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::String(const_value.clone()));
+                        enum_values.push(DisplayValue::String(const_value.clone()));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values
-                            .extend(enumerate.iter().map(|v| DisplayValue::String(v.clone())));
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values.extend(r#enum.iter().map(|v| DisplayValue::String(v.clone())));
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::OffsetDateTime(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::OffsetDateTime(const_value.clone()));
+                        enum_values.push(DisplayValue::OffsetDateTime(const_value.clone()));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values.extend(
-                            enumerate
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values.extend(
+                            r#enum
                                 .iter()
                                 .map(|v| DisplayValue::OffsetDateTime(v.clone())),
                         );
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::LocalDateTime(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::LocalDateTime(const_value.clone()));
+                        enum_values.push(DisplayValue::LocalDateTime(const_value.clone()));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values.extend(
-                            enumerate
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values.extend(
+                            r#enum
                                 .iter()
                                 .map(|v| DisplayValue::LocalDateTime(v.clone())),
                         );
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::LocalDate(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::LocalDate(const_value.clone()));
+                        enum_values.push(DisplayValue::LocalDate(const_value.clone()));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values
-                            .extend(enumerate.iter().map(|v| DisplayValue::LocalDate(v.clone())));
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values
+                            .extend(r#enum.iter().map(|v| DisplayValue::LocalDate(v.clone())));
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
                 }
                 ValueSchema::LocalTime(schema) => {
-                    let mut enumerate_values = Vec::new();
+                    let mut enum_values = Vec::new();
 
                     if let Some(const_value) = &schema.const_value {
-                        enumerate_values.push(DisplayValue::LocalTime(const_value.clone()));
+                        enum_values.push(DisplayValue::LocalTime(const_value.clone()));
                     }
 
-                    if let Some(enumerate) = &schema.enumerate {
-                        enumerate_values
-                            .extend(enumerate.iter().map(|v| DisplayValue::LocalTime(v.clone())));
+                    if let Some(r#enum) = &schema.r#enum {
+                        enum_values
+                            .extend(r#enum.iter().map(|v| DisplayValue::LocalTime(v.clone())));
                     }
 
-                    if !enumerate_values.is_empty() {
-                        Some(enumerate_values)
+                    if !enum_values.is_empty() {
+                        Some(enum_values)
                     } else {
                         None
                     }
@@ -301,8 +298,7 @@ impl GetEnumerate for ValueSchema {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                    get_enumerate_from_schemas(schemas, schema_uri, definitions, schema_context)
-                        .await
+                    get_enum_from_schemas(schemas, schema_uri, definitions, schema_context).await
                 }
             }
         }
@@ -310,15 +306,15 @@ impl GetEnumerate for ValueSchema {
     }
 }
 
-/// Helper function to get enumerate values from a collection of schemas
-fn get_enumerate_from_schemas<'a: 'b, 'b>(
+/// Helper function to get enum values from a collection of schemas
+fn get_enum_from_schemas<'a: 'b, 'b>(
     schemas: &'a tombi_schema_store::ReferableValueSchemas,
     schema_uri: &'a SchemaUri,
     definitions: &'a SchemaDefinitions,
     schema_context: &'a SchemaContext,
 ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
     async move {
-        let mut enumerate_values = Vec::new();
+        let mut enum_values = Vec::new();
         for schema in schemas.write().await.iter_mut() {
             if let Ok(Some(resolved)) = schema
                 .resolve(
@@ -330,18 +326,18 @@ fn get_enumerate_from_schemas<'a: 'b, 'b>(
             {
                 if let Some(values) = resolved
                     .value_schema
-                    .get_enumerate(schema_uri, definitions, schema_context)
+                    .get_enum(schema_uri, definitions, schema_context)
                     .await
                 {
-                    enumerate_values.extend(values);
+                    enum_values.extend(values);
                 }
             }
         }
 
-        if enumerate_values.is_empty() {
+        if enum_values.is_empty() {
             None
         } else {
-            Some(enumerate_values)
+            Some(enum_values)
         }
     }
     .boxed()

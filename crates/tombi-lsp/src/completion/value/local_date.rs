@@ -87,11 +87,11 @@ impl FindCompletionContents for LocalDateSchema {
                 return completion_items;
             }
 
-            if let Some(enumerate) = &self.enumerate {
-                for item in enumerate {
+            if let Some(r#enum) = &self.r#enum {
+                for item in r#enum {
                     let label = item.to_string();
                     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
-                    completion_items.push(CompletionContent::new_enumerate_value(
+                    completion_items.push(CompletionContent::new_enum_value(
                         CompletionKind::LocalDate,
                         label,
                         self.title.clone(),

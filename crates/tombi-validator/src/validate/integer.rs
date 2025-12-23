@@ -160,29 +160,24 @@ async fn validate_integer_schema(
         );
     }
 
-    if let Some(enumerate) = &integer_schema.enumerate
-        && !enumerate.contains(&value)
+    if let Some(r#enum) = &integer_schema.r#enum
+        && !r#enum.contains(&value)
     {
         let level = lint_rules
             .map(|rules| &rules.common)
-            .and_then(|rules| {
-                rules
-                    .enumerate
-                    .as_ref()
-                    .map(SeverityLevelDefaultError::from)
-            })
+            .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
             .unwrap_or_default();
 
         crate::Diagnostic {
-            kind: Box::new(crate::DiagnosticKind::Enumerate {
-                expected: enumerate.iter().map(ToString::to_string).collect(),
+            kind: Box::new(crate::DiagnosticKind::Enum {
+                expected: r#enum.iter().map(ToString::to_string).collect(),
                 actual: value.to_string(),
             }),
             range,
         }
         .push_diagnostic_with_level(level, &mut diagnostics);
     } else if lint_rules
-        .and_then(|rules| rules.common.enumerate.as_ref())
+        .and_then(|rules| rules.common.r#enum())
         .and_then(|rules| rules.disabled)
         == Some(true)
     {
@@ -190,7 +185,7 @@ async fn validate_integer_schema(
             &mut diagnostics,
             integer_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
-            "enumerate",
+            "enum",
         );
     }
 
@@ -415,21 +410,16 @@ async fn validate_float_schema_for_integer(
         }
     }
 
-    if let Some(enumerate) = &float_schema.enumerate {
-        if !enumerate.contains(&value) {
+    if let Some(r#enum) = &float_schema.r#enum {
+        if !r#enum.contains(&value) {
             let level = lint_rules
                 .map(|rules| &rules.common)
-                .and_then(|rules| {
-                    rules
-                        .enumerate
-                        .as_ref()
-                        .map(SeverityLevelDefaultError::from)
-                })
+                .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
                 .unwrap_or_default();
 
             crate::Diagnostic {
-                kind: Box::new(crate::DiagnosticKind::Enumerate {
-                    expected: enumerate.iter().map(ToString::to_string).collect(),
+                kind: Box::new(crate::DiagnosticKind::Enum {
+                    expected: r#enum.iter().map(ToString::to_string).collect(),
                     actual: value.to_string(),
                 }),
                 range,

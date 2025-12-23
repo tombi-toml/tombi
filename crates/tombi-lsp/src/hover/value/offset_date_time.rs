@@ -11,7 +11,7 @@ use crate::{
         all_of::get_all_of_hover_content,
         any_of::get_any_of_hover_content,
         comment::get_value_comment_directive_hover_content,
-        constraints::{ValueConstraints, build_enumerate_values},
+        constraints::{ValueConstraints, build_enum_values},
         display_value::DisplayValue,
         one_of::get_one_of_hover_content,
     },
@@ -136,11 +136,9 @@ impl GetHoverContent for OffsetDateTimeSchema {
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
                 value_type: tombi_schema_store::ValueType::OffsetDateTime,
                 constraints: Some(ValueConstraints {
-                    enumerate: build_enumerate_values(
-                        &self.const_value,
-                        &self.enumerate,
-                        |value| DisplayValue::try_new_offset_date_time(value).ok(),
-                    ),
+                    r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
+                        DisplayValue::try_new_offset_date_time(value).ok()
+                    }),
                     default: self
                         .default
                         .as_ref()

@@ -3,46 +3,43 @@ use tombi_x_keyword::{ArrayValuesOrderBy, ArrayValuesOrderGroup, StringFormat};
 
 use super::display_value::DisplayValue;
 
-/// Build enumerate values from const_value and enumerate fields
+/// Build enum values from const_value and enum fields
 ///
-/// This function is used to create the enumerate field for ValueConstraints
-/// by combining const_value and enumerate from various schema types.
-pub fn build_enumerate_values<T, F>(
+/// This function is used to create the enum field for ValueConstraints
+/// by combining const_value and enum from various schema types.
+pub fn build_enum_values<T, F>(
     const_value: &Option<T>,
-    enumerate: &Option<Vec<T>>,
+    r#enum: &Option<Vec<T>>,
     convert_fn: F,
 ) -> Option<Vec<DisplayValue>>
 where
     F: Fn(&T) -> Option<DisplayValue>,
 {
     let const_len = if const_value.is_some() { 1 } else { 0 };
-    let enumerate_len = enumerate
-        .as_ref()
-        .map(|value| value.len())
-        .unwrap_or_default();
-    let mut enumerate_values = Vec::with_capacity(const_len + enumerate_len);
+    let enum_len = r#enum.as_ref().map(|value| value.len()).unwrap_or_default();
+    let mut enum_values = Vec::with_capacity(const_len + enum_len);
 
     if let Some(const_value) = const_value {
         if let Some(display_value) = convert_fn(const_value) {
-            enumerate_values.push(display_value);
+            enum_values.push(display_value);
         }
     }
 
-    if let Some(enumerate) = enumerate {
-        enumerate_values.extend(enumerate.iter().filter_map(convert_fn));
+    if let Some(r#enum) = r#enum {
+        enum_values.extend(r#enum.iter().filter_map(convert_fn));
     }
 
-    if enumerate_values.is_empty() {
+    if enum_values.is_empty() {
         None
     } else {
-        Some(enumerate_values)
+        Some(enum_values)
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct ValueConstraints {
     // Common
-    pub enumerate: Option<Vec<DisplayValue>>,
+    pub r#enum: Option<Vec<DisplayValue>>,
     pub default: Option<DisplayValue>,
     pub examples: Option<Vec<DisplayValue>>,
 
@@ -77,9 +74,9 @@ pub struct ValueConstraints {
 
 impl std::fmt::Display for ValueConstraints {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(enumerate) = &self.enumerate {
-            write!(f, "Enumerated Values:\n\n")?;
-            for value in enumerate {
+        if let Some(r#enum) = &self.r#enum {
+            write!(f, "Enum Values:\n\n")?;
+            for value in r#enum {
                 write!(f, "- `{value}`\n\n")?;
             }
             writeln!(f)?;

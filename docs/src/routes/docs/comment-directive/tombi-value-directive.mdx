@@ -18,8 +18,8 @@ import { Note, Tip } from "~/components/Highlight";
       - [lint.rules.type-mismatch.disabled](#lint-rules-type-mismatch-disabled)
     - [lint.rules.const-value](#lint-rules-const-value)
       - [lint.rules.const-value.disabled](#lint-rules-const-value-disabled)
-    - [lint.rules.enumerate](#lint-rules-enumerate)
-      - [lint.rules.enumerate.disabled](#lint-rules-enumerate-disabled)
+    - [lint.rules.enum](#lint-rules-enum)
+      - [lint.rules.enum.disabled](#lint-rules-enum-disabled)
     - [lint.rules.deprecated](#lint-rules-deprecated)
       - [lint.rules.deprecated.disabled](#lint-rules-deprecated-disabled)
     - [lint.rules.one-of-multiple-match](#lint-rules-one-of-multiple-match)
@@ -210,19 +210,19 @@ Disable const-value rule.
 type = "wrong-value"  # Schema expects specific const value
 ```
 
-### lint.rules.enumerate
+### lint.rules.enum
 
-Check if the value is one of the values in the enumerate.
+Check if the value is one of the values in the enum.
 
-### lint.rules.enumerate.disabled
+### lint.rules.enum.disabled
 
-Disable enumerate rule.
+Disable enum rule.
 
 - **Type**: `boolean`
 - **Values**: `true`
 
 ```toml
-# tombi: lint.rules.enumerate.disabled = true
+# tombi: lint.rules.enum.disabled = true
 license = "Unknown"  # Not in enum list
 ```
 
