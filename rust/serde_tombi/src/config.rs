@@ -78,14 +78,6 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
     };
 
     match config_path.file_name().and_then(|name| name.to_str()) {
-        Some(TOMBI_TOML_FILENAME | CONFIG_TOML_FILENAME) => {
-            match crate::config::from_str(&config_text, config_path) {
-                Ok(tombi_config) => Ok(Some(tombi_config)),
-                Err(_) => Err(tombi_config::Error::ConfigFileParseFailed {
-                    config_path: config_path.to_owned(),
-                }),
-            }
-        }
         Some(PYPROJECT_TOML_FILENAME) => {
             let Ok(pyproject_toml) = PyProjectToml::from_str(&config_text, config_path) else {
                 return Err(tombi_config::Error::ConfigFileParseFailed {
@@ -101,25 +93,12 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
                 Ok(None)
             }
         }
-        _ => Err(tombi_config::Error::ConfigFileUnsupported {
-            config_path: config_path.to_owned(),
-        }),
-    }
-}
-
-pub fn try_from_uri(config_uri: &tombi_uri::Uri) -> Result<Option<Config>, tombi_config::Error> {
-    match config_uri.scheme() {
-        "file" => {
-            let config_path = tombi_uri::Uri::to_file_path(config_uri).map_err(|_| {
-                tombi_config::Error::ConfigUriParseFailed {
-                    config_uri: config_uri.clone(),
-                }
-            })?;
-            try_from_path(config_path)
-        }
-        _ => Err(tombi_config::Error::ConfigUriUnsupported {
-            config_uri: config_uri.clone(),
-        }),
+        _ => match crate::config::from_str(&config_text, config_path) {
+            Ok(tombi_config) => Ok(Some(tombi_config)),
+            Err(_) => Err(tombi_config::Error::ConfigFileParseFailed {
+                config_path: config_path.to_owned(),
+            }),
+        },
     }
 }
 
