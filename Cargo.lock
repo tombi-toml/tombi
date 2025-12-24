@@ -2958,7 +2958,6 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
- "tombi-uri",
  "tracing",
  "typed-builder",
 ]
