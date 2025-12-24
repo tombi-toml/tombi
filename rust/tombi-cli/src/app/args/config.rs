@@ -15,7 +15,10 @@ pub fn load_config(
                 })?;
         match serde_tombi::config::try_from_path(&config_path) {
             Ok(Some(config)) => Ok((config, Some(config_path), ConfigLevel::Project)),
-            Ok(None) => Ok((Config::default(), None, ConfigLevel::Default)),
+            Ok(None) => {
+                tracing::warn!("no [tool.tombi] found in {}", config_path.display());
+                Ok((Config::default(), None, ConfigLevel::Default))
+            }
             Err(error) => Err(Box::new(error)),
         }
     } else {
