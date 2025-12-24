@@ -179,7 +179,7 @@ mod tests {
               "".b = 1
             }
             "#,
-            TomlVersion::V1_1_0_Preview,
+            TomlVersion::V1_1_0,
         ) -> Ok(_)
     }
 
@@ -191,7 +191,7 @@ mod tests {
               "".b = 1  # tombi: lint.rules.key-empty.disabled = true
             }
             "#,
-            TomlVersion::V1_1_0_Preview,
+            TomlVersion::V1_1_0,
         ) -> Ok(_)
     }
 
