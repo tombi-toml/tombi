@@ -430,6 +430,7 @@ pub struct CommonLintRules {
     /// # Enum
     ///
     /// 🚧 Deprecated 🚧
+    ///
     /// Please use `lint.rules.enum` instead.
     #[deprecated(note = "Please use `lint.rules.enum` instead.")]
     enumerate: Option<ErrorRuleOptions>,
