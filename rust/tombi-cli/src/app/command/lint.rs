@@ -31,7 +31,7 @@ pub struct Args {
     ///
     /// If specified, use this configuration file instead of searching for one.
     #[arg(long)]
-    config: Option<std::path::PathBuf>,
+    config_path: Option<std::path::PathBuf>,
 
     #[command(flatten)]
     common: CommonArgs,
@@ -76,7 +76,8 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let (config, config_path, config_level) = crate::app::args::config::load_config(args.config)?;
+    let (config, config_path, config_level) =
+        crate::app::args::config::load_config(args.config_path)?;
 
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_options = config.schema.as_ref();
