@@ -62,7 +62,7 @@ pub async fn read_from_cache(
 
     if let Some(cache_file_path) = cache_file_path {
         if cache_file_path.is_file() {
-            if let Some(ttl) = options.and_then(|options| options.cache_ttl) {
+            if let Some(ttl) = options.unwrap_or(&Options::default()).cache_ttl {
                 let Ok(metadata) = tokio::fs::metadata(cache_file_path).await else {
                     return Ok(None);
                 };
