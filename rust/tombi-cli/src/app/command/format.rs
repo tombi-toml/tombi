@@ -4,7 +4,7 @@ use similar::{ChangeTag, TextDiff};
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
 use tombi_diagnostic::{Diagnostic, Print};
-use tombi_glob::{FileInputType, FileSearch};
+use tombi_glob::FileSearch;
 
 use crate::app::CommonArgs;
 
@@ -31,6 +31,12 @@ pub struct Args {
     /// This is useful for determining which JSON Schema should be applied, for more rich formatting.
     #[arg(long)]
     stdin_filename: Option<String>,
+
+    /// Path to the configuration file
+    ///
+    /// If specified, use this configuration file instead of searching for one.
+    #[arg(long)]
+    config: Option<std::path::PathBuf>,
 
     #[command(flatten)]
     common: CommonArgs,
@@ -87,16 +93,7 @@ where
     crate::Error: Print<P>,
     P: Clone + Send + 'static,
 {
-    let (config, config_path, config_level) = serde_tombi::config::load_with_path_and_level(
-        std::env::current_dir().ok(),
-    )
-    .inspect_err(|_| {
-        if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin {
-            if let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
-                tracing::error!("Failed to copy stdin to stdout: {}", error);
-            }
-        }
-    })?;
+    let (config, config_path, config_level) = crate::app::args::config::load_config(args.config)?;
 
     let toml_version = config.toml_version.unwrap_or_default();
     let schema_options = config.schema.as_ref();
