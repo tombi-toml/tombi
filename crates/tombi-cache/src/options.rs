@@ -8,7 +8,10 @@ impl Default for Options {
     fn default() -> Self {
         Self {
             no_cache: None,
-            cache_ttl: Some(DEFAULT_CACHE_TTL),
+            cache_ttl: std::env::var("TOMBI_CACHE_TTL")
+                .map_or(None, |value| value.parse::<u64>().ok())
+                .map(|value| std::time::Duration::from_secs(value))
+                .or_else(|| Some(DEFAULT_CACHE_TTL)),
         }
     }
 }
