@@ -276,6 +276,11 @@ For more details on how Tombi represents these concepts, check out the Hover sec
 ## JSON Catalog/Schema Cache
 Tombi caches JSON Catalog/Schemas in the file system to avoid unnecessary network requests.
 
+### Cache Expiration
+Cached schemas expire after **24 hours** by default. When a cached schema expires, Tombi automatically fetches the latest version from the remote source.
+
+You can customize the cache expiration time using the `TOMBI_CACHE_TTL` environment variable. See [Environment Variables](/docs/cli/environment-variables#tombi_cache_ttl) for details.
+
 ### How to Clear Cache
 #### CLI
 Use `--no-cache` option to disable using caches for a CLI command.
