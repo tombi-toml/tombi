@@ -525,7 +525,7 @@ mod format_options {
                   key3.key4 = "value3",
                 }
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
                 FormatOptions {
                     rules: Some(FormatRules {
                         key_value_equals_sign_alignment: Some(true),
@@ -869,7 +869,7 @@ mod format_options {
                     c = 3  # comment 3-3
                 } # comment 4
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
                 FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
@@ -901,7 +901,7 @@ mod format_options {
                     c = 3, # comment 3-3
                 } # comment 4
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
                 FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),
@@ -934,7 +934,7 @@ mod format_options {
                     c = 3, # comment 3-3
                 } # comment 4
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
                 FormatOptions {
                     rules: Some(FormatRules {
                         trailing_comment_alignment: Some(true),

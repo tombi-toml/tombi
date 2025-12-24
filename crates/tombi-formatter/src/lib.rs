@@ -260,7 +260,7 @@ mod test {
               # comment
             ]
             "#,
-            TomlVersion::V1_1_0_Preview
+            TomlVersion::V1_1_0
         ) -> Ok(source)
     }
 
@@ -405,7 +405,7 @@ b = 3
 # table key values end dangling comment3
 # table key values end dangling comment4
 "#,
-        TomlVersion::V1_1_0_Preview,
+        TomlVersion::V1_1_0,
         FormatOptions {
             rules: Some(FormatRules {
                 string_quote_style: Some(StringQuoteStyle::Preserve),

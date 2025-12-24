@@ -7,6 +7,7 @@ define_toml_version! {
     pub enum TomlVersion {
         #[default]
         V1_0_0 => "v1.0.0",
+        #[deprecated(note = "Please use V1_1_0 instead")]
         V1_1_0_Preview => "v1.1.0-preview",
         V1_1_0 => "v1.1.0",
     }

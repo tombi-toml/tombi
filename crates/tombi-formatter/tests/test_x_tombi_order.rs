@@ -1001,7 +1001,7 @@ mod table_keys_order {
                   key5 = 5, key4 = 4, key3 = 3
                 }
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
             ) -> Ok(
                 r#"
                 key = {
@@ -1023,7 +1023,7 @@ mod table_keys_order {
                   key5 = 5, key4 = 4, key3 = 3,
                 }  # tombi: format.rules.table-keys-order = "ascending"
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
             ) -> Ok(
                 r#"
                 key = {
@@ -1051,7 +1051,7 @@ mod table_keys_order {
                   key3 = 3 # trailing comment4
                 }
                 "#,
-                TomlVersion::V1_1_0_Preview,
+                TomlVersion::V1_1_0,
             ) -> Ok(
                 r#"
                 key = {

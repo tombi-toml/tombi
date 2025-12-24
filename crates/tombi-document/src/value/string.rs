@@ -67,7 +67,7 @@ mod test {
             r#"
             esc = "\e There is no escape! \e"
             "#,
-            TomlVersion::V1_1_0_Preview
+            TomlVersion::V1_1_0
         ) -> Ok(json!({"esc":"\u{001b} There is no escape! \u{001b}"}))
     }
 
@@ -92,7 +92,7 @@ mod test {
             € = 'Euro'
             😂 = "rofl"
             "#,
-            TomlVersion::V1_1_0_Preview
+            TomlVersion::V1_1_0
         ) -> Err([
             ("invalid string: unicode key is allowed in TOML v1.1.0 or later", ((0, 0), (0, 1))),
             ("invalid string: unicode key is allowed in TOML v1.1.0 or later", ((1, 0), (1, 1))),
@@ -230,7 +230,7 @@ mod test {
             \x20 \x09 \x0d\x0a
             '''
             "#,
-            TomlVersion::V1_1_0_Preview
+            TomlVersion::V1_1_0
         ) -> Ok(json!({
             "whitespace": "  \t \u{001b} \r\n",
             "bs": "\u{007f}",
