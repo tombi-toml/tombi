@@ -1,10 +1,6 @@
 mod command;
 mod tracing_formatter;
 
-mod args {
-    pub mod config;
-}
-
 use clap::{
     Parser,
     builder::styling::{AnsiColor, Color, Style},
