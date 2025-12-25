@@ -20,6 +20,15 @@ When set, Tombi will bypass the cache and fetch the latest schemas from remote s
 - Type: `true | false`
 - Default: `false`
 
+## TOMBI_CACHE_TTL
+
+Set the cache expiration time (Time To Live) in seconds for JSON Catalog/Schemas.
+
+When set, Tombi will use this value as the cache expiration time instead of the default 24 hours. Cached schemas older than this duration will be automatically refreshed from remote sources.
+
+- Type: `Integer` (seconds)
+- Default: `86400` (24 hours)
+
 ## TOMBI_HTTP_TIMEOUT
 
 Set the HTTP timeout in seconds for fetching remote schemas.
