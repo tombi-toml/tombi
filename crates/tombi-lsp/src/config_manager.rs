@@ -70,10 +70,11 @@ impl ConfigManager {
                 ),
             );
         } else {
+            let schema_options = schema_store_options(&config, backend_options);
             default_config_schema_store = Some(ConfigSchemaStore::new(
                 config,
                 None,
-                SchemaStore::new_with_options(Default::default()),
+                SchemaStore::new_with_options(schema_options),
             ));
         }
 

@@ -158,7 +158,7 @@
         },
         "enumerate": {
           "title": "Enum",
-          "description": "🚧 Deprecated 🚧\nPlease use `lint.rules.enum` instead.",
+          "description": "🚧 Deprecated 🚧\n\nPlease use `lint.rules.enum` instead.",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
