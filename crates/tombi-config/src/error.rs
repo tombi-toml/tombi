@@ -14,4 +14,7 @@ pub enum Error {
 
     #[error("failed to parse {config_path:?}")]
     ConfigFileParseFailed { config_path: std::path::PathBuf },
+
+    #[error("unsupported config file: {config_path:?}")]
+    ConfigFileUnsupported { config_path: std::path::PathBuf },
 }
