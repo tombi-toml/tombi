@@ -107,22 +107,6 @@ pub fn try_from_path<P: AsRef<std::path::Path>>(
     }
 }
 
-pub fn try_from_uri(config_uri: &tombi_uri::Uri) -> Result<Option<Config>, tombi_config::Error> {
-    match config_uri.scheme() {
-        "file" => {
-            let config_path = tombi_uri::Uri::to_file_path(config_uri).map_err(|_| {
-                tombi_config::Error::ConfigUriParseFailed {
-                    config_uri: config_uri.clone(),
-                }
-            })?;
-            try_from_path(config_path)
-        }
-        _ => Err(tombi_config::Error::ConfigUriUnsupported {
-            config_uri: config_uri.clone(),
-        }),
-    }
-}
-
 pub fn load_with_path_and_level(
     search_dir: Option<std::path::PathBuf>,
 ) -> Result<(Config, Option<std::path::PathBuf>, ConfigLevel), tombi_config::Error> {
