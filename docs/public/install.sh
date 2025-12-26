@@ -112,7 +112,8 @@ create_install_dir() {
 	mkdir -p "${BIN_DIR}"
 
 	if ! echo ":$PATH:" | grep -q ":${BIN_DIR}:"; then
-		print_step "${BIN_DIR} is not in your PATH. Consider adding it to your shell configuration file."
+		# Add to PATH for the current script execution
+		export PATH="${BIN_DIR}:${PATH}"
 	fi
 }
 
@@ -207,21 +208,27 @@ main() {
 	INSTALLED_BINARY="${BIN_DIR}/${EXE_NAME}"
 
 	# Verify installation
-	if command -v "${EXE_NAME}" >/dev/null 2>&1; then
-		if "${EXE_NAME}" --version >/dev/null 2>&1; then
-			INSTALLED_VERSION=$("${EXE_NAME}" --version 2>&1 | head -n 1 | sed -E 's/tombi //; s/^v//' || echo "unknown")
-			if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
-				print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
-				exit 1
-			fi
-			printf 'Usage: \033[34m%s --help\033[m\n' "${EXE_NAME}" >&2
-		else
-			print_error "Installation completed, but ${EXE_NAME} command cannot be executed. "
-			printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
+	if [ ! -f "${INSTALLED_BINARY}" ]; then
+		print_error "Installation failed: ${INSTALLED_BINARY} not found."
+		exit 1
+	fi
+
+	# Verify the binary can be found in PATH and executed
+	if ! command -v "${EXE_NAME}" >/dev/null 2>&1; then
+		print_error "Installation completed, but ${EXE_NAME} command not found in PATH."
+		printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
+		exit 1
+	fi
+
+	if "${EXE_NAME}" --version >/dev/null 2>&1; then
+		INSTALLED_VERSION=$("${EXE_NAME}" --version 2>&1 | head -n 1 | sed -E 's/tombi //; s/^v//' || echo "unknown")
+		if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
+			print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
 			exit 1
 		fi
+		printf 'Usage: \033[34m%s --help\033[m\n' "${EXE_NAME}" >&2
 	else
-		print_error "Installation completed, but ${EXE_NAME} command not found. Please check your PATH settings."
+		print_error "Installation completed, but ${EXE_NAME} cannot be executed."
 		printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
 		exit 1
 	fi
