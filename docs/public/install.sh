@@ -112,8 +112,7 @@ create_install_dir() {
 	mkdir -p "${BIN_DIR}"
 
 	if ! echo ":$PATH:" | grep -q ":${BIN_DIR}:"; then
-		# Add to PATH for the current script execution
-		export PATH="${BIN_DIR}:${PATH}"
+		print_step "${BIN_DIR} is not in your PATH. Consider adding it to your shell configuration file."
 	fi
 }
 

@@ -35,6 +35,9 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            - name: Add install directory to PATH
+              run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
             - name: Run install script
               run: |
                   chmod +x ./docs/public/install.sh
@@ -49,7 +52,6 @@ jobs:
 
             - name: Verify tombi command works
               run: |
-                  export PATH="$HOME/.local/bin:$PATH"
                   ${{ matrix.exe_name }} --version
                   ${{ matrix.exe_name }} --help
 
@@ -75,6 +77,9 @@ jobs:
             - name: Create custom install directory
               run: mkdir -p "$HOME/custom-bin"
 
+            - name: Add install directory to PATH
+              run: echo "$HOME/custom-bin" >> $GITHUB_PATH
+
             - name: Run install script with --install-dir option
               run: |
                   chmod +x ./docs/public/install.sh
@@ -89,7 +94,6 @@ jobs:
 
             - name: Verify tombi command works from custom directory
               run: |
-                  export PATH="$HOME/custom-bin:$PATH"
                   ${{ matrix.exe_name }} --version
                   ${{ matrix.exe_name }} --help
 
