@@ -144,17 +144,19 @@ download_and_install() {
 		exit 1
 	fi
 
+	EXE_NAME=$(get_exe_name)
 	if [ "${ARTIFACT_EXTENSION}" = ".zip" ]; then
 		unzip -o "${TEMP_FILE}" -d "${TEMP_DIR}"
-	elif [ "${ARTIFACT_EXTENSION}" = ".gz" ]; then
+		EXTRACTED_FILE="${TEMP_DIR}/${EXE_NAME}"
+	else
 		gzip -d "${TEMP_FILE}" -f
+		EXTRACTED_FILE="${TEMP_DIR}/tombi-${VERSION}"
 	fi
 
-	EXTRACTED_FILE="${TEMP_DIR}/tombi-${VERSION}"
 	chmod +x "${EXTRACTED_FILE}"
-	mv "${EXTRACTED_FILE}" "${BIN_DIR}/tombi"
+	mv "${EXTRACTED_FILE}" "${BIN_DIR}/${EXE_NAME}"
 
-	print_success "tombi ${VERSION} has been installed to ${BIN_DIR}/tombi"
+	print_success "tombi ${VERSION} has been installed to ${BIN_DIR}/${EXE_NAME}"
 }
 
 # Version
@@ -177,6 +179,19 @@ else
 fi
 ARTIFACT_EXTENSION=$(artifact_extension)
 
+# Get the executable name based on OS
+get_exe_name() {
+	OS="$(uname -s)"
+	case "${OS}" in
+	MINGW* | MSYS* | CYGWIN* | Windows_NT)
+		echo "tombi.exe"
+		;;
+	*)
+		echo "tombi"
+		;;
+	esac
+}
+
 # Main process
 main() {
 	print_step "Starting tombi installer..."
@@ -186,23 +201,32 @@ main() {
 		exit 1
 	fi
 
+	EXE_NAME=$(get_exe_name)
+	INSTALLED_BINARY="${BIN_DIR}/${EXE_NAME}"
+
 	# Verify installation
-	if command -v tombi >/dev/null 2>&1; then
-		if tombi --version >/dev/null 2>&1; then
-			INSTALLED_VERSION=$(tombi --version 2>&1 | head -n 1 | sed -E 's/tombi //; s/^v//' || echo "unknown")
-			if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
-				print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
-				exit 1
-			fi
-			printf 'Usage: \033[34mtombi --help\033[m\n' >&2
-		else
-			print_error "Installation completed, but tombi command cannot be executed. "
-			printf 'To run manually: \033[34m%s/tombi --help\033[m\n' "${BIN_DIR}" >&2
+	if [ ! -f "${INSTALLED_BINARY}" ]; then
+		print_error "Installation failed: ${INSTALLED_BINARY} not found."
+		exit 1
+	fi
+
+	# Verify the binary can be found in PATH and executed
+	if ! command -v "${EXE_NAME}" >/dev/null 2>&1; then
+		print_error "Installation completed, but ${EXE_NAME} command not found in PATH."
+		printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
+		exit 1
+	fi
+
+	if "${EXE_NAME}" --version >/dev/null 2>&1; then
+		INSTALLED_VERSION=$("${EXE_NAME}" --version 2>&1 | head -n 1 | sed -E 's/tombi //; s/^v//' || echo "unknown")
+		if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
+			print_error "Installed version mismatch: expected ${VERSION}, but got ${INSTALLED_VERSION}"
 			exit 1
 		fi
+		printf 'Usage: \033[34m%s --help\033[m\n' "${EXE_NAME}" >&2
 	else
-		print_error "Installation completed, but tombi command not found. Please check your PATH settings."
-		printf 'To run manually: \033[34m%s/tombi --help\033[m\n' "${BIN_DIR}" >&2
+		print_error "Installation completed, but ${EXE_NAME} cannot be executed."
+		printf 'To run manually: \033[34m%s --help\033[m\n' "${INSTALLED_BINARY}" >&2
 		exit 1
 	fi
 }

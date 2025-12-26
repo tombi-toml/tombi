@@ -1,0 +1,56 @@
+name: CI Install Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/public/install.sh"
+      - ".github/workflows/ci_install_script.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "docs/public/install.sh"
+      - ".github/workflows/ci_install_script.yml"
+  workflow_dispatch:
+
+jobs:
+  test-install-script:
+    name: Test install.sh (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            exe_name: tombi
+          - os: macos-latest
+            exe_name: tombi
+          - os: windows-latest
+            exe_name: tombi.exe
+      fail-fast: false
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add install directory to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Run install script
+        run: |
+          chmod +x ./docs/public/install.sh
+          ./docs/public/install.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify tombi binary exists
+        run: |
+          test -f "$HOME/.local/bin/${{ matrix.exe_name }}"
+          echo "Binary found at $HOME/.local/bin/${{ matrix.exe_name }}"
+
+      - name: Verify tombi command works
+        run: |
+          ${{ matrix.exe_name }} --version
+          ${{ matrix.exe_name }} --help
