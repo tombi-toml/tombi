@@ -144,21 +144,19 @@ download_and_install() {
 		exit 1
 	fi
 
+	EXE_NAME=$(get_exe_name)
 	if [ "${ARTIFACT_EXTENSION}" = ".zip" ]; then
 		unzip -o "${TEMP_FILE}" -d "${TEMP_DIR}"
-		EXTRACTED_FILE="${TEMP_DIR}/tombi.exe"
-		chmod +x "${EXTRACTED_FILE}"
-		mv "${EXTRACTED_FILE}" "${BIN_DIR}/tombi.exe"
-		INSTALLED_BINARY="${BIN_DIR}/tombi.exe"
-	elif [ "${ARTIFACT_EXTENSION}" = ".gz" ]; then
+		EXTRACTED_FILE="${TEMP_DIR}/${EXE_NAME}"
+	else
 		gzip -d "${TEMP_FILE}" -f
 		EXTRACTED_FILE="${TEMP_DIR}/tombi-${VERSION}"
-		chmod +x "${EXTRACTED_FILE}"
-		mv "${EXTRACTED_FILE}" "${BIN_DIR}/tombi"
-		INSTALLED_BINARY="${BIN_DIR}/tombi"
 	fi
 
-	print_success "tombi ${VERSION} has been installed to ${INSTALLED_BINARY}"
+	chmod +x "${EXTRACTED_FILE}"
+	mv "${EXTRACTED_FILE}" "${BIN_DIR}/${EXE_NAME}"
+
+	print_success "tombi ${VERSION} has been installed to ${BIN_DIR}/${EXE_NAME}"
 }
 
 # Version
