@@ -17,6 +17,12 @@ Also, we supports `[tool.tombi]` in `pyproject.toml`.
 6. `~/Library/Application Support/tombi/config.toml` (macOS), `%APPDATA%\tombi\config.toml` (Windows)
 7. `/etc/tombi/config.toml` (Linux)
 
+<Warning>
+The base directory for configuration search depends on the context: for CLI usage, it is the directory where the command is executed; for LSP usage, it is the directory of the currently opened file.
+
+Therefore, It is recommended to place `tombi.toml` only at the root of your project. If multiple `tombi.toml` files exist at different levels within a single project, there may be inconsistencies in formatting or diagnostic results between the CLI and the editor.
+</Warning>
+
 ## Full Structure
 
 ```toml
