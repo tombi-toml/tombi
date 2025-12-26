@@ -2,14 +2,16 @@ import { A, useLocation } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
 import { createMemo, createSignal, For } from "solid-js";
 import type { DocIndex } from "~/utils/doc-index";
+import { normalizePath } from "~/utils/path";
 import docIndex from "../../doc-index.json";
 
-const docIndexs: DocIndex[] = docIndex;
+const docIndexs: DocIndex[] = docIndex as DocIndex[];
 
 const TreeItem = (props: { item: DocIndex; level: number }) => {
   const location = useLocation();
+  const currentPath = createMemo(() => normalizePath(location.pathname));
   const isCurrentPage = createMemo(
-    () => location.pathname === `${import.meta.env.BASE_URL}${props.item.path}`,
+    () => currentPath() === normalizePath(props.item.path),
   );
 
   const hasChildren = props.item.children && props.item.children.length > 0;
@@ -18,8 +20,7 @@ const TreeItem = (props: { item: DocIndex; level: number }) => {
       hasChildren &&
       (isCurrentPage() ||
         props.item.children?.some(
-          (child) =>
-            `${import.meta.env.BASE_URL}${child.path}` === location.pathname,
+          (child) => normalizePath(child.path) === currentPath(),
         )),
   );
 
