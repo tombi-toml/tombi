@@ -33,4 +33,4 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [build-dependencies]
-regex.workspace = true
+tombi-regex.workspace = true

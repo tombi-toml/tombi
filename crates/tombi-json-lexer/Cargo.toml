@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-regex.workspace = true
+tombi-regex.workspace = true
 tombi-json-syntax = { path = "../tombi-json-syntax" }
 tombi-text.workspace = true
 tracing.workspace = true
