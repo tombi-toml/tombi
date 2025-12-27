@@ -362,7 +362,7 @@ async fn extract_pattern_properties<T>(
         return sorted_targets;
     };
     for (pattern_key, ..) in pattern_properties.write().await.iter_mut() {
-        let Ok(pattern) = regex::Regex::new(pattern_key) else {
+        let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
             tracing::warn!("Invalid regex pattern property: {}", pattern_key);
             continue;
         };

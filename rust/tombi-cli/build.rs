@@ -1,7 +1,7 @@
 use std::process::Command;
 
 fn main() {
-    let re = regex::Regex::new(r"^v\d+\.\d+\.\d+$").unwrap();
+    let re = tombi_regex::Regex::new(r"^v\d+\.\d+\.\d+$").unwrap();
 
     // Try to get version from git tag
     let git_version = Command::new("git")

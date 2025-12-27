@@ -1,7 +1,7 @@
-use regex::Regex;
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_regex::Regex;
 use tombi_schema_store::ValueSchema;
 use tombi_severity_level::SeverityLevelDefaultError;
 use tombi_x_keyword::StringFormat;

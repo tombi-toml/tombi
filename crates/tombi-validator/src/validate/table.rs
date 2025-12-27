@@ -16,10 +16,8 @@ use crate::{
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
-        handle_deprecated,
-        handle_deprecated_value, not_schema::validate_not,
-        handle_type_mismatch,
-        handle_unused_noqa,
+        handle_deprecated, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
+        not_schema::validate_not,
     },
 };
 
@@ -216,7 +214,7 @@ async fn validate_table(
                 },
             ) in pattern_properties.write().await.iter_mut()
             {
-                let Ok(pattern) = regex::Regex::new(pattern_key) else {
+                let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
                     tracing::warn!("Invalid regex pattern property: {}", pattern_key);
                     continue;
                 };

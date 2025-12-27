@@ -175,7 +175,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             },
                         ) in pattern_properties.write().await.iter_mut()
                         {
-                            let pattern = match regex::Regex::new(property_key) {
+                            let pattern = match tombi_regex::Regex::new(property_key) {
                                 Ok(pattern) => pattern,
                                 Err(_) => {
                                     tracing::warn!(

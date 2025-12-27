@@ -1,0 +1,16 @@
+[package]
+name = "tombi-regex"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+fancy-regex = { version = "0.13.0", optional = true }
+regex = { version = "1.12.2", optional = true }
+
+[features]
+default = ["fancy-regex"]
+fancy-regex = ["dep:fancy-regex"]
+regex = ["dep:regex"]

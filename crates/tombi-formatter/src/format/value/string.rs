@@ -100,7 +100,6 @@ impl LiteralNode for tombi_ast::MultiLineLiteralString {
 mod tests {
     use crate::{Formatter, test_format};
     use tombi_config::{StringQuoteStyle, format::FormatRules};
-    
 
     test_format! {
         #[tokio::test]

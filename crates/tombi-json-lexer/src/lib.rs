@@ -13,9 +13,8 @@ use tombi_json_syntax::{SyntaxKind, T};
 macro_rules! regex {
     ($($var:ident = $re:expr);+;) => {
         $(
-            static $var: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-                regex::Regex::new($re).unwrap()
-            });
+            static $var: std::sync::LazyLock<tombi_regex::Regex> =
+                std::sync::LazyLock::new(|| tombi_regex::Regex::new($re).unwrap());
         )+
     };
 }

@@ -139,7 +139,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         },
                                     ) in pattern_properties.write().await.iter_mut()
                                     {
-                                        if let Ok(pattern) = regex::Regex::new(property_key) {
+                                        if let Ok(pattern) = tombi_regex::Regex::new(property_key) {
                                             if pattern.is_match(&key.value) {
                                                 if let Ok(Some(current_schema)) = property_schema
                                                     .resolve(

@@ -56,7 +56,6 @@ pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
 rayon = "1.10.0"
-regex = "1.11.1"
 reqwest = { version = "0.12.15", default-features = false, features = [
   "json",
   "rustls-tls-native-roots",
@@ -105,6 +104,7 @@ tombi-lexer = { path = "crates/tombi-lexer" }
 tombi-linter = { path = "crates/tombi-linter" }
 tombi-lsp = { path = "crates/tombi-lsp", default-features = false }
 tombi-parser = { path = "crates/tombi-parser" }
+tombi-regex = { path = "crates/tombi-regex" }
 tombi-rg-tree = { path = "crates/tombi-rg-tree" }
 tombi-schema-store = { path = "crates/tombi-schema-store", default-features = false }
 tombi-severity-level = { path = "crates/tombi-severity-level" }

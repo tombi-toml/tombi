@@ -256,7 +256,8 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         },
                                     ) in pattern_properties.write().await.iter_mut()
                                     {
-                                        let Ok(pattern) = regex::Regex::new(property_key) else {
+                                        let Ok(pattern) = tombi_regex::Regex::new(property_key)
+                                        else {
                                             tracing::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
