@@ -34,6 +34,7 @@ impl Match {
 
 #[cfg(all(not(feature = "regex"), feature = "fancy-regex"))]
 impl<'t> From<fancy_regex::Match<'t>> for Match {
+    #[inline]
     fn from(matched: fancy_regex::Match<'t>) -> Self {
         Self {
             start: matched.start(),
@@ -44,6 +45,7 @@ impl<'t> From<fancy_regex::Match<'t>> for Match {
 
 #[cfg(feature = "regex")]
 impl<'t> From<regex::Match<'t>> for Match {
+    #[inline]
     fn from(matched: regex::Match<'t>) -> Self {
         Self {
             start: matched.start(),
@@ -57,6 +59,7 @@ impl Regex {
         Ok(Self(Inner::new(pattern)?))
     }
 
+    #[inline]
     pub fn is_match(&self, text: &str) -> bool {
         #[cfg(all(not(feature = "regex"), feature = "fancy-regex"))]
         {
@@ -69,6 +72,7 @@ impl Regex {
         }
     }
 
+    #[inline]
     pub fn find(&self, text: &str) -> Option<Match> {
         #[cfg(all(not(feature = "regex"), feature = "fancy-regex"))]
         {
