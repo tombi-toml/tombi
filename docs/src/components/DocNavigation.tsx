@@ -1,15 +1,15 @@
 import { A, useLocation } from "@solidjs/router";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "solid-icons/bi";
 import { type DocIndex, flattenDocPages } from "~/utils/doc-index";
+import { normalizePath } from "~/utils/path";
 import docIndex from "../../doc-index.json";
 
 export function DocNavigation() {
   const location = useLocation();
   const flatPages = flattenDocPages(docIndex as DocIndex[]);
+  const currentPath = () => normalizePath(location.pathname);
   const currentIndex = () =>
-    flatPages.findIndex(
-      (page) => `${import.meta.env.BASE_URL}${page.path}` === location.pathname,
-    );
+    flatPages.findIndex((page) => normalizePath(page.path) === currentPath());
   const nextPage = () =>
     currentIndex() === -1
       ? null
