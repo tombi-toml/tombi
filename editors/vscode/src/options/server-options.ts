@@ -15,6 +15,7 @@ export function serverOptions(
     args,
     options: {
       env: {
+        ...process.env,
         NO_COLOR: "1",
       },
     },
