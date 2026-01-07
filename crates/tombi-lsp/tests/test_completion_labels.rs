@@ -1249,6 +1249,7 @@ mod completion_labels {
                 )),
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
+                "\"default\"",
                 "\"\"",
                 "''",
             ]);
