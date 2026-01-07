@@ -1232,6 +1232,7 @@ mod completion_labels {
                 "\"default\"",
                 "\"extras\"",
                 "\"flag\"",
+                "\"default\"",
                 "\"\"",
                 "''",
             ]);
