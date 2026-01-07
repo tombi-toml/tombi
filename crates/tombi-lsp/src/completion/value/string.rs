@@ -64,7 +64,10 @@ impl FindCompletionContents for tombi_document_tree::String {
                     .await
                     .into_iter()
                     .filter_map(|mut completion_content| {
-                        if completion_content.kind != CompletionKind::String {
+                        if !matches!(
+                            completion_content.kind,
+                            CompletionKind::String | CompletionKind::StringEnum
+                        ) {
                             return None;
                         }
 
@@ -110,7 +113,7 @@ impl FindCompletionContents for StringSchema {
                 let label = format!("\"{default}\"");
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_default_value(
-                    CompletionKind::String,
+                    CompletionKind::StringEnum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -124,7 +127,7 @@ impl FindCompletionContents for StringSchema {
                 let label = format!("\"{const_value}\"");
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_const_value(
-                    CompletionKind::String,
+                    CompletionKind::StringEnum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -140,7 +143,7 @@ impl FindCompletionContents for StringSchema {
                     let label = format!("\"{item}\"");
                     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                     completion_items.push(CompletionContent::new_enum_value(
-                        CompletionKind::String,
+                        CompletionKind::StringEnum,
                         label,
                         self.title.clone(),
                         self.description.clone(),

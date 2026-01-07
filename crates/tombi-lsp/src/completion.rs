@@ -414,7 +414,7 @@ fn tombi_json_value_to_completion_default_item(
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionContent> {
     let (kind, value) = match value {
-        tombi_json::Value::String(value) => (CompletionKind::String, format!("\"{value}\"")),
+        tombi_json::Value::String(value) => (CompletionKind::StringEnum, format!("\"{value}\"")),
         tombi_json::Value::Number(value) => {
             if value.is_i64() {
                 (CompletionKind::Integer, value.to_string())
