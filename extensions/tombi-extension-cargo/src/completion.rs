@@ -269,7 +269,7 @@ async fn complete_crate_version(
             .enumerate()
             .map(|(i, ver)| CompletionContent {
                 label: format!("\"{ver}\""),
-                kind: CompletionKind::String,
+                kind: CompletionKind::StringEnum,
                 emoji_icon: Some('🦀'),
                 priority: tombi_extension::CompletionContentPriority::Custom(format!(
                     "10__cargo_{i:>03}__",
@@ -405,7 +405,7 @@ fn complete_crate_feature<'a: 'b, 'b>(
             .enumerate()
             .map(|(i, (feature, feature_dependencies))| CompletionContent {
                 label: format!("\"{feature}\""),
-                kind: CompletionKind::String,
+                kind: CompletionKind::StringEnum,
                 emoji_icon: Some('🦀'),
                 priority: tombi_extension::CompletionContentPriority::Custom(format!(
                     "10__cargo_feature_{:>03}__",
