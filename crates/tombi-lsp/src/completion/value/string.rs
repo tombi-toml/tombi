@@ -66,7 +66,7 @@ impl FindCompletionContents for tombi_document_tree::String {
                     .filter_map(|mut completion_content| {
                         if !matches!(
                             completion_content.kind,
-                            CompletionKind::String | CompletionKind::StringEnum
+                            CompletionKind::String | CompletionKind::Enum
                         ) {
                             return None;
                         }
@@ -113,7 +113,7 @@ impl FindCompletionContents for StringSchema {
                 let label = format!("\"{default}\"");
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_default_value(
-                    CompletionKind::StringEnum,
+                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -127,7 +127,7 @@ impl FindCompletionContents for StringSchema {
                 let label = format!("\"{const_value}\"");
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_const_value(
-                    CompletionKind::StringEnum,
+                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -143,7 +143,7 @@ impl FindCompletionContents for StringSchema {
                     let label = format!("\"{item}\"");
                     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                     completion_items.push(CompletionContent::new_enum_value(
-                        CompletionKind::StringEnum,
+                        CompletionKind::Enum,
                         label,
                         self.title.clone(),
                         self.description.clone(),
