@@ -186,7 +186,7 @@
               }
             },
             "anyOf": [
-              { "type": "string", "pattern": "default" },
+              { "type": "string", "const": "default" },
               { "type": "string" }
             ]
           },
