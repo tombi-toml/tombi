@@ -75,7 +75,7 @@ impl FindCompletionContents for BooleanSchema {
                 let label = const_value.to_string();
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 return vec![CompletionContent::new_const_value(
-                    CompletionKind::Boolean,
+                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -92,7 +92,7 @@ impl FindCompletionContents for BooleanSchema {
                         let label = value.to_string();
                         let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                         CompletionContent::new_enum_value(
-                            CompletionKind::Boolean,
+                            CompletionKind::Enum,
                             value.to_string(),
                             self.title.clone(),
                             self.description.clone(),

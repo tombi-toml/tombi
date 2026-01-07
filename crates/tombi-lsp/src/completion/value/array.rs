@@ -341,7 +341,7 @@ impl FindCompletionContents for ArraySchema {
                         let label = default.to_string();
                         let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                         completion_items.push(CompletionContent::new_default_value(
-                            CompletionKind::Integer,
+                            CompletionKind::Enum,
                             label,
                             self.title.clone(),
                             self.description.clone(),

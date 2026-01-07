@@ -413,25 +413,22 @@ fn tombi_json_value_to_completion_default_item(
     schema_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Option<CompletionContent> {
-    let (kind, value) = match value {
-        tombi_json::Value::String(value) => (CompletionKind::StringEnum, format!("\"{value}\"")),
-        tombi_json::Value::Number(value) => {
-            if value.is_i64() {
-                (CompletionKind::Integer, value.to_string())
-            } else {
-                (CompletionKind::Float, value.to_string())
-            }
-        }
-        tombi_json::Value::Bool(value) => (CompletionKind::Boolean, value.to_string()),
-        _ => return None,
-    };
+    if !matches!(
+        value,
+        tombi_json::Value::String(_) | tombi_json::Value::Number(_) | tombi_json::Value::Bool(_)
+    ) {
+        return None;
+    }
+
+    let label = value.to_string();
+    let edit = CompletionEdit::new_literal(&label, position, completion_hint);
 
     Some(CompletionContent::new_default_value(
-        kind,
-        value.to_string(),
+        CompletionKind::Enum,
+        label,
         detail,
         documentation,
-        CompletionEdit::new_literal(&value, position, completion_hint),
+        edit,
         schema_uri,
         None,
     ))

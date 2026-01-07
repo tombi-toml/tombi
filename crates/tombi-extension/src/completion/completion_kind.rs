@@ -5,7 +5,7 @@ pub enum CompletionKind {
     Integer,
     Float,
     String,
-    StringEnum,
+    Enum,
     OffsetDateTime,
     LocalDateTime,
     LocalDate,
@@ -25,7 +25,7 @@ impl CompletionKind {
                 | Self::Integer
                 | Self::Float
                 | Self::String
-                | Self::StringEnum
+                | Self::Enum
                 | Self::OffsetDateTime
                 | Self::LocalDateTime
                 | Self::LocalDate
@@ -39,11 +39,11 @@ impl From<CompletionKind> for tower_lsp::lsp_types::CompletionItemKind {
         // NOTE: All TOML completions are CompletionItemKind::VALUE,
         //       but some are assigned different types to make it easier to distinguish by symbols.
         match kind {
-            CompletionKind::Boolean => tower_lsp::lsp_types::CompletionItemKind::ENUM_MEMBER,
+            CompletionKind::Boolean => tower_lsp::lsp_types::CompletionItemKind::CONSTANT,
             CompletionKind::Integer => tower_lsp::lsp_types::CompletionItemKind::VALUE,
             CompletionKind::Float => tower_lsp::lsp_types::CompletionItemKind::VALUE,
             CompletionKind::String => tower_lsp::lsp_types::CompletionItemKind::TEXT,
-            CompletionKind::StringEnum => tower_lsp::lsp_types::CompletionItemKind::ENUM,
+            CompletionKind::Enum => tower_lsp::lsp_types::CompletionItemKind::ENUM_MEMBER,
             // NOTE: Event is related to time
             CompletionKind::OffsetDateTime => tower_lsp::lsp_types::CompletionItemKind::EVENT,
             CompletionKind::LocalDateTime => tower_lsp::lsp_types::CompletionItemKind::EVENT,

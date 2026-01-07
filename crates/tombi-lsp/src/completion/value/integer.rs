@@ -76,7 +76,7 @@ impl FindCompletionContents for IntegerSchema {
                 let label = const_value.to_string();
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_const_value(
-                    CompletionKind::Integer,
+                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -92,7 +92,7 @@ impl FindCompletionContents for IntegerSchema {
                     let label = item.to_string();
                     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                     completion_items.push(CompletionContent::new_enum_value(
-                        CompletionKind::Integer,
+                        CompletionKind::Enum,
                         label,
                         self.title.clone(),
                         self.description.clone(),
@@ -107,7 +107,7 @@ impl FindCompletionContents for IntegerSchema {
                 let label = default.to_string();
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_default_value(
-                    CompletionKind::Integer,
+                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
