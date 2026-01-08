@@ -5,6 +5,7 @@ use tombi_schema_store::{Accessor, AllOfSchema, CurrentSchema, ReferableValueSch
 use crate::completion::{
     CompletionCandidate, CompletionContent, CompletionHint, CompositeSchemaImpl,
     FindCompletionContents, tombi_json_value_to_completion_default_item,
+    tombi_json_value_to_completion_example_item,
 };
 
 impl CompositeSchemaImpl for AllOfSchema {
@@ -104,12 +105,35 @@ where
             } else if let Some(completion_item) = tombi_json_value_to_completion_default_item(
                 default,
                 position,
-                detail,
-                documentation,
+                detail.clone(),
+                documentation.clone(),
                 Some(&current_schema.schema_uri),
                 completion_hint,
             ) {
                 completion_items.push(completion_item);
+            }
+        }
+
+        if let Some(examples) = &all_of_schema.examples {
+            for example in examples {
+                let example_label = example.to_string();
+                if completion_items
+                    .iter()
+                    .any(|item| item.label == example_label)
+                {
+                    continue;
+                }
+
+                if let Some(completion_item) = tombi_json_value_to_completion_example_item(
+                    example,
+                    position,
+                    detail.clone(),
+                    documentation.clone(),
+                    Some(&current_schema.schema_uri),
+                    completion_hint,
+                ) {
+                    completion_items.push(completion_item);
+                }
             }
         }
 

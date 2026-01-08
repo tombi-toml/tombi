@@ -113,7 +113,6 @@ impl FindCompletionContents for StringSchema {
                 let label = format!("\"{default}\"");
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_default_value(
-                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -127,7 +126,6 @@ impl FindCompletionContents for StringSchema {
                 let label = format!("\"{const_value}\"");
                 let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                 completion_items.push(CompletionContent::new_const_value(
-                    CompletionKind::Enum,
                     label,
                     self.title.clone(),
                     self.description.clone(),
@@ -143,7 +141,6 @@ impl FindCompletionContents for StringSchema {
                     let label = format!("\"{item}\"");
                     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
                     completion_items.push(CompletionContent::new_enum_value(
-                        CompletionKind::Enum,
                         label,
                         self.title.clone(),
                         self.description.clone(),
@@ -153,6 +150,24 @@ impl FindCompletionContents for StringSchema {
                     ));
                 }
                 return completion_items;
+            }
+
+            if let Some(examples) = &self.examples {
+                for example in examples {
+                    let label = format!("\"{example}\"");
+                    if completion_items.iter().any(|item| item.label == label) {
+                        continue;
+                    }
+                    let edit = CompletionEdit::new_literal(&label, position, completion_hint);
+                    completion_items.push(CompletionContent::new_example_value(
+                        label,
+                        self.title.clone(),
+                        self.description.clone(),
+                        edit,
+                        schema_uri,
+                        self.deprecated,
+                    ));
+                }
             }
 
             completion_items.extend(
