@@ -184,7 +184,10 @@
                 "schemas": "feature"
               }
             },
-            "type": "string"
+            "anyOf": [
+              { "type": "string", "pattern": "default" },
+              { "type": "string" }
+            ]
           },
           "x-tombi-array-values-order": {
             "anyOf": ["ascending", "version-sort"]
