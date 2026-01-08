@@ -1339,6 +1339,27 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_package_license(
+                r#"
+                [package]
+                license = █
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"Apache-2.0\"",
+                "\"BSD-2-Clause\"",
+                "\"GPL-2.0-or-later WITH Bison-exception-2.2\"",
+                "\"LGPL-2.1-only\"",
+                "\"MIT\"",
+                "workspace",
+                "\"\"",
+                "''",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_target_build_dependencies(
                 r#"
                 [target.'cfg(windows)'.build-dependencies]

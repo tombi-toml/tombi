@@ -19,6 +19,7 @@ pub enum CompletionContentPriority {
     Default,
     Const,
     Enum,
+    Example,
     Key,
     OptionalKey,
     AdditionalKey,
@@ -37,13 +38,14 @@ impl CompletionContentPriority {
             CompletionContentPriority::Default => "50".to_string(),
             CompletionContentPriority::Const => "51".to_string(),
             CompletionContentPriority::Enum => "52".to_string(),
-            CompletionContentPriority::Key => "53".to_string(),
-            CompletionContentPriority::OptionalKey => "54".to_string(),
-            CompletionContentPriority::AdditionalKey => "55".to_string(),
-            CompletionContentPriority::TypeHint => "56".to_string(),
-            CompletionContentPriority::TypeHintKey => "57".to_string(),
-            CompletionContentPriority::TypeHintTrue => "58".to_string(),
-            CompletionContentPriority::TypeHintFalse => "59".to_string(),
+            CompletionContentPriority::Example => "53".to_string(),
+            CompletionContentPriority::Key => "54".to_string(),
+            CompletionContentPriority::OptionalKey => "55".to_string(),
+            CompletionContentPriority::AdditionalKey => "56".to_string(),
+            CompletionContentPriority::TypeHint => "57".to_string(),
+            CompletionContentPriority::TypeHintKey => "58".to_string(),
+            CompletionContentPriority::TypeHintTrue => "59".to_string(),
+            CompletionContentPriority::TypeHintFalse => "60".to_string(),
         }
     }
 }
@@ -73,7 +75,6 @@ pub struct CompletionContent {
 
 impl CompletionContent {
     pub fn new_const_value(
-        kind: CompletionKind,
         label: String,
         detail: Option<String>,
         documentation: Option<String>,
@@ -83,7 +84,7 @@ impl CompletionContent {
     ) -> Self {
         Self {
             label: label.clone(),
-            kind,
+            kind: CompletionKind::Enum,
             emoji_icon: None,
             priority: CompletionContentPriority::Const,
             detail,
@@ -98,7 +99,6 @@ impl CompletionContent {
     }
 
     pub fn new_enum_value(
-        kind: CompletionKind,
         label: String,
         detail: Option<String>,
         documentation: Option<String>,
@@ -108,7 +108,7 @@ impl CompletionContent {
     ) -> Self {
         Self {
             label: label.clone(),
-            kind,
+            kind: CompletionKind::Enum,
             emoji_icon: None,
             priority: CompletionContentPriority::Enum,
             detail,
@@ -123,7 +123,6 @@ impl CompletionContent {
     }
 
     pub fn new_default_value(
-        kind: CompletionKind,
         label: String,
         detail: Option<String>,
         documentation: Option<String>,
@@ -133,7 +132,7 @@ impl CompletionContent {
     ) -> Self {
         Self {
             label,
-            kind,
+            kind: CompletionKind::Enum,
             emoji_icon: None,
             priority: CompletionContentPriority::Default,
             detail,
@@ -143,6 +142,30 @@ impl CompletionContent {
             edit,
             deprecated,
             preselect: Some(true),
+            in_comment: false,
+        }
+    }
+
+    pub fn new_example_value(
+        label: String,
+        detail: Option<String>,
+        documentation: Option<String>,
+        edit: Option<CompletionEdit>,
+        schema_uri: Option<&SchemaUri>,
+        deprecated: Option<bool>,
+    ) -> Self {
+        Self {
+            label: label.clone(),
+            kind: CompletionKind::Enum,
+            emoji_icon: None,
+            priority: CompletionContentPriority::Example,
+            detail,
+            documentation,
+            filter_text: None,
+            schema_uri: schema_uri.cloned(),
+            edit,
+            deprecated,
+            preselect: None,
             in_comment: false,
         }
     }
@@ -532,6 +555,15 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
                     description: Some(match &source.detail {
                         Some(detail) => detail.to_string(),
                         None => "Enum".to_string(),
+                    }),
+                })
+            }
+            CompletionContentPriority::Example => {
+                Some(tower_lsp::lsp_types::CompletionItemLabelDetails {
+                    detail: None,
+                    description: Some(match &source.detail {
+                        Some(detail) => detail.to_string(),
+                        None => "Example".to_string(),
                     }),
                 })
             }

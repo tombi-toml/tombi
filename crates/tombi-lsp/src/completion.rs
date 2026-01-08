@@ -11,7 +11,7 @@ use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
 use tombi_config::TomlVersion;
 use tombi_document_tree::{IntoDocumentTreeAndErrors, TryIntoDocumentTree};
 use tombi_extension::{
-    CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint, CompletionKind,
+    CommaHint, CommentContext, CompletionContent, CompletionEdit, CompletionHint,
 };
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
@@ -424,7 +424,34 @@ fn tombi_json_value_to_completion_default_item(
     let edit = CompletionEdit::new_literal(&label, position, completion_hint);
 
     Some(CompletionContent::new_default_value(
-        CompletionKind::Enum,
+        label,
+        detail,
+        documentation,
+        edit,
+        schema_uri,
+        None,
+    ))
+}
+
+fn tombi_json_value_to_completion_example_item(
+    value: &tombi_json::Value,
+    position: tombi_text::Position,
+    detail: Option<String>,
+    documentation: Option<String>,
+    schema_uri: Option<&SchemaUri>,
+    completion_hint: Option<CompletionHint>,
+) -> Option<CompletionContent> {
+    if !matches!(
+        value,
+        tombi_json::Value::String(_) | tombi_json::Value::Number(_) | tombi_json::Value::Bool(_)
+    ) {
+        return None;
+    }
+
+    let label = value.to_string();
+    let edit = CompletionEdit::new_literal(&label, position, completion_hint);
+
+    Some(CompletionContent::new_example_value(
         label,
         detail,
         documentation,

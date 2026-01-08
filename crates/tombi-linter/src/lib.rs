@@ -211,10 +211,7 @@ macro_rules! test_lint {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     mod cargo_schema {
-        use super::*;
         use tombi_test_lib::cargo_schema_path;
 
         test_lint! {
@@ -302,7 +299,6 @@ mod tests {
     }
 
     mod tombi_schema {
-        use super::*;
         use tombi_test_lib::tombi_schema_path;
 
         test_lint! {
@@ -360,7 +356,6 @@ mod tests {
     }
 
     mod untagged_union_schema {
-        use super::*;
         use tombi_test_lib::untagged_union_schema_path;
 
         test_lint! {
@@ -400,8 +395,6 @@ mod tests {
     mod non_schema {
         use std::str::FromStr;
         use tombi_schema_store::SchemaUri;
-
-        use super::*;
 
         test_lint! {
             #[test]
