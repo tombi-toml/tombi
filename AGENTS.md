@@ -65,7 +65,3 @@ Managed by `/kiro:steering` command. Updates here reflect command changes.
 - **Always**: Loaded in every interaction (default)
 - **Conditional**: Loaded for specific file patterns (e.g., "*.test.js")
 - **Manual**: Reference with `@filename.md` syntax
-
-## Active Specifications
-- `uv-workspace-dependency-code-actions`: uvのワークスペース機能を活用した依存関係管理のCode Action実装 (phase: initialized)
-- `uv-goto-declaration`: tombi-extension-uv に goto_declaration を導入して依存宣言から定義箇所へ遷移できるようにする (phase: initialized)
