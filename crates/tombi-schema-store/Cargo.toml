@@ -35,6 +35,7 @@ tracing.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 reqwest = { workspace = true, features = ["blocking"] }
+tokio = { workspace = true, features = ["macros", "test-util"] }
 tombi-test-lib.workspace = true
 
 [features]

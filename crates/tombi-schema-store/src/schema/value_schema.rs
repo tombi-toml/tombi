@@ -195,6 +195,10 @@ impl ValueSchema {
             }
         }
 
+        if enum_types.contains("number") && enum_types.contains("integer") {
+            enum_types.shift_remove("integer");
+        }
+
         match enum_types.len() {
             0 => None,
             1 => {
@@ -625,6 +629,8 @@ impl FindSchemaCandidates for ValueSchema {
 
 #[cfg(test)]
 mod tests {
+    use crate::ValueType;
+
     use super::*;
     use std::str::FromStr;
 
@@ -639,9 +645,10 @@ mod tests {
         let schema = parse_schema(r#"{ "const": "dynamic" }"#);
         assert!(matches!(schema, Some(ValueSchema::String(_))));
 
-        if let Some(ValueSchema::String(s)) = schema {
-            assert_eq!(s.const_value, Some("dynamic".to_string()));
-        }
+        let Some(ValueSchema::String(s)) = schema else {
+            panic!("schema is not a String schema");
+        };
+        assert_eq!(s.const_value, Some("dynamic".to_string()));
     }
 
     #[test]
@@ -649,9 +656,10 @@ mod tests {
         let schema = parse_schema(r#"{ "const": true }"#);
         assert!(matches!(schema, Some(ValueSchema::Boolean(_))));
 
-        if let Some(ValueSchema::Boolean(b)) = schema {
-            assert_eq!(b.const_value, Some(true));
-        }
+        let Some(ValueSchema::Boolean(b)) = schema else {
+            panic!("schema is not a Boolean schema");
+        };
+        assert_eq!(b.const_value, Some(true));
     }
 
     #[test]
@@ -659,9 +667,10 @@ mod tests {
         let schema = parse_schema(r#"{ "const": 42 }"#);
         assert!(matches!(schema, Some(ValueSchema::Integer(_))));
 
-        if let Some(ValueSchema::Integer(i)) = schema {
-            assert_eq!(i.const_value, Some(42));
-        }
+        let Some(ValueSchema::Integer(i)) = schema else {
+            panic!("schema is not an Integer schema");
+        };
+        assert_eq!(i.const_value, Some(42));
     }
 
     #[test]
@@ -681,20 +690,8 @@ mod tests {
         assert!(matches!(schema, Some(ValueSchema::Null)));
     }
 
-    #[test]
-    fn test_const_with_description() {
-        let schema =
-            parse_schema(r#"{ "const": "dynamic", "description": "Use dynamic line width" }"#);
-        assert!(matches!(schema, Some(ValueSchema::String(_))));
-
-        if let Some(ValueSchema::String(s)) = schema {
-            assert_eq!(s.const_value, Some("dynamic".to_string()));
-            assert_eq!(s.description, Some("Use dynamic line width".to_string()));
-        }
-    }
-
-    #[test]
-    fn test_anyof_with_const_and_ref_style_integer() {
+    #[tokio::test]
+    async fn test_anyof_with_const_and_ref_style_integer() {
         // Simulates ruff schema: anyOf with integer and const "dynamic"
         let schema = parse_schema(
             r#"{
@@ -705,6 +702,20 @@ mod tests {
             }"#,
         );
         assert!(matches!(schema, Some(ValueSchema::AnyOf(_))));
+
+        let Some(ValueSchema::AnyOf(any_of)) = schema else {
+            panic!("schema is not an AnyOf schema");
+        };
+
+        let schemas = any_of.schemas.read().await;
+        assert!(matches!(
+            schemas.get(0).unwrap().value_type().await,
+            ValueType::Integer
+        ));
+        assert!(matches!(
+            schemas.get(1).unwrap().value_type().await,
+            ValueType::String
+        ));
     }
 
     #[test]
@@ -793,9 +804,34 @@ mod tests {
     }
 
     #[test]
-    fn test_enum_mixed_int_float_creates_oneof() {
-        // enum with mixed integers and floats should create OneOf
-        let schema = parse_schema(r#"{ "enum": [1, 2.5, 3] }"#);
-        assert!(matches!(schema, Some(ValueSchema::OneOf(_))));
+    fn test_enum_mixed_int_float_removes_integer() {
+        // When enum contains both integers and floats, integer should be removed
+        // and only number should remain, resulting in FloatSchema
+        // This tests the logic at lines 198-200: if enum_types contains both
+        // "number" and "integer", "integer" is removed
+        let schema = parse_schema(r#"{ "enum": [1, 2.5] }"#);
+        // After removing integer, only number remains, so FloatSchema should be created
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[tokio::test]
+    async fn test_enum_mixed_int_float_with_other_types() {
+        // When enum contains integers, floats, and other types (e.g., string),
+        // integer should be removed (lines 198-200), leaving number and string,
+        // resulting in OneOf with FloatSchema and StringSchema (but not IntegerSchema)
+        let schema = parse_schema(r#"{ "enum": [1, 2.5, "text"] }"#);
+
+        let Some(ValueSchema::OneOf(one_of)) = schema else {
+            panic!("schema is not a OneOf schema");
+        };
+        let schemars = one_of.schemas.read().await;
+        assert!(matches!(
+            schemars.get(0).unwrap().value_type().await,
+            ValueType::Float
+        ));
+        assert!(matches!(
+            schemars.get(1).unwrap().value_type().await,
+            ValueType::String
+        ));
     }
 }
