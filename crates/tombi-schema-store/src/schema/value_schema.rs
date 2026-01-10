@@ -195,6 +195,10 @@ impl ValueSchema {
             }
         }
 
+        if enum_types.contains("number") && enum_types.contains("integer") {
+            enum_types.shift_remove("integer");
+        }
+
         match enum_types.len() {
             0 => None,
             1 => {
