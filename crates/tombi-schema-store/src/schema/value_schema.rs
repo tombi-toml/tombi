@@ -81,29 +81,21 @@ impl ValueSchema {
         // Handle "const" keyword without explicit "type"
         // Infer the type from the const value itself
         if let Some(const_value) = object.get("const") {
-            return match const_value {
-                tombi_json::ValueNode::Null(_) => Some(ValueSchema::Null),
-                tombi_json::ValueNode::Bool(_) => {
-                    Some(ValueSchema::Boolean(BooleanSchema::new(object)))
-                }
+            let inferred_type = match const_value {
+                tombi_json::ValueNode::Null(_) => "null",
+                tombi_json::ValueNode::Bool(_) => "boolean",
                 tombi_json::ValueNode::Number(n) => {
-                    // Check if it's an integer or float based on the Number variant
                     if n.value.is_i64() {
-                        Some(ValueSchema::Integer(IntegerSchema::new(object)))
+                        "integer"
                     } else {
-                        Some(ValueSchema::Float(FloatSchema::new(object)))
+                        "number"
                     }
                 }
-                tombi_json::ValueNode::String(_) => {
-                    Some(ValueSchema::String(StringSchema::new(object, None)))
-                }
-                tombi_json::ValueNode::Array(_) => {
-                    Some(ValueSchema::Array(ArraySchema::new(object, string_formats)))
-                }
-                tombi_json::ValueNode::Object(_) => {
-                    Some(ValueSchema::Table(TableSchema::new(object, string_formats)))
-                }
+                tombi_json::ValueNode::String(_) => "string",
+                tombi_json::ValueNode::Array(_) => "array",
+                tombi_json::ValueNode::Object(_) => "object",
             };
+            return Self::new_single(inferred_type, object, string_formats);
         }
 
         None
@@ -187,8 +179,12 @@ impl ValueSchema {
                 tombi_json::ValueNode::Bool(_) => {
                     enum_types.insert("boolean");
                 }
-                tombi_json::ValueNode::Number(_) => {
-                    enum_types.insert("number");
+                tombi_json::ValueNode::Number(n) => {
+                    if n.value.is_i64() {
+                        enum_types.insert("integer");
+                    } else {
+                        enum_types.insert("number");
+                    }
                 }
                 tombi_json::ValueNode::String(_) => {
                     enum_types.insert("string");
@@ -669,6 +665,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn test_const_float_creates_float_schema() {
         let schema = parse_schema(r#"{ "const": 3.14 }"#);
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
@@ -744,5 +741,61 @@ mod tests {
     fn test_const_nested_object_creates_table_schema() {
         let schema = parse_schema(r#"{ "const": {"nested": {"key": "value"}} }"#);
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    fn parse_schema_with_formats(json: &str, formats: &[StringFormat]) -> Option<ValueSchema> {
+        let value_node = tombi_json::ValueNode::from_str(json).unwrap();
+        let object = value_node.as_object().unwrap();
+        ValueSchema::new(object, Some(formats))
+    }
+
+    #[test]
+    fn test_const_string_with_format_uses_new_single() {
+        // When const has a format field, it should be processed through new_single
+        // which handles date-time formats properly
+        let schema = parse_schema(r#"{ "const": "2024-01-10", "format": "date" }"#);
+        // Should create LocalDateSchema, not StringSchema
+        assert!(matches!(schema, Some(ValueSchema::LocalDate(_))));
+    }
+
+    #[test]
+    fn test_const_string_with_datetime_format() {
+        let schema = parse_schema(r#"{ "const": "2024-01-10T12:00:00Z", "format": "date-time" }"#);
+        assert!(matches!(schema, Some(ValueSchema::OffsetDateTime(_))));
+    }
+
+    #[test]
+    fn test_const_string_with_custom_format_and_string_formats() {
+        // Custom format (e.g., email) should be validated against string_formats
+        let schema = parse_schema_with_formats(
+            r#"{ "const": "test@example.com", "format": "email" }"#,
+            &[StringFormat::Email],
+        );
+        assert!(matches!(schema, Some(ValueSchema::String(_))));
+
+        if let Some(ValueSchema::String(s)) = schema {
+            assert_eq!(s.format, Some(StringFormat::Email));
+        }
+    }
+
+    #[test]
+    fn test_enum_integer_creates_integer_schema() {
+        // enum with integers should create IntegerSchema, not FloatSchema
+        let schema = parse_schema(r#"{ "enum": [1, 2, 3] }"#);
+        assert!(matches!(schema, Some(ValueSchema::Integer(_))));
+    }
+
+    #[test]
+    fn test_enum_float_creates_float_schema() {
+        // enum with floats should create FloatSchema
+        let schema = parse_schema(r#"{ "enum": [1.5, 2.5, 3.5] }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[test]
+    fn test_enum_mixed_int_float_creates_oneof() {
+        // enum with mixed integers and floats should create OneOf
+        let schema = parse_schema(r#"{ "enum": [1, 2.5, 3] }"#);
+        assert!(matches!(schema, Some(ValueSchema::OneOf(_))));
     }
 }
