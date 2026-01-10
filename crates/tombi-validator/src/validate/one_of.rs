@@ -40,7 +40,7 @@ where
 
         let mut valid_count = 0;
 
-        let mut schemas = one_of_schema.schemas.write().await;
+        let mut schemas = one_of_schema.schemas.write().await.clone();
         let mut each_results = Vec::with_capacity(schemas.len());
         for referable_schema in schemas.iter_mut() {
             let current_schema = if let Ok(Some(current_schema)) = referable_schema

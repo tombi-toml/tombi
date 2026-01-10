@@ -174,6 +174,7 @@ async fn validate_table(
             .properties
             .write()
             .await
+            .clone()
             .get_mut(&SchemaAccessor::from(&accessor))
         {
             matched_key = true;
@@ -212,7 +213,7 @@ async fn validate_table(
                 PropertySchema {
                     property_schema, ..
                 },
-            ) in pattern_properties.write().await.iter_mut()
+            ) in pattern_properties.write().await.clone().iter_mut()
             {
                 let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
                     tracing::warn!("Invalid regex pattern property: {}", pattern_key);
@@ -291,7 +292,8 @@ async fn validate_table(
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
             {
-                let mut referable_schema = referable_additional_property_schema.write().await;
+                let mut referable_schema =
+                    referable_additional_property_schema.write().await.clone();
                 if let Ok(Some(current_schema)) = referable_schema
                     .resolve(
                         current_schema.schema_uri.clone(),
