@@ -27,12 +27,19 @@ pub struct Args {
     #[arg(long, default_value_t = false)]
     error_on_warnings: bool,
 
+    /// Quiet mode
+    ///
+    /// If `true`, the program will not print any warnings.
+    #[arg(long, default_value_t = false)]
+    quiet: bool,
+
     #[command(flatten)]
     common: CommonArgs,
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args) -> Result<(), crate::Error> {
+    let quiet = args.quiet;
     let (success_num, error_num) = match inner_run(args, crate::app::printer()) {
         Ok((success_num, error_num)) => (success_num, error_num),
         Err(error) => {
@@ -41,20 +48,22 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
         }
     };
 
-    match success_num {
-        0 => {
-            if error_num == 0 {
-                eprintln!("No files linted")
+    if !quiet {
+        match success_num {
+            0 => {
+                if error_num == 0 {
+                    eprintln!("No files linted")
+                }
             }
+            1 => eprintln!("1 file linted successfully"),
+            _ => eprintln!("{success_num} files linted successfully"),
         }
-        1 => eprintln!("1 file linted successfully"),
-        _ => eprintln!("{success_num} files linted successfully"),
-    }
 
-    match error_num {
-        0 => {}
-        1 => eprintln!("1 file failed to be linted"),
-        _ => eprintln!("{error_num} files failed to be linted"),
+        match error_num {
+            0 => {}
+            1 => eprintln!("1 file failed to be linted"),
+            _ => eprintln!("{error_num} files failed to be linted"),
+        }
     }
 
     if error_num > 0 {
