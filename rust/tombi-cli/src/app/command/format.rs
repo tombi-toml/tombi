@@ -32,12 +32,19 @@ pub struct Args {
     #[arg(long)]
     stdin_filename: Option<String>,
 
+    /// Quiet mode
+    ///
+    /// If `true`, the program will not print summary output messages.
+    #[arg(long, default_value_t = false)]
+    quiet: bool,
+
     #[command(flatten)]
     common: CommonArgs,
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args) -> Result<(), crate::Error> {
+    let quiet = args.quiet;
     let (success_num, not_needed_num, error_num) = match inner_run(args, crate::app::printer()) {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
@@ -46,30 +53,32 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
         }
     };
 
-    match (success_num, not_needed_num) {
-        (0, 0) => {
-            if error_num == 0 {
-                eprintln!("No files formatted")
+    if !quiet {
+        match (success_num, not_needed_num) {
+            (0, 0) => {
+                if error_num == 0 {
+                    eprintln!("No files formatted")
+                }
             }
-        }
-        (success_num, not_needed_num) => {
-            match success_num {
-                0 => {}
-                1 => eprintln!("1 file formatted"),
-                _ => eprintln!("{success_num} files formatted"),
-            };
-            match not_needed_num {
-                0 => {}
-                1 => eprintln!("1 file did not need formatting"),
-                _ => eprintln!("{not_needed_num} files did not need formatting"),
+            (success_num, not_needed_num) => {
+                match success_num {
+                    0 => {}
+                    1 => eprintln!("1 file formatted"),
+                    _ => eprintln!("{success_num} files formatted"),
+                };
+                match not_needed_num {
+                    0 => {}
+                    1 => eprintln!("1 file did not need formatting"),
+                    _ => eprintln!("{not_needed_num} files did not need formatting"),
+                }
             }
-        }
-    };
-    match error_num {
-        0 => {}
-        1 => eprintln!("1 file failed to be formatted"),
-        _ => eprintln!("{error_num} files failed to be formatted"),
-    };
+        };
+        match error_num {
+            0 => {}
+            1 => eprintln!("1 file failed to be formatted"),
+            _ => eprintln!("{error_num} files failed to be formatted"),
+        };
+    }
 
     if error_num > 0 {
         std::process::exit(1);
