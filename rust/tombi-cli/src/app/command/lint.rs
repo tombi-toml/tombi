@@ -29,7 +29,7 @@ pub struct Args {
 
     /// Quiet mode
     ///
-    /// If `true`, the program will not print any warnings.
+    /// If `true`, the program will not print summary output messages.
     #[arg(long, default_value_t = false)]
     quiet: bool,
 
