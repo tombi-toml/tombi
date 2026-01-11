@@ -16,7 +16,6 @@ dirs.workspace = true
 futures.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
-tombi-regex.workspace = true
 reqwest.workspace = true
 semver.workspace = true
 serde.workspace = true
@@ -41,6 +40,7 @@ tombi-glob.workspace = true
 tombi-json.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true
+tombi-regex.workspace = true
 tombi-rg-tree.workspace = true
 tombi-schema-store = { workspace = true, features = ["document-tree"] }
 tombi-syntax.workspace = true
