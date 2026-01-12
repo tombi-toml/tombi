@@ -181,6 +181,11 @@
         "command": "tombi.refreshCache",
         "title": "Refresh Cache",
         "category": "Tombi"
+      },
+      {
+        "command": "tombi.selectSchema",
+        "title": "Select Schema",
+        "category": "Tombi"
       }
     ],
     "configuration": {

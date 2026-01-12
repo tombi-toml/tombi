@@ -7,6 +7,7 @@ use crate::Backend;
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_list_schemas(
     backend: &Backend,
+    _params: ListSchemasParams,
 ) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
     tracing::info!("handle_list_schemas");
 
@@ -28,6 +29,9 @@ pub async fn handle_list_schemas(
     })
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct ListSchemasParams {}
+
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListSchemasResponse {
@@ -48,5 +52,6 @@ pub struct SchemaInfo {
 
     pub uri: tombi_uri::SchemaUri,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub catalog_uri: Option<tombi_uri::CatalogUri>,
 }

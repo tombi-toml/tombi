@@ -116,6 +116,12 @@ export class Extension {
         async () => command.refreshCache(this.client),
       ),
     );
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(
+        `${EXTENSION_ID}.selectSchema`,
+        async () => command.selectSchema(this.client),
+      ),
+    );
   }
 
   private registerEvents(): void {

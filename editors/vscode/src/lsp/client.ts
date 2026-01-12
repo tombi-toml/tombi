@@ -26,14 +26,29 @@ export const updateSchema = new RequestType<UpdateSchemaParams, boolean, void>(
 );
 
 export type AssociateSchemaParams = {
-  url: string;
+  uri: string;
   fileMatch: string[];
+  tomlVersion?: string;
 };
 export const associateSchema = new RequestType<
   AssociateSchemaParams,
   void,
   void
 >("tombi/associateSchema");
+
+export type ListSchemasParams = Record<string, never>;
+export type SchemaInfo = {
+  title?: string;
+  description?: string;
+  tomlVersion?: string;
+  uri: string;
+  catalogUri?: string;
+};
+export const listSchemas = new RequestType<
+  ListSchemasParams,
+  { schemas: SchemaInfo[] },
+  void
+>("tombi/listSchemas");
 
 export type GetStatusParams = TextDocumentIdentifier;
 export const getStatus = new RequestType<

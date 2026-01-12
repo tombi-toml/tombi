@@ -65,7 +65,7 @@ pub mod handler {
     pub use hover::{get_hover_keys_with_range, handle_hover};
     pub use initialize::handle_initialize;
     pub use initialized::handle_initialized;
-    pub use list_schemas::{ListSchemasResponse, handle_list_schemas};
+    pub use list_schemas::{ListSchemasParams, ListSchemasResponse, handle_list_schemas};
     pub use refresh_cache::{RefreshCacheParams, handle_refresh_cache};
     pub use semantic_tokens_full::handle_semantic_tokens_full;
     pub use shutdown::handle_shutdown;

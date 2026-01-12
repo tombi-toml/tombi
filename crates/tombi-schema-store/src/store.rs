@@ -114,20 +114,24 @@ impl SchemaStore {
 
             let catalogs_results =
                 futures::future::join_all(catalog_paths.iter().map(|catalog_path| async move {
-                    let Ok(tagalog_uri) = catalog_path.try_to_catalog_url(base_dir_path) else {
+                    let Ok(catalog_uri) = catalog_path
+                        .try_to_catalog_url(base_dir_path)
+                        .map(CatalogUri::from)
+                    else {
                         return Err(crate::Error::CatalogPathConvertUriFailed {
                             catalog_path: catalog_path.to_string(),
                         });
                     };
-                    let tagalog_uri = CatalogUri::from(tagalog_uri);
-                    self.load_catalog_from_uri(&tagalog_uri).await
+                    self.load_catalog_from_uri(&catalog_uri)
+                        .await
+                        .map(|catalog| catalog.map(|catalog| (catalog_uri, catalog)))
                 }))
                 .await;
 
             for catalog_result in catalogs_results {
                 match catalog_result {
-                    Ok(Some(catalog)) => {
-                        self.add_json_catalog(catalog).await?;
+                    Ok(Some((catalog_uri, catalog))) => {
+                        self.add_json_catalog(&catalog_uri, catalog).await?;
                     }
                     Ok(None) => {}
                     Err(e) => return Err(e),
@@ -288,7 +292,11 @@ impl SchemaStore {
         }))
     }
 
-    async fn add_json_catalog(&self, json_catalog: JsonCatalog) -> Result<(), crate::Error> {
+    async fn add_json_catalog(
+        &self,
+        catalog_uri: &CatalogUri,
+        json_catalog: JsonCatalog,
+    ) -> Result<(), crate::Error> {
         let mut schemas = self.schemas.write().await;
         for schema in json_catalog.schemas {
             if schema
@@ -300,7 +308,7 @@ impl SchemaStore {
                     title: Some(schema.name),
                     description: Some(schema.description),
                     schema_uri: schema.url,
-                    catalog_uri: Some(json_catalog.catalog_uri.clone()),
+                    catalog_uri: Some(catalog_uri.clone()),
                     include: schema.file_match,
                     toml_version: None,
                     sub_root_keys: None,

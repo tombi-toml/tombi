@@ -26,8 +26,9 @@ use crate::{
     goto_definition::into_definition_locations,
     goto_type_definition::into_type_definition_locations,
     handler::{
-        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, ListSchemasResponse,
-        RefreshCacheParams, TomlVersionSource, handle_associate_schema, handle_code_action,
+        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, ListSchemasParams,
+        ListSchemasResponse, RefreshCacheParams, TomlVersionSource, handle_associate_schema,
+        handle_code_action,
         handle_completion, handle_diagnostic, handle_did_change, handle_did_change_configuration,
         handle_did_change_watched_files, handle_did_close, handle_did_open, handle_did_save,
         handle_document_link, handle_document_symbol, handle_folding_range, handle_formatting,
@@ -225,8 +226,11 @@ impl Backend {
     }
 
     #[inline]
-    pub async fn list_schemas(&self) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
-        handle_list_schemas(self).await
+    pub async fn list_schemas(
+        &self,
+        params: ListSchemasParams,
+    ) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
+        handle_list_schemas(self, params).await
     }
 
     #[inline]
