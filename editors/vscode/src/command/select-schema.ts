@@ -83,10 +83,10 @@ export async function selectSchema(
     if (workspaceFolder) {
       // Create a relative path pattern from the workspace root
       const relativePath = vscode.workspace.asRelativePath(documentUri, false);
-      filePattern = `**/${relativePath.split("/").pop()}`; // Use the filename with ** prefix
+      filePattern = relativePath;
     } else {
       // Use the filename if not in a workspace
-      filePattern = `**/${documentUri.path.split("/").pop()}`;
+      filePattern = documentUri.path;
     }
 
     // Send associateSchema notification to LSP
