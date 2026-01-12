@@ -2,7 +2,10 @@ use std::str::FromStr;
 
 use tombi_config::TomlVersion;
 
-use crate::Backend;
+use crate::{
+    Backend,
+    handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,4 +63,16 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
             },
         )
         .await;
+
+    // Refresh workspace diagnostics after schema association
+    if let Err(err) = push_workspace_diagnostics(
+        backend,
+        &WorkspaceDiagnosticOptions {
+            include_open_files: true,
+        },
+    )
+    .await
+    {
+        tracing::warn!("Failed to push workspace diagnostics: {err}");
+    }
 }
