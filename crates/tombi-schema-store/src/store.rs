@@ -132,16 +132,17 @@ impl SchemaStore {
                             catalog_path: catalog_path.to_string(),
                         });
                     };
+                    let catalog_uri = Arc::new(catalog_uri);
                     self.load_catalog_from_uri(&catalog_uri)
                         .await
-                        .map(|catalog| catalog.map(|catalog| (catalog_uri, catalog)))
+                        .map(|catalog| catalog.map(|catalog| (catalog_uri.clone(), catalog)))
                 }))
                 .await;
 
             for catalog_result in catalogs_results {
                 match catalog_result {
                     Ok(Some((catalog_uri, catalog))) => {
-                        self.add_json_catalog(&catalog_uri, catalog).await?;
+                        self.add_json_catalog(catalog_uri, catalog).await?;
                     }
                     Ok(None) => {}
                     Err(e) => return Err(e),
@@ -304,7 +305,7 @@ impl SchemaStore {
 
     async fn add_json_catalog(
         &self,
-        catalog_uri: &CatalogUri,
+        catalog_uri: Arc<CatalogUri>,
         json_catalog: JsonCatalog,
     ) -> Result<(), crate::Error> {
         let mut schemas = self.schemas.write().await;

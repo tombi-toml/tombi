@@ -64,7 +64,7 @@ pub struct Schema {
     pub description: Option<String>,
     pub toml_version: Option<tombi_config::TomlVersion>,
     pub schema_uri: tombi_uri::SchemaUri,
-    pub catalog_uri: Option<tombi_uri::CatalogUri>,
+    pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
     pub sub_root_keys: Option<Vec<SchemaAccessor>>,
 }

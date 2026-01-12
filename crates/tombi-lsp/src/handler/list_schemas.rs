@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::Backend;
 
 /// Handle the `tombi/listSchemas` request to list all available schemas.
@@ -53,5 +55,5 @@ pub struct SchemaInfo {
     pub uri: tombi_uri::SchemaUri,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub catalog_uri: Option<tombi_uri::CatalogUri>,
+    pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
 }
