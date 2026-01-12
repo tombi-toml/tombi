@@ -8,5 +8,6 @@ pub const DEFAULT_CATALOG_URL: &str = concat!(
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct JsonCatalog {
+    pub catalog_uri: tombi_uri::CatalogUri,
     pub schemas: Vec<JsonCatalogSchema>,
 }

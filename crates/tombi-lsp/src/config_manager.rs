@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use tombi_config::Config;
+use tombi_config::{Config, TomlVersion};
 use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
 
@@ -42,6 +42,7 @@ pub struct ConfigManager {
 struct AssociatedSchema {
     schema_uri: SchemaUri,
     file_match: Vec<String>,
+    toml_version: Option<TomlVersion>,
 }
 
 impl ConfigManager {
@@ -147,6 +148,7 @@ impl ConfigManager {
                                 .associate_schema(
                                     associated_schema.schema_uri.clone(),
                                     associated_schema.file_match.clone(),
+                                    associated_schema.toml_version,
                                 )
                                 .await;
                         }
@@ -210,6 +212,7 @@ impl ConfigManager {
                     .associate_schema(
                         associated_schema.schema_uri.clone(),
                         associated_schema.file_match.clone(),
+                        associated_schema.toml_version,
                     )
                     .await;
             }
@@ -250,7 +253,12 @@ impl ConfigManager {
         Ok(updated)
     }
 
-    pub async fn associate_schema(&self, schema_uri: &SchemaUri, file_match: &[String]) {
+    pub async fn associate_schema(
+        &self,
+        schema_uri: &SchemaUri,
+        file_match: &[String],
+        toml_version: Option<TomlVersion>,
+    ) {
         // Add to associated_schemas
         self.associated_schemas
             .write()
@@ -258,6 +266,7 @@ impl ConfigManager {
             .push(AssociatedSchema {
                 schema_uri: schema_uri.clone(),
                 file_match: file_match.to_vec(),
+                toml_version,
             });
 
         // Update config_schema_stores
@@ -266,14 +275,14 @@ impl ConfigManager {
             for config_schema_store in config_schema_stores.values_mut() {
                 config_schema_store
                     .schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec())
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), toml_version)
                     .await;
             }
             if let Some(ConfigSchemaStore { schema_store, .. }) =
                 &mut *self.default_config_schema_store.write().await
             {
                 schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec())
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), toml_version)
                     .await;
             }
         }
@@ -353,6 +362,37 @@ impl ConfigManager {
                 .load_config_schemas(schemas, base_dir_path)
                 .await;
         }
+    }
+
+    /// List all schemas from all config schema stores
+    pub async fn list_schemas(&self) -> Vec<tombi_schema_store::Schema> {
+        let mut all_schemas = Vec::new();
+        let mut seen_uris = std::collections::HashSet::new();
+
+        // Get schemas from all config_schema_stores
+        let config_schema_stores = self.config_schema_stores.read().await;
+        for config_schema_store in config_schema_stores.values() {
+            for schema in config_schema_store.schema_store.list_schemas().await {
+                if seen_uris.insert(schema.schema_uri.as_str().to_string()) {
+                    all_schemas.push(schema.clone());
+                }
+            }
+        }
+
+        // Get schemas from default_config_schema_store
+        if let Some(default_config_schema_store) = &*self.default_config_schema_store.read().await {
+            let schemas = default_config_schema_store
+                .schema_store
+                .list_schemas()
+                .await;
+            for schema in schemas.iter() {
+                if seen_uris.insert(schema.schema_uri.as_str().to_string()) {
+                    all_schemas.push(schema.clone());
+                }
+            }
+        }
+
+        all_schemas
     }
 }
 

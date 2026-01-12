@@ -26,15 +26,16 @@ use crate::{
     goto_definition::into_definition_locations,
     goto_type_definition::into_type_definition_locations,
     handler::{
-        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, RefreshCacheParams,
-        TomlVersionSource, handle_associate_schema, handle_code_action, handle_completion,
-        handle_diagnostic, handle_did_change, handle_did_change_configuration,
+        AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, ListSchemasResponse,
+        RefreshCacheParams, TomlVersionSource, handle_associate_schema, handle_code_action,
+        handle_completion, handle_diagnostic, handle_did_change, handle_did_change_configuration,
         handle_did_change_watched_files, handle_did_close, handle_did_open, handle_did_save,
         handle_document_link, handle_document_symbol, handle_folding_range, handle_formatting,
         handle_get_status, handle_get_toml_version, handle_goto_declaration,
         handle_goto_definition, handle_goto_type_definition, handle_hover, handle_initialize,
-        handle_initialized, handle_refresh_cache, handle_semantic_tokens_full, handle_shutdown,
-        handle_update_config, handle_update_schema, push_diagnostics,
+        handle_initialized, handle_list_schemas, handle_refresh_cache,
+        handle_semantic_tokens_full, handle_shutdown, handle_update_config, handle_update_schema,
+        push_diagnostics,
     },
 };
 
@@ -221,6 +222,11 @@ impl Backend {
         params: RefreshCacheParams,
     ) -> Result<bool, tower_lsp::jsonrpc::Error> {
         handle_refresh_cache(self, params).await
+    }
+
+    #[inline]
+    pub async fn list_schemas(&self) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
+        handle_list_schemas(self).await
     }
 
     #[inline]

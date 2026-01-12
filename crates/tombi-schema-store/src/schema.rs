@@ -60,8 +60,11 @@ pub struct PropertySchema {
 
 #[derive(Debug, Clone)]
 pub struct Schema {
+    pub title: Option<String>,
+    pub description: Option<String>,
     pub toml_version: Option<tombi_config::TomlVersion>,
-    pub url: crate::SchemaUri,
+    pub schema_uri: tombi_uri::SchemaUri,
+    pub catalog_uri: Option<tombi_uri::CatalogUri>,
     pub include: Vec<String>,
     pub sub_root_keys: Option<Vec<SchemaAccessor>>,
 }

@@ -33,6 +33,7 @@ pub mod handler {
     mod hover;
     mod initialize;
     mod initialized;
+    mod list_schemas;
     mod refresh_cache;
     mod semantic_tokens_full;
     mod shutdown;
@@ -64,6 +65,7 @@ pub mod handler {
     pub use hover::{get_hover_keys_with_range, handle_hover};
     pub use initialize::handle_initialize;
     pub use initialized::handle_initialized;
+    pub use list_schemas::{ListSchemasResponse, handle_list_schemas};
     pub use refresh_cache::{RefreshCacheParams, handle_refresh_cache};
     pub use semantic_tokens_full::handle_semantic_tokens_full;
     pub use shutdown::handle_shutdown;
@@ -104,6 +106,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     })
     .custom_method("tombi/getStatus", Backend::get_status)
     .custom_method("tombi/getTomlVersion", Backend::get_toml_version)
+    .custom_method("tombi/listSchemas", Backend::list_schemas)
     .custom_method("tombi/updateSchema", Backend::update_schema)
     .custom_method("tombi/updateConfig", Backend::update_config)
     .custom_method("tombi/associateSchema", Backend::associate_schema)

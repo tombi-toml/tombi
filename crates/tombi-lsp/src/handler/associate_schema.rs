@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use tombi_config::TomlVersion;
+
 use crate::Backend;
 
 #[derive(Debug, serde::Deserialize)]
@@ -7,6 +9,7 @@ use crate::Backend;
 pub struct AssociateSchemaParams {
     uri: String,
     file_match: Vec<String>,
+    toml_version: Option<TomlVersion>,
 }
 
 /// Handle the `tombi/associateSchema` request to associate a schema with a file match pattern.
@@ -40,6 +43,6 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
 
     backend
         .config_manager
-        .associate_schema(&schema_uri, &params.file_match)
+        .associate_schema(&schema_uri, &params.file_match, params.toml_version)
         .await;
 }

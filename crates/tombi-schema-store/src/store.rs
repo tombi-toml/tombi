@@ -10,7 +10,7 @@ use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
 use tombi_ast::SchemaDocumentCommentDirective;
 use tombi_cache::{get_cache_file_path, read_from_cache, refresh_cache, save_to_cache};
-use tombi_config::{SchemaItem, SchemaOverviewOptions};
+use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
@@ -159,7 +159,10 @@ impl SchemaStore {
             tracing::debug!("Load schema from config: {}", schema_uri);
 
             self.schemas.write().await.push(crate::Schema {
-                url: schema_uri,
+                title: None,
+                description: None,
+                schema_uri,
+                catalog_uri: None,
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
                 sub_root_keys: schema.root().and_then(SchemaAccessor::parse),
@@ -294,7 +297,10 @@ impl SchemaStore {
                 .any(|pattern| pattern.ends_with(".toml"))
             {
                 schemas.push(crate::Schema {
-                    url: schema.url,
+                    title: Some(schema.name),
+                    description: Some(schema.description),
+                    schema_uri: schema.url,
+                    catalog_uri: Some(json_catalog.catalog_uri.clone()),
                     include: schema.file_match,
                     toml_version: None,
                     sub_root_keys: None,
@@ -619,7 +625,10 @@ impl SchemaStore {
             if already_loaded {
                 continue;
             }
-            match self.try_get_document_schema(&matching_schema.url).await {
+            match self
+                .try_get_document_schema(&matching_schema.schema_uri)
+                .await
+            {
                 Ok(Some(document_schema)) => match &matching_schema.sub_root_keys {
                     Some(sub_root_keys) => match source_schema {
                         Some(ref mut source_schema) => {
@@ -657,12 +666,15 @@ impl SchemaStore {
                     },
                 },
                 Ok(None) => {
-                    tracing::warn!("Failed to find document schema: {}", matching_schema.url);
+                    tracing::warn!(
+                        "Failed to find document schema: {}",
+                        matching_schema.schema_uri
+                    );
                 }
                 Err(err) => {
                     tracing::warn!(
                         "Failed to get document schema for {url}: {err}",
-                        url = matching_schema.url,
+                        url = matching_schema.schema_uri,
                     );
                 }
             }
@@ -715,14 +727,26 @@ impl SchemaStore {
         })
     }
 
-    pub async fn associate_schema(&self, schema_uri: SchemaUri, include: Vec<String>) {
+    pub async fn associate_schema(
+        &self,
+        schema_uri: SchemaUri,
+        include: Vec<String>,
+        toml_version: Option<TomlVersion>,
+    ) {
         let mut schemas = self.schemas.write().await;
         schemas.push(crate::Schema {
-            url: schema_uri,
+            title: None,
+            description: None,
+            schema_uri,
+            catalog_uri: None,
             include,
-            toml_version: None,
+            toml_version,
             sub_root_keys: None,
         });
+    }
+
+    pub async fn list_schemas(&self) -> Vec<crate::Schema> {
+        self.schemas.read().await.clone()
     }
 }
 
