@@ -9,13 +9,20 @@ use crate::{
     document::DocumentSource,
 };
 
+#[derive(Debug, Default)]
+pub struct WorkspaceDiagnosticOptions {
+    pub include_open_files: bool,
+}
+
 pub async fn push_workspace_diagnostics(
     backend: &Backend,
+    options: &WorkspaceDiagnosticOptions,
 ) -> Result<(), tower_lsp::jsonrpc::Error> {
     tracing::info!("push_workspace_diagnostics");
+    tracing::trace!(?options);
 
     for text_document_uri in collect_workspace_diagnostic_targets(backend).await {
-        publish_workspace_diagnostics(backend, text_document_uri).await;
+        publish_workspace_diagnostics(backend, text_document_uri, options).await;
     }
 
     Ok(())
@@ -69,7 +76,11 @@ async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_ur
     targets.into_iter().collect()
 }
 
-async fn publish_workspace_diagnostics(backend: &Backend, text_document_uri: tombi_uri::Uri) {
+async fn publish_workspace_diagnostics(
+    backend: &Backend,
+    text_document_uri: tombi_uri::Uri,
+    options: &WorkspaceDiagnosticOptions,
+) {
     let Some(diagnostics_result) = get_diagnostics_result(backend, &text_document_uri).await else {
         return;
     };
@@ -81,7 +92,7 @@ async fn publish_workspace_diagnostics(backend: &Backend, text_document_uri: tom
         version,
     } = diagnostics_result;
 
-    if version.is_some() {
+    if !options.include_open_files && version.is_some() {
         tracing::debug!(
             "Skip publishing workspace diagnostics because version is some: {text_document_uri}"
         );

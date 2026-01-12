@@ -4,7 +4,10 @@ use tower_lsp::lsp_types::{
     Registration, WatchKind,
 };
 
-use crate::{backend::Backend, handler::push_workspace_diagnostics};
+use crate::{
+    backend::Backend,
+    handler::{push_workspace_diagnostics, workspace_diagnostic::WorkspaceDiagnosticOptions},
+};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
@@ -12,7 +15,9 @@ pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
     tracing::trace!(?params);
 
     tracing::info!("Pushing workspace diagnostics...");
-    if let Err(error) = push_workspace_diagnostics(backend).await {
+    if let Err(error) =
+        push_workspace_diagnostics(backend, &WorkspaceDiagnosticOptions::default()).await
+    {
         tracing::warn!("Failed to push workspace diagnostics: {error}");
     }
 

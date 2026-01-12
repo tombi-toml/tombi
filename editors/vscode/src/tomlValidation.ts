@@ -37,7 +37,7 @@ export function registerExtensionSchemas(client: BaseLanguageClient) {
         tomlValidation.fileMatch = [tomlValidation.fileMatch];
       }
       const params: AssociateSchemaParams = {
-        url: tomlValidation.url,
+        uri: tomlValidation.url,
         fileMatch: tomlValidation.fileMatch,
       };
       client.sendNotification("tombi/associateSchema", params);

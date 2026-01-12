@@ -3,7 +3,10 @@ use tower_lsp::lsp_types::{
     MessageType, ShowMessageParams, TextDocumentIdentifier, notification::ShowMessage,
 };
 
-use crate::backend::Backend;
+use crate::{
+    backend::Backend,
+    handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
+};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_update_schema(
@@ -20,7 +23,23 @@ pub async fn handle_update_schema(
         .update_schema(&SchemaUri::from(uri))
         .await
     {
-        Ok(is_updated) => Ok(is_updated),
+        Ok(is_updated) => {
+            if is_updated {
+                // Refresh workspace diagnostics after schema update
+                // Include open files to ensure diagnostics are updated for all files, including those open in the editor
+                if let Err(err) = push_workspace_diagnostics(
+                    backend,
+                    &WorkspaceDiagnosticOptions {
+                        include_open_files: true,
+                    },
+                )
+                .await
+                {
+                    tracing::warn!("Failed to push workspace diagnostics: {err}");
+                }
+            }
+            Ok(is_updated)
+        }
         Err(err) => {
             backend
                 .client

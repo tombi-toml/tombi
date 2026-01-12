@@ -26,14 +26,36 @@ export const updateSchema = new RequestType<UpdateSchemaParams, boolean, void>(
 );
 
 export type AssociateSchemaParams = {
-  url: string;
+  title?: string;
+  description?: string;
+  uri: string;
   fileMatch: string[];
+  tomlVersion?: string;
+  /**
+   * If true, the schema will be inserted at the beginning of the schema list
+   * to force it to take precedence over catalog schemas. Default is false.
+   */
+  force?: boolean;
 };
 export const associateSchema = new RequestType<
   AssociateSchemaParams,
   void,
   void
 >("tombi/associateSchema");
+
+export type ListSchemasParams = Record<string, never>;
+export type SchemaInfo = {
+  title?: string;
+  description?: string;
+  tomlVersion?: string;
+  uri: string;
+  catalogUri?: string;
+};
+export const listSchemas = new RequestType<
+  ListSchemasParams,
+  { schemas: SchemaInfo[] },
+  void
+>("tombi/listSchemas");
 
 export type GetStatusParams = TextDocumentIdentifier;
 export const getStatus = new RequestType<

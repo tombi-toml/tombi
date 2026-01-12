@@ -2,7 +2,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use tombi_config::Config;
+use indexmap::IndexMap;
+use tombi_config::{Config, TomlVersion};
 use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
 
@@ -42,6 +43,7 @@ pub struct ConfigManager {
 struct AssociatedSchema {
     schema_uri: SchemaUri,
     file_match: Vec<String>,
+    toml_version: Option<TomlVersion>,
 }
 
 impl ConfigManager {
@@ -147,6 +149,12 @@ impl ConfigManager {
                                 .associate_schema(
                                     associated_schema.schema_uri.clone(),
                                     associated_schema.file_match.clone(),
+                                    &tombi_schema_store::AssociateSchemaOptions {
+                                        toml_version: associated_schema.toml_version,
+                                        force: false, // Don't force when reapplying existing associations
+                                        title: None,  // No title when reapplying
+                                        description: None, // No description when reapplying
+                                    },
                                 )
                                 .await;
                         }
@@ -210,6 +218,12 @@ impl ConfigManager {
                     .associate_schema(
                         associated_schema.schema_uri.clone(),
                         associated_schema.file_match.clone(),
+                        &tombi_schema_store::AssociateSchemaOptions {
+                            toml_version: associated_schema.toml_version,
+                            force: false, // Don't force when reapplying existing associations
+                            title: None,  // No title when reapplying
+                            description: None, // No description when reapplying
+                        },
                     )
                     .await;
             }
@@ -250,7 +264,12 @@ impl ConfigManager {
         Ok(updated)
     }
 
-    pub async fn associate_schema(&self, schema_uri: &SchemaUri, file_match: &[String]) {
+    pub async fn associate_schema(
+        &self,
+        schema_uri: &SchemaUri,
+        file_match: &[String],
+        options: &tombi_schema_store::AssociateSchemaOptions,
+    ) {
         // Add to associated_schemas
         self.associated_schemas
             .write()
@@ -258,6 +277,7 @@ impl ConfigManager {
             .push(AssociatedSchema {
                 schema_uri: schema_uri.clone(),
                 file_match: file_match.to_vec(),
+                toml_version: options.toml_version,
             });
 
         // Update config_schema_stores
@@ -266,14 +286,14 @@ impl ConfigManager {
             for config_schema_store in config_schema_stores.values_mut() {
                 config_schema_store
                     .schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec())
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
                     .await;
             }
             if let Some(ConfigSchemaStore { schema_store, .. }) =
                 &mut *self.default_config_schema_store.write().await
             {
                 schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec())
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
                     .await;
             }
         }
@@ -354,6 +374,40 @@ impl ConfigManager {
                 .await;
         }
     }
+
+    /// List all schemas from all config schema stores
+    pub async fn list_schemas(&self) -> Vec<tombi_schema_store::Schema> {
+        let mut schema_map: IndexMap<SchemaUri, tombi_schema_store::Schema> = IndexMap::new();
+
+        // Get schemas from all config_schema_stores
+        let config_schema_stores = self.config_schema_stores.read().await;
+        for config_schema_store in config_schema_stores.values() {
+            for schema in config_schema_store.schema_store.list_schemas().await {
+                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
+                    merge_schema(existing_schema, schema);
+                } else {
+                    schema_map.insert(schema.schema_uri.clone(), schema);
+                }
+            }
+        }
+
+        // Get schemas from default_config_schema_store
+        if let Some(default_config_schema_store) = &*self.default_config_schema_store.read().await {
+            let schemas = default_config_schema_store
+                .schema_store
+                .list_schemas()
+                .await;
+            for schema in schemas {
+                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
+                    merge_schema(existing_schema, schema);
+                } else {
+                    schema_map.insert(schema.schema_uri.clone(), schema);
+                }
+            }
+        }
+
+        schema_map.into_values().collect()
+    }
 }
 
 fn schema_store_options(
@@ -367,5 +421,22 @@ fn schema_store_options(
             no_cache: backend_options.no_cache,
             ..Default::default()
         }),
+    }
+}
+
+fn merge_schema(
+    existing_schema: &mut tombi_schema_store::Schema,
+    new_schema: tombi_schema_store::Schema,
+) {
+    if let (None, Some(title)) = (&existing_schema.title, new_schema.title) {
+        existing_schema.title = Some(title);
+    }
+    if let (None, Some(description)) = (&existing_schema.description, new_schema.description) {
+        existing_schema.description = Some(description);
+    }
+    for pattern in new_schema.include {
+        if !existing_schema.include.contains(&pattern) {
+            existing_schema.include.push(pattern);
+        }
     }
 }

@@ -13,7 +13,7 @@ pub use http_client::*;
 use itertools::{Either, Itertools};
 pub use options::Options;
 pub use schema::*;
-pub use store::SchemaStore;
+pub use store::{AssociateSchemaOptions, SchemaStore};
 pub use tombi_accessor::{Accessor, AccessorContext, AccessorKeyKind, Accessors, KeyContext};
 pub use value_type::ValueType;
 

@@ -1,6 +1,6 @@
-import type { TombiBin } from "@/bootstrap";
 import { spawn } from "node:child_process";
 import { text } from "node:stream/consumers";
+import type { TombiBin } from "@/bootstrap";
 
 export const LANGUAGE_SERVER_NAME = "tombi";
 
