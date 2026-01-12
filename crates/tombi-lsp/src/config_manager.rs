@@ -384,11 +384,7 @@ impl ConfigManager {
         for config_schema_store in config_schema_stores.values() {
             for schema in config_schema_store.schema_store.list_schemas().await {
                 if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
-                    for pattern in schema.include {
-                        if !existing_schema.include.contains(&pattern) {
-                            existing_schema.include.push(pattern);
-                        }
-                    }
+                    merge_schema(existing_schema, schema);
                 } else {
                     schema_map.insert(schema.schema_uri.clone(), schema);
                 }
@@ -403,11 +399,7 @@ impl ConfigManager {
                 .await;
             for schema in schemas {
                 if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
-                    for pattern in schema.include {
-                        if !existing_schema.include.contains(&pattern) {
-                            existing_schema.include.push(pattern);
-                        }
-                    }
+                    merge_schema(existing_schema, schema);
                 } else {
                     schema_map.insert(schema.schema_uri.clone(), schema);
                 }
@@ -429,5 +421,22 @@ fn schema_store_options(
             no_cache: backend_options.no_cache,
             ..Default::default()
         }),
+    }
+}
+
+fn merge_schema(
+    existing_schema: &mut tombi_schema_store::Schema,
+    new_schema: tombi_schema_store::Schema,
+) {
+    if let (None, Some(title)) = (&existing_schema.title, new_schema.title) {
+        existing_schema.title = Some(title);
+    }
+    if let (None, Some(description)) = (&existing_schema.description, new_schema.description) {
+        existing_schema.description = Some(description);
+    }
+    for pattern in new_schema.include {
+        if !existing_schema.include.contains(&pattern) {
+            existing_schema.include.push(pattern);
+        }
     }
 }
