@@ -1,10 +1,28 @@
+import { gte } from "semver";
 import * as vscode from "vscode";
 import type * as node from "vscode-languageclient/node";
 import { log } from "@/logging";
 import { listSchemas, type SchemaInfo } from "@/lsp/client";
 
-export async function selectSchema(client: node.LanguageClient): Promise<void> {
+const MIN_VERSION = "0.7.19";
+
+export async function selectSchema(
+  client: node.LanguageClient,
+  lspVersion?: string,
+): Promise<void> {
   try {
+    // Check LSP version
+    if (
+      lspVersion &&
+      lspVersion !== "0.0.0-dev" &&
+      !gte(lspVersion, MIN_VERSION)
+    ) {
+      const message = `Select Schema requires Tombi v${MIN_VERSION} or later. Current version: ${lspVersion}. Please update Tombi.`;
+      vscode.window.showErrorMessage(message);
+      log.warn(message);
+      return;
+    }
+
     // Get the active editor
     const editor = vscode.window.activeTextEditor;
     if (!editor) {

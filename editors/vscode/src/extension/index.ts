@@ -119,7 +119,7 @@ export class Extension {
     this.context.subscriptions.push(
       vscode.commands.registerCommand(
         `${EXTENSION_ID}.selectSchema`,
-        async () => command.selectSchema(this.client),
+        async () => command.selectSchema(this.client, this.lspVersion),
       ),
     );
   }
