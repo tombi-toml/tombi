@@ -7,9 +7,15 @@ use crate::Backend;
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssociateSchemaParams {
+    title: Option<String>,
+    description: Option<String>,
     uri: String,
     file_match: Vec<String>,
     toml_version: Option<TomlVersion>,
+    /// If true, the schema will be inserted at the beginning of the schema list
+    /// to force it to take precedence over catalog schemas. Default is false.
+    #[serde(default)]
+    force: bool,
 }
 
 /// Handle the `tombi/associateSchema` request to associate a schema with a file match pattern.
@@ -43,6 +49,15 @@ pub async fn handle_associate_schema(backend: &Backend, params: AssociateSchemaP
 
     backend
         .config_manager
-        .associate_schema(&schema_uri, &params.file_match, params.toml_version)
+        .associate_schema(
+            &schema_uri,
+            &params.file_match,
+            &tombi_schema_store::AssociateSchemaOptions {
+                title: params.title,
+                description: params.description,
+                toml_version: params.toml_version,
+                force: params.force,
+            },
+        )
         .await;
 }

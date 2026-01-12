@@ -14,6 +14,16 @@ use tombi_config::{SchemaItem, SchemaOverviewOptions, TomlVersion};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_uri::SchemaUri;
 
+/// Options for associating a schema with file patterns
+#[derive(Debug, Clone, Default)]
+pub struct AssociateSchemaOptions {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub toml_version: Option<TomlVersion>,
+    /// If true, the schema will be inserted at the beginning to force precedence
+    pub force: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
     http_client: HttpClient,
@@ -739,18 +749,26 @@ impl SchemaStore {
         &self,
         schema_uri: SchemaUri,
         include: Vec<String>,
-        toml_version: Option<TomlVersion>,
+        options: &AssociateSchemaOptions,
     ) {
-        let mut schemas = self.schemas.write().await;
-        schemas.push(crate::Schema {
-            title: None,
-            description: None,
+        let new_schema = crate::Schema {
+            title: options.title.clone(),
+            description: options.description.clone(),
             schema_uri,
             catalog_uri: None,
             include,
-            toml_version,
+            toml_version: options.toml_version,
             sub_root_keys: None,
-        });
+        };
+
+        let mut schemas = self.schemas.write().await;
+        if options.force {
+            // Insert at the beginning to force precedence
+            schemas.insert(0, new_schema);
+        } else {
+            // Append at the end
+            schemas.push(new_schema);
+        }
     }
 
     pub async fn list_schemas(&self) -> Vec<crate::Schema> {

@@ -91,9 +91,12 @@ export async function selectSchema(
 
     // Send associateSchema notification to LSP
     await client.sendNotification("tombi/associateSchema", {
+      title: selected.schema.title,
+      description: selected.schema.description,
       uri: selected.schema.uri,
       fileMatch: [filePattern],
       tomlVersion: selected.schema.tomlVersion,
+      force: true, // Force user-selected schema to take precedence over catalog schemas
     });
 
     log.info(`Schema associated: ${selected.schema.uri} -> ${filePattern}`);

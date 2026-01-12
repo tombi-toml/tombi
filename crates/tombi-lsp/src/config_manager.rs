@@ -148,7 +148,12 @@ impl ConfigManager {
                                 .associate_schema(
                                     associated_schema.schema_uri.clone(),
                                     associated_schema.file_match.clone(),
-                                    associated_schema.toml_version,
+                                    &tombi_schema_store::AssociateSchemaOptions {
+                                        toml_version: associated_schema.toml_version,
+                                        force: false, // Don't force when reapplying existing associations
+                                        title: None,  // No title when reapplying
+                                        description: None, // No description when reapplying
+                                    },
                                 )
                                 .await;
                         }
@@ -212,7 +217,12 @@ impl ConfigManager {
                     .associate_schema(
                         associated_schema.schema_uri.clone(),
                         associated_schema.file_match.clone(),
-                        associated_schema.toml_version,
+                        &tombi_schema_store::AssociateSchemaOptions {
+                            toml_version: associated_schema.toml_version,
+                            force: false, // Don't force when reapplying existing associations
+                            title: None,  // No title when reapplying
+                            description: None, // No description when reapplying
+                        },
                     )
                     .await;
             }
@@ -257,7 +267,7 @@ impl ConfigManager {
         &self,
         schema_uri: &SchemaUri,
         file_match: &[String],
-        toml_version: Option<TomlVersion>,
+        options: &tombi_schema_store::AssociateSchemaOptions,
     ) {
         // Add to associated_schemas
         self.associated_schemas
@@ -266,7 +276,7 @@ impl ConfigManager {
             .push(AssociatedSchema {
                 schema_uri: schema_uri.clone(),
                 file_match: file_match.to_vec(),
-                toml_version,
+                toml_version: options.toml_version,
             });
 
         // Update config_schema_stores
@@ -275,14 +285,14 @@ impl ConfigManager {
             for config_schema_store in config_schema_stores.values_mut() {
                 config_schema_store
                     .schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec(), toml_version)
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
                     .await;
             }
             if let Some(ConfigSchemaStore { schema_store, .. }) =
                 &mut *self.default_config_schema_store.write().await
             {
                 schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec(), toml_version)
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
                     .await;
             }
         }
