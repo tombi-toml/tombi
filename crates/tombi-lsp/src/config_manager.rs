@@ -395,9 +395,9 @@ impl ConfigManager {
                 .schema_store
                 .list_schemas()
                 .await;
-            for schema in schemas.iter() {
+            for schema in schemas {
                 if seen_uris.insert(schema.schema_uri.as_str().to_string()) {
-                    all_schemas.push(schema.clone());
+                    all_schemas.push(schema);
                 }
             }
         }
