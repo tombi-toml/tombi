@@ -384,7 +384,7 @@ impl ConfigManager {
         for config_schema_store in config_schema_stores.values() {
             for schema in config_schema_store.schema_store.list_schemas().await {
                 if seen_uris.insert(schema.schema_uri.as_str().to_string()) {
-                    all_schemas.push(schema.clone());
+                    all_schemas.push(schema);
                 }
             }
         }
