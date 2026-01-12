@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use ahash::AHashMap;
+use indexmap::IndexMap;
 use tombi_config::{Config, TomlVersion};
 use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
@@ -376,15 +377,20 @@ impl ConfigManager {
 
     /// List all schemas from all config schema stores
     pub async fn list_schemas(&self) -> Vec<tombi_schema_store::Schema> {
-        let mut all_schemas = Vec::new();
-        let mut seen_uris = std::collections::HashSet::new();
+        let mut schema_map: IndexMap<SchemaUri, tombi_schema_store::Schema> = IndexMap::new();
 
         // Get schemas from all config_schema_stores
         let config_schema_stores = self.config_schema_stores.read().await;
         for config_schema_store in config_schema_stores.values() {
             for schema in config_schema_store.schema_store.list_schemas().await {
-                if seen_uris.insert(schema.schema_uri.as_str().to_string()) {
-                    all_schemas.push(schema);
+                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
+                    for pattern in schema.include {
+                        if !existing_schema.include.contains(&pattern) {
+                            existing_schema.include.push(pattern);
+                        }
+                    }
+                } else {
+                    schema_map.insert(schema.schema_uri.clone(), schema);
                 }
             }
         }
@@ -396,13 +402,19 @@ impl ConfigManager {
                 .list_schemas()
                 .await;
             for schema in schemas {
-                if seen_uris.insert(schema.schema_uri.as_str().to_string()) {
-                    all_schemas.push(schema);
+                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
+                    for pattern in schema.include {
+                        if !existing_schema.include.contains(&pattern) {
+                            existing_schema.include.push(pattern);
+                        }
+                    }
+                } else {
+                    schema_map.insert(schema.schema_uri.clone(), schema);
                 }
             }
         }
 
-        all_schemas
+        schema_map.into_values().collect()
     }
 }
 
