@@ -76,18 +76,7 @@ export async function selectSchema(
       return;
     }
 
-    // Get the workspace folder of the current file
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
-    let filePattern: string;
-
-    if (workspaceFolder) {
-      // Create a relative path pattern from the workspace root
-      const relativePath = vscode.workspace.asRelativePath(documentUri, false);
-      filePattern = relativePath;
-    } else {
-      // Use the filename if not in a workspace
-      filePattern = documentUri.path;
-    }
+    const filePattern = documentUri.path;
 
     // Send associateSchema notification to LSP
     await client.sendNotification("tombi/associateSchema", {
