@@ -18,7 +18,7 @@ pub async fn handle_list_schemas(
             title: schema.title,
             description: schema.description,
             toml_version: schema.toml_version.map(|v| v.to_string()),
-            schema_uri: schema.schema_uri,
+            uri: schema.schema_uri,
             catalog_uri: schema.catalog_uri,
         })
         .collect();
@@ -46,7 +46,7 @@ pub struct SchemaInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub toml_version: Option<String>,
 
-    pub schema_uri: tombi_uri::SchemaUri,
+    pub uri: tombi_uri::SchemaUri,
 
     pub catalog_uri: Option<tombi_uri::CatalogUri>,
 }
