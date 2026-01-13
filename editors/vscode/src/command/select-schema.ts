@@ -1,6 +1,7 @@
 import { gte } from "semver";
 import * as vscode from "vscode";
 import type * as node from "vscode-languageclient/node";
+import { TOMBI_DEV_VERSION } from "@/extension";
 import { log } from "@/logging";
 import { listSchemas, type SchemaInfo } from "@/lsp/client";
 
@@ -14,7 +15,7 @@ export async function selectSchema(
     // Check LSP version
     if (
       lspVersion &&
-      lspVersion !== "0.0.0-dev" &&
+      lspVersion !== TOMBI_DEV_VERSION &&
       !gte(lspVersion, MIN_VERSION)
     ) {
       const message = `Select Schema requires Tombi v${MIN_VERSION} or later. Current version: ${lspVersion}. Please update Tombi.`;
