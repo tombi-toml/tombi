@@ -27,6 +27,7 @@ export const SUPPORT_TOMBI_CONFIG_FILENAMES = [
   "tombi/config.toml",
 ];
 export const SUPPORT_JSON_LANGUAGES = ["json"];
+export const TOMBI_DEV_VERSION = "0.0.0-dev";
 
 export class Extension {
   private statusBarItem: vscode.StatusBarItem;
@@ -153,7 +154,10 @@ export class Extension {
         let configPath: string | undefined;
         let ignore: IgnoreReason | undefined;
 
-        if (gte(this.lspVersion, "0.5.1") || this.lspVersion === "0.0.0-dev") {
+        if (
+          gte(this.lspVersion, "0.5.1") ||
+          this.lspVersion === TOMBI_DEV_VERSION
+        ) {
           // Use getStatus for versions >= 0.5.1
           const response = await this.client.sendRequest(getStatus, {
             uri: editor.document.uri.toString(),
