@@ -40,6 +40,12 @@ export async function selectSchema(
 
     // Get the current file URI
     const documentUri = editor.document.uri;
+    if (documentUri.scheme === "untitled") {
+      vscode.window.showWarningMessage(
+        "Untitled files are not supported. Please save the file first.",
+      );
+      return;
+    }
 
     // Fetch schemas from LSP
     const response = await client.sendRequest(listSchemas, {});
@@ -83,7 +89,7 @@ export async function selectSchema(
       title: selected.schema.title,
       description: selected.schema.description,
       uri: selected.schema.uri,
-      fileMatch: [filePattern],
+      fileMatch: [documentUri.path],
       tomlVersion: selected.schema.tomlVersion,
       force: true, // Force user-selected schema to take precedence over catalog schemas
     });
