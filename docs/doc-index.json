@@ -114,6 +114,11 @@
         "title": "Code Action",
         "description": "Quick fixes and refactoring suggestions for TOML.",
         "path": "/docs/language-server/code-action"
+      },
+      {
+        "title": "Command",
+        "description": "Custom LSP commands for schema and configuration management.",
+        "path": "/docs/language-server/command"
       }
     ]
   },

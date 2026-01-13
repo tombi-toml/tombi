@@ -1,0 +1,315 @@
+# Command
+
+Tombi Language Server provides custom LSP commands for advanced features like schema management and configuration updates.
+
+## Available Commands
+
+### tombi/getStatus
+
+Get the current status of a TOML document, including its TOML version, configuration path, and whether it's ignored by file patterns.
+
+#### Request
+
+```typescript
+interface GetStatusParams {
+  textDocument: TextDocumentIdentifier;
+}
+```
+
+#### Response
+
+```typescript
+interface GetStatusResponse {
+  tomlVersion: string;
+  source: "comment" | "schema" | "config" | "default";
+  configPath?: string;
+  ignore?: "include-file-pattern-not-matched" | "exclude-file-pattern-matched";
+}
+```
+
+- `tomlVersion`: The TOML version used for the document (e.g., "v1.0.0", "v1.1.0")
+- `source`: Where the TOML version comes from:
+  - `comment`: From comment directive (`#:tombi toml-version = "v1.0.0"`)
+  - `schema`: From schema directive (`#:schema "https://example.com/schema.json"`)
+  - `config`: From configuration file
+  - `default`: Default value
+- `configPath`: Path to the configuration file used for this document
+- `ignore`: Reason why the document is ignored (if applicable)
+
+#### Example
+
+```typescript
+// Get the status of the current document
+const status = await client.sendRequest("tombi/getStatus", {
+  textDocument: { uri: "file:///path/to/Cargo.toml" }
+});
+
+console.log(`TOML Version: ${status.tomlVersion}`);
+console.log(`Source: ${status.source}`);
+if (status.configPath) {
+  console.log(`Config Path: ${status.configPath}`);
+}
+if (status.ignore) {
+  console.log(`Ignored: ${status.ignore}`);
+}
+```
+
+---
+
+### tombi/getTomlVersion
+
+Get the TOML version of a document and its source.
+
+#### Request
+
+```typescript
+interface GetTomlVersionParams {
+  textDocument: TextDocumentIdentifier;
+}
+```
+
+#### Response
+
+```typescript
+interface GetTomlVersionResponse {
+  tomlVersion: string;
+  source: "comment" | "schema" | "config" | "default";
+}
+```
+
+- `tomlVersion`: The TOML version used for the document
+- `source`: Where the TOML version comes from (same as `tombi/getStatus`)
+
+#### Example
+
+```typescript
+// Get the TOML version of the current document
+const response = await client.sendRequest("tombi/getTomlVersion", {
+  textDocument: { uri: "file:///path/to/pyproject.toml" }
+});
+
+console.log(`TOML Version: ${response.tomlVersion}`);
+console.log(`Source: ${response.source}`);
+```
+
+---
+
+### tombi/listSchemas
+
+List all available schemas known to the LSP server.
+
+#### Request
+
+```typescript
+interface ListSchemasParams {}
+```
+
+#### Response
+
+```typescript
+interface ListSchemasResponse {
+  schemas: {
+    title?: string;
+    description?: string;
+    tomlVersion?: string;
+    uri: string;
+    catalogUri?: string;
+  }[];
+}
+```
+
+- `title`: Title of the schema (in most cases, this matches the `name` field in the SchemaStore catalog)
+- `description`: Description of the schema (in most cases, this matches the `description` field in the SchemaStore catalog)
+- `tomlVersion`: TOML version required by the schema
+- `uri`: URI of the schema
+- `catalogUri`: URI in the schema catalog (e.g., Schema Store)
+
+#### Example
+
+```typescript
+// List all available schemas
+const response = await client.sendRequest("tombi/listSchemas", {});
+
+console.log(`Found ${response.schemas.length} schemas`);
+response.schemas.forEach(schema => {
+  console.log(`- ${schema.title || 'Untitled'}: ${schema.uri}`);
+  if (schema.tomlVersion) {
+    console.log(`  TOML Version: ${schema.tomlVersion}`);
+  }
+});
+```
+
+---
+
+### tombi/updateSchema
+
+Update a schema from its remote source. This is useful when you want to refresh the schema without restarting the language server.
+
+#### Request
+
+```typescript
+interface UpdateSchemaParams {
+  textDocument: TextDocumentIdentifier;
+}
+```
+
+The `textDocument` should point to a schema file URI.
+
+#### Response
+
+```typescript
+type UpdateSchemaResponse = boolean;
+```
+
+Returns `true` if the schema was updated successfully, `false` otherwise.
+
+#### Example
+
+```typescript
+// Update a schema from its remote source
+const updated = await client.sendRequest("tombi/updateSchema", {
+  textDocument: { uri: "https://json.schemastore.org/cargo.json" }
+});
+
+if (updated) {
+  console.log("Schema updated successfully");
+} else {
+  console.log("Schema was not updated (already up-to-date or error occurred)");
+}
+```
+
+---
+
+### tombi/updateConfig
+
+Update the configuration file. This command reloads the configuration from disk and applies it to the language server.
+
+#### Request
+
+```typescript
+interface UpdateConfigParams {
+  textDocument: TextDocumentIdentifier;
+}
+```
+
+The `textDocument` should point to a Tombi configuration file (e.g., `tombi.toml`).
+
+#### Response
+
+```typescript
+type UpdateConfigResponse = boolean;
+```
+
+Returns `true` if the configuration was updated successfully, `false` otherwise.
+
+#### Example
+
+```typescript
+// Update the configuration file
+const updated = await client.sendRequest("tombi/updateConfig", {
+  textDocument: { uri: "file:///path/to/project/tombi.toml" }
+});
+
+if (updated) {
+  console.log("Configuration updated successfully");
+} else {
+  console.log("Configuration was not updated");
+}
+```
+
+---
+
+### tombi/associateSchema
+
+Associate a schema with file match patterns. This is primarily used by editor extensions to dynamically register schemas.
+
+#### Request
+
+```typescript
+interface AssociateSchemaParams {
+  title?: string;
+  description?: string;
+  uri: string;
+  fileMatch: string[];
+  tomlVersion?: string;
+  force?: boolean;
+}
+```
+
+- `title`: Title of the schema (in most cases, this matches the `name` field in the SchemaStore catalog)
+- `description`: Description of the schema (in most cases, this matches the `description` field in the SchemaStore catalog)
+- `uri`: URI of the schema to associate
+- `fileMatch`: Array of glob patterns for files that should use this schema
+- `tomlVersion`: TOML version required by the schema
+- `force`: Determines where in the schema list the associated schema is inserted. Default is `false`.
+  - If `true`, the schema is inserted at the **beginning** (highest priority, takes precedence over catalog schemas).  
+  - If `false`, the schema is inserted at the **end** (lowest priority). 
+  
+
+#### Response
+
+This command has no return value (notification-style).
+
+#### Example
+
+```typescript
+// Associate a schema with file patterns
+await client.sendRequest("tombi/associateSchema", {
+  title: "Custom Application Config",
+  description: "Schema for application configuration files",
+  uri: "https://example.com/schemas/app-config.json",
+  fileMatch: ["**/config.toml", "**/app.toml"],
+  tomlVersion: "v1.0.0",
+  force: true // This schema takes precedence over catalog schemas
+});
+
+console.log("Schema associated successfully");
+```
+
+VSCode extensions can also contribute schema associations via `package.json`:
+
+```json
+{
+  "contributes": {
+    "tomlValidation": [
+      {
+        "regexMatch": "^.*foo.toml$",
+        "url": "https://www.schemastore.org/foo.json"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### tombi/refreshCache
+
+Refresh the schema cache. This command clears and rebuilds the internal schema cache.
+
+#### Request
+
+```typescript
+interface RefreshCacheParams {}
+```
+
+#### Response
+
+```typescript
+type RefreshCacheResponse = boolean;
+```
+
+Returns `true` if the cache was refreshed successfully, `false` if there was no cache to refresh.
+
+#### Example
+
+```typescript
+// Refresh the schema cache
+const refreshed = await client.sendRequest("tombi/refreshCache", {});
+
+if (refreshed) {
+  console.log("Cache refreshed successfully");
+} else {
+  console.log("No cache to refresh");
+}
+```
