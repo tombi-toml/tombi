@@ -43,7 +43,6 @@ export const associateSchema = new RequestType<
   void
 >("tombi/associateSchema");
 
-export type ListSchemasParams = Record<string, never>;
 export type SchemaInfo = {
   title?: string;
   description?: string;
@@ -52,7 +51,7 @@ export type SchemaInfo = {
   catalogUri?: string;
 };
 export const listSchemas = new RequestType<
-  ListSchemasParams,
+  void,
   { schemas: SchemaInfo[] },
   void
 >("tombi/listSchemas");

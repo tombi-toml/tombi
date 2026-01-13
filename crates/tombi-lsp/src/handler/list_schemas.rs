@@ -9,7 +9,7 @@ use crate::Backend;
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_list_schemas(
     backend: &Backend,
-    _params: ListSchemasParams,
+    _params: Option<ListSchemasParams>,
 ) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
     tracing::info!("handle_list_schemas");
 
