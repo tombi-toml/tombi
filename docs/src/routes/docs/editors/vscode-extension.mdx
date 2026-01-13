@@ -16,6 +16,14 @@ You can check which tombi binary is currently selected by running the `Tombi: Sh
 
 <img src="/show_language_server_version.png" class="w-full" />
 
+## Select Schema
+
+You can manually select and apply a JSON schema to the current TOML file using the `Tombi: Select Schema` command from the VSCode command palette. This command lists all available schemas and associates the selected one with the current file.
+
+This is useful when working on projects without Tombi configuration, or when validating files whose paths don't match SchemaStore's fileMatch patterns (e.g., template files like `config.toml.template` or example files like `example-config.toml`). The selected schema takes precedence over catalog schemas and automatic associations.
+
+<img src="/select_schema.png" class="w-full" />
+
 ## Offline Mode
 
 You can set offline mode in the VSCode settings file.
