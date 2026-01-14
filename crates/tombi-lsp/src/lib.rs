@@ -25,6 +25,7 @@ pub mod handler {
     mod document_symbol;
     mod folding_range;
     mod formatting;
+    mod get_schemas;
     mod get_status;
     mod get_toml_version;
     mod goto_declaration;
@@ -55,6 +56,7 @@ pub mod handler {
     pub use document_symbol::handle_document_symbol;
     pub use folding_range::handle_folding_range;
     pub use formatting::handle_formatting;
+    pub use get_schemas::{GetSchemasParams, GetSchemasResponse, handle_get_schemas};
     pub use get_status::{GetStatusResponse, handle_get_status};
     pub use get_toml_version::{
         GetTomlVersionResponse, TomlVersionSource, handle_get_toml_version,
@@ -107,6 +109,7 @@ pub async fn serve(_args: impl Into<Args>, offline: bool, no_cache: bool) {
     .custom_method("tombi/getStatus", Backend::get_status)
     .custom_method("tombi/getTomlVersion", Backend::get_toml_version)
     .custom_method("tombi/listSchemas", Backend::list_schemas)
+    .custom_method("tombi/getSchemas", Backend::get_schemas)
     .custom_method("tombi/updateSchema", Backend::update_schema)
     .custom_method("tombi/updateConfig", Backend::update_config)
     .custom_method("tombi/associateSchema", Backend::associate_schema)

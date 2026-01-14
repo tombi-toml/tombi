@@ -67,6 +67,14 @@ pub struct Schema {
     pub catalog_uri: Option<Arc<tombi_uri::CatalogUri>>,
     pub include: Vec<String>,
     pub sub_root_keys: Option<Vec<SchemaAccessor>>,
+    pub source: SchemaSource,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SchemaSource {
+    Catalog,
+    Config,
+    Directive,
 }
 
 pub trait FindSchemaCandidates {

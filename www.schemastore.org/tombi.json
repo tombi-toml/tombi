@@ -890,6 +890,20 @@
       "title": "The schema for the root table",
       "type": "object",
       "properties": {
+        "title": {
+          "title": "Title of the schema",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "title": "Description of the schema",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "toml-version": {
           "title": "The TOML version that the schema is available",
           "anyOf": [
@@ -926,6 +940,20 @@
       "title": "The schema for the sub value",
       "type": "object",
       "properties": {
+        "title": {
+          "title": "Title of the schema",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "title": "Description of the schema",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "root": {
           "title": "The accessors to apply the sub schema",
           "type": "string",

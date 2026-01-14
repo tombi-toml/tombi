@@ -570,6 +570,7 @@ macro_rules! test_document_link {
                             toml_version: None,
                             path: schema_uri.to_string(),
                             include: vec!["*.toml".to_string()],
+                            ..Default::default()
                         })],
                         None,
                     )
@@ -593,6 +594,7 @@ macro_rules! test_document_link {
                             path: subschema_uri.to_string(),
                             include: vec!["*.toml".to_string()],
                             root: subschema.root.clone(),
+                            ..Default::default()
                         })],
                         None,
                     )

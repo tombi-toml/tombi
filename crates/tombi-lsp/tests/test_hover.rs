@@ -549,6 +549,7 @@ mod hover_keys_value {
                                 toml_version: None,
                                 path: schema_uri.to_string(),
                                 include: vec!["*.toml".to_string()],
+                                ..Default::default()
                             })],
                             None,
                         )
@@ -572,6 +573,7 @@ mod hover_keys_value {
                                 path: subschema_uri.to_string(),
                                 include: vec!["*.toml".to_string()],
                                 root: subschema.root.clone(),
+                                ..Default::default()
                             })],
                             None,
                         )

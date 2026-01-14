@@ -40,7 +40,7 @@ pub struct ListSchemasResponse {
     pub schemas: Vec<SchemaInfo>,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaInfo {
     #[serde(skip_serializing_if = "Option::is_none")]

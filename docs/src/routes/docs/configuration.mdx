@@ -670,11 +670,15 @@ Apply a schema to the entire TOML document.
 
 ```toml
 [[schemas]]
-toml-version = "v1.0.0"  # optional
+title = "My Schema"               # optional
+description = "Project schema"     # optional
+toml-version = "v1.0.0"            # optional
 path = "https://example.com/schema.json"
 include = ["example.toml"]
 ```
 
+- `title`(optional): Title shown when listing schemas
+- `description`(optional): Description shown when listing schemas
 - `toml-version`(optional): The TOML version that the schema is available for
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
@@ -686,11 +690,15 @@ Sub schemas are mainly provided for configuring extension features, such as the 
 
 ```toml
 [[schemas]]
+title = "Taskipy Schema"          # optional
+description = "Tool section"       # optional
 root = "tool.taskipy"
 path = "schemas/partial-taskipy.schema.json"
 include = ["pyproject.toml"]
 ```
 
+- `title`(optional): Title shown when listing schemas
+- `description`(optional): Description shown when listing schemas
 - `root`: The accessor path to apply the sub-schema (e.g., `"tools.tombi"`, `"items[0].name"`)
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
