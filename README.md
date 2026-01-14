@@ -12,8 +12,9 @@
 [![homebrew](https://img.shields.io/homebrew/v/tombi.svg?labelColor=374151&color=60a5fa)](https://formulae.brew.sh/formula/tombi)
 [![pypi](https://img.shields.io/pypi/v/tombi.svg?labelColor=374151&color=60a5fa)](https://pypi.python.org/pypi/tombi)
 [![npm](https://img.shields.io/npm/v/tombi.svg?labelColor=374151&color=60a5fa)](https://www.npmjs.com/package/tombi)
+[![snap](https://snapcraft.io/tombi/badge.svg?labelColor=374151&color=60a5fa)](https://snapcraft.io/tombi)
 [![toml-test](https://github.com/tombi-toml/tombi/actions/workflows/toml-test.yml/badge.svg)](https://github.com/tombi-toml/tombi/actions)
-[![GitHub license](https://badgen.net/github/license/tombi-toml/tombi?style=flat-square&labelColor=374151)](https://github.com/tombi-toml/tombi/blob/main/LICENSE)
+[![GitHub license](https://badgen.net/github/license/tombi-toml/tombi)](https://github.com/tombi-toml/tombi/blob/main/LICENSE)
 
 </div>
 
