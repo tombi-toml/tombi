@@ -141,56 +141,6 @@ response.schemas.forEach(schema => {
 
 ---
 
-### tombi/getSchemas
-
-Get the resolved schemas for a TOML document.
-
-This returns the resolved root schema (if any) plus any referenced sub-schemas, enriched with metadata where available.
-
-#### Request
-
-```typescript
-interface GetSchemasParams {
-  textDocument: TextDocumentIdentifier;
-}
-```
-
-#### Response
-
-```typescript
-interface GetSchemasResponse {
-  schemas: {
-    title?: string;
-    description?: string;
-    tomlVersion?: string;
-    uri: string;
-    catalogUri?: string;
-  }[];
-}
-```
-
-- `title` / `description`: Metadata from the schema store if available.
-  - If the schema is configured via `[[schemas]]`, `title` and `description` from config are used.
-  - If a `#:schema` document directive is used and the schema is not found in the store, `title` is set to `"Document Directive Schema"`.
-- `tomlVersion`: TOML version required by the schema.
-- `uri`: Schema URI.
-- `catalogUri`: Schema catalog URI (e.g., Schema Store), when known.
-
-#### Example
-
-```typescript
-// Get resolved schemas for the current document
-const response = await client.sendRequest("tombi/getSchemas", {
-  textDocument: { uri: "file:///path/to/Cargo.toml" }
-});
-
-response.schemas.forEach(schema => {
-  console.log(schema.uri, schema.title);
-});
-```
-
----
-
 ### tombi/updateSchema
 
 Update a schema from its remote source. This is useful when you want to refresh the schema without restarting the language server.
