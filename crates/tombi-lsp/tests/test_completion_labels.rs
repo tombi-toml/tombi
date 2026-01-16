@@ -1671,7 +1671,6 @@ mod completion_labels {
                                 toml_version: None,
                                 path: schema_uri.to_string(),
                                 include: vec!["*.toml".to_string()],
-                                ..Default::default()
                             })],
                             None,
                         )
@@ -1695,7 +1694,6 @@ mod completion_labels {
                                 path: subschema_uri.to_string(),
                                 include: vec!["*.toml".to_string()],
                                 root: subschema.root.to_string(),
-                                ..Default::default()
                             })],
                             None,
                         )

@@ -90,7 +90,6 @@ macro_rules! test_format {
                             toml_version: None,
                             path,
                             include: vec!["*.toml".to_string()],
-                            ..Default::default()
                         })],
                         None,
                     )
@@ -191,7 +190,6 @@ macro_rules! test_format {
                             toml_version: None,
                             path,
                             include: vec!["*.toml".to_string()],
-                            ..Default::default()
                             })],
                         None,
                     )

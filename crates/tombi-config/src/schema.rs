@@ -94,20 +94,6 @@ pub enum SchemaItem {
 }
 
 impl SchemaItem {
-    pub fn title(&self) -> Option<&str> {
-        match self {
-            Self::Root(item) => item.title.as_deref(),
-            Self::Sub(item) => item.title.as_deref(),
-        }
-    }
-
-    pub fn description(&self) -> Option<&str> {
-        match self {
-            Self::Root(item) => item.description.as_deref(),
-            Self::Sub(item) => item.description.as_deref(),
-        }
-    }
-
     pub fn path(&self) -> &str {
         match self {
             Self::Root(item) => &item.path,
@@ -143,14 +129,8 @@ impl SchemaItem {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RootSchema {
-    /// # Title of the schema
-    pub title: Option<String>,
-
-    /// # Description of the schema
-    pub description: Option<String>,
-
     /// # The TOML version that the schema is available
     pub toml_version: Option<TomlVersion>,
 
@@ -171,14 +151,8 @@ pub struct RootSchema {
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "jsonschema", schemars(extend("x-tombi-table-keys-order" = tombi_x_keyword::TableKeysOrder::Schema)))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SubSchema {
-    /// # Title of the schema
-    pub title: Option<String>,
-
-    /// # Description of the schema
-    pub description: Option<String>,
-
     /// # The accessors to apply the sub schema
     #[cfg_attr(feature = "jsonschema", schemars(length(min = 1)))]
     #[cfg_attr(feature = "jsonschema", schemars(example = "tool.tombi"))]

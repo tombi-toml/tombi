@@ -80,7 +80,6 @@ macro_rules! test_lint {
                             toml_version: None,
                             path,
                             include: vec!["*.toml".to_string()],
-                            ..Default::default()
                         })],
                         None,
                     )
@@ -176,7 +175,6 @@ macro_rules! test_lint {
                             toml_version: None,
                             path,
                             include: vec!["*.toml".to_string()],
-                            ..Default::default()
                         })],
                         None,
                     )

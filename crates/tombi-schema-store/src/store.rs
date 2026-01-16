@@ -174,14 +174,13 @@ impl SchemaStore {
             tracing::debug!("Load schema from config: {}", schema_uri);
 
             self.schemas.write().await.push(crate::Schema {
-                title: schema.title().map(ToOwned::to_owned),
-                description: schema.description().map(ToOwned::to_owned),
+                title: None,
+                description: None,
                 schema_uri,
                 catalog_uri: None,
                 include: schema.include().to_vec(),
                 toml_version: schema.toml_version(),
                 sub_root_keys: schema.root().and_then(SchemaAccessor::parse),
-                source: crate::SchemaSource::Config,
             });
         }))
         .await;
@@ -324,7 +323,6 @@ impl SchemaStore {
                     include: schema.file_match,
                     toml_version: None,
                     sub_root_keys: None,
-                    source: crate::SchemaSource::Catalog,
                 });
             }
         }
@@ -762,7 +760,6 @@ impl SchemaStore {
             include,
             toml_version: options.toml_version,
             sub_root_keys: None,
-            source: crate::SchemaSource::Directive,
         };
 
         let mut schemas = self.schemas.write().await;
