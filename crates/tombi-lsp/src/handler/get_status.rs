@@ -46,14 +46,14 @@ pub async fn handle_get_status(
                 .flatten()
             {
                 Some(source_context) => {
-                    let root_schema = source_context.root_schema.map(|schema| SchemaInfo {
+                    let root_schema = source_context.root_schema.map(|schema| SchemaStatus {
                         uri: schema.schema_uri,
                     });
 
                     let sub_schemas = source_context
                         .sub_schema_uri_map
                         .into_iter()
-                        .map(|(accessors, schema_uri)| SubSchemaInfo {
+                        .map(|(accessors, schema_uri)| SubSchemaStatus {
                             root: SchemaAccessors::from(accessors.clone()),
                             uri: schema_uri,
                         })
@@ -111,20 +111,20 @@ pub struct GetStatusResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ignore: Option<IgnoreReason>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub schema: Option<SchemaInfo>,
+    pub schema: Option<SchemaStatus>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sub_schemas: Option<Vec<SubSchemaInfo>>,
+    pub sub_schemas: Option<Vec<SubSchemaStatus>>,
 }
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SchemaInfo {
+pub struct SchemaStatus {
     pub uri: tombi_uri::SchemaUri,
 }
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubSchemaInfo {
+pub struct SubSchemaStatus {
     pub root: SchemaAccessors,
     pub uri: tombi_uri::SchemaUri,
 }
