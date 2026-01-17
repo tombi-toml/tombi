@@ -8,6 +8,8 @@ import {
   getStatus,
   getTomlVersion,
   type IgnoreReason,
+  type SchemaStatus,
+  type SubSchemaStatus,
   updateConfig,
   updateSchema,
 } from "@/lsp/client";
@@ -153,6 +155,8 @@ export class Extension {
         let source: string;
         let configPath: string | undefined;
         let ignore: IgnoreReason | undefined;
+        let schema: SchemaStatus | undefined;
+        let subSchemas: SubSchemaStatus[] | undefined;
 
         if (
           gte(this.lspVersion, "0.5.1") ||
@@ -166,6 +170,8 @@ export class Extension {
           source = response.source;
           configPath = response.configPath;
           ignore = response.ignore;
+          schema = response.schema;
+          subSchemas = response.subSchemas;
         } else {
           // Use getTomlVersion for versions < 0.5.1
           const response = await this.client.sendRequest(getTomlVersion, {
@@ -178,6 +184,16 @@ export class Extension {
         let text = `TOML: ${tomlVersion} (${source})`;
         let tooltip = `Tombi: ${this.lspVersion}\nTOML: ${tomlVersion} (${source})\nConfig: ${configPath ?? "default"}`;
         let color: string | vscode.ThemeColor | undefined;
+
+        if (schema) {
+          tooltip += `\nSchema: ${schema.uri}`;
+        }
+        if (subSchemas && subSchemas.length !== 0) {
+          tooltip += "\nSub Schemas:";
+          for (const subSchema of subSchemas) {
+            tooltip += `\n  "${subSchema.root}": ${subSchema.uri}`;
+          }
+        }
 
         if (ignore) {
           text = `$(extensions-warning-message) ${text}`;
