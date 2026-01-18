@@ -382,28 +382,12 @@ impl ConfigManager {
         // Get schemas from all config_schema_stores
         let config_schema_stores = self.config_schema_stores.read().await;
         for config_schema_store in config_schema_stores.values() {
-            for schema in config_schema_store.schema_store.list_schemas().await {
-                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
-                    merge_schema(existing_schema, schema);
-                } else {
-                    schema_map.insert(schema.schema_uri.clone(), schema);
-                }
-            }
+            update_schema_map(&mut schema_map, &config_schema_store.schema_store).await;
         }
 
         // Get schemas from default_config_schema_store
         if let Some(default_config_schema_store) = &*self.default_config_schema_store.read().await {
-            let schemas = default_config_schema_store
-                .schema_store
-                .list_schemas()
-                .await;
-            for schema in schemas {
-                if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
-                    merge_schema(existing_schema, schema);
-                } else {
-                    schema_map.insert(schema.schema_uri.clone(), schema);
-                }
-            }
+            update_schema_map(&mut schema_map, &default_config_schema_store.schema_store).await;
         }
 
         schema_map.into_values().collect()
@@ -421,6 +405,20 @@ fn schema_store_options(
             no_cache: backend_options.no_cache,
             ..Default::default()
         }),
+    }
+}
+
+pub async fn update_schema_map(
+    schema_map: &mut IndexMap<SchemaUri, tombi_schema_store::Schema>,
+    schema_store: &SchemaStore,
+) {
+    let schemas = schema_store.list_schemas().await;
+    for schema in schemas {
+        if let Some(existing_schema) = schema_map.get_mut(&schema.schema_uri) {
+            merge_schema(existing_schema, schema);
+        } else {
+            schema_map.insert(schema.schema_uri.clone(), schema);
+        }
     }
 }
 

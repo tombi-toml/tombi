@@ -1,12 +1,17 @@
 use std::path::PathBuf;
 
+use indexmap::IndexMap;
 use itertools::{Either, Itertools};
 use tombi_config::TomlVersion;
 use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_schema_store::{SchemaAccessors, SchemaContext};
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
-use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
+use crate::{
+    backend::Backend,
+    config_manager::{ConfigSchemaStore, update_schema_map},
+    handler::TomlVersionSource,
+};
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_get_status(
@@ -63,24 +68,53 @@ pub async fn handle_get_status(
                 .await;
             }
 
+            let schemas = {
+                let mut schema_map = IndexMap::new();
+                update_schema_map(&mut schema_map, &schema_store).await;
+                schema_map.into_values().collect_vec()
+            };
+
             let (root_schema, sub_schemas) = match document_schema {
                 Some(document_schema) => {
-                    let root_schema =
-                        document_schema
-                            .schema_uri
-                            .as_ref()
-                            .map(|schema_uri| SchemaStatus {
-                                uri: schema_uri.clone(),
-                            });
+                    let root_schema = document_schema.schema_uri.as_ref().and_then(|schema_uri| {
+                        let (title, description) = match schemas
+                            .iter()
+                            .find(|schema| schema.schema_uri == *schema_uri)
+                        {
+                            Some(schema) => (schema.title.clone(), schema.description.clone()),
+                            None => (None, None),
+                        };
+                        Some(SchemaStatus {
+                            title,
+                            description,
+                            uri: schema_uri.clone(),
+                        })
+                    });
 
                     let sub_schemas = document_schema
                         .sub_schema_uri_map
                         .read()
                         .await
                         .iter()
-                        .map(|(accessors, schema_uri)| SubSchemaStatus {
-                            root: SchemaAccessors::from(accessors.clone()),
-                            uri: schema_uri.clone(),
+                        .sorted_by(|(accessors, _), (accessors2, _)| {
+                            accessors
+                                .partial_cmp(accessors2)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        })
+                        .filter_map(|(accessors, schema_uri)| {
+                            let (title, description) = match schemas
+                                .iter()
+                                .find(|schema| schema.schema_uri == *schema_uri)
+                            {
+                                Some(schema) => (schema.title.clone(), schema.description.clone()),
+                                None => (None, None),
+                            };
+                            Some(SubSchemaStatus {
+                                title,
+                                description,
+                                root: SchemaAccessors::from(accessors.clone()),
+                                uri: schema_uri.clone(),
+                            })
                         })
                         .collect_vec();
 
@@ -144,12 +178,20 @@ pub struct GetStatusResponse {
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     pub uri: tombi_uri::SchemaUri,
 }
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubSchemaStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     pub root: SchemaAccessors,
     pub uri: tombi_uri::SchemaUri,
 }
