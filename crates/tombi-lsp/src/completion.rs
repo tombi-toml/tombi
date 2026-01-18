@@ -206,7 +206,7 @@ pub async fn find_completion_contents_with_tree(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
-    let current_schema = schema_context.root_schema.and_then(|document_schema| {
+    let current_schema = schema_context.document_schema.and_then(|document_schema| {
         document_schema
             .value_schema
             .as_ref()

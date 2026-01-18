@@ -168,6 +168,12 @@ async fn validate_table(
             .collect_vec();
 
         let mut matched_key = false;
+        let should_register_sub_schema =
+            schema_context
+                .document_schema
+                .is_some_and(|document_schema| {
+                    current_schema.schema_uri.as_ref() == &document_schema.schema_uri
+                });
         if let Some(PropertySchema {
             property_schema, ..
         }) = table_schema
@@ -187,6 +193,12 @@ async fn validate_table(
                 .await
                 .inspect_err(|err| tracing::warn!("{err}"))
             {
+                if should_register_sub_schema {
+                    schema_context
+                        .register_dynamic_sub_schema(&new_accessors, &current_schema.schema_uri)
+                        .await;
+                }
+
                 if let Err(crate::Error {
                     mut diagnostics, ..
                 }) = value
@@ -229,6 +241,15 @@ async fn validate_table(
                         .await
                         .inspect_err(|err| tracing::warn!("{err}"))
                     {
+                        if should_register_sub_schema {
+                            schema_context
+                                .register_dynamic_sub_schema(
+                                    &new_accessors,
+                                    &current_schema.schema_uri,
+                                )
+                                .await;
+                        }
+
                         if let Err(crate::Error {
                             mut diagnostics, ..
                         }) = value
@@ -301,6 +322,12 @@ async fn validate_table(
                     .await
                     .inspect_err(|err| tracing::warn!("{err}"))
                 {
+                    if should_register_sub_schema {
+                        schema_context
+                            .register_dynamic_sub_schema(&new_accessors, &current_schema.schema_uri)
+                            .await;
+                    }
+
                     handle_deprecated_value(
                         &mut total_diagnostics,
                         current_schema.value_schema.deprecated().await,

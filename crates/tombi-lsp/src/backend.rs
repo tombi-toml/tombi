@@ -138,7 +138,7 @@ impl Backend {
             .config_schema_store_for_uri(text_document_uri)
             .await;
 
-        let source_schema = if let Some(parsed) =
+        let document_schema = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(text).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
@@ -152,7 +152,7 @@ impl Backend {
             }
 
             match schema_store
-                .resolve_source_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
+                .resolve_document_schema_from_ast(&root, Some(Either::Left(text_document_uri)))
                 .await
             {
                 Ok(Some(schema)) => Some(schema),
@@ -163,12 +163,10 @@ impl Backend {
             None
         };
 
-        if let Some(toml_version) = source_schema.as_ref().and_then(|schema| {
-            schema
-                .root_schema
-                .as_ref()
-                .and_then(|root| root.toml_version())
-        }) {
+        if let Some(toml_version) = document_schema
+            .as_ref()
+            .and_then(|schema| schema.toml_version())
+        {
             return (toml_version, TomlVersionSource::Schema);
         }
 

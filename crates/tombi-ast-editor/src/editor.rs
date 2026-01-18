@@ -38,7 +38,7 @@ impl<'a> Editor<'a> {
         };
         let new_root = self.root.clone_for_update();
 
-        let current_schema = self.schema_context.root_schema.and_then(|document_schema| {
+        let current_schema = self.schema_context.document_schema.and_then(|document_schema| {
             document_schema
                 .value_schema
                 .as_ref()

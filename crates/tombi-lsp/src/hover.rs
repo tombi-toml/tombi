@@ -24,7 +24,7 @@ pub async fn get_hover_content(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
 ) -> Option<HoverContent> {
     let table = tree.deref();
-    match schema_context.root_schema {
+    match schema_context.document_schema {
         Some(document_schema) => {
             let current_schema =
                 document_schema

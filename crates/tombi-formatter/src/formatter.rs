@@ -48,13 +48,13 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
-        let (source_schema, tombi_document_comment_directive) = if let Some(parsed) =
+        let (document_schema, tombi_document_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
             (
                 self.schema_store
-                    .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
+                    .resolve_document_schema_from_ast(&root, self.source_uri_or_path)
                     .await
                     .ok()
                     .flatten(),
@@ -90,14 +90,9 @@ impl<'a> Formatter<'a> {
             .as_ref()
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
-                source_schema
+                document_schema
                     .as_ref()
-                    .and_then(|schema| {
-                        schema
-                            .root_schema
-                            .as_ref()
-                            .and_then(|root| root.toml_version())
-                    })
+                    .and_then(|schema| schema.toml_version())
                     .unwrap_or(self.toml_version)
             });
 
@@ -132,12 +127,7 @@ impl<'a> Formatter<'a> {
             source_path.as_deref(),
             &tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
-                root_schema: source_schema
-                    .as_ref()
-                    .and_then(|schema| schema.root_schema.as_ref()),
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.sub_schema_uri_map),
+                document_schema: document_schema.as_ref(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive
                     .as_ref()

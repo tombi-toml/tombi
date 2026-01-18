@@ -35,14 +35,9 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
             TombiDocumentDirectiveContent::comment_directive_schema_url(),
         )
         .await;
-        let source_schema = tombi_schema_store::SourceSchema {
-            root_schema: Some(document_schema),
-            sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-        };
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-            root_schema: source_schema.root_schema.as_ref(),
-            sub_schema_uri_map: None,
+            document_schema: Some(&document_schema),
             store: schema_store,
             strict: None,
         };
@@ -85,8 +80,12 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
                         .into_iter()
                         .map(|diagnostic| into_directive_diagnostic(&diagnostic, content_range)),
                 );
-            } else if let Err(diagnostics) =
-                crate::validate(document_tree.clone(), Some(&source_schema), &schema_context).await
+            } else if let Err(diagnostics) = crate::validate(
+                document_tree.clone(),
+                Some(&document_schema),
+                &schema_context,
+            )
+            .await
             {
                 total_diagnostics.extend(
                     diagnostics

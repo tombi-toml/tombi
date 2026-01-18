@@ -2,7 +2,7 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor,
-    SchemaAccessors, SourceSchema, ValueSchema, get_tombi_schemastore_content,
+    SchemaAccessors, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
     http_client::HttpClient, json::JsonCatalog,
 };
 use ahash::AHashMap;
@@ -532,13 +532,13 @@ impl SchemaStore {
     }
 
     #[inline]
-    async fn try_get_source_schema_from_remote_url(
+    async fn try_get_document_schema_from_remote_url(
         &self,
         schema_uri: &SchemaUri,
         source_path: Option<&std::path::Path>,
-    ) -> Result<Option<SourceSchema>, crate::Error> {
-        let source_schema = if let Some(source_path) = source_path {
-            self.resolve_source_schema_from_path(source_path)
+    ) -> Result<Option<DocumentSchema>, crate::Error> {
+        let document_schema_from_path = if let Some(source_path) = source_path {
+            self.resolve_document_schema_from_path(source_path)
                 .await
                 .ok()
                 .flatten()
@@ -561,11 +561,11 @@ impl SchemaStore {
         }))
     }
 
-    pub async fn resolve_source_schema_from_ast(
+    pub async fn resolve_document_schema_from_ast(
         &self,
         root: &tombi_ast::Root,
         source_uri_or_path: Option<Either<&tombi_uri::Uri, &std::path::Path>>,
-    ) -> Result<Option<SourceSchema>, (crate::Error, tombi_text::Range)> {
+    ) -> Result<Option<DocumentSchema>, (crate::Error, tombi_text::Range)> {
         let source_path = match source_uri_or_path {
             Some(Either::Left(url)) => match url.scheme() {
                 "file" => tombi_uri::Uri::to_file_path(url).ok(),
@@ -592,14 +592,14 @@ impl SchemaStore {
                 }
             };
             return self
-                .try_get_source_schema_from_remote_url(&schema_uri, source_path.as_deref())
+                .try_get_document_schema_from_remote_url(&schema_uri, source_path.as_deref())
                 .await
                 .map_err(|err| (err, uri_range));
         }
 
         if let Some(source_uri_or_path) = source_uri_or_path {
             Ok(self
-                .resolve_source_schema(source_uri_or_path)
+                .resolve_document_schema(source_uri_or_path)
                 .await
                 .ok()
                 .flatten())
@@ -608,10 +608,10 @@ impl SchemaStore {
         }
     }
 
-    async fn resolve_source_schema_from_path(
+    async fn resolve_document_schema_from_path(
         &self,
         source_path: &std::path::Path,
-    ) -> Result<Option<SourceSchema>, crate::Error> {
+    ) -> Result<Option<DocumentSchema>, crate::Error> {
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
             .iter()
@@ -686,26 +686,23 @@ impl SchemaStore {
                 },
                 Ok(None) => {
                     tracing::warn!(
-                        "Failed to find document schema: {}",
-                        matching_schema.schema_uri
+                        "Failed to find document schema: {uri}",
+                        uri = matching_schema.schema_uri
                     );
                 }
                 Err(err) => {
                     tracing::warn!(
-                        "Failed to get document schema for {url}: {err}",
-                        url = matching_schema.schema_uri,
+                        "Failed to get document schema for {uri}: {err}",
+                        uri = matching_schema.schema_uri,
                     );
                 }
             }
         }
 
-        Ok(source_schema)
-    }
-
-    async fn resolve_source_schema_from_uri(
+    async fn resolve_document_schema_from_uri(
         &self,
         source_uri: &tombi_uri::Uri,
-    ) -> Result<Option<SourceSchema>, crate::Error> {
+    ) -> Result<Option<DocumentSchema>, crate::Error> {
         match source_uri.scheme() {
             "file" => {
                 let source_path = tombi_uri::Uri::to_file_path(source_uri).map_err(|_| {
@@ -713,7 +710,7 @@ impl SchemaStore {
                         source_uri: source_uri.to_owned(),
                     }
                 })?;
-                self.resolve_source_schema_from_path(&source_path).await
+                self.resolve_document_schema_from_path(&source_path).await
             }
             "untitled" => Ok(None),
             _ => Err(crate::Error::UnsupportedSourceUri {
@@ -722,25 +719,25 @@ impl SchemaStore {
         }
     }
 
-    pub(crate) async fn resolve_source_schema(
+    pub(crate) async fn resolve_document_schema(
         &self,
         source_uri_or_path: Either<&tombi_uri::Uri, &std::path::Path>,
-    ) -> Result<Option<SourceSchema>, crate::Error> {
+    ) -> Result<Option<DocumentSchema>, crate::Error> {
         match source_uri_or_path {
-            Either::Left(source_uri) => self.resolve_source_schema_from_uri(source_uri).await,
-            Either::Right(source_path) => self.resolve_source_schema_from_path(source_path).await,
+            Either::Left(source_uri) => self.resolve_document_schema_from_uri(source_uri).await,
+            Either::Right(source_path) => self.resolve_document_schema_from_path(source_path).await,
         }
-        .inspect(|source_schema| {
-            if let Some(source_schema) = source_schema {
-                if let Some(root_schema) = &source_schema.root_schema {
-                    tracing::trace!("find root schema from {}", root_schema.schema_uri);
-                }
-                for (accessors, schema_uri) in &source_schema.sub_schema_uri_map {
-                    tracing::trace!(
-                        "find sub schema {:?} from {}",
-                        SchemaAccessors::from(accessors.clone()),
-                        schema_uri
-                    );
+        .inspect(|document_schema| {
+            if let Some(document_schema) = document_schema {
+                tracing::trace!("find root schema from {}", document_schema.schema_uri);
+                if let Ok(sub_schema_uri_map) = document_schema.sub_schema_uri_map.try_read() {
+                    for (accessors, schema_uri) in sub_schema_uri_map.iter() {
+                        tracing::trace!(
+                            "find sub schema {} from {}",
+                            SchemaAccessors::from(accessors.clone()),
+                            schema_uri
+                        );
+                    }
                 }
             }
         })

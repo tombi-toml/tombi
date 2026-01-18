@@ -13,7 +13,7 @@ mod offset_date_time_schema;
 mod one_of_schema;
 mod referable_schema;
 mod schema_context;
-mod source_schema;
+use ahash::AHashMap;
 mod string_schema;
 mod table_schema;
 mod value_schema;
@@ -36,13 +36,13 @@ pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
 pub use referable_schema::{CurrentSchema, Referable, is_online_url};
 pub use schema_context::SchemaContext;
-pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
 pub use table_schema::{TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
 pub use tombi_accessor::{SchemaAccessor, SchemaAccessors};
 pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
 
+pub type SubSchemaUriMap = AHashMap<Vec<SchemaAccessor>, SchemaUri>;
 pub type SchemaProperties =
     Arc<tokio::sync::RwLock<indexmap::IndexMap<SchemaAccessor, PropertySchema>>>;
 pub type SchemaPatternProperties =

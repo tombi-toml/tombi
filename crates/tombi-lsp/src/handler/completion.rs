@@ -76,15 +76,11 @@ pub async fn handle_completion(
     let toml_version = document_source.toml_version;
     let line_index = document_source.line_index();
 
-    let source_schema = schema_store
-        .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
+    let document_schema = schema_store
+        .resolve_document_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
-
-    let root_schema = source_schema
-        .as_ref()
-        .and_then(|schema| schema.root_schema.as_ref());
 
     // Skip completion if the trigger character is a whitespace or if there is no schema.
     if let Some(CompletionContext {
@@ -97,7 +93,7 @@ pub async fn handle_completion(
             let pos_line = position.line as usize;
             if pos_line > 0 {
                 if let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1) {
-                    if prev_line.trim().is_empty() || root_schema.is_none() {
+                    if prev_line.trim().is_empty() || document_schema.is_none() {
                         tracing::trace!("completion skipped due to consecutive line breaks");
                         return Ok(None);
                     }
@@ -148,10 +144,7 @@ pub async fn handle_completion(
 
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version,
-                root_schema,
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|schema| &schema.sub_schema_uri_map),
+                document_schema: document_schema.as_ref(),
                 store: &schema_store,
                 strict: None,
             };

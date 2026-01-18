@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use itertools::{Either, Itertools};
 use tombi_config::TomlVersion;
 use tombi_glob::{MatchResult, matches_file_patterns};
-use tombi_schema_store::SchemaAccessors;
+use tombi_schema_store::{SchemaAccessors, SchemaContext};
 use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
@@ -36,26 +36,47 @@ pub async fn handle_get_status(
                 .text_document_toml_version_and_source(&text_document_uri, document_source.text())
                 .await;
 
-            let (root_schema, sub_schemas) = match schema_store
-                .resolve_source_schema_from_ast(
+            let document_schema = schema_store
+                .resolve_document_schema_from_ast(
                     document_source.ast(),
                     Some(Either::Left(&text_document_uri)),
                 )
                 .await
                 .ok()
-                .flatten()
-            {
-                Some(source_context) => {
-                    let root_schema = source_context.root_schema.map(|schema| SchemaStatus {
-                        uri: schema.schema_uri,
+                .flatten();
+
+            if let Some(document_schema) = document_schema.as_ref() {
+                let schema_context = SchemaContext {
+                    toml_version,
+                    document_schema: Some(document_schema),
+                    store: &schema_store,
+                    strict: None,
+                };
+
+                // Run validation to resolve and register only the sub-schemas
+                // that are actually referenced by the current document.
+                let _ = tombi_validator::validate(
+                    document_source.document_tree().clone(),
+                    Some(document_schema),
+                    &schema_context,
+                )
+                .await;
+            }
+
+            let (root_schema, sub_schemas) = match document_schema {
+                Some(document_schema) => {
+                    let root_schema = document_schema.value_schema.as_ref().map(|_| SchemaStatus {
+                        uri: document_schema.schema_uri,
                     });
 
-                    let sub_schemas = source_context
+                    let sub_schemas = document_schema
                         .sub_schema_uri_map
-                        .into_iter()
+                        .read()
+                        .await
+                        .iter()
                         .map(|(accessors, schema_uri)| SubSchemaStatus {
                             root: SchemaAccessors::from(accessors.clone()),
-                            uri: schema_uri,
+                            uri: schema_uri.clone(),
                         })
                         .collect_vec();
 

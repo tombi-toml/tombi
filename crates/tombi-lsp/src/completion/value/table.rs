@@ -444,8 +444,18 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
 
-                            if let Some(sub_schema_uri_map) = schema_context.sub_schema_uri_map {
-                                for (root_accessors, sub_schema_uri) in sub_schema_uri_map {
+                            if let Some(document_schema) = schema_context.document_schema {
+                                let sub_schema_items = {
+                                    let sub_schema_uri_map =
+                                        document_schema.sub_schema_uri_map.read().await;
+                                    sub_schema_uri_map
+                                        .iter()
+                                        .map(|(accessors, schema_uri)| {
+                                            (accessors.clone(), schema_uri.clone())
+                                        })
+                                        .collect_vec()
+                                };
+                                for (root_accessors, sub_schema_uri) in sub_schema_items {
                                     if let Some(SchemaAccessor::Key(last_key)) =
                                         root_accessors.last()
                                     {
@@ -454,7 +464,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         if head_accessors == accessors {
                                             if let Ok(Some(document_schema)) = schema_context
                                                 .store
-                                                .try_get_document_schema(sub_schema_uri)
+                                                .try_get_document_schema(&sub_schema_uri)
                                                 .await
                                             {
                                                 if let Some(value_schema) =
@@ -462,7 +472,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                 {
                                                     completion_contents.push(
                                                         CompletionContent::new_key(
-                                                            last_key,
+                                                            last_key.as_str(),
                                                             position,
                                                             value_schema
                                                                 .detail(

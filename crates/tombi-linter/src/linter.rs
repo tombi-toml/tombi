@@ -35,12 +35,12 @@ impl<'a> Linter<'a> {
 
     pub async fn lint(mut self, source: &str) -> Result<(), Vec<Diagnostic>> {
         self.source_text = Cow::Borrowed(source);
-        let (source_schema, tombi_document_comment_directive) = if let Some(parsed) =
+        let (document_schema, tombi_document_comment_directive) = if let Some(parsed) =
             tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
-            let (source_schema, error_with_range) =
-                tombi_schema_store::lint_source_schema_from_ast(
+            let (document_schema, error_with_range) =
+                tombi_schema_store::lint_document_schema_from_ast(
                     &root,
                     self.source_uri_or_path,
                     self.schema_store,
@@ -59,7 +59,7 @@ impl<'a> Linter<'a> {
                 tombi_validator::comment_directive::get_tombi_document_comment_directive_and_diagnostics(&root).await;
             self.diagnostics.extend(diagnostics);
 
-            (source_schema, tombi_document_comment_directive)
+            (document_schema, tombi_document_comment_directive)
         } else {
             (None, None)
         };
@@ -92,14 +92,9 @@ impl<'a> Linter<'a> {
             .as_ref()
             .and_then(|directive| directive.toml_version)
             .unwrap_or_else(|| {
-                source_schema
+                document_schema
                     .as_ref()
-                    .and_then(|schema| {
-                        schema
-                            .root_schema
-                            .as_ref()
-                            .and_then(|root| root.toml_version())
-                    })
+                    .and_then(|schema| schema.toml_version())
                     .unwrap_or(self.toml_version)
             });
 
@@ -128,12 +123,7 @@ impl<'a> Linter<'a> {
 
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,
-                root_schema: source_schema
-                    .as_ref()
-                    .and_then(|source_schema| source_schema.root_schema.as_ref()),
-                sub_schema_uri_map: source_schema
-                    .as_ref()
-                    .map(|source_schema| &source_schema.sub_schema_uri_map),
+                document_schema: document_schema.as_ref(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive
                     .as_ref()
@@ -143,7 +133,7 @@ impl<'a> Linter<'a> {
             };
 
             if let Err(diagnostics) =
-                tombi_validator::validate(document_tree, source_schema.as_ref(), &schema_context)
+                tombi_validator::validate(document_tree, document_schema.as_ref(), &schema_context)
                     .await
             {
                 self.diagnostics.extend(diagnostics);

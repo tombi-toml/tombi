@@ -2,12 +2,15 @@ use std::str::FromStr;
 
 use ahash::AHashMap;
 use itertools::Itertools;
+use tokio::sync::RwLock;
+use tombi_accessor::SchemaAccessor;
 use tombi_config::TomlVersion;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION};
 
 use super::{
-    FindSchemaCandidates, SchemaDefinitions, SchemaUri, ValueSchema, referable_schema::Referable,
+    FindSchemaCandidates, SchemaDefinitions, SchemaUri, SubSchemaUriMap, ValueSchema,
+    referable_schema::Referable,
 };
 use crate::{Accessor, SchemaStore};
 
@@ -17,6 +20,7 @@ pub struct DocumentSchema {
     pub(crate) toml_version: Option<TomlVersion>,
     pub value_schema: Option<ValueSchema>,
     pub definitions: SchemaDefinitions,
+    pub sub_schema_uri_map: Arc<RwLock<SubSchemaUriMap>>,
 }
 
 impl DocumentSchema {
