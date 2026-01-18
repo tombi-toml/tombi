@@ -532,33 +532,54 @@ impl SchemaStore {
     }
 
     #[inline]
-    async fn try_get_document_schema_from_remote_url(
+    async fn try_get_document_schema_from_comment_directive(
         &self,
-        schema_uri: &SchemaUri,
+        comment_directive: SchemaDocumentCommentDirective,
         source_path: Option<&std::path::Path>,
-    ) -> Result<Option<DocumentSchema>, crate::Error> {
-        let document_schema_from_path = if let Some(source_path) = source_path {
-            self.resolve_document_schema_from_path(source_path)
+    ) -> Result<Option<DocumentSchema>, (crate::Error, tombi_text::Range)> {
+        let SchemaDocumentCommentDirective { uri, uri_range, .. } = comment_directive;
+        let schema_uri = match uri {
+            Ok(schema_uri) => schema_uri,
+            Err(schema_uri_or_file_path) => {
+                return Err((
+                    crate::Error::InvalidSchemaUriOrFilePath {
+                        schema_uri_or_file_path,
+                    },
+                    uri_range,
+                ));
+            }
+        };
+
+        let document_schema = match self.try_get_document_schema(&schema_uri).await {
+            Ok(Some(document_schema)) => document_schema,
+            Ok(None) => return Ok(None),
+            Err(err) => return Err((err, uri_range)),
+        };
+
+        if let Some(source_path) = source_path {
+            if let Some(source_document_schema) = self
+                .resolve_document_schema_from_path(source_path)
                 .await
                 .ok()
                 .flatten()
-        } else {
-            None
+            {
+                let sub_schema_items = {
+                    let sub_schema_uri_map = source_document_schema.sub_schema_uri_map.read().await;
+                    sub_schema_uri_map
+                        .iter()
+                        .map(|(accessors, schema_uri)| (accessors.clone(), schema_uri.clone()))
+                        .collect_vec()
+                };
+                let mut sub_schema_uri_map = document_schema.sub_schema_uri_map.write().await;
+                for (accessors, schema_uri) in sub_schema_items {
+                    sub_schema_uri_map
+                        .entry(accessors)
+                        .or_insert_with(|| schema_uri);
+                }
+            }
         };
 
-        let (root_schema, sub_schema_uri_map) = if let Some(source_schema) = source_schema {
-            (source_schema.root_schema, source_schema.sub_schema_uri_map)
-        } else {
-            (None, Default::default())
-        };
-
-        Ok(Some(SourceSchema {
-            root_schema: self
-                .try_get_document_schema(schema_uri)
-                .await?
-                .or(root_schema),
-            sub_schema_uri_map,
-        }))
+        Ok(Some(document_schema))
     }
 
     pub async fn resolve_document_schema_from_ast(
@@ -577,24 +598,15 @@ impl SchemaStore {
             None => None,
         };
 
-        if let Some(SchemaDocumentCommentDirective { uri, uri_range, .. }) =
+        if let Some(comment_directive) =
             root.schema_document_comment_directive(source_path.as_deref())
         {
-            let schema_uri = match uri {
-                Ok(schema_uri) => schema_uri,
-                Err(schema_uri_or_file_path) => {
-                    return Err((
-                        crate::Error::InvalidSchemaUriOrFilePath {
-                            schema_uri_or_file_path,
-                        },
-                        uri_range,
-                    ));
-                }
-            };
             return self
-                .try_get_document_schema_from_remote_url(&schema_uri, source_path.as_deref())
-                .await
-                .map_err(|err| (err, uri_range));
+                .try_get_document_schema_from_comment_directive(
+                    comment_directive,
+                    source_path.as_deref(),
+                )
+                .await;
         }
 
         if let Some(source_uri_or_path) = source_uri_or_path {
@@ -630,74 +642,75 @@ impl SchemaStore {
             })
             .collect_vec();
 
-        let mut source_schema: Option<SourceSchema> = None;
+        let mut root_schema: Option<DocumentSchema> = None;
+        let mut sub_schema_uri_map: SubSchemaUriMap = Default::default();
         for matching_schema in matching_schemas {
-            // Skip if the same schema (by URL and sub_root_keys) is already loaded in source_schema
+            // Skip if the same schema (by URL and sub_root_keys) is already loaded in document_schema
             let already_loaded = match &matching_schema.sub_root_keys {
-                Some(sub_root_keys) => source_schema.as_ref().is_some_and(|source_schema| {
-                    source_schema.sub_schema_uri_map.contains_key(sub_root_keys)
-                }),
-                None => source_schema
-                    .as_ref()
-                    .is_some_and(|source_schema| source_schema.root_schema.is_some()),
+                Some(sub_root_keys) => sub_schema_uri_map.contains_key(sub_root_keys),
+                None => root_schema.is_some(),
             };
             if already_loaded {
                 continue;
             }
-            match self
-                .try_get_document_schema(&matching_schema.schema_uri)
-                .await
-            {
-                Ok(Some(document_schema)) => match &matching_schema.sub_root_keys {
-                    Some(sub_root_keys) => match source_schema {
-                        Some(ref mut source_schema) => {
-                            if !source_schema.sub_schema_uri_map.contains_key(sub_root_keys) {
-                                source_schema.sub_schema_uri_map.insert(
-                                    sub_root_keys.clone(),
-                                    document_schema.schema_uri.clone(),
-                                );
-                            }
-                        }
-                        None => {
-                            let mut new_source_schema = SourceSchema {
-                                root_schema: None,
-                                sub_schema_uri_map: Default::default(),
-                            };
-                            new_source_schema
-                                .sub_schema_uri_map
-                                .insert(sub_root_keys.clone(), document_schema.schema_uri.clone());
-
-                            source_schema = Some(new_source_schema);
-                        }
-                    },
-                    None => match source_schema {
-                        Some(ref mut source_schema) => {
-                            if source_schema.root_schema.is_none() {
-                                source_schema.root_schema = Some(document_schema);
-                            }
-                        }
-                        None => {
-                            source_schema = Some(SourceSchema {
-                                root_schema: Some(document_schema),
-                                sub_schema_uri_map: Default::default(),
-                            });
-                        }
-                    },
-                },
-                Ok(None) => {
-                    tracing::warn!(
-                        "Failed to find document schema: {uri}",
-                        uri = matching_schema.schema_uri
-                    );
+            match &matching_schema.sub_root_keys {
+                Some(sub_root_keys) => {
+                    sub_schema_uri_map
+                        .entry(sub_root_keys.clone())
+                        .or_insert_with(|| matching_schema.schema_uri.clone());
                 }
-                Err(err) => {
-                    tracing::warn!(
-                        "Failed to get document schema for {uri}: {err}",
-                        uri = matching_schema.schema_uri,
-                    );
+                None => {
+                    match self
+                        .try_get_document_schema(&matching_schema.schema_uri)
+                        .await
+                    {
+                        Ok(Some(document_schema)) => root_schema = Some(document_schema),
+                        Ok(None) => {
+                            tracing::warn!(
+                                "Failed to find document schema: {uri}",
+                                uri = matching_schema.schema_uri
+                            );
+                        }
+                        Err(err) => {
+                            tracing::warn!(
+                                "Failed to get document schema for {uri}: {err}",
+                                uri = matching_schema.schema_uri,
+                            );
+                        }
+                    }
                 }
             }
         }
+
+        if let Some(root_schema) = root_schema.as_mut() {
+            let mut root_sub_schema_uri_map = root_schema.sub_schema_uri_map.write().await;
+            for (accessors, schema_uri) in sub_schema_uri_map {
+                root_sub_schema_uri_map
+                    .entry(accessors)
+                    .or_insert_with(|| schema_uri);
+            }
+
+            return Ok(Some(root_schema.clone()));
+        }
+
+        if sub_schema_uri_map.is_empty() {
+            return Ok(None);
+        }
+
+        let root_schema = {
+            let root_schema = DocumentSchema::default();
+            let mut root_sub_schema_uri_map = root_schema.sub_schema_uri_map.write().await;
+            for (accessors, schema_uri) in sub_schema_uri_map {
+                root_sub_schema_uri_map
+                    .entry(accessors)
+                    .or_insert_with(|| schema_uri);
+            }
+            drop(root_sub_schema_uri_map);
+            root_schema
+        };
+
+        Ok(Some(root_schema))
+    }
 
     async fn resolve_document_schema_from_uri(
         &self,
@@ -729,7 +742,9 @@ impl SchemaStore {
         }
         .inspect(|document_schema| {
             if let Some(document_schema) = document_schema {
-                tracing::trace!("find root schema from {}", document_schema.schema_uri);
+                if let Some(schema_uri) = &document_schema.schema_uri {
+                    tracing::trace!("find root schema from {}", schema_uri);
+                }
                 if let Ok(sub_schema_uri_map) = document_schema.sub_schema_uri_map.try_read() {
                     for (accessors, schema_uri) in sub_schema_uri_map.iter() {
                         tracing::trace!(

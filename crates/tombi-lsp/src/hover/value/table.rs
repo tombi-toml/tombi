@@ -48,8 +48,8 @@ impl GetHoverContent for tombi_document_tree::Table {
             }
 
             if let Some(Ok(DocumentSchema {
+                schema_uri: Some(schema_uri),
                 value_schema,
-                schema_uri,
                 definitions,
                 ..
             })) = schema_context

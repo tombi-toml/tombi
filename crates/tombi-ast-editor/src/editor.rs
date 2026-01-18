@@ -38,16 +38,19 @@ impl<'a> Editor<'a> {
         };
         let new_root = self.root.clone_for_update();
 
-        let current_schema = self.schema_context.document_schema.and_then(|document_schema| {
-            document_schema
-                .value_schema
-                .as_ref()
-                .map(|value_schema| CurrentSchema {
+        let current_schema = self
+            .schema_context
+            .document_schema
+            .and_then(|document_schema| {
+                let schema_uri = document_schema.schema_uri.as_ref()?;
+                let value_schema = document_schema.value_schema.as_ref()?;
+
+                Some(CurrentSchema {
+                    schema_uri: Cow::Borrowed(schema_uri),
                     value_schema: Cow::Borrowed(value_schema),
-                    schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                     definitions: Cow::Borrowed(&document_schema.definitions),
                 })
-        });
+            });
 
         let changes = new_root
             .edit(

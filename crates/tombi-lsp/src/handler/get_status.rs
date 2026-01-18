@@ -65,9 +65,13 @@ pub async fn handle_get_status(
 
             let (root_schema, sub_schemas) = match document_schema {
                 Some(document_schema) => {
-                    let root_schema = document_schema.value_schema.as_ref().map(|_| SchemaStatus {
-                        uri: document_schema.schema_uri,
-                    });
+                    let root_schema =
+                        document_schema
+                            .schema_uri
+                            .as_ref()
+                            .map(|schema_uri| SchemaStatus {
+                                uri: schema_uri.clone(),
+                            });
 
                     let sub_schemas = document_schema
                         .sub_schema_uri_map

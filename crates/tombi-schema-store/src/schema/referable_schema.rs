@@ -2,7 +2,7 @@ use std::{borrow::Cow, str::FromStr};
 
 use tombi_x_keyword::StringFormat;
 
-use crate::x_taplo::XTaplo;
+use crate::{DocumentSchema, x_taplo::XTaplo};
 
 use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUri, ValueSchema};
 
@@ -173,7 +173,10 @@ impl Referable<ValueSchema> {
                         if let Some(mut document_schema) =
                             schema_store.try_get_document_schema(&schema_uri).await?
                         {
-                            if let Some(value_schema) = &mut document_schema.value_schema {
+                            if let (Some(schema_uri), Some(value_schema)) = (
+                                document_schema.schema_uri,
+                                &mut document_schema.value_schema,
+                            ) {
                                 if title.is_some() || description.is_some() {
                                     value_schema.set_title(title.to_owned());
                                     value_schema.set_description(description.to_owned());
@@ -183,13 +186,13 @@ impl Referable<ValueSchema> {
                                 }
 
                                 *self = Referable::Resolved {
-                                    schema_uri: Some(document_schema.schema_uri.clone()),
+                                    schema_uri: Some(schema_uri.clone()),
                                     value: value_schema.clone(),
                                 };
 
                                 return self
                                     .resolve(
-                                        Cow::Owned(document_schema.schema_uri),
+                                        Cow::Owned(schema_uri),
                                         Cow::Owned(document_schema.definitions),
                                         schema_store,
                                     )
@@ -220,13 +223,13 @@ impl Referable<ValueSchema> {
                     let (schema_uri, definitions) = {
                         match reference_url {
                             Some(reference_url) => {
-                                if let Some(document_schema) =
-                                    schema_store.try_get_document_schema(reference_url).await?
+                                if let Some(DocumentSchema {
+                                    schema_uri: Some(document_schema_uri),
+                                    definitions,
+                                    ..
+                                }) = schema_store.try_get_document_schema(reference_url).await?
                                 {
-                                    (
-                                        Cow::Owned(document_schema.schema_uri),
-                                        Cow::Owned(document_schema.definitions),
-                                    )
+                                    (Cow::Owned(document_schema_uri), Cow::Owned(definitions))
                                 } else {
                                     (schema_uri, definitions)
                                 }

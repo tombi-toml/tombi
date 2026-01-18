@@ -23,15 +23,17 @@ pub async fn get_type_definition(
     let table = document_tree.deref();
     match schema_context.document_schema {
         Some(document_schema) => {
-            let current_schema =
-                document_schema
-                    .value_schema
-                    .as_ref()
-                    .map(|value_schema| CurrentSchema {
+            let current_schema = document_schema
+                .value_schema
+                .as_ref()
+                .and_then(|value_schema| {
+                    let schema_uri = document_schema.schema_uri.as_ref()?;
+                    Some(CurrentSchema {
+                        schema_uri: Cow::Borrowed(schema_uri),
                         value_schema: Cow::Borrowed(value_schema),
-                        schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
-                    });
+                    })
+                });
             table
                 .get_type_definition(position, keys, &[], current_schema.as_ref(), schema_context)
                 .await

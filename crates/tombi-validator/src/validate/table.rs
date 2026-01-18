@@ -33,8 +33,8 @@ impl Validate for tombi_document_tree::Table {
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             if let Some(Ok(DocumentSchema {
+                schema_uri: Some(schema_uri),
                 value_schema: Some(value_schema),
-                schema_uri,
                 definitions,
                 ..
             })) = schema_context
@@ -172,7 +172,10 @@ async fn validate_table(
             schema_context
                 .document_schema
                 .is_some_and(|document_schema| {
-                    current_schema.schema_uri.as_ref() == &document_schema.schema_uri
+                    document_schema
+                        .schema_uri
+                        .as_ref()
+                        .is_some_and(|schema_uri| current_schema.schema_uri.as_ref() == schema_uri)
                 });
         if let Some(PropertySchema {
             property_schema, ..

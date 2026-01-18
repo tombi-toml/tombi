@@ -44,8 +44,8 @@ impl GetTypeDefinition for tombi_document_tree::Array {
             }
 
             if let Some(Ok(DocumentSchema {
+                schema_uri: Some(schema_uri),
                 value_schema,
-                schema_uri,
                 definitions,
                 ..
             })) = schema_context

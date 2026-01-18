@@ -41,14 +41,14 @@ pub fn validate<'a: 'b, 'b>(
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
     async move {
         let current_schema = document_schema.and_then(|document_schema| {
-            document_schema
-                .value_schema
-                .as_ref()
-                .map(|value_schema| CurrentSchema {
-                    value_schema: Cow::Borrowed(value_schema),
-                    schema_uri: Cow::Borrowed(&document_schema.schema_uri),
-                    definitions: Cow::Borrowed(&document_schema.definitions),
-                })
+            let schema_uri = document_schema.schema_uri.as_ref()?;
+            let value_schema = document_schema.value_schema.as_ref()?;
+
+            Some(CurrentSchema {
+                schema_uri: Cow::Borrowed(schema_uri),
+                value_schema: Cow::Borrowed(value_schema),
+                definitions: Cow::Borrowed(&document_schema.definitions),
+            })
         });
 
         if let Err(crate::Error { diagnostics, .. }) = tree

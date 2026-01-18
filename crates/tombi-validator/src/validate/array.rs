@@ -26,8 +26,8 @@ impl Validate for tombi_document_tree::Array {
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             if let Some(Ok(DocumentSchema {
+                schema_uri: Some(schema_uri),
                 value_schema: Some(value_schema),
-                schema_uri,
                 definitions,
                 ..
             })) = schema_context

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use ahash::AHashMap;
 use itertools::Itertools;
@@ -14,9 +14,9 @@ use super::{
 };
 use crate::{Accessor, SchemaStore};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct DocumentSchema {
-    pub schema_uri: SchemaUri,
+    pub schema_uri: Option<SchemaUri>,
     pub(crate) toml_version: Option<TomlVersion>,
     pub value_schema: Option<ValueSchema>,
     pub definitions: SchemaDefinitions,
@@ -77,20 +77,31 @@ impl DocumentSchema {
         }
 
         Self {
-            schema_uri,
+            schema_uri: Some(schema_uri),
             toml_version,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
+            sub_schema_uri_map: Arc::new(RwLock::default()),
         }
     }
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
         self.toml_version.inspect(|version| {
-            tracing::trace!(
-                "use schema TOML version \"{version}\" for {}",
-                self.schema_uri
-            );
+            if let Some(schema_uri) = &self.schema_uri {
+                tracing::trace!("use schema TOML version \"{version}\" for {}", schema_uri);
+            }
         })
+    }
+
+    pub async fn register_dynamic_sub_schema(
+        &self,
+        accessors: Vec<SchemaAccessor>,
+        schema_uri: &SchemaUri,
+    ) {
+        let mut sub_schema_uri_map = self.sub_schema_uri_map.write().await;
+        sub_schema_uri_map
+            .entry(accessors)
+            .or_insert_with(|| schema_uri.clone());
     }
 }
 
