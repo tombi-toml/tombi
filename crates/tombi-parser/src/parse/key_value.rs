@@ -199,4 +199,53 @@ mod test {
             "#
         ) -> Ok(_)
     }
+
+    test_parser! {
+        #[test]
+        fn hex_like_bare_keys(
+            r#"
+            0x96f = "hex-like key"
+            0xDEADBEEF = "another hex-like"
+            a.0xABC = "dotted hex"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn octal_like_bare_keys(
+            r#"
+            0o755 = "octal-like key"
+            0o777.permissions = "dotted octal"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn binary_like_bare_keys(
+            r#"
+            0b1010 = "binary-like key"
+            0b11.0b00 = "dotted binary"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn hex_key_with_hex_value(
+            r#"
+            0x96f = 0x96f
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_with_hex_key(
+            r#"
+            table = { 0x96f = "value" }
+            "#
+        ) -> Ok(_)
+    }
 }
