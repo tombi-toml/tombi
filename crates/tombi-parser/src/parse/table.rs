@@ -137,4 +137,35 @@ mod test {
             SyntaxError(ExpectedLineBreak, 1:9..1:16),
         ])
     }
+
+    test_parser! {
+        #[test]
+        fn hex_like_table_key(
+            r#"
+            [0x96f]
+            submodule = "extensions/0x96f"
+            version = "1.3.5"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn octal_like_table_key(
+            r#"
+            [0o755]
+            value = "octal key"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn binary_like_table_key(
+            r#"
+            [0b1010]
+            value = "binary key"
+            "#
+        ) -> Ok(_)
+    }
 }
