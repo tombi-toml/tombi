@@ -120,4 +120,34 @@ mod test {
             "#
         ) -> Err([SyntaxError(ExpectedLineBreak, 1:9..1:16)])
     }
+
+    test_parser! {
+        #[test]
+        fn hex_like_array_of_table_key(
+            r#"
+            [[0x96f]]
+            name = "hex-like"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn octal_like_array_of_table_key(
+            r#"
+            [[0o755]]
+            mode = "permissions"
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn binary_like_array_of_table_key(
+            r#"
+            [[0b1010]]
+            flags = true
+            "#
+        ) -> Ok(_)
+    }
 }

@@ -47,7 +47,7 @@ pub fn eat_key(p: &mut Parser<'_>) -> bool {
             m.complete(p, kind);
             true
         }
-        INTEGER_DEC | BOOLEAN | LOCAL_DATE => {
+        INTEGER_DEC | INTEGER_HEX | INTEGER_OCT | INTEGER_BIN | BOOLEAN | LOCAL_DATE => {
             let m = p.start();
             p.bump_remap(BARE_KEY);
             m.complete(p, BARE_KEY);
