@@ -24,13 +24,6 @@ interface GetStatusResponse {
   source: "comment" | "schema" | "config" | "default";
   configPath?: string;
   ignore?: "include-file-pattern-not-matched" | "exclude-file-pattern-matched";
-  schema?: {
-    uri: string;
-  };
-  subSchemas?: {
-    root: string;
-    uri: string;
-  }[];
 }
 ```
 
@@ -42,11 +35,6 @@ interface GetStatusResponse {
   - `default`: Default value
 - `configPath`: Path to the configuration file used for this document
 - `ignore`: Reason why the document is ignored (if applicable)
-- `schema`: Root schema assigned to the document (if available)
-  - `uri`: Schema URI
-- `subSchemas`: Sub-schemas mapped to specific roots (if available)
-  - `root`: Schema access path (string form, e.g., `tool.tombi`)
-  - `uri`: Schema URI
 
 #### Example
 

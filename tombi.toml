@@ -36,8 +36,3 @@ include = ["type-test.toml"]
 [[schemas]]
 path = "tombi://www.schemastore.org/tombi.json"
 include = ["tombi.toml", "tombi/config.toml"]
-
-[[schemas]]
-root = "tool.tombi"
-path = "tombi://www.schemastore.org/tombi.json"
-include = ["pyproject.toml"]
