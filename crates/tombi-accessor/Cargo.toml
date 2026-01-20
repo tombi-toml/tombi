@@ -9,7 +9,6 @@ license.workspace = true
 [dependencies]
 indexmap.workspace = true
 itertools.workspace = true
-serde.workspace = true
 tombi-text.workspace = true
 tracing.workspace = true
 

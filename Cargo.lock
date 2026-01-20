@@ -3493,7 +3493,6 @@ dependencies = [
  "itertools 0.14.0",
  "pretty_assertions",
  "rstest",
- "serde",
  "tombi-text",
  "tracing",
 ]
