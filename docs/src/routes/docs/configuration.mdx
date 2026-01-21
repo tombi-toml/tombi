@@ -16,6 +16,7 @@ Also, we supports `[tool.tombi]` in `pyproject.toml`.
 5. `~/.config/tombi/config.toml`
 6. `~/Library/Application Support/tombi/config.toml` (macOS), `%APPDATA%\tombi\config.toml` (Windows)
 7. `/etc/tombi/config.toml` (Linux)
+8. editor settings via [workspace/didChangeConfiguration](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeConfiguration) (LSP only)
 
 <Warning>
 The base directory for configuration search depends on the context: for CLI usage, it is the directory where the command is executed; for LSP usage, it is the directory of the currently opened file.
