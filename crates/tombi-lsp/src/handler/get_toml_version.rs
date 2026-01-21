@@ -63,6 +63,12 @@ pub enum TomlVersionSource {
     /// ```
     Config,
 
+    /// Editor settings
+    ///
+    /// Settings passed from the editor via `workspace/didChangeConfiguration`.
+    /// Has lower priority than config files but higher than default.
+    Editor,
+
     /// Default
     Default,
 }
