@@ -21,20 +21,19 @@ use tower_lsp::lsp_types::{
 };
 
 use crate::{
-    config_manager::{ConfigManager, ConfigSchemaStore},
+    config_manager::{ConfigManager, ConfigSchemaStore, DefaultConfigSource},
     document::DocumentSource,
     goto_definition::into_definition_locations,
     goto_type_definition::into_type_definition_locations,
     handler::{
         AssociateSchemaParams, GetStatusResponse, GetTomlVersionResponse, ListSchemasParams,
         ListSchemasResponse, RefreshCacheParams, TomlVersionSource, handle_associate_schema,
-        handle_code_action,
-        handle_completion, handle_diagnostic, handle_did_change, handle_did_change_configuration,
-        handle_did_change_watched_files, handle_did_close, handle_did_open, handle_did_save,
-        handle_document_link, handle_document_symbol, handle_folding_range, handle_formatting,
-        handle_get_status, handle_get_toml_version, handle_goto_declaration,
-        handle_goto_definition, handle_goto_type_definition, handle_hover, handle_initialize,
-        handle_initialized, handle_list_schemas, handle_refresh_cache,
+        handle_code_action, handle_completion, handle_diagnostic, handle_did_change,
+        handle_did_change_configuration, handle_did_change_watched_files, handle_did_close,
+        handle_did_open, handle_did_save, handle_document_link, handle_document_symbol,
+        handle_folding_range, handle_formatting, handle_get_status, handle_get_toml_version,
+        handle_goto_declaration, handle_goto_definition, handle_goto_type_definition, handle_hover,
+        handle_initialize, handle_initialized, handle_list_schemas, handle_refresh_cache,
         handle_semantic_tokens_full, handle_shutdown, handle_update_config, handle_update_schema,
         push_diagnostics,
     },
@@ -177,7 +176,16 @@ impl Backend {
             return (toml_version, TomlVersionSource::Config);
         }
 
-        (TomlVersion::default(), TomlVersionSource::Default)
+        let (source, default_config) = self.config_manager.default_config().await;
+        let toml_version_source = match source {
+            DefaultConfigSource::Editor => TomlVersionSource::Editor,
+            DefaultConfigSource::Default => TomlVersionSource::Default,
+        };
+
+        (
+            default_config.toml_version.unwrap_or_default(),
+            toml_version_source,
+        )
     }
 
     #[inline]
@@ -277,7 +285,7 @@ impl tower_lsp::LanguageServer for Backend {
     }
 
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
-        handle_did_change_configuration(params).await
+        handle_did_change_configuration(self, params).await
     }
 
     async fn completion(
