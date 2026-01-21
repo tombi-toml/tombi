@@ -7,6 +7,15 @@ use tombi_config::{Config, TomlVersion};
 use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
 
+/// Source type for ConfigSchemaStore without a specific config file
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DefaultConfigSource {
+    /// Default configuration
+    Default,
+    /// Configuration from editor settings via workspace/didChangeConfiguration
+    Editor,
+}
+
 /// Holds a Config and its associated SchemaStore
 #[derive(Debug, Clone)]
 pub struct ConfigSchemaStore {
@@ -33,7 +42,9 @@ pub struct ConfigManager {
     /// Maps config file paths to their ConfigSchemaStore
     config_schema_stores: Arc<tokio::sync::RwLock<AHashMap<PathBuf, ConfigSchemaStore>>>,
     /// Default ConfigSchemaStore when no config file is found
-    default_config_schema_store: Arc<tokio::sync::RwLock<Option<ConfigSchemaStore>>>,
+    /// Contains the source type (Default or Editor) and the ConfigSchemaStore
+    default_config_schema_store:
+        Arc<tokio::sync::RwLock<Option<(DefaultConfigSource, ConfigSchemaStore)>>>,
 
     backend_options: crate::backend::Options,
     associated_schemas: Arc<tokio::sync::RwLock<Vec<AssociatedSchema>>>,
@@ -73,10 +84,9 @@ impl ConfigManager {
             );
         } else {
             let schema_options = schema_store_options(&config, backend_options);
-            default_config_schema_store = Some(ConfigSchemaStore::new(
-                config,
-                None,
-                SchemaStore::new_with_options(schema_options),
+            default_config_schema_store = Some((
+                DefaultConfigSource::Default,
+                ConfigSchemaStore::new(config, None, SchemaStore::new_with_options(schema_options)),
             ));
         }
 
@@ -137,26 +147,16 @@ impl ConfigManager {
 
                     if schema_store.is_empty().await {
                         tracing::info!("Add new SchemaStore for {config_path_buf:?}");
-                        if let Err(err) = schema_store
-                            .load_config(config, Some(&config_path_buf))
-                            .await
+                        let associated_schemas = self.associated_schemas.read().await;
+                        if let Err(err) = load_schema_store_with_associations(
+                            schema_store,
+                            config,
+                            Some(&config_path_buf),
+                            &associated_schemas,
+                        )
+                        .await
                         {
-                            tracing::error!("Failed to load config: {err}");
-                        }
-
-                        for associated_schema in self.associated_schemas.read().await.iter() {
-                            schema_store
-                                .associate_schema(
-                                    associated_schema.schema_uri.clone(),
-                                    associated_schema.file_match.clone(),
-                                    &tombi_schema_store::AssociateSchemaOptions {
-                                        toml_version: associated_schema.toml_version,
-                                        force: false, // Don't force when reapplying existing associations
-                                        title: None,  // No title when reapplying
-                                        description: None, // No description when reapplying
-                                    },
-                                )
-                                .await;
+                            tracing::error!("Failed to load schema store: {err}");
                         }
                     }
 
@@ -202,33 +202,28 @@ impl ConfigManager {
     /// Get the default config
     async fn default_config_schema_store(&self) -> ConfigSchemaStore {
         let mut default_config_schema_store = self.default_config_schema_store.write().await;
-        if let Some(ref config_schema_store) = *default_config_schema_store {
+        if let Some((_, ref config_schema_store)) = *default_config_schema_store {
             config_schema_store.clone()
         } else {
             let config = Config::default();
+            let associated_schemas = self.associated_schemas.read().await;
             let schema_options = schema_store_options(&config, &self.backend_options);
             let schema_store = SchemaStore::new_with_options(schema_options);
 
-            if let Err(err) = schema_store.load_config(&config, None).await {
-                tracing::error!("Failed to load default config: {err}");
+            if let Err(err) = load_schema_store_with_associations(
+                &schema_store,
+                &config,
+                None,
+                &associated_schemas,
+            )
+            .await
+            {
+                tracing::error!("Failed to load default schema store: {err}");
             }
 
-            for associated_schema in self.associated_schemas.read().await.iter() {
-                schema_store
-                    .associate_schema(
-                        associated_schema.schema_uri.clone(),
-                        associated_schema.file_match.clone(),
-                        &tombi_schema_store::AssociateSchemaOptions {
-                            toml_version: associated_schema.toml_version,
-                            force: false, // Don't force when reapplying existing associations
-                            title: None,  // No title when reapplying
-                            description: None, // No description when reapplying
-                        },
-                    )
-                    .await;
-            }
             let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
-            *default_config_schema_store = Some(config_schema_store.clone());
+            *default_config_schema_store =
+                Some((DefaultConfigSource::Default, config_schema_store.clone()));
             config_schema_store
         }
     }
@@ -256,7 +251,7 @@ impl ConfigManager {
                 .update_schema(schema_uri)
                 .await?;
         }
-        if let Some(ConfigSchemaStore { schema_store, .. }) =
+        if let Some((_, ConfigSchemaStore { schema_store, .. })) =
             &mut *self.default_config_schema_store.write().await
         {
             updated |= schema_store.update_schema(schema_uri).await?;
@@ -289,7 +284,7 @@ impl ConfigManager {
                     .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
                     .await;
             }
-            if let Some(ConfigSchemaStore { schema_store, .. }) =
+            if let Some((_, ConfigSchemaStore { schema_store, .. })) =
                 &mut *self.default_config_schema_store.write().await
             {
                 schema_store
@@ -313,11 +308,14 @@ impl ConfigManager {
             schema_store.load_config(config, Some(config_path)).await?;
         }
 
-        if let Some(ConfigSchemaStore {
-            config,
-            schema_store,
-            ..
-        }) = &mut *self.default_config_schema_store.write().await
+        if let Some((
+            _,
+            ConfigSchemaStore {
+                config,
+                schema_store,
+                ..
+            },
+        )) = &mut *self.default_config_schema_store.write().await
         {
             schema_store.load_config(config, None).await?;
         }
@@ -342,11 +340,14 @@ impl ConfigManager {
                 .await?;
         }
 
-        if let Some(ConfigSchemaStore {
-            config,
-            schema_store,
-            ..
-        }) = &mut *self.default_config_schema_store.write().await
+        if let Some((
+            _,
+            ConfigSchemaStore {
+                config,
+                schema_store,
+                ..
+            },
+        )) = &mut *self.default_config_schema_store.write().await
         {
             updated |= schema_store.refresh_cache(config, None).await?;
         }
@@ -366,12 +367,40 @@ impl ConfigManager {
                 .await;
         }
 
-        if let Some(ConfigSchemaStore { schema_store, .. }) =
+        if let Some((_, ConfigSchemaStore { schema_store, .. })) =
             &mut *self.default_config_schema_store.write().await
         {
             schema_store
                 .load_config_schemas(schemas, base_dir_path)
                 .await;
+        }
+    }
+
+    /// Update editor configuration
+    pub async fn update_editor_config(&self, config: Config) {
+        let associated_schemas = self.associated_schemas.read().await;
+        let schema_options = schema_store_options(&config, &self.backend_options);
+        let schema_store = SchemaStore::new_with_options(schema_options);
+
+        if let Err(err) =
+            load_schema_store_with_associations(&schema_store, &config, None, &associated_schemas)
+                .await
+        {
+            tracing::error!("Failed to load editor config schema store: {err}");
+        }
+
+        let config_schema_store = ConfigSchemaStore::new(config, None, schema_store);
+        let mut default_config_schema_store = self.default_config_schema_store.write().await;
+        *default_config_schema_store = Some((DefaultConfigSource::Editor, config_schema_store));
+    }
+
+    /// Get editor configuration
+    pub async fn default_config(&self) -> (DefaultConfigSource, Config) {
+        let default_config_schema_store = self.default_config_schema_store.read().await;
+        if let Some((source, config_schema_store)) = &*default_config_schema_store {
+            (*source, config_schema_store.config.clone())
+        } else {
+            (DefaultConfigSource::Default, Config::default())
         }
     }
 
@@ -392,7 +421,9 @@ impl ConfigManager {
         }
 
         // Get schemas from default_config_schema_store
-        if let Some(default_config_schema_store) = &*self.default_config_schema_store.read().await {
+        if let Some((_, default_config_schema_store)) =
+            &*self.default_config_schema_store.read().await
+        {
             let schemas = default_config_schema_store
                 .schema_store
                 .list_schemas()
@@ -408,6 +439,33 @@ impl ConfigManager {
 
         schema_map.into_values().collect()
     }
+}
+
+/// Load config and associated schemas into an existing SchemaStore
+async fn load_schema_store_with_associations(
+    schema_store: &SchemaStore,
+    config: &Config,
+    config_path: Option<&Path>,
+    associated_schemas: &[AssociatedSchema],
+) -> Result<(), tombi_schema_store::Error> {
+    schema_store.load_config(config, config_path).await?;
+
+    for associated_schema in associated_schemas {
+        schema_store
+            .associate_schema(
+                associated_schema.schema_uri.clone(),
+                associated_schema.file_match.clone(),
+                &tombi_schema_store::AssociateSchemaOptions {
+                    toml_version: associated_schema.toml_version,
+                    force: false,
+                    title: None,
+                    description: None,
+                },
+            )
+            .await;
+    }
+
+    Ok(())
 }
 
 fn schema_store_options(
