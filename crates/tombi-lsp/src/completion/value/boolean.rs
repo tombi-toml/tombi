@@ -33,8 +33,7 @@ impl FindCompletionContents for tombi_document_tree::Boolean {
                     BooleanCommonFormatRules,
                     BooleanCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,
                     schema_uri,
                 )
@@ -42,7 +41,6 @@ impl FindCompletionContents for tombi_document_tree::Boolean {
                 {
                     return completions;
                 }
-            }
 
             Vec::with_capacity(0)
         }

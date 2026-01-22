@@ -64,9 +64,9 @@ impl<'a> Linter<'a> {
             (None, None)
         };
 
-        if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive {
-            if let Some(lint) = &tombi_document_comment_directive.lint {
-                if lint.disabled.unwrap_or(false) {
+        if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
+            && let Some(lint) = &tombi_document_comment_directive.lint
+                && lint.disabled.unwrap_or(false) {
                     // Only skip linting if there are no validation errors
                     if self.diagnostics.is_empty() {
                         match self.source_uri_or_path.map(|path| match path {
@@ -85,8 +85,6 @@ impl<'a> Linter<'a> {
                         return Ok(());
                     }
                 }
-            }
-        }
 
         self.toml_version = tombi_document_comment_directive
             .as_ref()

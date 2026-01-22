@@ -227,7 +227,7 @@ fn handle_unused_noqa(
                 kind: Box::new(crate::DiagnosticKind::UnusedNoqa { rule_name }),
                 range,
             }
-            .push_diagnostic_with_level(SeverityLevel::Warn, &mut diagnostics);
+            .push_diagnostic_with_level(SeverityLevel::Warn, diagnostics);
             return;
         }
     }

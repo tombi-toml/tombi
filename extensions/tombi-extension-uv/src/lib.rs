@@ -302,15 +302,12 @@ fn goto_workspace_member(
     } else {
         return Ok(None);
     };
-    if accessors.len() == 3 {
-        if let Some((_, tombi_document_tree::Value::Table(table))) =
+    if accessors.len() == 3
+        && let Some((_, tombi_document_tree::Value::Table(table))) =
             dig_accessors(document_tree, accessors)
-        {
-            if !table.contains_key("workspace") {
+            && !table.contains_key("workspace") {
                 return Ok(None);
             }
-        }
-    }
 
     let Some((package_toml_path, member_range)) = find_member_project_toml(
         package_name,
@@ -419,11 +416,10 @@ fn find_member_project_toml(
             continue;
         };
 
-        if let Some(name) = get_project_name(&package_project_toml_document_tree) {
-            if name.value() == package_name {
+        if let Some(name) = get_project_name(&package_project_toml_document_tree)
+            && name.value() == package_name {
                 return Some((package_project_toml_path, member_item.unquoted_range()));
             }
-        }
     }
 
     None

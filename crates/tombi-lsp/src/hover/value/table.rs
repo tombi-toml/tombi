@@ -38,14 +38,12 @@ impl GetHoverContent for tombi_document_tree::Table {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_table_comment_directive_content_with_schema_uri(self, position, accessors)
-            {
-                if let Some(hover_content) =
+                && let Some(hover_content) =
                     get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
                         .await
                 {
                     return Some(hover_content);
                 }
-            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema,
@@ -129,8 +127,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             .await;
                                         if let Some(HoverContent::Value(hover_value_content)) =
                                             hover_content.as_mut()
-                                        {
-                                            if keys.len() == 1 {
+                                            && keys.len() == 1 {
                                                 // Check if cursor is not on the value
                                                 if !value.contains(position) {
                                                     // When cursor is on key or equals sign,
@@ -164,7 +161,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     hover_value_content.value_type.set_nullable();
                                                 }
                                             }
-                                        }
                                         return hover_content;
                                     }
 
@@ -184,8 +180,7 @@ impl GetHoverContent for tombi_document_tree::Table {
 
                                     if let Some(HoverContent::Value(hover_value_content)) =
                                         hover_content.as_mut()
-                                    {
-                                        if keys.len() == 1
+                                        && keys.len() == 1
                                             && !required
                                             && hover_value_content
                                                 .accessors
@@ -200,7 +195,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             }
                                             hover_value_content.value_type.set_nullable();
                                         }
-                                    }
 
                                     return hover_content;
                                 }
@@ -239,8 +233,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     if let Some(HoverContent::Value(
                                                         hover_value_content,
                                                     )) = hover_content.as_mut()
-                                                    {
-                                                        if keys.len() == 1 {
+                                                        && keys.len() == 1 {
                                                             // Check if cursor is not on the value
                                                             if !value.contains(position) {
                                                                 // When cursor is on key or equals sign,
@@ -282,7 +275,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                                     .set_nullable();
                                                             }
                                                         }
-                                                    }
                                                     return hover_content;
                                                 }
 
@@ -303,8 +295,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 if let Some(HoverContent::Value(
                                                     hover_value_content,
                                                 )) = hover_content.as_mut()
-                                                {
-                                                    if keys.len() == 1
+                                                    && keys.len() == 1
                                                         && hover_value_content
                                                             .accessors
                                                             .last()
@@ -320,7 +311,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                             .value_type
                                                             .set_nullable();
                                                     }
-                                                }
                                                 return hover_content;
                                             }
                                         } else {
@@ -361,8 +351,7 @@ impl GetHoverContent for tombi_document_tree::Table {
 
                                         if let Some(HoverContent::Value(hover_value_content)) =
                                             hover_content.as_mut()
-                                        {
-                                            if keys.len() == 1 {
+                                            && keys.len() == 1 {
                                                 // Check if cursor is not on the value
                                                 let cursor_on_value = value.contains(position);
 
@@ -392,7 +381,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                     hover_value_content.value_type.set_nullable();
                                                 }
                                             }
-                                        }
                                         return hover_content;
                                     }
                                 }
@@ -475,8 +463,8 @@ impl GetHoverContent for tombi_document_tree::Table {
                     _ => None,
                 }
             } else {
-                if let Some(key) = keys.first() {
-                    if let Some(value) = self.get(key) {
+                if let Some(key) = keys.first()
+                    && let Some(value) = self.get(key) {
                         let accessor = Accessor::Key(key.value.clone());
 
                         return value
@@ -493,7 +481,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                             )
                             .await;
                     }
-                }
                 Some(HoverContent::Value(HoverValueContent {
                     title: None,
                     description: None,

@@ -53,11 +53,10 @@ impl crate::ArrayOfTable {
                 header_comment_directives.push(comment_directive);
             }
         }
-        if let Some(comment) = self.header_trailing_comment() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+        if let Some(comment) = self.header_trailing_comment()
+            && let Some(comment_directive) = comment.get_tombi_value_directive() {
                 header_comment_directives.push(comment_directive);
             }
-        }
 
         header_comment_directives.into_iter()
     }

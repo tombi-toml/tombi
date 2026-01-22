@@ -120,8 +120,7 @@ async fn completion_workspace(
         }
     } else if matches_accessors!(accessors, ["workspace", "dependencies", _, "features"])
         | matches_accessors!(accessors, ["workspace", "dependencies", _, "features", _])
-    {
-        if let Some(Accessor::Key(crate_name)) = accessors.get(2) {
+        && let Some(Accessor::Key(crate_name)) = accessors.get(2) {
             if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
                 dig_accessors(document_tree, accessors)
             {
@@ -147,7 +146,6 @@ async fn completion_workspace(
             )
             .await;
         }
-    }
     Ok(None)
 }
 

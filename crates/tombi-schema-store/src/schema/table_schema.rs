@@ -287,8 +287,7 @@ impl FindSchemaCandidates for TableSchema {
                 .write()
                 .await
                 .get_mut(&SchemaAccessor::from(&accessors[0]))
-            {
-                if let Ok(Some(CurrentSchema {
+                && let Ok(Some(CurrentSchema {
                     value_schema,
                     schema_uri,
                     definitions,
@@ -309,7 +308,6 @@ impl FindSchemaCandidates for TableSchema {
                         )
                         .await;
                 }
-            }
 
             (candidates, errors)
         }

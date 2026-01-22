@@ -32,8 +32,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_array_comment_directive_content_with_schema_uri(self, position, accessors)
-            {
-                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                && let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,
                     schema_uri,
                 )
@@ -41,7 +40,6 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                 {
                     return Some(hover_content);
                 }
-            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema,

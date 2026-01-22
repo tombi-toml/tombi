@@ -23,12 +23,11 @@ impl crate::Edit for tombi_ast::Root {
             let mut table_or_array_of_tables = vec![];
 
             // Move document schema/tombi comment directive to the top.
-            if self
+            if (self
                 .schema_document_comment_directive(source_path)
                 .is_some()
-                || !self.tombi_document_comment_directives().is_empty()
-            {
-                if let Some(document_header_comments) = self.get_document_header_comments() {
+                || !self.tombi_document_comment_directives().is_empty())
+                && let Some(document_header_comments) = self.get_document_header_comments() {
                     changes.push(crate::Change::AppendTop {
                         new: document_header_comments
                             .into_iter()
@@ -36,7 +35,6 @@ impl crate::Edit for tombi_ast::Root {
                             .collect_vec(),
                     });
                 }
-            }
 
             for key_value in self.key_values() {
                 changes.extend(

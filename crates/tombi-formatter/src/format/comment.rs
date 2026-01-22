@@ -161,13 +161,11 @@ fn format_comment(
 
         if c != ' ' && c != '\t' {
             write!(f, "{c}")?;
-        } else {
-            if strip_leading_spaces {
-                for c in iter.by_ref() {
-                    if c != ' ' && c != '\t' {
-                        write!(f, "{c}")?;
-                        break;
-                    }
+        } else if strip_leading_spaces {
+            for c in iter.by_ref() {
+                if c != ' ' && c != '\t' {
+                    write!(f, "{c}")?;
+                    break;
                 }
             }
         }

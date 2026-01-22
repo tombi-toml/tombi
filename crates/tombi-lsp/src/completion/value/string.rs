@@ -34,8 +34,7 @@ impl FindCompletionContents for tombi_document_tree::String {
                     StringCommonFormatRules,
                     StringCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,
                     schema_uri,
                 )
@@ -43,7 +42,6 @@ impl FindCompletionContents for tombi_document_tree::String {
                 {
                     return completions;
                 }
-            }
 
             if !self.range().contains(position) {
                 return Vec::with_capacity(0);

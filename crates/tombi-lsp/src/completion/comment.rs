@@ -27,8 +27,8 @@ pub async fn get_document_comment_directive_completion_contents(
     text_document_uri: &Uri,
 ) -> Option<Vec<CompletionContent>> {
     let comment_text = comment.syntax().text();
-    if let Some(colon_pos) = comment_text.find(':') {
-        if comment_text[1..colon_pos]
+    if let Some(colon_pos) = comment_text.find(':')
+        && comment_text[1..colon_pos]
             .chars()
             .all(|c| c.is_whitespace())
         {
@@ -61,22 +61,20 @@ pub async fn get_document_comment_directive_completion_contents(
                     get_schema_text_and_range(comment_text, &schema_directive)
             {
                 // Check if position is in the schema value part
-                if schema_range.contains(position) {
-                    if let Some(base_dir) = source_path.parent() {
+                if schema_range.contains(position)
+                    && let Some(base_dir) = source_path.parent() {
                         let completions =
                             get_schema_path_completions(base_dir, schema_text, schema_range);
                         if !completions.is_empty() {
                             return Some(completions);
                         }
                     }
-                }
             }
 
             if let Some(comment_directive_context) = comment
                 .get_tombi_document_directive()
                 .and_then(|directive| directive.get_context(position))
-            {
-                if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,
                     TombiDocumentDirectiveContent::comment_directive_schema_url(),
                 )
@@ -84,9 +82,7 @@ pub async fn get_document_comment_directive_completion_contents(
                 {
                     return Some(completions);
                 }
-            }
         }
-    }
 
     None
 }

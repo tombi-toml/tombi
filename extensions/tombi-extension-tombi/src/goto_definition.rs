@@ -21,23 +21,19 @@ pub async fn goto_definition(
 
     let mut locations = vec![];
 
-    if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string())) {
-        if let Some((_, tombi_document_tree::Value::String(path))) =
+    if accessors.last() == Some(&tombi_schema_store::Accessor::Key("path".to_string()))
+        && let Some((_, tombi_document_tree::Value::String(path))) =
             dig_accessors(document_tree, accessors)
-        {
-            if let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
+            && let Some(uri) = get_definition_link(path.value(), &tombi_toml_path) {
                 locations.push(tombi_extension::DefinitionLocation {
                     uri,
                     range: tombi_text::Range::default(),
                 });
             }
-        }
-    }
 
     if matches!(accessors.len(), 3 | 4)
         && matches_accessors!(accessors[..3], ["schema", "catalog", "paths"])
-    {
-        if let Some((_, tombi_document_tree::Value::Array(paths))) =
+        && let Some((_, tombi_document_tree::Value::Array(paths))) =
             dig_accessors(document_tree, &accessors[..3])
         {
             let index = (accessors.len() == 4)
@@ -59,7 +55,6 @@ pub async fn goto_definition(
                 }
             }
         }
-    }
 
     if locations.is_empty() {
         return Ok(None);

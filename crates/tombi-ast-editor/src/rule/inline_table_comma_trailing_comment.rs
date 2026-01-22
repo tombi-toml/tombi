@@ -7,8 +7,8 @@ pub fn inline_table_comma_trailing_comment(
     key_value: &tombi_ast::KeyValue,
     comma: Option<&tombi_ast::Comma>,
 ) -> Vec<Change> {
-    if let Some(trailing_comment) = key_value.trailing_comment() {
-        if match comma {
+    if let Some(trailing_comment) = key_value.trailing_comment()
+        && match comma {
             Some(comma) => {
                 comma.trailing_comment().is_none() && comma.leading_comments().next().is_none()
             }
@@ -26,7 +26,6 @@ pub fn inline_table_comma_trailing_comment(
                 },
             ];
         }
-    }
 
     Vec::with_capacity(0)
 }

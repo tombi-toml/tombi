@@ -90,8 +90,8 @@ where
         ctx.field_format().format_fields(writer.by_ref(), event)?;
         writeln!(writer)?;
 
-        if self.level == Some(tracing::Level::TRACE) {
-            if let Some(file) = metadata.file() {
+        if self.level == Some(tracing::Level::TRACE)
+            && let Some(file) = metadata.file() {
                 let link = if let Some(line) = metadata.line() {
                     format!("{file}:{line}")
                 } else {
@@ -105,7 +105,6 @@ where
                     Self::link_style(use_ansi_color).paint(link)
                 )?;
             }
-        }
 
         Ok(())
     }

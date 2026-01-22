@@ -183,11 +183,10 @@ fn get_ast_inline_table_node(
 ) -> Option<tombi_ast::InlineTable> {
     let target_range = table.range();
     for node in root.syntax().descendants() {
-        if let Some(inline_table) = tombi_ast::InlineTable::cast(node) {
-            if inline_table.range() == target_range {
+        if let Some(inline_table) = tombi_ast::InlineTable::cast(node)
+            && inline_table.range() == target_range {
                 return Some(inline_table);
             }
-        }
     }
     None
 }

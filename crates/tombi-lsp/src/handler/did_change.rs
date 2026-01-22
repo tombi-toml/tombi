@@ -20,7 +20,7 @@ pub async fn handle_did_change(backend: &Backend, params: DidChangeTextDocumentP
 
     let need_publish_diagnostics = document
         .version
-        .map_or(true, |version| version < text_document.version);
+        .is_none_or(|version| version < text_document.version);
 
     for content_change in content_changes {
         if let Some(range) = content_change.range {

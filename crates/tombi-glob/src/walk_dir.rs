@@ -63,8 +63,8 @@ impl WalkDir {
             Box::new(move |entry_result| {
                 match entry_result {
                     Ok(entry) => {
-                        if let Some(file_type) = entry.file_type() {
-                            if file_type.is_file() {
+                        if let Some(file_type) = entry.file_type()
+                            && file_type.is_file() {
                                 let path = entry.path();
                                 let relative_path =
                                     if let Ok(rel_path) = path.strip_prefix(&root_path) {
@@ -92,14 +92,12 @@ impl WalkDir {
                                         }
                                     }
 
-                                    if !should_exclude {
-                                        if let Ok(mut results_guard) = results_clone.lock() {
+                                    if !should_exclude
+                                        && let Ok(mut results_guard) = results_clone.lock() {
                                             results_guard.push(path.to_path_buf());
                                         }
-                                    }
                                 }
                             }
-                        }
                     }
                     Err(_) => {
                         // Ignore errors and continue

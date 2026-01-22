@@ -320,11 +320,10 @@ fn workspace_code_action(
         &["workspace", "package", parent_key.as_str()],
     )?;
 
-    if let tombi_document_tree::Value::Table(table) = value {
-        if table.get("workspace").is_some() {
+    if let tombi_document_tree::Value::Table(table) = value
+        && table.get("workspace").is_some() {
             return None; // Workspace already exists
-        }
-    };
+        };
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::InheritFromWorkspace.to_string(),
@@ -489,15 +488,14 @@ fn crate_version_code_action(
     document_tree: &tombi_document_tree::DocumentTree,
     accessors: &[Accessor],
 ) -> Option<CodeAction> {
-    if matches_accessors!(accessors, ["dependencies", _])
+    if (matches_accessors!(accessors, ["dependencies", _])
         || matches_accessors!(accessors, ["dev-dependencies", _])
         || matches_accessors!(accessors, ["build-dependencies", _])
         || matches_accessors!(accessors, ["workspace", "dependencies", _])
         || matches_accessors!(accessors, ["target", _, "dependencies", _])
         || matches_accessors!(accessors, ["target", _, "dev-dependencies", _])
-        || matches_accessors!(accessors, ["target", _, "build-dependencies", _])
-    {
-        if let Some((_, tombi_document_tree::Value::String(version))) =
+        || matches_accessors!(accessors, ["target", _, "build-dependencies", _]))
+        && let Some((_, tombi_document_tree::Value::String(version))) =
             dig_accessors(document_tree, accessors)
         {
             return Some(CodeAction {
@@ -529,7 +527,6 @@ fn crate_version_code_action(
                 ..Default::default()
             });
         }
-    }
     None
 }
 
@@ -568,11 +565,10 @@ fn get_ast_inline_table_from_document_tree(
 
     // Use descendants to find the InlineTable with matching range
     for node in root.syntax().descendants() {
-        if let Some(inline_table) = tombi_ast::InlineTable::cast(node) {
-            if inline_table.range() == target_range {
+        if let Some(inline_table) = tombi_ast::InlineTable::cast(node)
+            && inline_table.range() == target_range {
                 return Some(inline_table);
             }
-        }
     }
 
     None
@@ -604,7 +600,7 @@ fn calculate_inline_table_insertion(
         } else {
             Some((
                 ast_inline_table.brace_start()?.range().end,
-                format!("{}", new_entry_text),
+                new_entry_text.to_string(),
             ))
         };
     }

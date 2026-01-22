@@ -186,8 +186,7 @@ async fn validate_table(
                 )
                 .await
                 .inspect_err(|err| tracing::warn!("{err}"))
-            {
-                if let Err(crate::Error {
+                && let Err(crate::Error {
                     mut diagnostics, ..
                 }) = value
                     .validate(&new_accessors, Some(&current_schema), schema_context)
@@ -203,7 +202,6 @@ async fn validate_table(
 
                     total_diagnostics.extend(diagnostics);
                 }
-            }
         }
 
         if let Some(pattern_properties) = &table_schema.pattern_properties {
@@ -228,8 +226,7 @@ async fn validate_table(
                         )
                         .await
                         .inspect_err(|err| tracing::warn!("{err}"))
-                    {
-                        if let Err(crate::Error {
+                        && let Err(crate::Error {
                             mut diagnostics, ..
                         }) = value
                             .validate(&new_accessors, Some(&current_schema), schema_context)
@@ -245,7 +242,6 @@ async fn validate_table(
 
                             total_diagnostics.extend(diagnostics);
                         }
-                    }
                 }
             }
 
@@ -487,8 +483,8 @@ async fn validate_table(
         );
     }
 
-    if let Some(not_schema) = table_schema.not.as_ref() {
-        if let Err(error) = validate_not(
+    if let Some(not_schema) = table_schema.not.as_ref()
+        && let Err(error) = validate_not(
             table_value,
             accessors,
             not_schema,
@@ -501,7 +497,6 @@ async fn validate_table(
         {
             total_diagnostics.extend(error.diagnostics);
         }
-    }
 
     if total_diagnostics.is_empty() {
         Ok(())

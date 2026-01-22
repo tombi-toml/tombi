@@ -50,8 +50,8 @@ pub async fn create_integer_sortable_values<'a>(
                     let mut keys_iter = keys.keys();
                     if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
                         let key_text = key.to_raw_text(schema_context.toml_version);
-                        if key_text == array_values_order_by {
-                            if let Some(tombi_document_tree::Value::Integer(integer_node)) =
+                        if key_text == array_values_order_by
+                            && let Some(tombi_document_tree::Value::Integer(integer_node)) =
                                 table_node.get(&key_text)
                             {
                                 sortable_values.push((integer_node.value(), value, comma));
@@ -59,7 +59,6 @@ pub async fn create_integer_sortable_values<'a>(
                                 found = true;
                                 break;
                             }
-                        }
                     } else {
                         return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                     }

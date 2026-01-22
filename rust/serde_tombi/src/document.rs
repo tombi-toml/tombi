@@ -71,8 +71,8 @@ impl ToTomlString for tombi_document::Table {
     ) {
         match self.kind() {
             tombi_document::TableKind::Table => {
-                if self.key_values().len() == 1 {
-                    if let Some((key, value)) = self.key_values().iter().next() {
+                if self.key_values().len() == 1
+                    && let Some((key, value)) = self.key_values().iter().next() {
                         match value {
                             tombi_document::Value::Table(table)
                                 if table.kind() == tombi_document::TableKind::Table =>
@@ -93,7 +93,6 @@ impl ToTomlString for tombi_document::Table {
                             _ => {}
                         }
                     }
-                }
 
                 if !parent_keys.is_empty() {
                     result.push_str(&format!(

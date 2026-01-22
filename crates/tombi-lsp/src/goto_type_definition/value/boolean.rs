@@ -34,8 +34,7 @@ impl GetTypeDefinition for tombi_document_tree::Boolean {
                     BooleanCommonFormatRules,
                     BooleanCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                && let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,
                     schema_uri,
                 )
@@ -43,7 +42,6 @@ impl GetTypeDefinition for tombi_document_tree::Boolean {
                 {
                     return Some(hover_content);
                 }
-            }
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {

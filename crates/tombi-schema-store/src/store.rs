@@ -219,8 +219,8 @@ impl SchemaStore {
             }
             "http" | "https" => {
                 let catalog_cache_path = get_cache_file_path(catalog_uri).await;
-                if let Some(catalog_cache_path) = &catalog_cache_path {
-                    if let Ok(Some(catalog)) = load_catalog_from_cache(
+                if let Some(catalog_cache_path) = &catalog_cache_path
+                    && let Ok(Some(catalog)) = load_catalog_from_cache(
                         catalog_uri,
                         catalog_cache_path,
                         self.options.cache.as_ref(),
@@ -229,7 +229,6 @@ impl SchemaStore {
                     {
                         return Ok(Some(catalog));
                     }
-                }
 
                 if self.offline() {
                     if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
@@ -336,8 +335,8 @@ impl SchemaStore {
         }
 
         let has_key = { self.document_schemas.read().await.contains_key(schema_uri) };
-        if has_key {
-            if let Some(document_schema) = self.fetch_document_schema(schema_uri).await.transpose()
+        if has_key
+            && let Some(document_schema) = self.fetch_document_schema(schema_uri).await.transpose()
             {
                 self.document_schemas
                     .write()
@@ -346,7 +345,6 @@ impl SchemaStore {
                 tracing::debug!("update schema: {}", schema_uri);
                 return Ok(true);
             }
-        }
 
         Ok(false)
     }
@@ -383,8 +381,8 @@ impl SchemaStore {
             }
             "http" | "https" => {
                 let schema_cache_path = get_cache_file_path(schema_uri).await;
-                if let Some(schema_cache_path) = &schema_cache_path {
-                    if let Ok(Some(schema_value)) = load_json_schema_from_cache(
+                if let Some(schema_cache_path) = &schema_cache_path
+                    && let Ok(Some(schema_value)) = load_json_schema_from_cache(
                         schema_uri,
                         schema_cache_path,
                         self.options.cache.as_ref(),
@@ -393,7 +391,6 @@ impl SchemaStore {
                     {
                         return Ok(Some(schema_value));
                     }
-                }
 
                 if self.offline() {
                     if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(

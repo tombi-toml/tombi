@@ -45,8 +45,8 @@ pub async fn create_offset_date_time_sortable_values<'a>(
                     let mut keys_iter = keys.keys();
                     if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
                         let key_text = key.to_raw_text(schema_context.toml_version);
-                        if key_text == array_values_order_by {
-                            if let Some(tombi_document_tree::Value::OffsetDateTime(
+                        if key_text == array_values_order_by
+                            && let Some(tombi_document_tree::Value::OffsetDateTime(
                                 offset_date_time_node,
                             )) = table_node.get(&key_text)
                             {
@@ -59,7 +59,6 @@ pub async fn create_offset_date_time_sortable_values<'a>(
                                 found = true;
                                 break;
                             }
-                        }
                     } else {
                         return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                     }

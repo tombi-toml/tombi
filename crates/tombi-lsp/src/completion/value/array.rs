@@ -38,11 +38,10 @@ impl FindCompletionContents for tombi_document_tree::Array {
         tracing::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
-            if keys.is_empty() {
-                if let Some((comment_directive_context, schema_uri)) =
+            if keys.is_empty()
+                && let Some((comment_directive_context, schema_uri)) =
                     get_array_comment_directive_content_with_schema_uri(self, position, accessors)
-                {
-                    if let Some(completions) =
+                    && let Some(completions) =
                         get_tombi_comment_directive_content_completion_contents(
                             comment_directive_context,
                             schema_uri,
@@ -51,8 +50,6 @@ impl FindCompletionContents for tombi_document_tree::Array {
                     {
                         return completions;
                     }
-                }
-            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema: Some(value_schema),
@@ -91,8 +88,8 @@ impl FindCompletionContents for tombi_document_tree::Array {
                             }
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
-                                if let Some(items) = &array_schema.items {
-                                    if let Ok(Some(current_schema)) = items
+                                if let Some(items) = &array_schema.items
+                                    && let Ok(Some(current_schema)) = items
                                         .write()
                                         .await
                                         .resolve(
@@ -117,12 +114,11 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                             )
                                             .await;
                                     }
-                                }
                             }
                         }
 
-                        if let Some(items) = &array_schema.items {
-                            if let Ok(Some(current_schema)) = items
+                        if let Some(items) = &array_schema.items
+                            && let Ok(Some(current_schema)) = items
                                 .write()
                                 .await
                                 .resolve(
@@ -221,7 +217,6 @@ impl FindCompletionContents for tombi_document_tree::Array {
 
                                 return completions;
                             }
-                        }
 
                         Vec::with_capacity(0)
                     }
@@ -270,8 +265,8 @@ impl FindCompletionContents for tombi_document_tree::Array {
                 for (index, value) in self.values().iter().enumerate() {
                     if value.contains(position) {
                         // Array of tables
-                        if let tombi_document_tree::Value::Table(table) = value {
-                            if keys.len() == 1
+                        if let tombi_document_tree::Value::Table(table) = value
+                            && keys.len() == 1
                                 && table.kind() == tombi_document_tree::TableKind::KeyValue
                             {
                                 let key = &keys.first().unwrap();
@@ -285,7 +280,6 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     }),
                                 )];
                             }
-                        }
 
                         let accessor = Accessor::Index(index);
                         return value

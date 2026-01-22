@@ -221,9 +221,8 @@ fn document_link_for_member_pyproject_toml(
     let mut document_links = vec![];
     if let Some((workspace_key, tombi_document_tree::Value::Boolean(is_workspace))) =
         source.get_key_value("workspace")
-    {
-        if is_workspace.value() {
-            if let Some((member_project_toml_path, _)) = find_member_project_toml(
+        && is_workspace.value()
+            && let Some((member_project_toml_path, _)) = find_member_project_toml(
                 &package_name_key.value,
                 &workspace_pyproject_toml_document_tree,
                 &workspace_pyproject_toml_path,
@@ -244,8 +243,6 @@ fn document_link_for_member_pyproject_toml(
                     tooltip: DocumentLinkToolTip::WorkspacePyprojectToml.into(),
                 });
             }
-        }
-    }
 
     Ok(document_links)
 }
@@ -271,8 +268,8 @@ fn document_link_for_project_dependencies(
 
                 if is_local_source {
                     // For packages in tool.uv.sources, create links to local pyproject.toml
-                    if let Some(sources) = uv_sources {
-                        if let Some((package_key, source_value)) =
+                    if let Some(sources) = uv_sources
+                        && let Some((package_key, source_value)) =
                             sources.get_key_value(package_name.as_ref())
                         {
                             // Try to create document links for the local source
@@ -298,7 +295,6 @@ fn document_link_for_project_dependencies(
                                 }
                             }
                         }
-                    }
                 } else {
                     // Create PyPI URL for external packages
                     if let Ok(pypi_uri) = tombi_uri::Uri::from_str(&format!(

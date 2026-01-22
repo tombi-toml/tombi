@@ -25,7 +25,7 @@ impl TombiExtension {
         let env = binary_settings
             .and_then(|binary_settings| binary_settings.env.as_ref())
             .map(|env| {
-                env.into_iter()
+                env.iter()
                     .map(|(k, v)| (k.to_string(), v.to_string()))
                     .collect()
             })
@@ -75,15 +75,14 @@ impl TombiExtension {
             });
         }
 
-        if let Some(path) = &self.cached_binary_path {
-            if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
+        if let Some(path) = &self.cached_binary_path
+            && fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
                 return Ok(zed::Command {
                     command: path.clone(),
                     args,
                     env,
                 });
             }
-        }
 
         zed::set_language_server_installation_status(
             language_server_id,

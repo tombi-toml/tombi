@@ -164,8 +164,8 @@ pub async fn get_hover_keys_with_range(
             kv.keys()
         } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
             let header = table.header();
-            if let Some(header) = &header {
-                if hover_range.is_none()
+            if let Some(header) = &header
+                && hover_range.is_none()
                     && (header
                         .keys()
                         .last()
@@ -203,13 +203,12 @@ pub async fn get_hover_keys_with_range(
                     }
                     hover_range = Some(range);
                 }
-            }
 
             header
         } else if let Some(array_of_table) = tombi_ast::ArrayOfTable::cast(node.to_owned()) {
             let header = array_of_table.header();
-            if let Some(header) = &header {
-                if hover_range.is_none()
+            if let Some(header) = &header
+                && hover_range.is_none()
                     && (header
                         .keys()
                         .last()
@@ -247,7 +246,6 @@ pub async fn get_hover_keys_with_range(
                     }
                     hover_range = Some(range);
                 }
-            }
             header
         } else if let Some(root) = tombi_ast::Root::cast(node.to_owned()) {
             if hover_range.is_none()

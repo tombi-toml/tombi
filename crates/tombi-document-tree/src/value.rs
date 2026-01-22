@@ -225,11 +225,10 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Value {
             }
         }
 
-        if let Some(comment) = self.trailing_comment() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+        if let Some(comment) = self.trailing_comment()
+            && let Some(comment_directive) = comment.get_tombi_value_directive() {
                 comment_directives.push(comment_directive);
             }
-        }
 
         let mut document_tree_result = match self {
             tombi_ast::Value::BasicString(string) => {

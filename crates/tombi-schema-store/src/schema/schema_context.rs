@@ -21,11 +21,10 @@ impl SchemaContext<'_> {
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
     ) -> Option<Result<crate::DocumentSchema, crate::Error>> {
-        if let Some(sub_schema_uri_map) = self.sub_schema_uri_map {
-            if let Some(sub_schema_uri) =
+        if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
+            && let Some(sub_schema_uri) =
                 sub_schema_uri_map.get(&accessors.iter().map(SchemaAccessor::from).collect_vec())
-            {
-                if current_schema
+                && current_schema
                     .is_none_or(|current_schema| &*current_schema.schema_uri != sub_schema_uri)
                 {
                     return self
@@ -34,8 +33,6 @@ impl SchemaContext<'_> {
                         .await
                         .transpose();
                 }
-            }
-        }
         None
     }
 }

@@ -36,8 +36,7 @@ impl FindCompletionContents for tombi_document_tree::OffsetDateTime {
                     OffsetDateTimeCommonFormatRules,
                     OffsetDateTimeCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,
                     schema_uri,
                 )
@@ -45,7 +44,6 @@ impl FindCompletionContents for tombi_document_tree::OffsetDateTime {
                 {
                     return completions;
                 }
-            }
 
             Vec::with_capacity(0)
         }

@@ -40,8 +40,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
             if keys.is_empty() {
                 if let Some((comment_directive_context, schema_uri)) =
                     get_table_comment_directive_content_with_schema_uri(self, position, accessors)
-                {
-                    if let Some(completions) =
+                    && let Some(completions) =
                         get_tombi_comment_directive_content_completion_contents(
                             comment_directive_context,
                             schema_uri,
@@ -50,7 +49,6 @@ impl FindCompletionContents for tombi_document_tree::Table {
                     {
                         return completions;
                     }
-                }
 
                 if !matches!(
                     self.kind(),
@@ -189,15 +187,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             continue;
                                         }
 
-                                        if let Some(value) = self.get(key_name) {
-                                            if check_used_table_value(
+                                        if let Some(value) = self.get(key_name)
+                                            && check_used_table_value(
                                                 value,
                                                 accessors.is_empty(),
                                                 completion_hint,
                                             ) {
                                                 continue;
                                             }
-                                        }
 
                                         if let Ok(Some(current_schema)) = property_schema
                                             .resolve(
@@ -382,15 +379,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             {
                                 let key_name = &schema_accessor.to_string();
 
-                                if let Some(value) = self.get(key_name) {
-                                    if check_used_table_value(
+                                if let Some(value) = self.get(key_name)
+                                    && check_used_table_value(
                                         value,
                                         accessors.is_empty(),
                                         completion_hint,
                                     ) {
                                         continue;
                                     }
-                                }
 
                                 // NOTE: To avoid downloading unnecessary schema files,
                                 //       if the property is an unresolved online URL(like https:// or http://),
@@ -451,13 +447,12 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     {
                                         let head_accessors =
                                             &root_accessors[..root_accessors.len() - 1];
-                                        if head_accessors == accessors {
-                                            if let Ok(Some(document_schema)) = schema_context
+                                        if head_accessors == accessors
+                                            && let Ok(Some(document_schema)) = schema_context
                                                 .store
                                                 .try_get_document_schema(sub_schema_uri)
                                                 .await
-                                            {
-                                                if let Some(value_schema) =
+                                                && let Some(value_schema) =
                                                     &document_schema.value_schema
                                                 {
                                                     completion_contents.push(
@@ -489,8 +484,6 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                                         ),
                                                     );
                                                 }
-                                            }
-                                        }
                                     }
                                 }
                             }
@@ -511,8 +504,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 ))
                             } else if let Some((_, additional_property_schema)) =
                                 &table_schema.additional_property_schema
-                            {
-                                if let Ok(Some(CurrentSchema {
+                                && let Ok(Some(CurrentSchema {
                                     value_schema,
                                     schema_uri,
                                     ..
@@ -536,7 +528,6 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         ),
                                     );
                                 }
-                            }
                         }
                         completion_contents
                     }
@@ -665,14 +656,13 @@ impl FindCompletionContents for TableSchema {
                     }
 
                     for schema_candidate in schema_candidates {
-                        if let Some(CompletionHint::InTableHeader) = completion_hint {
-                            if count_table_or_array_schema(&current_schema, schema_context.store)
+                        if let Some(CompletionHint::InTableHeader) = completion_hint
+                            && count_table_or_array_schema(&current_schema, schema_context.store)
                                 .await
                                 == 0
                             {
                                 continue;
                             }
-                        }
 
                         completion_items.push(CompletionContent::new_key(
                             label,
@@ -732,8 +722,8 @@ async fn count_table_or_array_schema(
             .map(|schema| async {
                 match schema {
                     ValueSchema::Array(array_schema) => {
-                        if let Some(item) = array_schema.items {
-                            if let Ok(Some(CurrentSchema {
+                        if let Some(item) = array_schema.items
+                            && let Ok(Some(CurrentSchema {
                                 schema_uri,
                                 value_schema,
                                 definitions,
@@ -756,7 +746,6 @@ async fn count_table_or_array_schema(
                                     )
                                     .await;
                             }
-                        }
                         true
                     }
                     ValueSchema::Table(_) => true,
@@ -807,13 +796,12 @@ fn get_property_value_completion_contents<'a: 'b, 'b>(
                     }
                 }
                 Some(CompletionHint::InTableHeader) => {
-                    if let Some(current_schema) = current_schema {
-                        if count_table_or_array_schema(current_schema, schema_context.store).await
+                    if let Some(current_schema) = current_schema
+                        && count_table_or_array_schema(current_schema, schema_context.store).await
                             == 0
                         {
                             return Vec::with_capacity(0);
                         }
-                    }
                 }
                 Some(CompletionHint::InArray { .. } | CompletionHint::Comma { .. }) | None => {
                     if matches!(value, tombi_document_tree::Value::Incomplete { .. }) {

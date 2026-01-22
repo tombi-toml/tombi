@@ -35,8 +35,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
         async move {
             if let Some((comment_directive_context, schema_uri)) =
                 get_table_comment_directive_content_with_schema_uri(self, position, accessors)
-            {
-                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                && let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,
                     schema_uri,
                 )
@@ -44,7 +43,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                 {
                     return Some(hover_content);
                 }
-            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema,
@@ -297,8 +295,8 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                     }),
                 }
             } else {
-                if let Some(key) = keys.first() {
-                    if let Some(value) = self.get(key) {
+                if let Some(key) = keys.first()
+                    && let Some(value) = self.get(key) {
                         let accessor = Accessor::Key(key.value.clone());
 
                         return value
@@ -315,7 +313,6 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                             )
                             .await;
                     }
-                }
                 None
             }
         }

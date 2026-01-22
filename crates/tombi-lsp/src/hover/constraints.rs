@@ -19,11 +19,10 @@ where
     let enum_len = r#enum.as_ref().map(|value| value.len()).unwrap_or_default();
     let mut enum_values = Vec::with_capacity(const_len + enum_len);
 
-    if let Some(const_value) = const_value {
-        if let Some(display_value) = convert_fn(const_value) {
+    if let Some(const_value) = const_value
+        && let Some(display_value) = convert_fn(const_value) {
             enum_values.push(display_value);
         }
-    }
 
     if let Some(r#enum) = r#enum {
         enum_values.extend(r#enum.iter().filter_map(convert_fn));

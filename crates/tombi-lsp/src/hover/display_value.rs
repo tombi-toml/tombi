@@ -323,15 +323,13 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
                     schema_context.store,
                 )
                 .await
-            {
-                if let Some(values) = resolved
+                && let Some(values) = resolved
                     .value_schema
                     .get_enum(schema_uri, definitions, schema_context)
                     .await
                 {
                     enum_values.extend(values);
                 }
-            }
         }
 
         if enum_values.is_empty() {

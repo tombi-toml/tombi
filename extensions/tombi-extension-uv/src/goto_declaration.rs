@@ -97,20 +97,17 @@ fn goto_declaration_for_dependency_package(
 
     let mut locations = Vec::new();
 
-    if let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"]) {
-        if let Some((_, Value::Table(source_table))) = sources.get_key_value(package_name) {
+    if let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"])
+        && let Some((_, Value::Table(source_table))) = sources.get_key_value(package_name) {
             if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace")
-            {
-                if is_workspace.value() {
-                    if let Some(location) = get_workspace_dependency_declaration(
+                && is_workspace.value()
+                    && let Some(location) = get_workspace_dependency_declaration(
                         package_name,
                         pyproject_toml_path,
                         toml_version,
                     ) {
                         locations.push(location);
                     }
-                }
-            }
 
             if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
                 if let Some(location) = get_path_dependency_declaration(pyproject_toml_path, path) {
@@ -122,7 +119,6 @@ fn goto_declaration_for_dependency_package(
                 }
             }
         }
-    }
 
     locations.extend(collect_workspace_project_dependency_definitions(
         package_name,

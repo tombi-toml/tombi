@@ -89,20 +89,15 @@ pub fn code_action(
     }
 
     // Check if this is a workspace root (has [tool.uv.workspace] section)
-    if document_tree.contains_key("tool") {
-        if let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"]) {
-            if let tombi_document_tree::Value::Table(tool_table) = tool_value {
-                if let Some((_, uv_value)) = tool_table.get_key_value("uv") {
-                    if let tombi_document_tree::Value::Table(uv_table) = uv_value {
-                        if uv_table.contains_key("workspace") {
+    if document_tree.contains_key("tool")
+        && let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"])
+            && let tombi_document_tree::Value::Table(tool_table) = tool_value
+                && let Some((_, uv_value)) = tool_table.get_key_value("uv")
+                    && let tombi_document_tree::Value::Table(uv_table) = uv_value
+                        && uv_table.contains_key("workspace") {
                             // This is a workspace root, don't provide code actions
                             return Ok(None);
                         }
-                    }
-                }
-            }
-        }
-    }
 
     if matches_accessors!(accessors, ["project", "dependencies", _])
         || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
@@ -235,11 +230,10 @@ fn get_ast_array_from_document_tree(
 
     // Use descendants to find the Array with matching range
     for node in root.syntax().descendants() {
-        if let Some(array) = tombi_ast::Array::cast(node) {
-            if array.range() == target_range {
+        if let Some(array) = tombi_ast::Array::cast(node)
+            && array.range() == target_range {
                 return Some(array);
             }
-        }
     }
 
     None
@@ -303,7 +297,7 @@ fn calculate_array_insertion(
         target_value.syntax().range().end
     };
     let new_text = format!("\n{},\n", new_element);
-    return Some((insert_pos, new_text));
+    Some((insert_pos, new_text))
 }
 
 fn add_workspace_dependency_code_action(
@@ -327,13 +321,11 @@ fn add_workspace_dependency_code_action(
     let dependency_requirement = parse_dependency_requirement(dep_str)?;
 
     // If no version specified, don't provide code action
-    if dependency_requirement.version_or_url().is_none() {
-        return None;
-    }
+    dependency_requirement.version_or_url()?;
 
     // Check if this dependency already exists in workspace
     let workspace_dependencies =
-        collect_dependency_requirements_from_document_tree(&workspace_document_tree);
+        collect_dependency_requirements_from_document_tree(workspace_document_tree);
     if workspace_dependencies
         .iter()
         .find(
@@ -507,12 +499,10 @@ fn use_workspace_dependency_code_action(
     let requirement = parse_requirement(dep_str.value())?;
 
     // If no version specified, don't provide code action
-    if requirement.version_or_url.is_none() {
-        return None;
-    }
+    requirement.version_or_url.as_ref()?;
 
     let workspace_dependency_requirements =
-        collect_dependency_requirements_from_document_tree(&workspace_document_tree);
+        collect_dependency_requirements_from_document_tree(workspace_document_tree);
     let DependencyRequirement {
         requirement: workspace_requirement,
         ..
@@ -524,7 +514,7 @@ fn use_workspace_dependency_code_action(
     )?;
 
     // Format dependency without version (preserving extras)
-    let new_dep_str = format_dependency_without_version(&workspace_requirement);
+    let new_dep_str = format_dependency_without_version(workspace_requirement);
 
     // Use the string's range for replacement
     let range = dep_str.range().into_lsp(line_index);

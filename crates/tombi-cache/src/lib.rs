@@ -8,12 +8,11 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         let mut cache_dir_path = std::path::PathBuf::from(xdg_cache_home);
         cache_dir_path.push("tombi");
 
-        if !cache_dir_path.is_dir() {
-            if let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
+        if !cache_dir_path.is_dir()
+            && let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
                 tracing::warn!("Failed to create cache directory: {error}");
                 return None;
             }
-        }
         return Some(cache_dir_path);
     }
 
@@ -21,12 +20,11 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         let mut cache_dir_path = home_dir.clone();
         cache_dir_path.push(".cache");
         cache_dir_path.push("tombi");
-        if !cache_dir_path.is_dir() {
-            if let Err(error) = std::fs::create_dir_all(&cache_dir_path) {
+        if !cache_dir_path.is_dir()
+            && let Err(error) = std::fs::create_dir_all(&cache_dir_path) {
                 tracing::warn!("Failed to create cache directory: {error}");
                 return None;
             }
-        }
         return Some(cache_dir_path);
     }
 
@@ -60,8 +58,8 @@ pub async fn read_from_cache(
         return Ok(None);
     }
 
-    if let Some(cache_file_path) = cache_file_path {
-        if cache_file_path.is_file() {
+    if let Some(cache_file_path) = cache_file_path
+        && cache_file_path.is_file() {
             let cache_ttl = options
                 .map(|opts| opts.cache_ttl)
                 .unwrap_or_else(|| Options::default().cache_ttl);
@@ -69,13 +67,11 @@ pub async fn read_from_cache(
                 let Ok(metadata) = tokio::fs::metadata(cache_file_path).await else {
                     return Ok(None);
                 };
-                if let Ok(modified) = metadata.modified() {
-                    if let Ok(elapsed) = modified.elapsed() {
-                        if elapsed > ttl {
+                if let Ok(modified) = metadata.modified()
+                    && let Ok(elapsed) = modified.elapsed()
+                        && elapsed > ttl {
                             return Ok(None);
                         }
-                    }
-                }
             }
             return Ok(Some(
                 tokio::fs::read_to_string(&cache_file_path)
@@ -86,7 +82,6 @@ pub async fn read_from_cache(
                     })?,
             ));
         }
-    }
 
     Ok(None)
 }
@@ -126,8 +121,8 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
         // Remove all contents of the cache directory but keep the directory itself
         if let Ok(mut entries) = tokio::fs::read_dir(&cache_dir_path).await {
             while let Ok(Some(entry)) = entries.next_entry().await {
-                if let Ok(file_type) = entry.file_type().await {
-                    if file_type.is_dir() {
+                if let Ok(file_type) = entry.file_type().await
+                    && file_type.is_dir() {
                         let path = entry.path();
                         if let Err(err) = tokio::fs::remove_dir_all(&path).await {
                             return Err(crate::Error::CacheDirectoryRemoveFailed {
@@ -136,7 +131,6 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
                             });
                         }
                     }
-                }
             }
         }
         return Ok(true);
