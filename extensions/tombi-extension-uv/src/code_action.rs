@@ -328,18 +328,12 @@ fn add_workspace_dependency_code_action(
     // Check if this dependency already exists in workspace
     let workspace_dependencies =
         collect_dependency_requirements_from_document_tree(workspace_document_tree);
-    if workspace_dependencies
-        .iter()
-        .find(
-            |DependencyRequirement {
-                 requirement: workspace_requirement,
-                 ..
-             }| {
-                dependency_requirement.requirement.name == workspace_requirement.name
-            },
-        )
-        .is_some()
-    {
+    if workspace_dependencies.iter().any(
+        |DependencyRequirement {
+             requirement: workspace_requirement,
+             ..
+         }| { dependency_requirement.requirement.name == workspace_requirement.name },
+    ) {
         return None;
     }
 

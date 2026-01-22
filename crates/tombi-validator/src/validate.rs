@@ -181,7 +181,7 @@ fn handle_type_mismatch(
 }
 
 fn handle_unused_noqa(
-    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
     rule_name: &'static str,

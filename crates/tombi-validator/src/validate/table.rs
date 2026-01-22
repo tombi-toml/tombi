@@ -553,16 +553,5 @@ async fn convert_deprecated_diagnostics_range(
                 break;
             }
         }
-    } else if current_schema.value_schema.deprecated().await == Some(true) {
-        for diagnostic in schema_diagnostics.iter_mut() {
-            if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
-                *diagnostic = tombi_diagnostic::Diagnostic::new_warning(
-                    diagnostic.message(),
-                    diagnostic.code(),
-                    key.range() + value.range(),
-                );
-                break;
-            }
-        }
     }
 }

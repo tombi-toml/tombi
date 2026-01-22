@@ -121,9 +121,7 @@ pub fn inline_table_to_dot_keys_code_action(
             if table.len() == 1
                 && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
         {
-            let Some(node) = get_ast_inline_table_node(root, table) else {
-                return None;
-            };
+            let node = get_ast_inline_table_node(root, table)?;
             if !node.inner_begin_dangling_comments().is_empty()
                 || node
                     .inner_end_dangling_comments()

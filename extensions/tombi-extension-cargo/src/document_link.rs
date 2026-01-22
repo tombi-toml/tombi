@@ -526,12 +526,10 @@ fn document_link_for_bin_targets(
         })
         .filter_map(|path_string| {
             let raw_path = path_string.value();
-            let Some(target) = get_uri_relative_to_cargo_toml(
+            let target = get_uri_relative_to_cargo_toml(
                 std::path::Path::new(raw_path),
                 crate_cargo_toml_path,
-            ) else {
-                return None;
-            };
+            )?;
 
             Some(tombi_extension::DocumentLink {
                 target,
