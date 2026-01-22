@@ -42,10 +42,12 @@ impl Comment {
                     uri: Ok(uri),
                     uri_range,
                 })
-            } else if let Some(source_dir_path) = source_path {
+            } else if let Some(source_path) = source_path {
                 let mut schema_file_path = std::path::PathBuf::from(uri_text);
-                if let Some(parent) = source_dir_path.parent() {
-                    schema_file_path = parent.join(schema_file_path);
+                if schema_file_path.is_relative()
+                    && let Some(source_dir_path) = source_path.parent()
+                {
+                    schema_file_path = source_dir_path.join(schema_file_path);
                 }
                 if let Ok(canonicalized_file_path) = schema_file_path.canonicalize() {
                     schema_file_path = canonicalized_file_path
