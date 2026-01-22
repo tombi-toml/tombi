@@ -27,14 +27,15 @@ impl crate::Edit for tombi_ast::Root {
                 .schema_document_comment_directive(source_path)
                 .is_some()
                 || !self.tombi_document_comment_directives().is_empty())
-                && let Some(document_header_comments) = self.get_document_header_comments() {
-                    changes.push(crate::Change::AppendTop {
-                        new: document_header_comments
-                            .into_iter()
-                            .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
-                            .collect_vec(),
-                    });
-                }
+                && let Some(document_header_comments) = self.get_document_header_comments()
+            {
+                changes.push(crate::Change::AppendTop {
+                    new: document_header_comments
+                        .into_iter()
+                        .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
+                        .collect_vec(),
+                });
+            }
 
             for key_value in self.key_values() {
                 changes.extend(

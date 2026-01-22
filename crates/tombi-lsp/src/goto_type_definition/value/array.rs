@@ -37,9 +37,9 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                     schema_uri,
                 )
                 .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
+            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema,

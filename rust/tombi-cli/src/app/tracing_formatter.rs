@@ -91,20 +91,21 @@ where
         writeln!(writer)?;
 
         if self.level == Some(tracing::Level::TRACE)
-            && let Some(file) = metadata.file() {
-                let link = if let Some(line) = metadata.line() {
-                    format!("{file}:{line}")
-                } else {
-                    file.to_string()
-                };
+            && let Some(file) = metadata.file()
+        {
+            let link = if let Some(line) = metadata.line() {
+                format!("{file}:{line}")
+            } else {
+                file.to_string()
+            };
 
-                writeln!(
-                    writer,
-                    "    {} {}",
-                    Self::at_style(use_ansi_color).paint("at"),
-                    Self::link_style(use_ansi_color).paint(link)
-                )?;
-            }
+            writeln!(
+                writer,
+                "    {} {}",
+                Self::at_style(use_ansi_color).paint("at"),
+                Self::link_style(use_ansi_color).paint(link)
+            )?;
+        }
 
         Ok(())
     }

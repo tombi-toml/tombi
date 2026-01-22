@@ -34,17 +34,18 @@ impl GetHoverContent for tombi_document_tree::Integer {
                 && let Some(hover_content) =
                     get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
                         .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
+            }
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Integer(integer_schema) => {
                         if let Some(r#enum) = &integer_schema.r#enum
-                            && !r#enum.contains(&self.value()) {
-                                return None;
-                            }
+                            && !r#enum.contains(&self.value())
+                        {
+                            return None;
+                        }
 
                         let mut hover_content = integer_schema
                             .get_hover_content(

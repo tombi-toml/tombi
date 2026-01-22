@@ -17,13 +17,13 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             .syntax()
                             .range()
                             .contains(schema_comment_directive.directive_range.start)
-                        {
-                            builder.add_comment_directive(
-                                &comment,
-                                schema_comment_directive.directive_range,
-                            );
-                            continue;
-                        }
+                    {
+                        builder.add_comment_directive(
+                            &comment,
+                            schema_comment_directive.directive_range,
+                        );
+                        continue;
+                    }
                     if let Some(tombi_comment_directive) = comment.get_tombi_document_directive() {
                         builder.add_comment_directive(
                             &comment,
@@ -42,13 +42,13 @@ impl AppendSemanticTokens for tombi_ast::Root {
                             .syntax()
                             .range()
                             .contains(schema_document_directive.directive_range.start)
-                        {
-                            builder.add_comment_directive(
-                                &comment,
-                                schema_document_directive.directive_range,
-                            );
-                            continue;
-                        }
+                    {
+                        builder.add_comment_directive(
+                            &comment,
+                            schema_document_directive.directive_range,
+                        );
+                        continue;
+                    }
                     if let Some(tombi_document_directive) = comment.get_tombi_document_directive() {
                         builder.add_comment_directive(
                             &comment,

@@ -91,13 +91,14 @@ pub fn code_action(
     // Check if this is a workspace root (has [tool.uv.workspace] section)
     if document_tree.contains_key("tool")
         && let Some((_, tool_value)) = tombi_document_tree::dig_keys(document_tree, &["tool"])
-            && let tombi_document_tree::Value::Table(tool_table) = tool_value
-                && let Some((_, uv_value)) = tool_table.get_key_value("uv")
-                    && let tombi_document_tree::Value::Table(uv_table) = uv_value
-                        && uv_table.contains_key("workspace") {
-                            // This is a workspace root, don't provide code actions
-                            return Ok(None);
-                        }
+        && let tombi_document_tree::Value::Table(tool_table) = tool_value
+        && let Some((_, uv_value)) = tool_table.get_key_value("uv")
+        && let tombi_document_tree::Value::Table(uv_table) = uv_value
+        && uv_table.contains_key("workspace")
+    {
+        // This is a workspace root, don't provide code actions
+        return Ok(None);
+    }
 
     if matches_accessors!(accessors, ["project", "dependencies", _])
         || matches_accessors!(accessors, ["project", "optional-dependencies", _, _])
@@ -231,9 +232,10 @@ fn get_ast_array_from_document_tree(
     // Use descendants to find the Array with matching range
     for node in root.syntax().descendants() {
         if let Some(array) = tombi_ast::Array::cast(node)
-            && array.range() == target_range {
-                return Some(array);
-            }
+            && array.range() == target_range
+        {
+            return Some(array);
+        }
     }
 
     None

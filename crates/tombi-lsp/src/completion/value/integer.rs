@@ -39,9 +39,9 @@ impl FindCompletionContents for tombi_document_tree::Integer {
                     schema_uri,
                 )
                 .await
-                {
-                    return completions;
-                }
+            {
+                return completions;
+            }
 
             Vec::with_capacity(0)
         }

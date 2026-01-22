@@ -11,7 +11,6 @@ impl ArrayBracketSpaceWidth {
     }
 }
 
-
 impl From<u8> for ArrayBracketSpaceWidth {
     fn from(value: u8) -> Self {
         Self(value)

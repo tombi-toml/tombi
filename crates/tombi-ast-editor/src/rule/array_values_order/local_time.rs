@@ -48,12 +48,12 @@ pub async fn create_local_time_sortable_values<'a>(
                         if key_text == array_values_order_by
                             && let Some(tombi_document_tree::Value::LocalTime(local_time_node)) =
                                 table_node.get(&key_text)
-                            {
-                                sortable_values.push((local_time_node.to_string(), value, comma));
+                        {
+                            sortable_values.push((local_time_node.to_string(), value, comma));
 
-                                found = true;
-                                break;
-                            }
+                            found = true;
+                            break;
+                        }
                     } else {
                         return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                     }

@@ -39,17 +39,18 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                     schema_uri,
                 )
                 .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
+            }
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Integer(integer_schema) => {
                         if let Some(r#enum) = &integer_schema.r#enum
-                            && !r#enum.contains(&self.value()) {
-                                return None;
-                            }
+                            && !r#enum.contains(&self.value())
+                        {
+                            return None;
+                        }
 
                         integer_schema
                             .get_type_definition(

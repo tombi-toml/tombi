@@ -101,9 +101,10 @@ where
     )
     .inspect_err(|_| {
         if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin
-            && let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
-                tracing::error!("Failed to copy stdin to stdout: {}", error);
-            }
+            && let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout())
+        {
+            tracing::error!("Failed to copy stdin to stdout: {}", error);
+        }
     })?;
 
     let toml_version = config.toml_version.unwrap_or_default();

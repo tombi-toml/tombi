@@ -226,9 +226,9 @@ impl SchemaStore {
                         self.options.cache.as_ref(),
                     )
                     .await
-                    {
-                        return Ok(Some(catalog));
-                    }
+                {
+                    return Ok(Some(catalog));
+                }
 
                 if self.offline() {
                     if let Ok(Some(catalog)) = load_catalog_from_cache_ignoring_ttl(
@@ -337,14 +337,14 @@ impl SchemaStore {
         let has_key = { self.document_schemas.read().await.contains_key(schema_uri) };
         if has_key
             && let Some(document_schema) = self.fetch_document_schema(schema_uri).await.transpose()
-            {
-                self.document_schemas
-                    .write()
-                    .await
-                    .insert(schema_uri.clone(), document_schema);
-                tracing::debug!("update schema: {}", schema_uri);
-                return Ok(true);
-            }
+        {
+            self.document_schemas
+                .write()
+                .await
+                .insert(schema_uri.clone(), document_schema);
+            tracing::debug!("update schema: {}", schema_uri);
+            return Ok(true);
+        }
 
         Ok(false)
     }
@@ -388,9 +388,9 @@ impl SchemaStore {
                         self.options.cache.as_ref(),
                     )
                     .await
-                    {
-                        return Ok(Some(schema_value));
-                    }
+                {
+                    return Ok(Some(schema_value));
+                }
 
                 if self.offline() {
                     if let Ok(Some(schema_value)) = load_json_schema_from_cache_ignoring_ttl(

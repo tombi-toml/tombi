@@ -321,9 +321,10 @@ fn workspace_code_action(
     )?;
 
     if let tombi_document_tree::Value::Table(table) = value
-        && table.get("workspace").is_some() {
-            return None; // Workspace already exists
-        };
+        && table.get("workspace").is_some()
+    {
+        return None; // Workspace already exists
+    };
 
     Some(CodeAction {
         title: CodeActionRefactorRewriteName::InheritFromWorkspace.to_string(),
@@ -497,36 +498,36 @@ fn crate_version_code_action(
         || matches_accessors!(accessors, ["target", _, "build-dependencies", _]))
         && let Some((_, tombi_document_tree::Value::String(version))) =
             dig_accessors(document_tree, accessors)
-        {
-            return Some(CodeAction {
-                title: CodeActionRefactorRewriteName::ConvertDependencyToTableFormat.to_string(),
-                kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
-                diagnostics: None,
-                edit: Some(WorkspaceEdit {
-                    changes: None,
-                    document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
-                        text_document: OptionalVersionedTextDocumentIdentifier {
-                            uri: text_document_uri.to_owned().into(),
-                            version: None,
-                        },
-                        edits: vec![
-                            OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(version.symbol_range().start)
-                                    .into_lsp(line_index),
-                                new_text: "{ version = ".to_string(),
-                            }),
-                            OneOf::Left(TextEdit {
-                                range: tombi_text::Range::at(version.symbol_range().end)
-                                    .into_lsp(line_index),
-                                new_text: " }".to_string(),
-                            }),
-                        ],
-                    }])),
-                    change_annotations: None,
-                }),
-                ..Default::default()
-            });
-        }
+    {
+        return Some(CodeAction {
+            title: CodeActionRefactorRewriteName::ConvertDependencyToTableFormat.to_string(),
+            kind: Some(CodeActionKind::REFACTOR_REWRITE.clone()),
+            diagnostics: None,
+            edit: Some(WorkspaceEdit {
+                changes: None,
+                document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+                    text_document: OptionalVersionedTextDocumentIdentifier {
+                        uri: text_document_uri.to_owned().into(),
+                        version: None,
+                    },
+                    edits: vec![
+                        OneOf::Left(TextEdit {
+                            range: tombi_text::Range::at(version.symbol_range().start)
+                                .into_lsp(line_index),
+                            new_text: "{ version = ".to_string(),
+                        }),
+                        OneOf::Left(TextEdit {
+                            range: tombi_text::Range::at(version.symbol_range().end)
+                                .into_lsp(line_index),
+                            new_text: " }".to_string(),
+                        }),
+                    ],
+                }])),
+                change_annotations: None,
+            }),
+            ..Default::default()
+        });
+    }
     None
 }
 
@@ -566,9 +567,10 @@ fn get_ast_inline_table_from_document_tree(
     // Use descendants to find the InlineTable with matching range
     for node in root.syntax().descendants() {
         if let Some(inline_table) = tombi_ast::InlineTable::cast(node)
-            && inline_table.range() == target_range {
-                return Some(inline_table);
-            }
+            && inline_table.range() == target_range
+        {
+            return Some(inline_table);
+        }
     }
 
     None

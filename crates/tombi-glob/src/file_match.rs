@@ -64,12 +64,13 @@ fn relative_document_text_path<'a>(
         };
 
         if let Some(config_dir) = config_pathbuf.parent()
-            && text_document_absolute_path.starts_with(config_dir) {
-                // Use relative path from config directory
-                if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
-                    return rel_path.to_string_lossy();
-                }
+            && text_document_absolute_path.starts_with(config_dir)
+        {
+            // Use relative path from config directory
+            if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
+                return rel_path.to_string_lossy();
             }
+        }
     }
     text_document_absolute_path.to_string_lossy()
 }

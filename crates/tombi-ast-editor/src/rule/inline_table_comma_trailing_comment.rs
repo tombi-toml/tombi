@@ -13,19 +13,20 @@ pub fn inline_table_comma_trailing_comment(
                 comma.trailing_comment().is_none() && comma.leading_comments().next().is_none()
             }
             None => true,
-        } {
-            let comma_with_trailing_comment = make_comma_with_trailing_comment(&trailing_comment);
-
-            return vec![
-                Change::Remove {
-                    target: SyntaxElement::Token(trailing_comment.syntax().clone()),
-                },
-                Change::Append {
-                    base: SyntaxElement::Node(key_value.syntax().clone()),
-                    new: vec![SyntaxElement::Node(comma_with_trailing_comment)],
-                },
-            ];
         }
+    {
+        let comma_with_trailing_comment = make_comma_with_trailing_comment(&trailing_comment);
+
+        return vec![
+            Change::Remove {
+                target: SyntaxElement::Token(trailing_comment.syntax().clone()),
+            },
+            Change::Append {
+                base: SyntaxElement::Node(key_value.syntax().clone()),
+                new: vec![SyntaxElement::Node(comma_with_trailing_comment)],
+            },
+        ];
+    }
 
     Vec::with_capacity(0)
 }

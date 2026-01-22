@@ -39,9 +39,9 @@ impl GetTypeDefinition for tombi_document_tree::Float {
                     schema_uri,
                 )
                 .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
+            }
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {

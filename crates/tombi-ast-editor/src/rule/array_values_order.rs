@@ -109,12 +109,12 @@ pub async fn array_values_order<'a>(
 
     if let Some((_, comma)) = sorted_values_with_comma.last_mut()
         && !is_last_comma
-            && let Some(new_last_comma) = comma
-                && new_last_comma.trailing_comment().is_none()
-                    && new_last_comma.leading_comments().next().is_none()
-                {
-                    *comma = None;
-                }
+        && let Some(new_last_comma) = comma
+        && new_last_comma.trailing_comment().is_none()
+        && new_last_comma.leading_comments().next().is_none()
+    {
+        *comma = None;
+    }
 
     for (value, comma) in &sorted_values_with_comma {
         changes.extend(array_comma_trailing_comment(value, comma.as_ref()));
@@ -308,15 +308,15 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                                 .validate(accessors, Some(&current_schema), schema_context)
                                 .await
                                 .is_ok()
-                            {
-                                return try_array_values_order_by_from_item_schema(
-                                    table_node,
-                                    accessors,
-                                    Some(&current_schema),
-                                    schema_context,
-                                )
-                                .await;
-                            }
+                        {
+                            return try_array_values_order_by_from_item_schema(
+                                table_node,
+                                accessors,
+                                Some(&current_schema),
+                                schema_context,
+                            )
+                            .await;
+                        }
                     }
                 }
                 _ => {}

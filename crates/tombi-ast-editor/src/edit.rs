@@ -153,17 +153,17 @@ fn edit_recursive<'a: 'b, 'b>(
                                 schema_context.store,
                             )
                             .await
-                        {
-                            return edit_recursive(
-                                value,
-                                edit_fn,
-                                key_accessors,
-                                accessors,
-                                Some(current_schema.into_owned()),
-                                schema_context,
-                            )
-                            .await;
-                        }
+                    {
+                        return edit_recursive(
+                            value,
+                            edit_fn,
+                            key_accessors,
+                            accessors,
+                            Some(current_schema.into_owned()),
+                            schema_context,
+                        )
+                        .await;
+                    }
 
                     if let Some(pattern_properties) = &table_schema.pattern_properties {
                         for (

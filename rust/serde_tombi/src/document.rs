@@ -72,27 +72,28 @@ impl ToTomlString for tombi_document::Table {
         match self.kind() {
             tombi_document::TableKind::Table => {
                 if self.key_values().len() == 1
-                    && let Some((key, value)) = self.key_values().iter().next() {
-                        match value {
-                            tombi_document::Value::Table(table)
-                                if table.kind() == tombi_document::TableKind::Table =>
-                            {
-                                return table.to_toml_string(
-                                    result,
-                                    &parent_keys.iter().chain(&[key]).copied().collect_vec(),
-                                );
-                            }
-                            tombi_document::Value::Array(array)
-                                if array.kind() == tombi_document::ArrayKind::ArrayOfTable =>
-                            {
-                                return array.to_toml_string(
-                                    result,
-                                    &parent_keys.iter().chain(&[key]).copied().collect_vec(),
-                                );
-                            }
-                            _ => {}
+                    && let Some((key, value)) = self.key_values().iter().next()
+                {
+                    match value {
+                        tombi_document::Value::Table(table)
+                            if table.kind() == tombi_document::TableKind::Table =>
+                        {
+                            return table.to_toml_string(
+                                result,
+                                &parent_keys.iter().chain(&[key]).copied().collect_vec(),
+                            );
                         }
+                        tombi_document::Value::Array(array)
+                            if array.kind() == tombi_document::ArrayKind::ArrayOfTable =>
+                        {
+                            return array.to_toml_string(
+                                result,
+                                &parent_keys.iter().chain(&[key]).copied().collect_vec(),
+                            );
+                        }
+                        _ => {}
                     }
+                }
 
                 if !parent_keys.is_empty() {
                     result.push_str(&format!(

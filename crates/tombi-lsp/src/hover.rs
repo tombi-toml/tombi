@@ -158,9 +158,10 @@ impl std::fmt::Display for HoverValueContent {
             .schema_uri
             .as_ref()
             .and_then(|url| get_tombi_github_uri(url))
-            && let Some(schema_filename) = get_schema_name(schema_uri) {
-                writeln!(f, "Schema: [{schema_filename}]({schema_uri})\n",)?;
-            }
+            && let Some(schema_filename) = get_schema_name(schema_uri)
+        {
+            writeln!(f, "Schema: [{schema_filename}]({schema_uri})\n",)?;
+        }
 
         Ok(())
     }

@@ -86,30 +86,28 @@ fn goto_definition_for_dependency_package(
 
     // Check if this package is in tool.uv.sources
     if let Some((_, Value::Table(sources))) = dig_keys(document_tree, &["tool", "uv", "sources"])
-        && let Some((_, Value::Table(source_table))) = sources.get_key_value(package_name) {
-            if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace")
-            {
-                if !is_workspace.value() {
-                    return Ok(Vec::with_capacity(0));
-                }
-                if let Some(location) = get_workspace_dependency_definition(
-                    package_name,
-                    pyproject_toml_path,
-                    toml_version,
-                ) {
-                    return Ok(vec![location]);
-                } else {
-                    return Ok(Vec::with_capacity(0));
-                }
+        && let Some((_, Value::Table(source_table))) = sources.get_key_value(package_name)
+    {
+        if let Some((_, Value::Boolean(is_workspace))) = source_table.get_key_value("workspace") {
+            if !is_workspace.value() {
+                return Ok(Vec::with_capacity(0));
             }
-            if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
-                if let Some(location) = get_path_dependency_definition(path.value(), toml_version) {
-                    return Ok(vec![location]);
-                } else {
-                    return Ok(Vec::with_capacity(0));
-                }
+            if let Some(location) =
+                get_workspace_dependency_definition(package_name, pyproject_toml_path, toml_version)
+            {
+                return Ok(vec![location]);
+            } else {
+                return Ok(Vec::with_capacity(0));
             }
         }
+        if let Some((_, Value::String(path))) = source_table.get_key_value("path") {
+            if let Some(location) = get_path_dependency_definition(path.value(), toml_version) {
+                return Ok(vec![location]);
+            } else {
+                return Ok(Vec::with_capacity(0));
+            }
+        }
+    }
 
     let mut locations = Vec::new();
 

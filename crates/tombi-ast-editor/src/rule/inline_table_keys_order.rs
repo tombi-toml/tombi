@@ -69,12 +69,12 @@ pub async fn inline_table_keys_order<'a>(
 
     if let Some((_, comma)) = sorted_key_values_with_comma.last_mut()
         && !is_last_comma
-            && let Some(new_last_comma) = comma
-                && new_last_comma.trailing_comment().is_none()
-                    && new_last_comma.leading_comments().next().is_none()
-                {
-                    *comma = None;
-                }
+        && let Some(new_last_comma) = comma
+        && new_last_comma.trailing_comment().is_none()
+        && new_last_comma.leading_comments().next().is_none()
+    {
+        *comma = None;
+    }
 
     for (value, comma) in &sorted_key_values_with_comma {
         changes.extend(inline_table_comma_trailing_comment(value, comma.as_ref()));

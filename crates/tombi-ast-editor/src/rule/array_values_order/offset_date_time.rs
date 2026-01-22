@@ -49,16 +49,12 @@ pub async fn create_offset_date_time_sortable_values<'a>(
                             && let Some(tombi_document_tree::Value::OffsetDateTime(
                                 offset_date_time_node,
                             )) = table_node.get(&key_text)
-                            {
-                                sortable_values.push((
-                                    offset_date_time_node.to_string(),
-                                    value,
-                                    comma,
-                                ));
+                        {
+                            sortable_values.push((offset_date_time_node.to_string(), value, comma));
 
-                                found = true;
-                                break;
-                            }
+                            found = true;
+                            break;
+                        }
                     } else {
                         return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                     }

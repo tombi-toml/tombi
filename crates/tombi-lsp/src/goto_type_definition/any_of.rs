@@ -56,9 +56,9 @@ where
                     .validate(accessors, Some(&current_schema), schema_context)
                     .await
                     .is_ok()
-                {
-                    return Some(type_definition);
-                }
+            {
+                return Some(type_definition);
+            }
         }
 
         let mut schema_uri = schema_uri.clone();

@@ -191,17 +191,12 @@ async fn validate_table(
                 }) = value
                     .validate(&new_accessors, Some(&current_schema), schema_context)
                     .await
-                {
-                    convert_deprecated_diagnostics_range(
-                        &current_schema,
-                        value,
-                        key,
-                        &mut diagnostics,
-                    )
+            {
+                convert_deprecated_diagnostics_range(&current_schema, value, key, &mut diagnostics)
                     .await;
 
-                    total_diagnostics.extend(diagnostics);
-                }
+                total_diagnostics.extend(diagnostics);
+            }
         }
 
         if let Some(pattern_properties) = &table_schema.pattern_properties {
@@ -231,17 +226,17 @@ async fn validate_table(
                         }) = value
                             .validate(&new_accessors, Some(&current_schema), schema_context)
                             .await
-                        {
-                            convert_deprecated_diagnostics_range(
-                                &current_schema,
-                                value,
-                                key,
-                                &mut diagnostics,
-                            )
-                            .await;
+                    {
+                        convert_deprecated_diagnostics_range(
+                            &current_schema,
+                            value,
+                            key,
+                            &mut diagnostics,
+                        )
+                        .await;
 
-                            total_diagnostics.extend(diagnostics);
-                        }
+                        total_diagnostics.extend(diagnostics);
+                    }
                 }
             }
 
@@ -494,9 +489,9 @@ async fn validate_table(
             table_rules.as_ref().map(|rules| &rules.common),
         )
         .await
-        {
-            total_diagnostics.extend(error.diagnostics);
-        }
+    {
+        total_diagnostics.extend(error.diagnostics);
+    }
 
     if total_diagnostics.is_empty() {
         Ok(())

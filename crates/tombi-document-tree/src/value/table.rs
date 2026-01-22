@@ -231,10 +231,11 @@ impl Table {
                                 matches!(table2.kind(), TableKind::InlineTable { .. })
                             }
                             _ => false,
-                        } {
-                            is_conflict = true;
-                            break;
                         }
+                    {
+                        is_conflict = true;
+                        break;
+                    }
                 }
             }
             (Table | InlineTable { .. } | KeyValue, Table | InlineTable { .. })

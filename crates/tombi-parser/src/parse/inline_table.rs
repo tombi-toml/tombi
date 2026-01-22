@@ -70,12 +70,13 @@ impl Parse for tombi_ast::InlineTable {
             ));
         }
         if let Some(comma_range) = last_comma_range
-            && p.toml_version == TomlVersion::V1_0_0 {
-                p.error(crate::Error::new(
-                    ForbiddenInlineTableLastComma,
-                    comma_range,
-                ));
-            }
+            && p.toml_version == TomlVersion::V1_0_0
+        {
+            p.error(crate::Error::new(
+                ForbiddenInlineTableLastComma,
+                comma_range,
+            ));
+        }
 
         trailing_comment(p);
 

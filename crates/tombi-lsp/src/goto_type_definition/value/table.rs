@@ -40,9 +40,9 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                     schema_uri,
                 )
                 .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
+            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema,
@@ -296,23 +296,24 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                 }
             } else {
                 if let Some(key) = keys.first()
-                    && let Some(value) = self.get(key) {
-                        let accessor = Accessor::Key(key.value.clone());
+                    && let Some(value) = self.get(key)
+                {
+                    let accessor = Accessor::Key(key.value.clone());
 
-                        return value
-                            .get_type_definition(
-                                position,
-                                &keys[1..],
-                                &accessors
-                                    .iter()
-                                    .cloned()
-                                    .chain(std::iter::once(accessor))
-                                    .collect_vec(),
-                                None,
-                                schema_context,
-                            )
-                            .await;
-                    }
+                    return value
+                        .get_type_definition(
+                            position,
+                            &keys[1..],
+                            &accessors
+                                .iter()
+                                .cloned()
+                                .chain(std::iter::once(accessor))
+                                .collect_vec(),
+                            None,
+                            schema_context,
+                        )
+                        .await;
+                }
                 None
             }
         }

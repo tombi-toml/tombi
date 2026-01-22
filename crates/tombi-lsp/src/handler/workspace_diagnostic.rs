@@ -46,13 +46,14 @@ async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_ur
         }
 
         if let Some(home_dir) = &home_dir
-            && &workspace_config.workspace_folder_path == home_dir {
-                tracing::debug!(
-                    "Skip diagnostics for workspace folder matching $HOME: {:?}",
-                    workspace_config.workspace_folder_path
-                );
-                continue;
-            }
+            && &workspace_config.workspace_folder_path == home_dir
+        {
+            tracing::debug!(
+                "Skip diagnostics for workspace folder matching $HOME: {:?}",
+                workspace_config.workspace_folder_path
+            );
+            continue;
+        }
 
         let files_options = workspace_config.config.files.clone().unwrap_or_default();
 

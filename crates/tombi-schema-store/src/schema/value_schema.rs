@@ -143,9 +143,10 @@ impl ValueSchema {
                         }
                         _ => string_formats.and_then(|string_formats| {
                             if let Ok(string_format) = StringFormat::from_str(format_str.as_str())
-                                && string_formats.contains(&string_format) {
-                                    return Some(string_format);
-                                }
+                                && string_formats.contains(&string_format)
+                            {
+                                return Some(string_format);
+                            }
                             None
                         }),
                     }

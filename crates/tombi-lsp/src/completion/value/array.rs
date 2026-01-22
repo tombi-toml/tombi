@@ -41,15 +41,14 @@ impl FindCompletionContents for tombi_document_tree::Array {
             if keys.is_empty()
                 && let Some((comment_directive_context, schema_uri)) =
                     get_array_comment_directive_content_with_schema_uri(self, position, accessors)
-                    && let Some(completions) =
-                        get_tombi_comment_directive_content_completion_contents(
-                            comment_directive_context,
-                            schema_uri,
-                        )
-                        .await
-                    {
-                        return completions;
-                    }
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                    comment_directive_context,
+                    schema_uri,
+                )
+                .await
+            {
+                return completions;
+            }
 
             if let Some(Ok(DocumentSchema {
                 value_schema: Some(value_schema),
@@ -98,22 +97,22 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                             schema_context.store,
                                         )
                                         .await
-                                    {
-                                        return value
-                                            .find_completion_contents(
-                                                position,
-                                                keys,
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor))
-                                                    .collect_vec(),
-                                                Some(&current_schema),
-                                                schema_context,
-                                                completion_hint,
-                                            )
-                                            .await;
-                                    }
+                                {
+                                    return value
+                                        .find_completion_contents(
+                                            position,
+                                            keys,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor))
+                                                .collect_vec(),
+                                            Some(&current_schema),
+                                            schema_context,
+                                            completion_hint,
+                                        )
+                                        .await;
+                                }
                             }
                         }
 
@@ -127,96 +126,96 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     schema_context.store,
                                 )
                                 .await
-                            {
-                                let mut completions = SchemaCompletion
-                                    .find_completion_contents(
-                                        position,
-                                        keys,
-                                        &accessors
-                                            .iter()
-                                            .cloned()
-                                            .chain(std::iter::once(Accessor::Index(new_item_index)))
-                                            .collect_vec(),
-                                        Some(&current_schema),
-                                        schema_context,
-                                        if self.kind() == ArrayKind::Array {
-                                            if new_item_index == 0 {
-                                                let add_trailing_comma = if self.is_empty()
-                                                    || matches!(
-                                                        completion_hint,
-                                                        Some(CompletionHint::Comma {
-                                                            trailing_comma: Some(_),
-                                                            ..
-                                                        })
-                                                    ) {
-                                                    None
-                                                } else {
-                                                    Some(AddTrailingComma)
-                                                };
-
-                                                Some(CompletionHint::InArray {
-                                                    add_leading_comma: None,
-                                                    add_trailing_comma,
-                                                })
-                                            } else {
-                                                let add_leading_comma = if matches!(
-                                                    completion_hint,
-                                                    Some(CompletionHint::Comma {
-                                                        leading_comma: Some(_),
-                                                        ..
-                                                    })
-                                                ) {
-                                                    None
-                                                } else {
-                                                    new_item_start_position.map(|start_position| {
-                                                        AddLeadingComma { start_position }
-                                                    })
-                                                };
-
-                                                let add_trailing_comma = if matches!(
+                        {
+                            let mut completions = SchemaCompletion
+                                .find_completion_contents(
+                                    position,
+                                    keys,
+                                    &accessors
+                                        .iter()
+                                        .cloned()
+                                        .chain(std::iter::once(Accessor::Index(new_item_index)))
+                                        .collect_vec(),
+                                    Some(&current_schema),
+                                    schema_context,
+                                    if self.kind() == ArrayKind::Array {
+                                        if new_item_index == 0 {
+                                            let add_trailing_comma = if self.is_empty()
+                                                || matches!(
                                                     completion_hint,
                                                     Some(CompletionHint::Comma {
                                                         trailing_comma: Some(_),
                                                         ..
                                                     })
                                                 ) {
-                                                    None
-                                                } else if new_item_index != self.len() {
-                                                    Some(AddTrailingComma)
-                                                } else {
-                                                    None
-                                                };
+                                                None
+                                            } else {
+                                                Some(AddTrailingComma)
+                                            };
 
-                                                Some(CompletionHint::InArray {
-                                                    add_leading_comma,
-                                                    add_trailing_comma,
-                                                })
-                                            }
+                                            Some(CompletionHint::InArray {
+                                                add_leading_comma: None,
+                                                add_trailing_comma,
+                                            })
                                         } else {
-                                            completion_hint
-                                        },
-                                    )
-                                    .await;
+                                            let add_leading_comma = if matches!(
+                                                completion_hint,
+                                                Some(CompletionHint::Comma {
+                                                    leading_comma: Some(_),
+                                                    ..
+                                                })
+                                            ) {
+                                                None
+                                            } else {
+                                                new_item_start_position.map(|start_position| {
+                                                    AddLeadingComma { start_position }
+                                                })
+                                            };
 
-                                if array_schema.unique_items == Some(true) {
-                                    let unique_values = self
-                                        .values()
-                                        .iter()
-                                        .filter_map(Option::<LiteralValueRef>::from)
-                                        .map(|value| value.to_string())
-                                        .collect::<AHashSet<_>>();
+                                            let add_trailing_comma = if matches!(
+                                                completion_hint,
+                                                Some(CompletionHint::Comma {
+                                                    trailing_comma: Some(_),
+                                                    ..
+                                                })
+                                            ) {
+                                                None
+                                            } else if new_item_index != self.len() {
+                                                Some(AddTrailingComma)
+                                            } else {
+                                                None
+                                            };
 
-                                    completions = completions
-                                        .into_iter()
-                                        .filter(|completion| {
-                                            !(completion.kind.is_literal()
-                                                && unique_values.contains(&completion.label))
-                                        })
-                                        .collect_vec();
-                                }
+                                            Some(CompletionHint::InArray {
+                                                add_leading_comma,
+                                                add_trailing_comma,
+                                            })
+                                        }
+                                    } else {
+                                        completion_hint
+                                    },
+                                )
+                                .await;
 
-                                return completions;
+                            if array_schema.unique_items == Some(true) {
+                                let unique_values = self
+                                    .values()
+                                    .iter()
+                                    .filter_map(Option::<LiteralValueRef>::from)
+                                    .map(|value| value.to_string())
+                                    .collect::<AHashSet<_>>();
+
+                                completions = completions
+                                    .into_iter()
+                                    .filter(|completion| {
+                                        !(completion.kind.is_literal()
+                                            && unique_values.contains(&completion.label))
+                                    })
+                                    .collect_vec();
                             }
+
+                            return completions;
+                        }
 
                         Vec::with_capacity(0)
                     }
@@ -267,19 +266,19 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         // Array of tables
                         if let tombi_document_tree::Value::Table(table) = value
                             && keys.len() == 1
-                                && table.kind() == tombi_document_tree::TableKind::KeyValue
-                            {
-                                let key = &keys.first().unwrap();
-                                return vec![CompletionContent::new_type_hint_key(
-                                    &key.value,
-                                    key.range(),
-                                    None,
-                                    Some(CompletionHint::InArray {
-                                        add_leading_comma: None,
-                                        add_trailing_comma: None,
-                                    }),
-                                )];
-                            }
+                            && table.kind() == tombi_document_tree::TableKind::KeyValue
+                        {
+                            let key = &keys.first().unwrap();
+                            return vec![CompletionContent::new_type_hint_key(
+                                &key.value,
+                                key.range(),
+                                None,
+                                Some(CompletionHint::InArray {
+                                    add_leading_comma: None,
+                                    add_trailing_comma: None,
+                                }),
+                            )];
+                        }
 
                         let accessor = Accessor::Index(index);
                         return value

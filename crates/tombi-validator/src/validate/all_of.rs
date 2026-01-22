@@ -75,9 +75,9 @@ where
                 common_rules,
             )
             .await
-            {
-                total_diagnostics.extend(error.diagnostics);
-            }
+        {
+            total_diagnostics.extend(error.diagnostics);
+        }
 
         if total_diagnostics.is_empty() {
             Ok(())

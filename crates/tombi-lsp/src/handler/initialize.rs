@@ -53,9 +53,10 @@ pub async fn handle_initialize(
     backend_capabilities.encoding_kind = negotiated_wide_encoding(&client_capabilities);
     if let Some(text_document_capabilities) = client_capabilities.text_document.as_ref()
         && let Some(diagnostic_capabilities) = text_document_capabilities.diagnostic.as_ref()
-            && diagnostic_capabilities.dynamic_registration == Some(true) {
-                backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
-            }
+        && diagnostic_capabilities.dynamic_registration == Some(true)
+    {
+        backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
+    }
 
     tracing::debug!("backend_capabilities: {:?}", backend_capabilities);
 

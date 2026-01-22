@@ -348,9 +348,10 @@ fn get_duplicated_ranges(
 
     for value in array_value.values() {
         if let Some(literal_value) = Option::<LiteralValueRef>::from(value)
-            && duplicated_values.contains(&literal_value) {
-                duplicated_ranges.push(value.range());
-            }
+            && duplicated_values.contains(&literal_value)
+        {
+            duplicated_ranges.push(value.range());
+        }
     }
 
     if duplicated_ranges.is_empty() {

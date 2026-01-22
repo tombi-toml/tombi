@@ -10,13 +10,14 @@ fn main() {
         .ok()
         .and_then(|output| {
             if output.status.success()
-                && let Ok(tags) = String::from_utf8(output.stdout) {
-                    for tag in tags.split('\n') {
-                        if re.is_match(tag.trim()) {
-                            return Some(tag.trim().to_string());
-                        }
+                && let Ok(tags) = String::from_utf8(output.stdout)
+            {
+                for tag in tags.split('\n') {
+                    if re.is_match(tag.trim()) {
+                        return Some(tag.trim().to_string());
                     }
                 }
+            }
             None
         })
         .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());

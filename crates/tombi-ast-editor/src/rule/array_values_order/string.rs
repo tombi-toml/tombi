@@ -53,12 +53,12 @@ pub async fn create_string_sortable_values<'a>(
                         if key_text == array_values_order_by
                             && let Some(tombi_document_tree::Value::String(string)) =
                                 table_node.get(&key_text)
-                            {
-                                sortable_values.push((string.value().to_owned(), value, comma));
+                        {
+                            sortable_values.push((string.value().to_owned(), value, comma));
 
-                                found = true;
-                                break;
-                            }
+                            found = true;
+                            break;
+                        }
                     } else {
                         return Err(SortFailReason::DottedKeysInlineTableNotSupported);
                     }

@@ -9,10 +9,11 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         cache_dir_path.push("tombi");
 
         if !cache_dir_path.is_dir()
-            && let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await {
-                tracing::warn!("Failed to create cache directory: {error}");
-                return None;
-            }
+            && let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await
+        {
+            tracing::warn!("Failed to create cache directory: {error}");
+            return None;
+        }
         return Some(cache_dir_path);
     }
 
@@ -21,10 +22,11 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         cache_dir_path.push(".cache");
         cache_dir_path.push("tombi");
         if !cache_dir_path.is_dir()
-            && let Err(error) = std::fs::create_dir_all(&cache_dir_path) {
-                tracing::warn!("Failed to create cache directory: {error}");
-                return None;
-            }
+            && let Err(error) = std::fs::create_dir_all(&cache_dir_path)
+        {
+            tracing::warn!("Failed to create cache directory: {error}");
+            return None;
+        }
         return Some(cache_dir_path);
     }
 
@@ -59,29 +61,31 @@ pub async fn read_from_cache(
     }
 
     if let Some(cache_file_path) = cache_file_path
-        && cache_file_path.is_file() {
-            let cache_ttl = options
-                .map(|opts| opts.cache_ttl)
-                .unwrap_or_else(|| Options::default().cache_ttl);
-            if let Some(ttl) = cache_ttl {
-                let Ok(metadata) = tokio::fs::metadata(cache_file_path).await else {
-                    return Ok(None);
-                };
-                if let Ok(modified) = metadata.modified()
-                    && let Ok(elapsed) = modified.elapsed()
-                        && elapsed > ttl {
-                            return Ok(None);
-                        }
+        && cache_file_path.is_file()
+    {
+        let cache_ttl = options
+            .map(|opts| opts.cache_ttl)
+            .unwrap_or_else(|| Options::default().cache_ttl);
+        if let Some(ttl) = cache_ttl {
+            let Ok(metadata) = tokio::fs::metadata(cache_file_path).await else {
+                return Ok(None);
+            };
+            if let Ok(modified) = metadata.modified()
+                && let Ok(elapsed) = modified.elapsed()
+                && elapsed > ttl
+            {
+                return Ok(None);
             }
-            return Ok(Some(
-                tokio::fs::read_to_string(&cache_file_path)
-                    .await
-                    .map_err(|err| crate::Error::CacheFileReadFailed {
-                        cache_file_path: cache_file_path.to_path_buf(),
-                        reason: err.to_string(),
-                    })?,
-            ));
         }
+        return Ok(Some(
+            tokio::fs::read_to_string(&cache_file_path)
+                .await
+                .map_err(|err| crate::Error::CacheFileReadFailed {
+                    cache_file_path: cache_file_path.to_path_buf(),
+                    reason: err.to_string(),
+                })?,
+        ));
+    }
 
     Ok(None)
 }
@@ -122,15 +126,16 @@ pub async fn refresh_cache() -> Result<bool, crate::Error> {
         if let Ok(mut entries) = tokio::fs::read_dir(&cache_dir_path).await {
             while let Ok(Some(entry)) = entries.next_entry().await {
                 if let Ok(file_type) = entry.file_type().await
-                    && file_type.is_dir() {
-                        let path = entry.path();
-                        if let Err(err) = tokio::fs::remove_dir_all(&path).await {
-                            return Err(crate::Error::CacheDirectoryRemoveFailed {
-                                cache_dir_path: path,
-                                reason: err.to_string(),
-                            });
-                        }
+                    && file_type.is_dir()
+                {
+                    let path = entry.path();
+                    if let Err(err) = tokio::fs::remove_dir_all(&path).await {
+                        return Err(crate::Error::CacheDirectoryRemoveFailed {
+                            cache_dir_path: path,
+                            reason: err.to_string(),
+                        });
                     }
+                }
             }
         }
         return Ok(true);

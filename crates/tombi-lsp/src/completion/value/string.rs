@@ -39,9 +39,9 @@ impl FindCompletionContents for tombi_document_tree::String {
                     schema_uri,
                 )
                 .await
-                {
-                    return completions;
-                }
+            {
+                return completions;
+            }
 
             if !self.range().contains(position) {
                 return Vec::with_capacity(0);

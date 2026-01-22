@@ -62,9 +62,10 @@ impl Referable<ValueSchema> {
     ) -> Option<Self> {
         if let Some(x_taplo) = object.get("x-taplo")
             && let Ok(x_taplo) = tombi_json::from_value_node::<XTaplo>(x_taplo.to_owned())
-                && x_taplo.hidden == Some(true) {
-                    return None;
-                }
+            && x_taplo.hidden == Some(true)
+        {
+            return None;
+        }
         if let Some(tombi_json::ValueNode::String(ref_string)) = object.get("$ref") {
             return Some(Referable::Ref {
                 reference: ref_string.value.clone(),
@@ -350,10 +351,11 @@ fn percent_decode(input: &str) -> String {
             }
 
             if hex_chars.len() == 2
-                && let Ok(byte) = u8::from_str_radix(&hex_chars, 16) {
-                    result.push(byte);
-                    continue;
-                }
+                && let Ok(byte) = u8::from_str_radix(&hex_chars, 16)
+            {
+                result.push(byte);
+                continue;
+            }
 
             // If percent decoding failed, keep the original '%' and hex chars
             result.extend_from_slice(b"%");

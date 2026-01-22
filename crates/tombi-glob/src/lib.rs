@@ -26,9 +26,10 @@ pub fn get_format_options(
                     // Check if format is enabled
                     if let Some(format) = &override_item.format {
                         if let Some(enabled) = &format.enabled
-                            && !enabled.value() {
-                                return None;
-                            }
+                            && !enabled.value()
+                        {
+                            return None;
+                        }
                         return Some(config.format(Some(format)));
                     }
                     break;
@@ -53,9 +54,10 @@ pub fn get_lint_options(
                     // Check if lint is enabled
                     if let Some(lint) = &override_item.lint {
                         if let Some(enabled) = &lint.enabled
-                            && !enabled.value() {
-                                return None;
-                            }
+                            && !enabled.value()
+                        {
+                            return None;
+                        }
                         return Some(config.lint(Some(lint)));
                     }
                     break;
@@ -118,12 +120,13 @@ fn relative_document_text_path<'a>(
         };
 
         if let Some(config_dir) = config_pathbuf.parent()
-            && text_document_absolute_path.starts_with(config_dir) {
-                // Use relative path from config directory
-                if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
-                    return rel_path.to_string_lossy();
-                }
+            && text_document_absolute_path.starts_with(config_dir)
+        {
+            // Use relative path from config directory
+            if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
+                return rel_path.to_string_lossy();
             }
+        }
     }
     text_document_absolute_path.to_string_lossy()
 }
