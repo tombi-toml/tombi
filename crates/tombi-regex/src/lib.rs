@@ -11,7 +11,7 @@ type Inner = fancy_regex::Regex;
 pub type Error = regex::Error;
 
 #[cfg(all(not(feature = "regex"), feature = "fancy-regex"))]
-pub type Error = fancy_regex::Error;
+pub type Error = Box<fancy_regex::Error>;
 
 #[derive(Debug, Clone)]
 pub struct Regex(Inner);
@@ -55,7 +55,7 @@ impl<'t> From<regex::Match<'t>> for Match {
 }
 
 impl Regex {
-    pub fn new(pattern: &str) -> Result<Self, Error> {
+    pub fn new(pattern: &str) -> Result<Self, crate::Error> {
         Ok(Self(Inner::new(pattern)?))
     }
 
