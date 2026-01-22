@@ -609,6 +609,51 @@ mod completion_labels {
                 "lint",
             ]);
         }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn schema_directive_file_path_empty(
+                r#"
+                #:schema █
+                "#,
+                SourcePath(project_root_path().join("www.schemastore.org/dummy.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "api/",
+                "cargo.json",
+                "pyproject.json",
+                "tombi.json",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn schema_directive_file_path_www_schemastore_org(
+                r#"
+                #:schema ./www.schemastore.org/█
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "./www.schemastore.org/api/",
+                "./www.schemastore.org/cargo.json",
+                "./www.schemastore.org/pyproject.json",
+                "./www.schemastore.org/tombi.json",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn schema_directive_file_path_partial_match(
+                r#"
+                #:schema schemas/type█
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "schemas/type-test.schema.json",
+            ]);
+        }
     }
 
     mod pyproject_schema {
