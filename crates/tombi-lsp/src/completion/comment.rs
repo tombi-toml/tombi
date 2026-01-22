@@ -263,18 +263,11 @@ fn get_schema_path_completions(
         }
 
         // Calculate the relative path by combining path_prefix and file_name
-        let relative_path = if path_prefix.is_empty() {
-            if is_dir {
-                format!("{}/", file_name)
-            } else {
-                file_name.clone()
-            }
-        } else {
-            if is_dir {
-                format!("{}{}/", path_prefix, file_name)
-            } else {
-                format!("{}{}", path_prefix, file_name)
-            }
+        let relative_path = match (path_prefix.is_empty(), is_dir) {
+            (true, true) => format!("{}/", file_name),
+            (true, false) => file_name.clone(),
+            (false, true) => format!("{}{}/", path_prefix, file_name),
+            (false, false) => format!("{}{}", path_prefix, file_name),
         };
 
         // Use the full relative path as the label
