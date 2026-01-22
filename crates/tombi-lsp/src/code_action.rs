@@ -133,9 +133,7 @@ pub fn inline_table_to_dot_keys_code_action(
             {
                 return None;
             }
-            let Some((key, value)) = table.key_values().iter().next() else {
-                return None;
-            };
+            let (key, value) = table.key_values().iter().next()?;
 
             Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InlineTableToDottedKeys.to_string(),
