@@ -643,51 +643,17 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
-            async fn schema_directive_file_path_crates(
+            async fn schema_directive_file_path_www_schemastore_org(
                 r#"
-                #:schema crates/█
+                #:schema ./www.schemastore.org/█
                 "#,
                 SourcePath(project_root_path().join("Cargo.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
-                "crates/tombi-accessor/",
-                "crates/tombi-ast-editor/",
-                "crates/tombi-ast/",
-                "crates/tombi-cache/",
-                "crates/tombi-cli-options/",
-                "crates/tombi-comment-directive-serde/",
-                "crates/tombi-comment-directive-store/",
-                "crates/tombi-comment-directive/",
-                "crates/tombi-config/",
-                "crates/tombi-date-time/",
-                "crates/tombi-diagnostic/",
-                "crates/tombi-document-tree/",
-                "crates/tombi-document/",
-                "crates/tombi-extension/",
-                "crates/tombi-formatter/",
-                "crates/tombi-future/",
-                "crates/tombi-glob/",
-                "crates/tombi-json-lexer/",
-                "crates/tombi-json-syntax/",
-                "crates/tombi-json-value/",
-                "crates/tombi-json/",
-                "crates/tombi-lexer/",
-                "crates/tombi-linter/",
-                "crates/tombi-lsp/",
-                "crates/tombi-parser/",
-                "crates/tombi-regex/",
-                "crates/tombi-rg-tree/",
-                "crates/tombi-schema-store/",
-                "crates/tombi-severity-level/",
-                "crates/tombi-syntax/",
-                "crates/tombi-test-lib/",
-                "crates/tombi-text/",
-                "crates/tombi-toml-text/",
-                "crates/tombi-toml-version/",
-                "crates/tombi-uri/",
-                "crates/tombi-validator/",
-                "crates/tombi-version-sort/",
-                "crates/tombi-x-keyword/",
+                "./www.schemastore.org/api/",
+                "./www.schemastore.org/cargo.json",
+                "./www.schemastore.org/pyproject.json",
+                "./www.schemastore.org/tombi.json",
             ]);
         }
 
