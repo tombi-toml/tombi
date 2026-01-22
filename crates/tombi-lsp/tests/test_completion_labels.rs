@@ -616,28 +616,13 @@ mod completion_labels {
                 r#"
                 #:schema █
                 "#,
-                SourcePath(project_root_path().join("Cargo.toml")),
+                SourcePath(project_root_path().join("www.schemastore.org/dummy.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
-                "biome.json",
-                "crates/",
-                "design/",
-                "dist/",
-                "docs/",
-                "editors/",
-                "extensions/",
-                "node_modules/",
-                "package.json",
-                "python/",
-                "remove/",
-                "rust/",
-                "schemas/",
-                "target/",
-                "toml-test/",
-                "typescript/",
-                "www.schemastore.org/",
-                "www.schemastore.tombi/",
-                "xtask/",
+                "api/",
+                "cargo.json",
+                "pyproject.json",
+                "tombi.json",
             ]);
         }
 
