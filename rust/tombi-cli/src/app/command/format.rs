@@ -100,10 +100,10 @@ where
         std::env::current_dir().ok(),
     )
     .inspect_err(|_| {
-        if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin {
-            if let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout()) {
-                tracing::error!("Failed to copy stdin to stdout: {}", error);
-            }
+        if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin
+            && let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout())
+        {
+            tracing::error!("Failed to copy stdin to stdout: {}", error);
         }
     })?;
 

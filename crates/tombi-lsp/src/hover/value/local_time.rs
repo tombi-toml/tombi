@@ -31,13 +31,11 @@ impl GetHoverContent for tombi_document_tree::LocalTime {
                     LocalTimeCommonFormatRules,
                     LocalTimeCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(hover_content) =
+                && let Some(hover_content) =
                     get_value_comment_directive_hover_content(comment_directive_context, schema_uri)
                         .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
             }
 
             if let Some(current_schema) = current_schema {

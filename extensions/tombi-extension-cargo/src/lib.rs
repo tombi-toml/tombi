@@ -63,13 +63,12 @@ fn find_workspace_cargo_toml(
     if let Some(workspace_path) = workspace_path {
         let mut workspace_cargo_toml_path =
             std::path::PathBuf::from(workspace_path).join("Cargo.toml");
-        if !workspace_cargo_toml_path.is_absolute() {
-            if let Some(joined_path) = cargo_toml_path
+        if !workspace_cargo_toml_path.is_absolute()
+            && let Some(joined_path) = cargo_toml_path
                 .parent()
                 .map(|parent| parent.join(&workspace_cargo_toml_path))
-            {
-                workspace_cargo_toml_path = joined_path;
-            }
+        {
+            workspace_cargo_toml_path = joined_path;
         }
         if let Ok(canonicalized_path) = std::fs::canonicalize(&workspace_cargo_toml_path) {
             let (root, document_tree) = load_cargo_toml(&canonicalized_path, toml_version)?;
@@ -195,27 +194,21 @@ fn goto_workspace(
             keys.first(),
             Some(key) if *key == "dependencies" || *key == "dev-dependencies" || *key == "build-dependencies"
         )
+        && let tombi_document_tree::Value::Table(table) = value
+        && let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path")
+        && let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
+            find_path_crate_cargo_toml(
+                &workspace_cargo_toml_path,
+                std::path::Path::new(subcrate_path.value()),
+                toml_version,
+            )
+        && let Some((_, tombi_document_tree::Value::String(package_name))) =
+            tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
     {
-        if let tombi_document_tree::Value::Table(table) = value {
-            if let Some(tombi_document_tree::Value::String(subcrate_path)) = table.get("path") {
-                if let Some((subcrate_cargo_toml_path, _, subcrate_document_tree)) =
-                    find_path_crate_cargo_toml(
-                        &workspace_cargo_toml_path,
-                        std::path::Path::new(subcrate_path.value()),
-                        toml_version,
-                    )
-                {
-                    if let Some((_, tombi_document_tree::Value::String(package_name))) =
-                        tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
-                    {
-                        return Ok(Some(tombi_extension::DefinitionLocation {
-                            uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
-                            range: package_name.unquoted_range(),
-                        }));
-                    }
-                }
-            }
-        }
+        return Ok(Some(tombi_extension::DefinitionLocation {
+            uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
+            range: package_name.unquoted_range(),
+        }));
     }
 
     let Ok(workspace_cargo_toml_uri) = tombi_uri::Uri::from_file_path(&workspace_cargo_toml_path)
@@ -269,39 +262,36 @@ fn goto_dependency_crates(
                     std::path::Path::new(subcrate_path.value()),
                     toml_version,
                 )
-            {
-                if let Some((_, tombi_document_tree::Value::String(package_name))) =
+                && let Some((_, tombi_document_tree::Value::String(package_name))) =
                     tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
-                {
-                    locations.push(tombi_extension::DefinitionLocation {
-                        uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
-                        range: package_name.unquoted_range(),
-                    });
-                }
+            {
+                locations.push(tombi_extension::DefinitionLocation {
+                    uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
+                    range: package_name.unquoted_range(),
+                });
             }
         } else if let Some(tombi_document_tree::Value::Boolean(has_workspace)) =
             table.get("workspace")
+            && has_workspace.value()
         {
-            if has_workspace.value() {
-                let mut accessors = accessors.iter().map(Clone::clone).collect_vec();
-                accessors.push(tombi_schema_store::Accessor::Key("workspace".to_string()));
-                if is_workspace_cargo_toml {
-                    locations.extend(goto_definition_for_workspace_cargo_toml(
-                        workspace_document_tree,
-                        &accessors,
-                        workspace_cargo_toml_path,
-                        toml_version,
-                        jump_to_subcrate,
-                    )?);
-                } else {
-                    locations.extend(goto_definition_for_crate_cargo_toml(
-                        workspace_document_tree,
-                        &accessors,
-                        workspace_cargo_toml_path,
-                        toml_version,
-                        jump_to_subcrate,
-                    )?);
-                }
+            let mut accessors = accessors.iter().map(Clone::clone).collect_vec();
+            accessors.push(tombi_schema_store::Accessor::Key("workspace".to_string()));
+            if is_workspace_cargo_toml {
+                locations.extend(goto_definition_for_workspace_cargo_toml(
+                    workspace_document_tree,
+                    &accessors,
+                    workspace_cargo_toml_path,
+                    toml_version,
+                    jump_to_subcrate,
+                )?);
+            } else {
+                locations.extend(goto_definition_for_crate_cargo_toml(
+                    workspace_document_tree,
+                    &accessors,
+                    workspace_cargo_toml_path,
+                    toml_version,
+                    jump_to_subcrate,
+                )?);
             }
         }
     }
@@ -339,28 +329,24 @@ fn goto_dependency_crates(
                 if let Some((crate_key, _)) = tombi_document_tree::dig_keys(
                     &crate_document_tree,
                     &[dependency_key, crate_name],
-                ) {
-                    if let Some(mut definition_location) =
-                        Option::<tombi_extension::DefinitionLocation>::from(crate_location.clone())
-                    {
-                        definition_location.range = crate_key.unquoted_range();
-                        locations.push(definition_location);
-                    }
+                ) && let Some(mut definition_location) =
+                    Option::<tombi_extension::DefinitionLocation>::from(crate_location.clone())
+                {
+                    definition_location.range = crate_key.unquoted_range();
+                    locations.push(definition_location);
                 }
             }
             for platform in &platforms {
                 for dependency_key in ["dependencies", "dev-dependencies", "build-dependencies"] {
                     if let Some((crate_key, _)) =
-                        tombi_document_tree::dig_keys(&platform, &[dependency_key, crate_name])
-                    {
-                        if let Some(mut definition_location) =
+                        tombi_document_tree::dig_keys(platform, &[dependency_key, crate_name])
+                        && let Some(mut definition_location) =
                             Option::<tombi_extension::DefinitionLocation>::from(
                                 crate_location.clone(),
                             )
-                        {
-                            definition_location.range = crate_key.unquoted_range();
-                            locations.push(definition_location);
-                        }
+                    {
+                        definition_location.range = crate_key.unquoted_range();
+                        locations.push(definition_location);
                     }
                 }
             }
@@ -408,15 +394,13 @@ fn goto_crate_package(
                 std::path::Path::new(subcrate_path.value()),
                 toml_version,
             )
-        {
-            if let Some((_, tombi_document_tree::Value::String(package_name))) =
+            && let Some((_, tombi_document_tree::Value::String(package_name))) =
                 tombi_document_tree::dig_keys(&subcrate_document_tree, &["package", "name"])
-            {
-                return Ok(Some(tombi_extension::DefinitionLocation {
-                    uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
-                    range: package_name.unquoted_range(),
-                }));
-            }
+        {
+            return Ok(Some(tombi_extension::DefinitionLocation {
+                uri: tombi_uri::Uri::from_file_path(subcrate_cargo_toml_path).unwrap(),
+                range: package_name.unquoted_range(),
+            }));
         }
     }
 

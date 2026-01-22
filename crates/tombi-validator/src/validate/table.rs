@@ -186,23 +186,16 @@ async fn validate_table(
                 )
                 .await
                 .inspect_err(|err| tracing::warn!("{err}"))
-            {
-                if let Err(crate::Error {
+                && let Err(crate::Error {
                     mut diagnostics, ..
                 }) = value
                     .validate(&new_accessors, Some(&current_schema), schema_context)
                     .await
-                {
-                    convert_deprecated_diagnostics_range(
-                        &current_schema,
-                        value,
-                        key,
-                        &mut diagnostics,
-                    )
+            {
+                convert_deprecated_diagnostics_range(&current_schema, value, key, &mut diagnostics)
                     .await;
 
-                    total_diagnostics.extend(diagnostics);
-                }
+                total_diagnostics.extend(diagnostics);
             }
         }
 
@@ -228,23 +221,21 @@ async fn validate_table(
                         )
                         .await
                         .inspect_err(|err| tracing::warn!("{err}"))
-                    {
-                        if let Err(crate::Error {
+                        && let Err(crate::Error {
                             mut diagnostics, ..
                         }) = value
                             .validate(&new_accessors, Some(&current_schema), schema_context)
                             .await
-                        {
-                            convert_deprecated_diagnostics_range(
-                                &current_schema,
-                                value,
-                                key,
-                                &mut diagnostics,
-                            )
-                            .await;
+                    {
+                        convert_deprecated_diagnostics_range(
+                            &current_schema,
+                            value,
+                            key,
+                            &mut diagnostics,
+                        )
+                        .await;
 
-                            total_diagnostics.extend(diagnostics);
-                        }
+                        total_diagnostics.extend(diagnostics);
                     }
                 }
             }
@@ -487,8 +478,8 @@ async fn validate_table(
         );
     }
 
-    if let Some(not_schema) = table_schema.not.as_ref() {
-        if let Err(error) = validate_not(
+    if let Some(not_schema) = table_schema.not.as_ref()
+        && let Err(error) = validate_not(
             table_value,
             accessors,
             not_schema,
@@ -498,9 +489,8 @@ async fn validate_table(
             table_rules.as_ref().map(|rules| &rules.common),
         )
         .await
-        {
-            total_diagnostics.extend(error.diagnostics);
-        }
+    {
+        total_diagnostics.extend(error.diagnostics);
     }
 
     if total_diagnostics.is_empty() {
@@ -553,17 +543,6 @@ async fn convert_deprecated_diagnostics_range(
     schema_diagnostics: &mut [tombi_diagnostic::Diagnostic],
 ) {
     if current_schema.value_schema.deprecated().await == Some(true) {
-        for diagnostic in schema_diagnostics.iter_mut() {
-            if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
-                *diagnostic = tombi_diagnostic::Diagnostic::new_warning(
-                    diagnostic.message(),
-                    diagnostic.code(),
-                    key.range() + value.range(),
-                );
-                break;
-            }
-        }
-    } else if current_schema.value_schema.deprecated().await == Some(true) {
         for diagnostic in schema_diagnostics.iter_mut() {
             if diagnostic.code() == "deprecated" && diagnostic.range() == value.range() {
                 *diagnostic = tombi_diagnostic::Diagnostic::new_warning(

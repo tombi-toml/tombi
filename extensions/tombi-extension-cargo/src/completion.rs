@@ -120,33 +120,32 @@ async fn completion_workspace(
         }
     } else if matches_accessors!(accessors, ["workspace", "dependencies", _, "features"])
         | matches_accessors!(accessors, ["workspace", "dependencies", _, "features", _])
+        && let Some(Accessor::Key(crate_name)) = accessors.get(2)
     {
-        if let Some(Accessor::Key(crate_name)) = accessors.get(2) {
-            if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
-                dig_accessors(document_tree, accessors)
-            {
-                return Ok(None);
-            }
-
-            return complete_crate_feature(
-                crate_name.as_str(),
-                document_tree,
-                cargo_toml_path,
-                &accessors[..4],
-                position,
-                toml_version,
-                accessors.get(4).and_then(|_| {
-                    dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
-                        if let tombi_document_tree::Value::String(feature_string) = feature {
-                            Some(feature_string)
-                        } else {
-                            None
-                        }
-                    })
-                }),
-            )
-            .await;
+        if let Some((_, tombi_document_tree::Value::Incomplete { .. })) =
+            dig_accessors(document_tree, accessors)
+        {
+            return Ok(None);
         }
+
+        return complete_crate_feature(
+            crate_name.as_str(),
+            document_tree,
+            cargo_toml_path,
+            &accessors[..4],
+            position,
+            toml_version,
+            accessors.get(4).and_then(|_| {
+                dig_accessors(document_tree, accessors).and_then(|(_, feature)| {
+                    if let tombi_document_tree::Value::String(feature_string) = feature {
+                        Some(feature_string)
+                    } else {
+                        None
+                    }
+                })
+            }),
+        )
+        .await;
     }
     Ok(None)
 }

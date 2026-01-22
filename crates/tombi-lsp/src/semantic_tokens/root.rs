@@ -12,18 +12,17 @@ impl AppendSemanticTokens for tombi_ast::Root {
         if key_values.is_empty() {
             for comments in self.key_values_dangling_comments() {
                 for comment in comments {
-                    if let Some(schema_comment_directive) = &schema_document_directive {
-                        if comment
+                    if let Some(schema_comment_directive) = &schema_document_directive
+                        && comment
                             .syntax()
                             .range()
                             .contains(schema_comment_directive.directive_range.start)
-                        {
-                            builder.add_comment_directive(
-                                &comment,
-                                schema_comment_directive.directive_range,
-                            );
-                            continue;
-                        }
+                    {
+                        builder.add_comment_directive(
+                            &comment,
+                            schema_comment_directive.directive_range,
+                        );
+                        continue;
                     }
                     if let Some(tombi_comment_directive) = comment.get_tombi_document_directive() {
                         builder.add_comment_directive(
@@ -38,18 +37,17 @@ impl AppendSemanticTokens for tombi_ast::Root {
         } else {
             for comments in self.key_values_begin_dangling_comments() {
                 for comment in comments {
-                    if let Some(schema_document_directive) = &schema_document_directive {
-                        if comment
+                    if let Some(schema_document_directive) = &schema_document_directive
+                        && comment
                             .syntax()
                             .range()
                             .contains(schema_document_directive.directive_range.start)
-                        {
-                            builder.add_comment_directive(
-                                &comment,
-                                schema_document_directive.directive_range,
-                            );
-                            continue;
-                        }
+                    {
+                        builder.add_comment_directive(
+                            &comment,
+                            schema_document_directive.directive_range,
+                        );
+                        continue;
                     }
                     if let Some(tombi_document_directive) = comment.get_tombi_document_directive() {
                         builder.add_comment_directive(

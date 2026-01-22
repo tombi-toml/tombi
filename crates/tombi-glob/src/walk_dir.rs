@@ -63,40 +63,40 @@ impl WalkDir {
             Box::new(move |entry_result| {
                 match entry_result {
                     Ok(entry) => {
-                        if let Some(file_type) = entry.file_type() {
-                            if file_type.is_file() {
-                                let path = entry.path();
-                                let relative_path =
-                                    if let Ok(rel_path) = path.strip_prefix(&root_path) {
-                                        rel_path.to_string_lossy()
-                                    } else {
-                                        path.to_string_lossy()
-                                    };
+                        if let Some(file_type) = entry.file_type()
+                            && file_type.is_file()
+                        {
+                            let path = entry.path();
+                            let relative_path = if let Ok(rel_path) = path.strip_prefix(&root_path)
+                            {
+                                rel_path.to_string_lossy()
+                            } else {
+                                path.to_string_lossy()
+                            };
 
-                                // Check if file matches any include pattern
-                                let mut should_include = include_patterns.is_empty();
-                                for pattern in &include_patterns {
+                            // Check if file matches any include pattern
+                            let mut should_include = include_patterns.is_empty();
+                            for pattern in &include_patterns {
+                                if glob_match(pattern, &relative_path) {
+                                    should_include = true;
+                                    break;
+                                }
+                            }
+
+                            if should_include {
+                                // Check if file should be excluded
+                                let mut should_exclude = false;
+                                for pattern in &exclude_patterns {
                                     if glob_match(pattern, &relative_path) {
-                                        should_include = true;
+                                        should_exclude = true;
                                         break;
                                     }
                                 }
 
-                                if should_include {
-                                    // Check if file should be excluded
-                                    let mut should_exclude = false;
-                                    for pattern in &exclude_patterns {
-                                        if glob_match(pattern, &relative_path) {
-                                            should_exclude = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if !should_exclude {
-                                        if let Ok(mut results_guard) = results_clone.lock() {
-                                            results_guard.push(path.to_path_buf());
-                                        }
-                                    }
+                                if !should_exclude
+                                    && let Ok(mut results_guard) = results_clone.lock()
+                                {
+                                    results_guard.push(path.to_path_buf());
                                 }
                             }
                         }

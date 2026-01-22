@@ -222,8 +222,8 @@ impl Table {
         match (self.kind, other.kind) {
             (KeyValue, KeyValue) => {
                 for (self_key, self_value) in self.key_values() {
-                    if let Some(other_value) = other.key_values.get(self_key) {
-                        if match (self_value, other_value) {
+                    if let Some(other_value) = other.key_values.get(self_key)
+                        && match (self_value, other_value) {
                             (Value::Table(table1), _) => {
                                 matches!(table1.kind(), TableKind::InlineTable { .. })
                             }
@@ -231,10 +231,10 @@ impl Table {
                                 matches!(table2.kind(), TableKind::InlineTable { .. })
                             }
                             _ => false,
-                        } {
-                            is_conflict = true;
-                            break;
                         }
+                    {
+                        is_conflict = true;
+                        break;
                     }
                 }
             }

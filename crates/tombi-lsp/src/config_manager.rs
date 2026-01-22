@@ -281,14 +281,14 @@ impl ConfigManager {
             for config_schema_store in config_schema_stores.values_mut() {
                 config_schema_store
                     .schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
                     .await;
             }
             if let Some((_, ConfigSchemaStore { schema_store, .. })) =
                 &mut *self.default_config_schema_store.write().await
             {
                 schema_store
-                    .associate_schema(schema_uri.clone(), file_match.to_vec(), &options)
+                    .associate_schema(schema_uri.clone(), file_match.to_vec(), options)
                     .await;
             }
         }

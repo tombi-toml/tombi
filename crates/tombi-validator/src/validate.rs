@@ -181,7 +181,7 @@ fn handle_type_mismatch(
 }
 
 fn handle_unused_noqa(
-    mut diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
     rule_name: &'static str,
@@ -227,7 +227,7 @@ fn handle_unused_noqa(
                 kind: Box::new(crate::DiagnosticKind::UnusedNoqa { rule_name }),
                 range,
             }
-            .push_diagnostic_with_level(SeverityLevel::Warn, &mut diagnostics);
+            .push_diagnostic_with_level(SeverityLevel::Warn, diagnostics);
             return;
         }
     }

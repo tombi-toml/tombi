@@ -67,16 +67,13 @@ pub async fn inline_table_keys_order<'a>(
         return Vec::with_capacity(0);
     };
 
-    if let Some((_, comma)) = sorted_key_values_with_comma.last_mut() {
-        if !is_last_comma {
-            if let Some(new_last_comma) = comma {
-                if new_last_comma.trailing_comment().is_none()
-                    && new_last_comma.leading_comments().next().is_none()
-                {
-                    *comma = None;
-                }
-            }
-        }
+    if let Some((_, comma)) = sorted_key_values_with_comma.last_mut()
+        && !is_last_comma
+        && let Some(new_last_comma) = comma
+        && new_last_comma.trailing_comment().is_none()
+        && new_last_comma.leading_comments().next().is_none()
+    {
+        *comma = None;
     }
 
     for (value, comma) in &sorted_key_values_with_comma {

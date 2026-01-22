@@ -107,16 +107,13 @@ pub async fn array_values_order<'a>(
         return Vec::with_capacity(0);
     };
 
-    if let Some((_, comma)) = sorted_values_with_comma.last_mut() {
-        if !is_last_comma {
-            if let Some(new_last_comma) = comma {
-                if new_last_comma.trailing_comment().is_none()
-                    && new_last_comma.leading_comments().next().is_none()
-                {
-                    *comma = None;
-                }
-            }
-        }
+    if let Some((_, comma)) = sorted_values_with_comma.last_mut()
+        && !is_last_comma
+        && let Some(new_last_comma) = comma
+        && new_last_comma.trailing_comment().is_none()
+        && new_last_comma.leading_comments().next().is_none()
+    {
+        *comma = None;
     }
 
     for (value, comma) in &sorted_values_with_comma {
@@ -307,20 +304,18 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                                 schema_context.store,
                             )
                             .await
-                        {
-                            if table_node
+                            && table_node
                                 .validate(accessors, Some(&current_schema), schema_context)
                                 .await
                                 .is_ok()
-                            {
-                                return try_array_values_order_by_from_item_schema(
-                                    table_node,
-                                    accessors,
-                                    Some(&current_schema),
-                                    schema_context,
-                                )
-                                .await;
-                            }
+                        {
+                            return try_array_values_order_by_from_item_schema(
+                                table_node,
+                                accessors,
+                                Some(&current_schema),
+                                schema_context,
+                            )
+                            .await;
                         }
                     }
                 }

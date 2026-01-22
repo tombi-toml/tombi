@@ -68,7 +68,7 @@ pub async fn handle_code_action(
     if let Some(code_action) = dot_keys_to_inline_table_code_action(
         &text_document_uri,
         line_index,
-        &root,
+        root,
         document_tree,
         &accessors,
         &accessor_contexts,
@@ -79,7 +79,7 @@ pub async fn handle_code_action(
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
         line_index,
-        &root,
+        root,
         document_tree,
         &accessors,
         &accessor_contexts,
@@ -90,7 +90,7 @@ pub async fn handle_code_action(
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
         &text_document_uri,
         line_index,
-        &root,
+        root,
         document_tree,
         &accessors,
         &accessor_contexts,

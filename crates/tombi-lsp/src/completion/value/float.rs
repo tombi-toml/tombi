@@ -34,15 +34,13 @@ impl FindCompletionContents for tombi_document_tree::Float {
                     FloatCommonFormatRules,
                     FloatCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(completions) = get_tombi_comment_directive_content_completion_contents(
+                && let Some(completions) = get_tombi_comment_directive_content_completion_contents(
                     comment_directive_context,
                     schema_uri,
                 )
                 .await
-                {
-                    return completions;
-                }
+            {
+                return completions;
             }
 
             Vec::with_capacity(0)

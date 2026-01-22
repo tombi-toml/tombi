@@ -34,24 +34,22 @@ impl GetTypeDefinition for tombi_document_tree::Integer {
                     IntegerCommonFormatRules,
                     IntegerCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                && let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,
                     schema_uri,
                 )
                 .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
             }
 
             if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Integer(integer_schema) => {
-                        if let Some(r#enum) = &integer_schema.r#enum {
-                            if !r#enum.contains(&self.value()) {
-                                return None;
-                            }
+                        if let Some(r#enum) = &integer_schema.r#enum
+                            && !r#enum.contains(&self.value())
+                        {
+                            return None;
                         }
 
                         integer_schema

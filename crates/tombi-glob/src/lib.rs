@@ -25,10 +25,10 @@ pub fn get_format_options(
                 if matches_override_files(text_document_path, config_path, &override_item.files) {
                     // Check if format is enabled
                     if let Some(format) = &override_item.format {
-                        if let Some(enabled) = &format.enabled {
-                            if !enabled.value() {
-                                return None;
-                            }
+                        if let Some(enabled) = &format.enabled
+                            && !enabled.value()
+                        {
+                            return None;
                         }
                         return Some(config.format(Some(format)));
                     }
@@ -53,10 +53,10 @@ pub fn get_lint_options(
                 if matches_override_files(text_document_path, config_path, &override_item.files) {
                     // Check if lint is enabled
                     if let Some(lint) = &override_item.lint {
-                        if let Some(enabled) = &lint.enabled {
-                            if !enabled.value() {
-                                return None;
-                            }
+                        if let Some(enabled) = &lint.enabled
+                            && !enabled.value()
+                        {
+                            return None;
                         }
                         return Some(config.lint(Some(lint)));
                     }
@@ -119,12 +119,12 @@ fn relative_document_text_path<'a>(
             Err(_) => config_path.to_path_buf(),
         };
 
-        if let Some(config_dir) = config_pathbuf.parent() {
-            if text_document_absolute_path.starts_with(config_dir) {
-                // Use relative path from config directory
-                if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
-                    return rel_path.to_string_lossy();
-                }
+        if let Some(config_dir) = config_pathbuf.parent()
+            && text_document_absolute_path.starts_with(config_dir)
+        {
+            // Use relative path from config directory
+            if let Ok(rel_path) = text_document_absolute_path.strip_prefix(config_dir) {
+                return rel_path.to_string_lossy();
             }
         }
     }

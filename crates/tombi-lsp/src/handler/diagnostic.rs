@@ -51,12 +51,12 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: tombi_uri::U
 
     let params = PushDiagnosticsParams {
         text_document: TextDocumentIdentifier {
-            uri: text_document_uri.into(),
+            uri: text_document_uri,
         },
     };
 
     tracing::info!("push_diagnostics");
     tracing::trace!(?params);
 
-    publish_diagnostics(backend, params.text_document.uri.into()).await;
+    publish_diagnostics(backend, params.text_document.uri).await;
 }

@@ -146,25 +146,23 @@ fn edit_recursive<'a: 'b, 'b>(
                         .write()
                         .await
                         .get_mut(&key_schema_accessor)
-                    {
-                        if let Ok(Some(current_schema)) = property_schema
+                        && let Ok(Some(current_schema)) = property_schema
                             .resolve(
                                 current_schema.schema_uri.clone(),
                                 current_schema.definitions.clone(),
                                 schema_context.store,
                             )
                             .await
-                        {
-                            return edit_recursive(
-                                value,
-                                edit_fn,
-                                key_accessors,
-                                accessors,
-                                Some(current_schema.into_owned()),
-                                schema_context,
-                            )
-                            .await;
-                        }
+                    {
+                        return edit_recursive(
+                            value,
+                            edit_fn,
+                            key_accessors,
+                            accessors,
+                            Some(current_schema.into_owned()),
+                            schema_context,
+                        )
+                        .await;
                     }
 
                     if let Some(pattern_properties) = &table_schema.pattern_properties {

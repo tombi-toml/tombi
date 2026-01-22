@@ -10,8 +10,8 @@ impl Default for Options {
             no_cache: None,
             cache_ttl: std::env::var("TOMBI_CACHE_TTL")
                 .map_or(None, |value| value.parse::<u64>().ok())
-                .map(|value| std::time::Duration::from_secs(value))
-                .or_else(|| Some(DEFAULT_CACHE_TTL)),
+                .map(std::time::Duration::from_secs)
+                .or(Some(DEFAULT_CACHE_TTL)),
         }
     }
 }

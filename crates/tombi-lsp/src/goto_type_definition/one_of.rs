@@ -52,14 +52,12 @@ where
                     schema_context,
                 )
                 .await
-            {
-                if value
+                && value
                     .validate(accessors, Some(&current_schema), schema_context)
                     .await
                     .is_ok()
-                {
-                    return Some(type_definition);
-                }
+            {
+                return Some(type_definition);
             }
         }
 

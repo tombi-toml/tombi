@@ -63,12 +63,11 @@ pub async fn open_remote_file(
     match uri.scheme() {
         "http" | "https" => {
             // Check if cache file exists
-            if let Some(cache_path) = tombi_cache::get_cache_file_path(uri).await {
-                if cache_path.is_file() {
-                    if let Ok(cached_uri) = tombi_uri::Uri::from_file_path(&cache_path) {
-                        return Ok(Some(cached_uri));
-                    }
-                }
+            if let Some(cache_path) = tombi_cache::get_cache_file_path(uri).await
+                && cache_path.is_file()
+                && let Ok(cached_uri) = tombi_uri::Uri::from_file_path(&cache_path)
+            {
+                return Ok(Some(cached_uri));
             }
             let remote_uri =
                 tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();

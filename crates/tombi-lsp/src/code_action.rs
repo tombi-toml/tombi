@@ -121,9 +121,7 @@ pub fn inline_table_to_dot_keys_code_action(
             if table.len() == 1
                 && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
         {
-            let Some(node) = get_ast_inline_table_node(root, table) else {
-                return None;
-            };
+            let node = get_ast_inline_table_node(root, table)?;
             if !node.inner_begin_dangling_comments().is_empty()
                 || node
                     .inner_end_dangling_comments()
@@ -135,9 +133,7 @@ pub fn inline_table_to_dot_keys_code_action(
             {
                 return None;
             }
-            let Some((key, value)) = table.key_values().iter().next() else {
-                return None;
-            };
+            let (key, value) = table.key_values().iter().next()?;
 
             Some(CodeAction {
                 title: CodeActionRefactorRewriteName::InlineTableToDottedKeys.to_string(),
@@ -183,10 +179,10 @@ fn get_ast_inline_table_node(
 ) -> Option<tombi_ast::InlineTable> {
     let target_range = table.range();
     for node in root.syntax().descendants() {
-        if let Some(inline_table) = tombi_ast::InlineTable::cast(node) {
-            if inline_table.range() == target_range {
-                return Some(inline_table);
-            }
+        if let Some(inline_table) = tombi_ast::InlineTable::cast(node)
+            && inline_table.range() == target_range
+        {
+            return Some(inline_table);
         }
     }
     None

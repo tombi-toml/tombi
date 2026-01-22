@@ -64,8 +64,8 @@ where
             );
         }
 
-        if let Some(not_schema) = all_of_schema.not.as_ref() {
-            if let Err(error) = validate_not(
+        if let Some(not_schema) = all_of_schema.not.as_ref()
+            && let Err(error) = validate_not(
                 value,
                 accessors,
                 not_schema,
@@ -75,9 +75,8 @@ where
                 common_rules,
             )
             .await
-            {
-                total_diagnostics.extend(error.diagnostics);
-            }
+        {
+            total_diagnostics.extend(error.diagnostics);
         }
 
         if total_diagnostics.is_empty() {

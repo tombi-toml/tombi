@@ -36,15 +36,13 @@ impl GetTypeDefinition for tombi_document_tree::OffsetDateTime {
                     OffsetDateTimeCommonFormatRules,
                     OffsetDateTimeCommonLintRules,
                 >(self.comment_directives(), position, accessors)
-            {
-                if let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
+                && let Some(hover_content) = get_tombi_value_comment_directive_type_definition(
                     comment_directive_context,
                     schema_uri,
                 )
                 .await
-                {
-                    return Some(hover_content);
-                }
+            {
+                return Some(hover_content);
             }
 
             if let Some(current_schema) = current_schema {

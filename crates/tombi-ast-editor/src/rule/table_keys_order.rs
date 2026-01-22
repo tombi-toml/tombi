@@ -119,22 +119,20 @@ where
                             )
                             .await
                             .inspect_err(|err| tracing::warn!("{err}"))
-                        {
-                            if value
+                            && value
                                 .validate(accessors, Some(&current_schema), schema_context)
                                 .await
                                 .is_ok()
-                            {
-                                return get_sorted_accessors(
-                                    value,
-                                    accessors,
-                                    targets.clone(),
-                                    Some(&current_schema),
-                                    schema_context,
-                                    order.or(*keys_order),
-                                )
-                                .await;
-                            }
+                        {
+                            return get_sorted_accessors(
+                                value,
+                                accessors,
+                                targets.clone(),
+                                Some(&current_schema),
+                                schema_context,
+                                order.or(*keys_order),
+                            )
+                            .await;
                         }
                     }
                     return None;
@@ -176,73 +174,68 @@ where
                     sort_table_targets(sort_targets_map, table_schema, table_order.as_ref()).await;
 
                 for (accessor, targets) in sorted_targets {
-                    if let Some(value) = table.get(&accessor.to_string()) {
-                        if let (Some(current_schema), Some(table_schema)) =
+                    if let Some(value) = table.get(&accessor.to_string())
+                        && let (Some(current_schema), Some(table_schema)) =
                             (current_schema, table_schema)
+                    {
+                        if let Some(PropertySchema {
+                            property_schema, ..
+                        }) = table_schema.properties.write().await.get_mut(&accessor)
+                            && let Ok(Some(current_schema)) = property_schema
+                                .resolve(
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
+                                .inspect_err(|err| tracing::warn!("{err}"))
                         {
-                            if let Some(PropertySchema {
-                                property_schema, ..
-                            }) = table_schema.properties.write().await.get_mut(&accessor)
-                            {
-                                if let Ok(Some(current_schema)) = property_schema
-                                    .resolve(
-                                        current_schema.schema_uri.clone(),
-                                        current_schema.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
-                                    .inspect_err(|err| tracing::warn!("{err}"))
-                                {
-                                    results.extend(
-                                        get_sorted_accessors(
-                                            value,
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(accessor))
-                                                .collect_vec(),
-                                            targets,
-                                            Some(&current_schema),
-                                            schema_context,
-                                            order,
-                                        )
-                                        .await?,
-                                    );
-                                    continue;
-                                }
-                            }
-                            if let Some((_, referable_schema)) =
-                                &table_schema.additional_property_schema
-                            {
-                                if let Ok(Some(current_schema)) = referable_schema
-                                    .write()
-                                    .await
-                                    .resolve(
-                                        current_schema.schema_uri.clone(),
-                                        current_schema.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
-                                    .inspect_err(|err| tracing::warn!("{err}"))
-                                {
-                                    results.extend(
-                                        get_sorted_accessors(
-                                            value,
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(accessor))
-                                                .collect_vec(),
-                                            targets,
-                                            Some(&current_schema),
-                                            schema_context,
-                                            order,
-                                        )
-                                        .await?,
-                                    );
-                                    continue;
-                                }
-                            }
+                            results.extend(
+                                get_sorted_accessors(
+                                    value,
+                                    &accessors
+                                        .iter()
+                                        .cloned()
+                                        .chain(std::iter::once(accessor))
+                                        .collect_vec(),
+                                    targets,
+                                    Some(&current_schema),
+                                    schema_context,
+                                    order,
+                                )
+                                .await?,
+                            );
+                            continue;
+                        }
+                        if let Some((_, referable_schema)) =
+                            &table_schema.additional_property_schema
+                            && let Ok(Some(current_schema)) = referable_schema
+                                .write()
+                                .await
+                                .resolve(
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
+                                .inspect_err(|err| tracing::warn!("{err}"))
+                        {
+                            results.extend(
+                                get_sorted_accessors(
+                                    value,
+                                    &accessors
+                                        .iter()
+                                        .cloned()
+                                        .chain(std::iter::once(accessor))
+                                        .collect_vec(),
+                                    targets,
+                                    Some(&current_schema),
+                                    schema_context,
+                                    order,
+                                )
+                                .await?,
+                            );
+                            continue;
                         }
                     }
 
@@ -270,43 +263,40 @@ where
                     .iter()
                     .all(|(accessor, _)| matches!(accessor, Accessor::Index(_))) =>
             {
-                if let Some(current_schema) = current_schema {
-                    if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
-                        if let Some(referable_schema) = &array_schema.items {
-                            if let Ok(Some(current_schema)) = referable_schema
-                                .write()
-                                .await
-                                .resolve(
-                                    current_schema.schema_uri.clone(),
-                                    current_schema.definitions.clone(),
-                                    schema_context.store,
-                                )
-                                .await
-                                .inspect_err(|err| tracing::warn!("{err}"))
-                            {
-                                for (index, (value, (_, targets))) in
-                                    array.iter().zip(sort_targets_map).enumerate()
-                                {
-                                    results.extend(
-                                        get_sorted_accessors(
-                                            value,
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(Accessor::Index(index)))
-                                                .collect_vec(),
-                                            targets,
-                                            Some(&current_schema),
-                                            schema_context,
-                                            order,
-                                        )
-                                        .await?,
-                                    );
-                                }
-                                return Some(results);
-                            }
-                        }
+                if let Some(current_schema) = current_schema
+                    && let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref()
+                    && let Some(referable_schema) = &array_schema.items
+                    && let Ok(Some(current_schema)) = referable_schema
+                        .write()
+                        .await
+                        .resolve(
+                            current_schema.schema_uri.clone(),
+                            current_schema.definitions.clone(),
+                            schema_context.store,
+                        )
+                        .await
+                        .inspect_err(|err| tracing::warn!("{err}"))
+                {
+                    for (index, (value, (_, targets))) in
+                        array.iter().zip(sort_targets_map).enumerate()
+                    {
+                        results.extend(
+                            get_sorted_accessors(
+                                value,
+                                &accessors
+                                    .iter()
+                                    .cloned()
+                                    .chain(std::iter::once(Accessor::Index(index)))
+                                    .collect_vec(),
+                                targets,
+                                Some(&current_schema),
+                                schema_context,
+                                order,
+                            )
+                            .await?,
+                        );
                     }
+                    return Some(results);
                 };
 
                 for (index, (value, (_, targets))) in array.iter().zip(sort_targets_map).enumerate()
@@ -425,10 +415,10 @@ fn get_table_keys_order(
     match order {
         Some(order) => Some(XTombiTableKeysOrder::All(order)),
         None => {
-            if let Some(current_schema) = current_schema {
-                if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
-                    return table_schema.keys_order.clone();
-                }
+            if let Some(current_schema) = current_schema
+                && let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref()
+            {
+                return table_schema.keys_order.clone();
             }
             None
         }

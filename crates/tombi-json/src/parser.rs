@@ -46,13 +46,13 @@ impl<'a> Parser<'a> {
         }
 
         // Ensure all tokens have been consumed
-        if let Some(token) = self.peek() {
-            if token.kind() != SyntaxKind::EOF {
-                return Err(Error::UnexpectedToken {
-                    expected: SyntaxKind::EOF,
-                    actual: token.kind(),
-                });
-            }
+        if let Some(token) = self.peek()
+            && token.kind() != SyntaxKind::EOF
+        {
+            return Err(Error::UnexpectedToken {
+                expected: SyntaxKind::EOF,
+                actual: token.kind(),
+            });
         }
 
         Ok(root)
@@ -225,15 +225,15 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
 
         // Check if the array is empty
-        if let Some(token) = self.peek() {
-            if token.kind() == T![']'] {
-                let close_token = self.advance().unwrap();
-                let full_range = Range::new(start_range.start, close_token.range().end);
-                return Ok(ValueNode::Array(ArrayNode {
-                    items: Vec::new(),
-                    range: full_range,
-                }));
-            }
+        if let Some(token) = self.peek()
+            && token.kind() == T![']']
+        {
+            let close_token = self.advance().unwrap();
+            let full_range = Range::new(start_range.start, close_token.range().end);
+            return Ok(ValueNode::Array(ArrayNode {
+                items: Vec::new(),
+                range: full_range,
+            }));
         }
 
         // Parse array elements
@@ -267,18 +267,18 @@ impl<'a> Parser<'a> {
             }
 
             // Check if we've reached the end of the array
-            if let Some(token) = self.peek() {
-                if token.kind() == T![']'] {
-                    let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start, close_token.range().end);
+            if let Some(token) = self.peek()
+                && token.kind() == T![']']
+            {
+                let close_token = self.advance().unwrap();
+                let full_range = Range::new(start_range.start, close_token.range().end);
 
-                    let array_node = ArrayNode {
-                        items,
-                        range: full_range,
-                    };
+                let array_node = ArrayNode {
+                    items,
+                    range: full_range,
+                };
 
-                    return Ok(ValueNode::Array(array_node));
-                }
+                return Ok(ValueNode::Array(array_node));
             }
         }
     }
@@ -291,15 +291,15 @@ impl<'a> Parser<'a> {
             tombi_json_value::Map::new();
 
         // Check if the object is empty
-        if let Some(token) = self.peek() {
-            if token.kind() == T!['}'] {
-                let close_token = self.advance().unwrap();
-                let full_range = Range::new(start_range.start, close_token.range().end);
-                return Ok(ValueNode::Object(ObjectNode {
-                    properties: tombi_json_value::Map::new(),
-                    range: full_range,
-                }));
-            }
+        if let Some(token) = self.peek()
+            && token.kind() == T!['}']
+        {
+            let close_token = self.advance().unwrap();
+            let full_range = Range::new(start_range.start, close_token.range().end);
+            return Ok(ValueNode::Object(ObjectNode {
+                properties: tombi_json_value::Map::new(),
+                range: full_range,
+            }));
         }
 
         // Parse object members
@@ -357,18 +357,18 @@ impl<'a> Parser<'a> {
             }
 
             // Check if we've reached the end of the object
-            if let Some(token) = self.peek() {
-                if token.kind() == T!['}'] {
-                    let close_token = self.advance().unwrap();
-                    let full_range = Range::new(start_range.start, close_token.range().end);
+            if let Some(token) = self.peek()
+                && token.kind() == T!['}']
+            {
+                let close_token = self.advance().unwrap();
+                let full_range = Range::new(start_range.start, close_token.range().end);
 
-                    let object_node = ObjectNode {
-                        properties,
-                        range: full_range,
-                    };
+                let object_node = ObjectNode {
+                    properties,
+                    range: full_range,
+                };
 
-                    return Ok(ValueNode::Object(object_node));
-                }
+                return Ok(ValueNode::Object(object_node));
             }
         }
     }

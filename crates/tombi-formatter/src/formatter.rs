@@ -65,25 +65,24 @@ impl<'a> Formatter<'a> {
             (None, None)
         };
 
-        if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive {
-            if let Some(format) = &tombi_document_comment_directive.format {
-                if format.disabled.unwrap_or(false) {
-                    match self.source_uri_or_path.map(|path| match path {
-                        Either::Left(url) => url.to_string(),
-                        Either::Right(path) => path.to_string_lossy().to_string(),
-                    }) {
-                        Some(source_url_or_path) => {
-                            tracing::info!(
-                                "Skip formatting for \"{source_url_or_path}\" due to `format.disable`"
-                            );
-                        }
-                        None => {
-                            tracing::info!("Skip formatting for stdin due to `format.disable`");
-                        }
-                    }
-                    return Ok(source.to_string());
+        if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
+            && let Some(format) = &tombi_document_comment_directive.format
+            && format.disabled.unwrap_or(false)
+        {
+            match self.source_uri_or_path.map(|path| match path {
+                Either::Left(url) => url.to_string(),
+                Either::Right(path) => path.to_string_lossy().to_string(),
+            }) {
+                Some(source_url_or_path) => {
+                    tracing::info!(
+                        "Skip formatting for \"{source_url_or_path}\" due to `format.disable`"
+                    );
+                }
+                None => {
+                    tracing::info!("Skip formatting for stdin due to `format.disable`");
                 }
             }
+            return Ok(source.to_string());
         }
 
         self.toml_version = tombi_document_comment_directive

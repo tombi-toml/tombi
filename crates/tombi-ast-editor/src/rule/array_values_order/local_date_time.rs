@@ -45,20 +45,15 @@ pub async fn create_local_date_time_sortable_values<'a>(
                     let mut keys_iter = keys.keys();
                     if let (Some(key), None) = (keys_iter.next(), keys_iter.next()) {
                         let key_text = key.to_raw_text(schema_context.toml_version);
-                        if key_text == array_values_order_by {
-                            if let Some(tombi_document_tree::Value::LocalDateTime(
+                        if key_text == array_values_order_by
+                            && let Some(tombi_document_tree::Value::LocalDateTime(
                                 local_date_time_node,
                             )) = table_node.get(&key_text)
-                            {
-                                sortable_values.push((
-                                    local_date_time_node.to_string(),
-                                    value,
-                                    comma,
-                                ));
+                        {
+                            sortable_values.push((local_date_time_node.to_string(), value, comma));
 
-                                found = true;
-                                break;
-                            }
+                            found = true;
+                            break;
                         }
                     } else {
                         return Err(SortFailReason::DottedKeysInlineTableNotSupported);

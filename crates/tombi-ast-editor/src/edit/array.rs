@@ -44,8 +44,7 @@ impl crate::Edit for tombi_ast::Array {
                                 )
                                 .await
                                 .inspect_err(|err| tracing::warn!("{err}"))
-                            {
-                                if array_node
+                                && array_node
                                     .validate(
                                         accessors.as_ref(),
                                         Some(&current_schema),
@@ -53,17 +52,16 @@ impl crate::Edit for tombi_ast::Array {
                                     )
                                     .await
                                     .is_ok()
-                                {
-                                    return self
-                                        .edit(
-                                            node,
-                                            accessors,
-                                            source_path,
-                                            Some(&current_schema),
-                                            schema_context,
-                                        )
-                                        .await;
-                                }
+                            {
+                                return self
+                                    .edit(
+                                        node,
+                                        accessors,
+                                        source_path,
+                                        Some(&current_schema),
+                                        schema_context,
+                                    )
+                                    .await;
                             }
                         }
                         None
@@ -222,24 +220,21 @@ fn edit_item<'a: 'b, 'b>(
             }
         }
 
-        if let Some(current_schema) = current_schema.as_ref() {
-            if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
-                if let Some(item_schema) = &array_schema.items {
-                    if let Ok(Some(current_schema)) = item_schema
-                        .write()
-                        .await
-                        .resolve(
-                            current_schema.schema_uri.clone(),
-                            current_schema.definitions.clone(),
-                            schema_context.store,
-                        )
-                        .await
-                        .inspect_err(|err| tracing::warn!("{err}"))
-                    {
-                        return edit_fn(node, accessors, Some(current_schema.into_owned())).await;
-                    }
-                }
-            }
+        if let Some(current_schema) = current_schema.as_ref()
+            && let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref()
+            && let Some(item_schema) = &array_schema.items
+            && let Ok(Some(current_schema)) = item_schema
+                .write()
+                .await
+                .resolve(
+                    current_schema.schema_uri.clone(),
+                    current_schema.definitions.clone(),
+                    schema_context.store,
+                )
+                .await
+                .inspect_err(|err| tracing::warn!("{err}"))
+        {
+            return edit_fn(node, accessors, Some(current_schema.into_owned())).await;
         }
 
         edit_fn(node, accessors, None).await

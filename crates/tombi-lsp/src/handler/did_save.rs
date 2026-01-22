@@ -24,7 +24,7 @@ pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParam
             .await;
 
         if let Some(document) = document_sources.get_mut(&text_document_uri) {
-            if need_publish_diagnostics && document.text() == &text {
+            if need_publish_diagnostics && document.text() == text {
                 need_publish_diagnostics = false;
             }
 

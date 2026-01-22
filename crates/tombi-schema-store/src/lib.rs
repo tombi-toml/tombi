@@ -18,10 +18,10 @@ pub use tombi_accessor::{Accessor, AccessorContext, AccessorKeyKind, Accessors, 
 pub use value_type::ValueType;
 
 pub fn get_schema_name(schema_uri: &tombi_uri::Uri) -> Option<&str> {
-    if let Some(path) = schema_uri.path().split('/').next_back() {
-        if !path.is_empty() {
-            return Some(path);
-        }
+    if let Some(path) = schema_uri.path().split('/').next_back()
+        && !path.is_empty()
+    {
+        return Some(path);
     }
     schema_uri.host_str()
 }

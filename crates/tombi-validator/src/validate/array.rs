@@ -347,10 +347,10 @@ fn get_duplicated_ranges(
         .collect::<AHashSet<_>>();
 
     for value in array_value.values() {
-        if let Some(literal_value) = Option::<LiteralValueRef>::from(value) {
-            if duplicated_values.contains(&literal_value) {
-                duplicated_ranges.push(value.range());
-            }
+        if let Some(literal_value) = Option::<LiteralValueRef>::from(value)
+            && duplicated_values.contains(&literal_value)
+        {
+            duplicated_ranges.push(value.range());
         }
     }
 
