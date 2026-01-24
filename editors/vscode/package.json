@@ -216,10 +216,12 @@
           "type": "object",
           "scope": "resource",
           "default": null,
-          "pattern": "^.+$",
-          "additionalProperties": {
-            "type": "string"
-          }
+          "patternProperties": {
+            "^.+$": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       }
     }
