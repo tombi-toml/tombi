@@ -15,6 +15,7 @@ pub enum CompletionKind {
     Key,
     MagicTrigger,
     CommentDirective,
+    File,
 }
 
 impl CompletionKind {
@@ -55,6 +56,7 @@ impl From<CompletionKind> for tower_lsp::lsp_types::CompletionItemKind {
             // NOTE: To give a writing taste close to method chaining
             CompletionKind::MagicTrigger => tower_lsp::lsp_types::CompletionItemKind::METHOD,
             CompletionKind::CommentDirective => tower_lsp::lsp_types::CompletionItemKind::KEYWORD,
+            CompletionKind::File => tower_lsp::lsp_types::CompletionItemKind::FILE,
         }
     }
 }
