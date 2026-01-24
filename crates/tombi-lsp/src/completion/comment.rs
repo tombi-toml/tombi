@@ -280,9 +280,9 @@ fn get_schema_path_completions(
         if let Some(edit) = completion_edit {
             completions.push(CompletionContent {
                 label,
-                kind: CompletionKind::String,
+                kind: CompletionKind::File,
                 emoji_icon: if is_dir { Some('📁') } else { Some('📄') },
-                priority: CompletionContentPriority::Custom("40".to_string()),
+                priority: CompletionContentPriority::Custom("50".to_string()),
                 detail: Some(detail),
                 documentation: None,
                 filter_text: None,
