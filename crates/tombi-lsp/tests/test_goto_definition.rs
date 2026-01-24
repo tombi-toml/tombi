@@ -20,7 +20,7 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn ignores_http_schema_uri(
+            async fn ignores_https_schema_uri(
                 r#"
                 #:schema https://www.schemastore.org/tombi.json█
 
