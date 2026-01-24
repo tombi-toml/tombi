@@ -210,6 +210,16 @@
             "type": "string",
             "minItems": 1
           }
+        },
+        "tombi.env": {
+          "description": "Environment variables to pass to `tombi` command.",
+          "type": "object",
+          "scope": "resource",
+          "default": null,
+          "pattern": "^.+$",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     }
