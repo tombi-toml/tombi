@@ -20,14 +20,14 @@ mod goto_definition_tests {
 
         test_goto_definition!(
             #[tokio::test]
-            async fn ignores_http_schema_uri(
+            async fn ignores_https_schema_uri(
                 r#"
-                #:schema http://www.schemastore.org/tombi.json█
+                #:schema https://www.schemastore.org/tombi.json█
 
                 toml-version = "v1.0.0"
                 "#,
                 SourcePath(project_root_path().join("tombi.toml")),
-            ) -> Ok(["http://www.schemastore.org/tombi.json"]);
+            ) -> Ok(["https://www.schemastore.org/tombi.json"]);
         );
 
         test_goto_definition!(
