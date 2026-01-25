@@ -611,8 +611,6 @@ mod completion_labels {
                 "type-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",
-                "\"\"",
-                "''",
             ]);
         }
 
