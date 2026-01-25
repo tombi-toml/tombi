@@ -636,12 +636,23 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
     }
 }
 
+/// Creates a new file path completion content.
+///
+/// If `allowed_extensions` is `None`, all file extensions are allowed.
+/// If `allowed_extensions` is `Some`, only the specified file extensions are allowed.
+///
+/// # Examples
+///
+/// ```toml
+/// [package.build]
+/// path = "src/█"
+/// ```
 pub fn completion_file_path(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
-    allowed_extensions: &[&str],
+    allowed_extensions: Option<&[&str]>,
 ) -> Option<Vec<CompletionContent>> {
     let Ok(source_path) = text_document_uri.to_file_path() else {
         return None;
@@ -674,11 +685,36 @@ pub fn completion_file_path(
     }
 }
 
+/// Creates completion content for directory paths only.
+///
+/// Use this when the schema expects a directory path (e.g. workspace members).
+///
+/// # Examples
+///
+/// ```toml
+/// [workspace]
+/// members = ["crates/█"]
+/// ```
+pub fn completion_directory_path(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    position: tombi_text::Position,
+    accessors: &[Accessor],
+) -> Option<Vec<CompletionContent>> {
+    completion_file_path(
+        text_document_uri,
+        document_tree,
+        position,
+        accessors,
+        Some(&[]),
+    )
+}
+
 pub fn get_file_path_completions(
     base_dir: &Path,
     path_text: &str,
     path_range: tombi_text::Range,
-    allowed_extensions: &[&str],
+    allowed_extensions: Option<&[&str]>,
 ) -> Vec<CompletionContent> {
     let mut completions = Vec::new();
 
@@ -767,9 +803,12 @@ pub fn get_file_path_completions(
     completions
 }
 
-fn is_allowed_extension(file_name: &str, allowed_extensions: &[&str]) -> bool {
-    if allowed_extensions.is_empty() {
+fn is_allowed_extension(file_name: &str, allowed_extensions: Option<&[&str]>) -> bool {
+    let Some(allowed_extensions) = allowed_extensions else {
         return false;
+    };
+    if allowed_extensions.is_empty() {
+        return true;
     }
 
     let extension = Path::new(file_name)
@@ -782,6 +821,9 @@ fn is_allowed_extension(file_name: &str, allowed_extensions: &[&str]) -> bool {
     })
 }
 
-fn is_json_only_extensions(allowed_extensions: &[&str]) -> bool {
+fn is_json_only_extensions(allowed_extensions: Option<&[&str]>) -> bool {
+    let Some(allowed_extensions) = allowed_extensions else {
+        return false;
+    };
     allowed_extensions.len() == 1 && allowed_extensions[0].eq_ignore_ascii_case("json")
 }

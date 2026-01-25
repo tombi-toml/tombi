@@ -9,7 +9,7 @@ use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
-use tombi_extension::completion_file_path;
+use tombi_extension::{completion_directory_path, completion_file_path};
 use tombi_future::Boxable;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
@@ -95,13 +95,19 @@ pub async fn completion(
     }
 }
 
+/// Tries directory-only completion, then .rs path completion, then any-file path completion.
 fn completion_cargo_file_path(
     text_document_uri: &tombi_uri::Uri,
     document_tree: &tombi_document_tree::DocumentTree,
     position: tombi_text::Position,
     accessors: &[Accessor],
 ) -> Option<Vec<CompletionContent>> {
-    let rs_extensions = ["rs"];
+    if matches_accessors!(accessors, ["workspace", "members", _])
+        || matches_accessors!(accessors, ["workspace", "exclude", _])
+        || matches_accessors!(accessors, ["workspace", "default-members", _])
+    {
+        return completion_directory_path(text_document_uri, document_tree, position, accessors);
+    }
 
     if matches_accessors!(accessors, ["package", "build"])
         || matches_accessors!(accessors, ["project", "build"])
@@ -111,9 +117,13 @@ fn completion_cargo_file_path(
         || matches_accessors!(accessors, ["test", _, "path"])
         || matches_accessors!(accessors, ["bench", _, "path"])
     {
-        if let Some(completions) =
-            completion_file_path(text_document_uri, document_tree, position, accessors, &rs_extensions)
-        {
+        if let Some(completions) = completion_file_path(
+            text_document_uri,
+            document_tree,
+            position,
+            accessors,
+            Some(&["rs"]),
+        ) {
             return Some(completions);
         }
     }
@@ -141,9 +151,6 @@ fn completion_cargo_file_path(
         || matches_accessors!(accessors, ["package", "exclude", _])
         || matches_accessors!(accessors, ["project", "exclude", _])
         || matches_accessors!(accessors, ["workspace", "package", "exclude", _])
-        || matches_accessors!(accessors, ["workspace", "members", _])
-        || matches_accessors!(accessors, ["workspace", "exclude", _])
-        || matches_accessors!(accessors, ["workspace", "default-members", _])
         || matches_accessors!(accessors, ["package", "metadata", "playdate", "image-path"])
         || matches_accessors!(accessors, ["project", "metadata", "playdate", "image-path"])
         || matches_accessors!(
@@ -156,12 +163,22 @@ fn completion_cargo_file_path(
         )
         || matches_accessors!(accessors, ["package", "metadata", "playdate", "assets", _])
         || matches_accessors!(accessors, ["project", "metadata", "playdate", "assets", _])
-        || matches_accessors!(accessors, ["package", "metadata", "playdate", "dev-assets", _])
-        || matches_accessors!(accessors, ["project", "metadata", "playdate", "dev-assets", _])
+        || matches_accessors!(
+            accessors,
+            ["package", "metadata", "playdate", "dev-assets", _]
+        )
+        || matches_accessors!(
+            accessors,
+            ["project", "metadata", "playdate", "dev-assets", _]
+        )
     {
-        if let Some(completions) =
-            completion_file_path(text_document_uri, document_tree, position, accessors, &[])
-        {
+        if let Some(completions) = completion_file_path(
+            text_document_uri,
+            document_tree,
+            position,
+            accessors,
+            Some(&[]),
+        ) {
             return Some(completions);
         }
     }
