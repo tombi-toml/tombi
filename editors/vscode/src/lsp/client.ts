@@ -7,6 +7,20 @@ export type TomlVersionSource = "comment" | "schema" | "config" | "default";
 export type IgnoreReason =
   | "include-file-pattern-not-matched"
   | "exclude-file-pattern-matched";
+export type SchemaInfo = {
+  title?: string;
+  description?: string;
+  tomlVersion?: string;
+  uri: string;
+  catalogUri?: string;
+};
+export type SchemaStatus = {
+  uri: string;
+};
+export type SubSchemaStatus = {
+  root: string;
+  uri: string;
+};
 
 export type GetTomlVersionParams = TextDocumentIdentifier;
 export const getTomlVersion = new RequestType<
@@ -44,13 +58,7 @@ export const associateSchema = new RequestType<
 >("tombi/associateSchema");
 
 export type ListSchemasParams = Record<string, never>;
-export type SchemaInfo = {
-  title?: string;
-  description?: string;
-  tomlVersion?: string;
-  uri: string;
-  catalogUri?: string;
-};
+
 export const listSchemas = new RequestType<
   ListSchemasParams,
   { schemas: SchemaInfo[] },
@@ -65,6 +73,8 @@ export const getStatus = new RequestType<
     source: TomlVersionSource;
     configPath?: string;
     ignore?: IgnoreReason;
+    schema?: SchemaInfo;
+    subSchemas?: SubSchemaStatus[];
   },
   void
 >("tombi/getStatus");
