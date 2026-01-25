@@ -1092,6 +1092,52 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn cargo_package_build_path_file_completion(
+                r#"
+                [package]
+                build = "bui█"
+                "#,
+                SourcePath(project_root_path().join("rust/tombi-cli/Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "build.rs",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_path_completion_local_prefix(
+                r#"
+                [dependencies]
+                local-path-crate = { path = "local-█" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "local-path-crate/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_workspace_members_path_completion_local_prefix(
+                r#"
+                [workspace]
+                members = ["local-█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "local-path-crate/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn cargo_dependencies_serde_bra_work_key(
                 r#"
                 [dependencies]

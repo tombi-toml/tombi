@@ -730,7 +730,7 @@ pub fn get_file_path_completions(
 
 fn is_allowed_extension(file_name: &str, allowed_extensions: &[&str]) -> bool {
     if allowed_extensions.is_empty() {
-        return true;
+        return false;
     }
 
     let extension = Path::new(file_name)
