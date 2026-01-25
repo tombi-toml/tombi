@@ -599,6 +599,25 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_schemars_path_file_completion(
+                r#"
+                [[schemas]]
+                path = "█"
+                "#,
+                SourcePath(project_root_path().join("schemas").join("tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "partial-taskipy.schema.json",
+                "type-test.schema.json",
+                "untagged-union.schema.json",
+                "x-tombi-table-keys-order.schema.json",
+                "\"\"",
+                "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_toml_version_v1_0_0_comment_directive(
                 r#"
                 toml-version = "v1.0.0" # tombi:█

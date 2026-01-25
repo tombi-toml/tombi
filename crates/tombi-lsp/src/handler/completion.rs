@@ -182,6 +182,19 @@ pub async fn handle_completion(
     };
 
     let accessors = tombi_document_tree::get_accessors(document_tree, &keys, position);
+    if let Some(items) = tombi_extension_tombi::completion(
+        &text_document_uri,
+        document_tree,
+        position,
+        &accessors,
+        toml_version,
+        completion_hint,
+        comment_context.as_ref(),
+    )
+    .await?
+    {
+        completion_items.extend(items);
+    }
     if let Some(items) = tombi_extension_cargo::completion(
         &text_document_uri,
         document_tree,
