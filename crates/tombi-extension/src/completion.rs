@@ -7,7 +7,8 @@ use std::{ops::Deref, path::Path};
 pub use completion_edit::{CompletionEdit, CompletionTextEdit, InsertReplaceEdit};
 pub use completion_hint::{AddLeadingComma, AddTrailingComma, CommaHint, CompletionHint};
 pub use completion_kind::CompletionKind;
-use tombi_schema_store::{SchemaUri, get_schema_name};
+use tombi_document_tree::dig_accessors;
+use tombi_schema_store::{Accessor, SchemaUri, get_schema_name};
 use tombi_text::{FromLsp, IntoLsp};
 
 use crate::get_tombi_github_uri;
@@ -632,6 +633,44 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             deprecated: source.deprecated,
             ..Default::default()
         }
+    }
+}
+
+pub fn completion_file_path(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    position: tombi_text::Position,
+    accessors: &[Accessor],
+    allowed_extensions: &[&str],
+) -> Option<Vec<CompletionContent>> {
+    let Ok(source_path) = text_document_uri.to_file_path() else {
+        return None;
+    };
+    let Some(base_dir) = source_path.parent() else {
+        return None;
+    };
+
+    let Some((_, tombi_document_tree::Value::String(string))) =
+        dig_accessors(document_tree, accessors)
+    else {
+        return None;
+    };
+
+    if !string.range().contains(position) {
+        return None;
+    }
+
+    let completions = get_file_path_completions(
+        base_dir,
+        string.value(),
+        string.unquoted_range(),
+        allowed_extensions,
+    );
+
+    if completions.is_empty() {
+        None
+    } else {
+        Some(completions)
     }
 }
 
