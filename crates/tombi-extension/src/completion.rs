@@ -2,7 +2,7 @@ mod completion_edit;
 mod completion_hint;
 mod completion_kind;
 
-use std::ops::Deref;
+use std::{ops::Deref, path::Path};
 
 pub use completion_edit::{CompletionEdit, CompletionTextEdit, InsertReplaceEdit};
 pub use completion_hint::{AddLeadingComma, AddTrailingComma, CommaHint, CompletionHint};
@@ -633,4 +633,116 @@ impl FromLsp<CompletionContent> for tower_lsp::lsp_types::CompletionItem {
             ..Default::default()
         }
     }
+}
+
+pub fn get_file_path_completions(
+    base_dir: &Path,
+    path_text: &str,
+    path_range: tombi_text::Range,
+    allowed_extensions: &[&str],
+) -> Vec<CompletionContent> {
+    let mut completions = Vec::new();
+
+    let (search_dir, prefix, path_prefix) = if path_text.is_empty() {
+        (base_dir.to_path_buf(), String::new(), String::new())
+    } else {
+        let path = Path::new(path_text);
+        if path_text.ends_with('/') {
+            (base_dir.join(path), String::new(), path_text.to_string())
+        } else {
+            let parent = path.parent().unwrap_or(Path::new(""));
+            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            let prefix_str = if parent == Path::new("") {
+                String::new()
+            } else {
+                format!("{}/", parent.display())
+            };
+            (base_dir.join(parent), file_name.to_string(), prefix_str)
+        }
+    };
+
+    let Ok(entries) = std::fs::read_dir(&search_dir) else {
+        return completions;
+    };
+
+    for entry in entries.flatten() {
+        let Ok(file_name) = entry.file_name().into_string() else {
+            continue;
+        };
+
+        if file_name.starts_with('.') {
+            continue;
+        }
+
+        if !prefix.is_empty() && !file_name.starts_with(&prefix) {
+            continue;
+        }
+
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+
+        let is_dir = metadata.is_dir();
+        let is_allowed_file = is_allowed_extension(&file_name, allowed_extensions);
+
+        if !is_dir && !is_allowed_file {
+            continue;
+        }
+
+        let relative_path = match (path_prefix.is_empty(), is_dir) {
+            (true, true) => format!("{}/", file_name),
+            (true, false) => file_name.clone(),
+            (false, true) => format!("{}{}/", path_prefix, file_name),
+            (false, false) => format!("{}{}", path_prefix, file_name),
+        };
+
+        let detail = if is_dir {
+            "Directory".to_string()
+        } else if is_json_only_extensions(allowed_extensions) {
+            "JSON file".to_string()
+        } else {
+            "File".to_string()
+        };
+
+        let completion_edit =
+            CompletionEdit::new_string_literal_while_editing(&relative_path, path_range);
+
+        if let Some(edit) = completion_edit {
+            completions.push(CompletionContent {
+                label: relative_path,
+                kind: CompletionKind::File,
+                emoji_icon: if is_dir { Some('📁') } else { Some('📄') },
+                priority: CompletionContentPriority::Custom("50".to_string()),
+                detail: Some(detail),
+                documentation: None,
+                filter_text: None,
+                schema_uri: None,
+                deprecated: None,
+                edit: Some(edit),
+                preselect: None,
+                in_comment: false,
+            });
+        }
+    }
+
+    completions
+}
+
+fn is_allowed_extension(file_name: &str, allowed_extensions: &[&str]) -> bool {
+    if allowed_extensions.is_empty() {
+        return true;
+    }
+
+    let extension = Path::new(file_name)
+        .extension()
+        .and_then(|ext| ext.to_str());
+    extension.is_some_and(|ext| {
+        allowed_extensions
+            .iter()
+            .any(|allowed| ext.eq_ignore_ascii_case(allowed))
+    })
+}
+
+fn is_json_only_extensions(allowed_extensions: &[&str]) -> bool {
+    allowed_extensions.len() == 1 && allowed_extensions[0].eq_ignore_ascii_case("json")
 }
