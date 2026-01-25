@@ -62,7 +62,7 @@ pub async fn get_document_comment_directive_completion_contents(
                 && let Some(base_dir) = source_path.parent()
             {
                 let completions =
-                    get_file_path_completions(base_dir, schema_text, schema_range, &["json"]);
+                    get_file_path_completions(base_dir, schema_text, schema_range, Some(&["json"]));
                 if !completions.is_empty() {
                     return Some(completions);
                 }

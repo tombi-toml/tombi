@@ -208,6 +208,19 @@ pub async fn handle_completion(
     {
         completion_items.extend(items);
     }
+    if let Some(items) = tombi_extension_uv::completion(
+        &text_document_uri,
+        document_tree,
+        position,
+        &accessors,
+        toml_version,
+        completion_hint,
+        comment_context.as_ref(),
+    )
+    .await?
+    {
+        completion_items.extend(items);
+    }
 
     if comment_context.is_some() {
         completion_items.retain(|item| item.in_comment);

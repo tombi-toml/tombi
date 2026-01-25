@@ -1,4 +1,5 @@
 mod code_action;
+mod completion;
 mod document_link;
 mod goto_declaration;
 mod goto_definition;
@@ -6,6 +7,7 @@ mod goto_definition;
 use std::str::FromStr;
 
 pub use code_action::code_action;
+pub use completion::completion;
 pub use document_link::document_link;
 pub use goto_declaration::goto_declaration;
 pub use goto_definition::goto_definition;
