@@ -6,12 +6,11 @@ use crate::Backend;
 ///
 /// This function returns a list of all schemas known to the LSP server,
 /// including their URIs, file match patterns, and other metadata.
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_list_schemas(
     backend: &Backend,
     _params: ListSchemasParams,
 ) -> Result<ListSchemasResponse, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_list_schemas");
+    log::info!("handle_list_schemas");
 
     let schemas = backend.config_manager.list_schemas().await;
 

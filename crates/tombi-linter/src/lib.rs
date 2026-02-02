@@ -22,7 +22,7 @@ macro_rules! test_lint {
         async fn $name() {
             use tombi_config::TomlVersion;
 
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             /// Test-time configuration overridden via `test_lint!` arguments.
             #[allow(unused)]
@@ -117,7 +117,7 @@ macro_rules! test_lint {
             use tombi_config::TomlVersion;
             use itertools::Itertools;
 
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             /// Test-time configuration overridden via `test_lint!` arguments.
             #[allow(unused)]

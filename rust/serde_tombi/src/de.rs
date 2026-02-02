@@ -630,7 +630,7 @@ optional_string = "provided"
 
     #[tokio::test]
     async fn test_empty_tombi_config() {
-        tombi_test_lib::init_tracing();
+        tombi_test_lib::init_log();
         let toml = r#""#;
 
         let config: tombi_config::Config = from_str_async(toml)

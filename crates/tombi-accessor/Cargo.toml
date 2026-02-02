@@ -9,8 +9,8 @@ license.workspace = true
 [dependencies]
 indexmap.workspace = true
 itertools.workspace = true
+log.workspace = true
 tombi-text.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

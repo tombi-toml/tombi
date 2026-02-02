@@ -8,7 +8,7 @@ macro_rules! test_lex_tokens {
     ];} => {
         #[test]
         fn $name() {
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             let tokens = tokenize($source).collect_vec();
             let (expected, _) = [

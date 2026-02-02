@@ -1639,7 +1639,7 @@ mod completion_labels {
                 use tombi_lsp::handler::handle_did_open;
                 use tombi_text::IntoLsp;
 
-                tombi_test_lib::init_tracing();
+                tombi_test_lib::init_log();
 
                 #[allow(unused)]
                 #[derive(Default)]

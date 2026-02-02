@@ -10,6 +10,7 @@ license.workspace = true
 chrono.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
+log.workspace = true
 thiserror.workspace = true
 tombi-accessor.workspace = true
 tombi-ast.workspace = true
@@ -19,7 +20,6 @@ tombi-syntax.workspace = true
 tombi-text.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-tracing.workspace = true
 
 [features]
 default = ["diagnostic"]

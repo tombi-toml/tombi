@@ -317,7 +317,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_serialization() {
-        tombi_test_lib::init_tracing();
+        tombi_test_lib::init_log();
 
         // Create a test document with various value types
         let mut document = Document::new();
@@ -370,7 +370,7 @@ array = [1, 2, 3]
 
     #[tokio::test]
     async fn test_array_of_tables_serialization() {
-        tombi_test_lib::init_tracing();
+        tombi_test_lib::init_log();
 
         // Create a test document with array of tables
         let mut document = Document::new();
@@ -424,7 +424,7 @@ color = "yellow"
 
     #[tokio::test]
     async fn test_nested_tables_serialization() {
-        tombi_test_lib::init_tracing();
+        tombi_test_lib::init_log();
 
         // Create a test document with nested tables
         let mut document = Document::new();
@@ -458,7 +458,7 @@ age = 30
 
     #[tokio::test]
     async fn test_complex_nested_structures_serialization() {
-        tombi_test_lib::init_tracing();
+        tombi_test_lib::init_log();
 
         let mut document = Document::new();
 
@@ -537,7 +537,7 @@ age = 30
             Value::Table(aaa_table),
         );
 
-        tracing::trace!("document: {document:?}");
+        log::trace!("document: {document:?}");
 
         // Test to_string method
         let toml_string = crate::to_string_async(&document).await.unwrap();
@@ -563,7 +563,7 @@ id = 2
 
     #[tokio::test]
     async fn test_date_time_serialization() {
-        tombi_test_lib::init_tracing();
+        tombi_test_lib::init_log();
 
         let mut document = Document::new();
 

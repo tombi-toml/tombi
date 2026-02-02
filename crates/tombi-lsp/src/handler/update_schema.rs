@@ -8,13 +8,12 @@ use crate::{
     handler::workspace_diagnostic::{WorkspaceDiagnosticOptions, push_workspace_diagnostics},
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_update_schema(
     backend: &Backend,
     params: TextDocumentIdentifier,
 ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_update_schema");
-    tracing::trace!(?params);
+    log::info!("handle_update_schema");
+    log::trace!("{:?}", params);
 
     let TextDocumentIdentifier { uri, .. } = params;
 
@@ -35,7 +34,7 @@ pub async fn handle_update_schema(
                 )
                 .await
                 {
-                    tracing::warn!("Failed to push workspace diagnostics: {err}");
+                    log::warn!("Failed to push workspace diagnostics: {err}");
                 }
             }
             Ok(is_updated)

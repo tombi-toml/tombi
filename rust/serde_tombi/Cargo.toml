@@ -15,6 +15,7 @@ chrono.workspace = true
 dirs.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
+log.workspace = true
 serde.workspace = true
 textwrap.workspace = true
 thiserror.workspace = true
@@ -29,7 +30,6 @@ tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
-tracing.workspace = true
 typed-builder.workspace = true
 
 [dev-dependencies]

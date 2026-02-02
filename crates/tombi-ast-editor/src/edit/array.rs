@@ -21,9 +21,9 @@ impl crate::Edit for tombi_ast::Array {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
-        tracing::trace!("node = {:?}", node);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
+        log::trace!("node = {:?}", node);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("current_schema = {:?}", current_schema);
 
         async move {
             let tombi_document_tree::Value::Array(array_node) = node else {
@@ -43,7 +43,7 @@ impl crate::Edit for tombi_ast::Array {
                                     schema_context.store,
                                 )
                                 .await
-                                .inspect_err(|err| tracing::warn!("{err}"))
+                                .inspect_err(|err| log::warn!("{err}"))
                                 && array_node
                                     .validate(
                                         accessors.as_ref(),
@@ -77,9 +77,9 @@ impl crate::Edit for tombi_ast::Array {
                 array_node,
                 |node, accessors, current_schema| {
                     async move {
-                        tracing::trace!("node = {:?}", node);
-                        tracing::trace!("accessors = {:?}", accessors);
-                        tracing::trace!("current_schema = {:?}", current_schema);
+                        log::trace!("node = {:?}", node);
+                        log::trace!("accessors = {:?}", accessors);
+                        log::trace!("current_schema = {:?}", current_schema);
 
                         let mut changes = vec![];
                         for (index, ((value, comma), value_node)) in
@@ -196,7 +196,7 @@ fn edit_item<'a: 'b, 'b>(
                                 schema_context.store,
                             )
                             .await
-                            .inspect_err(|err| tracing::warn!("{err}"))
+                            .inspect_err(|err| log::warn!("{err}"))
                         {
                             let current_schema = current_schema.into_owned();
                             if node
@@ -232,7 +232,7 @@ fn edit_item<'a: 'b, 'b>(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
         {
             return edit_fn(node, accessors, Some(current_schema.into_owned())).await;
         }

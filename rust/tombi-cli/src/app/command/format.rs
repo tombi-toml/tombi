@@ -42,13 +42,12 @@ pub struct Args {
     common: CommonArgs,
 }
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
     let (success_num, not_needed_num, error_num) = match inner_run(args, crate::app::printer()) {
         Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
         Err(error) => {
-            tracing::error!("{}", error);
+            log::error!("{}", error);
             std::process::exit(1);
         }
     };
@@ -103,7 +102,7 @@ where
         if FileInputType::from(args.files.as_ref()) == FileInputType::Stdin
             && let Err(error) = std::io::copy(&mut std::io::stdin(), &mut std::io::stdout())
         {
-            tracing::error!("Failed to copy stdin to stdout: {}", error);
+            log::error!("Failed to copy stdin to stdout: {}", error);
         }
     })?;
 
@@ -123,7 +122,7 @@ where
         .enable_all()
         .build()
     else {
-        tracing::error!("Failed to create tokio runtime");
+        log::error!("Failed to create tokio runtime");
         std::process::exit(1);
     };
 
@@ -142,7 +141,7 @@ where
 
         match input {
             FileSearch::Stdin => {
-                tracing::debug!("Formatting... stdin input");
+                log::debug!("Formatting... stdin input");
                 let stdin_path = args.stdin_filename.as_ref().map(std::path::PathBuf::from);
 
                 // Get format options with override support
@@ -151,7 +150,7 @@ where
                     stdin_path.as_deref(),
                     config_path.as_deref(),
                 ) else {
-                    tracing::debug!("Formatting disabled for stdin by override");
+                    log::debug!("Formatting disabled for stdin by override");
                     not_needed_num += 1;
                     return Ok((success_num, not_needed_num, error_num));
                 };
@@ -178,7 +177,7 @@ where
                 for file in files {
                     match file {
                         Ok(source_path) => {
-                            tracing::debug!("Formatting... {:?}", &source_path);
+                            log::debug!("Formatting... {:?}", &source_path);
 
                             // Get format options with override support
                             let Some(format_options) = tombi_glob::get_format_options(
@@ -186,7 +185,7 @@ where
                                 Some(source_path.as_ref()),
                                 config_path.as_deref(),
                             ) else {
-                                tracing::debug!(
+                                log::debug!(
                                     "Formatting disabled for {:?} by override",
                                     source_path
                                 );
@@ -247,7 +246,7 @@ where
                             error_num += 1;
                         }
                         Err(e) => {
-                            tracing::error!("Task failed {}", e);
+                            log::error!("Task failed {}", e);
                             error_num += 1;
                         }
                     }
@@ -297,7 +296,7 @@ where
         Ok(formatted) => {
             let has_diff = source != formatted;
             if has_diff && diff {
-                tracing::info!("Found format changes in stdin");
+                log::info!("Found format changes in stdin");
                 eprint_diff(&source, &formatted);
             }
             if check {
@@ -349,7 +348,7 @@ where
         Ok(formatted) => {
             if source != formatted {
                 if diff {
-                    tracing::info!("Found format changes in {:?}", source_path);
+                    log::info!("Found format changes in {:?}", source_path);
                     eprint_diff(&source, &formatted);
                 }
                 if check {

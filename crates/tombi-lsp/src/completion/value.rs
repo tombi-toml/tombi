@@ -46,11 +46,11 @@ impl FindCompletionContents for tombi_document_tree::Value {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
-        tracing::trace!("self = {:?}", self);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("keys = {:?}", keys);
-        tracing::trace!("current_schema = {:?}", current_schema);
-        tracing::trace!("completion_hint = {:?}", completion_hint);
+        log::trace!("self = {:?}", self);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("keys = {:?}", keys);
+        log::trace!("current_schema = {:?}", current_schema);
+        log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
             match self {

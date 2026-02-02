@@ -55,8 +55,8 @@ pub async fn push_diagnostics(backend: &Backend, text_document_uri: tombi_uri::U
         },
     };
 
-    tracing::info!("push_diagnostics");
-    tracing::trace!(?params);
+    log::info!("push_diagnostics");
+    log::trace!("{:?}", params);
 
     publish_diagnostics(backend, params.text_document.uri).await;
 }

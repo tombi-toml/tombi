@@ -4,18 +4,17 @@ use crate::{backend::Backend, handler::workspace_diagnostic::upsert_document_sou
 
 use super::diagnostic::push_diagnostics;
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_did_change_watched_files(
     backend: &Backend,
     params: DidChangeWatchedFilesParams,
 ) {
-    tracing::info!("handle_did_change_watched_files");
-    tracing::trace!(?params);
+    log::info!("handle_did_change_watched_files");
+    log::trace!("{:?}", params);
 
     for change in params.changes {
         let uri: tombi_uri::Uri = change.uri.clone().into();
 
-        tracing::debug!("Detected {:?} via watcher: {}", change.typ, uri);
+        log::debug!("Detected {:?} via watcher: {}", change.typ, uri);
 
         match change.typ {
             FileChangeType::DELETED => {
@@ -35,7 +34,7 @@ pub async fn handle_did_change_watched_files(
                 }
             }
             _ => {
-                tracing::debug!("Ignored file change type {:?} for URI: {}", change.typ, uri);
+                log::debug!("Ignored file change type {:?} for URI: {}", change.typ, uri);
             }
         }
     }

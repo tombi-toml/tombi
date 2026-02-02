@@ -113,7 +113,7 @@ impl Sub<Position> for Position {
     #[inline]
     fn sub(self, rhs: Position) -> Self::Output {
         if rhs > self {
-            tracing::warn!(
+            log::warn!(
                 "Invalid tombi_text::Position: rhs: {:?} > self: {:?}",
                 rhs,
                 self

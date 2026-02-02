@@ -30,10 +30,10 @@ impl GetHoverContent for tombi_document_tree::Table {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
-        tracing::trace!("self = {:?}", self);
-        tracing::trace!("keys = {:?}", keys);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
+        log::trace!("self = {:?}", self);
+        log::trace!("keys = {:?}", keys);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("current_schema = {:?}", current_schema);
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
@@ -97,7 +97,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     .await
                                     .get_mut(&SchemaAccessor::from(&accessor))
                                 {
-                                    tracing::trace!("property_schema = {:?}", property_schema);
+                                    log::trace!("property_schema = {:?}", property_schema);
                                     let required = table_schema
                                         .required
                                         .as_ref()
@@ -310,7 +310,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                                                 return hover_content;
                                             }
                                         } else {
-                                            tracing::warn!(
+                                            log::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
                                             );

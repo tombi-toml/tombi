@@ -24,11 +24,11 @@ where
         + Send
         + std::fmt::Debug,
 {
-    tracing::trace!("value: {:?}", value);
-    tracing::trace!("keys: {:?}", keys);
-    tracing::trace!("accessors: {:?}", accessors);
-    tracing::trace!("all_of_schema: {:?}", all_of_schema);
-    tracing::trace!("schema_uri: {:?}", schema_uri);
+    log::trace!("value: {:?}", value);
+    log::trace!("keys: {:?}", keys);
+    log::trace!("accessors: {:?}", accessors);
+    log::trace!("all_of_schema: {:?}", all_of_schema);
+    log::trace!("schema_uri: {:?}", schema_uri);
 
     async move {
         let mut all_of_type_definition = None;

@@ -24,7 +24,6 @@ regex!(
     REGEX_FLOAT = r"^-?[0-9]+(:?(:?\.[0-9]+)?[eE][+-]?[0-9]+|\.[0-9]+)$";
 );
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub fn lex(source: &str) -> Lexed {
     let mut lexed = Lexed::default();
     let mut last_offset = tombi_text::Offset::default();

@@ -185,7 +185,7 @@ async fn validate_table(
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
                 && let Err(crate::Error {
                     mut diagnostics, ..
                 }) = value
@@ -208,7 +208,7 @@ async fn validate_table(
             ) in pattern_properties.write().await.iter_mut()
             {
                 let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
-                    tracing::warn!("Invalid regex pattern property: {}", pattern_key);
+                    log::warn!("Invalid regex pattern property: {}", pattern_key);
                     continue;
                 };
                 if pattern.is_match(accessor_raw_text) {
@@ -220,7 +220,7 @@ async fn validate_table(
                             schema_context.store,
                         )
                         .await
-                        .inspect_err(|err| tracing::warn!("{err}"))
+                        .inspect_err(|err| log::warn!("{err}"))
                         && let Err(crate::Error {
                             mut diagnostics, ..
                         }) = value
@@ -290,7 +290,7 @@ async fn validate_table(
                         schema_context.store,
                     )
                     .await
-                    .inspect_err(|err| tracing::warn!("{err}"))
+                    .inspect_err(|err| log::warn!("{err}"))
                 {
                     handle_deprecated_value(
                         &mut total_diagnostics,

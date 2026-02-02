@@ -15,9 +15,9 @@ impl crate::Edit for tombi_ast::KeyValue {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
-            tracing::trace!("node = {:?}", node);
-            tracing::trace!("accessors = {:?}", accessors);
-            tracing::trace!("current_schema = {:?}", current_schema);
+            log::trace!("node = {:?}", node);
+            log::trace!("accessors = {:?}", accessors);
+            log::trace!("current_schema = {:?}", current_schema);
 
             let Some(key_accessors) = self.get_accessors(schema_context.toml_version) else {
                 return Vec::with_capacity(0);
@@ -27,9 +27,9 @@ impl crate::Edit for tombi_ast::KeyValue {
                 node,
                 |node, accessors, current_schema| {
                     async move {
-                        tracing::trace!("node = {:?}", node);
-                        tracing::trace!("accessors = {:?}", accessors);
-                        tracing::trace!("current_schema = {:?}", current_schema);
+                        log::trace!("node = {:?}", node);
+                        log::trace!("accessors = {:?}", accessors);
+                        log::trace!("current_schema = {:?}", current_schema);
 
                         if let Some(value) = self.value() {
                             value

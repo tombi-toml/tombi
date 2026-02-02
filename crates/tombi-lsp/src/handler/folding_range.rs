@@ -4,13 +4,12 @@ use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
 
 use crate::backend::Backend;
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_folding_range(
     backend: &Backend,
     params: FoldingRangeParams,
 ) -> Result<Option<Vec<FoldingRange>>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_folding_range");
-    tracing::trace!(?params);
+    log::info!("handle_folding_range");
+    log::trace!("{:?}", params);
 
     let FoldingRangeParams { text_document, .. } = params;
     let text_document_uri = text_document.uri.into();

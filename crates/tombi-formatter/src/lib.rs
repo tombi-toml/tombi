@@ -32,7 +32,7 @@ macro_rules! test_format {
             use tombi_config::{TomlVersion, FormatOptions};
 
 
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             /// Test-time configuration overridden via `test_format!` arguments.
             #[allow(unused)]
@@ -132,7 +132,7 @@ macro_rules! test_format {
             use tombi_config::{FormatOptions, TomlVersion};
 
 
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             /// Test-time configuration overridden via `test_format!` arguments.
             #[allow(unused)]

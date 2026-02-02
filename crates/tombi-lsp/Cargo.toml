@@ -16,6 +16,7 @@ dirs.workspace = true
 futures.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
+log.workspace = true
 reqwest.workspace = true
 semver.workspace = true
 serde.workspace = true
@@ -49,7 +50,6 @@ tombi-uri.workspace = true
 tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
 tower-lsp.workspace = true
-tracing.workspace = true
 unicode-segmentation.workspace = true
 
 [dev-dependencies]

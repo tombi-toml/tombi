@@ -33,7 +33,6 @@ regex!(
     static REGEX_LOCAL_TIME = r"^[0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:[\.,][0-9]+)?$";
 );
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub fn lex(source: &str) -> Lexed {
     let mut lexed = Lexed::default();
     let mut was_joint = false;

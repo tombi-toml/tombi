@@ -53,7 +53,7 @@ impl SchemaAccessor {
                     } else if index_str.parse::<usize>().is_ok() {
                         accessors.push(SchemaAccessor::Index);
                     } else {
-                        tracing::warn!("Invalid schema accessor: {path}");
+                        log::warn!("Invalid schema accessor: {path}");
                         return None;
                     }
                 }

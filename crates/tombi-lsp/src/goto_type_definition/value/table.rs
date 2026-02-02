@@ -27,10 +27,10 @@ impl GetTypeDefinition for tombi_document_tree::Table {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<TypeDefinition>> {
-        tracing::trace!("self = {:?}", self);
-        tracing::trace!("keys = {:?}", keys);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
+        log::trace!("self = {:?}", self);
+        log::trace!("keys = {:?}", keys);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("current_schema = {:?}", current_schema);
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
@@ -93,7 +93,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     .await
                                     .get_mut(&schema_accessor)
                                 {
-                                    tracing::trace!("property_schema = {:?}", property_schema);
+                                    log::trace!("property_schema = {:?}", property_schema);
 
                                     if let Ok(Some(current_schema)) = property_schema
                                         .resolve(
@@ -173,7 +173,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                     .await;
                                             }
                                         } else {
-                                            tracing::warn!(
+                                            log::warn!(
                                                 "Invalid regex pattern property: {}",
                                                 property_key
                                             );

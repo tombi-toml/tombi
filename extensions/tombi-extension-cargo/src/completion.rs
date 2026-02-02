@@ -459,7 +459,7 @@ async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
     {
         Ok(bytes) => bytes,
         Err(e) => {
-            tracing::warn!("Failed to fetch crate versions from {url}: {e}");
+            log::warn!("Failed to fetch crate versions from {url}: {e}");
             return None;
         }
     };
@@ -467,7 +467,7 @@ async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
     let resp: CratesIoVersionsResponse = match serde_json::from_slice(&bytes) {
         Ok(resp) => resp,
         Err(e) => {
-            tracing::warn!("Failed to parse crate versions response: {e}");
+            log::warn!("Failed to parse crate versions response: {e}");
             return None;
         }
     };

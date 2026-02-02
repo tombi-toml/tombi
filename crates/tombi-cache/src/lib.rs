@@ -11,7 +11,7 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         if !cache_dir_path.is_dir()
             && let Err(error) = tokio::fs::create_dir_all(&cache_dir_path).await
         {
-            tracing::warn!("Failed to create cache directory: {error}");
+            log::warn!("Failed to create cache directory: {error}");
             return None;
         }
         return Some(cache_dir_path);
@@ -24,7 +24,7 @@ pub async fn get_tombi_cache_dir_path() -> Option<std::path::PathBuf> {
         if !cache_dir_path.is_dir()
             && let Err(error) = std::fs::create_dir_all(&cache_dir_path)
         {
-            tracing::warn!("Failed to create cache directory: {error}");
+            log::warn!("Failed to create cache directory: {error}");
             return None;
         }
         return Some(cache_dir_path);

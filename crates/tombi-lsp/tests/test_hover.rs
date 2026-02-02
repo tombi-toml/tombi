@@ -470,7 +470,7 @@ mod hover_keys_value {
                 use tombi_lsp::handler::handle_did_open;
                 use tombi_text::IntoLsp;
 
-                tombi_test_lib::init_tracing();
+                tombi_test_lib::init_log();
 
                 #[allow(unused)]
                 #[derive(Default)]
@@ -643,7 +643,7 @@ mod hover_keys_value {
                     return Err("failed to handle hover content".into());
                 };
 
-                tracing::debug!("hover_content: {:#?}", hover_content);
+                log::debug!("hover_content: {:#?}", hover_content);
 
                 if config.schema_file_path.is_some() {
                     assert!(hover_content.schema_uri.is_some(), "The hover target is not defined in the schema.");

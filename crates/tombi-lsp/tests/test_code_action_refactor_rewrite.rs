@@ -454,7 +454,7 @@ mod refactor_rewrite {
                 use tower_lsp::lsp_types::{CodeActionParams, TextDocumentIdentifier, Url};
                 use tower_lsp::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
 
-                tombi_test_lib::init_tracing();
+                tombi_test_lib::init_log();
 
                 #[allow(unused)]
                 #[derive(Default)]
@@ -511,8 +511,8 @@ mod refactor_rewrite {
                     );
                 };
                 toml_text.remove(index);
-                tracing::debug!(?toml_text, "test toml text");
-                tracing::debug!(?index, "test toml text index");
+                log::debug!("{:?}", toml_text, "test toml text");
+                log::debug!("{:?}", index, "test toml text index");
 
                 let line_index =
                     tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
@@ -557,7 +557,7 @@ mod refactor_rewrite {
                     return Err("failed to get code actions".into());
                 };
 
-                tracing::debug!(?actions, "code actions found");
+                log::debug!("{:?}", actions, "code actions found");
 
                 match (actions, $expected) {
                     (Some(actions), Some(expected)) => {
@@ -638,7 +638,7 @@ mod refactor_rewrite {
                         if config.select.is_some() {
                             return Err("Select(..) should not be provided when expecting no code actions (Ok(None))".into());
                         };
-                        tracing::debug!("no code actions found, as expected");
+                        log::debug!("no code actions found, as expected");
                         Ok(())
                     }
                     (Some(actions), None) => {

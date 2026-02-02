@@ -5,13 +5,12 @@ use crate::{
     semantic_tokens::{AppendSemanticTokens, SemanticTokensBuilder},
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_semantic_tokens_full(
     backend: &Backend,
     params: SemanticTokensParams,
 ) -> Result<Option<SemanticTokensResult>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_semantic_tokens_full");
-    tracing::trace!(?params);
+    log::info!("handle_semantic_tokens_full");
+    log::trace!("{:?}", params);
 
     let SemanticTokensParams { text_document, .. } = params;
     let text_document_uri: tombi_uri::Uri = text_document.uri.into();

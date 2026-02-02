@@ -37,13 +37,12 @@ pub struct Args {
     common: CommonArgs,
 }
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
     let (success_num, error_num) = match inner_run(args, crate::app::printer()) {
         Ok((success_num, error_num)) => (success_num, error_num),
         Err(error) => {
-            tracing::error!("{}", error);
+            log::error!("{}", error);
             std::process::exit(1);
         }
     };
@@ -98,7 +97,7 @@ where
         .enable_all()
         .build()
     else {
-        tracing::error!("Failed to create tokio runtime");
+        log::error!("Failed to create tokio runtime");
         std::process::exit(1);
     };
 
@@ -116,14 +115,14 @@ where
 
         match input {
             FileSearch::Stdin => {
-                tracing::debug!("linting... stdin input");
+                log::debug!("linting... stdin input");
                 let stdin_path = args.stdin_filename.as_deref().map(std::path::Path::new);
 
                 // Get lint options with override support
                 let Some(lint_options) =
                     tombi_glob::get_lint_options(&config, stdin_path, config_path.as_deref())
                 else {
-                    tracing::debug!("Linting disabled for stdin by override");
+                    log::debug!("Linting disabled for stdin by override");
                     success_num += 1;
                     return Ok((success_num, error_num));
                 };
@@ -150,7 +149,7 @@ where
                 for file in files {
                     match file {
                         Ok(source_path) => {
-                            tracing::debug!("linting... {:?}", source_path);
+                            log::debug!("linting... {:?}", source_path);
 
                             // Get lint options with override support
                             let Some(lint_options) = tombi_glob::get_lint_options(
@@ -158,7 +157,7 @@ where
                                 Some(source_path.as_ref()),
                                 config_path.as_deref(),
                             ) else {
-                                tracing::debug!(
+                                log::debug!(
                                     "Linting disabled for {:?} by override",
                                     source_path
                                 );
@@ -214,7 +213,7 @@ where
                             }
                         }
                         Err(e) => {
-                            tracing::error!("Task failed {}", e);
+                            log::error!("Task failed {}", e);
                             error_num += 1;
                         }
                     }

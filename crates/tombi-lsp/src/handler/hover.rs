@@ -11,13 +11,12 @@ use crate::{
     hover::{HoverContent, get_document_comment_directive_hover_content, get_hover_content},
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_hover(
     backend: &backend::Backend,
     params: HoverParams,
 ) -> Result<Option<HoverContent>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_hover");
-    tracing::trace!(?params);
+    log::info!("handle_hover");
+    log::trace!("{:?}", params);
 
     let HoverParams {
         text_document_position_params:
@@ -46,7 +45,7 @@ pub async fn handle_hover(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.hover.enabled` is false");
+        log::debug!("`server.hover.enabled` is false");
         return Ok(None);
     }
 
@@ -76,12 +75,12 @@ pub async fn handle_hover(
     }
 
     let Some((keys, range)) = get_hover_keys_with_range(root, position, toml_version).await else {
-        tracing::debug!("Failed to get hover keys with range");
+        log::debug!("Failed to get hover keys with range");
         return Ok(None);
     };
 
     if keys.is_empty() && range.is_none() {
-        tracing::debug!("Keys and range are empty");
+        log::debug!("Keys and range are empty");
         return Ok(None);
     }
 

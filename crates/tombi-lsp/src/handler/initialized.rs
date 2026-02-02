@@ -9,21 +9,20 @@ use crate::{
     handler::{push_workspace_diagnostics, workspace_diagnostic::WorkspaceDiagnosticOptions},
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialized(backend: &Backend, params: InitializedParams) {
-    tracing::info!("handle_initialized");
-    tracing::trace!(?params);
+    log::info!("handle_initialized");
+    log::trace!("{:?}", params);
 
-    tracing::info!("Pushing workspace diagnostics...");
+    log::info!("Pushing workspace diagnostics...");
     if let Err(error) =
         push_workspace_diagnostics(backend, &WorkspaceDiagnosticOptions::default()).await
     {
-        tracing::warn!("Failed to push workspace diagnostics: {error}");
+        log::warn!("Failed to push workspace diagnostics: {error}");
     }
 
-    tracing::info!("Registering workspace TOML watchers...");
+    log::info!("Registering workspace TOML watchers...");
     if let Err(error) = register_workspace_toml_watcher(backend).await {
-        tracing::warn!("Failed to register TOML file watchers: {error}");
+        log::warn!("Failed to register TOML file watchers: {error}");
     }
 }
 

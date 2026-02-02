@@ -14,13 +14,12 @@ use crate::{
     config_manager::ConfigSchemaStore,
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_completion(
     backend: &backend::Backend,
     params: CompletionParams,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_completion");
-    tracing::trace!(?params);
+    log::info!("handle_completion");
+    log::trace!("{:?}", params);
 
     let CompletionParams {
         text_document_position:
@@ -51,7 +50,7 @@ pub async fn handle_completion(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.completion.enabled` is false");
+        log::debug!("`server.completion.enabled` is false");
         return Ok(None);
     }
 
@@ -62,13 +61,13 @@ pub async fn handle_completion(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`schema.enabled` is false");
+        log::debug!("`schema.enabled` is false");
         return Ok(None);
     }
 
     let document_sources = backend.document_sources.read().await;
     let Some(document_source) = document_sources.get(&text_document_uri) else {
-        tracing::trace!("document_source not found");
+        log::trace!("document_source not found");
         return Ok(None);
     };
 
@@ -99,7 +98,7 @@ pub async fn handle_completion(
             && let Some(prev_line) = &document_source.text().lines().nth(pos_line - 1)
             && (prev_line.trim().is_empty() || root_schema.is_none())
         {
-            tracing::trace!("completion skipped due to consecutive line breaks");
+            log::trace!("completion skipped due to consecutive line breaks");
             return Ok(None);
         }
     }
@@ -212,7 +211,7 @@ fn get_keys_and_completion_hint(
     let Some((keys, completion_hint)) =
         extract_keys_and_hint(root, position, toml_version, comment_context)
     else {
-        tracing::trace!("keys and completion_hint not found");
+        log::trace!("keys and completion_hint not found");
         return None;
     };
 
