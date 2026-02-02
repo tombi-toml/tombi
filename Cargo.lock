@@ -3730,6 +3730,7 @@ version = "0.0.0-dev"
 dependencies = [
  "log",
  "tombi-ast",
+ "tombi-document-tree",
  "tombi-schema-store",
  "tombi-text",
  "tombi-uri",

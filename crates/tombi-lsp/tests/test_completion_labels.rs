@@ -599,6 +599,23 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn tombi_schemars_path_file_completion(
+                r#"
+                [[schemas]]
+                path = "█"
+                "#,
+                SourcePath(project_root_path().join("schemas").join("tombi.toml")),
+                SchemaPath(tombi_schema_path()),
+            ) -> Ok([
+                "partial-taskipy.schema.json",
+                "type-test.schema.json",
+                "untagged-union.schema.json",
+                "x-tombi-table-keys-order.schema.json",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn tombi_toml_version_v1_0_0_comment_directive(
                 r#"
                 toml-version = "v1.0.0" # tombi:█
@@ -708,6 +725,70 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_project_readme_file_completion(
+                r#"
+                [project]
+                readme = "py█"
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "pyproject.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_readme_file_object_completion(
+                r#"
+                [project]
+                readme = { file = "py█" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "pyproject.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_license_file_completion(
+                r#"
+                [project]
+                license = { file = "py█" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "pyproject.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_project_license_files_completion(
+                r#"
+                [project]
+                license-files = ["py█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "pyproject.toml",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_project_dynamic_array(
                 r#"
                 [project]
@@ -781,6 +862,22 @@ mod completion_labels {
                 SchemaPath(pyproject_schema_path()),
             ) -> Ok([
                 "backend-path",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn pyproject_build_system_backend_path_file_completion(
+                r#"
+                [build-system]
+                backend-path = ["mem█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/pyproject_workspace/pyproject.toml"
+                )),
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([
+                "members/",
             ]);
         }
 
@@ -1070,6 +1167,52 @@ mod completion_labels {
                 SchemaPath(cargo_schema_path()),
             ) -> Ok([
                 "$crate_name",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_package_build_path_file_completion(
+                r#"
+                [package]
+                build = "bui█"
+                "#,
+                SourcePath(project_root_path().join("rust/tombi-cli/Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "build.rs",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_path_completion_local_prefix(
+                r#"
+                [dependencies]
+                local-path-crate = { path = "local-█" }
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "local-path-crate/",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_workspace_members_path_completion_local_prefix(
+                r#"
+                [workspace]
+                members = ["local-█"]
+                "#,
+                SourcePath(project_root_path().join(
+                    "crates/tombi-lsp/tests/fixtures/cargo/path-dependency-with-features/Cargo.toml"
+                )),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "local-path-crate/",
             ]);
         }
 

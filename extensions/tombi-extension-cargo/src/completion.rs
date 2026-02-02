@@ -9,6 +9,7 @@ use tombi_extension::CompletionHint;
 use tombi_extension::CompletionKind;
 use tombi_extension::CompletionTextEdit;
 use tombi_extension::TextEdit;
+use tombi_extension::{completion_directory_path, completion_file_path};
 use tombi_future::Boxable;
 use tombi_schema_store::Accessor;
 use tombi_schema_store::HttpClient;
@@ -59,6 +60,12 @@ pub async fn completion(
         return Ok(None);
     }
 
+    if let Some(completions) =
+        completion_cargo_file_path(text_document_uri, document_tree, position, accessors)
+    {
+        return Ok(Some(completions));
+    }
+
     let cargo_toml_path = std::path::Path::new(text_document_uri.path());
 
     if let Some(Accessor::Key(first)) = accessors.first() {
@@ -86,6 +93,97 @@ pub async fn completion(
     } else {
         Ok(None)
     }
+}
+
+/// Tries directory-only completion, then .rs path completion, then any-file path completion.
+fn completion_cargo_file_path(
+    text_document_uri: &tombi_uri::Uri,
+    document_tree: &tombi_document_tree::DocumentTree,
+    position: tombi_text::Position,
+    accessors: &[Accessor],
+) -> Option<Vec<CompletionContent>> {
+    if matches_accessors!(accessors, ["workspace", "members", _])
+        || matches_accessors!(accessors, ["workspace", "exclude", _])
+        || matches_accessors!(accessors, ["workspace", "default-members", _])
+    {
+        return completion_directory_path(text_document_uri, document_tree, position, accessors);
+    }
+
+    if matches_accessors!(accessors, ["package", "build"])
+        || matches_accessors!(accessors, ["project", "build"])
+        || matches_accessors!(accessors, ["lib", "path"])
+        || matches_accessors!(accessors, ["bin", _, "path"])
+        || matches_accessors!(accessors, ["example", _, "path"])
+        || matches_accessors!(accessors, ["test", _, "path"])
+        || matches_accessors!(accessors, ["bench", _, "path"])
+    {
+        if let Some(completions) = completion_file_path(
+            text_document_uri,
+            document_tree,
+            position,
+            accessors,
+            Some(&["rs"]),
+        ) {
+            return Some(completions);
+        }
+    }
+
+    if matches_accessors!(accessors, ["dependencies", _, "path"])
+        || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
+        || matches_accessors!(accessors, ["build-dependencies", _, "path"])
+        || matches_accessors!(accessors, ["target", _, "dependencies", _, "path"])
+        || matches_accessors!(accessors, ["target", _, "dev-dependencies", _, "path"])
+        || matches_accessors!(accessors, ["target", _, "build-dependencies", _, "path"])
+        || matches_accessors!(accessors, ["workspace", "dependencies", _, "path"])
+        || matches_accessors!(accessors, ["patch", _, _, "path"])
+        || matches_accessors!(accessors, ["replace", _, "path"])
+        || matches_accessors!(accessors, ["package", "readme"])
+        || matches_accessors!(accessors, ["project", "readme"])
+        || matches_accessors!(accessors, ["workspace", "package", "readme"])
+        || matches_accessors!(accessors, ["package", "license-file"])
+        || matches_accessors!(accessors, ["project", "license-file"])
+        || matches_accessors!(accessors, ["workspace", "package", "license-file"])
+        || matches_accessors!(accessors, ["package", "workspace"])
+        || matches_accessors!(accessors, ["project", "workspace"])
+        || matches_accessors!(accessors, ["package", "include", _])
+        || matches_accessors!(accessors, ["project", "include", _])
+        || matches_accessors!(accessors, ["workspace", "package", "include", _])
+        || matches_accessors!(accessors, ["package", "exclude", _])
+        || matches_accessors!(accessors, ["project", "exclude", _])
+        || matches_accessors!(accessors, ["workspace", "package", "exclude", _])
+        || matches_accessors!(accessors, ["package", "metadata", "playdate", "image-path"])
+        || matches_accessors!(accessors, ["project", "metadata", "playdate", "image-path"])
+        || matches_accessors!(
+            accessors,
+            ["package", "metadata", "playdate", "launch-sound-path"]
+        )
+        || matches_accessors!(
+            accessors,
+            ["project", "metadata", "playdate", "launch-sound-path"]
+        )
+        || matches_accessors!(accessors, ["package", "metadata", "playdate", "assets", _])
+        || matches_accessors!(accessors, ["project", "metadata", "playdate", "assets", _])
+        || matches_accessors!(
+            accessors,
+            ["package", "metadata", "playdate", "dev-assets", _]
+        )
+        || matches_accessors!(
+            accessors,
+            ["project", "metadata", "playdate", "dev-assets", _]
+        )
+    {
+        if let Some(completions) = completion_file_path(
+            text_document_uri,
+            document_tree,
+            position,
+            accessors,
+            Some(&[]),
+        ) {
+            return Some(completions);
+        }
+    }
+
+    None
 }
 
 async fn completion_workspace(

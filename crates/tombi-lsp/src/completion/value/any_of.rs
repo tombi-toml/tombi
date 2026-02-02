@@ -1,6 +1,8 @@
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, AnyOfSchema, CurrentSchema, ReferableValueSchemas};
+use tombi_schema_store::{
+    Accessor, AnyOfSchema, CurrentSchema, ReferableValueSchemas, SchemaAccessor, ValueSchema,
+};
 
 use crate::completion::{
     CompletionCandidate, CompletionContent, CompletionHint, CompositeSchemaImpl,
@@ -45,27 +47,54 @@ where
     async move {
         let mut completion_items = Vec::new();
 
+        // Same branching narrow logic as oneOf: when completing the value of a single key, only
+        // consider branches that are a table containing that key; skip default/examples when narrow.
+        let first_key = (keys.len() == 1 && !keys[0].value.is_empty()).then(|| &keys[0].value);
+
+        let mut branch_results: Vec<(bool, Vec<CompletionContent>)> = Vec::new();
         for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
-            if let Ok(Some(current_schema)) = referable_schema
+            let Ok(Some(current_schema)) = referable_schema
                 .resolve(
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
                 )
                 .await
-            {
-                let schema_completions = value
-                    .find_completion_contents(
-                        position,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                        completion_hint,
-                    )
-                    .await;
+            else {
+                continue;
+            };
 
-                completion_items.extend(schema_completions);
+            let branch_has_key = if let Some(ref first_key) = first_key {
+                match current_schema.value_schema.as_ref() {
+                    ValueSchema::Table(table_schema) => table_schema
+                        .properties
+                        .read()
+                        .await
+                        .contains_key(&SchemaAccessor::Key(first_key.to_string())),
+                    _ => false,
+                }
+            } else {
+                false
+            };
+
+            let schema_completions = value
+                .find_completion_contents(
+                    position,
+                    keys,
+                    accessors,
+                    Some(&current_schema),
+                    schema_context,
+                    completion_hint,
+                )
+                .await;
+
+            branch_results.push((branch_has_key, schema_completions));
+        }
+
+        let narrow_branches = branch_results.iter().any(|(has_key, _)| *has_key);
+        for (branch_has_key, items) in branch_results {
+            if !narrow_branches || branch_has_key {
+                completion_items.extend(items);
             }
         }
 
@@ -96,37 +125,16 @@ where
             }
         }
 
-        if let Some(default) = &any_of_schema.default {
-            let default_label = default.to_string();
-            if let Some(completion_item) = completion_items
-                .iter_mut()
-                .find(|item| item.label == default_label)
-            {
-                completion_item.priority = CompletionContentPriority::Default;
-            } else if let Some(completion_item) = tombi_json_value_to_completion_default_item(
-                default,
-                position,
-                detail.clone(),
-                documentation.clone(),
-                Some(&current_schema.schema_uri),
-                completion_hint,
-            ) {
-                completion_items.push(completion_item);
-            }
-        }
-
-        if let Some(examples) = &any_of_schema.examples {
-            for example in examples {
-                let example_label = example.to_string();
-                if completion_items
-                    .iter()
-                    .any(|item| item.label == example_label)
+        if !narrow_branches {
+            if let Some(default) = &any_of_schema.default {
+                let default_label = default.to_string();
+                if let Some(completion_item) = completion_items
+                    .iter_mut()
+                    .find(|item| item.label == default_label)
                 {
-                    continue;
-                }
-
-                if let Some(completion_item) = tombi_json_value_to_completion_example_item(
-                    example,
+                    completion_item.priority = CompletionContentPriority::Default;
+                } else if let Some(completion_item) = tombi_json_value_to_completion_default_item(
+                    default,
                     position,
                     detail.clone(),
                     documentation.clone(),
@@ -134,6 +142,29 @@ where
                     completion_hint,
                 ) {
                     completion_items.push(completion_item);
+                }
+            }
+
+            if let Some(examples) = &any_of_schema.examples {
+                for example in examples {
+                    let example_label = example.to_string();
+                    if completion_items
+                        .iter()
+                        .any(|item| item.label == example_label)
+                    {
+                        continue;
+                    }
+
+                    if let Some(completion_item) = tombi_json_value_to_completion_example_item(
+                        example,
+                        position,
+                        detail.clone(),
+                        documentation.clone(),
+                        Some(&current_schema.schema_uri),
+                        completion_hint,
+                    ) {
+                        completion_items.push(completion_item);
+                    }
                 }
             }
         }
