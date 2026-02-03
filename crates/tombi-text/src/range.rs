@@ -29,7 +29,7 @@ impl Range {
             end: if start <= end {
                 end
             } else {
-                tracing::warn!(
+                log::warn!(
                     "Invalid tombi_text::Range: start: {:?} > end: {:?}",
                     start,
                     end

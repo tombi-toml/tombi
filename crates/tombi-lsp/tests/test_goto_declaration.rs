@@ -182,7 +182,7 @@ mod goto_declaration_tests {
                 };
                 use tombi_text::IntoLsp;
 
-                tombi_test_lib::init_tracing();
+                tombi_test_lib::init_log();
 
                 #[allow(unused)]
                 #[derive(Default)]
@@ -334,7 +334,7 @@ mod goto_declaration_tests {
                     return Err("failed to handle goto_declaration".into());
                 };
 
-                tracing::debug!("goto_declaration result: {:#?}", result);
+                log::debug!("goto_declaration result: {:#?}", result);
 
                 let expected_paths: Vec<std::path::PathBuf> = vec![$($expected_file_path.to_owned()),*];
 

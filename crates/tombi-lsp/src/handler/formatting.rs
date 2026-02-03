@@ -8,13 +8,12 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_formatting(
     backend: &Backend,
     params: DocumentFormattingParams,
 ) -> Result<Option<Vec<TextEdit>>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_formatting");
-    tracing::trace!(?params);
+    log::info!("handle_formatting");
+    log::trace!("{:?}", params);
 
     let DocumentFormattingParams { text_document, .. } = params;
     let text_document_uri = text_document.uri.into();
@@ -36,7 +35,7 @@ pub async fn handle_formatting(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.formatting.enabled` is false");
+        log::debug!("`server.formatting.enabled` is false");
         return Ok(None);
     }
 
@@ -44,13 +43,13 @@ pub async fn handle_formatting(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                tracing::info!(
+                log::info!(
                     "Skip {text_document_path:?} because it is not in config.files.include"
                 );
                 return Ok(None);
             }
             MatchResult::ExcludeMatched => {
-                tracing::info!("Skip {text_document_path:?} because it is in config.files.exclude");
+                log::info!("Skip {text_document_path:?} because it is in config.files.exclude");
                 return Ok(None);
             }
         }
@@ -70,7 +69,7 @@ pub async fn handle_formatting(
         text_document_path.as_deref(),
         config_path.as_deref(),
     ) else {
-        tracing::debug!(
+        log::debug!(
             "Formatting disabled for {:?} by override",
             text_document_path
         );
@@ -93,12 +92,12 @@ pub async fn handle_formatting(
                     &formatted,
                     document_source.line_index(),
                 );
-                tracing::debug!(?edits);
+                log::debug!("{:?}", edits);
                 document_source.set_text(formatted, toml_version);
 
                 return Ok(Some(edits));
             } else {
-                tracing::debug!("no change");
+                log::debug!("no change");
                 backend
                     .client
                     .send_notification::<PublishDiagnostics>(PublishDiagnosticsParams {
@@ -110,7 +109,7 @@ pub async fn handle_formatting(
             }
         }
         Err(diagnostics) => {
-            tracing::error!("Failed to format");
+            log::error!("Failed to format");
             let line_index = document_source.line_index();
             backend
                 .client

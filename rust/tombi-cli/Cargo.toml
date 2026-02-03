@@ -14,7 +14,9 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 clap_complete = "4.5.58"
+env_logger.workspace = true
 itertools.workspace = true
+log.workspace = true
 nu-ansi-term.workspace = true
 serde_tombi.workspace = true
 similar = { workspace = true, features = ["inline"] }
@@ -29,8 +31,6 @@ tombi-glob.workspace = true
 tombi-linter.workspace = true
 tombi-lsp = { workspace = true, features = ["clap", "native"] }
 tombi-schema-store = { workspace = true, features = ["native"] }
-tracing.workspace = true
-tracing-subscriber.workspace = true
 
 [build-dependencies]
 tombi-regex.workspace = true

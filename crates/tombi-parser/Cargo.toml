@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 drop_bomb.workspace = true
 itertools.workspace = true
+log.workspace = true
 thiserror.workspace = true
 tombi-ast.workspace = true
 tombi-config.workspace = true
@@ -16,7 +17,6 @@ tombi-lexer.workspace = true
 tombi-rg-tree.workspace = true
 tombi-syntax.workspace = true
 tombi-text.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

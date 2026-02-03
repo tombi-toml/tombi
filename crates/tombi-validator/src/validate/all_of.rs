@@ -21,8 +21,8 @@ pub fn validate_all_of<'a: 'b, 'b, T>(
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
-    tracing::trace!("value = {:?}", value);
-    tracing::trace!("all_of_schema = {:?}", all_of_schema);
+    log::trace!("value = {:?}", value);
+    log::trace!("all_of_schema = {:?}", all_of_schema);
 
     async move {
         let mut total_diagnostics = vec![];
@@ -37,7 +37,7 @@ where
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
             {
                 current_schema
             } else {

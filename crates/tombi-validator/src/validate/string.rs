@@ -287,7 +287,7 @@ async fn validate_string(
 
     if let Some(pattern) = &string_schema.pattern
         && let Ok(regex) = Regex::new(pattern)
-            .inspect_err(|_| tracing::warn!("Invalid regex pattern: {:?}", pattern))
+            .inspect_err(|_| log::warn!("Invalid regex pattern: {:?}", pattern))
         && !regex.is_match(&value)
     {
         let level = lint_rules

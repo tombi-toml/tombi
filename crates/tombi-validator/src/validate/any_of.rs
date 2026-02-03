@@ -22,8 +22,8 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
-    tracing::trace!("value = {:?}", value);
-    tracing::trace!("any_of_schema = {:?}", any_of_schema);
+    log::trace!("value = {:?}", value);
+    log::trace!("any_of_schema = {:?}", any_of_schema);
 
     async move {
         if let Some(not_schema) = any_of_schema.not.as_ref() {
@@ -50,7 +50,7 @@ where
                     schema_context.store,
                 )
                 .await
-                .inspect_err(|err| tracing::warn!("{err}"))
+                .inspect_err(|err| log::warn!("{err}"))
             {
                 current_schema
             } else {

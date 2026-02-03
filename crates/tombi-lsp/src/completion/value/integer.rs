@@ -21,12 +21,12 @@ impl FindCompletionContents for tombi_document_tree::Integer {
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
-        tracing::trace!("self = {:?}", self);
-        tracing::trace!("position = {:?}", position);
-        tracing::trace!("keys = {:?}", keys);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
-        tracing::trace!("completion_hint = {:?}", completion_hint);
+        log::trace!("self = {:?}", self);
+        log::trace!("position = {:?}", position);
+        log::trace!("keys = {:?}", keys);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("current_schema = {:?}", current_schema);
+        log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
             if let Some((comment_directive_context, schema_uri)) =
@@ -59,12 +59,12 @@ impl FindCompletionContents for IntegerSchema {
         _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
-        tracing::trace!("self = {:?}", self);
-        tracing::trace!("position = {:?}", position);
-        tracing::trace!("keys = {:?}", keys);
-        tracing::trace!("accessors = {:?}", accessors);
-        tracing::trace!("current_schema = {:?}", current_schema);
-        tracing::trace!("completion_hint = {:?}", completion_hint);
+        log::trace!("self = {:?}", self);
+        log::trace!("position = {:?}", position);
+        log::trace!("keys = {:?}", keys);
+        log::trace!("accessors = {:?}", accessors);
+        log::trace!("current_schema = {:?}", current_schema);
+        log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
             let mut completion_items = vec![];

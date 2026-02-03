@@ -141,7 +141,7 @@ impl XTombiArrayValuesOrder {
                 match ArrayValuesOrder::try_from(string.value.as_ref()) {
                     Ok(val) => return Some(XTombiArrayValuesOrder::All(val)),
                     Err(_) => {
-                        tracing::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
+                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER}: {}", string.value);
                     }
                 }
             }
@@ -158,7 +158,7 @@ impl XTombiArrayValuesOrder {
                                     {
                                         Some(val) => orders.push(val),
                                         None => {
-                                            tracing::warn!(
+                                            log::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders.to_string()
                                             );
@@ -180,7 +180,7 @@ impl XTombiArrayValuesOrder {
                                     {
                                         Some(val) => orders.push(val),
                                         None => {
-                                            tracing::warn!(
+                                            log::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
                                                 group_orders.to_string()
                                             );
@@ -193,7 +193,7 @@ impl XTombiArrayValuesOrder {
                             }
                         }
                         _ => {
-                            tracing::warn!(
+                            log::warn!(
                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} group: {}",
                                 group_name.value
                             );

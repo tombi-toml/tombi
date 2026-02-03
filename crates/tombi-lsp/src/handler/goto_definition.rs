@@ -5,13 +5,12 @@ use crate::Backend;
 use crate::config_manager::ConfigSchemaStore;
 use crate::handler::hover::get_hover_keys_with_range;
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_goto_definition(
     backend: &Backend,
     params: GotoDefinitionParams,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_goto_definition");
-    tracing::trace!(?params);
+    log::info!("handle_goto_definition");
+    log::trace!("{:?}", params);
 
     let GotoDefinitionParams {
         text_document_position_params:
@@ -36,7 +35,7 @@ pub async fn handle_goto_definition(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.goto_definition.enabled` is false");
+        log::debug!("`server.goto_definition.enabled` is false");
         return Ok(Default::default());
     }
 

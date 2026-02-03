@@ -18,7 +18,7 @@ impl crate::Edit for tombi_ast::Table {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
-        tracing::trace!("current_schema = {:?}", current_schema);
+        log::trace!("current_schema = {:?}", current_schema);
 
         async move {
             let Some(header_accessors) = self.get_header_accessors(schema_context.toml_version)
@@ -35,9 +35,9 @@ impl crate::Edit for tombi_ast::Table {
                 node,
                 |node, accessors, current_schema| {
                     async move {
-                        tracing::trace!("node = {:#?}", node);
-                        tracing::trace!("accessors = {:?}", accessors);
-                        tracing::trace!("current_schema = {:#?}", current_schema);
+                        log::trace!("node = {:#?}", node);
+                        log::trace!("accessors = {:?}", accessors);
+                        log::trace!("current_schema = {:#?}", current_schema);
 
                         let mut changes = vec![];
                         for key_value in self.key_values() {

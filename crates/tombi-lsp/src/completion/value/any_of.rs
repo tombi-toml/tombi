@@ -37,12 +37,12 @@ pub fn find_any_of_completion_items<'a: 'b, 'b, T>(
 where
     T: FindCompletionContents + tombi_validator::Validate + Sync + Send + std::fmt::Debug,
 {
-    tracing::trace!("value = {:?}", value);
-    tracing::trace!("position = {:?}", position);
-    tracing::trace!("keys = {:?}", keys);
-    tracing::trace!("accessors = {:?}", accessors);
-    tracing::trace!("any_of_schema = {:?}", any_of_schema);
-    tracing::trace!("completion_hint = {:?}", completion_hint);
+    log::trace!("value = {:?}", value);
+    log::trace!("position = {:?}", position);
+    log::trace!("keys = {:?}", keys);
+    log::trace!("accessors = {:?}", accessors);
+    log::trace!("any_of_schema = {:?}", any_of_schema);
+    log::trace!("completion_hint = {:?}", completion_hint);
 
     async move {
         let mut completion_items = Vec::new();

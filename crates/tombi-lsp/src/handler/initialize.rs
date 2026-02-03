@@ -18,13 +18,12 @@ use crate::{
     semantic_tokens::SUPPORTED_TOKEN_TYPES,
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_initialize(
     backend: &Backend,
     params: InitializeParams,
 ) -> Result<InitializeResult, tower_lsp::jsonrpc::Error> {
-    tracing::debug!("handle_initialize");
-    tracing::trace!(?params);
+    log::debug!("handle_initialize");
+    log::trace!("{:?}", params);
 
     let InitializeParams {
         capabilities: client_capabilities,
@@ -34,14 +33,14 @@ pub async fn handle_initialize(
 
     if let Some(ClientInfo { name, version }) = client_info {
         let version = version.unwrap_or_default();
-        tracing::info!("{name} version: {version}",);
+        log::info!("{name} version: {version}",);
     }
 
-    tracing::info!("Loading config...");
+    log::info!("Loading config...");
     if let Err(error) = backend.config_manager.load().await {
         let error_message = error.to_string();
 
-        tracing::error!("{error_message}");
+        log::error!("{error_message}");
 
         backend
             .client
@@ -58,7 +57,7 @@ pub async fn handle_initialize(
         backend_capabilities.diagnostic_mode = DiagnosticMode::Pull;
     }
 
-    tracing::debug!("backend_capabilities: {:?}", backend_capabilities);
+    log::debug!("backend_capabilities: {:?}", backend_capabilities);
 
     Ok(InitializeResult {
         server_info: Some(ServerInfo {

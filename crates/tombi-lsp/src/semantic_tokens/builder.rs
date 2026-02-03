@@ -111,7 +111,7 @@ fn token_length(range: tombi_text::Range, line_index: &tombi_text::LineIndex) ->
 
     if range.start.line == range.end.line {
         let Some(line_text) = line_index.line_text(range.start.line) else {
-            tracing::error!("line_text is None. line: {}", range.start.line);
+            log::error!("line_text is None. line: {}", range.start.line);
             return 0;
         };
         let line_text_graphemes = line_text.graphemes(true);

@@ -45,12 +45,12 @@ impl FileSearch {
         match FileInputType::from(files) {
             FileInputType::Stdin => FileSearch::Stdin,
             FileInputType::Project => {
-                tracing::debug!("Searching for TOML files using configured patterns...");
+                log::debug!("Searching for TOML files using configured patterns...");
 
                 FileSearch::Files(search_pattern_matched_paths(root, files_options).await)
             }
             FileInputType::Files => {
-                tracing::debug!("Searching for TOML files using user input patterns...");
+                log::debug!("Searching for TOML files using user input patterns...");
 
                 let mut matched_paths = Vec::with_capacity(100);
 
@@ -106,8 +106,8 @@ pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
     root: P,
     files_options: FilesOptions,
 ) -> Vec<Result<PathBuf, crate::Error>> {
-    tracing::debug!("Include patterns: {:?}", files_options.include);
-    tracing::debug!("Exclude patterns: {:?}", files_options.exclude);
+    log::debug!("Include patterns: {:?}", files_options.include);
+    log::debug!("Exclude patterns: {:?}", files_options.exclude);
 
     match WalkDir::new_with_options(root, files_options).walk().await {
         Ok(results) => {

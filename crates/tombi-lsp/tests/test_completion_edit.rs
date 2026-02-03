@@ -717,7 +717,7 @@ mod completion_edit {
                 };
                 use tombi_text::IntoLsp;
 
-                tombi_test_lib::init_tracing();
+                tombi_test_lib::init_log();
 
                 #[allow(unused)]
                 #[derive(Default)]

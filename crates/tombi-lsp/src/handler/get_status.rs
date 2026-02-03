@@ -6,13 +6,12 @@ use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore, handler::TomlVersionSource};
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_get_status(
     backend: &Backend,
     params: TextDocumentIdentifier,
 ) -> Result<GetStatusResponse, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_get_status");
-    tracing::trace!(?params);
+    log::info!("handle_get_status");
+    log::trace!("{:?}", params);
 
     let TextDocumentIdentifier { uri } = params;
     let text_document_uri = uri.into();

@@ -2,10 +2,9 @@ use tower_lsp::lsp_types::DidSaveTextDocumentParams;
 
 use crate::backend::Backend;
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_did_save(backend: &Backend, params: DidSaveTextDocumentParams) {
-    tracing::info!("handle_did_save");
-    tracing::trace!(?params);
+    log::info!("handle_did_save");
+    log::trace!("{:?}", params);
 
     let DidSaveTextDocumentParams {
         text_document,

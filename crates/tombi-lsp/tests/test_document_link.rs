@@ -491,7 +491,7 @@ macro_rules! test_document_link {
                 LspService,
             };
 
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             #[allow(unused)]
             #[derive(Default)]
@@ -634,7 +634,7 @@ macro_rules! test_document_link {
 
             let result = handle_document_link(&backend, params).await;
 
-            tracing::debug!("document_link result: {:#?}", result);
+            log::debug!("document_link result: {:#?}", result);
 
             let result = result.map(|result| {
                 result.map(|document_links| {

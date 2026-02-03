@@ -2,13 +2,12 @@ use tower_lsp::lsp_types::TextDocumentIdentifier;
 
 use crate::backend::Backend;
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_update_config(
     backend: &Backend,
     params: TextDocumentIdentifier,
 ) -> Result<bool, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_update_config");
-    tracing::trace!(?params);
+    log::info!("handle_update_config");
+    log::trace!("{:?}", params);
 
     let text_document_uri: tombi_uri::Uri = params.uri.into();
 
@@ -21,11 +20,11 @@ pub async fn handle_update_config(
                     .await
                 {
                     Ok(_) => {
-                        tracing::info!("Updated config: {}", text_document_uri);
+                        log::info!("Updated config: {}", text_document_uri);
                         return Ok(true);
                     }
                     Err(err) => {
-                        tracing::error!(
+                        log::error!(
                             "Failed to update config for {config_path}: {err}",
                             config_path = config_path.display()
                         );
@@ -34,7 +33,7 @@ pub async fn handle_update_config(
             }
             Ok(None) => {}
             Err(err) => {
-                tracing::error!(
+                log::error!(
                     "Failed to load config for update for {config_path}: {err}",
                     config_path = config_path.display()
                 );

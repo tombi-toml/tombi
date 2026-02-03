@@ -9,7 +9,6 @@ license.workspace = true
 tombi-regex.workspace = true
 tombi-syntax.workspace = true
 tombi-text.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
 itertools.workspace = true

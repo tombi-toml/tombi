@@ -475,7 +475,7 @@ mod goto_definition_tests {
                 };
                 use tombi_text::IntoLsp;
 
-                tombi_test_lib::init_tracing();
+                tombi_test_lib::init_log();
 
                 #[allow(unused)]
                 #[derive(Default)]
@@ -627,7 +627,7 @@ mod goto_definition_tests {
                     return Err("failed to handle goto_definition".into());
                 };
 
-                tracing::debug!("goto_definition result: {:#?}", result);
+                log::debug!("goto_definition result: {:#?}", result);
 
                 trait ToUri {
                     fn to_uri(&self) -> tombi_uri::Uri;

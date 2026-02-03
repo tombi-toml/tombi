@@ -125,9 +125,9 @@ fn code_action_for_dependency_package(
 ) -> Option<Vec<CodeActionOrCommand>> {
     // Try to find workspace pyproject.toml
     let Ok(pyproject_toml_path) = text_document_uri.to_file_path() else {
-        tracing::warn!(
-            uri = %text_document_uri,
-            "Failed to convert URI to file path"
+        log::warn!(
+            "Failed to convert URI to file path: {:?}",
+            text_document_uri
         );
         return None;
     };
@@ -135,18 +135,18 @@ fn code_action_for_dependency_package(
     let Some((workspace_path, workspace_root, workspace_document_tree)) =
         find_workspace_pyproject_toml(&pyproject_toml_path, toml_version)
     else {
-        tracing::debug!(
-            member_path = %pyproject_toml_path.display(),
-            "No workspace pyproject.toml found"
+        log::debug!(
+            "No workspace pyproject.toml found: {:?}",
+            pyproject_toml_path.display()
         );
         return None;
     };
 
     // Load workspace text and create line index for workspace document
     let Ok(workspace_text) = std::fs::read_to_string(&workspace_path) else {
-        tracing::warn!(
-            path = %workspace_path.display(),
-            "Failed to read workspace pyproject.toml"
+        log::warn!(
+            "Failed to read workspace pyproject.toml: {:?}",
+            workspace_path.display()
         );
         return None;
     };
@@ -178,10 +178,10 @@ fn code_action_for_dependency_package(
         &workspace_root,
         &workspace_document_tree,
     ) {
-        tracing::debug!(
-            action = %action.title,
-            uri = %text_document_uri,
-            "Providing 'Add to Workspace and Use Workspace Dependency' code action"
+        log::debug!(
+            "Providing 'Add to Workspace and Use Workspace Dependency' code action: action={:?}, uri={:?}",
+            action.title,
+            text_document_uri
         );
         actions.push(CodeActionOrCommand::CodeAction(action));
     }
@@ -339,9 +339,9 @@ fn add_workspace_dependency_code_action(
 
     // Generate workspace URI
     let Ok(workspace_uri) = tombi_uri::Uri::from_file_path(workspace_pyproject_toml_path) else {
-        tracing::warn!(
-            path = %workspace_pyproject_toml_path.display(),
-            "Failed to convert workspace path to URI"
+        log::warn!(
+            "Failed to convert workspace path to URI: {:?}",
+            workspace_pyproject_toml_path.display()
         );
         return None;
     };

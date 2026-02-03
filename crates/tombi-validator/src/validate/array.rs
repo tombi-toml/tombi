@@ -161,7 +161,7 @@ async fn validate_array(
                 schema_context.store,
             )
             .await
-            .inspect_err(|err| tracing::warn!("{err}"))
+            .inspect_err(|err| log::warn!("{err}"))
         {
             for (index, value) in array_value.values().iter().enumerate() {
                 let new_accessors = accessors

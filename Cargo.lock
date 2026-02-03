@@ -980,6 +980,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_filter"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bf3c259d255ca70051b30e2e95b5446cdb8949ac4cd22c0d7fd634d89f568e2"
+dependencies = [
+ "log",
+ "regex",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.11.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "env_filter",
+ "jiff",
+ "log",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1822,6 +1845,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
+name = "jiff"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be1f93b8b1eb69c77f24bbb0afdf66f54b632ee39af40ca21c4365a1d7347e49"
+dependencies = [
+ "jiff-static",
+ "log",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde",
+]
+
+[[package]]
+name = "jiff-static"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03343451ff899767262ec32146f6d559dd759fdadf42ff0e227c7c48f72594b4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "jobserver"
 version = "0.1.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1849,12 +1896,6 @@ checksum = "0de8b303297635ad57c9f5059fd9cee7a47f8e8daa09df0fcd07dd39fb22977f"
 dependencies = [
  "log",
 ]
-
-[[package]]
-name = "lazy_static"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "leb128fmt"
@@ -1969,15 +2010,6 @@ dependencies = [
  "cc",
  "libc",
  "pkg-config",
-]
-
-[[package]]
-name = "matchers"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1525a2a28c7f4fa0fc98bb91ae755d1e2d1505079e05539e35bc876b5d65ae9"
-dependencies = [
- "regex-automata",
 ]
 
 [[package]]
@@ -2249,6 +2281,21 @@ dependencies = [
  "cpuid-bool",
  "opaque-debug",
  "universal-hash",
+]
+
+[[package]]
+name = "portable-atomic"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
+
+[[package]]
+name = "portable-atomic-util"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a9db96d7fa8782dd8c15ce32ffe8680bbd1e978a43bf51a34d39483540495f5"
+dependencies = [
+ "portable-atomic",
 ]
 
 [[package]]
@@ -2968,6 +3015,7 @@ dependencies = [
  "dirs",
  "indexmap",
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "serde",
  "textwrap",
@@ -2984,7 +3032,6 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
- "tracing",
  "typed-builder",
 ]
 
@@ -3037,15 +3084,6 @@ dependencies = [
  "cpufeatures",
  "digest 0.9.0",
  "opaque-debug",
-]
-
-[[package]]
-name = "sharded-slab"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
-dependencies = [
- "lazy_static",
 ]
 
 [[package]]
@@ -3339,15 +3377,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "thread_local"
-version = "1.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f60246a4944f24f6e018aa17cdeffb7818b76356965d03b07d6a9886e8962185"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "time"
 version = "0.2.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3491,10 +3520,10 @@ version = "0.0.0-dev"
 dependencies = [
  "indexmap",
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "rstest",
  "tombi-text",
- "tracing",
 ]
 
 [[package]]
@@ -3509,7 +3538,6 @@ dependencies = [
  "tombi-toml-text",
  "tombi-toml-version",
  "tombi-uri",
- "tracing",
 ]
 
 [[package]]
@@ -3519,6 +3547,7 @@ dependencies = [
  "ahash",
  "indexmap",
  "itertools 0.14.0",
+ "log",
  "thiserror 2.0.12",
  "tombi-ast",
  "tombi-comment-directive",
@@ -3533,7 +3562,6 @@ dependencies = [
  "tombi-validator",
  "tombi-version-sort",
  "tombi-x-keyword",
- "tracing",
 ]
 
 [[package]]
@@ -3541,10 +3569,10 @@ name = "tombi-cache"
 version = "0.0.0-dev"
 dependencies = [
  "dirs",
+ "log",
  "thiserror 2.0.12",
  "tokio",
  "tombi-uri",
- "tracing",
 ]
 
 [[package]]
@@ -3553,7 +3581,9 @@ version = "0.0.0-dev"
 dependencies = [
  "clap",
  "clap_complete",
+ "env_logger",
  "itertools 0.14.0",
+ "log",
  "nu-ansi-term",
  "serde_tombi",
  "similar",
@@ -3569,8 +3599,6 @@ dependencies = [
  "tombi-lsp",
  "tombi-regex",
  "tombi-schema-store",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -3578,7 +3606,7 @@ name = "tombi-cli-options"
 version = "0.0.0-dev"
 dependencies = [
  "clap",
- "tracing-subscriber",
+ "log",
 ]
 
 [[package]]
@@ -3648,11 +3676,11 @@ name = "tombi-diagnostic"
 version = "0.0.0-dev"
 dependencies = [
  "clap",
+ "env_logger",
  "nu-ansi-term",
  "serde",
  "tombi-text",
  "tower-lsp",
- "tracing-subscriber",
  "wasm-bindgen",
 ]
 
@@ -3692,7 +3720,6 @@ dependencies = [
  "tombi-text",
  "tombi-toml-text",
  "tombi-toml-version",
- "tracing",
 ]
 
 [[package]]
@@ -3705,7 +3732,6 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tower-lsp",
- "tracing",
 ]
 
 [[package]]
@@ -3715,6 +3741,7 @@ dependencies = [
  "ahash",
  "glob",
  "itertools 0.14.0",
+ "log",
  "serde",
  "serde_json",
  "tombi-ast",
@@ -3728,7 +3755,6 @@ dependencies = [
  "tombi-uri",
  "tombi-version-sort",
  "tower-lsp",
- "tracing",
 ]
 
 [[package]]
@@ -3750,6 +3776,7 @@ version = "0.0.0-dev"
 dependencies = [
  "glob",
  "itertools 0.14.0",
+ "log",
  "pep508_rs",
  "tombi-ast",
  "tombi-config",
@@ -3761,7 +3788,6 @@ dependencies = [
  "tombi-uri",
  "tombi-version-sort",
  "tower-lsp",
- "tracing",
 ]
 
 [[package]]
@@ -3769,6 +3795,7 @@ name = "tombi-formatter"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "rstest",
  "schemars",
@@ -3786,7 +3813,6 @@ dependencies = [
  "tombi-test-lib",
  "tombi-uri",
  "tombi-validator",
- "tracing",
  "unicode-segmentation",
 ]
 
@@ -3803,12 +3829,12 @@ version = "0.0.0-dev"
 dependencies = [
  "fast-glob",
  "ignore",
+ "log",
  "rayon",
  "serde_tombi",
  "thiserror 2.0.12",
  "tokio",
  "tombi-config",
- "tracing",
 ]
 
 [[package]]
@@ -3837,7 +3863,6 @@ dependencies = [
  "tombi-regex",
  "tombi-test-lib",
  "tombi-text",
- "tracing",
 ]
 
 [[package]]
@@ -3867,7 +3892,6 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
- "tracing",
 ]
 
 [[package]]
@@ -3876,6 +3900,7 @@ version = "0.0.0-dev"
 dependencies = [
  "ahash",
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "thiserror 2.0.12",
  "tokio",
@@ -3893,7 +3918,6 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-validator",
- "tracing",
 ]
 
 [[package]]
@@ -3907,6 +3931,7 @@ dependencies = [
  "futures",
  "indexmap",
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "reqwest",
  "rstest",
@@ -3945,7 +3970,6 @@ dependencies = [
  "tombi-validator",
  "tombi-x-keyword",
  "tower-lsp",
- "tracing",
  "unicode-segmentation",
 ]
 
@@ -3955,6 +3979,7 @@ version = "0.0.0-dev"
 dependencies = [
  "drop_bomb",
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "textwrap",
  "thiserror 2.0.12",
@@ -3966,7 +3991,6 @@ dependencies = [
  "tombi-syntax",
  "tombi-test-lib",
  "tombi-text",
- "tracing",
 ]
 
 [[package]]
@@ -3987,7 +4011,6 @@ dependencies = [
  "pretty_assertions",
  "rustc-hash",
  "tombi-text",
- "tracing",
 ]
 
 [[package]]
@@ -4001,6 +4024,7 @@ dependencies = [
  "gloo-net",
  "indexmap",
  "itertools 0.14.0",
+ "log",
  "pretty_assertions",
  "reqwest",
  "serde",
@@ -4019,7 +4043,6 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-x-keyword",
- "tracing",
 ]
 
 [[package]]
@@ -4043,19 +4066,19 @@ name = "tombi-test-lib"
 version = "0.0.0-dev"
 dependencies = [
  "chrono",
+ "env_logger",
  "tombi-uri",
- "tracing-subscriber",
 ]
 
 [[package]]
 name = "tombi-text"
 version = "0.0.0-dev"
 dependencies = [
+ "log",
  "pretty_assertions",
  "rstest",
  "serde",
  "tower-lsp",
- "tracing",
  "unicode-segmentation",
  "wasm-bindgen",
 ]
@@ -4093,6 +4116,7 @@ dependencies = [
  "ahash",
  "email_address",
  "itertools 0.14.0",
+ "log",
  "serde",
  "thiserror 2.0.12",
  "tombi-ast",
@@ -4109,7 +4133,6 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-x-keyword",
- "tracing",
  "unicode-segmentation",
  "uuid",
 ]
@@ -4313,7 +4336,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9d12581f227e93f094d3af2ae690a574abb8a2b9b7a96e7cfe9647b2b617678"
 dependencies = [
  "once_cell",
- "valuable",
 ]
 
 [[package]]
@@ -4324,35 +4346,6 @@ checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
 dependencies = [
  "pin-project",
  "tracing",
-]
-
-[[package]]
-name = "tracing-log"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
-dependencies = [
- "log",
- "once_cell",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-subscriber"
-version = "0.3.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2054a14f5307d601f88daf0553e1cbf472acc4f2c51afab632431cdcd72124d5"
-dependencies = [
- "matchers",
- "nu-ansi-term",
- "once_cell",
- "regex-automata",
- "sharded-slab",
- "smallvec",
- "thread_local",
- "tracing",
- "tracing-core",
- "tracing-log",
 ]
 
 [[package]]
@@ -4494,12 +4487,6 @@ dependencies = [
  "sha1_smol",
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "valuable"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "value-bag"

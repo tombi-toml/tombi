@@ -22,11 +22,11 @@ pub fn get_all_of_hover_content<'a: 'b, 'b, T>(
 where
     T: GetHoverContent + Sync + Send + std::fmt::Debug,
 {
-    tracing::trace!("value = {:?}", value);
-    tracing::trace!("keys = {:?}", keys);
-    tracing::trace!("accessors = {:?}", accessors);
-    tracing::trace!("all_of_schema = {:?}", all_of_schema);
-    tracing::trace!("schema_uri = {:?}", schema_uri);
+    log::trace!("value = {:?}", value);
+    log::trace!("keys = {:?}", keys);
+    log::trace!("accessors = {:?}", accessors);
+    log::trace!("all_of_schema = {:?}", all_of_schema);
+    log::trace!("schema_uri = {:?}", schema_uri);
 
     async move {
         let mut title_description_set = ahash::AHashSet::new();

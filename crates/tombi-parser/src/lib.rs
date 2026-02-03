@@ -100,11 +100,11 @@ macro_rules! test_parser {
     {#[test] fn $name:ident($source:expr, $toml_version:expr) -> Ok(_)} => {
         #[test]
         fn $name() {
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             let p = $crate::parse(textwrap::dedent($source).trim(), $toml_version);
 
-            tracing::debug!("syntax_node: {:#?}", p.syntax_node());
+            log::debug!("syntax_node: {:#?}", p.syntax_node());
 
             pretty_assertions::assert_eq!(
                 p.errors,
@@ -138,11 +138,11 @@ macro_rules! test_parser {
     )} => {
         #[test]
         fn $name() {
-            tombi_test_lib::init_tracing();
+            tombi_test_lib::init_log();
 
             let p = $crate::parse(textwrap::dedent($source).trim(), $toml_version);
 
-            tracing::debug!("syntax_node: {:#?}", p.syntax_node());
+            log::debug!("syntax_node: {:#?}", p.syntax_node());
 
             pretty_assertions::assert_eq!(
                 p.errors,

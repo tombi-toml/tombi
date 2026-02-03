@@ -74,12 +74,12 @@ impl<'a> Formatter<'a> {
                 Either::Right(path) => path.to_string_lossy().to_string(),
             }) {
                 Some(source_url_or_path) => {
-                    tracing::info!(
+                    log::info!(
                         "Skip formatting for \"{source_url_or_path}\" due to `format.disable`"
                     );
                 }
                 None => {
-                    tracing::info!("Skip formatting for stdin due to `format.disable`");
+                    log::info!("Skip formatting for stdin due to `format.disable`");
                 }
             }
             return Ok(source.to_string());
@@ -148,7 +148,7 @@ impl<'a> Formatter<'a> {
         .edit()
         .await;
 
-        tracing::trace!("TOML AST after editing: {:#?}", root);
+        log::trace!("TOML AST after editing: {:#?}", root);
 
         let line_ending = {
             root.format(&mut self).unwrap();

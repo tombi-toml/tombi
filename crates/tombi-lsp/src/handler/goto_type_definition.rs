@@ -12,13 +12,12 @@ use crate::{
     handler::hover::get_hover_keys_with_range,
 };
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_goto_type_definition(
     backend: &Backend,
     params: GotoTypeDefinitionParams,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_goto_type_definition");
-    tracing::trace!(?params);
+    log::info!("handle_goto_type_definition");
+    log::trace!("{:?}", params);
 
     let GotoTypeDefinitionParams {
         text_document_position_params:
@@ -48,7 +47,7 @@ pub async fn handle_goto_type_definition(
         .unwrap_or_default()
         .value()
     {
-        tracing::debug!("`server.goto_type_definition.enabled` is false");
+        log::debug!("`server.goto_type_definition.enabled` is false");
         return Ok(Default::default());
     }
 

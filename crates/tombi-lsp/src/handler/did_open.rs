@@ -2,10 +2,9 @@ use tower_lsp::lsp_types::DidOpenTextDocumentParams;
 
 use crate::{backend::Backend, document::DocumentSource};
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_did_open(backend: &Backend, params: DidOpenTextDocumentParams) {
-    tracing::info!("handle_did_open");
-    tracing::trace!(?params);
+    log::info!("handle_did_open");
+    log::trace!("{:?}", params);
 
     let DidOpenTextDocumentParams { text_document, .. } = params;
 

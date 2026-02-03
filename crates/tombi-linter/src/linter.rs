@@ -75,12 +75,12 @@ impl<'a> Linter<'a> {
                     Either::Right(path) => path.to_string_lossy().to_string(),
                 }) {
                     Some(source_url_or_path) => {
-                        tracing::info!(
+                        log::info!(
                             "Skip linting for \"{source_url_or_path}\" due to `lint.disable`"
                         );
                     }
                     None => {
-                        tracing::info!("Skip linting for stdin due to `lint.disable`");
+                        log::info!("Skip linting for stdin due to `lint.disable`");
                     }
                 }
                 return Ok(());
@@ -123,7 +123,7 @@ impl<'a> Linter<'a> {
 
             errors.set_diagnostics(&mut self.diagnostics);
 
-            tracing::trace!("document_tree: {:#?}", document_tree);
+            log::trace!("document_tree: {:#?}", document_tree);
 
             let schema_context = tombi_schema_store::SchemaContext {
                 toml_version: self.toml_version,

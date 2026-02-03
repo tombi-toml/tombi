@@ -5,13 +5,12 @@ use tower_lsp::lsp_types::{
 
 use crate::backend::Backend;
 
-#[tracing::instrument(level = "debug", skip_all)]
 pub async fn handle_document_symbol(
     backend: &Backend,
     params: DocumentSymbolParams,
 ) -> Result<Option<DocumentSymbolResponse>, tower_lsp::jsonrpc::Error> {
-    tracing::info!("handle_document_symbol");
-    tracing::trace!(?params);
+    log::info!("handle_document_symbol");
+    log::trace!("{:?}", params);
 
     let DocumentSymbolParams { text_document, .. } = params;
 
