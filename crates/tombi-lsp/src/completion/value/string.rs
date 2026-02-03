@@ -69,9 +69,7 @@ impl FindCompletionContents for tombi_document_tree::String {
                             return None;
                         }
 
-                        if completion_content.label == "\"\""
-                            || completion_content.label == "''"
-                        {
+                        if completion_content.label == "\"\"" || completion_content.label == "''" {
                             return None;
                         }
 

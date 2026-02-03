@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use tombi_config::TomlVersion;
+use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion};
 use tombi_document_tree::dig_accessors;
 use tombi_schema_store::matches_accessors;
 
@@ -10,8 +10,9 @@ pub async fn goto_definition(
     accessors: &[tombi_schema_store::Accessor],
     _toml_version: TomlVersion,
 ) -> Result<Option<Vec<tombi_extension::DefinitionLocation>>, tower_lsp::jsonrpc::Error> {
-    // Check if current file is tombi.toml
-    if !text_document_uri.path().ends_with("tombi.toml") {
+    // Check if current file is .tombi.toml or tombi.toml
+    let path = text_document_uri.path();
+    if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
         return Ok(Default::default());
     }
 

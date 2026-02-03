@@ -61,9 +61,7 @@ pub async fn get_diagnostics_result(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                log::info!(
-                    "Skip {text_document_path:?} because it is not in config.files.include"
-                );
+                log::info!("Skip {text_document_path:?} because it is not in config.files.include");
                 return None;
             }
             MatchResult::ExcludeMatched => {

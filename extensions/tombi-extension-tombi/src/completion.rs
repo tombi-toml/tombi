@@ -1,4 +1,4 @@
-use tombi_config::TomlVersion;
+use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion};
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint, completion_file_path};
 use tombi_schema_store::{Accessor, matches_accessors};
 
@@ -15,7 +15,8 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if !text_document_uri.path().ends_with("tombi.toml") {
+    let path = text_document_uri.path();
+    if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
         return Ok(None);
     }
 

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, str::FromStr};
 
-use tombi_config::TomlVersion;
+use tombi_config::{DOT_TOMBI_TOML_FILENAME, TOMBI_TOML_FILENAME, TomlVersion};
 use tombi_document_tree::dig_keys;
 use tombi_extension::get_tombi_github_uri;
 
@@ -41,8 +41,9 @@ pub async fn document_link(
     document_tree: &tombi_document_tree::DocumentTree,
     _toml_version: TomlVersion,
 ) -> Result<Option<Vec<tombi_extension::DocumentLink>>, tower_lsp::jsonrpc::Error> {
-    // Check if current file is tombi.toml
-    if !text_document_uri.path().ends_with("tombi.toml") {
+    // Check if current file is .tombi.toml or tombi.toml
+    let path = text_document_uri.path();
+    if !(path.ends_with(DOT_TOMBI_TOML_FILENAME) || path.ends_with(TOMBI_TOML_FILENAME)) {
         return Ok(None);
     }
 

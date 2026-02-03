@@ -8,15 +8,15 @@ fn main() {
     let root = if args.len() > 1 { &args[1] } else { "." };
 
     println!(
-        "Profiling TOML file search in: {} (using tombi.toml config)",
+        "Profiling TOML file search in: {} (using .tombi.toml/tombi.toml config)",
         root
     );
 
-    // Load tombi.toml configuration like tombi format does
+    // Load .tombi.toml/tombi.toml configuration like tombi format does
     let (config, _config_path) = match serde_tombi::config::load_with_path() {
         Ok(config) => config,
         Err(e) => {
-            eprintln!("Warning: Failed to load tombi.toml: {}", e);
+            eprintln!("Warning: Failed to load .tombi.toml/tombi.toml: {}", e);
             eprintln!("Using default configuration");
             (Default::default(), None)
         }
