@@ -43,9 +43,7 @@ pub async fn handle_formatting(
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
             MatchResult::Matched => {}
             MatchResult::IncludeNotMatched => {
-                log::info!(
-                    "Skip {text_document_path:?} because it is not in config.files.include"
-                );
+                log::info!("Skip {text_document_path:?} because it is not in config.files.include");
                 return Ok(None);
             }
             MatchResult::ExcludeMatched => {

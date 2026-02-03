@@ -157,10 +157,7 @@ where
                                 Some(source_path.as_ref()),
                                 config_path.as_deref(),
                             ) else {
-                                log::debug!(
-                                    "Linting disabled for {:?} by override",
-                                    source_path
-                                );
+                                log::debug!("Linting disabled for {:?} by override", source_path);
                                 success_num += 1;
                                 continue;
                             };

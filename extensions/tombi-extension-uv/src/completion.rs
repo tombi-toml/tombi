@@ -41,12 +41,7 @@ fn completion_pyproject_file_path(
     if matches_accessors!(accessors, ["tool", "uv", "workspace", "members", _])
         || matches_accessors!(accessors, ["tool", "uv", "workspace", "exclude", _])
     {
-        return completion_directory_path(
-            text_document_uri,
-            document_tree,
-            position,
-            accessors,
-        );
+        return completion_directory_path(text_document_uri, document_tree, position, accessors);
     }
 
     // UV sources: path to local package (file or directory)
