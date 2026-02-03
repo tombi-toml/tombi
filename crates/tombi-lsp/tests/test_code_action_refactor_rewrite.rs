@@ -511,8 +511,8 @@ mod refactor_rewrite {
                     );
                 };
                 toml_text.remove(index);
-                log::debug!("{:?}", toml_text, "test toml text");
-                log::debug!("{:?}", index, "test toml text index");
+                log::debug!("test toml text: {:?}", toml_text);
+                log::debug!("test toml text index: {:?}", index);
 
                 let line_index =
                     tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
@@ -557,7 +557,7 @@ mod refactor_rewrite {
                     return Err("failed to get code actions".into());
                 };
 
-                log::debug!("{:?}", actions, "code actions found");
+                log::debug!("code actions found: {:?}", actions);
 
                 match (actions, $expected) {
                     (Some(actions), Some(expected)) => {
