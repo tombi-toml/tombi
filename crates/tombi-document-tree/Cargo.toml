@@ -10,7 +10,6 @@ license.workspace = true
 chrono.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
-log.workspace = true
 thiserror.workspace = true
 tombi-accessor.workspace = true
 tombi-ast.workspace = true

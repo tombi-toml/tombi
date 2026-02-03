@@ -9,5 +9,4 @@ license.workspace = true
 [dependencies]
 chrono.workspace = true
 env_logger.workspace = true
-log.workspace = true
 tombi-uri.workspace = true

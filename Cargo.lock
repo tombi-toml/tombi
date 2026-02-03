@@ -3531,7 +3531,6 @@ name = "tombi-ast"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
- "log",
  "thiserror 2.0.12",
  "tombi-accessor",
  "tombi-syntax",
@@ -3712,7 +3711,6 @@ dependencies = [
  "chrono",
  "indexmap",
  "itertools 0.14.0",
- "log",
  "thiserror 2.0.12",
  "tombi-accessor",
  "tombi-ast",
@@ -3728,7 +3726,6 @@ dependencies = [
 name = "tombi-extension"
 version = "0.0.0-dev"
 dependencies = [
- "log",
  "tombi-ast",
  "tombi-document-tree",
  "tombi-schema-store",
@@ -3860,7 +3857,6 @@ name = "tombi-json-lexer"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
- "log",
  "pretty_assertions",
  "textwrap",
  "tombi-json-syntax",
@@ -3890,7 +3886,6 @@ name = "tombi-lexer"
 version = "0.0.0-dev"
 dependencies = [
  "itertools 0.14.0",
- "log",
  "pretty_assertions",
  "textwrap",
  "tombi-regex",
@@ -4013,7 +4008,6 @@ dependencies = [
  "countme",
  "hashbrown 0.15.5",
  "itertools 0.14.0",
- "log",
  "pretty_assertions",
  "rustc-hash",
  "tombi-text",
@@ -4073,7 +4067,6 @@ version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "env_logger",
- "log",
  "tombi-uri",
 ]
 
