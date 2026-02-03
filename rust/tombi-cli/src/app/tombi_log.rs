@@ -3,7 +3,10 @@ use log::Record;
 use nu_ansi_term::Style;
 use std::io::Write;
 
-pub fn format_log(use_ansi_color: bool, show_trace_location: bool) -> impl Fn(&mut Formatter, &Record) -> std::io::Result<()> + Send + Sync + 'static {
+pub fn format(
+    use_ansi_color: bool,
+    show_trace_location: bool,
+) -> impl Fn(&mut Formatter, &Record) -> std::io::Result<()> + Send + Sync + 'static {
     move |f, record| {
         let level_style = level_style_for(record.level(), use_ansi_color);
         let level_str = match record.level() {
@@ -14,11 +17,7 @@ pub fn format_log(use_ansi_color: bool, show_trace_location: bool) -> impl Fn(&m
             log::Level::Trace => "Trace",
         };
 
-        write!(
-            f,
-            "{}: ",
-            level_style.paint(format!("{:>7}", level_str))
-        )?;
+        write!(f, "{}: ", level_style.paint(format!("{:>7}", level_str)))?;
 
         writeln!(f, "{}", record.args())?;
 

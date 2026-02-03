@@ -1,5 +1,5 @@
 mod command;
-mod log_formatter;
+mod tombi_log;
 
 use clap::{
     Parser,
@@ -58,10 +58,7 @@ pub fn run(args: impl Into<Args>) -> Result<(), crate::Error> {
         .filter_level(log_level)
         .filter_module("tombi", log_level)
         .filter_module("serde_tombi", log_level)
-        .format(log_formatter::format_log(
-            use_ansi_color,
-            show_trace_location,
-        ))
+        .format(tombi_log::format(use_ansi_color, show_trace_location))
         .target(env_logger::Target::Stderr)
         .init();
 
