@@ -174,15 +174,13 @@ where
             {
                 let table_override =
                     table_order_overrides.and_then(|overrides| overrides.get(accessors));
-                let table_order_override = table_order_overrides
-                    .and_then(|overrides| overrides.get(accessors))
-                    .and_then(|override_order| {
-                        if override_order.disabled {
-                            None
-                        } else {
-                            override_order.order
-                        }
-                    });
+                let table_order_override = table_override.and_then(|override_order| {
+                    if override_order.disabled {
+                        None
+                    } else {
+                        override_order.order
+                    }
+                });
                 let table_order =
                     get_table_keys_order(table_order_override.or(order), current_schema);
                 let table_schema = current_schema.and_then(|current_schema| {
