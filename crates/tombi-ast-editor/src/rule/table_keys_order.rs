@@ -1,4 +1,4 @@
-use ahash::HashSet;
+use ahash::{AHashMap, HashSet};
 use std::borrow::Cow;
 
 use indexmap::IndexMap;
@@ -15,6 +15,14 @@ use tombi_schema_store::{
 use tombi_syntax::SyntaxElement;
 use tombi_validator::Validate;
 use tombi_x_keyword::{TableKeysOrder, TableKeysOrderGroupKind};
+
+#[derive(Debug, Clone, Copy)]
+pub struct TableOrderOverride {
+    pub disabled: bool,
+    pub order: Option<TableKeysOrder>,
+}
+
+pub type TableOrderOverrides = AHashMap<Vec<Accessor>, TableOrderOverride>;
 
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
@@ -62,6 +70,7 @@ pub async fn table_keys_order<'a>(
         current_schema,
         schema_context,
         order,
+        None,
     )
     .await
     else {
@@ -83,6 +92,7 @@ pub fn get_sorted_accessors<'a: 'b, 'b, T>(
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
     order: Option<TableKeysOrder>,
+    table_order_overrides: Option<&'b TableOrderOverrides>,
 ) -> BoxFuture<'b, Option<Vec<T>>>
 where
     T: Send + Clone + std::fmt::Debug + 'b,
@@ -131,6 +141,7 @@ where
                                 Some(&current_schema),
                                 schema_context,
                                 order.or(*keys_order),
+                                table_order_overrides,
                             )
                             .await;
                         }
@@ -161,7 +172,19 @@ where
                     .iter()
                     .all(|(accessor, _)| matches!(accessor, Accessor::Key(_))) =>
             {
-                let table_order = get_table_keys_order(order, current_schema);
+                let table_override =
+                    table_order_overrides.and_then(|overrides| overrides.get(accessors));
+                let table_order_override = table_order_overrides
+                    .and_then(|overrides| overrides.get(accessors))
+                    .and_then(|override_order| {
+                        if override_order.disabled {
+                            None
+                        } else {
+                            override_order.order
+                        }
+                    });
+                let table_order =
+                    get_table_keys_order(table_order_override.or(order), current_schema);
                 let table_schema = current_schema.and_then(|current_schema| {
                     if let ValueSchema::Table(table_schema) = current_schema.value_schema.as_ref() {
                         Some(table_schema)
@@ -170,8 +193,14 @@ where
                     }
                 });
 
-                let sorted_targets =
-                    sort_table_targets(sort_targets_map, table_schema, table_order.as_ref()).await;
+                let sorted_targets = if table_override
+                    .map(|override_order| override_order.disabled)
+                    .unwrap_or(false)
+                {
+                    sort_targets_map.into_iter().collect_vec()
+                } else {
+                    sort_table_targets(sort_targets_map, table_schema, table_order.as_ref()).await
+                };
 
                 for (accessor, targets) in sorted_targets {
                     if let Some(value) = table.get(&accessor.to_string())
@@ -202,6 +231,7 @@ where
                                     Some(&current_schema),
                                     schema_context,
                                     order,
+                                    table_order_overrides,
                                 )
                                 .await?,
                             );
@@ -232,6 +262,7 @@ where
                                     Some(&current_schema),
                                     schema_context,
                                     order,
+                                    table_order_overrides,
                                 )
                                 .await?,
                             );
@@ -251,6 +282,7 @@ where
                             None,
                             schema_context,
                             order,
+                            table_order_overrides,
                         )
                         .await?,
                     );
@@ -292,6 +324,7 @@ where
                                 Some(&current_schema),
                                 schema_context,
                                 order,
+                                table_order_overrides,
                             )
                             .await?,
                         );
@@ -313,6 +346,7 @@ where
                             None,
                             schema_context,
                             order,
+                            table_order_overrides,
                         )
                         .await?,
                     );

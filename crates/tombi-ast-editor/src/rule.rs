@@ -11,3 +11,4 @@ pub use inline_table_comma_trailing_comment::inline_table_comma_trailing_comment
 pub use inline_table_keys_order::inline_table_keys_order;
 pub use root_table_keys_order::root_table_keys_order;
 pub use table_keys_order::table_keys_order;
+pub use table_keys_order::{TableOrderOverride, TableOrderOverrides};

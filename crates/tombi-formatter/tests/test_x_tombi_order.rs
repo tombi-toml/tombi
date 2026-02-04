@@ -380,6 +380,48 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_table_keys_order_disabled_is_true(
+                r#"
+                [project]
+                name = "test-project"
+
+                [tool]  # tombi: format.rules.table-keys-order.disabled = true
+                [tool.uv]
+                [tool.pyright]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [project]
+                name = "test-project"
+
+                [tool]  # tombi: format.rules.table-keys-order.disabled = true
+                [tool.uv]
+
+                [tool.pyright]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_tool_table_keys_order_disabled_is_true_inline(
+                r#"
+                project.name = "test-project"
+
+                tool = { uv = {}, pyright = {} }  # tombi: format.rules.table-keys-order.disabled = true
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                project.name = "test-project"
+                tool = { uv = {  }, pyright = {  } }  # tombi: format.rules.table-keys-order.disabled = true
+                "#
+            )
+        }
     }
 
     mod cargo {
