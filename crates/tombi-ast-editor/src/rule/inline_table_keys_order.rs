@@ -61,6 +61,7 @@ pub async fn inline_table_keys_order<'a>(
         current_schema,
         schema_context,
         order,
+        None,
     )
     .await
     else {

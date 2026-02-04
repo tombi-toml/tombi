@@ -6,7 +6,8 @@ use tombi_schema_store::Accessor;
 use tombi_syntax::SyntaxElement;
 
 use crate::rule::root_table_keys_order;
-use tombi_ast::AstToken;
+use crate::rule::{TableOrderOverride, TableOrderOverrides};
+use tombi_ast::{AstToken, GetHeaderAccessors};
 
 impl crate::Edit for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
@@ -21,6 +22,7 @@ impl crate::Edit for tombi_ast::Root {
             let mut changes = vec![];
             let mut key_values = vec![];
             let mut table_or_array_of_tables = vec![];
+            let mut table_order_overrides = TableOrderOverrides::default();
 
             // Move document schema/tombi comment directive to the top.
             if (self
@@ -63,6 +65,39 @@ impl crate::Edit for tombi_ast::Root {
                         );
                     }
                 };
+
+                if let Some(header_accessors) =
+                    table_or_array_of_table.get_header_accessors(schema_context.toml_version)
+                {
+                    let comment_directive = match &table_or_array_of_table {
+                        tombi_ast::TableOrArrayOfTable::Table(table) => {
+                            get_comment_directive_content::<
+                                TableCommonFormatRules,
+                                TableCommonLintRules,
+                            >(table.header_comment_directives())
+                        }
+                        tombi_ast::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
+                            get_comment_directive_content::<
+                                TableCommonFormatRules,
+                                TableCommonLintRules,
+                            >(array_of_table.header_comment_directives())
+                        }
+                    };
+
+                    if let Some(comment_directive) = comment_directive {
+                        let disabled = comment_directive
+                            .table_keys_order_disabled()
+                            .unwrap_or(false);
+                        let order = comment_directive.table_keys_order().map(Into::into);
+                        if disabled || order.is_some() {
+                            table_order_overrides.insert(
+                                header_accessors,
+                                TableOrderOverride { disabled, order },
+                            );
+                        }
+                    }
+                }
+
                 table_or_array_of_tables.push(table_or_array_of_table);
             }
 
@@ -78,6 +113,7 @@ impl crate::Edit for tombi_ast::Root {
                     current_schema,
                     schema_context,
                     comment_directive,
+                    Some(&table_order_overrides),
                 )
                 .await,
             );
