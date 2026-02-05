@@ -176,21 +176,29 @@ fn format_singleline_array(
     array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
-    write!(f, "[{}", f.array_bracket_space())?;
 
-    for (i, value) in array.values().enumerate() {
-        if i > 0 {
-            write!(f, ",{}", f.array_comma_space())?;
+    let values = array.values().collect_vec();
+    let is_empty = values.is_empty() && array.inner_dangling_comments().is_empty();
+
+    if is_empty {
+        write!(f, "[]")?;
+    } else {
+        write!(f, "[{}", f.array_bracket_space())?;
+
+        for (i, value) in values.into_iter().enumerate() {
+            if i > 0 {
+                write!(f, ",{}", f.array_comma_space())?;
+            }
+            f.skip_indent();
+            WithAlignmentHint::new_with_trailing_comment_alignment_width(
+                &value,
+                *trailing_comment_alignment_width,
+            )
+            .format(f)?;
         }
-        f.skip_indent();
-        WithAlignmentHint::new_with_trailing_comment_alignment_width(
-            &value,
-            *trailing_comment_alignment_width,
-        )
-        .format(f)?;
-    }
 
-    write!(f, "{}]", f.array_bracket_space())?;
+        write!(f, "{}]", f.array_bracket_space())?;
+    }
 
     if let Some(comment) = array.trailing_comment() {
         if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
@@ -561,5 +569,40 @@ mod tests {
 
         let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();
         pretty_assertions::assert_eq!(ast.has_last_value_trailing_comma(), expected);
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn empty_array_no_space(
+            r#"empty = [ ]"#
+        ) -> Ok(r#"empty = []"#)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn empty_array_with_elements(
+            r#"filled = [1, 2, 3]"#
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn nested_empty_arrays(
+            r#"nested = [[ ], [  ], [1, 2]]"#
+        ) -> Ok(r#"nested = [[], [], [1, 2]]"#)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn nested_empty_arrays_with_bracket_space_width_one(
+            r#"nested = [[ ], [  ], [1, 2]]"#,
+            FormatOptions {
+                rules: Some(FormatRules {
+                    array_bracket_space_width: Some(1.into()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }
+        ) -> Ok(r#"nested = [ [], [], [ 1, 2 ] ]"#)
     }
 }
