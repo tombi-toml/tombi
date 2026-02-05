@@ -311,7 +311,7 @@
               "properties": {
                 "file": {
                   "title": "License file path",
-                  "description": "Deprecated per [PEP 639](https://peps.python.org/pep-0639/#add-license-file-key). Use the `license-files` field instead with a string SPDX expression.",
+                  "description": "Deprecated per [PEP 639](https://peps.python.org/pep-0639/#add-license-file-key). Instead, list license file paths in the top-level `license-files` field and specify the license using an SPDX expression string in the `license` field.",
                   "type": "string"
                 }
               }
