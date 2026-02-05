@@ -76,7 +76,7 @@ surf = "2.3.2"
 tempfile = { version = "3.15.0" }
 textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
-time = { version = "0.3.36" }
+time = { version = "0.3.47" }
 tokio = { version = "1.45.0", default-features = false }
 tombi-accessor = { path = "crates/tombi-accessor" }
 tombi-ast = { path = "crates/tombi-ast" }
