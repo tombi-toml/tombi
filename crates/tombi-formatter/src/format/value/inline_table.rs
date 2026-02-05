@@ -186,21 +186,29 @@ fn format_singleline_inline_table(
     table.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
-    write!(f, "{{{}", f.inline_table_brace_space())?;
 
-    for (i, key_value) in table.key_values().enumerate() {
-        if i > 0 {
-            write!(f, ",{}", f.inline_table_comma_space())?;
+    let key_values = table.key_values().collect_vec();
+    let is_empty = key_values.is_empty() && table.inner_dangling_comments().is_empty();
+
+    if is_empty {
+        write!(f, "{{}}")?;
+    } else {
+        write!(f, "{{{}", f.inline_table_brace_space())?;
+
+        for (i, key_value) in key_values.into_iter().enumerate() {
+            if i > 0 {
+                write!(f, ",{}", f.inline_table_comma_space())?;
+            }
+            f.skip_indent();
+            WithAlignmentHint::new_with_trailing_comment_alignment_width(
+                &key_value,
+                *trailing_comment_alignment_width,
+            )
+            .format(f)?;
         }
-        f.skip_indent();
-        WithAlignmentHint::new_with_trailing_comment_alignment_width(
-            &key_value,
-            *trailing_comment_alignment_width,
-        )
-        .format(f)?;
-    }
 
-    write!(f, "{}}}", f.inline_table_brace_space())?;
+        write!(f, "{}}}", f.inline_table_brace_space())?;
+    }
 
     if let Some(comment) = table.trailing_comment() {
         if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width {
@@ -372,5 +380,26 @@ mod tests {
         ) -> Ok(
             r#"table = { t1 = { key1 = 1111111111, key2 = 2222222222 }, t2 = { key3 = 3333333333, key4 = 4444444444 } }"#
         )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn empty_inline_table_no_space(
+            r#"empty = { }"#
+        ) -> Ok(r#"empty = {}"#)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn empty_inline_table_with_elements(
+            r#"filled = { key = "value" }"#
+        ) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn nested_empty_inline_tables(
+            r#"nested = { empty1 = { }, empty2 = {  }, filled = { x = 1 } }"#
+        ) -> Ok(r#"nested = { empty1 = {}, empty2 = {}, filled = { x = 1 } }"#)
     }
 }
