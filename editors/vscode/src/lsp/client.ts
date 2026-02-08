@@ -8,6 +8,12 @@ export type IgnoreReason =
   | "include-file-pattern-not-matched"
   | "exclude-file-pattern-matched";
 
+export type SchemaStatus = {
+  title?: string;
+  description?: string;
+  uri: string;
+};
+
 export type GetTomlVersionParams = TextDocumentIdentifier;
 export const getTomlVersion = new RequestType<
   GetTomlVersionParams,
@@ -65,6 +71,7 @@ export const getStatus = new RequestType<
     source: TomlVersionSource;
     configPath?: string;
     ignore?: IgnoreReason;
+    schema?: SchemaStatus;
   },
   void
 >("tombi/getStatus");
