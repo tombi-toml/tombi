@@ -24,6 +24,11 @@ interface GetStatusResponse {
   source: "comment" | "schema" | "config" | "default";
   configPath?: string;
   ignore?: "include-file-pattern-not-matched" | "exclude-file-pattern-matched";
+  schema?: {
+    title?: string;
+    description?: string;
+    uri: string;
+  }
 }
 ```
 
@@ -35,6 +40,10 @@ interface GetStatusResponse {
   - `default`: Default value
 - `configPath`: Path to the configuration file used for this document
 - `ignore`: Reason why the document is ignored (if applicable)
+- `schema`: Schema information (if applicable)
+  - `title`: Title of the schema (in most cases, this matches the `name` field in the SchemaStore catalog)
+  - `description`: Description of the schema (in most cases, this matches the `description` field in the SchemaStore catalog)
+  - `uri`: URI of the schema
 
 #### Example
 
