@@ -7,7 +7,7 @@
 ## 実装の目標
 
 - [x] Phase 0: コードベース調査（完了）
-- [ ] Phase 1: KeyValueGroup と ValueGroup 構造体の実装
+- [x] Phase 1: KeyValueGroup と ValueGroup 構造体の実装（完了）
 - [ ] Phase 2: ソート処理の実装（グループ単位）
 - [ ] Phase 3: フォーマッター層の実装
 - [ ] Phase 4: コメントディレクティブの対応
@@ -67,7 +67,7 @@ impl KeyValueGroup {
 
 ### タスク
 
-- [ ] **Task 1.1**: `KeyValueGroup` 構造体の定義
+- [x] **Task 1.1**: `KeyValueGroup` 構造体の定義（完了）
   - `crates/tombi-ast/src/node/key_value_group.rs` (新規) を作成
   - `crates/tombi-ast/src/node/table_or_array_of_table.rs` を参考に `can_cast` と `cast` で実装
   - `KeyValueGroup` 構造体を定義
@@ -134,7 +134,7 @@ impl KeyValueGroup {
   }
   ```
 
-- [ ] **Task 1.2**: グループ境界検出ユーティリティの実装
+- [x] **Task 1.2**: グループ境界検出ユーティリティの実装（完了）
   - `crates/tombi-ast/src/support/group.rs` (新規) を作成
   - `has_separator_between()` 関数を実装
     - 入力: 2つの SyntaxNode
@@ -149,7 +149,7 @@ impl KeyValueGroup {
   }
   ```
 
-- [ ] **Task 1.3**: `Table::key_value_groups()` の実装
+- [x] **Task 1.3**: `Table::key_value_groups()` の実装（完了）
   - `crates/tombi-ast/src/impls/table.rs` に追加
   - `key_values()` を基に、グループ境界で分割
   - 各グループのダングリングコメントを抽出
@@ -165,11 +165,11 @@ impl KeyValueGroup {
   }
   ```
 
-- [ ] **Task 1.4**: `Root::key_value_groups()` の実装
+- [x] **Task 1.4**: `Root::key_value_groups()` の実装（完了）
   - `crates/tombi-ast/src/impls/root.rs` に追加
   - `Table::key_value_groups()` と同様のロジック
 
-- [ ] **Task 1.5**: `ValueGroup` 構造体の定義と `Array::value_groups()` の実装
+- [x] **Task 1.5**: `ValueGroup` 構造体の定義と `Array::value_groups()` の実装（完了）
   - `crates/tombi-ast/src/node/value_group.rs` (新規) を作成
   - `KeyValueGroup` と同様に `can_cast` と `cast` で実装
   - `Array::value_groups()` を実装
