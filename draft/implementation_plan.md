@@ -462,22 +462,20 @@ impl KeyValueGroup {
 
 - [ ] **Task 4.1**: グループ単位でのディレクティブ抽出
   - `KeyValueGroup` からディレクティブを抽出する関数を実装
-  - `begin_dangling_comments()` からディレクティブを抽出
-  - `end_dangling_comments()` からディレクティブを抽出
+  - **重要**: `begin_dangling_comments()` と `end_dangling_comments()` を `chain()` で繋げてから解析
+  - これにより、同じグループ内で競合するディレクティブを検出できる
 
   ```rust
   // 疑似コード
   fn extract_directive_from_group(group: &KeyValueGroup) -> Option<Directive> {
-      // begin_dangling_comments からディレクティブを探す
-      for comment_group in group.begin_dangling_comments() {
-          if let Some(directive) = parse_directive(&comment_group) {
-              return Some(directive);
-          }
-      }
+      // begin と end のコメントを繋げてから解析
+      // これにより、同じグループ内で競合するディレクティブを検出できる
+      let all_comments: Vec<_> = group.begin_dangling_comments()
+          .chain(group.end_dangling_comments())
+          .collect();
 
-      // end_dangling_comments からディレクティブを探す
-      let end_comments: Vec<_> = group.end_dangling_comments().collect();
-      if let Some(directive) = parse_directive(&end_comments) {
+      // 既存の parse_directive がグループ内の競合を検出する
+      if let Some(directive) = parse_directive(&all_comments) {
           return Some(directive);
       }
 
@@ -516,6 +514,7 @@ impl KeyValueGroup {
 - [ ] **Task 4.4**: テストの追加
   - 各種ディレクティブのテストケース（draft/new_comment_treatment.md の例を参考）
   - グループ先頭/末尾のディレクティブがグループ全体に作用することを確認
+  - **競合するディレクティブの検出**: 同じグループ内で異なるディレクティブがある場合、適切に警告が出ることを確認
   - 例:
     ```toml
     # グループ1に作用
@@ -527,6 +526,14 @@ impl KeyValueGroup {
     # グループ2はソートされる
     c = 2
     b = 1
+    ```
+  - 競合の例:
+    ```toml
+    # tombi: format.rules.table-keys-order.disabled = true
+
+    z = 3
+    a = 1
+    # tombi: format.rules.table-keys-order = "ascending"  # 競合！
     ```
 
 ### 期待される変更ファイル
