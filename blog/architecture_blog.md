@@ -178,7 +178,7 @@ Language Server の大きな課題は、**まだ書きかけのコードでも�
 
 ```toml
 [package]
-name = 
+name =
 version = "0.1.0"
 ```
 
