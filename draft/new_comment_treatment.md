@@ -158,10 +158,9 @@ c = 3
 ```
 ↓ (このグループはソート無効)
 ```toml
-# tombi: format.rules.table-keys-order.disabled = true
-
 b = 2
 a = 1
+# tombi: format.rules.table-keys-order.disabled = true
 
 c = 3
 ```
