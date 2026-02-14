@@ -19,8 +19,9 @@ Tombi の自動ソートは「ノードとコメントの紐付けが安定す�
 ## 提案: 空行を「境界ノード」として保持する
 
 ### 1. 空行を `Separator` として AST に埋め込む
-- 連続する空行を `Separator(n)` として保持 (n は連続数)
+- 連続する空行を `Separator(n)` として保持 (n は連続数。AST 上は空改行の数を保持)
 - `Separator` はキーに紐付かず、**グループ境界**として扱う
+- **フォーマット出力**: フォーマッタでは `Separator` を 0 行または 1 行の空行に圧縮して出力する (連続空行は最大 1 行に正規化)
 
 ### 2. ソートは「グループ単位」で実行
 - `Separator` で分割された範囲をグループとみなし、各グループ内だけソート
@@ -43,6 +44,8 @@ Tombi の自動ソートは「ノードとコメントの紐付けが安定す�
 - **dangling comment の判定基準は「次ノードとの間の空行」**
 - **前ノードとの間に空行が無ければ**前のグループに紐付ける
 - **前ノードとの間に空行があれば**次のグループに紐付ける
+- **テーブル間の dangling**: ルートの自動ソートと同様に、テーブルとテーブルの間の dangling comment は従来通り、その**直前の** root key/value もしくはテーブルに属する
+- **dangling コメントグループが連続する場合**: 空行で区切られた複数の dangling コメントグループが連続してあるとき、**最後のコメントグループ以外**は、要素が空のグループに対する dangling comment として保持する
 
 ### 6. コメントディレクティブの作用ノード
 - ディレクティブは **「最も近い構文ノード」** に作用させる
@@ -52,20 +55,22 @@ Tombi の自動ソートは「ノードとコメントの紐付けが安定す�
   `docs/src/routes/docs/formatter/auto-sorting.mdx`)
 - 優先順位 (上から順に適用):
   1. **同一行 trailing**: その行のノード (同一行の key/value)
-  2. **直前行の inline/leading**: 次のノード
-  3. **dangling**:
+  2. **直前行の leading**: 次のノード
+  3. **ファイル先頭の value ディレクティブ**: 次の key-value グループに紐づく (document 用の `#:tombi` とは別。document レベルのコメントディレクティブは**最初のコメントグループにのみ**記述可能)
+  4. **dangling**:
      - 次ノードとの間に空行なし: 前のグループに作用
      - 次ノードとの間に空行あり: 次のグループに作用
+- **document コメントディレクティブ** (`#:tombi`): value 用の `# tombi:` とは指示形が異なるため本仕様の紐付けには影響しない。ただし、ドキュメントレベルのコメントディレクティブは**最初のコメントグループにしか**記述できない
 
 #### 例: trailing
 ```toml
-key1 = "a" # tombi: format.disabled
+key1 = "a" # tombi: format.rules.table-keys-order.disabled = true
 ```
 → `key1` に作用
 
 #### 例: leading (次ノードに作用)
 ```toml
-# tombi: format.disabled
+# tombi: format.rules.table-keys-order.disabled = true
 key2 = "b"
 ```
 → `key2` に作用
@@ -73,7 +78,7 @@ key2 = "b"
 #### 例: dangling (グループ境界)
 ```toml
 key1 = "a"
-# tombi: format.disabled
+# tombi: format.rules.table-keys-order.disabled = true
 
 key2 = "b"
 key3 = "c"
@@ -84,7 +89,7 @@ key3 = "c"
 ```toml
 key1 = "a"
 
-# tombi: format.disabled
+# tombi: format.rules.table-keys-order.disabled = true
 key2 = "b"
 key3 = "c"
 ```
@@ -94,7 +99,7 @@ key3 = "c"
 #### 例: グループ跨ぎ禁止
 ```toml
 key1 = "a"
-# tombi: format.disabled
+# tombi: format.rules.table-keys-order.disabled = true
 
 key2 = "b"
 ```
@@ -173,32 +178,38 @@ c = 3
 複数のグループがある場合、ディレクティブは**記載されたグループのみに作用**する。
 各グループごとにディレクティブでソート方法を指定でき、
 指定が無い場合は **JSON Schema のソート指示**を使う。
+グループに作用させるディレクティブは **dangling comment** である必要があるため、ディレクティブの**直後に空行**を入れる。
 
 ```toml
 # tombi: format.rules.table-keys-order.disabled = true
+
 b = 2
 a = 1
 
 # tombi: format.rules.table-keys-order = "ascending"
+
 z = 3
 y = 2
 
 d = 4
 c = 5
 ```
-↓ (1グループ目: 無効 / 2グループ目: 有効 / 3グループ目: Schema 指示)
+↓ (1グループ目: 無効 / 2グループ目: 有効 / 3グループ目: JSON Schema のソート順)
 ```toml
 # tombi: format.rules.table-keys-order.disabled = true
+
 b = 2
 a = 1
 
 # tombi: format.rules.table-keys-order = "ascending"
+
 y = 2
 z = 3
 
-<schema-order>
+c = 5
+d = 4
 ```
-→ 各ディレクティブは **該当グループのみ**に適用される
+→ 各ディレクティブは **該当グループのみ**に適用される。3 グループ目は Schema 指示でソート
 
 ## 仕様案
 
@@ -246,7 +257,10 @@ key3 = "c"
 - フォーマッタのソート関数に「グループ境界」を渡す
 - 既存の comment attachment を壊さないよう、キーの移動はグループ内のみ
 
+## スコープ: テーブル以外のソート対象
+- **format.rules.array-values-order**: 配列要素のソートも、本仕様と同様のグループ・Separator ルールを適用する
+- **inline table / array of tables**: いずれも同様に、空行によるグループ境界とグループ内ソートのルールを持つ
+
 ## 未解決の論点
 - schema 側で定義されるソート順とグループ分割の整合
-- 複合キー (inline table, array of tables) でのグループ判定
-- 連続空行数は `Separator(n)` として保持する
+- 複合キー (inline table, array of tables) 内でのグループ境界の具体的な扱い
