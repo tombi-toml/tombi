@@ -108,16 +108,7 @@ impl SchemaStore {
     ) -> Result<(), crate::Error> {
         let base_dir_path_buf = config_path
             .and_then(|p| p.parent())
-            .and_then(|base_dir_path| {
-                if base_dir_path.is_absolute() {
-                    Some(base_dir_path.to_path_buf())
-                } else {
-                    std::env::current_dir()
-                        .ok()
-                        .map(|current_dir| current_dir.join(base_dir_path))
-                        .or_else(|| Some(base_dir_path.to_path_buf()))
-                }
-            });
+            .map(canonicalize_path_for_matching);
         let base_dir_path = base_dir_path_buf.as_deref();
 
         // Set the base directory for schema matching
@@ -627,6 +618,8 @@ impl SchemaStore {
         &self,
         source_path: &std::path::Path,
     ) -> Result<Option<SourceSchema>, crate::Error> {
+        let canonicalized_source_path = canonicalize_path_for_matching(source_path);
+
         // Get the base directory for relative path conversion
         let base_dir_path = self.base_dir_path.read().await;
 
@@ -634,27 +627,12 @@ impl SchemaStore {
         let path_for_matching = base_dir_path
             .as_deref()
             .and_then(|base_dir_path| {
-                // Try direct relative conversion first
-                source_path
+                canonicalized_source_path
                     .strip_prefix(base_dir_path)
                     .ok()
                     .map(|relative_source_path| relative_source_path.to_path_buf())
-                    .or_else(|| {
-                        // If source_path is relative, try resolving it against current_dir for matching.
-                        if source_path.is_absolute() {
-                            None
-                        } else {
-                            std::env::current_dir().ok().and_then(|current_dir| {
-                                current_dir
-                                    .join(source_path)
-                                    .strip_prefix(&base_dir_path)
-                                    .ok()
-                                    .map(|p| p.to_path_buf())
-                            })
-                        }
-                    })
             })
-            .unwrap_or_else(|| source_path.to_path_buf());
+            .unwrap_or(canonicalized_source_path);
 
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
@@ -904,4 +882,17 @@ async fn load_json_schema_from_cache(
     }
 
     Ok(None)
+}
+
+fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| {
+        if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            std::env::current_dir()
+                .ok()
+                .map(|current_dir| current_dir.join(path))
+                .unwrap_or_else(|| path.to_path_buf())
+        }
+    })
 }
