@@ -31,6 +31,7 @@ pub struct SchemaStore {
         Arc<tokio::sync::RwLock<AHashMap<SchemaUri, Result<DocumentSchema, crate::Error>>>>,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
     options: crate::Options,
+    base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
 }
 
 impl Default for SchemaStore {
@@ -62,6 +63,7 @@ impl SchemaStore {
             document_schemas: Arc::new(RwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
+            base_dir_path: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -105,6 +107,10 @@ impl SchemaStore {
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
         let base_dir_path = config_path.and_then(|p| p.parent());
+
+        // Set the base directory for schema matching
+        *self.base_dir_path.write().await = base_dir_path.map(|p| p.to_path_buf());
+
         let schema_options = match &config.schema {
             Some(schema) => schema,
             None => &SchemaOverviewOptions::default(),
@@ -158,6 +164,9 @@ impl SchemaStore {
         schemas: &[SchemaItem],
         base_dir_path: Option<&std::path::Path>,
     ) {
+        // Set the base directory for schema matching
+        *self.base_dir_path.write().await = base_dir_path.map(|p| p.to_path_buf());
+
         futures::future::join_all(schemas.iter().map(|schema| async move {
             let schema_uri = if let Ok(schema_uri) = SchemaUri::from_str(schema.path()) {
                 schema_uri
@@ -609,6 +618,32 @@ impl SchemaStore {
         &self,
         source_path: &std::path::Path,
     ) -> Result<Option<SourceSchema>, crate::Error> {
+        // Canonicalize the source path to get absolute path
+        let source_absolute_path = source_path
+            .canonicalize()
+            .unwrap_or_else(|_| source_path.to_path_buf());
+
+        // Get the base directory for relative path conversion
+        let base_dir_path = self.base_dir_path.read().await.clone();
+
+        // Determine the path to use for pattern matching
+        let path_for_matching = if let Some(base_dir_path) = base_dir_path {
+            // If base_dir exists, try to get relative path from it
+            let base_dir_absolute_path = match base_dir_path.canonicalize() {
+                Ok(path) => path,
+                Err(_) => base_dir_path,
+            };
+
+            // Use relative path from base directory
+            source_absolute_path
+                .strip_prefix(&base_dir_absolute_path)
+                .ok()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| source_absolute_path.clone())
+        } else {
+            source_absolute_path
+        };
+
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
             .iter()
@@ -621,7 +656,7 @@ impl SchemaStore {
                     };
                     glob::Pattern::new(&pattern)
                         .ok()
-                        .map(|glob_pat| glob_pat.matches_path(source_path))
+                        .map(|glob_pat| glob_pat.matches_path(&path_for_matching))
                         .unwrap_or(false)
                 })
             })

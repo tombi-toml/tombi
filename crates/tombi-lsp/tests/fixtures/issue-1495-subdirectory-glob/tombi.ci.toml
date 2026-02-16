@@ -1,0 +1,3 @@
+[[schemas]]
+path = "./schema.json"
+include = ["product.toml", "subdir/*.toml"]

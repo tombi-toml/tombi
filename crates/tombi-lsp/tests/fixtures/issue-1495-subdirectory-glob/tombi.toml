@@ -1,0 +1,6 @@
+[lsp]
+diagnostic.enabled = false
+
+[[schemas]]
+path = "./schema.json"
+include = ["product.toml", "subdir/*.toml"]
