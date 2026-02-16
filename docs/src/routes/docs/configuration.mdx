@@ -662,6 +662,10 @@ The schema catalog path/url array. The catalog is evaluated after the schemas sp
 - Type: `String[]`
 - Default: `["tombi://www.schemastore.org/api/json/catalog.json", "https://www.schemastore.org/api/json/catalog.json"]`
 
+<Note>
+For local paths in `schema.catalog.paths`, relative paths are also resolved from the directory containing the loaded config file.
+</Note>
+
 ### schemas
 
 Define custom schemas for specific TOML files. You can specify both root schemas and sub-schemas.
@@ -680,6 +684,13 @@ include = ["example.toml"]
 - `toml-version`(optional): The TOML version that the schema is available for
 - `path`: The schema path (URL or local file path)
 - `include`: File match patterns to apply this schema (supports glob patterns)
+
+<Note>
+For local paths, `path` is resolved relative to the directory containing the loaded config file.
+
+When using User/System config (for example `~/.config/tombi/config.toml`), the config directory is usually outside your project.
+In that case, use recursive include globs such as `**/project/**/*.toml` or filename-based patterns like `pyproject.toml` to target project files.
+</Note>
 
 ### Sub Schema
 

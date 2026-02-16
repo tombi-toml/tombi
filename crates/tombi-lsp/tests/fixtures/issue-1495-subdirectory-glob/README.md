@@ -10,38 +10,19 @@ Glob patterns with subdirectories (e.g., `subdir/*.toml`) were not correctly mat
 
 ```
 ├── tombi.toml       # Config with schema glob pattern
-├── schema.json      # Schema requiring 'name' to be an integer
-├── product.toml     # Invalid: name = true (Boolean)
+├── schema.json      # Schema requiring 'name' to be a string
+├── product.toml     # Valid: name = "taro"
 └── subdir/
-    └── subproduct.toml  # Invalid: name = "some-str" (String)
+    └── subproduct.toml  # Valid: name = "jiro"
 ```
 
 ## Expected Behavior
 
-Both `product.toml` and `subdir/subproduct.toml` should fail validation because:
-- `product.toml`: `name` is Boolean, but schema requires Integer
-- `subdir/subproduct.toml`: `name` is String, but schema requires Integer
+The fixture files are valid by default.  
+In `crates/tombi-lsp/tests/test_diagnostic.rs`, diagnostics are asserted by opening each file path with injected text `name = false`.
 
-The glob pattern `subdir/*.toml` in `tombi.toml` should match `subdir/subproduct.toml`.
-
-## Manual Test
-
-From this directory:
-
-```bash
-tombi lint
-```
-
-Expected output:
-```
-2 files linted successfully
-2 files failed to be linted
-
-Error: Expected a value of type Integer, but found Boolean
-  at .../product.toml:1:8
-Error: Expected a value of type Integer, but found String
-  at .../subdir/subproduct.toml:1:8
-```
+When glob association works correctly, both `product.toml` and `subdir/subproduct.toml` receive the same schema and both produce:
+- `Expected a value of type String, but found Boolean`
 
 ## Before the Fix
 

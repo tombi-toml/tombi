@@ -106,10 +106,13 @@ impl SchemaStore {
         config: &tombi_config::Config,
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
-        let base_dir_path = config_path.and_then(|p| p.parent());
+        let base_dir_path_buf = config_path
+            .and_then(|p| p.parent())
+            .map(canonicalize_path_for_matching);
+        let base_dir_path = base_dir_path_buf.as_deref();
 
         // Set the base directory for schema matching
-        *self.base_dir_path.write().await = base_dir_path.map(|p| p.to_path_buf());
+        *self.base_dir_path.write().await = base_dir_path_buf.clone();
 
         let schema_options = match &config.schema {
             Some(schema) => schema,
@@ -159,14 +162,11 @@ impl SchemaStore {
         Ok(())
     }
 
-    pub async fn load_config_schemas(
+    async fn load_config_schemas(
         &self,
         schemas: &[SchemaItem],
         base_dir_path: Option<&std::path::Path>,
     ) {
-        // Set the base directory for schema matching
-        *self.base_dir_path.write().await = base_dir_path.map(|p| p.to_path_buf());
-
         futures::future::join_all(schemas.iter().map(|schema| async move {
             let schema_uri = if let Ok(schema_uri) = SchemaUri::from_str(schema.path()) {
                 schema_uri
@@ -618,31 +618,21 @@ impl SchemaStore {
         &self,
         source_path: &std::path::Path,
     ) -> Result<Option<SourceSchema>, crate::Error> {
-        // Canonicalize the source path to get absolute path
-        let source_absolute_path = source_path
-            .canonicalize()
-            .unwrap_or_else(|_| source_path.to_path_buf());
+        let canonicalized_source_path = canonicalize_path_for_matching(source_path);
 
         // Get the base directory for relative path conversion
-        let base_dir_path = self.base_dir_path.read().await.clone();
+        let base_dir_path = self.base_dir_path.read().await;
 
-        // Determine the path to use for pattern matching
-        let path_for_matching = if let Some(base_dir_path) = base_dir_path {
-            // If base_dir exists, try to get relative path from it
-            let base_dir_absolute_path = match base_dir_path.canonicalize() {
-                Ok(path) => path,
-                Err(_) => base_dir_path,
-            };
-
-            // Use relative path from base directory
-            source_absolute_path
-                .strip_prefix(&base_dir_absolute_path)
-                .ok()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| source_absolute_path.clone())
-        } else {
-            source_absolute_path
-        };
+        // Determine the path to use for pattern matching without per-call filesystem I/O
+        let path_for_matching = base_dir_path
+            .as_deref()
+            .and_then(|base_dir_path| {
+                canonicalized_source_path
+                    .strip_prefix(base_dir_path)
+                    .ok()
+                    .map(|relative_source_path| relative_source_path.to_path_buf())
+            })
+            .unwrap_or(canonicalized_source_path);
 
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
@@ -892,4 +882,17 @@ async fn load_json_schema_from_cache(
     }
 
     Ok(None)
+}
+
+fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| {
+        if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            std::env::current_dir()
+                .ok()
+                .map(|current_dir| current_dir.join(path))
+                .unwrap_or_else(|| path.to_path_buf())
+        }
+    })
 }

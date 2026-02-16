@@ -27,7 +27,7 @@ macro_rules! test_lint {
             /// Test-time configuration overridden via `test_lint!` arguments.
             #[allow(unused)]
             #[derive(Default)]
-            pub struct TestConfig {
+            pub struct TestArgs {
                 pub toml_version: TomlVersion,
                 pub options: $crate::LintOptions,
                 pub schema_path: Option<std::path::PathBuf>,
@@ -35,18 +35,18 @@ macro_rules! test_lint {
 
             #[allow(unused)]
             pub trait ApplyTestArg {
-                fn apply(self, config: &mut TestConfig);
+                fn apply(self, args: &mut TestArgs);
             }
 
             impl ApplyTestArg for TomlVersion {
-                fn apply(self, config: &mut TestConfig) {
-                    config.toml_version = self;
+                fn apply(self, args: &mut TestArgs) {
+                    args.toml_version = self;
                 }
             }
 
             impl ApplyTestArg for $crate::LintOptions {
-                fn apply(self, config: &mut TestConfig) {
-                    config.options = self;
+                fn apply(self, args: &mut TestArgs) {
+                    args.options = self;
                 }
             }
 
@@ -55,33 +55,28 @@ macro_rules! test_lint {
             pub struct SchemaPath(pub std::path::PathBuf);
 
             impl ApplyTestArg for SchemaPath {
-                fn apply(self, config: &mut TestConfig) {
-                    config.schema_path = Some(self.0);
+                fn apply(self, args: &mut TestArgs) {
+                    args.schema_path = Some(self.0);
                 }
             }
 
             #[allow(unused_mut)]
-            let mut config = TestConfig::default();
+            let mut args = TestArgs::default();
             $(
-                ApplyTestArg::apply($arg, &mut config);
+                ApplyTestArg::apply($arg, &mut args);
             )*
 
             // Initialize schema store
             let schema_store = tombi_schema_store::SchemaStore::new();
 
-            if let Some(schema_path) = &config.schema_path {
-                let path = tombi_uri::Uri::from_file_path(schema_path.as_path())
-                    .unwrap()
-                    .to_string();
-                // Load schemas
+            if let Some(schema_path) = &args.schema_path {
+                let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path.as_path())
+                    .expect("failed to convert test schema path to schema uri");
                 schema_store
-                    .load_config_schemas(
-                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                            toml_version: None,
-                            path,
-                            include: vec!["*.toml".to_string()],
-                        })],
-                        None,
+                    .associate_schema(
+                        schema_uri,
+                        vec!["*.toml".to_string()],
+                        &tombi_schema_store::AssociateSchemaOptions::default(),
                     )
                     .await;
             }
@@ -89,8 +84,8 @@ macro_rules! test_lint {
             // Initialize linter
             let source_path = tombi_test_lib::project_root_path().join("test.toml");
             let linter = $crate::Linter::new(
-                config.toml_version,
-                &config.options,
+                args.toml_version,
+                &args.options,
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );
@@ -122,7 +117,7 @@ macro_rules! test_lint {
             /// Test-time configuration overridden via `test_lint!` arguments.
             #[allow(unused)]
             #[derive(Default)]
-            pub struct TestConfig {
+            pub struct TestArgs {
                 pub toml_version: TomlVersion,
                 pub options: $crate::LintOptions,
                 pub schema_path: Option<std::path::PathBuf>,
@@ -130,18 +125,18 @@ macro_rules! test_lint {
 
             #[allow(unused)]
             pub trait ApplyTestArg {
-                fn apply(self, config: &mut TestConfig);
+                fn apply(self, args: &mut TestArgs);
             }
 
             impl ApplyTestArg for TomlVersion {
-                fn apply(self, config: &mut TestConfig) {
-                    config.toml_version = self;
+                fn apply(self, args: &mut TestArgs) {
+                    args.toml_version = self;
                 }
             }
 
             impl ApplyTestArg for $crate::LintOptions {
-                fn apply(self, config: &mut TestConfig) {
-                    config.options = self;
+                fn apply(self, args: &mut TestArgs) {
+                    args.options = self;
                 }
             }
 
@@ -150,33 +145,28 @@ macro_rules! test_lint {
             pub struct SchemaPath(pub std::path::PathBuf);
 
             impl ApplyTestArg for SchemaPath {
-                fn apply(self, config: &mut TestConfig) {
-                    config.schema_path = Some(self.0);
+                fn apply(self, args: &mut TestArgs) {
+                    args.schema_path = Some(self.0);
                 }
             }
 
             #[allow(unused_mut)]
-            let mut config = TestConfig::default();
+            let mut args = TestArgs::default();
             $(
-                ApplyTestArg::apply($arg, &mut config);
+                ApplyTestArg::apply($arg, &mut args);
             )*
 
             // Initialize schema store
             let schema_store = tombi_schema_store::SchemaStore::new();
 
-            if let Some(schema_path) = config.schema_path {
-                let path = tombi_uri::Uri::from_file_path(schema_path)
-                    .unwrap()
-                    .to_string();
-                // Load schemas
+            if let Some(schema_path) = args.schema_path {
+                let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_path)
+                    .expect("failed to convert test schema path to schema uri");
                 schema_store
-                    .load_config_schemas(
-                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                            toml_version: None,
-                            path,
-                            include: vec!["*.toml".to_string()],
-                        })],
-                        None,
+                    .associate_schema(
+                        schema_uri,
+                        vec!["*.toml".to_string()],
+                        &tombi_schema_store::AssociateSchemaOptions::default(),
                     )
                     .await;
             }
@@ -184,8 +174,8 @@ macro_rules! test_lint {
             // Initialize linter
             let source_path = tombi_test_lib::project_root_path().join("test.toml");
             let linter = $crate::Linter::new(
-                config.toml_version,
-                &config.options,
+                args.toml_version,
+                &args.options,
                 Some(itertools::Either::Right(source_path.as_path())),
                 &schema_store,
             );

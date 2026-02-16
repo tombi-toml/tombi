@@ -355,27 +355,6 @@ impl ConfigManager {
         Ok(updated)
     }
 
-    pub async fn load_config_schemas(
-        &self,
-        schemas: &[tombi_config::SchemaItem],
-        base_dir_path: Option<&std::path::Path>,
-    ) {
-        let mut config_schema_stores = self.config_schema_stores.write().await;
-        for ConfigSchemaStore { schema_store, .. } in config_schema_stores.values_mut() {
-            schema_store
-                .load_config_schemas(schemas, base_dir_path)
-                .await;
-        }
-
-        if let Some((_, ConfigSchemaStore { schema_store, .. })) =
-            &mut *self.default_config_schema_store.write().await
-        {
-            schema_store
-                .load_config_schemas(schemas, base_dir_path)
-                .await;
-        }
-    }
-
     /// Update editor configuration
     pub async fn update_editor_config(&self, config: Config) {
         let associated_schemas = self.associated_schemas.read().await;
