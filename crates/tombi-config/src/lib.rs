@@ -16,7 +16,7 @@ pub use lint::*;
 pub use overrides::*;
 pub use schema::SchemaOverviewOptions;
 pub use schema::{RootSchema, SchemaItem, SubSchema};
-pub use server::{LspCompletion, LspOptions};
+pub use server::{LspCompletion, LspDiagnostic, LspOptions};
 pub use tombi_severity_level::SeverityLevel;
 pub use tombi_toml_version::TomlVersion;
 pub use types::*;
