@@ -78,7 +78,7 @@ macro_rules! test_diagnostic {
 
         #[allow(unused)]
         #[derive(Default)]
-        struct TestConfig {
+        struct TestArgs {
             source_file_path: Option<std::path::PathBuf>,
             source_text: Option<String>,
             schema_file_path: Option<std::path::PathBuf>,
@@ -88,15 +88,15 @@ macro_rules! test_diagnostic {
 
         #[allow(unused)]
         trait ApplyTestArg {
-            fn apply(self, config: &mut TestConfig);
+            fn apply(self, args: &mut TestArgs);
         }
 
         #[allow(unused)]
         struct SourcePath(std::path::PathBuf);
 
         impl ApplyTestArg for SourcePath {
-            fn apply(self, config: &mut TestConfig) {
-                config.source_file_path = Some(self.0);
+            fn apply(self, args: &mut TestArgs) {
+                args.source_file_path = Some(self.0);
             }
         }
 
@@ -104,8 +104,8 @@ macro_rules! test_diagnostic {
         struct SourceText(String);
 
         impl ApplyTestArg for SourceText {
-            fn apply(self, config: &mut TestConfig) {
-                config.source_text = Some(self.0);
+            fn apply(self, args: &mut TestArgs) {
+                args.source_text = Some(self.0);
             }
         }
 
@@ -113,8 +113,8 @@ macro_rules! test_diagnostic {
         struct SchemaPath(std::path::PathBuf);
 
         impl ApplyTestArg for SchemaPath {
-            fn apply(self, config: &mut TestConfig) {
-                config.schema_file_path = Some(self.0);
+            fn apply(self, args: &mut TestArgs) {
+                args.schema_file_path = Some(self.0);
             }
         }
 
@@ -122,29 +122,29 @@ macro_rules! test_diagnostic {
         struct ConfigPath(std::path::PathBuf);
 
         impl ApplyTestArg for ConfigPath {
-            fn apply(self, config: &mut TestConfig) {
-                config.config_file_path = Some(self.0);
+            fn apply(self, args: &mut TestArgs) {
+                args.config_file_path = Some(self.0);
             }
         }
 
         impl ApplyTestArg for tombi_lsp::backend::Options {
-            fn apply(self, config: &mut TestConfig) {
-                config.backend_options = self;
+            fn apply(self, args: &mut TestArgs) {
+                args.backend_options = self;
             }
         }
 
         #[allow(unused_mut)]
-        let mut config = TestConfig::default();
-        $(ApplyTestArg::apply($arg, &mut config);)*
+        let mut args = TestArgs::default();
+        $(ApplyTestArg::apply($arg, &mut args);)*
 
         let (service, _) = LspService::new(|client| {
-            Backend::new(client, &config.backend_options)
+            Backend::new(client, &args.backend_options)
         });
 
         let backend = service.inner();
 
         // Load config file if specified
-        if let Some(config_file_path) = config.config_file_path.as_ref() {
+        if let Some(config_file_path) = args.config_file_path.as_ref() {
             let config_content = std::fs::read_to_string(config_file_path)
                 .map_err(|e| format!("Failed to read config file {}: {}", config_file_path.display(), e))?;
             let tombi_config: tombi_config::Config = serde_tombi::from_str_async(&config_content)
@@ -364,7 +364,7 @@ macro_rules! test_diagnostic_file {
 
         #[allow(unused)]
         #[derive(Default)]
-        struct TestConfig {
+        struct TestArgs {
             source_file_path: Option<std::path::PathBuf>,
             source_text: Option<String>,
             schema_file_path: Option<std::path::PathBuf>,
@@ -374,14 +374,14 @@ macro_rules! test_diagnostic_file {
 
         #[allow(unused)]
         trait ApplyTestArg {
-            fn apply(self, config: &mut TestConfig);
+            fn apply(self, config: &mut TestArgs);
         }
 
         #[allow(unused)]
         struct SourcePath(std::path::PathBuf);
 
         impl ApplyTestArg for SourcePath {
-            fn apply(self, config: &mut TestConfig) {
+            fn apply(self, config: &mut TestArgs) {
                 config.source_file_path = Some(self.0);
             }
         }
@@ -390,7 +390,7 @@ macro_rules! test_diagnostic_file {
         struct SourceText(String);
 
         impl ApplyTestArg for SourceText {
-            fn apply(self, config: &mut TestConfig) {
+            fn apply(self, config: &mut TestArgs) {
                 config.source_text = Some(self.0);
             }
         }
@@ -399,7 +399,7 @@ macro_rules! test_diagnostic_file {
         struct SchemaPath(std::path::PathBuf);
 
         impl ApplyTestArg for SchemaPath {
-            fn apply(self, config: &mut TestConfig) {
+            fn apply(self, config: &mut TestArgs) {
                 config.schema_file_path = Some(self.0);
             }
         }
@@ -408,19 +408,19 @@ macro_rules! test_diagnostic_file {
         struct ConfigPath(std::path::PathBuf);
 
         impl ApplyTestArg for ConfigPath {
-            fn apply(self, config: &mut TestConfig) {
+            fn apply(self, config: &mut TestArgs) {
                 config.config_file_path = Some(self.0);
             }
         }
 
         impl ApplyTestArg for tombi_lsp::backend::Options {
-            fn apply(self, config: &mut TestConfig) {
+            fn apply(self, config: &mut TestArgs) {
                 config.backend_options = self;
             }
         }
 
         #[allow(unused_mut)]
-        let mut config = TestConfig::default();
+        let mut config = TestArgs::default();
         $(ApplyTestArg::apply($arg, &mut config);)*
 
         // SourcePath must be provided for file-based tests

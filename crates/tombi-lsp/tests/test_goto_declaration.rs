@@ -186,7 +186,7 @@ mod goto_declaration_tests {
 
                 #[allow(unused)]
                 #[derive(Default)]
-                struct TestConfig {
+                struct TestArgs {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchemaPath>,
@@ -195,15 +195,15 @@ mod goto_declaration_tests {
 
                 #[allow(unused)]
                 trait ApplyTestArg {
-                    fn apply(self, config: &mut TestConfig);
+                    fn apply(self, args: &mut TestArgs);
                 }
 
                 #[allow(unused)]
                 struct SourcePath(std::path::PathBuf);
 
                 impl ApplyTestArg for SourcePath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.source_file_path = Some(self.0);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.source_file_path = Some(self.0);
                     }
                 }
 
@@ -211,8 +211,8 @@ mod goto_declaration_tests {
                 struct SchemaPath(std::path::PathBuf);
 
                 impl ApplyTestArg for SchemaPath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.schema_file_path = Some(self.0);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.schema_file_path = Some(self.0);
                     }
                 }
 
@@ -223,29 +223,29 @@ mod goto_declaration_tests {
                 }
 
                 impl ApplyTestArg for SubSchemaPath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.subschemas.push(self);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.subschemas.push(self);
                     }
                 }
 
                 impl ApplyTestArg for tombi_lsp::backend::Options {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.backend_options = self;
+                    fn apply(self, args: &mut TestArgs) {
+                        args.backend_options = self;
                     }
                 }
 
                 #[allow(unused_mut)]
-                let mut config = TestConfig::default();
-                $(ApplyTestArg::apply($arg, &mut config);)*
+                let mut args = TestArgs::default();
+                $(ApplyTestArg::apply($arg, &mut args);)*
 
                 let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &config.backend_options)
+                    Backend::new(client, &args.backend_options)
                 });
 
                 let backend = service.inner();
                 let mut schema_items = Vec::new();
 
-                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+                if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                         .expect(
                             format!(
@@ -262,7 +262,7 @@ mod goto_declaration_tests {
                     }));
                 }
 
-                for subschema in &config.subschemas {
+                for subschema in &args.subschemas {
                     let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
                         .expect(
                             format!(
@@ -279,7 +279,7 @@ mod goto_declaration_tests {
                     }));
                 }
 
-                let source_path = config
+                let source_path = args
                     .source_file_path
                     .as_ref()
                     .ok_or("SourcePath must be provided for goto_declaration tests")?;

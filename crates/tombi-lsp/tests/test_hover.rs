@@ -474,7 +474,7 @@ mod hover_keys_value {
 
                 #[allow(unused)]
                 #[derive(Default)]
-                struct TestConfig {
+                struct TestArgs {
                     source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     subschemas: Vec<SubSchemaPath>,
@@ -483,15 +483,15 @@ mod hover_keys_value {
 
                 #[allow(unused)]
                 trait ApplyTestArg {
-                    fn apply(self, config: &mut TestConfig);
+                    fn apply(self, args: &mut TestArgs);
                 }
 
                 #[allow(unused)]
                 struct SourcePath(std::path::PathBuf);
 
                 impl ApplyTestArg for SourcePath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.source_file_path = Some(self.0);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.source_file_path = Some(self.0);
                     }
                 }
 
@@ -499,8 +499,8 @@ mod hover_keys_value {
                 struct SchemaPath(std::path::PathBuf);
 
                 impl ApplyTestArg for SchemaPath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.schema_file_path = Some(self.0);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.schema_file_path = Some(self.0);
                     }
                 }
 
@@ -511,29 +511,29 @@ mod hover_keys_value {
                 }
 
                 impl ApplyTestArg for SubSchemaPath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.subschemas.push(self);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.subschemas.push(self);
                     }
                 }
 
                 impl ApplyTestArg for tombi_lsp::backend::Options {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.backend_options = self;
+                    fn apply(self, args: &mut TestArgs) {
+                        args.backend_options = self;
                     }
                 }
 
                 #[allow(unused_mut)]
-                let mut config = TestConfig::default();
-                $(ApplyTestArg::apply($arg, &mut config);)*
+                let mut args = TestArgs::default();
+                $(ApplyTestArg::apply($arg, &mut args);)*
 
                 let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &config.backend_options)
+                    Backend::new(client, &args.backend_options)
                 });
 
                 let backend = service.inner();
                 let mut schema_items = Vec::new();
 
-                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+                if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                         .expect(
                             format!(
@@ -550,7 +550,7 @@ mod hover_keys_value {
                     }));
                 }
 
-                for subschema in &config.subschemas {
+                for subschema in &args.subschemas {
                     let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
                         .expect(
                             format!(
@@ -568,7 +568,7 @@ mod hover_keys_value {
                 }
 
                 let current_dir = std::env::current_dir().expect("failed to get current directory");
-                let temp_dir = if let Some(source_path) = config.source_file_path.as_ref() {
+                let temp_dir = if let Some(source_path) = args.source_file_path.as_ref() {
                     source_path.parent().ok_or("failed to get parent directory")?
                 } else {
                     current_dir.as_path()
@@ -662,7 +662,7 @@ mod hover_keys_value {
 
                 log::debug!("hover_content: {:#?}", hover_content);
 
-                if config.schema_file_path.is_some() {
+                if args.schema_file_path.is_some() {
                     assert!(hover_content.schema_uri.is_some(), "The hover target is not defined in the schema.");
                 } else {
                     assert!(hover_content.schema_uri.is_none(), "The hover target is defined in the schema.");
