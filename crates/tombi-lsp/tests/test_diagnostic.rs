@@ -29,7 +29,7 @@ mod diagnostic {
 
         test_diagnostic_file!(
             #[tokio::test]
-            async fn subdir_subproduct_toml_string_error(
+            async fn subdir_subproduct_toml_boolean_error(
                 "name = false",
                 SourcePath(fixture_path().join("subdir").join("subproduct.toml")),
                 ConfigPath(fixture_path().join("tombi.toml")),
@@ -151,15 +151,11 @@ macro_rules! test_diagnostic {
                 .await
                 .map_err(|e| format!("Failed to parse config file {}: {}", config_file_path.display(), e))?;
 
-            if let Some(schemas) = tombi_config.schemas.as_ref() {
-                backend
-                    .config_manager
-                    .load_config_schemas(
-                        schemas,
-                        config_file_path.parent(),
-                    )
-                    .await;
-            }
+            backend
+                .config_manager
+                .update_config_with_path(tombi_config, config_file_path)
+                .await
+                .map_err(|e| format!("Failed to load config file {}: {}", config_file_path.display(), e))?;
         } else if let Some(schema_file_path) = config.schema_file_path.as_ref() {
             // Fallback to schema path if no config file
             let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -173,14 +169,17 @@ macro_rules! test_diagnostic {
 
             backend
                 .config_manager
-                .load_config_schemas(
-                    &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                        toml_version: None,
-                        path: schema_uri.to_string(),
-                        include: vec!["*.toml".to_string()],
-                    })],
-                    None,
-                )
+                .update_editor_config({
+                    let mut editor_config = tombi_config::Config::default();
+                    editor_config.schemas = Some(vec![
+                        tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                            toml_version: None,
+                            path: schema_uri.to_string(),
+                            include: vec!["*.toml".to_string()],
+                        }),
+                    ]);
+                    editor_config
+                })
                 .await;
         }
 
@@ -428,15 +427,6 @@ macro_rules! test_diagnostic_file {
         let source_path = config.source_file_path.as_ref()
             .expect("SourcePath must be provided for test_diagnostic_file");
 
-        // If both SourceText and SourcePath are provided, write SourceText to SourcePath
-        if let Some(source_text) = config.source_text.take() {
-            use std::io::Write;
-            let mut file = std::fs::File::create(source_path)
-                .map_err(|e| format!("Failed to create file {}: {}", source_path.display(), e))?;
-            file.write_all(source_text.as_bytes())
-                .map_err(|e| format!("Failed to write to file {}: {}", source_path.display(), e))?;
-        }
-
         let (service, _) = LspService::new(|client| {
             Backend::new(client, &config.backend_options)
         });
@@ -451,15 +441,11 @@ macro_rules! test_diagnostic_file {
                 .await
                 .map_err(|e| format!("Failed to parse config file {}: {}", config_file_path.display(), e))?;
 
-            if let Some(schemas) = tombi_config.schemas.as_ref() {
-                backend
-                    .config_manager
-                    .load_config_schemas(
-                        schemas,
-                        config_file_path.parent(),
-                    )
-                    .await;
-            }
+            backend
+                .config_manager
+                .update_config_with_path(tombi_config, config_file_path)
+                .await
+                .map_err(|e| format!("Failed to load config file {}: {}", config_file_path.display(), e))?;
         } else if let Some(schema_file_path) = config.schema_file_path.as_ref() {
             // Fallback to schema path if no config file
             let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -473,20 +459,27 @@ macro_rules! test_diagnostic_file {
 
             backend
                 .config_manager
-                .load_config_schemas(
-                    &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                        toml_version: None,
-                        path: schema_uri.to_string(),
-                        include: vec!["*.toml".to_string()],
-                    })],
-                    None,
-                )
+                .update_editor_config({
+                    let mut editor_config = tombi_config::Config::default();
+                    editor_config.schemas = Some(vec![
+                        tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                            toml_version: None,
+                            path: schema_uri.to_string(),
+                            include: vec!["*.toml".to_string()],
+                        }),
+                    ]);
+                    editor_config
+                })
                 .await;
         }
 
-        // Read from SourcePath
-        let toml_text = std::fs::read_to_string(source_path)
-            .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?;
+        // Use SourceText when provided, otherwise read from SourcePath.
+        let toml_text = if let Some(source_text) = config.source_text.take() {
+            source_text
+        } else {
+            std::fs::read_to_string(source_path)
+                .map_err(|e| format!("Failed to read source file {}: {}", source_path.display(), e))?
+        };
         let toml_file_url = Url::from_file_path(source_path)
             .map_err(|_| format!("Failed to convert path to URL: {}", source_path.display()))?;
 

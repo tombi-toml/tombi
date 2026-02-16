@@ -765,6 +765,7 @@ mod completion_edit {
                 });
 
                 let backend = service.inner();
+                let mut schema_items = Vec::new();
 
                 if let Some(schema_file_path) = config.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -775,19 +776,11 @@ mod completion_edit {
                             )
                             .as_str(),
                         );
-                    backend
-                        .config_manager
-                        .load_config_schemas(
-                            &[
-                                tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                                    toml_version: None,
-                                    path: schema_uri.to_string(),
-                                    include: vec!["*.toml".to_string()],
-                                }),
-                            ],
-                            None
-                        )
-                        .await;
+                    schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                        toml_version: None,
+                        path: schema_uri.to_string(),
+                        include: vec!["*.toml".to_string()],
+                    }));
                 }
 
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(
@@ -818,6 +811,34 @@ mod completion_edit {
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
+
+                if !schema_items.is_empty() {
+                    let config_schema_store = backend
+                        .config_manager
+                        .config_schema_store_for_file(temp_file.path())
+                        .await;
+
+                    let mut test_config = config_schema_store.config;
+                    let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+                    existing_schemas.extend(schema_items);
+                    test_config.schemas = Some(existing_schemas);
+
+                    if let Some(config_path) = config_schema_store.config_path {
+                        backend
+                            .config_manager
+                            .update_config_with_path(test_config, &config_path)
+                            .await
+                            .map_err(|e| {
+                                format!(
+                                    "failed to update config {}: {}",
+                                    config_path.display(),
+                                    e
+                                )
+                            })?;
+                    } else {
+                        backend.config_manager.update_editor_config(test_config).await;
+                    }
+                }
 
                 handle_did_open(
                     backend,

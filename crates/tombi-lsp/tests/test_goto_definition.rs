@@ -536,6 +536,7 @@ mod goto_definition_tests {
                 });
 
                 let backend = service.inner();
+                let mut schema_items = Vec::new();
 
                 if let Some(schema_file_path) = config.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
@@ -547,17 +548,11 @@ mod goto_definition_tests {
                             .as_str(),
                         );
 
-                    backend
-                        .config_manager
-                        .load_config_schemas(
-                            &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                                toml_version: None,
-                                path: schema_uri.to_string(),
-                                include: vec!["*.toml".to_string()],
-                            })],
-                            None,
-                        )
-                        .await;
+                    schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                        toml_version: None,
+                        path: schema_uri.to_string(),
+                        include: vec!["*.toml".to_string()],
+                    }));
                 }
 
                 for subschema in &config.subschemas {
@@ -570,23 +565,45 @@ mod goto_definition_tests {
                             .as_str(),
                         );
 
-                    backend
-                        .config_manager
-                        .load_config_schemas(
-                            &[tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
-                                path: subschema_uri.to_string(),
-                                include: vec!["*.toml".to_string()],
-                                root: subschema.root.clone(),
-                            })],
-                            None,
-                        )
-                        .await;
+                    schema_items.push(tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                        path: subschema_uri.to_string(),
+                        include: vec!["*.toml".to_string()],
+                        root: subschema.root.clone(),
+                    }));
                 }
 
                 let source_path = config
                     .source_file_path
                     .as_ref()
                     .ok_or("SourcePath must be provided for goto_definition tests")?;
+
+                if !schema_items.is_empty() {
+                    let config_schema_store = backend
+                        .config_manager
+                        .config_schema_store_for_file(source_path)
+                        .await;
+
+                    let mut test_config = config_schema_store.config;
+                    let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+                    existing_schemas.extend(schema_items);
+                    test_config.schemas = Some(existing_schemas);
+
+                    if let Some(config_path) = config_schema_store.config_path {
+                        backend
+                            .config_manager
+                            .update_config_with_path(test_config, &config_path)
+                            .await
+                            .map_err(|e| {
+                                format!(
+                                    "failed to update config {}: {}",
+                                    config_path.display(),
+                                    e
+                                )
+                            })?;
+                    } else {
+                        backend.config_manager.update_editor_config(test_config).await;
+                    }
+                }
 
                 let toml_file_url = Url::from_file_path(source_path)
                     .expect("failed to convert source file path to URL");
