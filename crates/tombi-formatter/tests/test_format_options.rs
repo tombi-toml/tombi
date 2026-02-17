@@ -607,6 +607,87 @@ mod format_options {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_line_ending_auto_with_lf_source(
+                r#"
+                key = "value"
+                "#,
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        line_ending: Some(LineEnding::Auto),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok(
+                r#"
+                key = "value"
+                "#
+            )
+        }
+
+        #[tokio::test]
+        async fn test_line_ending_auto_with_crlf_source() {
+            use tombi_config::{FormatOptions, TomlVersion, format::FormatRules};
+            use tombi_schema_store::SchemaStore;
+
+            tombi_test_lib::init_log();
+
+            let schema_store = SchemaStore::new();
+            let options = FormatOptions {
+                rules: Some(FormatRules {
+                    line_ending: Some(LineEnding::Auto),
+                    ..Default::default()
+                }),
+            };
+            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let formatter = Formatter::new(
+                TomlVersion::default(),
+                &options,
+                Some(itertools::Either::Right(source_path.as_path())),
+                &schema_store,
+            );
+
+            let source = "key = \"value\"\r\n";
+            let formatted = formatter.format(source).await.unwrap();
+            assert!(
+                formatted.contains("\r\n"),
+                "Auto mode should preserve CRLF line endings from source"
+            );
+            assert_eq!(formatted, "key = \"value\"\r\n");
+        }
+
+        #[tokio::test]
+        async fn test_line_ending_auto_with_lf_only_source() {
+            use tombi_config::{FormatOptions, TomlVersion, format::FormatRules};
+            use tombi_schema_store::SchemaStore;
+
+            tombi_test_lib::init_log();
+
+            let schema_store = SchemaStore::new();
+            let options = FormatOptions {
+                rules: Some(FormatRules {
+                    line_ending: Some(LineEnding::Auto),
+                    ..Default::default()
+                }),
+            };
+            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let formatter = Formatter::new(
+                TomlVersion::default(),
+                &options,
+                Some(itertools::Either::Right(source_path.as_path())),
+                &schema_store,
+            );
+
+            let source = "key = \"value\"\n";
+            let formatted = formatter.format(source).await.unwrap();
+            assert!(
+                !formatted.contains("\r\n"),
+                "Auto mode should use LF when source has LF line endings"
+            );
+            assert_eq!(formatted, "key = \"value\"\n");
+        }
     }
 
     mod line_width {

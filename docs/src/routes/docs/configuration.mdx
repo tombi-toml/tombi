@@ -47,7 +47,7 @@ inline-table-brace-space-width = 1
 inline-table-comma-space-width = 1
 key-value-equals-sign-alignment = false
 key-value-equals-sign-space-width = 1
-line-ending = "lf"
+line-ending = "auto"
 line-width = 80
 string-quote-style = "double"
 trailing-comment-alignment = false
@@ -421,9 +421,10 @@ key = "value"
 
 The type of line ending.
 
-- Type: `"lf" | "crlf"`
-- Default: `"lf"`
+- Type: `"auto" | "lf" | "crlf"`
+- Default: `"auto"`
 - Enum Values:
+  - `auto`: Automatically detect the line ending from the source file. If the source contains `\r\n`, `crlf` is used. Otherwise, `lf` is used.
   - `lf`: Line Feed only (`\n`), common on Linux and macOS as well as inside git repos.
   - `crlf`: Carriage Return Line Feed (`\r\n`), common on Windows.
 
