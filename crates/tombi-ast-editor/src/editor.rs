@@ -61,6 +61,9 @@ impl<'a> Editor<'a> {
 
         for change in changes {
             match change {
+                Change::AppendTop { new } => {
+                    new_root.syntax().splice_children(0..0, new);
+                }
                 Change::Append { base, new } => {
                     let index = base.index() + 1;
                     if let Some(node) = base.parent().as_ref().or_else(|| base.as_node()) {
