@@ -688,6 +688,38 @@ mod format_options {
             );
             assert_eq!(formatted, "key = \"value\"\n");
         }
+
+        #[tokio::test]
+        async fn test_line_ending_auto_with_no_newline_source() {
+            use tombi_config::{FormatOptions, TomlVersion, format::FormatRules};
+            use tombi_schema_store::SchemaStore;
+
+            tombi_test_lib::init_log();
+
+            let schema_store = SchemaStore::new();
+            let options = FormatOptions {
+                rules: Some(FormatRules {
+                    line_ending: Some(LineEnding::Auto),
+                    ..Default::default()
+                }),
+            };
+            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let formatter = Formatter::new(
+                TomlVersion::default(),
+                &options,
+                Some(itertools::Either::Right(source_path.as_path())),
+                &schema_store,
+            );
+
+            // Source contains no newline characters; Auto should default to LF.
+            let source = "key = \"value\"";
+            let formatted = formatter.format(source).await.unwrap();
+            assert!(
+                !formatted.contains("\r\n"),
+                "Auto mode should default to LF when source has no line endings"
+            );
+            assert_eq!(formatted, "key = \"value\"\n");
+        }
     }
 
     mod line_width {
