@@ -45,6 +45,7 @@ macro_rules! test_lex_token {
         #[test]
         fn $name() {
             let source = textwrap::dedent($source);
+            let source = source.trim();
             let mut cursor = Cursor::new(&source);
             let tokens = tokenize(&mut cursor).collect_vec();
             let start_position = tombi_text::Position::MIN;
@@ -257,16 +258,19 @@ test_lex_tokens! {
 test_lex_tokens! {
     #[test]
     fn array_of_table(
-        r#"
-        [[package]]
-        name = "toml"
-        version = "0.5.8"
+        textwrap::dedent(
+            r#"
+            [[package]]
+            name = "toml"
+            version = "0.5.8"
 
-        [[package]]
-        name = "json"
-        version = "1.2.4"
-        "#
+            [[package]]
+            name = "json"
+            version = "1.2.4"
+            "#
+        )
     ) -> [
+        Token(LINE_BREAK, "\n"),
         Token(BRACKET_START, "["),
         Token(BRACKET_START, "["),
         Token(BARE_KEY, "package"),
@@ -303,6 +307,7 @@ test_lex_tokens! {
         Token(EQUAL, "="),
         Token(WHITESPACE, " "),
         Token(BASIC_STRING, "\"1.2.4\""),
+        Token(LINE_BREAK, "\n"),
     ];
 }
 
