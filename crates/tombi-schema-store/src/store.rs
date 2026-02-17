@@ -31,6 +31,7 @@ pub struct SchemaStore {
         Arc<tokio::sync::RwLock<AHashMap<SchemaUri, Result<DocumentSchema, crate::Error>>>>,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
     options: crate::Options,
+    base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
 }
 
 impl Default for SchemaStore {
@@ -62,6 +63,7 @@ impl SchemaStore {
             document_schemas: Arc::new(RwLock::default()),
             schemas: Arc::new(RwLock::new(Vec::new())),
             options,
+            base_dir_path: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -104,7 +106,14 @@ impl SchemaStore {
         config: &tombi_config::Config,
         config_path: Option<&std::path::Path>,
     ) -> Result<(), crate::Error> {
-        let base_dir_path = config_path.and_then(|p| p.parent());
+        let base_dir_path_buf = config_path
+            .and_then(|p| p.parent())
+            .map(canonicalize_path_for_matching);
+        let base_dir_path = base_dir_path_buf.as_deref();
+
+        // Set the base directory for schema matching
+        *self.base_dir_path.write().await = base_dir_path_buf.clone();
+
         let schema_options = match &config.schema {
             Some(schema) => schema,
             None => &SchemaOverviewOptions::default(),
@@ -153,7 +162,7 @@ impl SchemaStore {
         Ok(())
     }
 
-    pub async fn load_config_schemas(
+    async fn load_config_schemas(
         &self,
         schemas: &[SchemaItem],
         base_dir_path: Option<&std::path::Path>,
@@ -609,6 +618,22 @@ impl SchemaStore {
         &self,
         source_path: &std::path::Path,
     ) -> Result<Option<SourceSchema>, crate::Error> {
+        let canonicalized_source_path = canonicalize_path_for_matching(source_path);
+
+        // Get the base directory for relative path conversion
+        let base_dir_path = self.base_dir_path.read().await;
+
+        // Determine the path to use for pattern matching without per-call filesystem I/O
+        let path_for_matching = base_dir_path
+            .as_deref()
+            .and_then(|base_dir_path| {
+                canonicalized_source_path
+                    .strip_prefix(base_dir_path)
+                    .ok()
+                    .map(|relative_source_path| relative_source_path.to_path_buf())
+            })
+            .unwrap_or(canonicalized_source_path);
+
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
             .iter()
@@ -621,7 +646,7 @@ impl SchemaStore {
                     };
                     glob::Pattern::new(&pattern)
                         .ok()
-                        .map(|glob_pat| glob_pat.matches_path(source_path))
+                        .map(|glob_pat| glob_pat.matches_path(&path_for_matching))
                         .unwrap_or(false)
                 })
             })
@@ -857,4 +882,17 @@ async fn load_json_schema_from_cache(
     }
 
     Ok(None)
+}
+
+fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| {
+        if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            std::env::current_dir()
+                .ok()
+                .map(|current_dir| current_dir.join(path))
+                .unwrap_or_else(|| path.to_path_buf())
+        }
+    })
 }

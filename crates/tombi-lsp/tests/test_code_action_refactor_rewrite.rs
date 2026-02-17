@@ -458,7 +458,7 @@ mod refactor_rewrite {
 
                 #[allow(unused)]
                 #[derive(Default)]
-                pub struct TestConfig {
+                pub struct TestArgs {
                     select: Option<String>,
                     toml_file_path: Option<std::path::PathBuf>,
                     backend_options: tombi_lsp::backend::Options,
@@ -466,7 +466,7 @@ mod refactor_rewrite {
 
                 #[allow(unused)]
                 pub trait ApplyTestArg {
-                    fn apply(self, config: &mut TestConfig);
+                    fn apply(self, args: &mut TestArgs);
                 }
 
                 /// Code action title to select in assertions.
@@ -474,29 +474,29 @@ mod refactor_rewrite {
                 pub struct Select<T>(pub T);
 
                 impl<T: ToString> ApplyTestArg for Select<T> {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.select = Some(self.0.to_string());
+                    fn apply(self, args: &mut TestArgs) {
+                        args.select = Some(self.0.to_string());
                     }
                 }
 
                 impl ApplyTestArg for tombi_lsp::backend::Options {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.backend_options = self;
+                    fn apply(self, args: &mut TestArgs) {
+                        args.backend_options = self;
                     }
                 }
 
                 impl ApplyTestArg for std::path::PathBuf {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.toml_file_path = Some(self);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.toml_file_path = Some(self);
                     }
                 }
 
                 #[allow(unused_mut)]
-                let mut config = TestConfig::default();
-                $(ApplyTestArg::apply($arg, &mut config);)*
+                let mut args = TestArgs::default();
+                $(ApplyTestArg::apply($arg, &mut args);)*
 
                 let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &config.backend_options)
+                    Backend::new(client, &args.backend_options)
                 });
                 let backend = service.inner();
                 let temp_file = tempfile::NamedTempFile::with_suffix_in(
@@ -517,7 +517,7 @@ mod refactor_rewrite {
                 let line_index =
                     tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
-                let toml_file_url = config
+                let toml_file_url = args
                     .toml_file_path
                     .as_ref()
                     .map(|path| Url::from_file_path(path).expect("failed to convert file path to URL"))
@@ -561,7 +561,7 @@ mod refactor_rewrite {
 
                 match (actions, $expected) {
                     (Some(actions), Some(expected)) => {
-                        let Some(selected) = config.select.as_ref() else {
+                        let Some(selected) = args.select.as_ref() else {
                             return Err("no code action selection provided via Select(..)".into());
                         };
                         let Some(action) = actions.into_iter().find_map(|a| match a {
@@ -635,14 +635,14 @@ mod refactor_rewrite {
                         Ok(())
                     }
                     (None, None) => {
-                        if config.select.is_some() {
+                        if args.select.is_some() {
                             return Err("Select(..) should not be provided when expecting no code actions (Ok(None))".into());
                         };
                         log::debug!("no code actions found, as expected");
                         Ok(())
                     }
                     (Some(actions), None) => {
-                        let Some(selected) = config.select.as_ref() else {
+                        let Some(selected) = args.select.as_ref() else {
                             return Err("no code action selection provided via Select(..)".into());
                         };
                         let None = actions.iter().find_map(|a| match a {

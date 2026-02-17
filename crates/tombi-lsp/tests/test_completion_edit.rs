@@ -721,7 +721,7 @@ mod completion_edit {
 
                 #[allow(unused)]
                 #[derive(Default)]
-                struct TestConfig {
+                struct TestArgs {
                     select: Option<String>,
                     schema_file_path: Option<std::path::PathBuf>,
                     backend_options: tombi_lsp::backend::Options,
@@ -729,15 +729,15 @@ mod completion_edit {
 
                 #[allow(unused)]
                 trait ApplyTestArg {
-                    fn apply(self, config: &mut TestConfig);
+                    fn apply(self, args: &mut TestArgs);
                 }
 
                 #[allow(unused)]
                 struct Select<T>(T);
 
                 impl<T: ToString> ApplyTestArg for Select<T> {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.select = Some(self.0.to_string());
+                    fn apply(self, args: &mut TestArgs) {
+                        args.select = Some(self.0.to_string());
                     }
                 }
 
@@ -745,28 +745,29 @@ mod completion_edit {
                 struct SchemaPath(std::path::PathBuf);
 
                 impl ApplyTestArg for SchemaPath {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.schema_file_path = Some(self.0);
+                    fn apply(self, args: &mut TestArgs) {
+                        args.schema_file_path = Some(self.0);
                     }
                 }
 
                 impl ApplyTestArg for tombi_lsp::backend::Options {
-                    fn apply(self, config: &mut TestConfig) {
-                        config.backend_options = self;
+                    fn apply(self, args: &mut TestArgs) {
+                        args.backend_options = self;
                     }
                 }
 
                 #[allow(unused_mut)]
-                let mut config = TestConfig::default();
-                $(ApplyTestArg::apply($arg, &mut config);)*
+                let mut args = TestArgs::default();
+                $(ApplyTestArg::apply($arg, &mut args);)*
 
                 let (service, _) = LspService::new(|client| {
-                    Backend::new(client, &config.backend_options)
+                    Backend::new(client, &args.backend_options)
                 });
 
                 let backend = service.inner();
+                let mut schema_items = Vec::new();
 
-                if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+                if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                     let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                         .expect(
                             format!(
@@ -775,19 +776,11 @@ mod completion_edit {
                             )
                             .as_str(),
                         );
-                    backend
-                        .config_manager
-                        .load_config_schemas(
-                            &[
-                                tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                                    toml_version: None,
-                                    path: schema_uri.to_string(),
-                                    include: vec!["*.toml".to_string()],
-                                }),
-                            ],
-                            None
-                        )
-                        .await;
+                    schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                        toml_version: None,
+                        path: schema_uri.to_string(),
+                        include: vec!["*.toml".to_string()],
+                    }));
                 }
 
                 let Ok(temp_file) = tempfile::NamedTempFile::with_suffix_in(
@@ -818,6 +811,34 @@ mod completion_edit {
                 let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
                     return Err("failed to convert temporary file path to URL".into());
                 };
+
+                if !schema_items.is_empty() {
+                    let config_schema_store = backend
+                        .config_manager
+                        .config_schema_store_for_file(temp_file.path())
+                        .await;
+
+                    let mut test_config = config_schema_store.config;
+                    let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+                    existing_schemas.extend(schema_items);
+                    test_config.schemas = Some(existing_schemas);
+
+                    if let Some(config_path) = config_schema_store.config_path {
+                        backend
+                            .config_manager
+                            .update_config_with_path(test_config, &config_path)
+                            .await
+                            .map_err(|e| {
+                                format!(
+                                    "failed to update config {}: {}",
+                                    config_path.display(),
+                                    e
+                                )
+                            })?;
+                    } else {
+                        backend.config_manager.update_editor_config(test_config).await;
+                    }
+                }
 
                 handle_did_open(
                     backend,
@@ -855,7 +876,7 @@ mod completion_edit {
                     return Err("failed to handle completion".into());
                 };
 
-                let Some(selected) = config.select.as_ref() else {
+                let Some(selected) = args.select.as_ref() else {
                     return Err("no completion item selection provided via Select(..)".into());
                 };
 

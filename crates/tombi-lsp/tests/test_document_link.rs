@@ -495,7 +495,7 @@ macro_rules! test_document_link {
 
             #[allow(unused)]
             #[derive(Default)]
-            struct TestConfig {
+            struct TestArgs {
                 source_file_path: Option<std::path::PathBuf>,
                 schema_file_path: Option<std::path::PathBuf>,
                 subschemas: Vec<SubSchemaPath>,
@@ -504,15 +504,15 @@ macro_rules! test_document_link {
 
             #[allow(unused)]
             trait ApplyTestArg {
-                fn apply(self, config: &mut TestConfig);
+                fn apply(self, args: &mut TestArgs);
             }
 
             #[allow(unused)]
             struct SourcePath(std::path::PathBuf);
 
             impl ApplyTestArg for SourcePath {
-                fn apply(self, config: &mut TestConfig) {
-                    config.source_file_path = Some(self.0);
+                fn apply(self, args: &mut TestArgs) {
+                    args.source_file_path = Some(self.0);
                 }
             }
 
@@ -520,8 +520,8 @@ macro_rules! test_document_link {
             struct SchemaPath(std::path::PathBuf);
 
             impl ApplyTestArg for SchemaPath {
-                fn apply(self, config: &mut TestConfig) {
-                    config.schema_file_path = Some(self.0);
+                fn apply(self, args: &mut TestArgs) {
+                    args.schema_file_path = Some(self.0);
                 }
             }
 
@@ -532,28 +532,29 @@ macro_rules! test_document_link {
             }
 
             impl ApplyTestArg for SubSchemaPath {
-                fn apply(self, config: &mut TestConfig) {
-                    config.subschemas.push(self);
+                fn apply(self, args: &mut TestArgs) {
+                    args.subschemas.push(self);
                 }
             }
 
             impl ApplyTestArg for tombi_lsp::backend::Options {
-                fn apply(self, config: &mut TestConfig) {
-                    config.backend_options = self;
+                fn apply(self, args: &mut TestArgs) {
+                    args.backend_options = self;
                 }
             }
 
             #[allow(unused_mut)]
-            let mut config = TestConfig::default();
-            $(ApplyTestArg::apply($arg, &mut config);)*
+            let mut args = TestArgs::default();
+            $(ApplyTestArg::apply($arg, &mut args);)*
 
             let (service, _) = LspService::new(|client| {
-                Backend::new(client, &config.backend_options)
+                Backend::new(client, &args.backend_options)
             });
 
             let backend = service.inner();
+            let mut schema_items = Vec::new();
 
-            if let Some(schema_file_path) = config.schema_file_path.as_ref() {
+            if let Some(schema_file_path) = args.schema_file_path.as_ref() {
                 let schema_uri = tombi_schema_store::SchemaUri::from_file_path(schema_file_path)
                     .expect(
                         format!(
@@ -563,20 +564,14 @@ macro_rules! test_document_link {
                         .as_str(),
                     );
 
-                backend
-                    .config_manager
-                    .load_config_schemas(
-                        &[tombi_config::SchemaItem::Root(tombi_config::RootSchema {
-                            toml_version: None,
-                            path: schema_uri.to_string(),
-                            include: vec!["*.toml".to_string()],
-                        })],
-                        None,
-                    )
-                    .await;
+                schema_items.push(tombi_config::SchemaItem::Root(tombi_config::RootSchema {
+                    toml_version: None,
+                    path: schema_uri.to_string(),
+                    include: vec!["*.toml".to_string()],
+                }));
             }
 
-            for subschema in &config.subschemas {
+            for subschema in &args.subschemas {
                 let subschema_uri = tombi_schema_store::SchemaUri::from_file_path(&subschema.path)
                     .expect(
                         format!(
@@ -586,17 +581,11 @@ macro_rules! test_document_link {
                         .as_str(),
                     );
 
-                backend
-                    .config_manager
-                    .load_config_schemas(
-                        &[tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
-                            path: subschema_uri.to_string(),
-                            include: vec!["*.toml".to_string()],
-                            root: subschema.root.clone(),
-                        })],
-                        None,
-                    )
-                    .await;
+                schema_items.push(tombi_config::SchemaItem::Sub(tombi_config::SubSchema {
+                    path: subschema_uri.to_string(),
+                    include: vec!["*.toml".to_string()],
+                    root: subschema.root.clone(),
+                }));
             }
 
             let _temp_file = tempfile::NamedTempFile::with_suffix_in(
@@ -605,11 +594,41 @@ macro_rules! test_document_link {
             )
             .expect("failed to create temporary file for test document path");
 
-            let toml_file_url = match config.source_file_path.as_ref() {
-                Some(path) => Url::from_file_path(path)
-                    .expect("failed to convert source file path to URL"),
+            let source_path = match args.source_file_path.as_ref() {
+                Some(path) => path,
                 None => return Err("SourcePath(..) is required".into()),
             };
+
+            if !schema_items.is_empty() {
+                let config_schema_store = backend
+                    .config_manager
+                    .config_schema_store_for_file(source_path)
+                    .await;
+
+                let mut test_config = config_schema_store.config;
+                let mut existing_schemas = test_config.schemas.take().unwrap_or_default();
+                existing_schemas.extend(schema_items);
+                test_config.schemas = Some(existing_schemas);
+
+                if let Some(config_path) = config_schema_store.config_path {
+                    backend
+                        .config_manager
+                        .update_config_with_path(test_config, &config_path)
+                        .await
+                        .map_err(|e| {
+                            format!(
+                                "failed to update config {}: {}",
+                                config_path.display(),
+                                e
+                            )
+                        })?;
+                } else {
+                    backend.config_manager.update_editor_config(test_config).await;
+                }
+            }
+
+            let toml_file_url = Url::from_file_path(source_path)
+                .expect("failed to convert source file path to URL");
 
             let toml_text = textwrap::dedent($source).trim().to_string();
 
