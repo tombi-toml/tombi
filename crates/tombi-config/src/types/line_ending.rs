@@ -17,10 +17,10 @@ impl LineEnding {
     pub fn resolve(self, source: &str) -> &'static str {
         match self {
             LineEnding::Auto => {
-                if source.contains("\r\n") {
-                    "\r\n"
-                } else {
-                    "\n"
+                // Check the first newline to determine the line ending style.
+                match source.find('\n') {
+                    Some(pos) if pos > 0 && source.as_bytes()[pos - 1] == b'\r' => "\r\n",
+                    _ => "\n",
                 }
             }
             LineEnding::Lf => "\n",
