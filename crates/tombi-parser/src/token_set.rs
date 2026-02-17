@@ -5,7 +5,6 @@ pub(crate) const TS_COMMEMT_OR_LINE_END: TokenSet = TokenSet::new(&[COMMENT, LIN
 pub(crate) const TS_NEXT_SECTION: TokenSet = TokenSet::new(&[T!['['], T!("[["), EOF]);
 pub(crate) const TS_DANGLING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);
 pub(crate) const TS_LEADING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);
-pub(crate) const TS_TAILING_COMMENT_KINDS: TokenSet = TokenSet::new(&[COMMENT]);
 pub(crate) const TS_KEY_FIRST: TokenSet = TokenSet::new(&[
     // name = "Tom"
     BARE_KEY,

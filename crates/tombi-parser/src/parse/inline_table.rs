@@ -22,6 +22,8 @@ impl Parse for tombi_ast::InlineTable {
 
         p.eat(T!['{']);
 
+        trailing_comment(p);
+
         begin_dangling_comments(p);
 
         let mut key_value_lines = 0;
