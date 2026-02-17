@@ -164,7 +164,7 @@ fn create_member_document_links(
                     _ => None,
                 })
                 .collect(),
-            _ => Vec::new(),
+            _ => Vec::with_capacity(0),
         };
 
     for member in members.iter() {
