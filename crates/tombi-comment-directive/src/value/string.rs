@@ -43,7 +43,7 @@ pub struct StringLintRules {
     ///
     /// Check if the string is longer than the max length.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(string) <= max
     /// ```
     ///
@@ -53,7 +53,7 @@ pub struct StringLintRules {
     ///
     /// Check if the string is shorter than the min length.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(string) >= min
     /// ```
     ///
@@ -63,7 +63,7 @@ pub struct StringLintRules {
     ///
     /// Check if the string matches the format.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// matches(string, format)
     /// ```
     ///
@@ -73,7 +73,7 @@ pub struct StringLintRules {
     ///
     /// Check if the string matches the pattern.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// matches(string, pattern)
     /// ```
     ///

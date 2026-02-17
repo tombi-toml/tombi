@@ -157,7 +157,7 @@ pub struct TableLintRules {
     ///
     /// Check if the table has more than the maximum number of keys.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(table) <= maximum
     /// ```
     ///
@@ -167,7 +167,7 @@ pub struct TableLintRules {
     ///
     /// Check if the table has less than the minimum number of keys.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(table) >= minimum
     /// ```
     ///

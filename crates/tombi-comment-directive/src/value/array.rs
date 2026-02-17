@@ -50,7 +50,7 @@ pub struct ArrayLintRules {
     ///
     /// Check if the array has more than the maximum number of values.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(array) <= maximum
     /// ```
     ///
@@ -60,7 +60,7 @@ pub struct ArrayLintRules {
     ///
     /// Check if the array has less than the minimum number of values.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(array) >= minimum
     /// ```
     ///
@@ -70,7 +70,7 @@ pub struct ArrayLintRules {
     ///
     /// Check if the array has duplicate values.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// length(array) == length(unique(array))
     /// ```
     ///
