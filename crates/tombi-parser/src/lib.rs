@@ -40,7 +40,7 @@ pub fn parse_document_header_comments(source: &str) -> Parsed<SyntaxNode> {
 
     errors.extend(errs);
 
-    Parsed::new(green_tree, errors)
+    Parsed::new(green_tree, errors, lexed.line_ending)
 }
 
 #[allow(private_bounds)]
@@ -63,7 +63,7 @@ pub fn parse_as<P: Parse>(
 
     errors.extend(errs);
 
-    Parsed::new(green_tree, errors)
+    Parsed::new(green_tree, errors, lexed.line_ending)
 }
 
 pub fn build_green_tree(

@@ -1,4 +1,5 @@
 use tombi_syntax::SyntaxKind::*;
+use tombi_text::LineEnding;
 
 #[allow(non_camel_case_types)]
 type bits = u64;
@@ -8,6 +9,7 @@ pub struct Lexed {
     pub tokens: Vec<crate::Token>,
     pub joints: Vec<bits>,
     pub errors: Vec<crate::Error>,
+    pub line_ending: LineEnding,
 }
 
 impl Lexed {

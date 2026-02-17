@@ -16,11 +16,14 @@
 /// but makes it much easier to implement features that work with the tree.
 ///
 mod features;
+mod line_ending;
 mod offset;
 mod position;
 mod range;
 mod relative_position;
 mod span;
+
+pub use crate::line_ending::LineEnding;
 
 type RawTextSize = u32;
 pub type RawOffset = RawTextSize;

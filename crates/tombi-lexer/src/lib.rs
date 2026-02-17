@@ -3,12 +3,13 @@ mod error;
 mod lexed;
 mod token;
 
-use cursor::Cursor;
+pub use cursor::Cursor;
 use error::ErrorKind::*;
 pub use error::{Error, ErrorKind};
 pub use lexed::Lexed;
 pub use token::Token;
 use tombi_syntax::{SyntaxKind, T};
+use tombi_text::LineEnding;
 
 macro_rules! regex {
     ($(static $var:ident = $re:expr);+;) => {
@@ -39,7 +40,9 @@ pub fn lex(source: &str) -> Lexed {
     let mut last_offset = tombi_text::Offset::default();
     let mut last_position = tombi_text::Position::default();
 
-    for result in tokenize(source) {
+    let mut cursor = Cursor::new(source);
+
+    for result in tokenize(&mut cursor) {
         match result {
             Ok(token) if token.kind().is_trivia() => was_joint = false,
             _ => {
@@ -54,6 +57,7 @@ pub fn lex(source: &str) -> Lexed {
         last_position = last_range.end;
     }
 
+    lexed.line_ending = cursor.line_ending;
     lexed.tokens.push(crate::Token::new(
         SyntaxKind::EOF,
         (
@@ -73,8 +77,9 @@ pub fn lex_document_header_comments(source: &str) -> Lexed {
     let mut was_joint = false;
     let mut last_offset = tombi_text::Offset::default();
     let mut last_position = tombi_text::Position::default();
+    let mut cursor = Cursor::new(source);
 
-    for result in tokenize(source) {
+    for result in tokenize(&mut cursor) {
         match result {
             Ok(token) => match token.kind() {
                 SyntaxKind::COMMENT => {
@@ -97,6 +102,7 @@ pub fn lex_document_header_comments(source: &str) -> Lexed {
         }
     }
 
+    lexed.line_ending = cursor.line_ending;
     lexed.tokens.push(crate::Token::new(
         SyntaxKind::EOF,
         (
@@ -111,8 +117,7 @@ pub fn lex_document_header_comments(source: &str) -> Lexed {
     lexed
 }
 
-pub fn tokenize(source: &str) -> impl Iterator<Item = Result<Token, crate::Error>> + '_ {
-    let mut cursor = Cursor::new(source);
+pub fn tokenize(cursor: &mut Cursor) -> impl Iterator<Item = Result<Token, crate::Error>> {
     std::iter::from_fn(move || match cursor.advance_token() {
         Ok(token) => match token.kind() {
             kind if kind != SyntaxKind::EOF => Some(Ok(token)),
@@ -242,6 +247,7 @@ impl Cursor<'_> {
         if c == '\r' {
             if self.peek(1) == '\n' {
                 self.eat_n(1);
+                self.line_ending = LineEnding::Crlf;
             } else {
                 return Err(crate::Error::new(InvalidLineBreak, self.pop_span_range()));
             }

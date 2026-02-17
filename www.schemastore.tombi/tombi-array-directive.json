@@ -219,7 +219,7 @@
         },
         "array-max-values": {
           "title": "Max values",
-          "description": "Check if the array has more than the maximum number of values.\n\n```rust\nlength(array) <= maximum\n```",
+          "description": "Check if the array has more than the maximum number of values.\n\n```rust,ignore\nlength(array) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -231,7 +231,7 @@
         },
         "array-min-values": {
           "title": "Min values",
-          "description": "Check if the array has less than the minimum number of values.\n\n```rust\nlength(array) >= minimum\n```",
+          "description": "Check if the array has less than the minimum number of values.\n\n```rust,ignore\nlength(array) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -243,7 +243,7 @@
         },
         "array-unique-values": {
           "title": "Unique values",
-          "description": "Check if the array has duplicate values.\n\n```rust\nlength(array) == length(unique(array))\n```",
+          "description": "Check if the array has duplicate values.\n\n```rust,ignore\nlength(array) == length(unique(array))\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"

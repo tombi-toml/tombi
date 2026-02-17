@@ -7,14 +7,20 @@ use tombi_syntax::SyntaxNode;
 pub struct Parsed<T> {
     green_tree: tombi_rg_tree::GreenNode,
     pub errors: Vec<crate::Error>,
+    pub line_ending: tombi_text::LineEnding,
     _ty: PhantomData<fn() -> T>,
 }
 
 impl<T> Parsed<T> {
-    pub fn new(green_tree: tombi_rg_tree::GreenNode, errors: Vec<crate::Error>) -> Parsed<T> {
+    pub fn new(
+        green_tree: tombi_rg_tree::GreenNode,
+        errors: Vec<crate::Error>,
+        line_ending: tombi_text::LineEnding,
+    ) -> Parsed<T> {
         Parsed {
             green_tree,
             errors,
+            line_ending,
             _ty: PhantomData,
         }
     }
@@ -37,6 +43,7 @@ impl<T> Clone for Parsed<T> {
         Parsed {
             green_tree: self.green_tree.clone(),
             errors: self.errors.clone(),
+            line_ending: self.line_ending,
             _ty: PhantomData,
         }
     }
@@ -48,6 +55,7 @@ impl<T: AstNode> Parsed<T> {
         Parsed {
             green_tree: self.green_tree,
             errors: self.errors,
+            line_ending: self.line_ending,
             _ty: PhantomData,
         }
     }
@@ -69,6 +77,7 @@ impl Parsed<SyntaxNode> {
             Some(Parsed {
                 green_tree: self.green_tree,
                 errors: self.errors,
+                line_ending: self.line_ending,
                 _ty: PhantomData,
             })
         } else {

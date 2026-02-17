@@ -267,7 +267,7 @@
         },
         "table-max-keys": {
           "title": "Max keys",
-          "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
+          "description": "Check if the table has more than the maximum number of keys.\n\n```rust,ignore\nlength(table) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -279,7 +279,7 @@
         },
         "table-min-keys": {
           "title": "Min keys",
-          "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
+          "description": "Check if the table has less than the minimum number of keys.\n\n```rust,ignore\nlength(table) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"

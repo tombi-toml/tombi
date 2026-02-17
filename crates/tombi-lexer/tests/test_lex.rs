@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_lexer::{ErrorKind::*, Token, tokenize};
+use tombi_lexer::{Cursor, ErrorKind::*, Token, tokenize};
 use tombi_syntax::SyntaxKind::*;
 
 macro_rules! test_lex_tokens {
@@ -9,8 +9,9 @@ macro_rules! test_lex_tokens {
         #[test]
         fn $name() {
             tombi_test_lib::init_log();
-
-            let tokens = tokenize($source).collect_vec();
+            let source = $source;
+            let mut cursor = Cursor::new(&source);
+            let tokens = tokenize(&mut cursor).collect_vec();
             let (expected, _) = [
                 $(
                     ($kind, $text),
@@ -44,10 +45,10 @@ macro_rules! test_lex_token {
         #[test]
         fn $name() {
             let source = textwrap::dedent($source);
-            let source = source.trim();
-            let tokens = tokenize(&source).collect_vec();
+            let mut cursor = Cursor::new(&source);
+            let tokens = tokenize(&mut cursor).collect_vec();
             let start_position = tombi_text::Position::MIN;
-            let end_position = start_position + tombi_text::RelativePosition::of(source);
+            let end_position = start_position + tombi_text::RelativePosition::of(&source);
 
             pretty_assertions::assert_eq!(
                 tokens,
@@ -70,10 +71,10 @@ macro_rules! test_lex_token {
         #[test]
         fn $name() {
             let source = textwrap::dedent($source);
-            let source = source.trim();
-            let tokens = tokenize(&source).collect_vec();
+            let mut cursor = Cursor::new(&source);
+            let tokens = tokenize(&mut cursor).collect_vec();
             let start_position = tombi_text::Position::MIN;
-            let end_position = start_position + tombi_text::RelativePosition::of(source);
+            let end_position = start_position + tombi_text::RelativePosition::of(&source);
 
             pretty_assertions::assert_eq!(
                 tokens,
@@ -212,8 +213,9 @@ test_lex_tokens! {
             name = "toml"
             version = "0.5.8"
             "#
-        ).trim()
+        )
     ) -> [
+            Token(LINE_BREAK, "\n"),
             Token(BRACKET_START, "["),
             Token(BARE_KEY, "package"),
             Token(BRACKET_END, "]"),
@@ -229,6 +231,7 @@ test_lex_tokens! {
             Token(EQUAL, "="),
             Token(WHITESPACE, " "),
             Token(BASIC_STRING, "\"0.5.8\""),
+            Token(LINE_BREAK, "\n"),
         ];
 }
 
@@ -254,17 +257,15 @@ test_lex_tokens! {
 test_lex_tokens! {
     #[test]
     fn array_of_table(
-        textwrap::dedent(
-            r#"
-            [[package]]
-            name = "toml"
-            version = "0.5.8"
+        r#"
+        [[package]]
+        name = "toml"
+        version = "0.5.8"
 
-            [[package]]
-            name = "json"
-            version = "1.2.4"
-            "#
-        ).trim()
+        [[package]]
+        name = "json"
+        version = "1.2.4"
+        "#
     ) -> [
         Token(BRACKET_START, "["),
         Token(BRACKET_START, "["),

@@ -19,6 +19,7 @@ tombi-diagnostic.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-syntax.workspace = true
+tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-validator.workspace = true
 unicode-segmentation.workspace = true

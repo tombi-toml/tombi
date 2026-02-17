@@ -104,13 +104,24 @@ macro_rules! test_format {
             let source = dedent($source).to_string();
             let mut expected = dedent($expected).trim().to_string();
             if !source.trim().is_empty() {
-                expected.push('\n');
+                let line_ending = match args.options.rules.as_ref().and_then(|rules| rules.line_ending).unwrap_or_default() {
+                    tombi_config::LineEnding::Auto => {
+                        if source.contains("\r\n") {
+                            "\r\n"
+                        } else {
+                            "\n"
+                        }
+                    },
+                    tombi_config::LineEnding::Lf => "\n",
+                    tombi_config::LineEnding::Crlf => "\r\n",
+                };
+                expected.push_str(line_ending);
             }
 
             let formatted = formatter.format(&source).await.unwrap();
             pretty_assertions::assert_eq!(
-                formatted,
-                expected,
+                formatted.bytes().collect::<Vec<_>>(),
+                expected.bytes().collect::<Vec<_>>(),
                 "Formatting should be equal to expected"
             );
         }

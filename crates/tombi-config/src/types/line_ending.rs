@@ -4,15 +4,7 @@
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum LineEnding {
     #[default]
+    Auto,
     Lf,
     Crlf,
-}
-
-impl From<LineEnding> for &'static str {
-    fn from(val: LineEnding) -> Self {
-        match val {
-            LineEnding::Lf => "\n",
-            LineEnding::Crlf => "\r\n",
-        }
-    }
 }

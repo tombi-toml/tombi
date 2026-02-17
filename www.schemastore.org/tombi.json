@@ -330,7 +330,7 @@
               "type": "null"
             }
           ],
-          "default": "lf"
+          "default": "auto"
         },
         "line-width": {
           "title": "The maximum line width",
@@ -448,6 +448,7 @@
     "LineEnding": {
       "type": "string",
       "enum": [
+        "auto",
         "lf",
         "crlf"
       ]
