@@ -607,6 +607,33 @@ mod format_options {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_line_ending_crlf_preserved(
+                "key = \"value\"\r\n",
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_line_ending_crlf_multiline_preserved(
+                "[package]\r\nname = \"toml\"\r\nversion = \"0.5.8\"\r\n",
+            ) -> Ok(source)
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_line_ending_crlf_explicit(
+                "key = \"value\"\n",
+                FormatOptions {
+                    rules: Some(FormatRules {
+                        line_ending: Some(LineEnding::Crlf),
+                        ..Default::default()
+                    }),
+                }
+            ) -> Ok("key = \"value\"\r\n")
+        }
     }
 
     mod line_width {

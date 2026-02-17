@@ -330,7 +330,7 @@
               "type": "null"
             }
           ],
-          "default": "lf"
+          "default": "auto"
         },
         "line-width": {
           "title": "The maximum line width",
@@ -446,10 +446,19 @@
       "maximum": 255
     },
     "LineEnding": {
-      "type": "string",
-      "enum": [
-        "lf",
-        "crlf"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "lf",
+            "crlf"
+          ]
+        },
+        {
+          "description": "Automatically detects the line ending style from the source file.",
+          "type": "string",
+          "const": "auto"
+        }
       ]
     },
     "LineWidth": {

@@ -120,7 +120,7 @@
         },
         "table-max-keys": {
           "title": "Max keys",
-          "description": "Check if the table has more than the maximum number of keys.\n\n```rust\nlength(table) <= maximum\n```",
+          "description": "Check if the table has more than the maximum number of keys.\n\n```rust,ignore\nlength(table) <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -132,7 +132,7 @@
         },
         "table-min-keys": {
           "title": "Min keys",
-          "description": "Check if the table has less than the minimum number of keys.\n\n```rust\nlength(table) >= minimum\n```",
+          "description": "Check if the table has less than the minimum number of keys.\n\n```rust,ignore\nlength(table) >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -253,7 +253,7 @@
         },
         "integer-maximum": {
           "title": "Maximum integer",
-          "description": "Check if the integer is less than or equal to the maximum.\n\n```rust\ninteger <= maximum\n```",
+          "description": "Check if the integer is less than or equal to the maximum.\n\n```rust,ignore\ninteger <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -265,7 +265,7 @@
         },
         "integer-minimum": {
           "title": "Minimum integer",
-          "description": "Check if the integer is greater than or equal to the minimum.\n\n```rust\ninteger >= minimum\n```",
+          "description": "Check if the integer is greater than or equal to the minimum.\n\n```rust,ignore\ninteger >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -277,7 +277,7 @@
         },
         "integer-exclusive-maximum": {
           "title": "Exclusive maximum integer",
-          "description": "Check if the integer is less than the maximum.\n\n```rust\ninteger < maximum\n```",
+          "description": "Check if the integer is less than the maximum.\n\n```rust,ignore\ninteger < maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -289,7 +289,7 @@
         },
         "integer-exclusive-minimum": {
           "title": "Exclusive minimum integer",
-          "description": "Check if the integer is greater than the minimum.\n\n```rust\ninteger > minimum\n```",
+          "description": "Check if the integer is greater than the minimum.\n\n```rust,ignore\ninteger > minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -301,7 +301,7 @@
         },
         "integer-multiple-of": {
           "title": "Multiple of integer",
-          "description": "Check if the integer is a multiple of the value.\n\n```rust\ninteger % multiple_of == 0\n```",
+          "description": "Check if the integer is a multiple of the value.\n\n```rust,ignore\ninteger % multiple_of == 0\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"

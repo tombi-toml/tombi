@@ -20,6 +20,7 @@ pub struct Formatter<'a> {
     skip_comment: bool,
     single_line_mode: bool,
     definitions: crate::FormatDefinitions,
+    line_ending: &'static str,
     source_uri_or_path: Option<Either<&'a tombi_uri::Uri, &'a std::path::Path>>,
     schema_store: &'a tombi_schema_store::SchemaStore,
     buf: String,
@@ -40,6 +41,7 @@ impl<'a> Formatter<'a> {
             skip_comment: false,
             single_line_mode: false,
             definitions: crate::FormatDefinitions::new(options),
+            line_ending: tombi_text::LineEnding::default().into(),
             source_uri_or_path,
             schema_store,
             buf: String::new(),
@@ -100,7 +102,14 @@ impl<'a> Formatter<'a> {
                     .unwrap_or(self.toml_version)
             });
 
-        let (root, errors) = tombi_parser::parse(source, self.toml_version).into_root_and_errors();
+        let parsed = tombi_parser::parse(source, self.toml_version);
+        self.line_ending = match self.definitions.line_ending {
+            tombi_config::LineEnding::Auto => parsed.line_ending.into(),
+            tombi_config::LineEnding::Lf => "\n",
+            tombi_config::LineEnding::Crlf => "\r\n",
+        };
+
+        let (root, errors) = parsed.into_root_and_errors();
         let errors = errors
             .into_iter()
             .filter(|error| {
@@ -228,7 +237,7 @@ impl<'a> Formatter<'a> {
 
     #[inline]
     pub const fn line_ending(&self) -> &'static str {
-        self.definitions.line_ending
+        self.line_ending
     }
 
     #[inline]

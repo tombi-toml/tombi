@@ -10,7 +10,7 @@ use tombi_config::{DateTimeDelimiter, FormatOptions, IndentStyle, StringQuoteSty
 #[derive(Debug, Default, Clone)]
 pub struct FormatDefinitions {
     pub line_width: u8,
-    pub line_ending: &'static str,
+    pub line_ending: tombi_config::LineEnding,
     pub indent_style: IndentStyle,
     pub indent_sub_tables: bool,
     pub indent_table_key_values: bool,
@@ -40,8 +40,7 @@ impl FormatDefinitions {
                 .rules
                 .as_ref()
                 .and_then(|rules| rules.line_ending)
-                .unwrap_or_default()
-                .into(),
+                .unwrap_or_default(),
             indent_style: options
                 .rules
                 .as_ref()

@@ -169,7 +169,7 @@
         },
         "string-max-length": {
           "title": "Integer Max length",
-          "description": "Check if the string is longer than the max length.\n\n```rust\nlength(string) <= max\n```",
+          "description": "Check if the string is longer than the max length.\n\n```rust,ignore\nlength(string) <= max\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -181,7 +181,7 @@
         },
         "string-min-length": {
           "title": "Min length",
-          "description": "Check if the string is shorter than the min length.\n\n```rust\nlength(string) >= min\n```",
+          "description": "Check if the string is shorter than the min length.\n\n```rust,ignore\nlength(string) >= min\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -193,7 +193,7 @@
         },
         "string-format": {
           "title": "String Format",
-          "description": "Check if the string matches the format.\n\n```rust\nmatches(string, format)\n```",
+          "description": "Check if the string matches the format.\n\n```rust,ignore\nmatches(string, format)\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -205,7 +205,7 @@
         },
         "string-pattern": {
           "title": "String Pattern",
-          "description": "Check if the string matches the pattern.\n\n```rust\nmatches(string, pattern)\n```",
+          "description": "Check if the string matches the pattern.\n\n```rust,ignore\nmatches(string, pattern)\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"

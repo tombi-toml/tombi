@@ -169,7 +169,7 @@
         },
         "float-maximum": {
           "title": "Maximum float",
-          "description": "Check if the float is less than or equal to the maximum.\n\n```rust\nfloat <= maximum\n```",
+          "description": "Check if the float is less than or equal to the maximum.\n\n```rust,ignore\nfloat <= maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -181,7 +181,7 @@
         },
         "float-minimum": {
           "title": "Minimum float",
-          "description": "Check if the float is greater than or equal to the minimum.\n\n```rust\nfloat >= minimum\n```",
+          "description": "Check if the float is greater than or equal to the minimum.\n\n```rust,ignore\nfloat >= minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -193,7 +193,7 @@
         },
         "float-exclusive-maximum": {
           "title": "Exclusive maximum float",
-          "description": "Check if the float is less than the maximum.\n\n```rust\nfloat < maximum\n```",
+          "description": "Check if the float is less than the maximum.\n\n```rust,ignore\nfloat < maximum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -205,7 +205,7 @@
         },
         "float-exclusive-minimum": {
           "title": "Exclusive minimum float",
-          "description": "Check if the float is greater than the minimum.\n\n```rust\nfloat > minimum\n```",
+          "description": "Check if the float is greater than the minimum.\n\n```rust,ignore\nfloat > minimum\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"
@@ -217,7 +217,7 @@
         },
         "float-multiple-of": {
           "title": "Multiple of float",
-          "description": "Check if the float is a multiple of the value.\n\n```rust\nfloat % multiple_of == 0\n```",
+          "description": "Check if the float is a multiple of the value.\n\n```rust,ignore\nfloat % multiple_of == 0\n```",
           "anyOf": [
             {
               "$ref": "#/definitions/ErrorRuleOptions"

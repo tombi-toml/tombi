@@ -1,3 +1,5 @@
+use tombi_text::LineEnding;
+
 pub struct Cursor<'a> {
     /// Iterator over chars. Slightly faster than a &str.
     chars: std::str::Chars<'a>,
@@ -6,6 +8,7 @@ pub struct Cursor<'a> {
     current_position: tombi_text::Position,
     token_start_offset: tombi_text::Offset,
     token_start_position: tombi_text::Position,
+    pub(crate) line_ending: LineEnding,
 }
 
 pub(crate) const EOF_CHAR: char = '\0';
@@ -22,6 +25,7 @@ impl<'a> Cursor<'a> {
             current_position: Default::default(),
             token_start_offset: Default::default(),
             token_start_position: Default::default(),
+            line_ending: LineEnding::default(),
         }
     }
 
