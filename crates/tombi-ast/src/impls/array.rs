@@ -6,6 +6,11 @@ use crate::{AstNode, TombiValueCommentDirective, support};
 
 impl crate::Array {
     #[inline]
+    pub fn bracket_start_trailing_comment(&self) -> Option<crate::TrailingComment> {
+        support::node::trailing_comment(self.syntax().children_with_tokens(), T!('['))
+    }
+
+    #[inline]
     pub fn inner_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
         support::node::begin_dangling_comments(
             self.syntax()
