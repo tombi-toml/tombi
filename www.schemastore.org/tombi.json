@@ -446,11 +446,19 @@
       "maximum": 255
     },
     "LineEnding": {
-      "type": "string",
-      "enum": [
-        "auto",
-        "lf",
-        "crlf"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "lf",
+            "crlf"
+          ]
+        },
+        {
+          "description": "Automatically detects the line ending style from the source file.",
+          "type": "string",
+          "const": "auto"
+        }
       ]
     },
     "LineWidth": {
