@@ -22,6 +22,8 @@ impl Parse for tombi_ast::InlineTable {
 
         p.eat(T!['{']);
 
+        trailing_comment(p);
+
         begin_dangling_comments(p);
 
         let mut key_value_lines = 0;
@@ -188,6 +190,18 @@ mod test {
                 key1 = 1,
                 key2 = 2,
             }
+            "#,
+            TomlVersion::V1_1_0
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_multi_line_in_v1_1_0_with_trailing_comment(r#"
+            key = { # trailing comment
+                key1 = 1, # trailing comment
+                key2 = 2,
+            } # trailing comment
             "#,
             TomlVersion::V1_1_0
         ) -> Ok(_)

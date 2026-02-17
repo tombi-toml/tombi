@@ -43,7 +43,7 @@ pub struct IntegerLintRules {
     ///
     /// Check if the integer is less than or equal to the maximum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// integer <= maximum
     /// ```
     ///
@@ -53,7 +53,7 @@ pub struct IntegerLintRules {
     ///
     /// Check if the integer is greater than or equal to the minimum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// integer >= minimum
     /// ```
     ///
@@ -63,7 +63,7 @@ pub struct IntegerLintRules {
     ///
     /// Check if the integer is less than the maximum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// integer < maximum
     /// ```
     ///
@@ -73,7 +73,7 @@ pub struct IntegerLintRules {
     ///
     /// Check if the integer is greater than the minimum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// integer > minimum
     /// ```
     ///
@@ -83,7 +83,7 @@ pub struct IntegerLintRules {
     ///
     /// Check if the integer is a multiple of the value.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// integer % multiple_of == 0
     /// ```
     ///

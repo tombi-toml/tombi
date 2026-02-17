@@ -42,7 +42,7 @@ pub struct FloatLintRules {
     ///
     /// Check if the float is less than or equal to the maximum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// float <= maximum
     /// ```
     ///
@@ -52,7 +52,7 @@ pub struct FloatLintRules {
     ///
     /// Check if the float is greater than or equal to the minimum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// float >= minimum
     /// ```
     ///
@@ -62,7 +62,7 @@ pub struct FloatLintRules {
     ///
     /// Check if the float is less than the maximum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// float < maximum
     /// ```
     ///
@@ -72,7 +72,7 @@ pub struct FloatLintRules {
     ///
     /// Check if the float is greater than the minimum.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// float > minimum
     /// ```
     ///
@@ -82,7 +82,7 @@ pub struct FloatLintRules {
     ///
     /// Check if the float is a multiple of the value.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// float % multiple_of == 0
     /// ```
     ///

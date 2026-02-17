@@ -41,6 +41,7 @@ pub const NODES: &[&str] = &[
     "TABLE",
     "INLINE_TABLE",
     "ARRAY_OF_TABLE",
+    "DANGLING_COMMENTS",
 ];
 
 #[derive(Debug)]

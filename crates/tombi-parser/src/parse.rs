@@ -27,9 +27,7 @@ pub fn invalid_line(p: &mut Parser<'_>, kind: crate::ErrorKind) {
 mod support {
     use crate::{
         SyntaxKind::*,
-        token_set::{
-            TS_DANGLING_COMMENTS_KINDS, TS_LEADING_COMMENTS_KINDS, TS_TAILING_COMMENT_KINDS,
-        },
+        token_set::{TS_DANGLING_COMMENTS_KINDS, TS_LEADING_COMMENTS_KINDS},
     };
 
     pub fn begin_dangling_comments(p: &mut crate::parser::Parser<'_>) {
@@ -103,6 +101,6 @@ mod support {
 
     #[inline]
     pub fn trailing_comment(p: &mut crate::parser::Parser<'_>) {
-        while p.eat_ts(TS_TAILING_COMMENT_KINDS) {}
+        while p.eat(COMMENT) {}
     }
 }

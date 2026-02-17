@@ -627,7 +627,7 @@ async fn fetch_local_crate_features(
                             }
                         })
                         .collect(),
-                    _ => Vec::new(),
+                    _ => Vec::with_capacity(0),
                 };
                 (feature_name.value.clone(), deps)
             })

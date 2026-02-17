@@ -19,6 +19,8 @@ impl Parse for tombi_ast::Array {
 
         p.eat(T!['[']);
 
+        trailing_comment(p);
+
         begin_dangling_comments(p);
 
         loop {
