@@ -120,8 +120,8 @@ macro_rules! test_format {
 
             let formatted = formatter.format(&source).await.unwrap();
             pretty_assertions::assert_eq!(
-                formatted.bytes().collect::<Vec<_>>(),
-                expected.bytes().collect::<Vec<_>>(),
+                formatted,
+                expected,
                 "Formatting should be equal to expected"
             );
         }
