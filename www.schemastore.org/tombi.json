@@ -321,7 +321,7 @@
         },
         "line-ending": {
           "title": "The type of line ending",
-          "description": "In TOML, the line ending must be either `LF` or `CRLF`.\n\n- `auto`: Automatically detect the line ending from the source file. If the source contains `\\r\\n`, `crlf` is used. Otherwise, `lf` is used.\n- `lf`: Line Feed only (`\\n`), common on Linux and macOS as well as inside git repos.\n- `crlf`: Carriage Return Line Feed (`\\r\\n`), common on Windows.",
+          "description": "In TOML, the line ending must be either `LF` or `CRLF`.\n\n- `auto`: The newline style is detected automatically on a file-by-file basis. Files with mixed line endings will be converted to the first detected line ending. Defaults to `\\n` for files that contain no line endings.\n- `lf`: Line Feed only (`\\n`), common on Linux and macOS as well as inside git repos.\n- `crlf`: Carriage Return Line Feed (`\\r\\n`), common on Windows.",
           "anyOf": [
             {
               "$ref": "#/definitions/LineEnding"

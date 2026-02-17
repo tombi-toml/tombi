@@ -199,7 +199,7 @@ pub struct FormatRules {
     ///
     /// In TOML, the line ending must be either `LF` or `CRLF`.
     ///
-    /// - `auto`: Automatically detect the line ending from the source file. If the source contains `\r\n`, `crlf` is used. Otherwise, `lf` is used.
+    /// - `auto`: The newline style is detected automatically on a file-by-file basis. Files with mixed line endings will be converted to the first detected line ending. Defaults to `\n` for files that contain no line endings.
     /// - `lf`: Line Feed only (`\n`), common on Linux and macOS as well as inside git repos.
     /// - `crlf`: Carriage Return Line Feed (`\r\n`), common on Windows.
     #[cfg_attr(feature = "jsonschema", schemars(default = "LineEnding::default"))]

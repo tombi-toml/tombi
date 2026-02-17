@@ -12,8 +12,9 @@ pub enum LineEnding {
 impl LineEnding {
     /// Resolve the line ending to a concrete string based on the source text.
     ///
-    /// For `Auto`, detects the line ending from the source: if `\r\n` is found, uses CRLF;
-    /// otherwise defaults to LF.
+    /// For `Auto`, the newline style is detected automatically on a file-by-file basis.
+    /// Files with mixed line endings will be converted to the first detected line ending.
+    /// Defaults to `\n` for files that contain no line endings.
     pub fn resolve(self, source: &str) -> &'static str {
         match self {
             LineEnding::Auto => {
