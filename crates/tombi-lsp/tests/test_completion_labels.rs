@@ -903,6 +903,20 @@ mod completion_labels {
 
         test_completion_labels! {
             #[tokio::test]
+            async fn pyproject_dependency_groups_dev_eq_array_last(
+                r#"
+                [dependency-groups]
+                dev = [
+                    "pytest>=8.3.3",
+                    "ruff>=0.7.4",
+                ]█
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok([]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
             async fn pyproject_tool(
                 r#"
                 [tool.█]
@@ -1198,6 +1212,17 @@ mod completion_labels {
             ) -> Ok([
                 "local-path-crate/",
             ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_inline_table_last(
+                r#"
+                [dependencies]
+                serde = { workspace = true }█
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([]);
         }
 
         test_completion_labels! {
@@ -1637,6 +1662,13 @@ mod completion_labels {
                 ".",
                 "=",
             ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn aaa_equal_inline_table_last(
+                "aaa = { bbb = 1 }█"
+            ) -> Ok([]);
         }
 
         test_completion_labels! {
