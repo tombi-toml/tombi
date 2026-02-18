@@ -38,6 +38,12 @@ impl FindCompletionContents for tombi_document_tree::Array {
         log::trace!("completion_hint = {:?}", completion_hint);
 
         async move {
+            // `range.end` points to the cursor position right after `]`.
+            // At that point, completion should not behave as "inside array".
+            if self.kind() == ArrayKind::Array && position >= self.range().end {
+                return Vec::with_capacity(0);
+            }
+
             if keys.is_empty()
                 && let Some((comment_directive_context, schema_uri)) =
                     get_array_comment_directive_content_with_schema_uri(self, position, accessors)
