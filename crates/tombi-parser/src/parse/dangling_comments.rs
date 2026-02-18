@@ -20,11 +20,11 @@ impl Parse for tombi_ast::DanglingComments {
             }
         }
 
-        m.complete(p, DANGLING_COMMENTS);
+        m.complete(p, DANGLING_COMMENT_GROUP);
     }
 }
 
-/// Check if we should parse a DANGLING_COMMENTS node
+/// Check if we should parse a DANGLING_COMMENT_GROUP node
 /// Returns true if current position has comments that form a dangling comments group.
 /// A dangling comments group must be preceded by either:
 /// - At least 2 consecutive LINE_BREAKs (empty line separator), OR

@@ -21,10 +21,10 @@ Tombi の自動ソートは「ノードとコメントの紐付けが安定す�
 - **空行**: 二つ以上の LINE_BREAK が連続したもの（Whitespace は除く）。境界判定や「直前に空行があるか」の判定ではこの定義を用いる。
 - **境界判定のノード**: 本仕様で「前ノード」「次ノード」として用いるノードは、**key-value**、**テーブルヘッダ**（`[table]` / `[[array of tables]]`）、**配列要素**とする。総合例の紐付けはこの範囲で一貫している。
 
-## 提案: `DANGLING_COMMENTS` で dangling comment 情報を保持する
+## 提案: `DANGLING_COMMENT_GROUP` で dangling comment 情報を保持する
 
-### 1. `DANGLING_COMMENTS` ノードを AST に埋め込む
-- 空行由来の区切りは `DANGLING_COMMENTS` ノードから rowan 経由で LINE_BREAK が2回続いているかで判定する- `DANGLING_COMMENTS` は `crates/tombi-ast/src/node/dangling_comments.rs` を基準に扱う
+### 1. `DANGLING_COMMENT_GROUP` ノードを AST に埋め込む
+- 空行由来の区切りは `DANGLING_COMMENT_GROUP` ノードから rowan 経由で LINE_BREAK が2回続いているかで判定する- `DANGLING_COMMENT_GROUP` は `crates/tombi-ast/src/node/dangling_comments.rs` を基準に扱う
 - フォーマット出力では、空の改行が dangling comment の前にあるときだけ空行を 1 行出力する（連続空行は最大 1 行に正規化）
 - ただし、table の先頭の dangling comment group は例外で空行を 0 行として出力する。
 
@@ -45,7 +45,7 @@ Tombi の自動ソートは「ノードとコメントの紐付けが安定す�
 ### 4. コメントの紐付けはグループ内で維持
 - leading / trailing コメントは既存ロジック通りノードに紐付ける
 - dangling コメントはノードに紐付けず独立保持する（後述）
-- `DANGLING_COMMENTS` 自体には作用ノードを紐付けない（table 先頭例外を除く）
+- `DANGLING_COMMENT_GROUP` 自体には作用ノードを紐付けない（table 先頭例外を除く）
 
 ### 5. Dangling comment の扱い (改訂)
 - **判定**
@@ -288,7 +288,7 @@ version = "0.2.0"
 - グループ意図が失われるため不可
 
 ## 実装上のポイント
-- パーサで `DANGLING_COMMENTS` と `has_blank_line_before` を保持する必要がある
+- パーサで `DANGLING_COMMENT_GROUP` と `has_blank_line_before` を保持する必要がある
 - フォーマッタのソート関数に「グループ境界」を渡す
 - dangling comment には `has_blank_line_before` を保持する
 - 保持レイヤーは `KeyValueGroup` と同階層とし、`crates/tombi-ast/src/node/key_value_group.rs` の `KeyValueGroup::DanglingComments` を基準に扱う

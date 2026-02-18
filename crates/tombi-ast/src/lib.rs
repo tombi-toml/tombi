@@ -5,6 +5,7 @@ mod impls;
 mod literal_value;
 mod node;
 pub mod support;
+mod token;
 
 pub use comment_directive::{
     SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
@@ -13,6 +14,7 @@ pub use generated::*;
 use itertools::Itertools;
 pub use literal_value::LiteralValue;
 pub use node::*;
+pub use token::*;
 
 use std::{fmt::Debug, marker::PhantomData};
 use tombi_accessor::Accessor;
@@ -23,7 +25,7 @@ where
     Self: Debug,
 {
     fn leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
-        support::node::leading_comments(self.syntax().children_with_tokens())
+        support::comment::leading_comments(self.syntax().children_with_tokens())
     }
 
     fn trailing_comment(&self) -> Option<crate::TrailingComment> {

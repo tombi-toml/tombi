@@ -31,9 +31,9 @@ impl AstNode for TableOrArrayOfTable {
     #[inline]
     fn cast(syntax: tombi_syntax::SyntaxNode) -> Option<Self> {
         if Table::can_cast(syntax.kind()) {
-            Table::cast(syntax).map(TableOrArrayOfTable::Table)
+            Some(TableOrArrayOfTable::Table(Table { syntax }))
         } else if ArrayOfTable::can_cast(syntax.kind()) {
-            ArrayOfTable::cast(syntax).map(TableOrArrayOfTable::ArrayOfTable)
+            Some(TableOrArrayOfTable::ArrayOfTable(ArrayOfTable { syntax }))
         } else {
             None
         }

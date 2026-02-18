@@ -2,96 +2,70 @@ use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable, TombiValueCommentDirective, support,
+    ArrayOfTable, AstChildren, AstNode, DanglingCommentGroupOr, KeyValueGroup, TableOrArrayOfTable,
+    TombiValueCommentDirective, support,
 };
 
 impl crate::ArrayOfTable {
-    pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
-        support::node::leading_comments(self.syntax().children_with_tokens())
-    }
-
-    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
-        support::node::trailing_comment(self.syntax().children_with_tokens(), T!("]]"))
-    }
-
-    pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
-        support::node::dangling_comments(
-            self.syntax()
-                .children_with_tokens()
-                .skip_while(|node| !matches!(node.kind(), T!("]]")))
-                .skip_while(|node| !matches!(node.kind(), LINE_BREAK))
-                .take_while(|node| matches!(node.kind(), COMMENT | LINE_BREAK | WHITESPACE)),
-        )
-    }
-
-    pub fn key_values_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
-        support::node::begin_dangling_comments(
-            self.syntax()
-                .children_with_tokens()
-                .skip_while(|node| !matches!(node.kind(), T!("]]")))
-                .skip_while(|node| !matches!(node.kind(), LINE_BREAK))
-                .take_while(|node| matches!(node.kind(), COMMENT | LINE_BREAK | WHITESPACE)),
-        )
-    }
-
-    pub fn key_values_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
-        support::node::end_dangling_comments(self.syntax().children_with_tokens())
-    }
-
     pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
         itertools::chain!(
-            self.header_comment_directives(),
-            self.key_values_comment_directives(),
+            self.header_leading_comments()
+                .filter_map(|comment| comment.get_tombi_value_directive()),
+            self.header_trailing_comment()
+                .into_iter()
+                .filter_map(|comment| comment.get_tombi_value_directive()),
+            self.dangling_comment_groups().flat_map(|comment_group| {
+                comment_group
+                    .into_comments()
+                    .filter_map(|comment| comment.get_tombi_value_directive())
+            })
         )
     }
 
-    pub fn header_comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
-        let mut header_comment_directives = vec![];
-
-        for comment in self.header_leading_comments() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                header_comment_directives.push(comment_directive);
-            }
-        }
-        if let Some(comment) = self.header_trailing_comment()
-            && let Some(comment_directive) = comment.get_tombi_value_directive()
-        {
-            header_comment_directives.push(comment_directive);
-        }
-
-        header_comment_directives.into_iter()
+    /// The leading comments of the array of table header.
+    ///
+    /// ```toml
+    /// # This comment
+    /// [[table]]
+    /// ```
+    pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
+        support::comment::leading_comments(self.syntax().children_with_tokens())
     }
 
-    pub fn key_values_comment_directives(
-        &self,
-    ) -> impl Iterator<Item = TombiValueCommentDirective> {
-        let mut key_values_comment_directives = vec![];
-        if self.key_values().next().is_none() {
-            for comments in self.key_values_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        key_values_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        } else {
-            for comments in self.key_values_begin_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        key_values_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-            for comments in self.key_values_end_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        key_values_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        }
+    /// The trailing comment of the array of table header.
+    ///
+    /// ```toml
+    /// [[table]]  # This comment
+    /// ```
+    pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
+        support::comment::trailing_comment(self.syntax().children_with_tokens(), T!("]]"))
+    }
 
-        key_values_comment_directives.into_iter()
+    /// The dangling comments of the array of table (without key-value pairs).
+    ///
+    /// ```toml
+    /// [[table]]
+    /// # This comments
+    /// # This comments
+    /// ```
+    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
+        support::comment::dangling_comment_groups(
+            self.syntax()
+                .children_with_tokens()
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!("]]")))
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), LINE_BREAK)),
+        )
+    }
+
+    pub fn key_value_groups(&self) -> impl Iterator<Item = DanglingCommentGroupOr<KeyValueGroup>> {
+        support::comment::dangling_comment_group_or(
+            self.syntax()
+                .children_with_tokens()
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!("]]")))
+                .skip_while(|node_or_token| {
+                    !matches!(node_or_token.kind(), LINE_BREAK | DANGLING_COMMENT_GROUP)
+                }),
+        )
     }
 
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
