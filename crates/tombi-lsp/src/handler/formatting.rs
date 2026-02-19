@@ -49,7 +49,7 @@ pub async fn handle_formatting(
 
     // NOTE: It is not desirable to use `editor_formatting_options`
     //       because it causes inconsistent behavior
-    //       between the editor side and the config side.
+    //       between the Editor side and the CLI side.
     //
     // use_editor_formatting_options(
     //     &mut config,
