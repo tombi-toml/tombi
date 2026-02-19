@@ -35,16 +35,6 @@ pub async fn handle_formatting(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    // NOTE: It is not desirable to use `editor_formatting_options`
-    //       because it causes inconsistent behavior
-    //       between the editor side and the config side.
-    //
-    // use_editor_formatting_options(
-    //     &mut config,
-    //     config_path.as_deref(),
-    //     &editor_formatting_options,
-    // );
-
     if !config
         .lsp
         .as_ref()
@@ -56,6 +46,16 @@ pub async fn handle_formatting(
         log::debug!("`server.formatting.enabled` is false");
         return Ok(None);
     }
+
+    // NOTE: It is not desirable to use `editor_formatting_options`
+    //       because it causes inconsistent behavior
+    //       between the editor side and the config side.
+    //
+    // use_editor_formatting_options(
+    //     &mut config,
+    //     config_path.as_deref(),
+    //     &editor_formatting_options,
+    // );
 
     if let Ok(text_document_path) = text_document_uri.to_file_path() {
         match matches_file_patterns(&text_document_path, config_path.as_deref(), &config) {
