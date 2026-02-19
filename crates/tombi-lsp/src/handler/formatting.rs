@@ -144,7 +144,7 @@ pub async fn handle_formatting(
     Ok(None)
 }
 
-#[allow(unused)]
+#[allow(dead_code)]
 fn use_editor_formatting_options(
     config: &mut tombi_config::Config,
     config_path: Option<&Path>,
