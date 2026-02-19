@@ -150,7 +150,7 @@ fn use_editor_formatting_options(
     config_path: Option<&Path>,
     editor_formatting_options: &FormattingOptions,
 ) {
-    // if `tombi.toml` is not found, use editor settings for formatting
+    // if `tombi.toml` is not found, use editor formatting options
     if config_path.is_none() {
         let override_options = OverrideFormatOptions {
             rules: Some(FormatRules {
