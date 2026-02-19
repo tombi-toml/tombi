@@ -30,7 +30,7 @@ pub fn get_format_options(
                         {
                             return None;
                         }
-                        return Some(config.format(Some(format)));
+                        return Some(config.merge_format(Some(format)));
                     }
                     break;
                 }
@@ -38,7 +38,7 @@ pub fn get_format_options(
         }
     }
 
-    Some(config.format(None))
+    Some(config.merge_format(None))
 }
 
 pub fn get_lint_options(
@@ -58,7 +58,7 @@ pub fn get_lint_options(
                         {
                             return None;
                         }
-                        return Some(config.lint(Some(lint)));
+                        return Some(config.merge_lint(Some(lint)));
                     }
                     break;
                 }
@@ -66,7 +66,7 @@ pub fn get_lint_options(
         }
     }
 
-    Some(config.lint(None))
+    Some(config.merge_lint(None))
 }
 
 /// Check if a path matches override files patterns

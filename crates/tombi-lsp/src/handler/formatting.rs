@@ -1,4 +1,5 @@
 use itertools::{Either, Itertools};
+use tombi_config::{FormatRules, IndentStyle, IndentWidth, OverrideFormatOptions};
 use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_text::{IntoLsp, Position, Range};
 use tower_lsp::lsp_types::{
@@ -15,17 +16,38 @@ pub async fn handle_formatting(
     log::info!("handle_formatting");
     log::trace!("{:?}", params);
 
-    let DocumentFormattingParams { text_document, .. } = params;
+    let DocumentFormattingParams {
+        text_document,
+        options: editor_formatting_options,
+        ..
+    } = params;
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        config,
+        mut config,
         schema_store,
         config_path,
     } = backend
         .config_manager
         .config_schema_store_for_uri(&text_document_uri)
         .await;
+
+    // if `tombi.toml` is not found, use editor settings for formatting
+    if config_path.is_none() {
+        let override_options = OverrideFormatOptions {
+            rules: Some(FormatRules {
+                indent_width: Some(IndentWidth::from(editor_formatting_options.tab_size as u8)),
+                indent_style: if editor_formatting_options.insert_spaces {
+                    Some(IndentStyle::Space)
+                } else {
+                    Some(IndentStyle::Tab)
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        config.format = Some(config.merge_format(Some(&override_options)));
+    }
 
     if !config
         .lsp
