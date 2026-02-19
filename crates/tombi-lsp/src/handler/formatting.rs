@@ -32,7 +32,7 @@ pub async fn handle_formatting(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    // if `tombi.toml` is not found, use editor settings for formatting
+    // if `tombi.toml` is not found, use editor format options.
     if config_path.is_none() {
         let override_options = OverrideFormatOptions {
             rules: Some(FormatRules {
