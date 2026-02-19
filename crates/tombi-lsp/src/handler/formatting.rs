@@ -1,9 +1,12 @@
+use std::path::Path;
+
 use itertools::{Either, Itertools};
 use tombi_config::{FormatRules, IndentStyle, IndentWidth, OverrideFormatOptions};
 use tombi_glob::{MatchResult, matches_file_patterns};
 use tombi_text::{IntoLsp, Position, Range};
 use tower_lsp::lsp_types::{
-    DocumentFormattingParams, PublishDiagnosticsParams, TextEdit, notification::PublishDiagnostics,
+    DocumentFormattingParams, FormattingOptions, PublishDiagnosticsParams, TextEdit,
+    notification::PublishDiagnostics,
 };
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -18,13 +21,13 @@ pub async fn handle_formatting(
 
     let DocumentFormattingParams {
         text_document,
-        options: editor_formatting_options,
+        options: _editor_formatting_options,
         ..
     } = params;
     let text_document_uri = text_document.uri.into();
 
     let ConfigSchemaStore {
-        mut config,
+        config,
         schema_store,
         config_path,
     } = backend
@@ -32,24 +35,15 @@ pub async fn handle_formatting(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    // if `tombi.toml` is not found, use editor settings for formatting
-    if config_path.is_none() {
-        let override_options = OverrideFormatOptions {
-            rules: Some(FormatRules {
-                indent_width: Some(IndentWidth::from(
-                    editor_formatting_options.tab_size.clamp(0, u8::MAX as u32) as u8,
-                )),
-                indent_style: if editor_formatting_options.insert_spaces {
-                    Some(IndentStyle::Space)
-                } else {
-                    Some(IndentStyle::Tab)
-                },
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-        config.format = Some(config.merge_format(Some(&override_options)));
-    }
+    // NOTE: It is not desirable to use `editor_formatting_options`
+    //       because it causes inconsistent behavior
+    //       between the editor side and the config side.
+    //
+    // use_editor_formatting_options(
+    //     &mut config,
+    //     config_path.as_deref(),
+    //     &editor_formatting_options,
+    // );
 
     if !config
         .lsp
@@ -148,6 +142,32 @@ pub async fn handle_formatting(
     }
 
     Ok(None)
+}
+
+#[allow(unused)]
+fn use_editor_formatting_options(
+    config: &mut tombi_config::Config,
+    config_path: Option<&Path>,
+    editor_formatting_options: &FormattingOptions,
+) {
+    // if `tombi.toml` is not found, use editor settings for formatting
+    if config_path.is_none() {
+        let override_options = OverrideFormatOptions {
+            rules: Some(FormatRules {
+                indent_width: Some(IndentWidth::from(
+                    editor_formatting_options.tab_size.clamp(0, u8::MAX as u32) as u8,
+                )),
+                indent_style: if editor_formatting_options.insert_spaces {
+                    Some(IndentStyle::Space)
+                } else {
+                    Some(IndentStyle::Tab)
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        config.format = Some(config.merge_format(Some(&override_options)));
+    }
 }
 
 /// Computes incremental text edits between old and new text
