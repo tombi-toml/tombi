@@ -36,7 +36,9 @@ pub async fn handle_formatting(
     if config_path.is_none() {
         let override_options = OverrideFormatOptions {
             rules: Some(FormatRules {
-                indent_width: Some(IndentWidth::from(editor_formatting_options.tab_size as u8)),
+                indent_width: Some(IndentWidth::from(
+                    editor_formatting_options.tab_size.clamp(0, u8::MAX as u32) as u8,
+                )),
                 indent_style: if editor_formatting_options.insert_spaces {
                     Some(IndentStyle::Space)
                 } else {
