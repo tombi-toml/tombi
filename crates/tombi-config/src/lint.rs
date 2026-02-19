@@ -73,7 +73,7 @@ pub struct LintRules {
 }
 
 impl LintRules {
-    pub fn override_with(self, override_rules: &Self) -> Self {
+    pub fn merge(self, override_rules: &Self) -> Self {
         Self {
             key_empty: self.key_empty.or(override_rules.key_empty),
             dotted_keys_out_of_order: self
