@@ -7,6 +7,7 @@ use crate::{
 };
 
 impl crate::ArrayOfTable {
+    #[inline]
     pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
         itertools::chain!(
             self.header_leading_comments()
@@ -28,6 +29,7 @@ impl crate::ArrayOfTable {
     /// # This comment
     /// [[table]]
     /// ```
+    #[inline]
     pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
         support::comment::leading_comments(self.syntax().children_with_tokens())
     }
@@ -37,6 +39,7 @@ impl crate::ArrayOfTable {
     /// ```toml
     /// [[table]]  # This comment
     /// ```
+    #[inline]
     pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
         support::comment::trailing_comment(self.syntax().children_with_tokens(), T!("]]"))
     }
@@ -53,6 +56,7 @@ impl crate::ArrayOfTable {
     ///
     /// key = "value"
     /// ```
+    #[inline]
     pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
         support::comment::dangling_comment_groups(
             self.syntax()
@@ -73,6 +77,7 @@ impl crate::ArrayOfTable {
         )
     }
 
+    #[inline]
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
         self.double_bracket_start().unwrap().range().end <= position
             && position <= self.double_bracket_end().unwrap().range().start
@@ -90,6 +95,7 @@ impl crate::ArrayOfTable {
     /// [[foo.baz]]  # <- This is also a subtable
     /// key = true
     /// ```
+    #[inline]
     pub fn sub_tables(&self) -> impl Iterator<Item = TableOrArrayOfTable> + '_ {
         support::node::next_siblings_nodes(self)
             .skip(1)
@@ -105,6 +111,7 @@ impl crate::ArrayOfTable {
             })
     }
 
+    #[inline]
     pub fn parent_table_or_array_of_table_keys(
         &self,
         toml_version: TomlVersion,
@@ -133,6 +140,7 @@ impl crate::ArrayOfTable {
             })
     }
 
+    #[inline]
     pub fn parrent_array_of_tables_keys(
         &self,
     ) -> impl Iterator<Item = AstChildren<crate::Key>> + '_ {
