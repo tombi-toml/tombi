@@ -9,10 +9,11 @@ use std::{borrow::Cow, ops::Deref};
 use ahash::AHashMap;
 pub use comment::get_tombi_document_comment_directive_type_definition;
 use itertools::Itertools;
-use tombi_schema_store::{CurrentSchema, SchemaUri};
+use tombi_future::{BoxFuture, Boxable};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 use tower_lsp::lsp_types::GotoDefinitionResponse;
 
-use crate::{Backend, goto_definition::open_remote_file};
+use crate::{Backend, composite_schema::CompositeSchema, goto_definition::open_remote_file};
 
 pub async fn get_type_definition(
     document_tree: &tombi_document_tree::DocumentTree,
@@ -115,4 +116,19 @@ trait GetTypeDefinition {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<crate::goto_type_definition::TypeDefinition>>;
+}
+
+pub(super) fn schema_type_definition(
+    schema_uri: &SchemaUri,
+    accessors: &[Accessor],
+    range: tombi_text::Range,
+) -> TypeDefinition {
+    let mut schema_uri = schema_uri.clone();
+    schema_uri.set_fragment(Some(&format!("L{}", range.start.line + 1)));
+
+    TypeDefinition {
+        schema_uri,
+        schema_accessors: accessors.iter().map(Into::into).collect_vec(),
+        range: tombi_text::Range::default(),
+    }
 }

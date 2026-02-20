@@ -222,7 +222,10 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                     || resolved_schema.value_schema.description().is_some()
                 {
                     title_description_set.insert((
-                        resolved_schema.value_schema.title().map(ToString::to_string),
+                        resolved_schema
+                            .value_schema
+                            .title()
+                            .map(ToString::to_string),
                         resolved_schema
                             .value_schema
                             .description()

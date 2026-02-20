@@ -1,28 +1,13 @@
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, CurrentSchema, OneOfSchema, ReferableValueSchemas, SchemaAccessor, ValueSchema,
+    Accessor, CurrentSchema, SchemaAccessor, ValueSchema,
 };
 
 use crate::completion::{
-    CompletionCandidate, CompletionContent, CompletionHint, CompositeSchemaImpl,
-    FindCompletionContents, tombi_json_value_to_completion_default_item,
-    tombi_json_value_to_completion_example_item,
+    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
-
-impl CompositeSchemaImpl for OneOfSchema {
-    fn title(&self) -> Option<String> {
-        self.title.clone()
-    }
-
-    fn description(&self) -> Option<String> {
-        self.description.clone()
-    }
-
-    fn schemas(&self) -> &ReferableValueSchemas {
-        &self.schemas
-    }
-}
 
 pub fn find_one_of_completion_items<'a: 'b, 'b, T>(
     value: &'a T,

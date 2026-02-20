@@ -595,32 +595,28 @@ impl ValueSchema {
                         let Ok(mut schemas_guard) = schemas.try_write() else {
                             return false;
                         };
-                        join_all(
-                            schemas_guard
-                                .iter_mut()
-                                .map(|referable_schema| async {
-                                    if let Ok(Some(current_schema)) = referable_schema
-                                        .resolve(
-                                            Cow::Borrowed(schema_uri),
-                                            Cow::Borrowed(definitions),
-                                            schema_store,
-                                        )
-                                        .await
-                                    {
-                                        current_schema
-                                            .value_schema
-                                            .is_match(
-                                                condition,
-                                                &current_schema.schema_uri,
-                                                &current_schema.definitions,
-                                                schema_store,
-                                            )
-                                            .await
-                                    } else {
-                                        false
-                                    }
-                                }),
-                        )
+                        join_all(schemas_guard.iter_mut().map(|referable_schema| async {
+                            if let Ok(Some(current_schema)) = referable_schema
+                                .resolve(
+                                    Cow::Borrowed(schema_uri),
+                                    Cow::Borrowed(definitions),
+                                    schema_store,
+                                )
+                                .await
+                            {
+                                current_schema
+                                    .value_schema
+                                    .is_match(
+                                        condition,
+                                        &current_schema.schema_uri,
+                                        &current_schema.definitions,
+                                        schema_store,
+                                    )
+                                    .await
+                            } else {
+                                false
+                            }
+                        }))
                         .await
                         .into_iter()
                         .any(|is_matched| is_matched)
@@ -679,32 +675,28 @@ impl ValueSchema {
                         let Ok(mut schemas_guard) = schemas.try_write() else {
                             return false;
                         };
-                        join_all(
-                            schemas_guard
-                                .iter_mut()
-                                .map(|referable_schema| async {
-                                    if let Ok(Some(current_schema)) = referable_schema
-                                        .resolve(
-                                            Cow::Borrowed(schema_uri),
-                                            Cow::Borrowed(definitions),
-                                            schema_store,
-                                        )
-                                        .await
-                                    {
-                                        current_schema
-                                            .value_schema
-                                            .is_match(
-                                                condition,
-                                                &current_schema.schema_uri,
-                                                &current_schema.definitions,
-                                                schema_store,
-                                            )
-                                            .await
-                                    } else {
-                                        false
-                                    }
-                                }),
-                        )
+                        join_all(schemas_guard.iter_mut().map(|referable_schema| async {
+                            if let Ok(Some(current_schema)) = referable_schema
+                                .resolve(
+                                    Cow::Borrowed(schema_uri),
+                                    Cow::Borrowed(definitions),
+                                    schema_store,
+                                )
+                                .await
+                            {
+                                current_schema
+                                    .value_schema
+                                    .is_match(
+                                        condition,
+                                        &current_schema.schema_uri,
+                                        &current_schema.definitions,
+                                        schema_store,
+                                    )
+                                    .await
+                            } else {
+                                false
+                            }
+                        }))
                         .await
                         .into_iter()
                         .all(|is_matched| is_matched)

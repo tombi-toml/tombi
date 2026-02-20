@@ -47,9 +47,10 @@ pub async fn handle_get_status(
                     .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
                     .await
                 {
-                    Ok(Some(source_schema)) => {
-                        source_schema.root_schema.as_ref().map(|s| s.schema_uri.clone())
-                    }
+                    Ok(Some(source_schema)) => source_schema
+                        .root_schema
+                        .as_ref()
+                        .map(|s| s.schema_uri.clone()),
                     _ => None,
                 };
 
@@ -68,16 +69,15 @@ pub async fn handle_get_status(
                         match schema_store.try_get_document_schema(&schema_uri).await {
                             Ok(Some(doc_schema)) => {
                                 // Get title/description from DocumentSchema
-                                let (title, description) = if let Some(value_schema) =
-                                    &doc_schema.value_schema
-                                {
-                                    (
-                                        value_schema.title().map(|s| s.to_string()),
-                                        value_schema.description().map(|s| s.to_string()),
-                                    )
-                                } else {
-                                    (None, None)
-                                };
+                                let (title, description) =
+                                    if let Some(value_schema) = &doc_schema.value_schema {
+                                        (
+                                            value_schema.title().map(|s| s.to_string()),
+                                            value_schema.description().map(|s| s.to_string()),
+                                        )
+                                    } else {
+                                        (None, None)
+                                    };
                                 Some(SchemaStatus {
                                     title,
                                     description,

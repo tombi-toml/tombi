@@ -244,7 +244,9 @@ impl Referable<ValueSchema> {
                             let needs_resolution = if let Ok(guard) = schemas.try_read() {
                                 guard.iter().any(|s| matches!(s, Referable::Ref { .. }))
                             } else {
-                                log::debug!("Circular JSON Schema reference detected, skipping inner schema resolution");
+                                log::debug!(
+                                    "Circular JSON Schema reference detected, skipping inner schema resolution"
+                                );
                                 false
                             };
 
@@ -331,7 +333,10 @@ pub async fn resolve_and_collect_schemas(
 ) -> Option<Vec<CurrentSchema<'static>>> {
     // Path 1: Read lock -- check if all schemas are already Resolved
     if let Ok(guard) = schemas.try_read() {
-        if guard.iter().all(|s| matches!(s, Referable::Resolved { .. })) {
+        if guard
+            .iter()
+            .all(|s| matches!(s, Referable::Resolved { .. }))
+        {
             let mut collected = Vec::with_capacity(guard.len());
             for referable_schema in guard.iter() {
                 match referable_schema

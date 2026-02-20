@@ -16,10 +16,12 @@ use tombi_extension::{
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, ReferableValueSchemas, SchemaDefinitions,
-    SchemaStore, SchemaUri, ValueSchema,
+    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, SchemaDefinitions, SchemaStore,
+    SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
+
+use crate::composite_schema::CompositeSchema;
 
 pub fn get_comment_context(
     root: &tombi_ast::Root,
@@ -294,13 +296,7 @@ pub trait CompletionCandidate {
     }
 }
 
-trait CompositeSchemaImpl {
-    fn title(&self) -> Option<String>;
-    fn description(&self) -> Option<String>;
-    fn schemas(&self) -> &ReferableValueSchemas;
-}
-
-impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
+impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
     fn title<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,
@@ -311,14 +307,13 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
         async move {
             let mut candidates = ahash::AHashSet::new();
 
-            if let Some(resolved_schemas) =
-                tombi_schema_store::resolve_and_collect_schemas(
-                    self.schemas(),
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_store,
-                )
-                .await
+            if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                self.schemas(),
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_store,
+            )
+            .await
             {
                 for current_schema in &resolved_schemas {
                     if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
@@ -343,7 +338,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                 return candidates.into_iter().next();
             }
 
-            self.title().as_deref().map(|title| title.into())
+            self.composite_title().as_deref().map(|title| title.into())
         }
         .boxed()
     }
@@ -358,14 +353,13 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
         async move {
             let mut candidates = ahash::AHashSet::new();
 
-            if let Some(resolved_schemas) =
-                tombi_schema_store::resolve_and_collect_schemas(
-                    self.schemas(),
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_store,
-                )
-                .await
+            if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                self.schemas(),
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_store,
+            )
+            .await
             {
                 for current_schema in &resolved_schemas {
                     if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
@@ -390,7 +384,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                 return candidates.into_iter().next();
             }
 
-            self.description()
+            self.composite_description()
                 .as_deref()
                 .map(|description| description.into())
         }

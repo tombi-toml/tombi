@@ -4,7 +4,7 @@ use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 
-use super::{GetTypeDefinition, TypeDefinition};
+use super::{GetTypeDefinition, TypeDefinition, schema_type_definition};
 
 pub fn get_one_of_type_definition<'a: 'b, 'b, T>(
     value: &'a T,
@@ -93,14 +93,11 @@ impl GetTypeDefinition for tombi_schema_store::OneOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut schema_uri = current_schema.schema_uri.as_ref().to_owned();
-            schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
-
-            Some(TypeDefinition {
-                schema_uri,
-                schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                range: tombi_text::Range::default(),
-            })
+            Some(schema_type_definition(
+                current_schema.schema_uri.as_ref(),
+                accessors,
+                self.range,
+            ))
         }
         .boxed()
     }

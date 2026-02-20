@@ -3,13 +3,13 @@ use std::fmt::Debug;
 use tombi_comment_directive::value::CommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, OneOfSchema, ValueSchema};
+use tombi_schema_store::{CurrentSchema, OneOfSchema};
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use super::Validate;
 use crate::validate::{
-    all_of::validate_all_of, any_of::validate_any_of, handle_deprecated, handle_type_mismatch,
-    not_schema::validate_not,
+    handle_deprecated, has_error_level_diagnostics, is_success_or_warning,
+    not_schema::validate_not, validate_resolved_schema,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -58,98 +58,21 @@ where
 
         let mut each_results = Vec::with_capacity(resolved_schemas.len());
         for resolved_schema in &resolved_schemas {
-            let result = match (value.value_type(), resolved_schema.value_schema.as_ref()) {
-                (tombi_document_tree::ValueType::Boolean, ValueSchema::Boolean(_))
-                | (
-                    tombi_document_tree::ValueType::Integer,
-                    ValueSchema::Integer(_) | ValueSchema::Float(_),
-                )
-                | (tombi_document_tree::ValueType::Float, ValueSchema::Float(_))
-                | (tombi_document_tree::ValueType::String, ValueSchema::String(_))
-                | (
-                    tombi_document_tree::ValueType::OffsetDateTime,
-                    ValueSchema::OffsetDateTime(_),
-                )
-                | (tombi_document_tree::ValueType::LocalDateTime, ValueSchema::LocalDateTime(_))
-                | (tombi_document_tree::ValueType::LocalDate, ValueSchema::LocalDate(_))
-                | (tombi_document_tree::ValueType::LocalTime, ValueSchema::LocalTime(_))
-                | (tombi_document_tree::ValueType::Table, ValueSchema::Table(_))
-                | (tombi_document_tree::ValueType::Array, ValueSchema::Array(_)) => {
-                    value
-                        .validate(accessors, Some(resolved_schema), schema_context)
-                        .await
-                }
-                (_, ValueSchema::Null) => {
-                    continue;
-                }
-                (_, ValueSchema::Boolean(_))
-                | (_, ValueSchema::Integer(_))
-                | (_, ValueSchema::Float(_))
-                | (_, ValueSchema::String(_))
-                | (_, ValueSchema::OffsetDateTime(_))
-                | (_, ValueSchema::LocalDateTime(_))
-                | (_, ValueSchema::LocalDate(_))
-                | (_, ValueSchema::LocalTime(_))
-                | (_, ValueSchema::Table(_))
-                | (_, ValueSchema::Array(_)) => handle_type_mismatch(
-                    resolved_schema.value_schema.value_type().await,
-                    value.value_type(),
-                    value.range(),
-                    common_rules,
-                ),
-                (_, ValueSchema::OneOf(one_of_schema)) => {
-                    validate_one_of(
-                        value,
-                        accessors,
-                        one_of_schema,
-                        resolved_schema,
-                        schema_context,
-                        comment_directives,
-                        common_rules,
-                    )
-                    .await
-                }
-                (_, ValueSchema::AnyOf(any_of_schema)) => {
-                    validate_any_of(
-                        value,
-                        accessors,
-                        any_of_schema,
-                        resolved_schema,
-                        schema_context,
-                        comment_directives,
-                        common_rules,
-                    )
-                    .await
-                }
-                (_, ValueSchema::AllOf(all_of_schema)) => {
-                    validate_all_of(
-                        value,
-                        accessors,
-                        all_of_schema,
-                        resolved_schema,
-                        schema_context,
-                        comment_directives,
-                        common_rules,
-                    )
-                    .await
-                }
+            let Some(result) = validate_resolved_schema(
+                value,
+                accessors,
+                resolved_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await
+            else {
+                continue;
             };
 
-            match &result {
-                Ok(()) => {
-                    valid_count += 1;
-                }
-                Err(error) => {
-                    if error
-                        .diagnostics
-                        .iter()
-                        .filter(|d| d.level() == tombi_diagnostic::Level::ERROR)
-                        .count()
-                        == 0
-                    {
-                        valid_count += 1;
-                    }
-                }
+            if is_success_or_warning(&result) {
+                valid_count += 1;
             }
 
             each_results.push(result);
@@ -161,17 +84,8 @@ where
             for result in each_results {
                 match result {
                     Ok(()) => return Ok(()),
-                    Err(error) => {
-                        if error
-                            .diagnostics
-                            .iter()
-                            .filter(|d| d.level() == tombi_diagnostic::Level::ERROR)
-                            .count()
-                            == 0
-                        {
-                            return Err(error);
-                        }
-                    }
+                    Err(error) if !has_error_level_diagnostics(&error) => return Err(error),
+                    Err(_) => {}
                 }
             }
 
@@ -197,14 +111,7 @@ where
                 );
             }
 
-            if error
-                .diagnostics
-                .iter()
-                .filter(|d| d.level() == tombi_diagnostic::Level::ERROR)
-                .count()
-                == 0
-                && valid_count > 1
-            {
+            if !has_error_level_diagnostics(&error) && valid_count > 1 {
                 let mut diagnostics = vec![];
 
                 crate::Diagnostic {

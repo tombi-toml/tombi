@@ -3,12 +3,11 @@ use std::fmt::Debug;
 use tombi_comment_directive::value::CommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, ValueSchema};
+use tombi_schema_store::CurrentSchema;
 
 use super::Validate;
 use crate::validate::not_schema::validate_not;
-use crate::validate::{all_of::validate_all_of, one_of::validate_one_of};
-use crate::validate::{handle_deprecated, handle_type_mismatch};
+use crate::validate::{validate_deprecated, validate_resolved_schema};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
     value: &'a T,
@@ -57,178 +56,33 @@ where
         let mut total_error = crate::Error::new();
 
         for resolved_schema in &resolved_schemas {
-            let error = match (value.value_type(), resolved_schema.value_schema.as_ref()) {
-                (tombi_document_tree::ValueType::Boolean, ValueSchema::Boolean(_))
-                | (
-                    tombi_document_tree::ValueType::Integer,
-                    ValueSchema::Integer(_) | ValueSchema::Float(_),
-                )
-                | (tombi_document_tree::ValueType::Float, ValueSchema::Float(_))
-                | (tombi_document_tree::ValueType::String, ValueSchema::String(_))
-                | (
-                    tombi_document_tree::ValueType::OffsetDateTime,
-                    ValueSchema::OffsetDateTime(_),
-                )
-                | (tombi_document_tree::ValueType::LocalDateTime, ValueSchema::LocalDateTime(_))
-                | (tombi_document_tree::ValueType::LocalDate, ValueSchema::LocalDate(_))
-                | (tombi_document_tree::ValueType::LocalTime, ValueSchema::LocalTime(_))
-                | (tombi_document_tree::ValueType::Table, ValueSchema::Table(_))
-                | (tombi_document_tree::ValueType::Array, ValueSchema::Array(_)) => {
-                    match value
-                        .validate(accessors, Some(resolved_schema), schema_context)
-                        .await
-                    {
-                        Ok(()) => {
-                            let mut diagnostics = Vec::with_capacity(1);
-                            handle_deprecated(
-                                &mut diagnostics,
-                                any_of_schema.deprecated,
-                                accessors,
-                                value,
-                                comment_directives,
-                                common_rules,
-                            );
-                            return if diagnostics.is_empty() {
-                                Ok(())
-                            } else {
-                                Err(diagnostics.into())
-                            };
-                        }
-                        Err(error) => error,
-                    }
-                }
-                (_, ValueSchema::Null) => {
-                    continue;
-                }
-                (_, ValueSchema::Boolean(_))
-                | (_, ValueSchema::Integer(_))
-                | (_, ValueSchema::Float(_))
-                | (_, ValueSchema::String(_))
-                | (_, ValueSchema::OffsetDateTime(_))
-                | (_, ValueSchema::LocalDateTime(_))
-                | (_, ValueSchema::LocalDate(_))
-                | (_, ValueSchema::LocalTime(_))
-                | (_, ValueSchema::Table(_))
-                | (_, ValueSchema::Array(_)) => match handle_type_mismatch(
-                    resolved_schema.value_schema.value_type().await,
-                    value.value_type(),
-                    value.range(),
-                    common_rules,
-                ) {
-                    Ok(()) => {
-                        let mut diagnostics = Vec::with_capacity(1);
-                        handle_deprecated(
-                            &mut diagnostics,
-                            any_of_schema.deprecated,
-                            accessors,
-                            value,
-                            comment_directives,
-                            common_rules,
-                        );
-                        return if diagnostics.is_empty() {
-                            Ok(())
-                        } else {
-                            Err(diagnostics.into())
-                        };
-                    }
-                    Err(error) => error,
-                },
-                (_, ValueSchema::OneOf(one_of_schema)) => {
-                    match validate_one_of(
-                        value,
-                        accessors,
-                        one_of_schema,
-                        resolved_schema,
-                        schema_context,
-                        comment_directives,
-                        common_rules,
-                    )
-                    .await
-                    {
-                        Ok(()) => {
-                            let mut diagnostics = Vec::with_capacity(1);
-                            handle_deprecated(
-                                &mut diagnostics,
-                                any_of_schema.deprecated,
-                                accessors,
-                                value,
-                                comment_directives,
-                                common_rules,
-                            );
-                            return if diagnostics.is_empty() {
-                                Ok(())
-                            } else {
-                                Err(diagnostics.into())
-                            };
-                        }
-                        Err(error) => error,
-                    }
-                }
-                (_, ValueSchema::AnyOf(any_of_schema)) => {
-                    match validate_any_of(
-                        value,
-                        accessors,
-                        any_of_schema,
-                        resolved_schema,
-                        schema_context,
-                        comment_directives,
-                        common_rules,
-                    )
-                    .await
-                    {
-                        Ok(()) => {
-                            let mut diagnostics = Vec::with_capacity(1);
-                            handle_deprecated(
-                                &mut diagnostics,
-                                any_of_schema.deprecated,
-                                accessors,
-                                value,
-                                comment_directives,
-                                common_rules,
-                            );
-                            return if diagnostics.is_empty() {
-                                Ok(())
-                            } else {
-                                Err(diagnostics.into())
-                            };
-                        }
-                        Err(error) => error,
-                    }
-                }
-                (_, ValueSchema::AllOf(all_of_schema)) => {
-                    match validate_all_of(
-                        value,
-                        accessors,
-                        all_of_schema,
-                        resolved_schema,
-                        schema_context,
-                        comment_directives,
-                        common_rules,
-                    )
-                    .await
-                    {
-                        Ok(()) => {
-                            let mut diagnostics = Vec::with_capacity(1);
-                            handle_deprecated(
-                                &mut diagnostics,
-                                any_of_schema.deprecated,
-                                accessors,
-                                value,
-                                comment_directives,
-                                common_rules,
-                            );
-                            return if diagnostics.is_empty() {
-                                Ok(())
-                            } else {
-                                Err(diagnostics.into())
-                            };
-                        }
-                        Err(error) => error,
-                    }
-                }
+            let Some(result) = validate_resolved_schema(
+                value,
+                accessors,
+                resolved_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await
+            else {
+                continue;
             };
 
-            total_error.combine(error);
+            match result {
+                Ok(()) => {
+                    return validate_deprecated(
+                        any_of_schema.deprecated,
+                        accessors,
+                        value,
+                        comment_directives,
+                        common_rules,
+                    );
+                }
+                Err(error) => {
+                    total_error.combine(error);
+                }
+            }
         }
 
         drop(_cycle_guard);

@@ -58,7 +58,11 @@ where
             if let Some(values) = resolved_schema
                 .value_schema
                 .as_ref()
-                .get_enum(&resolved_schema.schema_uri, &resolved_schema.definitions, schema_context)
+                .get_enum(
+                    &resolved_schema.schema_uri,
+                    &resolved_schema.definitions,
+                    schema_context,
+                )
                 .await
             {
                 enum_values.extend(values);
@@ -205,10 +209,18 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
             };
 
             for resolved_schema in &resolved_schemas {
-                if resolved_schema.value_schema.title().is_some() || resolved_schema.value_schema.description().is_some() {
+                if resolved_schema.value_schema.title().is_some()
+                    || resolved_schema.value_schema.description().is_some()
+                {
                     title_description_set.insert((
-                        resolved_schema.value_schema.title().map(ToString::to_string),
-                        resolved_schema.value_schema.description().map(ToString::to_string),
+                        resolved_schema
+                            .value_schema
+                            .title()
+                            .map(ToString::to_string),
+                        resolved_schema
+                            .value_schema
+                            .description()
+                            .map(ToString::to_string),
                     ));
                 }
                 value_type_set.insert(resolved_schema.value_schema.value_type().await);
@@ -216,7 +228,11 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 if let Some(values) = resolved_schema
                     .value_schema
                     .as_ref()
-                    .get_enum(&resolved_schema.schema_uri, &resolved_schema.definitions, schema_context)
+                    .get_enum(
+                        &resolved_schema.schema_uri,
+                        &resolved_schema.definitions,
+                        schema_context,
+                    )
                     .await
                 {
                     enum_values.extend(values);
