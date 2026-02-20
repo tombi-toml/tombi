@@ -1,8 +1,6 @@
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
-use tombi_schema_store::{
-    Accessor, CurrentSchema, SchemaAccessor, ValueSchema,
-};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, ValueSchema};
 
 use crate::completion::{
     CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
