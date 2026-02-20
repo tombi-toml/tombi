@@ -46,6 +46,11 @@ impl crate::Table {
     /// [table]
     /// # This comments
     /// # This comments
+    ///
+    /// # This comments
+    /// # This comments
+    ///
+    /// key = "value"
     /// ```
     pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
         support::comment::dangling_comment_groups(
