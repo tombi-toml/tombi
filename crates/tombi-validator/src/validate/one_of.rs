@@ -40,27 +40,20 @@ where
 
         let mut valid_count = 0;
 
-        let Ok(mut schemas_guard) = one_of_schema.schemas.try_write() else {
-            log::warn!("Circular JSON Schema reference detected in validate_one_of, skipping validation");
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &one_of_schema.schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        else {
             return Ok(());
         };
-        let total_count = schemas_guard.len();
-        let resolved_schemas = {
-            let mut resolved = Vec::with_capacity(total_count);
-            for referable_schema in schemas_guard.iter_mut() {
-                if let Ok(Some(current_schema)) = referable_schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                    .inspect_err(|err| log::warn!("{err}"))
-                {
-                    resolved.push(current_schema.into_owned());
-                }
-            }
-            resolved
+        let total_count = resolved_schemas.len();
+
+        let Ok(_cycle_guard) = one_of_schema.schemas.try_write() else {
+            return Ok(());
         };
 
         let mut each_results = Vec::with_capacity(resolved_schemas.len());
@@ -162,7 +155,7 @@ where
             each_results.push(result);
         }
 
-        drop(schemas_guard);
+        drop(_cycle_guard);
 
         if valid_count == 1 {
             for result in each_results {

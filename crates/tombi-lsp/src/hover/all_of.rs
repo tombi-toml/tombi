@@ -39,25 +39,19 @@ where
             .as_ref()
             .and_then(|default| DisplayValue::try_from(default).ok());
 
-        let Ok(mut schemas_guard) = all_of_schema.schemas.try_write() else {
-            log::warn!("Circular JSON Schema reference detected in get_all_of_hover_content, skipping hover");
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &all_of_schema.schemas,
+            Cow::Borrowed(schema_uri),
+            Cow::Borrowed(definitions),
+            schema_context.store,
+        )
+        .await
+        else {
             return None;
         };
-        let resolved_schemas = {
-            let mut resolved = Vec::with_capacity(schemas_guard.len());
-            for referable_schema in schemas_guard.iter_mut() {
-                if let Ok(Some(current_schema)) = referable_schema
-                    .resolve(
-                        Cow::Borrowed(schema_uri),
-                        Cow::Borrowed(definitions),
-                        schema_context.store,
-                    )
-                    .await
-                {
-                    resolved.push(current_schema.into_owned());
-                }
-            }
-            resolved
+
+        let Ok(_cycle_guard) = all_of_schema.schemas.try_write() else {
+            return None;
         };
 
         for resolved_schema in &resolved_schemas {
@@ -113,7 +107,7 @@ where
             }
         }
 
-        drop(schemas_guard);
+        drop(_cycle_guard);
 
         let (mut title, mut description) = if title_description_set.len() == 1 {
             title_description_set.into_iter().next().unwrap()
@@ -195,25 +189,19 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok());
 
-            let Ok(mut schemas_guard) = self.schemas.try_write() else {
-                log::warn!("Circular JSON Schema reference detected in AllOfSchema::get_hover_content, skipping hover");
+            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                &self.schemas,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
+            else {
                 return None;
             };
-            let resolved_schemas = {
-                let mut resolved = Vec::with_capacity(schemas_guard.len());
-                for referable_schema in schemas_guard.iter_mut() {
-                    if let Ok(Some(current_schema)) = referable_schema
-                        .resolve(
-                            current_schema.schema_uri.clone(),
-                            current_schema.definitions.clone(),
-                            schema_context.store,
-                        )
-                        .await
-                    {
-                        resolved.push(current_schema.into_owned());
-                    }
-                }
-                resolved
+
+            let Ok(_cycle_guard) = self.schemas.try_write() else {
+                return None;
             };
 
             for resolved_schema in &resolved_schemas {
@@ -235,7 +223,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 }
             }
 
-            drop(schemas_guard);
+            drop(_cycle_guard);
 
             let (mut title, mut description) = if title_description_set.len() == 1 {
                 title_description_set.into_iter().next().unwrap()

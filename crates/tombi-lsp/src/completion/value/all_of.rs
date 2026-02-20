@@ -45,25 +45,19 @@ where
     async move {
         let mut completion_items = Vec::new();
 
-        let Ok(mut schemas_guard) = all_of_schema.schemas.try_write() else {
-            log::warn!("Circular JSON Schema reference detected in find_all_of_completion_items, skipping completion");
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &all_of_schema.schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        else {
             return completion_items;
         };
-        let resolved_schemas = {
-            let mut resolved = Vec::with_capacity(schemas_guard.len());
-            for referable_schema in schemas_guard.iter_mut() {
-                if let Ok(Some(current_schema)) = referable_schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                {
-                    resolved.push(current_schema.into_owned());
-                }
-            }
-            resolved
+
+        let Ok(_cycle_guard) = all_of_schema.schemas.try_write() else {
+            return completion_items;
         };
 
         for resolved_schema in &resolved_schemas {
@@ -81,7 +75,7 @@ where
             completion_items.extend(schema_completions);
         }
 
-        drop(schemas_guard);
+        drop(_cycle_guard);
 
         let detail = all_of_schema
             .detail(

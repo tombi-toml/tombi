@@ -34,7 +34,7 @@ pub use local_time_schema::LocalTimeSchema;
 pub use not_schema::NotSchema;
 pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
-pub use referable_schema::{CurrentSchema, Referable, is_online_url};
+pub use referable_schema::{CurrentSchema, Referable, is_online_url, resolve_and_collect_schemas};
 pub use schema_context::SchemaContext;
 pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;

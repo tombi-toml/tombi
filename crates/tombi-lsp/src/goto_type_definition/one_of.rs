@@ -31,25 +31,19 @@ where
     log::trace!("schema_uri: {:?}", schema_uri);
 
     async move {
-        let Ok(mut schemas_guard) = one_of_schema.schemas.try_write() else {
-            log::warn!("Circular JSON Schema reference detected in get_one_of_goto_type_definition_response, skipping");
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &one_of_schema.schemas,
+            Cow::Borrowed(schema_uri),
+            Cow::Borrowed(definitions),
+            schema_context.store,
+        )
+        .await
+        else {
             return None;
         };
-        let resolved_schemas = {
-            let mut resolved = Vec::with_capacity(schemas_guard.len());
-            for referable_schema in schemas_guard.iter_mut() {
-                if let Ok(Some(current_schema)) = referable_schema
-                    .resolve(
-                        Cow::Borrowed(schema_uri),
-                        Cow::Borrowed(definitions),
-                        schema_context.store,
-                    )
-                    .await
-                {
-                    resolved.push(current_schema.into_owned());
-                }
-            }
-            resolved
+
+        let Ok(_cycle_guard) = one_of_schema.schemas.try_write() else {
+            return None;
         };
 
         for resolved_schema in &resolved_schemas {
@@ -71,7 +65,7 @@ where
             }
         }
 
-        drop(schemas_guard);
+        drop(_cycle_guard);
 
         let mut schema_uri = schema_uri.clone();
         schema_uri.set_fragment(Some(&format!("L{}", one_of_schema.range.start.line + 1)));

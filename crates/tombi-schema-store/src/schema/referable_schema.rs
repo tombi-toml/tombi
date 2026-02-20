@@ -244,7 +244,7 @@ impl Referable<ValueSchema> {
                             let needs_resolution = if let Ok(guard) = schemas.try_read() {
                                 guard.iter().any(|s| matches!(s, Referable::Ref { .. }))
                             } else {
-                                log::warn!("Circular JSON Schema reference detected, skipping inner schema resolution");
+                                log::debug!("Circular JSON Schema reference detected, skipping inner schema resolution");
                                 false
                             };
 
@@ -274,6 +274,105 @@ impl Referable<ValueSchema> {
             }
         })
     }
+
+    /// Constructs a `CurrentSchema<'static>` from a `Resolved` variant without mutation.
+    /// Returns `Ok(None)` for `Ref` variants (they need `resolve()` first).
+    ///
+    /// This is designed for use under a read lock, where we've already confirmed
+    /// all schemas are Resolved.
+    pub async fn to_current_schema(
+        &self,
+        schema_uri: Cow<'_, SchemaUri>,
+        definitions: Cow<'_, SchemaDefinitions>,
+        schema_store: &crate::SchemaStore,
+    ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
+        match self {
+            Referable::Ref { .. } => Ok(None),
+            Referable::Resolved {
+                schema_uri: reference_url,
+                value: value_schema,
+            } => {
+                let (schema_uri, definitions) = match reference_url {
+                    Some(reference_url) => {
+                        if let Some(document_schema) =
+                            schema_store.try_get_document_schema(reference_url).await?
+                        {
+                            (
+                                Cow::Owned(document_schema.schema_uri),
+                                Cow::Owned(document_schema.definitions),
+                            )
+                        } else {
+                            (schema_uri, definitions)
+                        }
+                    }
+                    None => (schema_uri, definitions),
+                };
+
+                Ok(Some(CurrentSchema {
+                    value_schema: Cow::Owned(value_schema.clone()),
+                    schema_uri: Cow::Owned(schema_uri.into_owned()),
+                    definitions: Cow::Owned(definitions.into_owned()),
+                }))
+            }
+        }
+    }
+}
+
+/// Two-path schema collection: tries a read lock first for already-resolved schemas,
+/// falls back to a write lock for resolution.
+///
+/// Returns `None` if the lock cannot be acquired (indicating a circular reference
+/// in a parent caller's processing phase, or concurrent write lock).
+pub async fn resolve_and_collect_schemas(
+    schemas: &super::ReferableValueSchemas,
+    schema_uri: Cow<'_, SchemaUri>,
+    definitions: Cow<'_, SchemaDefinitions>,
+    schema_store: &crate::SchemaStore,
+) -> Option<Vec<CurrentSchema<'static>>> {
+    // Path 1: Read lock -- check if all schemas are already Resolved
+    if let Ok(guard) = schemas.try_read() {
+        if guard.iter().all(|s| matches!(s, Referable::Resolved { .. })) {
+            let mut collected = Vec::with_capacity(guard.len());
+            for referable_schema in guard.iter() {
+                match referable_schema
+                    .to_current_schema(schema_uri.clone(), definitions.clone(), schema_store)
+                    .await
+                {
+                    Ok(Some(current_schema)) => collected.push(current_schema),
+                    Ok(None) => {}
+                    Err(err) => {
+                        log::warn!("{err}");
+                    }
+                }
+            }
+            return Some(collected);
+        }
+        // Not all resolved, drop read lock before trying write
+        drop(guard);
+    } else {
+        // try_read() failed -- a write lock is held (circular reference during processing)
+        return None;
+    }
+
+    // Path 2: Write lock -- some schemas are Ref, need resolution
+    let Ok(mut guard) = schemas.try_write() else {
+        return None;
+    };
+
+    let mut collected = Vec::with_capacity(guard.len());
+    for referable_schema in guard.iter_mut() {
+        match referable_schema
+            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .await
+        {
+            Ok(Some(current_schema)) => collected.push(current_schema.into_owned()),
+            Ok(None) => {}
+            Err(err) => {
+                log::warn!("{err}");
+            }
+        }
+    }
+    Some(collected)
 }
 
 pub fn is_online_url(reference: &str) -> bool {
