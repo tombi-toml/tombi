@@ -27,16 +27,22 @@ pub async fn handle_get_status(
         .config_schema_store_for_uri(&text_document_uri)
         .await;
 
-    let (toml_version, source, schema) = {
+    let document_text = {
         let document_sources = backend.document_sources.read().await;
-        if let Some(document_source) = document_sources.get(&text_document_uri) {
+        document_sources
+            .get(&text_document_uri)
+            .map(|document_source| document_source.text().to_string())
+    };
+
+    let (toml_version, source, schema) = {
+        if let Some(document_text) = document_text.as_deref() {
             let (toml_version, source) = backend
-                .text_document_toml_version_and_source(&text_document_uri, document_source.text())
+                .text_document_toml_version_and_source(&text_document_uri, document_text)
                 .await;
 
             // Get schema information
             let schema = if let Some(parsed) =
-                tombi_parser::parse_document_header_comments(document_source.text())
+                tombi_parser::parse_document_header_comments(document_text)
                     .cast::<tombi_ast::Root>()
             {
                 let root = parsed.tree();
@@ -47,9 +53,10 @@ pub async fn handle_get_status(
                     .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
                     .await
                 {
-                    Ok(Some(source_schema)) => {
-                        source_schema.root_schema.as_ref().map(|s| s.schema_uri.clone())
-                    }
+                    Ok(Some(source_schema)) => source_schema
+                        .root_schema
+                        .as_ref()
+                        .map(|s| s.schema_uri.clone()),
                     _ => None,
                 };
 
@@ -68,16 +75,15 @@ pub async fn handle_get_status(
                         match schema_store.try_get_document_schema(&schema_uri).await {
                             Ok(Some(doc_schema)) => {
                                 // Get title/description from DocumentSchema
-                                let (title, description) = if let Some(value_schema) =
-                                    &doc_schema.value_schema
-                                {
-                                    (
-                                        value_schema.title().map(|s| s.to_string()),
-                                        value_schema.description().map(|s| s.to_string()),
-                                    )
-                                } else {
-                                    (None, None)
-                                };
+                                let (title, description) =
+                                    if let Some(value_schema) = &doc_schema.value_schema {
+                                        (
+                                            value_schema.title().map(|s| s.to_string()),
+                                            value_schema.description().map(|s| s.to_string()),
+                                        )
+                                    } else {
+                                        (None, None)
+                                    };
                                 Some(SchemaStatus {
                                     title,
                                     description,

@@ -71,43 +71,45 @@ pub async fn get_diagnostics_result(
         }
     }
 
-    let document_sources = backend.document_sources.read().await;
+    let document_source = {
+        let document_sources = backend.document_sources.read().await;
+        document_sources.get(text_document_uri).cloned()
+    };
 
-    match document_sources.get(text_document_uri) {
-        Some(document_source) => {
-            // Get lint options with override support
-            let text_document_path = text_document_uri.to_file_path().ok();
-            let Some(lint_options) = tombi_glob::get_lint_options(
-                &config,
-                text_document_path.as_deref(),
-                config_path.as_deref(),
-            ) else {
-                log::debug!("Linting disabled for {:?} by override", text_document_path);
-                return None;
-            };
+    let Some(document_source) = document_source else {
+        return None;
+    };
 
-            Some(DiagnosticsResult {
-                diagnostics: match tombi_linter::Linter::new(
-                    document_source.toml_version,
-                    &lint_options,
-                    Some(Either::Left(text_document_uri)),
-                    &schema_store,
-                )
-                .lint(document_source.text())
-                .await
-                {
-                    Ok(_) => Vec::with_capacity(0),
-                    Err(diagnostics) => diagnostics
-                        .into_iter()
-                        .unique()
-                        .map(|diagnostic| diagnostic.into_lsp(document_source.line_index()))
-                        .collect_vec(),
-                },
-                version: document_source.version,
-            })
-        }
-        None => None,
-    }
+    // Get lint options with override support
+    let text_document_path = text_document_uri.to_file_path().ok();
+    let Some(lint_options) = tombi_glob::get_lint_options(
+        &config,
+        text_document_path.as_deref(),
+        config_path.as_deref(),
+    ) else {
+        log::debug!("Linting disabled for {:?} by override", text_document_path);
+        return None;
+    };
+
+    Some(DiagnosticsResult {
+        diagnostics: match tombi_linter::Linter::new(
+            document_source.toml_version,
+            &lint_options,
+            Some(Either::Left(text_document_uri)),
+            &schema_store,
+        )
+        .lint(document_source.text())
+        .await
+        {
+            Ok(_) => Vec::with_capacity(0),
+            Err(diagnostics) => diagnostics
+                .into_iter()
+                .unique()
+                .map(|diagnostic| diagnostic.into_lsp(document_source.line_index()))
+                .collect_vec(),
+        },
+        version: document_source.version,
+    })
 }
 
 #[derive(Debug)]

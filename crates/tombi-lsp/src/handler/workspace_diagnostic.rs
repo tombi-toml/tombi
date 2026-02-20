@@ -138,6 +138,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
     let toml_version = backend
         .text_document_toml_version(&text_document_uri, &content)
         .await;
+    let encoding_kind = backend.capabilities.read().await.encoding_kind;
 
     let mut document_sources = backend.document_sources.write().await;
     if let Some(source) = document_sources.get_mut(&text_document_uri) {
@@ -150,12 +151,7 @@ pub async fn upsert_document_source(backend: &Backend, text_document_uri: tombi_
     } else {
         document_sources.insert(
             text_document_uri.clone(),
-            DocumentSource::new(
-                content,
-                None,
-                toml_version,
-                backend.capabilities.read().await.encoding_kind,
-            ),
+            DocumentSource::new(content, None, toml_version, encoding_kind),
         );
     }
 

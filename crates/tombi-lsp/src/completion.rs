@@ -16,8 +16,8 @@ use tombi_extension::{
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, ReferableValueSchemas, SchemaDefinitions,
-    SchemaStore, SchemaUri, ValueSchema,
+    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, Referable, ReferableValueSchemas,
+    SchemaDefinitions, SchemaStore, SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -310,7 +310,50 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
-            {
+            // If all schemas are resolved, keep a read lock; resolve refs with a write lock only when needed
+            let resolved_only = {
+                let schemas_read = self.schemas().read().await;
+                let all_resolved = schemas_read
+                    .iter()
+                    .all(|schema| matches!(&*schema, Referable::Resolved { .. }));
+
+                if all_resolved {
+                    for referable_schema in schemas_read.iter() {
+                        if let Ok(Some(CurrentSchema {
+                            value_schema,
+                            schema_uri,
+                            definitions,
+                        })) = referable_schema
+                            .current_schema(
+                                Cow::Borrowed(schema_uri),
+                                Cow::Borrowed(definitions),
+                                schema_store,
+                            )
+                            .await
+                        {
+                            if matches!(value_schema.as_ref(), ValueSchema::Null) {
+                                continue;
+                            }
+
+                            if let Some(candidate) = CompletionCandidate::title(
+                                value_schema.as_ref(),
+                                &schema_uri,
+                                &definitions,
+                                schema_store,
+                                completion_hint,
+                            )
+                            .await
+                            {
+                                candidates.insert(candidate.to_string());
+                            }
+                        }
+                    }
+                }
+
+                all_resolved
+            };
+
+            if !resolved_only {
                 for referable_schema in self.schemas().write().await.iter_mut() {
                     if let Ok(Some(CurrentSchema {
                         value_schema,
@@ -360,7 +403,49 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
-            {
+            let resolved_only = {
+                let schemas_read = self.schemas().read().await;
+                let all_resolved = schemas_read
+                    .iter()
+                    .all(|schema| matches!(&*schema, Referable::Resolved { .. }));
+
+                if all_resolved {
+                    for referable_schema in schemas_read.iter() {
+                        if let Ok(Some(CurrentSchema {
+                            value_schema,
+                            schema_uri,
+                            definitions,
+                        })) = referable_schema
+                            .current_schema(
+                                Cow::Borrowed(schema_uri),
+                                Cow::Borrowed(definitions),
+                                schema_store,
+                            )
+                            .await
+                        {
+                            if matches!(value_schema.as_ref(), ValueSchema::Null) {
+                                continue;
+                            }
+
+                            if let Some(candidate) = CompletionCandidate::description(
+                                value_schema.as_ref(),
+                                &schema_uri,
+                                &definitions,
+                                schema_store,
+                                completion_hint,
+                            )
+                            .await
+                            {
+                                candidates.insert(candidate.to_string());
+                            }
+                        }
+                    }
+                }
+
+                all_resolved
+            };
+
+            if !resolved_only {
                 for referable_schema in self.schemas().write().await.iter_mut() {
                     if let Ok(Some(CurrentSchema {
                         value_schema,

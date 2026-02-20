@@ -4,7 +4,7 @@ use tombi_x_keyword::StringFormat;
 
 use crate::x_taplo::XTaplo;
 
-use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUri, ValueSchema};
+use super::{ReferableValueSchemas, SchemaDefinitions, SchemaUri, ValueSchema};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Referable<T> {
@@ -55,6 +55,62 @@ impl<T> Referable<T> {
     }
 }
 
+/// Resolve `ReferableValueSchemas` into concrete `CurrentSchema`s.
+/// Resolve `ReferableValueSchemas` while preferring read locks when everything is already resolved.
+pub async fn collect_current_schemas<'a>(
+    schemas: &'a ReferableValueSchemas,
+    schema_uri: Cow<'a, SchemaUri>,
+    definitions: Cow<'a, SchemaDefinitions>,
+    schema_store: &'a crate::SchemaStore,
+) -> Result<Vec<CurrentSchema<'static>>, crate::Error> {
+    // Fast path: all resolved => read lock only
+    let read_cloned = {
+        let schemas_read = schemas.read().await;
+        if schemas_read
+            .iter()
+            .all(|schema| matches!(&*schema, Referable::Resolved { .. }))
+        {
+            Some(schemas_read.clone())
+        } else {
+            None
+        }
+    };
+
+    if let Some(referable_schemas) = read_cloned {
+        let mut current_schemas = Vec::with_capacity(referable_schemas.len());
+        for referable_schema in &referable_schemas {
+            if let Some(current_schema) = referable_schema
+                .current_schema(
+                    Cow::Borrowed(schema_uri.as_ref()),
+                    Cow::Borrowed(definitions.as_ref()),
+                    schema_store,
+                )
+                .await?
+            {
+                current_schemas.push(current_schema.into_owned());
+            }
+        }
+        return Ok(current_schemas);
+    }
+
+    // Fallback: resolve refs with a write lock when needed
+    let mut current_schemas = Vec::new();
+    for referable_schema in schemas.write().await.iter_mut() {
+        if let Some(current_schema) = referable_schema
+            .resolve(
+                Cow::Borrowed(schema_uri.as_ref()),
+                Cow::Borrowed(definitions.as_ref()),
+                schema_store,
+            )
+            .await?
+        {
+            current_schemas.push(current_schema.into_owned());
+        }
+    }
+
+    Ok(current_schemas)
+}
+
 impl Referable<ValueSchema> {
     pub fn new(
         object: &tombi_json::ObjectNode,
@@ -99,8 +155,51 @@ impl Referable<ValueSchema> {
     pub async fn value_type(&self) -> crate::ValueType {
         match self {
             Referable::Resolved { value, .. } => value.value_type().await,
-            Referable::Ref { .. } => unreachable!("unreachable ref value_tyle."),
+            // Ref can remain unresolved on read paths; treat it as unknown instead of panicking.
+            Referable::Ref { .. } => crate::ValueType::Null,
         }
+    }
+
+    pub fn current_schema<'a: 'b, 'b>(
+        &'a self,
+        schema_uri: Cow<'a, SchemaUri>,
+        definitions: Cow<'a, SchemaDefinitions>,
+        schema_store: &'a crate::SchemaStore,
+    ) -> tombi_future::BoxFuture<'b, Result<Option<CurrentSchema<'a>>, crate::Error>> {
+        Box::pin(async move {
+            match self {
+                Referable::Resolved {
+                    schema_uri: reference_url,
+                    value: value_schema,
+                    ..
+                } => {
+                    let (schema_uri, definitions) = {
+                        match reference_url {
+                            Some(reference_url) if reference_url != schema_uri.as_ref() => {
+                                if let Some(document_schema) =
+                                    schema_store.try_get_document_schema(reference_url).await?
+                                {
+                                    (
+                                        Cow::Owned(document_schema.schema_uri),
+                                        Cow::Owned(document_schema.definitions),
+                                    )
+                                } else {
+                                    (schema_uri, definitions)
+                                }
+                            }
+                            Some(_) | None => (schema_uri, definitions),
+                        }
+                    };
+
+                    Ok(Some(CurrentSchema {
+                        value_schema: Cow::Borrowed(value_schema),
+                        schema_uri,
+                        definitions,
+                    }))
+                }
+                Referable::Ref { .. } => Ok(None),
+            }
+        })
     }
 
     pub fn resolve<'a: 'b, 'b>(
@@ -187,7 +286,7 @@ impl Referable<ValueSchema> {
                                 };
 
                                 return self
-                                    .resolve(
+                                    .current_schema(
                                         Cow::Owned(document_schema.schema_uri),
                                         Cow::Owned(document_schema.definitions),
                                         schema_store,
@@ -209,49 +308,12 @@ impl Referable<ValueSchema> {
                         });
                     }
 
-                    self.resolve(schema_uri, definitions, schema_store).await
+                    self.current_schema(schema_uri, definitions, schema_store)
+                        .await
                 }
-                Referable::Resolved {
-                    schema_uri: reference_url,
-                    value: value_schema,
-                    ..
-                } => {
-                    let (schema_uri, definitions) = {
-                        match reference_url {
-                            Some(reference_url) => {
-                                if let Some(document_schema) =
-                                    schema_store.try_get_document_schema(reference_url).await?
-                                {
-                                    (
-                                        Cow::Owned(document_schema.schema_uri),
-                                        Cow::Owned(document_schema.definitions),
-                                    )
-                                } else {
-                                    (schema_uri, definitions)
-                                }
-                            }
-                            None => (schema_uri, definitions),
-                        }
-                    };
-
-                    match value_schema {
-                        ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                        | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                        | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                            for schema in schemas.write().await.iter_mut() {
-                                schema
-                                    .resolve(schema_uri.clone(), definitions.clone(), schema_store)
-                                    .await?;
-                            }
-                        }
-                        _ => {}
-                    }
-
-                    Ok(Some(CurrentSchema {
-                        value_schema: Cow::Borrowed(value_schema),
-                        schema_uri,
-                        definitions,
-                    }))
+                Referable::Resolved { .. } => {
+                    self.current_schema(schema_uri, definitions, schema_store)
+                        .await
                 }
             }
         })
@@ -373,7 +435,9 @@ fn percent_decode(input: &str) -> String {
 mod test {
     use std::str::FromStr;
 
-    use crate::{ValueSchema, schema::referable_schema::resolve_json_pointer};
+    use crate::{
+        Referable, ValueSchema, ValueType, schema::referable_schema::resolve_json_pointer,
+    };
 
     #[test]
     fn test_json_pointer_percent_decode() {
@@ -449,5 +513,17 @@ mod test {
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
         }
+    }
+
+    #[tokio::test]
+    async fn value_type_of_unresolved_ref_is_null() {
+        let referable = Referable::<ValueSchema>::Ref {
+            reference: "#/definitions/value".to_string(),
+            title: None,
+            description: None,
+            deprecated: None,
+        };
+
+        assert_eq!(referable.value_type().await, ValueType::Null);
     }
 }

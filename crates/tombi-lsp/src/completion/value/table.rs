@@ -71,8 +71,10 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
             // `range.end` points to the cursor position right after `}`.
             // At that point, completion should not behave as "inside inline table".
-            if matches!(self.kind(), tombi_document_tree::TableKind::InlineTable { .. })
-                && position >= self.range().end
+            if matches!(
+                self.kind(),
+                tombi_document_tree::TableKind::InlineTable { .. }
+            ) && position >= self.range().end
             {
                 return Vec::with_capacity(0);
             }

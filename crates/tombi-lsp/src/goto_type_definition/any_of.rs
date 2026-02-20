@@ -31,18 +31,17 @@ where
     log::trace!("schema_uri: {:?}", schema_uri);
 
     async move {
-        for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let current_schemas: Vec<CurrentSchema<'static>> =
+            tombi_schema_store::collect_current_schemas(
+                &any_of_schema.schemas,
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_context.store,
+            )
+            .await
+            .unwrap_or_default();
 
+        for current_schema in current_schemas {
             if let Some(type_definition) = value
                 .get_type_definition(
                     position,

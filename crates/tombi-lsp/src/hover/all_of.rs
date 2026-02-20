@@ -39,18 +39,17 @@ where
             .as_ref()
             .and_then(|default| DisplayValue::try_from(default).ok());
 
-        for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let current_schemas: Vec<CurrentSchema<'static>> =
+            tombi_schema_store::collect_current_schemas(
+                &all_of_schema.schemas,
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_context.store,
+            )
+            .await
+            .unwrap_or_default();
 
+        for current_schema in current_schemas {
             if let Some(values) = current_schema
                 .value_schema
                 .as_ref()
@@ -183,22 +182,22 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok());
 
-            for referable_schema in self.schemas.write().await.iter_mut() {
-                let Ok(Some(CurrentSchema {
-                    value_schema,
-                    schema_uri,
-                    definitions,
-                    ..
-                })) = referable_schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                else {
-                    continue;
-                };
+            let current_schemas: Vec<CurrentSchema<'static>> =
+                tombi_schema_store::collect_current_schemas(
+                    &self.schemas,
+                    Cow::Borrowed(current_schema.schema_uri.as_ref()),
+                    Cow::Borrowed(current_schema.definitions.as_ref()),
+                    schema_context.store,
+                )
+                .await
+                .unwrap_or_default();
+
+            for CurrentSchema {
+                value_schema,
+                schema_uri,
+                definitions,
+            } in current_schemas
+            {
                 if value_schema.title().is_some() || value_schema.description().is_some() {
                     title_description_set.insert((
                         value_schema.title().map(ToString::to_string),

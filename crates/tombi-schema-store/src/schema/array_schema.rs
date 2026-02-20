@@ -97,6 +97,39 @@ impl FindSchemaCandidates for ArraySchema {
                 return (candidates, errors);
             };
 
+            {
+                // If already resolved, read lock is enough to avoid blocking concurrent readers
+                let referable_schema = items.read().await;
+                if matches!(&*referable_schema, Referable::Resolved { .. }) {
+                    if let Ok(Some(CurrentSchema {
+                        schema_uri,
+                        value_schema,
+                        definitions,
+                    })) = referable_schema
+                        .current_schema(
+                            Cow::Borrowed(schema_uri),
+                            Cow::Borrowed(definitions),
+                            schema_store,
+                        )
+                        .await
+                    {
+                        let (mut item_candidates, mut item_errors) = value_schema
+                            .find_schema_candidates(
+                                &accessors[1..],
+                                &schema_uri,
+                                &definitions,
+                                schema_store,
+                            )
+                            .await;
+                        candidates.append(&mut item_candidates);
+                        errors.append(&mut item_errors);
+
+                        return (candidates, errors);
+                    }
+                }
+            }
+
+            // Only take write lock when the item is still a Ref
             let mut referable_schema = items.write().await;
             if let Ok(Some(CurrentSchema {
                 schema_uri,

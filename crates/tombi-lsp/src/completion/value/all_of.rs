@@ -45,27 +45,65 @@ where
     async move {
         let mut completion_items = Vec::new();
 
-        for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
-            if let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-            {
-                let schema_completions = value
-                    .find_completion_contents(
-                        position,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                        completion_hint,
-                    )
-                    .await;
+        // If everything is resolved, stay on read lock
+        let resolved_only = {
+            let schemas_read = all_of_schema.schemas.read().await;
+            let all_resolved = schemas_read
+                .iter()
+                .all(|schema| matches!(&*schema, tombi_schema_store::Referable::Resolved { .. }));
 
-                completion_items.extend(schema_completions);
+            if all_resolved {
+                for referable_schema in schemas_read.iter() {
+                    if let Ok(Some(current_schema)) = referable_schema
+                        .current_schema(
+                            current_schema.schema_uri.clone(),
+                            current_schema.definitions.clone(),
+                            schema_context.store,
+                        )
+                        .await
+                    {
+                        let schema_completions = value
+                            .find_completion_contents(
+                                position,
+                                keys,
+                                accessors,
+                                Some(&current_schema),
+                                schema_context,
+                                completion_hint,
+                            )
+                            .await;
+
+                        completion_items.extend(schema_completions);
+                    }
+                }
+            }
+
+            all_resolved
+        };
+
+        if !resolved_only {
+            for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
+                if let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    let schema_completions = value
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            Some(&current_schema),
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await;
+
+                    completion_items.extend(schema_completions);
+                }
             }
         }
 

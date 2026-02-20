@@ -56,43 +56,97 @@ where
         let first_key = (keys.len() == 1 && !keys[0].value.is_empty()).then(|| &keys[0].value);
 
         let mut branch_results: Vec<(bool, Vec<CompletionContent>)> = Vec::new();
-        for referable_schema in one_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
 
-            let branch_has_key = if let Some(ref first_key) = first_key {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => table_schema
-                        .properties
-                        .read()
+        // If all branches are resolved, keep read lock; only resolve refs with write lock when needed
+        let resolved_only = {
+            let schemas_read = one_of_schema.schemas.read().await;
+            let all_resolved = schemas_read
+                .iter()
+                .all(|schema| matches!(&*schema, tombi_schema_store::Referable::Resolved { .. }));
+
+            if all_resolved {
+                for referable_schema in schemas_read.iter() {
+                    let Ok(Some(current_schema)) = referable_schema
+                        .current_schema(
+                            current_schema.schema_uri.clone(),
+                            current_schema.definitions.clone(),
+                            schema_context.store,
+                        )
                         .await
-                        .contains_key(&SchemaAccessor::Key(first_key.to_string())),
-                    _ => false,
+                    else {
+                        continue;
+                    };
+
+                    let branch_has_key = if let Some(ref first_key) = first_key {
+                        match current_schema.value_schema.as_ref() {
+                            ValueSchema::Table(table_schema) => table_schema
+                                .properties
+                                .read()
+                                .await
+                                .contains_key(&SchemaAccessor::Key(first_key.to_string())),
+                            _ => false,
+                        }
+                    } else {
+                        false
+                    };
+
+                    let schema_completions = value
+                        .find_completion_contents(
+                            position,
+                            keys,
+                            accessors,
+                            Some(&current_schema),
+                            schema_context,
+                            completion_hint,
+                        )
+                        .await;
+
+                    branch_results.push((branch_has_key, schema_completions));
                 }
-            } else {
-                false
-            };
+            }
 
-            let schema_completions = value
-                .find_completion_contents(
-                    position,
-                    keys,
-                    accessors,
-                    Some(&current_schema),
-                    schema_context,
-                    completion_hint,
-                )
-                .await;
+            all_resolved
+        };
 
-            branch_results.push((branch_has_key, schema_completions));
+        if !resolved_only {
+            for referable_schema in one_of_schema.schemas.write().await.iter_mut() {
+                let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                else {
+                    continue;
+                };
+
+                let branch_has_key = if let Some(ref first_key) = first_key {
+                    match current_schema.value_schema.as_ref() {
+                        ValueSchema::Table(table_schema) => table_schema
+                            .properties
+                            .read()
+                            .await
+                            .contains_key(&SchemaAccessor::Key(first_key.to_string())),
+                        _ => false,
+                    }
+                } else {
+                    false
+                };
+
+                let schema_completions = value
+                    .find_completion_contents(
+                        position,
+                        keys,
+                        accessors,
+                        Some(&current_schema),
+                        schema_context,
+                        completion_hint,
+                    )
+                    .await;
+
+                branch_results.push((branch_has_key, schema_completions));
+            }
         }
 
         let narrow_branches = branch_results.iter().any(|(has_key, _)| *has_key);

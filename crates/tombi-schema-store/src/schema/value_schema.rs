@@ -440,6 +440,41 @@ impl ValueSchema {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                    {
+                        // If already resolved, stay on a read lock to maximize concurrency
+                        let schemas_read = schemas.read().await;
+                        if schemas_read
+                            .iter()
+                            .all(|schema| matches!(&*schema, Referable::Resolved { .. }))
+                        {
+                            for referable_schema in schemas_read.iter() {
+                                if let Ok(Some(current_schema)) = referable_schema
+                                    .current_schema(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
+                                    .await
+                                {
+                                    matched_schemas.extend(
+                                        current_schema
+                                            .value_schema
+                                            .match_flattened_schemas(
+                                                condition,
+                                                &current_schema.schema_uri,
+                                                &current_schema.definitions,
+                                                schema_store,
+                                            )
+                                            .await,
+                                    )
+                                }
+                            }
+
+                            return matched_schemas;
+                        }
+                    }
+
+                    // Resolve with a write lock only when refs are present
                     for referable_schema in schemas.write().await.iter_mut() {
                         if let Ok(Some(current_schema)) = referable_schema
                             .resolve(
@@ -488,64 +523,154 @@ impl ValueSchema {
         async move {
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => join_all(
-                    schemas
-                        .write()
-                        .await
-                        .iter_mut()
-                        .map(|referable_schema| async {
-                            if let Ok(Some(CurrentSchema {
-                                value_schema,
-                                schema_uri,
-                                definitions,
-                            })) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                value_schema
-                                    .is_match(condition, &schema_uri, &definitions, schema_store)
+                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => {
+                    {
+                        // If all branches are resolved, use read lock for quick checks
+                        let schemas_read = schemas.read().await;
+                        if schemas_read
+                            .iter()
+                            .all(|schema| matches!(&*schema, Referable::Resolved { .. }))
+                        {
+                            return join_all(schemas_read.iter().map(|referable_schema| async {
+                                if let Ok(Some(CurrentSchema {
+                                    value_schema,
+                                    schema_uri,
+                                    definitions,
+                                })) = referable_schema
+                                    .current_schema(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
                                     .await
-                            } else {
-                                false
-                            }
-                        }),
-                )
-                .await
-                .into_iter()
-                .any(|is_matched| is_matched),
-                ValueSchema::AllOf(AllOfSchema { schemas, .. }) => join_all(
-                    schemas
-                        .write()
-                        .await
-                        .iter_mut()
-                        .map(|referable_schema| async {
-                            if let Ok(Some(CurrentSchema {
-                                value_schema,
-                                schema_uri,
-                                definitions,
-                            })) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                value_schema
-                                    .is_match(condition, &schema_uri, &definitions, schema_store)
+                                {
+                                    value_schema
+                                        .is_match(
+                                            condition,
+                                            &schema_uri,
+                                            &definitions,
+                                            schema_store,
+                                        )
+                                        .await
+                                } else {
+                                    false
+                                }
+                            }))
+                            .await
+                            .into_iter()
+                            .any(|is_matched| is_matched);
+                        }
+                    }
+
+                    join_all(
+                        schemas
+                            .write()
+                            .await
+                            .iter_mut()
+                            .map(|referable_schema| async {
+                                if let Ok(Some(CurrentSchema {
+                                    value_schema,
+                                    schema_uri,
+                                    definitions,
+                                })) = referable_schema
+                                    .resolve(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
                                     .await
-                            } else {
-                                false
-                            }
-                        }),
-                )
-                .await
-                .into_iter()
-                .all(|is_matched| is_matched),
+                                {
+                                    value_schema
+                                        .is_match(
+                                            condition,
+                                            &schema_uri,
+                                            &definitions,
+                                            schema_store,
+                                        )
+                                        .await
+                                } else {
+                                    false
+                                }
+                            }),
+                    )
+                    .await
+                    .into_iter()
+                    .any(|is_matched| is_matched)
+                }
+                ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                    {
+                        // If resolved, rely on read lock for evaluation
+                        let schemas_read = schemas.read().await;
+                        if schemas_read
+                            .iter()
+                            .all(|schema| matches!(&*schema, Referable::Resolved { .. }))
+                        {
+                            return join_all(schemas_read.iter().map(|referable_schema| async {
+                                if let Ok(Some(CurrentSchema {
+                                    value_schema,
+                                    schema_uri,
+                                    definitions,
+                                })) = referable_schema
+                                    .current_schema(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
+                                    .await
+                                {
+                                    value_schema
+                                        .is_match(
+                                            condition,
+                                            &schema_uri,
+                                            &definitions,
+                                            schema_store,
+                                        )
+                                        .await
+                                } else {
+                                    false
+                                }
+                            }))
+                            .await
+                            .into_iter()
+                            .all(|is_matched| is_matched);
+                        }
+                    }
+
+                    join_all(
+                        schemas
+                            .write()
+                            .await
+                            .iter_mut()
+                            .map(|referable_schema| async {
+                                if let Ok(Some(CurrentSchema {
+                                    value_schema,
+                                    schema_uri,
+                                    definitions,
+                                })) = referable_schema
+                                    .resolve(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
+                                    .await
+                                {
+                                    value_schema
+                                        .is_match(
+                                            condition,
+                                            &schema_uri,
+                                            &definitions,
+                                            schema_store,
+                                        )
+                                        .await
+                                } else {
+                                    false
+                                }
+                            }),
+                    )
+                    .await
+                    .into_iter()
+                    .all(|is_matched| is_matched)
+                }
                 _ => condition(self),
             }
         }
@@ -583,6 +708,50 @@ impl FindSchemaCandidates for ValueSchema {
                 }) => {
                     let mut candidates = Vec::new();
                     let mut errors = Vec::new();
+
+                    {
+                        // If everything is resolved, read lock is sufficient for reads
+                        let schemas_read = schemas.read().await;
+                        if schemas_read
+                            .iter()
+                            .all(|schema| matches!(&*schema, Referable::Resolved { .. }))
+                        {
+                            for referable_schema in schemas_read.iter() {
+                                let Ok(Some(current_schema)) = referable_schema
+                                    .current_schema(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
+                                    .await
+                                else {
+                                    continue;
+                                };
+
+                                let (mut schema_candidates, schema_errors) = current_schema
+                                    .value_schema
+                                    .find_schema_candidates(
+                                        accessors,
+                                        &current_schema.schema_uri,
+                                        &current_schema.definitions,
+                                        schema_store,
+                                    )
+                                    .await;
+
+                                for schema_candidate in &mut schema_candidates {
+                                    if title.is_some() || description.is_some() {
+                                        schema_candidate.set_title(title.clone());
+                                        schema_candidate.set_description(description.clone());
+                                    }
+                                }
+
+                                candidates.extend(schema_candidates);
+                                errors.extend(schema_errors);
+                            }
+
+                            return (candidates, errors);
+                        }
+                    }
 
                     for referable_schema in schemas.write().await.iter_mut() {
                         let Ok(Some(current_schema)) = referable_schema
