@@ -33,30 +33,40 @@ where
     async move {
         let mut all_of_type_definition = None;
 
-        for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let Ok(mut schemas_guard) = all_of_schema.schemas.try_write() else {
+            log::warn!("Circular JSON Schema reference detected in get_all_of_goto_type_definition_response, skipping");
+            return None;
+        };
+        let resolved_schemas = {
+            let mut resolved = Vec::with_capacity(schemas_guard.len());
+            for referable_schema in schemas_guard.iter_mut() {
+                if let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    resolved.push(current_schema.into_owned());
+                }
+            }
+            resolved
+        };
 
+        for resolved_schema in &resolved_schemas {
             if let Some(type_definition) = value
                 .get_type_definition(
                     position,
                     keys,
                     accessors,
-                    Some(&current_schema),
+                    Some(resolved_schema),
                     schema_context,
                 )
                 .await
             {
                 if value
-                    .validate(accessors, Some(&current_schema), schema_context)
+                    .validate(accessors, Some(resolved_schema), schema_context)
                     .await
                     .is_err()
                 {
@@ -69,6 +79,8 @@ where
                 all_of_type_definition = Some(type_definition);
             }
         }
+
+        drop(schemas_guard);
 
         all_of_type_definition
     }

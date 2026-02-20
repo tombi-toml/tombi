@@ -40,24 +40,32 @@ where
 
         let mut valid_count = 0;
 
-        let mut schemas = one_of_schema.schemas.write().await;
-        let mut each_results = Vec::with_capacity(schemas.len());
-        for referable_schema in schemas.iter_mut() {
-            let current_schema = if let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}"))
-            {
-                current_schema
-            } else {
-                continue;
-            };
+        let Ok(mut schemas_guard) = one_of_schema.schemas.try_write() else {
+            log::warn!("Circular JSON Schema reference detected in validate_one_of, skipping validation");
+            return Ok(());
+        };
+        let total_count = schemas_guard.len();
+        let resolved_schemas = {
+            let mut resolved = Vec::with_capacity(total_count);
+            for referable_schema in schemas_guard.iter_mut() {
+                if let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
+                {
+                    resolved.push(current_schema.into_owned());
+                }
+            }
+            resolved
+        };
 
-            let result = match (value.value_type(), current_schema.value_schema.as_ref()) {
+        let mut each_results = Vec::with_capacity(resolved_schemas.len());
+        for resolved_schema in &resolved_schemas {
+            let result = match (value.value_type(), resolved_schema.value_schema.as_ref()) {
                 (tombi_document_tree::ValueType::Boolean, ValueSchema::Boolean(_))
                 | (
                     tombi_document_tree::ValueType::Integer,
@@ -75,7 +83,7 @@ where
                 | (tombi_document_tree::ValueType::Table, ValueSchema::Table(_))
                 | (tombi_document_tree::ValueType::Array, ValueSchema::Array(_)) => {
                     value
-                        .validate(accessors, Some(&current_schema), schema_context)
+                        .validate(accessors, Some(resolved_schema), schema_context)
                         .await
                 }
                 (_, ValueSchema::Null) => {
@@ -91,7 +99,7 @@ where
                 | (_, ValueSchema::LocalTime(_))
                 | (_, ValueSchema::Table(_))
                 | (_, ValueSchema::Array(_)) => handle_type_mismatch(
-                    current_schema.value_schema.value_type().await,
+                    resolved_schema.value_schema.value_type().await,
                     value.value_type(),
                     value.range(),
                     common_rules,
@@ -101,7 +109,7 @@ where
                         value,
                         accessors,
                         one_of_schema,
-                        &current_schema,
+                        resolved_schema,
                         schema_context,
                         comment_directives,
                         common_rules,
@@ -113,7 +121,7 @@ where
                         value,
                         accessors,
                         any_of_schema,
-                        &current_schema,
+                        resolved_schema,
                         schema_context,
                         comment_directives,
                         common_rules,
@@ -125,7 +133,7 @@ where
                         value,
                         accessors,
                         all_of_schema,
-                        &current_schema,
+                        resolved_schema,
                         schema_context,
                         comment_directives,
                         common_rules,
@@ -153,6 +161,8 @@ where
 
             each_results.push(result);
         }
+
+        drop(schemas_guard);
 
         if valid_count == 1 {
             for result in each_results {
@@ -207,7 +217,7 @@ where
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::OneOfMultipleMatch {
                         valid_count,
-                        total_count: schemas.len(),
+                        total_count,
                     }),
                     range: value.range(),
                 }

@@ -28,30 +28,39 @@ where
         let mut total_diagnostics = vec![];
         let mut total_score = 0;
 
-        let mut schemas = all_of_schema.schemas.write().await;
-        for referable_schema in schemas.iter_mut() {
-            let current_schema = if let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}"))
-            {
-                current_schema
-            } else {
-                continue;
-            };
+        let Ok(mut schemas_guard) = all_of_schema.schemas.try_write() else {
+            log::warn!("Circular JSON Schema reference detected in validate_all_of, skipping validation");
+            return Ok(());
+        };
+        let resolved_schemas = {
+            let mut resolved = Vec::with_capacity(schemas_guard.len());
+            for referable_schema in schemas_guard.iter_mut() {
+                if let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
+                {
+                    resolved.push(current_schema.into_owned());
+                }
+            }
+            resolved
+        };
 
+        for resolved_schema in &resolved_schemas {
             if let Err(crate::Error { diagnostics, score }) = value
-                .validate(accessors, Some(&current_schema), schema_context)
+                .validate(accessors, Some(resolved_schema), schema_context)
                 .await
             {
                 total_diagnostics.extend(diagnostics);
                 total_score += score;
             }
         }
+
+        drop(schemas_guard);
 
         if total_diagnostics.is_empty() {
             handle_deprecated(

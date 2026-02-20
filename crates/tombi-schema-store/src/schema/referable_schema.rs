@@ -238,10 +238,28 @@ impl Referable<ValueSchema> {
                         ValueSchema::OneOf(OneOfSchema { schemas, .. })
                         | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                         | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                            for schema in schemas.write().await.iter_mut() {
-                                schema
-                                    .resolve(schema_uri.clone(), definitions.clone(), schema_store)
-                                    .await?;
+                            // Only resolve inner schemas that are still Ref (first time only).
+                            // Use try_read() to check without conflicting with write locks
+                            // held by callers (which indicates circular references).
+                            let needs_resolution = if let Ok(guard) = schemas.try_read() {
+                                guard.iter().any(|s| matches!(s, Referable::Ref { .. }))
+                            } else {
+                                log::warn!("Circular JSON Schema reference detected, skipping inner schema resolution");
+                                false
+                            };
+
+                            if needs_resolution {
+                                if let Ok(mut schemas_guard) = schemas.try_write() {
+                                    for schema in schemas_guard.iter_mut() {
+                                        schema
+                                            .resolve(
+                                                schema_uri.clone(),
+                                                definitions.clone(),
+                                                schema_store,
+                                            )
+                                            .await?;
+                                    }
+                                }
                             }
                         }
                         _ => {}

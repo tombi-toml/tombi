@@ -9,7 +9,7 @@ use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 use super::{
     AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema, FindSchemaCandidates, FloatSchema,
     IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
-    OneOfSchema, SchemaUri, StringSchema, TableSchema, referable_schema::CurrentSchema,
+    OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
 use crate::{Accessor, Referable, SchemaDefinitions, SchemaStore, schema::not_schema::NotSchema};
 
@@ -440,7 +440,11 @@ impl ValueSchema {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                    for referable_schema in schemas.write().await.iter_mut() {
+                    let Ok(mut schemas_guard) = schemas.try_write() else {
+                        log::warn!("Circular JSON Schema reference detected in match_flattened_schemas, skipping to prevent infinite recursion");
+                        return matched_schemas;
+                    };
+                    for referable_schema in schemas_guard.iter_mut() {
                         if let Ok(Some(current_schema)) = referable_schema
                             .resolve(
                                 Cow::Borrowed(schema_uri),
@@ -488,64 +492,76 @@ impl ValueSchema {
         async move {
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => join_all(
-                    schemas
-                        .write()
-                        .await
-                        .iter_mut()
-                        .map(|referable_schema| async {
-                            if let Ok(Some(CurrentSchema {
-                                value_schema,
-                                schema_uri,
-                                definitions,
-                            })) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                value_schema
-                                    .is_match(condition, &schema_uri, &definitions, schema_store)
+                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => {
+                    let Ok(mut schemas_guard) = schemas.try_write() else {
+                        log::warn!("Circular JSON Schema reference detected in is_match (OneOf/AnyOf), skipping to prevent infinite recursion");
+                        return false;
+                    };
+                    join_all(
+                        schemas_guard
+                            .iter_mut()
+                            .map(|referable_schema| async {
+                                if let Ok(Some(current_schema)) = referable_schema
+                                    .resolve(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
                                     .await
-                            } else {
-                                false
-                            }
-                        }),
-                )
-                .await
-                .into_iter()
-                .any(|is_matched| is_matched),
-                ValueSchema::AllOf(AllOfSchema { schemas, .. }) => join_all(
-                    schemas
-                        .write()
-                        .await
-                        .iter_mut()
-                        .map(|referable_schema| async {
-                            if let Ok(Some(CurrentSchema {
-                                value_schema,
-                                schema_uri,
-                                definitions,
-                            })) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                value_schema
-                                    .is_match(condition, &schema_uri, &definitions, schema_store)
+                                {
+                                    current_schema
+                                        .value_schema
+                                        .is_match(
+                                            condition,
+                                            &current_schema.schema_uri,
+                                            &current_schema.definitions,
+                                            schema_store,
+                                        )
+                                        .await
+                                } else {
+                                    false
+                                }
+                            }),
+                    )
+                    .await
+                    .into_iter()
+                    .any(|is_matched| is_matched)
+                }
+                ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                    let Ok(mut schemas_guard) = schemas.try_write() else {
+                        log::warn!("Circular JSON Schema reference detected in is_match (AllOf), skipping to prevent infinite recursion");
+                        return false;
+                    };
+                    join_all(
+                        schemas_guard
+                            .iter_mut()
+                            .map(|referable_schema| async {
+                                if let Ok(Some(current_schema)) = referable_schema
+                                    .resolve(
+                                        Cow::Borrowed(schema_uri),
+                                        Cow::Borrowed(definitions),
+                                        schema_store,
+                                    )
                                     .await
-                            } else {
-                                false
-                            }
-                        }),
-                )
-                .await
-                .into_iter()
-                .all(|is_matched| is_matched),
+                                {
+                                    current_schema
+                                        .value_schema
+                                        .is_match(
+                                            condition,
+                                            &current_schema.schema_uri,
+                                            &current_schema.definitions,
+                                            schema_store,
+                                        )
+                                        .await
+                                } else {
+                                    false
+                                }
+                            }),
+                    )
+                    .await
+                    .into_iter()
+                    .all(|is_matched| is_matched)
+                }
                 _ => condition(self),
             }
         }
@@ -584,7 +600,11 @@ impl FindSchemaCandidates for ValueSchema {
                     let mut candidates = Vec::new();
                     let mut errors = Vec::new();
 
-                    for referable_schema in schemas.write().await.iter_mut() {
+                    let Ok(mut schemas_guard) = schemas.try_write() else {
+                        log::warn!("Circular JSON Schema reference detected in find_schema_candidates, skipping to prevent infinite recursion");
+                        return (candidates, errors);
+                    };
+                    for referable_schema in schemas_guard.iter_mut() {
                         let Ok(Some(current_schema)) = referable_schema
                             .resolve(
                                 Cow::Borrowed(schema_uri),

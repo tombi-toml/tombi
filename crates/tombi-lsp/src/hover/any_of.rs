@@ -44,19 +44,30 @@ where
             .as_ref()
             .and_then(|default| DisplayValue::try_from(default).ok());
 
-        for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(CurrentSchema { value_schema, .. })) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let Ok(mut schemas_guard) = any_of_schema.schemas.try_write() else {
+            log::warn!("Circular JSON Schema reference detected in get_any_of_hover_content, skipping hover");
+            return None;
+        };
+        let resolved_schemas = {
+            let mut resolved = Vec::with_capacity(schemas_guard.len());
+            for referable_schema in schemas_guard.iter_mut() {
+                if let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    resolved.push(current_schema.into_owned());
+                }
+            }
+            resolved
+        };
 
-            if let Some(values) = value_schema
+        for resolved_schema in &resolved_schemas {
+            if let Some(values) = resolved_schema
+                .value_schema
                 .as_ref()
                 .get_enum(schema_uri, definitions, schema_context)
                 .await
@@ -64,7 +75,7 @@ where
                 enum_values.extend(values);
             }
 
-            value_type_set.insert(value_schema.value_type().await);
+            value_type_set.insert(resolved_schema.value_schema.value_type().await);
         }
 
         let value_type = if value_type_set.len() == 1 {
@@ -73,23 +84,13 @@ where
             tombi_schema_store::ValueType::AnyOf(value_type_set.into_iter().collect())
         };
 
-        for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        for resolved_schema in &resolved_schemas {
             match value
                 .get_hover_content(
                     position,
                     keys,
                     accessors,
-                    Some(&current_schema),
+                    Some(resolved_schema),
                     schema_context,
                 )
                 .await
@@ -111,7 +112,7 @@ where
                     }
 
                     match value
-                        .validate(accessors, Some(&current_schema), schema_context)
+                        .validate(accessors, Some(resolved_schema), schema_context)
                         .await
                     {
                         Ok(()) => valid_hover_value_contents.push(hover_value_content.clone()),
@@ -136,6 +137,8 @@ where
                 }
             };
         }
+
+        drop(schemas_guard);
 
         let mut hover_value_content =
             if let Some(hover_value_content) = valid_hover_value_contents.into_iter().next() {
@@ -205,38 +208,57 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok());
 
-            for referable_schema in self.schemas.write().await.iter_mut() {
-                let Ok(Some(CurrentSchema {
-                    value_schema,
-                    schema_uri,
-                    definitions,
-                })) = referable_schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                else {
-                    continue;
-                };
-                if value_schema.title().is_some() || value_schema.description().is_some() {
+            let Ok(mut schemas_guard) = self.schemas.try_write() else {
+                log::warn!("Circular JSON Schema reference detected in AnyOfSchema::get_hover_content, skipping hover");
+                return None;
+            };
+            let resolved_schemas = {
+                let mut resolved = Vec::with_capacity(schemas_guard.len());
+                for referable_schema in schemas_guard.iter_mut() {
+                    if let Ok(Some(current_schema)) = referable_schema
+                        .resolve(
+                            current_schema.schema_uri.clone(),
+                            current_schema.definitions.clone(),
+                            schema_context.store,
+                        )
+                        .await
+                    {
+                        resolved.push(current_schema.into_owned());
+                    }
+                }
+                resolved
+            };
+
+            for resolved_schema in &resolved_schemas {
+                if resolved_schema.value_schema.title().is_some()
+                    || resolved_schema.value_schema.description().is_some()
+                {
                     title_description_set.insert((
-                        value_schema.title().map(ToString::to_string),
-                        value_schema.description().map(ToString::to_string),
+                        resolved_schema.value_schema.title().map(ToString::to_string),
+                        resolved_schema
+                            .value_schema
+                            .description()
+                            .map(ToString::to_string),
                     ));
                 }
 
-                value_type_set.insert(value_schema.value_type().await);
+                value_type_set.insert(resolved_schema.value_schema.value_type().await);
 
-                if let Some(values) = value_schema
+                if let Some(values) = resolved_schema
+                    .value_schema
                     .as_ref()
-                    .get_enum(&schema_uri, &definitions, schema_context)
+                    .get_enum(
+                        &resolved_schema.schema_uri,
+                        &resolved_schema.definitions,
+                        schema_context,
+                    )
                     .await
                 {
                     enum_values.extend(values);
                 }
             }
+
+            drop(schemas_guard);
 
             let (mut title, mut description) = if title_description_set.len() == 1 {
                 title_description_set.into_iter().next().unwrap()

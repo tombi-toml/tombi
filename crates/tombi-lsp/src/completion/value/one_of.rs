@@ -55,21 +55,31 @@ where
         // Only narrow when at least one branch has the key, so we never return [] by over-narrowing.
         let first_key = (keys.len() == 1 && !keys[0].value.is_empty()).then(|| &keys[0].value);
 
-        let mut branch_results: Vec<(bool, Vec<CompletionContent>)> = Vec::new();
-        for referable_schema in one_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let Ok(mut schemas_guard) = one_of_schema.schemas.try_write() else {
+            log::warn!("Circular JSON Schema reference detected in find_one_of_completion_items, skipping completion");
+            return completion_items;
+        };
+        let resolved_schemas = {
+            let mut resolved = Vec::with_capacity(schemas_guard.len());
+            for referable_schema in schemas_guard.iter_mut() {
+                if let Ok(Some(current_schema)) = referable_schema
+                    .resolve(
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                {
+                    resolved.push(current_schema.into_owned());
+                }
+            }
+            resolved
+        };
 
+        let mut branch_results: Vec<(bool, Vec<CompletionContent>)> = Vec::new();
+        for resolved_schema in &resolved_schemas {
             let branch_has_key = if let Some(ref first_key) = first_key {
-                match current_schema.value_schema.as_ref() {
+                match resolved_schema.value_schema.as_ref() {
                     ValueSchema::Table(table_schema) => table_schema
                         .properties
                         .read()
@@ -86,7 +96,7 @@ where
                     position,
                     keys,
                     accessors,
-                    Some(&current_schema),
+                    Some(resolved_schema),
                     schema_context,
                     completion_hint,
                 )
@@ -101,6 +111,8 @@ where
                 completion_items.extend(items);
             }
         }
+
+        drop(schemas_guard);
 
         let detail = one_of_schema
             .detail(
