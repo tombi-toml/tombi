@@ -80,6 +80,7 @@ cargo xtask toml-test
 ## Check Performance
 
 ```sh
+mkdir -p .tmp
 cargo tombi-flamegraph format
 # Open the flamegraph in a browser or using a platform-specific command:
 # macOS: open .tmp/flamegraph.svg
