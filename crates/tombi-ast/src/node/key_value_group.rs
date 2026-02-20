@@ -1,6 +1,6 @@
 use tombi_syntax::SyntaxNode;
 
-use crate::{AstNode, KeyValue};
+use crate::AstNode;
 use tombi_syntax::SyntaxKind::KEY_VALUE_GROUP;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -10,10 +10,10 @@ pub struct KeyValueGroup {
 
 impl KeyValueGroup {
     #[inline]
-    pub fn key_values(&self) -> impl Iterator<Item = KeyValue> {
+    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue> {
         self.syntax()
             .children_with_tokens()
-            .filter_map(|el| el.into_node().and_then(KeyValue::cast))
+            .filter_map(|el| el.into_node().and_then(crate::KeyValue::cast))
     }
 
     #[inline]

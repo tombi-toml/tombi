@@ -2,86 +2,68 @@ use itertools::Itertools;
 use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
-use crate::{AstNode, TombiValueCommentDirective, support};
+use crate::{
+    AstNode, DanglingCommentGroupOr, KeyValueWithCommaGroup, TombiValueCommentDirective, support,
+};
 
 impl crate::InlineTable {
+    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+        itertools::chain!(
+            self.brace_start_trailing_comment()
+                .into_iter()
+                .filter_map(|comment| comment.get_tombi_value_directive()),
+            self.dangling_comment_groups()
+                .flat_map(|comment_group| comment_group
+                    .into_comments()
+                    .filter_map(|comment| comment.get_tombi_value_directive()))
+        )
+    }
+
+    /// The trailing comment of the inline table start brace.
+    ///
+    /// ```toml
+    /// key = {  # This comment
+    /// }
+    /// ```
     #[inline]
     pub fn brace_start_trailing_comment(&self) -> Option<crate::TrailingComment> {
         support::comment::trailing_comment(self.syntax().children_with_tokens(), T!('{'))
     }
 
+    /// The dangling comments of the inline table (without key-values).
+    ///
+    /// ```toml
+    /// key = {
+    ///     # This comments
+    ///     # This comments
+    ///
+    ///     # This comments
+    ///     # This comments
+    ///
+    ///     "value"
+    /// }
     #[inline]
-    pub fn inner_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
-        support::comment::begin_dangling_comments(
+    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
+        support::comment::dangling_comment_groups(
             self.syntax()
                 .children_with_tokens()
-                .skip_while(|node| node.kind() != T!('{'))
-                .skip(1), // skip '{'
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!('{')))
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), COMMENT))
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), LINE_BREAK)),
         )
     }
 
     #[inline]
-    pub fn inner_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
-        support::comment::end_dangling_comments(
-            self.syntax()
-                .children_with_tokens()
-                .take_while(|node| node.kind() != T!('}')),
-        )
-    }
-
-    #[inline]
-    pub fn inner_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
-        support::comment::dangling_comments(
-            self.syntax()
-                .children_with_tokens()
-                .skip_while(|node| node.kind() != T!('{'))
-                .skip(1) // skip '{'
-                .take_while(|node| node.kind() != T!('}')),
-        )
-    }
-
-    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
-        let mut comment_directives = vec![];
-
-        if self.key_values().next().is_none() {
-            for comments in self.inner_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        } else {
-            for comments in self.inner_begin_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        comment_directives.push(comment_directive);
-                    }
-                }
-            }
-            for comments in self.inner_end_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        }
-
-        comment_directives.into_iter()
-    }
-
-    #[inline]
-    pub fn key_values_with_comma(
+    pub fn key_value_with_comma_groups(
         &self,
-    ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
-        self.key_values()
-            .zip_longest(support::node::children::<crate::Comma>(self.syntax()))
-            .filter_map(|value_with_comma| match value_with_comma {
-                itertools::EitherOrBoth::Both(value, comma) => Some((value, Some(comma))),
-                itertools::EitherOrBoth::Left(value) => Some((value, None)),
-                itertools::EitherOrBoth::Right(_) => None,
-            })
+    ) -> impl Iterator<Item = DanglingCommentGroupOr<KeyValueWithCommaGroup>> {
+        support::comment::dangling_comment_group_or(
+            self.syntax()
+                .children_with_tokens()
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!('{')))
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), COMMENT))
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), LINE_BREAK)),
+        )
     }
 
     #[inline]
