@@ -39,10 +39,11 @@ where
             .await?;
         }
 
-        let mut schemas = any_of_schema.schemas.write().await;
+        let schemas = any_of_schema.schemas.read().await.clone();
         let mut total_error = crate::Error::new();
 
-        for referable_schema in schemas.iter_mut() {
+        for referable_schema in schemas.iter() {
+            let mut referable_schema = referable_schema.clone();
             let current_schema = if let Ok(Some(current_schema)) = referable_schema
                 .resolve(
                     current_schema.schema_uri.clone(),

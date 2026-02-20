@@ -41,3 +41,9 @@ pub fn untagged_union_schema_path() -> PathBuf {
         .join("schemas")
         .join("untagged-union.schema.json")
 }
+
+pub fn recursive_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("recursive-schema.schema.json")
+}

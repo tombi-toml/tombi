@@ -1,6 +1,7 @@
 mod change;
 mod edit;
 mod editor;
+pub(crate) mod matches_schema;
 mod node;
 mod rule;
 

@@ -608,6 +608,7 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "partial-taskipy.schema.json",
+                "recursive-schema.schema.json",
                 "type-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",
