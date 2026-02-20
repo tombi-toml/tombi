@@ -53,9 +53,9 @@ pub struct Config {
 
     pub files: Option<FilesOptions>,
 
-    format: Option<FormatOptions>,
+    pub format: Option<FormatOptions>,
 
-    lint: Option<LintOptions>,
+    pub lint: Option<LintOptions>,
 
     pub lsp: Option<LspOptions>,
 
@@ -81,7 +81,7 @@ impl Config {
         self.overrides.as_ref()
     }
 
-    pub fn format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {
+    pub fn merge_format(&self, override_options: Option<&OverrideFormatOptions>) -> FormatOptions {
         let options = self.format.clone().unwrap_or_default();
         let base_rules = options.rules.unwrap_or_default();
 
@@ -89,7 +89,7 @@ impl Config {
             .as_ref()
             .and_then(|options| options.rules.as_ref())
         {
-            base_rules.override_with(override_rules)
+            base_rules.merge(override_rules)
         } else {
             base_rules
         };
@@ -97,7 +97,7 @@ impl Config {
         FormatOptions { rules: Some(rules) }
     }
 
-    pub fn lint(&self, override_options: Option<&OverrideLintOptions>) -> LintOptions {
+    pub fn merge_lint(&self, override_options: Option<&OverrideLintOptions>) -> LintOptions {
         let base_rules = self
             .lint
             .clone()
@@ -108,7 +108,7 @@ impl Config {
             .as_ref()
             .and_then(|options| options.rules.as_ref())
         {
-            base_rules.override_with(override_rules)
+            base_rules.merge(override_rules)
         } else {
             base_rules
         };
