@@ -7,12 +7,12 @@ use crate::{AstNode, TombiValueCommentDirective, support};
 impl crate::Array {
     #[inline]
     pub fn bracket_start_trailing_comment(&self) -> Option<crate::TrailingComment> {
-        support::node::trailing_comment(self.syntax().children_with_tokens(), T!('['))
+        support::comment::trailing_comment(self.syntax().children_with_tokens(), T!('['))
     }
 
     #[inline]
     pub fn inner_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
-        support::node::begin_dangling_comments(
+        support::comment::begin_dangling_comments(
             self.syntax()
                 .children_with_tokens()
                 .skip_while(|node| node.kind() != T!('['))
@@ -22,7 +22,7 @@ impl crate::Array {
 
     #[inline]
     pub fn inner_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
-        support::node::end_dangling_comments(
+        support::comment::end_dangling_comments(
             self.syntax()
                 .children_with_tokens()
                 .take_while(|node| node.kind() != T!(']')),
@@ -31,7 +31,7 @@ impl crate::Array {
 
     #[inline]
     pub fn inner_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
-        support::node::dangling_comments(
+        support::comment::dangling_comments(
             self.syntax()
                 .children_with_tokens()
                 .skip_while(|node| node.kind() != T!('['))
@@ -110,7 +110,7 @@ impl crate::Array {
 
     #[inline]
     pub fn has_inner_comments(&self) -> bool {
-        support::node::has_inner_comments(self.syntax().children_with_tokens(), T!('['), T!(']'))
+        support::comment::has_inner_comments(self.syntax().children_with_tokens(), T!('['), T!(']'))
     }
 
     pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
