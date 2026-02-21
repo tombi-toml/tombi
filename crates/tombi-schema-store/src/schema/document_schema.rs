@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use ahash::AHashMap;
 use itertools::Itertools;
@@ -15,7 +15,7 @@ use crate::{Accessor, SchemaStore};
 pub struct DocumentSchema {
     pub schema_uri: SchemaUri,
     pub(crate) toml_version: Option<TomlVersion>,
-    pub value_schema: Option<ValueSchema>,
+    pub value_schema: Option<Arc<ValueSchema>>,
     pub definitions: SchemaDefinitions,
 }
 
@@ -45,7 +45,7 @@ impl DocumentSchema {
                 _ => None,
             });
 
-        let value_schema = ValueSchema::new(&object, string_formats.as_deref());
+        let value_schema = ValueSchema::new(&object, string_formats.as_deref()).map(Arc::new);
         let mut definitions = AHashMap::default();
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
             for (key, value) in object.properties.iter() {

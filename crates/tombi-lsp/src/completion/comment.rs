@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use itertools::Itertools;
 use tombi_ast::{AstToken, SchemaDocumentCommentDirective};
 use tombi_comment_directive::{
@@ -148,12 +150,12 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
     let source_schema = tombi_schema_store::SourceSchema {
-        root_schema: Some(document_schema),
+        root_schema: Some(Arc::new(document_schema)),
         sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
     };
     let schema_context = tombi_schema_store::SchemaContext {
         toml_version,
-        root_schema: source_schema.root_schema.as_ref(),
+        root_schema: source_schema.root_schema.as_deref(),
         sub_schema_uri_map: None,
         store: schema_store,
         strict: None,

@@ -97,18 +97,18 @@ impl FindSchemaCandidates for ArraySchema {
                 return (candidates, errors);
             };
 
-            let mut referable_schema = items.write().await;
             if let Ok(Some(CurrentSchema {
                 schema_uri,
                 value_schema,
                 definitions,
-            })) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_store,
-                )
-                .await
+            })) = crate::resolve_schema_item(
+                items,
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_store,
+            )
+            .await
+            .inspect_err(|err| log::warn!("{err}"))
             {
                 let (mut item_candidates, mut item_errors) = value_schema
                     .find_schema_candidates(

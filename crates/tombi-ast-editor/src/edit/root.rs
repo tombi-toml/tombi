@@ -90,10 +90,8 @@ impl crate::Edit for tombi_ast::Root {
                             .unwrap_or(false);
                         let order = comment_directive.table_keys_order().map(Into::into);
                         if disabled || order.is_some() {
-                            table_order_overrides.insert(
-                                header_accessors,
-                                TableOrderOverride { disabled, order },
-                            );
+                            table_order_overrides
+                                .insert(header_accessors, TableOrderOverride { disabled, order });
                         }
                     }
                 }

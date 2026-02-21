@@ -3,6 +3,7 @@ use std::{borrow::Cow, sync::Arc};
 use ahash::AHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use tombi_accessor::Accessors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{
     ArrayValuesOrderBy, StringFormat, TableKeysOrder, TableKeysOrderGroupKind,
@@ -113,7 +114,7 @@ impl TableSchema {
                     if let Ok(v) = ArrayValuesOrderBy::try_from(v) {
                         Some(v)
                     } else {
-                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
+                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {v}");
                         None
                     }
                 } else {
@@ -233,6 +234,96 @@ impl TableSchema {
             })
             .collect_vec()
     }
+
+    pub async fn resolve_property_schema(
+        &self,
+        accessor: &SchemaAccessor,
+        schema_uri: Cow<'_, SchemaUri>,
+        definitions: Cow<'_, SchemaDefinitions>,
+        schema_store: &SchemaStore,
+    ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
+        {
+            let properties = self.properties.read().await;
+            let Some(PropertySchema {
+                property_schema, ..
+            }) = properties.get(accessor)
+            else {
+                return Ok(None);
+            };
+
+            if matches!(property_schema, Referable::Resolved { .. }) {
+                return property_schema
+                    .to_current_schema(schema_uri.clone(), definitions.clone(), schema_store)
+                    .await;
+            }
+        }
+
+        let mut properties = self.properties.write().await;
+        let Some(PropertySchema {
+            property_schema, ..
+        }) = properties.get_mut(accessor)
+        else {
+            return Ok(None);
+        };
+
+        if matches!(property_schema, Referable::Resolved { .. }) {
+            return property_schema
+                .to_current_schema(schema_uri, definitions, schema_store)
+                .await;
+        }
+
+        property_schema
+            .resolve(schema_uri, definitions, schema_store)
+            .await
+            .map(|current_schema| current_schema.map(CurrentSchema::into_owned))
+    }
+
+    pub async fn resolve_pattern_property_schema(
+        &self,
+        pattern_key: &str,
+        schema_uri: Cow<'_, SchemaUri>,
+        definitions: Cow<'_, SchemaDefinitions>,
+        schema_store: &SchemaStore,
+    ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
+        let Some(pattern_properties) = &self.pattern_properties else {
+            return Ok(None);
+        };
+
+        {
+            let pattern_properties = pattern_properties.read().await;
+            let Some(PropertySchema {
+                property_schema, ..
+            }) = pattern_properties.get(pattern_key)
+            else {
+                return Ok(None);
+            };
+
+            if matches!(property_schema, Referable::Resolved { .. }) {
+                return property_schema
+                    .to_current_schema(schema_uri.clone(), definitions.clone(), schema_store)
+                    .await;
+            }
+        }
+
+        let mut pattern_properties = pattern_properties.write().await;
+        let Some(PropertySchema {
+            property_schema, ..
+        }) = pattern_properties.get_mut(pattern_key)
+        else {
+            return Ok(None);
+        };
+
+        if matches!(property_schema, Referable::Resolved { .. }) {
+            return property_schema
+                .to_current_schema(schema_uri, definitions, schema_store)
+                .await;
+        }
+
+        property_schema
+            .resolve(schema_uri, definitions, schema_store)
+            .await
+            .map(|current_schema| current_schema.map(CurrentSchema::into_owned))
+    }
 }
 
 impl FindSchemaCandidates for TableSchema {
@@ -248,21 +339,31 @@ impl FindSchemaCandidates for TableSchema {
             let mut errors = Vec::new();
 
             if accessors.is_empty() {
-                for PropertySchema {
-                    property_schema, ..
-                } in self.properties.write().await.values_mut()
-                {
-                    if let Ok(Some(CurrentSchema {
-                        value_schema,
-                        schema_uri,
-                        definitions,
-                    })) = property_schema
-                        .resolve(
+                let property_keys = self.properties.read().await.keys().cloned().collect_vec();
+                for property_key in property_keys {
+                    let current_schema = self
+                        .resolve_property_schema(
+                            &property_key,
                             Cow::Borrowed(schema_uri),
                             Cow::Borrowed(definitions),
                             schema_store,
                         )
                         .await
+                        .inspect_err(|err| {
+                            log::warn!(
+                                "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
+                                schema_uri = schema_uri.to_string(),
+                                accessors = Accessors::from(accessors.to_vec()),
+                            )
+                        })
+                        .ok()
+                        .flatten();
+
+                    if let Some(CurrentSchema {
+                        value_schema,
+                        schema_uri,
+                        definitions,
+                    }) = current_schema
                     {
                         let (schema_candidates, schema_errors) = value_schema
                             .find_schema_candidates(
@@ -280,24 +381,29 @@ impl FindSchemaCandidates for TableSchema {
                 return (candidates, errors);
             }
 
-            if let Some(PropertySchema {
-                property_schema, ..
-            }) = self
-                .properties
-                .write()
+            let current_schema = self
+                .resolve_property_schema(
+                    &SchemaAccessor::from(&accessors[0]),
+                    Cow::Borrowed(schema_uri),
+                    Cow::Borrowed(definitions),
+                    schema_store,
+                )
                 .await
-                .get_mut(&SchemaAccessor::from(&accessors[0]))
-                && let Ok(Some(CurrentSchema {
-                    value_schema,
-                    schema_uri,
-                    definitions,
-                })) = property_schema
-                    .resolve(
-                        Cow::Borrowed(schema_uri),
-                        Cow::Borrowed(definitions),
-                        schema_store,
+                .inspect_err(|err| {
+                    log::warn!(
+                        "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
+                        schema_uri = schema_uri.to_string(),
+                        accessors = Accessors::from(accessors.to_vec()),
                     )
-                    .await
+                })
+                .ok()
+                .flatten();
+
+            if let Some(CurrentSchema {
+                value_schema,
+                schema_uri,
+                definitions,
+            }) = current_schema
             {
                 return value_schema
                     .find_schema_candidates(

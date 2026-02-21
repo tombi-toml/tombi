@@ -5,7 +5,7 @@ use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, ArraySchema, CurrentSchema, DocumentSchema, SchemaUri, ValueSchema,
+    Accessor, ArraySchema, CurrentSchema, CurrentValueSchema, SchemaUri, ValueSchema,
 };
 
 use super::{
@@ -56,14 +56,10 @@ impl FindCompletionContents for tombi_document_tree::Array {
                 return completions;
             }
 
-            if let Some(Ok(DocumentSchema {
-                value_schema: Some(value_schema),
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
+                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
                     .find_completion_contents(
@@ -71,9 +67,9 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         keys,
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: Cow::Owned(value_schema),
-                            schema_uri: Cow::Owned(schema_uri),
-                            definitions: Cow::Owned(definitions),
+                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
                         }),
                         schema_context,
                         completion_hint,

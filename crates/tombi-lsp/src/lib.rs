@@ -2,6 +2,7 @@ pub mod backend;
 pub mod code_action;
 mod comment_directive;
 mod completion;
+mod composite_schema;
 mod config_manager;
 mod diagnostic;
 mod document;

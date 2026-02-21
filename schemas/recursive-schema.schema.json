@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Recursive test schema",
+  "description": "A schema with self-referencing definitions to test recursive schema handling",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of this node"
+    },
+    "value": {
+      "type": "integer",
+      "description": "Value of this node"
+    },
+    "children": {
+      "type": "array",
+      "description": "Child nodes (recursive)",
+      "items": {
+        "$ref": "#"
+      }
+    },
+    "metadata": {
+      "$ref": "#/definitions/Metadata"
+    }
+  },
+  "definitions": {
+    "Metadata": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nested": {
+          "$ref": "#/definitions/Metadata",
+          "description": "Recursive metadata reference"
+        }
+      }
+    }
+  }
+}

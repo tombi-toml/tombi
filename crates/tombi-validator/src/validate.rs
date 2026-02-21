@@ -30,7 +30,7 @@ pub use one_of::validate_one_of;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::CurrentSchema;
+use tombi_schema_store::{CurrentSchema, CurrentValueSchema};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_text::RelativePosition;
 
@@ -41,16 +41,19 @@ pub fn validate<'a: 'b, 'b>(
 ) -> BoxFuture<'b, Result<(), Vec<tombi_diagnostic::Diagnostic>>> {
     async move {
         let current_schema = source_schema.as_ref().and_then(|source_schema| {
-            source_schema.root_schema.as_ref().and_then(|root_schema| {
-                root_schema
-                    .value_schema
-                    .as_ref()
-                    .map(|value_schema| CurrentSchema {
-                        value_schema: Cow::Borrowed(value_schema),
-                        schema_uri: Cow::Borrowed(&root_schema.schema_uri),
-                        definitions: Cow::Borrowed(&root_schema.definitions),
-                    })
-            })
+            source_schema
+                .root_schema
+                .as_deref()
+                .and_then(|root_schema| {
+                    root_schema
+                        .value_schema
+                        .as_ref()
+                        .map(|value_schema| CurrentSchema {
+                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            schema_uri: Cow::Borrowed(&root_schema.schema_uri),
+                            definitions: Cow::Borrowed(&root_schema.definitions),
+                        })
+                })
         });
 
         if let Err(crate::Error { diagnostics, .. }) = tree
@@ -231,4 +234,149 @@ fn handle_unused_noqa(
             return;
         }
     }
+}
+
+fn has_error_level_diagnostics(error: &crate::Error) -> bool {
+    error
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
+}
+
+fn is_success_or_warning(result: &Result<(), crate::Error>) -> bool {
+    match result {
+        Ok(()) => true,
+        Err(error) => !has_error_level_diagnostics(error),
+    }
+}
+
+fn validate_deprecated<T>(
+    deprecated: Option<bool>,
+    accessors: &[tombi_schema_store::Accessor],
+    value: &T,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
+) -> Result<(), crate::Error>
+where
+    T: tombi_document_tree::ValueImpl,
+{
+    let mut diagnostics = Vec::with_capacity(1);
+    handle_deprecated(
+        &mut diagnostics,
+        deprecated,
+        accessors,
+        value,
+        comment_directives,
+        common_rules,
+    );
+
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics.into())
+    }
+}
+
+pub fn validate_resolved_schema<'a: 'b, 'b, T>(
+    value: &'a T,
+    accessors: &'a [tombi_schema_store::Accessor],
+    resolved_schema: &'a tombi_schema_store::CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
+) -> BoxFuture<'b, Option<Result<(), crate::Error>>>
+where
+    T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+{
+    async move {
+        match (value.value_type(), resolved_schema.value_schema.as_ref()) {
+            (tombi_document_tree::ValueType::Boolean, tombi_schema_store::ValueSchema::Boolean(_))
+            | (
+                tombi_document_tree::ValueType::Integer,
+                tombi_schema_store::ValueSchema::Integer(_)
+                | tombi_schema_store::ValueSchema::Float(_),
+            )
+            | (tombi_document_tree::ValueType::Float, tombi_schema_store::ValueSchema::Float(_))
+            | (tombi_document_tree::ValueType::String, tombi_schema_store::ValueSchema::String(_))
+            | (
+                tombi_document_tree::ValueType::OffsetDateTime,
+                tombi_schema_store::ValueSchema::OffsetDateTime(_),
+            )
+            | (
+                tombi_document_tree::ValueType::LocalDateTime,
+                tombi_schema_store::ValueSchema::LocalDateTime(_),
+            )
+            | (
+                tombi_document_tree::ValueType::LocalDate,
+                tombi_schema_store::ValueSchema::LocalDate(_),
+            )
+            | (
+                tombi_document_tree::ValueType::LocalTime,
+                tombi_schema_store::ValueSchema::LocalTime(_),
+            )
+            | (tombi_document_tree::ValueType::Table, tombi_schema_store::ValueSchema::Table(_))
+            | (tombi_document_tree::ValueType::Array, tombi_schema_store::ValueSchema::Array(_)) => {
+                Some(
+                    value
+                        .validate(accessors, Some(resolved_schema), schema_context)
+                        .await,
+                )
+            }
+            (_, tombi_schema_store::ValueSchema::Null) => None,
+            (_, tombi_schema_store::ValueSchema::Boolean(_))
+            | (_, tombi_schema_store::ValueSchema::Integer(_))
+            | (_, tombi_schema_store::ValueSchema::Float(_))
+            | (_, tombi_schema_store::ValueSchema::String(_))
+            | (_, tombi_schema_store::ValueSchema::OffsetDateTime(_))
+            | (_, tombi_schema_store::ValueSchema::LocalDateTime(_))
+            | (_, tombi_schema_store::ValueSchema::LocalDate(_))
+            | (_, tombi_schema_store::ValueSchema::LocalTime(_))
+            | (_, tombi_schema_store::ValueSchema::Table(_))
+            | (_, tombi_schema_store::ValueSchema::Array(_)) => Some(
+                handle_type_mismatch(
+                    resolved_schema.value_schema.value_type().await,
+                    value.value_type(),
+                    value.range(),
+                    common_rules,
+                ),
+            ),
+            (_, tombi_schema_store::ValueSchema::OneOf(one_of_schema)) => Some(
+                validate_one_of(
+                    value,
+                    accessors,
+                    one_of_schema,
+                    resolved_schema,
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+                .await,
+            ),
+            (_, tombi_schema_store::ValueSchema::AnyOf(any_of_schema)) => Some(
+                validate_any_of(
+                    value,
+                    accessors,
+                    any_of_schema,
+                    resolved_schema,
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+                .await,
+            ),
+            (_, tombi_schema_store::ValueSchema::AllOf(all_of_schema)) => Some(
+                validate_all_of(
+                    value,
+                    accessors,
+                    all_of_schema,
+                    resolved_schema,
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+                .await,
+            ),
+        }
+    }
+    .boxed()
 }
