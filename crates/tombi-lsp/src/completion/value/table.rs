@@ -109,81 +109,82 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             let accessor_str = &key.value;
                             if let Some(value) = self.get(key) {
                                 let accessor: Accessor = Accessor::Key(accessor_str.to_string());
-
-                                let need_magic_trigger = match completion_hint {
-                                    Some(
-                                        CompletionHint::DotTrigger { range, .. }
-                                        | CompletionHint::EqualTrigger { range, .. },
-                                    ) => range.end <= key.range().start,
-                                    Some(
-                                        CompletionHint::InArray { .. }
-                                        | CompletionHint::InTableHeader
-                                        | CompletionHint::Comma { .. },
-                                    ) => false,
-                                    None => true,
-                                };
-                                if matches!(value, tombi_document_tree::Value::Incomplete { .. })
-                                    && need_magic_trigger
-                                {
-                                    return CompletionContent::new_magic_triggers(
-                                        accessor_str,
-                                        position,
-                                        Some(current_schema.schema_uri.as_ref()),
-                                    );
-                                }
-
                                 let schema_accessor = SchemaAccessor::from(&accessor);
-                                let has_direct_property = table_schema
+                                if table_schema
                                     .properties
                                     .read()
                                     .await
-                                    .contains_key(&schema_accessor);
-                                let direct_property_schema = table_schema
-                                    .resolve_property_schema(
-                                        &schema_accessor,
-                                        current_schema.schema_uri.clone(),
-                                        current_schema.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
-                                    .inspect_err(|err| log::warn!("{err}"))
-                                    .ok()
-                                    .flatten();
-
-                                if let Some(current_schema) = direct_property_schema {
-                                    log::trace!(
-                                        "property_schema = {:?}",
-                                        current_schema.value_schema
-                                    );
-
-                                    let mut contents = value
-                                        .find_completion_contents(
-                                            position,
-                                            &keys[1..],
-                                            &accessors
-                                                .iter()
-                                                .cloned()
-                                                .chain(std::iter::once(accessor))
-                                                .collect_vec(),
-                                            Some(&current_schema),
-                                            schema_context,
-                                            completion_hint,
-                                        )
-                                        .await;
-
-                                    if !contents.is_empty()
-                                        && current_schema.value_schema.deprecated().await
-                                            == Some(true)
+                                    .contains_key(&schema_accessor)
+                                {
+                                    let need_magic_trigger = match completion_hint {
+                                        Some(
+                                            CompletionHint::DotTrigger { range, .. }
+                                            | CompletionHint::EqualTrigger { range, .. },
+                                        ) => range.end <= key.range().start,
+                                        Some(
+                                            CompletionHint::InArray { .. }
+                                            | CompletionHint::InTableHeader
+                                            | CompletionHint::Comma { .. },
+                                        ) => false,
+                                        None => true,
+                                    };
+                                    if matches!(value, tombi_document_tree::Value::Incomplete { .. })
+                                        && need_magic_trigger
                                     {
-                                        for content in &mut contents {
-                                            if !content.in_comment {
-                                                content.deprecated = Some(true);
-                                            }
-                                        }
+                                        return CompletionContent::new_magic_triggers(
+                                            accessor_str,
+                                            position,
+                                            Some(current_schema.schema_uri.as_ref()),
+                                        );
                                     }
 
-                                    return contents;
-                                } else if !has_direct_property && keys.len() == 1 {
+                                    let direct_property_schema = table_schema
+                                        .resolve_property_schema(
+                                            &schema_accessor,
+                                            current_schema.schema_uri.clone(),
+                                            current_schema.definitions.clone(),
+                                            schema_context.store,
+                                        )
+                                        .await
+                                        .inspect_err(|err| log::warn!("{err}"))
+                                        .ok()
+                                        .flatten();
+
+                                    if let Some(current_schema) = direct_property_schema {
+                                        log::trace!(
+                                            "property_schema = {:?}",
+                                            current_schema.value_schema
+                                        );
+
+                                        let mut contents = value
+                                            .find_completion_contents(
+                                                position,
+                                                &keys[1..],
+                                                &accessors
+                                                    .iter()
+                                                    .cloned()
+                                                    .chain(std::iter::once(accessor))
+                                                    .collect_vec(),
+                                                Some(&current_schema),
+                                                schema_context,
+                                                completion_hint,
+                                            )
+                                            .await;
+
+                                        if !contents.is_empty()
+                                            && current_schema.value_schema.deprecated().await
+                                                == Some(true)
+                                        {
+                                            for content in &mut contents {
+                                                if !content.in_comment {
+                                                    content.deprecated = Some(true);
+                                                }
+                                            }
+                                        }
+
+                                        return contents;
+                                    }
+                                } else if keys.len() == 1 {
                                     let property_keys = table_schema
                                         .properties
                                         .read()
