@@ -6,6 +6,7 @@ mod output;
 mod parse;
 mod parsed;
 mod parser;
+mod support;
 mod token_set;
 
 pub use error::{Error, ErrorKind};

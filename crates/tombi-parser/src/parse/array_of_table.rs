@@ -3,11 +3,12 @@ use tombi_syntax::{SyntaxKind::*, T};
 use super::Parse;
 use crate::{
     ErrorKind::*,
-    parse::{
-        TS_LINE_END, begin_dangling_comments, end_dangling_comments, invalid_line,
-        leading_comments, peek_leading_comments, trailing_comment,
-    },
+    parse::{TS_LINE_END, invalid_line},
     parser::Parser,
+    support::{
+        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
+        trailing_comment,
+    },
     token_set::TS_NEXT_SECTION,
 };
 

@@ -1,6 +1,7 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{Parse, key::eat_key, leading_comments, peek_leading_comments, trailing_comment};
+use super::{Parse, key::eat_key};
+use crate::support::{leading_comments, peek_leading_comments, trailing_comment};
 use crate::{ErrorKind::*, parser::Parser, token_set::TS_COMMEMT_OR_LINE_END};
 
 impl Parse for tombi_ast::Value {

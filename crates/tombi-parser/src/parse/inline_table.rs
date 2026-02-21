@@ -3,11 +3,12 @@ use tombi_syntax::{SyntaxKind::*, T};
 
 use crate::{
     ErrorKind::*,
-    parse::{
-        Parse, begin_dangling_comments, end_dangling_comments, leading_comments,
-        peek_leading_comments, trailing_comment,
-    },
+    parse::Parse,
     parser::Parser,
+    support::{
+        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
+        trailing_comment,
+    },
 };
 
 impl Parse for tombi_ast::InlineTable {
