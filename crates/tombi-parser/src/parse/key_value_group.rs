@@ -18,7 +18,7 @@ impl Parse for tombi_ast::KeyValueGroup {
                 break;
             }
             let n = peek_leading_comments(p);
-            if p.nth_at_ts(n, TS_NEXT_SECTION) || p.nth_at(n, EOF) {
+            if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
             if !p.nth_at_ts(n, TS_KEY_FIRST) {
