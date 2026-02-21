@@ -349,18 +349,11 @@ pub async fn resolve_and_collect_schemas(
     schema_visits: &crate::SchemaVisits,
     accessors: &[crate::Accessor],
 ) -> Option<Vec<CurrentSchema<'static>>> {
-    let schema_uri_for_log = schema_uri.as_ref().to_string();
-    let accessors_for_log = if accessors.is_empty() {
-        "<root>".to_string()
-    } else {
-        crate::Accessors::from(accessors.to_vec()).to_string()
-    };
-
     let Some(_cycle_guard) = schema_visits.get_cycle_guard(schemas) else {
         log::debug!(
-            "detected composite schema cycle while collecting schemas: schema_uri={} accessors={} reason=reentrant_schema_traversal",
-            schema_uri_for_log,
-            accessors_for_log
+            "detected composite schema cycle while collecting schemas: schema_uri={schema_uri} accessors={accessors} reason=reentrant_schema_traversal",
+            schema_uri = schema_uri.as_ref().to_string(),
+            accessors = crate::Accessors::from(accessors.to_vec())
         );
         return None;
     };
@@ -371,9 +364,9 @@ pub async fn resolve_and_collect_schemas(
     } else {
         // try_read() failed -- a write lock is held.
         log::debug!(
-            "failed to acquire read lock for composite schema collection: schema_uri={} accessors={} reason=write_lock_held",
-            schema_uri_for_log,
-            accessors_for_log
+            "failed to acquire read lock for composite schema collection: schema_uri={schema_uri} accessors={accessors} reason=write_lock_held",
+            schema_uri = schema_uri.as_ref().to_string(),
+            accessors = crate::Accessors::from(accessors.to_vec())
         );
         return None;
     };
@@ -402,17 +395,17 @@ pub async fn resolve_and_collect_schemas(
     if !resolved_indices.is_empty() {
         let Ok(mut guard) = schemas.try_write() else {
             log::debug!(
-                "failed to acquire write lock for composite schema resolution: schema_uri={} accessors={} reason=lock_contention",
-                schema_uri_for_log,
-                accessors_for_log
+                "failed to acquire write lock for composite schema resolution: schema_uri={schema_uri} accessors={accessors} reason=lock_contention",
+                schema_uri = schema_uri.as_ref().to_string(),
+                accessors = crate::Accessors::from(accessors.to_vec())
             );
             return Some(collected);
         };
 
         log::debug!(
-            "acquired write lock for composite schema resolution: schema_uri={} accessors={} mode=cache_resolved_refs",
-            schema_uri_for_log,
-            accessors_for_log
+            "acquired write lock for composite schema resolution: schema_uri={schema_uri} accessors={accessors} mode=cache_resolved_refs",
+            schema_uri = schema_uri.as_ref().to_string(),
+            accessors = crate::Accessors::from(accessors.to_vec())
         );
 
         for index in resolved_indices {
@@ -424,13 +417,6 @@ pub async fn resolve_and_collect_schemas(
                 *cached_schema = local_schema.clone();
             }
         }
-
-        log::debug!(
-            "finished composite schema resolution under write lock: schema_uri={} accessors={} resolved_count={}",
-            schema_uri_for_log,
-            accessors_for_log,
-            collected.len()
-        );
     }
 
     Some(collected)
