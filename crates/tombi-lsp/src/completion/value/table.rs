@@ -274,6 +274,10 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             continue;
                                         };
                                         if pattern.is_match(accessor_str) {
+                                            log::trace!(
+                                                "pattern_property_schema = {:?}",
+                                                &current_schema.value_schema
+                                            );
                                             if let Ok(Some(current_schema)) = table_schema
                                                 .resolve_pattern_property_schema(
                                                     &property_key,
