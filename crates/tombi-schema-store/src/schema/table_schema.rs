@@ -3,6 +3,7 @@ use std::{borrow::Cow, sync::Arc};
 use ahash::AHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use tombi_accessor::Accessors;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{
     ArrayValuesOrderBy, StringFormat, TableKeysOrder, TableKeysOrderGroupKind,
@@ -113,7 +114,7 @@ impl TableSchema {
                     if let Ok(v) = ArrayValuesOrderBy::try_from(v) {
                         Some(v)
                     } else {
-                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
+                        log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {v}");
                         None
                     }
                 } else {
@@ -350,7 +351,13 @@ impl FindSchemaCandidates for TableSchema {
                             schema_store,
                         )
                         .await
-                        .inspect_err(|err| log::warn!("{err}"))
+                        .inspect_err(|err| {
+                            log::warn!(
+                                "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
+                                schema_uri = schema_uri.to_string(),
+                                accessors = Accessors::from(accessors.to_vec()),
+                            )
+                        })
                         .ok()
                         .flatten();
 
@@ -384,7 +391,13 @@ impl FindSchemaCandidates for TableSchema {
                     schema_store,
                 )
                 .await
-                .inspect_err(|err| log::warn!("{err}"))
+                .inspect_err(|err| {
+                    log::warn!(
+                        "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
+                        schema_uri = schema_uri.to_string(),
+                        accessors = Accessors::from(accessors.to_vec()),
+                    )
+                })
                 .ok()
                 .flatten();
 
