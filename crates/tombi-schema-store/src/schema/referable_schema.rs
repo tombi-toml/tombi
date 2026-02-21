@@ -1,5 +1,6 @@
 use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
+use itertools::Itertools;
 use tombi_x_keyword::StringFormat;
 
 use crate::x_taplo::XTaplo;
@@ -358,9 +359,8 @@ pub async fn resolve_and_collect_schemas(
         return None;
     };
 
-    // Path 1: Take a local snapshot under read lock.
-    let mut local = if let Ok(guard) = schemas.try_read() {
-        guard.clone()
+    let guard = if let Ok(guard) = schemas.try_read() {
+        guard
     } else {
         // try_read() failed -- a write lock is held.
         log::debug!(
@@ -370,6 +370,64 @@ pub async fn resolve_and_collect_schemas(
         );
         return None;
     };
+
+    // Fast path: all schemas are already resolved.
+    // Build output from read snapshot and avoid cloning the whole referable vector.
+    if guard
+        .iter()
+        .all(|referable_schema| matches!(referable_schema, Referable::Resolved { .. }))
+    {
+        let resolved_snapshot = guard
+            .iter()
+            .map(|referable_schema| match referable_schema {
+                Referable::Resolved {
+                    schema_uri: resolved_schema_uri,
+                    value,
+                } => (resolved_schema_uri.clone(), value.clone()),
+                Referable::Ref { .. } => unreachable!("all entries are checked as resolved"),
+            })
+            .collect_vec();
+
+        drop(guard);
+
+        let mut collected = Vec::with_capacity(resolved_snapshot.len());
+        let default_schema_uri = schema_uri.as_ref().clone();
+        let default_definitions = definitions.clone().into_owned();
+
+        for (resolved_schema_uri, value_schema) in resolved_snapshot {
+            let (current_schema_uri, current_definitions) =
+                if let Some(resolved_schema_uri) = resolved_schema_uri {
+                    match schema_store
+                        .try_get_document_schema(&resolved_schema_uri)
+                        .await
+                    {
+                        Ok(Some(document_schema)) => (
+                            document_schema.schema_uri.clone(),
+                            document_schema.definitions.clone(),
+                        ),
+                        Ok(None) => (default_schema_uri.clone(), default_definitions.clone()),
+                        Err(err) => {
+                            log::warn!("{err}");
+                            continue;
+                        }
+                    }
+                } else {
+                    (default_schema_uri.clone(), default_definitions.clone())
+                };
+
+            collected.push(CurrentSchema {
+                value_schema: CurrentValueSchema::Shared(Arc::new(value_schema)),
+                schema_uri: Cow::Owned(current_schema_uri),
+                definitions: Cow::Owned(current_definitions),
+            });
+        }
+
+        return Some(collected);
+    }
+
+    // Slow path: unresolved refs exist. Resolve on local clone and cache back.
+    let mut local = guard.clone();
+    drop(guard);
 
     let mut collected = Vec::with_capacity(local.len());
     let mut resolved_indices = Vec::new();
