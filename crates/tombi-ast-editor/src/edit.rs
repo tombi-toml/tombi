@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, CurrentValueSchema, OneOfSchema,
@@ -163,7 +164,7 @@ fn edit_recursive<'a: 'b, 'b>(
                             .await
                             .keys()
                             .cloned()
-                            .collect::<Vec<_>>();
+                            .collect_vec();
                         for property_key in pattern_keys {
                             let pattern = match tombi_regex::Regex::new(&property_key) {
                                 Ok(pattern) => pattern,
