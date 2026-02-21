@@ -402,12 +402,6 @@ pub async fn resolve_and_collect_schemas(
             return Some(collected);
         };
 
-        log::debug!(
-            "acquired write lock for composite schema resolution: schema_uri={schema_uri} accessors={accessors} mode=cache_resolved_refs",
-            schema_uri = schema_uri.as_ref().to_string(),
-            accessors = crate::Accessors::from(accessors.to_vec())
-        );
-
         for index in resolved_indices {
             if let (Some(cached_schema), Some(local_schema)) =
                 (guard.get_mut(index), local.get(index))
