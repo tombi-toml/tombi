@@ -192,27 +192,27 @@ async fn get_sorted_values_order_groups<'a>(
             ValueSchema::AnyOf(AnyOfSchema { schemas, .. }),
         ) => {
             let mut sorted_values_with_comma = Vec::with_capacity(values_with_comma.len());
-            let mut schemas = schemas.write().await;
+            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                schemas,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+                accessors,
+            )
+            .await
+            else {
+                return Some(values_with_comma);
+            };
 
-            for (group_order, schema) in group_orders.iter().zip(schemas.iter_mut()) {
+            for (group_order, current_schema) in group_orders.iter().zip(resolved_schemas.iter()) {
                 let mut group_values_with_comma = Vec::new();
                 let mut group_value_nodes = Vec::new();
-                let Ok(Some(current_schema)) = schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                else {
-                    continue;
-                };
 
                 let mut i = 0;
                 while i < values_with_comma.len() {
                     // check if the value is compatible with the schema
                     if value_nodes[i]
-                        .validate(&[], Some(&current_schema), schema_context)
+                        .validate(&[], Some(current_schema), schema_context)
                         .await
                         .is_ok()
                     {
@@ -229,7 +229,7 @@ async fn get_sorted_values_order_groups<'a>(
                         group_values_with_comma.clone(),
                         group_value_nodes.as_slice(),
                         accessors,
-                        Some(&current_schema),
+                        Some(current_schema),
                         schema_context,
                     )
                     .await
@@ -296,26 +296,29 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                 ValueSchema::AllOf(AllOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                    for schema in schemas.write().await.iter_mut() {
-                        if let Ok(Some(current_schema)) = schema
-                            .resolve(
-                                current_schema.schema_uri.clone(),
-                                current_schema.definitions.clone(),
-                                schema_context.store,
-                            )
-                            .await
-                            && table_node
-                                .validate(accessors, Some(&current_schema), schema_context)
+                    if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                        schemas,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                        accessors,
+                    )
+                    .await
+                    {
+                        for current_schema in &resolved_schemas {
+                            if table_node
+                                .validate(accessors, Some(current_schema), schema_context)
                                 .await
                                 .is_ok()
-                        {
-                            return try_array_values_order_by_from_item_schema(
-                                table_node,
-                                accessors,
-                                Some(&current_schema),
-                                schema_context,
-                            )
-                            .await;
+                            {
+                                return try_array_values_order_by_from_item_schema(
+                                    table_node,
+                                    accessors,
+                                    Some(current_schema),
+                                    schema_context,
+                                )
+                                .await;
+                            }
                         }
                     }
                 }

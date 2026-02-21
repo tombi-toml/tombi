@@ -38,13 +38,10 @@ where
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
             schema_context.store,
+            accessors,
         )
         .await
         else {
-            return None;
-        };
-
-        let Ok(_cycle_guard) = all_of_schema.schemas.try_write() else {
             return None;
         };
 
@@ -73,8 +70,6 @@ where
                 all_of_type_definition = Some(type_definition);
             }
         }
-
-        drop(_cycle_guard);
 
         all_of_type_definition
     }

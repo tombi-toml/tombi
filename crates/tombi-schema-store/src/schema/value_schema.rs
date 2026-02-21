@@ -296,7 +296,10 @@ impl ValueSchema {
                 } else {
                     let mut has_deprecated = false;
                     for schema in schemas.read().await.iter() {
-                        if schema.value_type().await == crate::ValueType::Null {
+                        if schema
+                            .resolved()
+                            .is_some_and(|value_schema| matches!(value_schema, ValueSchema::Null))
+                        {
                             continue;
                         }
                         if schema.deprecated().await != Some(true) {
@@ -440,81 +443,30 @@ impl ValueSchema {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                    // Try read path first for already-resolved schemas
-                    let collected = if let Ok(guard) = schemas.try_read() {
-                        if guard
-                            .iter()
-                            .all(|s| matches!(s, Referable::Resolved { .. }))
-                        {
-                            let mut collected = Vec::with_capacity(guard.len());
-                            for referable_schema in guard.iter() {
-                                if let Ok(Some(current_schema)) = referable_schema
-                                    .to_current_schema(
-                                        Cow::Borrowed(schema_uri),
-                                        Cow::Borrowed(definitions),
-                                        schema_store,
-                                    )
-                                    .await
-                                {
-                                    collected.push(current_schema);
-                                }
-                            }
-                            drop(guard);
-                            Some(collected)
-                        } else {
-                            drop(guard);
-                            None
-                        }
-                    } else {
-                        // try_read failed -- cycle guard held by parent
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        &[],
+                    )
+                    .await
+                    else {
                         return matched_schemas;
                     };
 
-                    if let Some(collected) = collected {
-                        // All resolved: cycle guard + process
-                        let Ok(_cycle_guard) = schemas.try_write() else {
-                            return matched_schemas;
-                        };
-                        for current_schema in &collected {
-                            matched_schemas.extend(
-                                current_schema
-                                    .value_schema
-                                    .match_flattened_schemas(
-                                        condition,
-                                        &current_schema.schema_uri,
-                                        &current_schema.definitions,
-                                        schema_store,
-                                    )
-                                    .await,
-                            );
-                        }
-                    } else {
-                        // Some Ref: write lock for resolution + processing
-                        let Ok(mut schemas_guard) = schemas.try_write() else {
-                            return matched_schemas;
-                        };
-                        for referable_schema in schemas_guard.iter_mut() {
-                            if let Ok(Some(current_schema)) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
+                    for current_schema in &collected {
+                        matched_schemas.extend(
+                            current_schema
+                                .value_schema
+                                .match_flattened_schemas(
+                                    condition,
+                                    &current_schema.schema_uri,
+                                    &current_schema.definitions,
                                     schema_store,
                                 )
-                                .await
-                            {
-                                matched_schemas.extend(
-                                    current_schema
-                                        .value_schema
-                                        .match_flattened_schemas(
-                                            condition,
-                                            &current_schema.schema_uri,
-                                            &current_schema.definitions,
-                                            schema_store,
-                                        )
-                                        .await,
-                                );
-                            }
-                        }
+                                .await,
+                        );
                     }
                 }
                 _ => {
@@ -543,164 +495,60 @@ impl ValueSchema {
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => {
-                    // Try read path first for already-resolved schemas
-                    let collected = if let Ok(guard) = schemas.try_read() {
-                        if guard
-                            .iter()
-                            .all(|s| matches!(s, Referable::Resolved { .. }))
-                        {
-                            let mut collected = Vec::with_capacity(guard.len());
-                            for referable_schema in guard.iter() {
-                                if let Ok(Some(current_schema)) = referable_schema
-                                    .to_current_schema(
-                                        Cow::Borrowed(schema_uri),
-                                        Cow::Borrowed(definitions),
-                                        schema_store,
-                                    )
-                                    .await
-                                {
-                                    collected.push(current_schema);
-                                }
-                            }
-                            drop(guard);
-                            Some(collected)
-                        } else {
-                            drop(guard);
-                            None
-                        }
-                    } else {
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        &[],
+                    )
+                    .await
+                    else {
                         return false;
                     };
 
-                    if let Some(collected) = collected {
-                        let Ok(_cycle_guard) = schemas.try_write() else {
-                            return false;
-                        };
-                        let result = join_all(collected.iter().map(|current_schema| async {
-                            current_schema
-                                .value_schema
-                                .is_match(
-                                    condition,
-                                    &current_schema.schema_uri,
-                                    &current_schema.definitions,
-                                    schema_store,
-                                )
-                                .await
-                        }))
-                        .await
-                        .into_iter()
-                        .any(|is_matched| is_matched);
-                        result
-                    } else {
-                        let Ok(mut schemas_guard) = schemas.try_write() else {
-                            return false;
-                        };
-                        join_all(schemas_guard.iter_mut().map(|referable_schema| async {
-                            if let Ok(Some(current_schema)) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                current_schema
-                                    .value_schema
-                                    .is_match(
-                                        condition,
-                                        &current_schema.schema_uri,
-                                        &current_schema.definitions,
-                                        schema_store,
-                                    )
-                                    .await
-                            } else {
-                                false
-                            }
-                        }))
-                        .await
-                        .into_iter()
-                        .any(|is_matched| is_matched)
-                    }
+                    join_all(collected.iter().map(|current_schema| async {
+                        current_schema
+                            .value_schema
+                            .is_match(
+                                condition,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_store,
+                            )
+                            .await
+                    }))
+                    .await
+                    .into_iter()
+                    .any(|is_matched| is_matched)
                 }
                 ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                    // Try read path first for already-resolved schemas
-                    let collected = if let Ok(guard) = schemas.try_read() {
-                        if guard
-                            .iter()
-                            .all(|s| matches!(s, Referable::Resolved { .. }))
-                        {
-                            let mut collected = Vec::with_capacity(guard.len());
-                            for referable_schema in guard.iter() {
-                                if let Ok(Some(current_schema)) = referable_schema
-                                    .to_current_schema(
-                                        Cow::Borrowed(schema_uri),
-                                        Cow::Borrowed(definitions),
-                                        schema_store,
-                                    )
-                                    .await
-                                {
-                                    collected.push(current_schema);
-                                }
-                            }
-                            drop(guard);
-                            Some(collected)
-                        } else {
-                            drop(guard);
-                            None
-                        }
-                    } else {
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        &[],
+                    )
+                    .await
+                    else {
                         return false;
                     };
 
-                    if let Some(collected) = collected {
-                        let Ok(_cycle_guard) = schemas.try_write() else {
-                            return false;
-                        };
-                        let result = join_all(collected.iter().map(|current_schema| async {
-                            current_schema
-                                .value_schema
-                                .is_match(
-                                    condition,
-                                    &current_schema.schema_uri,
-                                    &current_schema.definitions,
-                                    schema_store,
-                                )
-                                .await
-                        }))
-                        .await
-                        .into_iter()
-                        .all(|is_matched| is_matched);
-                        result
-                    } else {
-                        let Ok(mut schemas_guard) = schemas.try_write() else {
-                            return false;
-                        };
-                        join_all(schemas_guard.iter_mut().map(|referable_schema| async {
-                            if let Ok(Some(current_schema)) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                current_schema
-                                    .value_schema
-                                    .is_match(
-                                        condition,
-                                        &current_schema.schema_uri,
-                                        &current_schema.definitions,
-                                        schema_store,
-                                    )
-                                    .await
-                            } else {
-                                false
-                            }
-                        }))
-                        .await
-                        .into_iter()
-                        .all(|is_matched| is_matched)
-                    }
+                    join_all(collected.iter().map(|current_schema| async {
+                        current_schema
+                            .value_schema
+                            .is_match(
+                                condition,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_store,
+                            )
+                            .await
+                    }))
+                    .await
+                    .into_iter()
+                    .all(|is_matched| is_matched)
                 }
                 _ => condition(self),
             }
@@ -740,96 +588,38 @@ impl FindSchemaCandidates for ValueSchema {
                     let mut candidates = Vec::new();
                     let mut errors = Vec::new();
 
-                    // Try read path first for already-resolved schemas
-                    let collected = if let Ok(guard) = schemas.try_read() {
-                        if guard
-                            .iter()
-                            .all(|s| matches!(s, Referable::Resolved { .. }))
-                        {
-                            let mut collected = Vec::with_capacity(guard.len());
-                            for referable_schema in guard.iter() {
-                                if let Ok(Some(current_schema)) = referable_schema
-                                    .to_current_schema(
-                                        Cow::Borrowed(schema_uri),
-                                        Cow::Borrowed(definitions),
-                                        schema_store,
-                                    )
-                                    .await
-                                {
-                                    collected.push(current_schema);
-                                }
-                            }
-                            drop(guard);
-                            Some(collected)
-                        } else {
-                            drop(guard);
-                            None
-                        }
-                    } else {
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        accessors,
+                    )
+                    .await
+                    else {
                         return (candidates, errors);
                     };
 
-                    if let Some(collected) = collected {
-                        let Ok(_cycle_guard) = schemas.try_write() else {
-                            return (candidates, errors);
-                        };
-                        for current_schema in &collected {
-                            let (mut schema_candidates, schema_errors) = current_schema
-                                .value_schema
-                                .find_schema_candidates(
-                                    accessors,
-                                    &current_schema.schema_uri,
-                                    &current_schema.definitions,
-                                    schema_store,
-                                )
-                                .await;
+                    for current_schema in &collected {
+                        let (mut schema_candidates, schema_errors) = current_schema
+                            .value_schema
+                            .find_schema_candidates(
+                                accessors,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_store,
+                            )
+                            .await;
 
-                            for schema_candidate in &mut schema_candidates {
-                                if title.is_some() || description.is_some() {
-                                    schema_candidate.set_title(title.clone());
-                                    schema_candidate.set_description(description.clone());
-                                }
+                        for schema_candidate in &mut schema_candidates {
+                            if title.is_some() || description.is_some() {
+                                schema_candidate.set_title(title.clone());
+                                schema_candidate.set_description(description.clone());
                             }
-
-                            candidates.extend(schema_candidates);
-                            errors.extend(schema_errors);
                         }
-                    } else {
-                        let Ok(mut schemas_guard) = schemas.try_write() else {
-                            return (candidates, errors);
-                        };
-                        for referable_schema in schemas_guard.iter_mut() {
-                            let Ok(Some(current_schema)) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            else {
-                                continue;
-                            };
 
-                            let (mut schema_candidates, schema_errors) = current_schema
-                                .value_schema
-                                .find_schema_candidates(
-                                    accessors,
-                                    &current_schema.schema_uri,
-                                    &current_schema.definitions,
-                                    schema_store,
-                                )
-                                .await;
-
-                            for schema_candidate in &mut schema_candidates {
-                                if title.is_some() || description.is_some() {
-                                    schema_candidate.set_title(title.clone());
-                                    schema_candidate.set_description(description.clone());
-                                }
-                            }
-
-                            candidates.extend(schema_candidates);
-                            errors.extend(schema_errors);
-                        }
+                        candidates.extend(schema_candidates);
+                        errors.extend(schema_errors);
                     }
 
                     (candidates, errors)

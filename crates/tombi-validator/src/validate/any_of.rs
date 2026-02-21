@@ -43,13 +43,10 @@ where
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
+            accessors,
         )
         .await
         else {
-            return Ok(());
-        };
-
-        let Ok(_cycle_guard) = any_of_schema.schemas.try_write() else {
             return Ok(());
         };
 
@@ -84,8 +81,6 @@ where
                 }
             }
         }
-
-        drop(_cycle_guard);
 
         if total_error.diagnostics.is_empty() {
             Ok(())

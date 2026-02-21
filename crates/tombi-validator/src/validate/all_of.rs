@@ -33,13 +33,10 @@ where
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
+            accessors,
         )
         .await
         else {
-            return Ok(());
-        };
-
-        let Ok(_cycle_guard) = all_of_schema.schemas.try_write() else {
             return Ok(());
         };
 
@@ -52,8 +49,6 @@ where
                 total_score += score;
             }
         }
-
-        drop(_cycle_guard);
 
         if total_diagnostics.is_empty() {
             handle_deprecated(

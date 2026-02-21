@@ -45,16 +45,13 @@ where
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
+            accessors,
         )
         .await
         else {
             return Ok(());
         };
         let total_count = resolved_schemas.len();
-
-        let Ok(_cycle_guard) = one_of_schema.schemas.try_write() else {
-            return Ok(());
-        };
 
         let mut each_results = Vec::with_capacity(resolved_schemas.len());
         for resolved_schema in &resolved_schemas {
@@ -77,8 +74,6 @@ where
 
             each_results.push(result);
         }
-
-        drop(_cycle_guard);
 
         if valid_count == 1 {
             for result in each_results {

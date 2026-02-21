@@ -20,7 +20,7 @@ impl SchemaContext<'_> {
         &self,
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
-    ) -> Option<Result<crate::DocumentSchema, crate::Error>> {
+    ) -> Option<Result<std::sync::Arc<crate::DocumentSchema>, crate::Error>> {
         if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
             && let Some(sub_schema_uri) =
                 sub_schema_uri_map.get(&accessors.iter().map(SchemaAccessor::from).collect_vec())

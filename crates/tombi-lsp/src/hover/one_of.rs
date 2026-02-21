@@ -51,13 +51,10 @@ where
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
             schema_context.store,
+            accessors,
         )
         .await
         else {
-            return None;
-        };
-
-        let Ok(_cycle_guard) = one_of_schema.schemas.try_write() else {
             return None;
         };
 
@@ -142,8 +139,6 @@ where
                 }
             }
         }
-
-        drop(_cycle_guard);
 
         let mut hover_value_content = if one_hover_value_contents.len() == 1 {
             one_hover_value_contents
@@ -247,13 +242,10 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
                 schema_context.store,
+                accessors,
             )
             .await
             else {
-                return None;
-            };
-
-            let Ok(_cycle_guard) = self.schemas.try_write() else {
                 return None;
             };
 
@@ -287,8 +279,6 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                     enum_values.extend(values);
                 }
             }
-
-            drop(_cycle_guard);
 
             let (mut title, mut description) = if title_description_set.len() == 1 {
                 title_description_set.into_iter().next().unwrap()

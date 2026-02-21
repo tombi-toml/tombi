@@ -1,4 +1,10 @@
-use std::{borrow::Cow, str::FromStr};
+use std::{
+    borrow::Cow,
+    collections::HashSet,
+    ops::Deref,
+    str::FromStr,
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
+};
 
 use tombi_x_keyword::StringFormat;
 
@@ -20,9 +26,43 @@ pub enum Referable<T> {
     },
 }
 
+#[derive(Clone, Debug)]
+pub enum CurrentValueSchema<'a> {
+    Borrowed(&'a ValueSchema),
+    Shared(Arc<ValueSchema>),
+}
+
+impl CurrentValueSchema<'_> {
+    pub fn into_owned(self) -> CurrentValueSchema<'static> {
+        match self {
+            CurrentValueSchema::Borrowed(value_schema) => {
+                CurrentValueSchema::Shared(Arc::new(value_schema.clone()))
+            }
+            CurrentValueSchema::Shared(value_schema) => CurrentValueSchema::Shared(value_schema),
+        }
+    }
+}
+
+impl AsRef<ValueSchema> for CurrentValueSchema<'_> {
+    fn as_ref(&self) -> &ValueSchema {
+        match self {
+            CurrentValueSchema::Borrowed(value_schema) => value_schema,
+            CurrentValueSchema::Shared(value_schema) => value_schema,
+        }
+    }
+}
+
+impl Deref for CurrentValueSchema<'_> {
+    type Target = ValueSchema;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
 #[derive(Clone)]
 pub struct CurrentSchema<'a> {
-    pub value_schema: Cow<'a, ValueSchema>,
+    pub value_schema: CurrentValueSchema<'a>,
     pub schema_uri: Cow<'a, SchemaUri>,
     pub definitions: Cow<'a, SchemaDefinitions>,
 }
@@ -30,7 +70,7 @@ pub struct CurrentSchema<'a> {
 impl<'a> CurrentSchema<'a> {
     pub fn into_owned(self) -> CurrentSchema<'static> {
         CurrentSchema {
-            value_schema: Cow::Owned(self.value_schema.into_owned()),
+            value_schema: self.value_schema.into_owned(),
             schema_uri: Cow::Owned(self.schema_uri.into_owned()),
             definitions: Cow::Owned(self.definitions.into_owned()),
         }
@@ -52,6 +92,42 @@ impl<T> Referable<T> {
             Self::Resolved { value, .. } => Some(value),
             Self::Ref { .. } => None,
         }
+    }
+}
+
+fn composite_schema_cycle_set() -> &'static Mutex<HashSet<usize>> {
+    static CYCLE_SET: OnceLock<Mutex<HashSet<usize>>> = OnceLock::new();
+    CYCLE_SET.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn lock_composite_schema_cycle_set() -> MutexGuard<'static, HashSet<usize>> {
+    composite_schema_cycle_set()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+pub struct CompositeSchemaCycleGuard {
+    key: usize,
+}
+
+impl Drop for CompositeSchemaCycleGuard {
+    fn drop(&mut self) {
+        lock_composite_schema_cycle_set().remove(&self.key);
+    }
+}
+
+/// Global re-entrancy guard for recursive composite schema traversal.
+///
+/// We intentionally guard by `schemas` pointer identity so cycles like
+/// `oneOf -> sequence_task -> tasks_array -> oneOf` can short-circuit.
+pub fn try_enter_composite_schema_cycle(
+    schemas: &super::ReferableValueSchemas,
+) -> Option<CompositeSchemaCycleGuard> {
+    let key = std::sync::Arc::as_ptr(schemas) as usize;
+    if lock_composite_schema_cycle_set().insert(key) {
+        Some(CompositeSchemaCycleGuard { key })
+    } else {
+        None
     }
 }
 
@@ -99,7 +175,14 @@ impl Referable<ValueSchema> {
     pub async fn value_type(&self) -> crate::ValueType {
         match self {
             Referable::Resolved { value, .. } => value.value_type().await,
-            Referable::Ref { .. } => unreachable!("unreachable ref value_tyle."),
+            Referable::Ref { reference, .. } => {
+                log::warn!(
+                    "unresolved $ref while determining value type: reference={}",
+                    reference
+                );
+                // Unknown under the current API surface (no schema context here).
+                crate::ValueType::AnyOf(Vec::new())
+            }
         }
     }
 
@@ -117,8 +200,12 @@ impl Referable<ValueSchema> {
                     description,
                     deprecated,
                 } => {
-                    if let Some(definition_schema) = definitions.read().await.get(reference) {
-                        let mut referable_schema = definition_schema.to_owned();
+                    let definition_schema = {
+                        let definitions_guard = definitions.read().await;
+                        definitions_guard.get(reference).cloned()
+                    };
+                    if let Some(definition_schema) = definition_schema {
+                        let mut referable_schema = definition_schema;
                         if let Referable::Resolved {
                             value: value_schema,
                             ..
@@ -154,10 +241,13 @@ impl Referable<ValueSchema> {
                                     resolved_schema.set_deprecated(*deprecated);
                                 }
 
-                                *self = Referable::Resolved {
-                                    schema_uri: Some(schema_uri.as_ref().clone()),
-                                    value: resolved_schema,
-                                };
+                                return Ok(Some(CurrentSchema {
+                                    value_schema: CurrentValueSchema::Shared(Arc::new(
+                                        resolved_schema,
+                                    )),
+                                    schema_uri: Cow::Owned(schema_uri.as_ref().clone()),
+                                    definitions: Cow::Owned(definitions.clone().into_owned()),
+                                }));
                             } else {
                                 return Err(crate::Error::InvalidJsonPointer {
                                     pointer: pointer.to_owned(),
@@ -169,10 +259,11 @@ impl Referable<ValueSchema> {
                             return Ok(None);
                         }
                     } else if let Ok(schema_uri) = SchemaUri::from_str(reference) {
-                        if let Some(mut document_schema) =
+                        if let Some(document_schema) =
                             schema_store.try_get_document_schema(&schema_uri).await?
                         {
-                            if let Some(value_schema) = &mut document_schema.value_schema {
+                            if let Some(value_schema) = document_schema.value_schema.as_ref() {
+                                let mut value_schema = value_schema.as_ref().clone();
                                 if title.is_some() || description.is_some() {
                                     value_schema.set_title(title.to_owned());
                                     value_schema.set_description(description.to_owned());
@@ -183,13 +274,13 @@ impl Referable<ValueSchema> {
 
                                 *self = Referable::Resolved {
                                     schema_uri: Some(document_schema.schema_uri.clone()),
-                                    value: value_schema.clone(),
+                                    value: value_schema,
                                 };
 
                                 return self
                                     .resolve(
-                                        Cow::Owned(document_schema.schema_uri),
-                                        Cow::Owned(document_schema.definitions),
+                                        Cow::Owned(document_schema.schema_uri.clone()),
+                                        Cow::Owned(document_schema.definitions.clone()),
                                         schema_store,
                                     )
                                     .await;
@@ -223,8 +314,8 @@ impl Referable<ValueSchema> {
                                     schema_store.try_get_document_schema(reference_url).await?
                                 {
                                     (
-                                        Cow::Owned(document_schema.schema_uri),
-                                        Cow::Owned(document_schema.definitions),
+                                        Cow::Owned(document_schema.schema_uri.clone()),
+                                        Cow::Owned(document_schema.definitions.clone()),
                                     )
                                 } else {
                                     (schema_uri, definitions)
@@ -235,40 +326,17 @@ impl Referable<ValueSchema> {
                     };
 
                     match value_schema {
-                        ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                        | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
-                        | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                            // Only resolve inner schemas that are still Ref (first time only).
-                            // Use try_read() to check without conflicting with write locks
-                            // held by callers (which indicates circular references).
-                            let needs_resolution = if let Ok(guard) = schemas.try_read() {
-                                guard.iter().any(|s| matches!(s, Referable::Ref { .. }))
-                            } else {
-                                log::debug!(
-                                    "Circular JSON Schema reference detected, skipping inner schema resolution"
-                                );
-                                false
-                            };
-
-                            if needs_resolution {
-                                if let Ok(mut schemas_guard) = schemas.try_write() {
-                                    for schema in schemas_guard.iter_mut() {
-                                        schema
-                                            .resolve(
-                                                schema_uri.clone(),
-                                                definitions.clone(),
-                                                schema_store,
-                                            )
-                                            .await?;
-                                    }
-                                }
-                            }
-                        }
+                        // Do not eagerly resolve nested composite schemas here.
+                        // Nested refs are resolved lazily by `resolve_and_collect_schemas`
+                        // at each call site to avoid recursive expansion on cyclic schemas.
+                        ValueSchema::OneOf(OneOfSchema { .. })
+                        | ValueSchema::AnyOf(AnyOfSchema { .. })
+                        | ValueSchema::AllOf(AllOfSchema { .. }) => {}
                         _ => {}
                     }
 
                     Ok(Some(CurrentSchema {
-                        value_schema: Cow::Borrowed(value_schema),
+                        value_schema: CurrentValueSchema::Borrowed(value_schema),
                         schema_uri,
                         definitions,
                     }))
@@ -300,8 +368,8 @@ impl Referable<ValueSchema> {
                             schema_store.try_get_document_schema(reference_url).await?
                         {
                             (
-                                Cow::Owned(document_schema.schema_uri),
-                                Cow::Owned(document_schema.definitions),
+                                Cow::Owned(document_schema.schema_uri.clone()),
+                                Cow::Owned(document_schema.definitions.clone()),
                             )
                         } else {
                             (schema_uri, definitions)
@@ -311,7 +379,7 @@ impl Referable<ValueSchema> {
                 };
 
                 Ok(Some(CurrentSchema {
-                    value_schema: Cow::Owned(value_schema.clone()),
+                    value_schema: CurrentValueSchema::Shared(Arc::new(value_schema.clone())),
                     schema_uri: Cow::Owned(schema_uri.into_owned()),
                     definitions: Cow::Owned(definitions.into_owned()),
                 }))
@@ -321,51 +389,50 @@ impl Referable<ValueSchema> {
 }
 
 /// Two-path schema collection: tries a read lock first for already-resolved schemas,
-/// falls back to a write lock for resolution.
+/// resolves refs on a local clone, and writes back only newly-resolved entries.
 ///
-/// Returns `None` if the lock cannot be acquired (indicating a circular reference
-/// in a parent caller's processing phase, or concurrent write lock).
+/// Returns `None` when schema traversal is re-entrant (cycle guard) or when
+/// an initial read snapshot cannot be acquired due to concurrent mutation.
 pub async fn resolve_and_collect_schemas(
     schemas: &super::ReferableValueSchemas,
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
     schema_store: &crate::SchemaStore,
+    accessors: &[crate::Accessor],
 ) -> Option<Vec<CurrentSchema<'static>>> {
-    // Path 1: Read lock -- check if all schemas are already Resolved
-    if let Ok(guard) = schemas.try_read() {
-        if guard
-            .iter()
-            .all(|s| matches!(s, Referable::Resolved { .. }))
-        {
-            let mut collected = Vec::with_capacity(guard.len());
-            for referable_schema in guard.iter() {
-                match referable_schema
-                    .to_current_schema(schema_uri.clone(), definitions.clone(), schema_store)
-                    .await
-                {
-                    Ok(Some(current_schema)) => collected.push(current_schema),
-                    Ok(None) => {}
-                    Err(err) => {
-                        log::warn!("{err}");
-                    }
-                }
-            }
-            return Some(collected);
-        }
-        // Not all resolved, drop read lock before trying write
-        drop(guard);
+    let schema_uri_for_log = schema_uri.as_ref().to_string();
+    let accessors_for_log = if accessors.is_empty() {
+        "<root>".to_string()
     } else {
-        // try_read() failed -- a write lock is held (circular reference during processing)
-        return None;
-    }
+        crate::Accessors::from(accessors.to_vec()).to_string()
+    };
 
-    // Path 2: Write lock -- some schemas are Ref, need resolution
-    let Ok(mut guard) = schemas.try_write() else {
+    let Some(_cycle_guard) = try_enter_composite_schema_cycle(schemas) else {
+        log::warn!(
+            "detected composite schema cycle while collecting schemas: schema_uri={} accessors={} reason=reentrant_schema_traversal",
+            schema_uri_for_log,
+            accessors_for_log
+        );
         return None;
     };
 
-    let mut collected = Vec::with_capacity(guard.len());
-    for referable_schema in guard.iter_mut() {
+    // Path 1: Take a local snapshot under read lock.
+    let mut local = if let Ok(guard) = schemas.try_read() {
+        guard.clone()
+    } else {
+        // try_read() failed -- a write lock is held.
+        log::warn!(
+            "failed to acquire read lock for composite schema collection: schema_uri={} accessors={} reason=write_lock_held",
+            schema_uri_for_log,
+            accessors_for_log
+        );
+        return None;
+    };
+
+    let mut collected = Vec::with_capacity(local.len());
+    let mut resolved_indices = Vec::new();
+    for (index, referable_schema) in local.iter_mut().enumerate() {
+        let was_ref = matches!(referable_schema, Referable::Ref { .. });
         match referable_schema
             .resolve(schema_uri.clone(), definitions.clone(), schema_store)
             .await
@@ -376,8 +443,84 @@ pub async fn resolve_and_collect_schemas(
                 log::warn!("{err}");
             }
         }
+
+        if was_ref && matches!(referable_schema, Referable::Resolved { .. }) {
+            resolved_indices.push(index);
+        }
     }
+
+    // Write back only entries that transitioned from Ref -> Resolved.
+    if !resolved_indices.is_empty() {
+        let Ok(mut guard) = schemas.try_write() else {
+            log::warn!(
+                "failed to acquire write lock for composite schema resolution: schema_uri={} accessors={} reason=lock_contention",
+                schema_uri_for_log,
+                accessors_for_log
+            );
+            return Some(collected);
+        };
+
+        log::warn!(
+            "acquired write lock for composite schema resolution: schema_uri={} accessors={} mode=cache_resolved_refs",
+            schema_uri_for_log,
+            accessors_for_log
+        );
+
+        for index in resolved_indices {
+            if let (Some(cached_schema), Some(local_schema)) =
+                (guard.get_mut(index), local.get(index))
+                && matches!(cached_schema, Referable::Ref { .. })
+                && matches!(local_schema, Referable::Resolved { .. })
+            {
+                *cached_schema = local_schema.clone();
+            }
+        }
+
+        log::warn!(
+            "finished composite schema resolution under write lock: schema_uri={} accessors={} resolved_count={}",
+            schema_uri_for_log,
+            accessors_for_log,
+            collected.len()
+        );
+    }
+
     Some(collected)
+}
+
+/// Resolve a schema item without holding its write lock across await points.
+///
+/// 1. Clone under read lock.
+/// 2. If already resolved, build `CurrentSchema` directly.
+/// 3. If unresolved, resolve on the local clone.
+/// 4. Write back only the resolved cache state.
+pub async fn resolve_schema_item(
+    item: &super::SchemaItem,
+    schema_uri: Cow<'_, SchemaUri>,
+    definitions: Cow<'_, SchemaDefinitions>,
+    schema_store: &crate::SchemaStore,
+) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
+    let mut local = { item.read().await.clone() };
+
+    if matches!(local, Referable::Resolved { .. }) {
+        return local
+            .to_current_schema(schema_uri, definitions, schema_store)
+            .await;
+    }
+
+    let was_ref = matches!(local, Referable::Ref { .. });
+    let resolved = local
+        .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+        .await?
+        .map(|current_schema| current_schema.into_owned());
+
+    if was_ref && matches!(local, Referable::Resolved { .. }) {
+        let mut guard = item.write().await;
+        if matches!(*guard, Referable::Ref { .. }) {
+            *guard = local;
+        }
+    }
+
+    Ok(resolved)
 }
 
 pub fn is_online_url(reference: &str) -> bool {
@@ -495,7 +638,7 @@ fn percent_decode(input: &str) -> String {
 mod test {
     use std::str::FromStr;
 
-    use crate::{ValueSchema, schema::referable_schema::resolve_json_pointer};
+    use crate::{Referable, ValueSchema, schema::referable_schema::resolve_json_pointer};
 
     #[test]
     fn test_json_pointer_percent_decode() {
@@ -571,5 +714,18 @@ mod test {
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
         }
+    }
+
+    #[tokio::test]
+    async fn test_value_type_ref_does_not_panic() {
+        let referable = Referable::Ref {
+            reference: "#/definitions/foo".to_string(),
+            title: None,
+            description: None,
+            deprecated: None,
+        };
+
+        let value_type = referable.value_type().await;
+        assert!(matches!(value_type, crate::ValueType::AnyOf(types) if types.is_empty()));
     }
 }

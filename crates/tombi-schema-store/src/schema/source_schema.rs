@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ahash::AHashMap;
 use itertools::Itertools;
 
@@ -8,7 +10,7 @@ pub type SubSchemaUriMap = AHashMap<Vec<SchemaAccessor>, SchemaUri>;
 
 #[derive(Clone, Default)]
 pub struct SourceSchema {
-    pub root_schema: Option<DocumentSchema>,
+    pub root_schema: Option<Arc<DocumentSchema>>,
     pub sub_schema_uri_map: SubSchemaUriMap,
 }
 

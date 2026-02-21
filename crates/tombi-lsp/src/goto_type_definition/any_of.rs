@@ -36,13 +36,10 @@ where
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
             schema_context.store,
+            accessors,
         )
         .await
         else {
-            return None;
-        };
-
-        let Ok(_cycle_guard) = any_of_schema.schemas.try_write() else {
             return None;
         };
 
@@ -64,8 +61,6 @@ where
                 return Some(type_definition);
             }
         }
-
-        drop(_cycle_guard);
 
         let mut schema_uri = schema_uri.clone();
         schema_uri.set_fragment(Some(&format!("L{}", any_of_schema.range.start.line + 1)));

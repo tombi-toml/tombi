@@ -43,13 +43,10 @@ where
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
+            accessors,
         )
         .await
         else {
-            return completion_items;
-        };
-
-        let Ok(_cycle_guard) = one_of_schema.schemas.try_write() else {
             return completion_items;
         };
 
@@ -88,8 +85,6 @@ where
                 completion_items.extend(items);
             }
         }
-
-        drop(_cycle_guard);
 
         let detail = one_of_schema
             .detail(

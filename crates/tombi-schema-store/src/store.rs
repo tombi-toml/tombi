@@ -28,7 +28,7 @@ pub struct AssociateSchemaOptions {
 pub struct SchemaStore {
     http_client: HttpClient,
     document_schemas:
-        Arc<tokio::sync::RwLock<AHashMap<SchemaUri, Result<DocumentSchema, crate::Error>>>>,
+        Arc<tokio::sync::RwLock<AHashMap<SchemaUri, Result<Arc<DocumentSchema>, crate::Error>>>>,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
     options: crate::Options,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,
@@ -475,7 +475,7 @@ impl SchemaStore {
     async fn fetch_document_schema(
         &self,
         schema_uri: &SchemaUri,
-    ) -> Result<Option<DocumentSchema>, crate::Error> {
+    ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
         let object = match self.fetch_schema_value(schema_uri).await? {
             Some(tombi_json::ValueNode::Object(object)) => object,
             Some(_) => {
@@ -490,7 +490,7 @@ impl SchemaStore {
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
             | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
-        ) = &document_schema.value_schema
+        ) = document_schema.value_schema.as_deref()
         {
             {
                 for referable_schema in schemas.write().await.iter_mut() {
@@ -505,13 +505,13 @@ impl SchemaStore {
             }
         }
 
-        Ok(Some(document_schema))
+        Ok(Some(Arc::new(document_schema)))
     }
 
     pub fn try_get_document_schema<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,
-    ) -> BoxFuture<'b, Result<Option<DocumentSchema>, crate::Error>> {
+    ) -> BoxFuture<'b, Result<Option<Arc<DocumentSchema>>, crate::Error>> {
         async move {
             // Use memory cache first
             if let Some(document_schema) = self.document_schemas.read().await.get(schema_uri) {

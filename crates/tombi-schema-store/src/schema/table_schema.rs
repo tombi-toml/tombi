@@ -233,6 +233,98 @@ impl TableSchema {
             })
             .collect_vec()
     }
+
+    pub async fn resolve_property_schema(
+        &self,
+        accessor: &SchemaAccessor,
+        schema_uri: Cow<'_, SchemaUri>,
+        definitions: Cow<'_, SchemaDefinitions>,
+        schema_store: &SchemaStore,
+    ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
+        let mut local = {
+            let properties = self.properties.read().await;
+            let Some(PropertySchema {
+                property_schema, ..
+            }) = properties.get(accessor)
+            else {
+                return Ok(None);
+            };
+            property_schema.clone()
+        };
+
+        if matches!(local, Referable::Resolved { .. }) {
+            return local
+                .to_current_schema(schema_uri, definitions, schema_store)
+                .await;
+        }
+
+        let was_ref = matches!(local, Referable::Ref { .. });
+        let resolved = local
+            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .await?
+            .map(|current_schema| current_schema.into_owned());
+
+        if was_ref && matches!(local, Referable::Resolved { .. }) {
+            let mut properties = self.properties.write().await;
+            if let Some(PropertySchema {
+                property_schema, ..
+            }) = properties.get_mut(accessor)
+                && matches!(property_schema, Referable::Ref { .. })
+            {
+                *property_schema = local;
+            }
+        }
+
+        Ok(resolved)
+    }
+
+    pub async fn resolve_pattern_property_schema(
+        &self,
+        pattern_key: &str,
+        schema_uri: Cow<'_, SchemaUri>,
+        definitions: Cow<'_, SchemaDefinitions>,
+        schema_store: &SchemaStore,
+    ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
+        let Some(pattern_properties) = &self.pattern_properties else {
+            return Ok(None);
+        };
+
+        let mut local = {
+            let pattern_properties = pattern_properties.read().await;
+            let Some(PropertySchema {
+                property_schema, ..
+            }) = pattern_properties.get(pattern_key)
+            else {
+                return Ok(None);
+            };
+            property_schema.clone()
+        };
+
+        if matches!(local, Referable::Resolved { .. }) {
+            return local
+                .to_current_schema(schema_uri, definitions, schema_store)
+                .await;
+        }
+
+        let was_ref = matches!(local, Referable::Ref { .. });
+        let resolved = local
+            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .await?
+            .map(|current_schema| current_schema.into_owned());
+
+        if was_ref && matches!(local, Referable::Resolved { .. }) {
+            let mut pattern_properties = pattern_properties.write().await;
+            if let Some(PropertySchema {
+                property_schema, ..
+            }) = pattern_properties.get_mut(pattern_key)
+                && matches!(property_schema, Referable::Ref { .. })
+            {
+                *property_schema = local;
+            }
+        }
+
+        Ok(resolved)
+    }
 }
 
 impl FindSchemaCandidates for TableSchema {
@@ -248,21 +340,25 @@ impl FindSchemaCandidates for TableSchema {
             let mut errors = Vec::new();
 
             if accessors.is_empty() {
-                for PropertySchema {
-                    property_schema, ..
-                } in self.properties.write().await.values_mut()
-                {
-                    if let Ok(Some(CurrentSchema {
-                        value_schema,
-                        schema_uri,
-                        definitions,
-                    })) = property_schema
-                        .resolve(
+                let property_keys = self.properties.read().await.keys().cloned().collect_vec();
+                for property_key in property_keys {
+                    let current_schema = self
+                        .resolve_property_schema(
+                            &property_key,
                             Cow::Borrowed(schema_uri),
                             Cow::Borrowed(definitions),
                             schema_store,
                         )
                         .await
+                        .inspect_err(|err| log::warn!("{err}"))
+                        .ok()
+                        .flatten();
+
+                    if let Some(CurrentSchema {
+                        value_schema,
+                        schema_uri,
+                        definitions,
+                    }) = current_schema
                     {
                         let (schema_candidates, schema_errors) = value_schema
                             .find_schema_candidates(
@@ -280,24 +376,23 @@ impl FindSchemaCandidates for TableSchema {
                 return (candidates, errors);
             }
 
-            if let Some(PropertySchema {
-                property_schema, ..
-            }) = self
-                .properties
-                .write()
+            let current_schema = self
+                .resolve_property_schema(
+                    &SchemaAccessor::from(&accessors[0]),
+                    Cow::Borrowed(schema_uri),
+                    Cow::Borrowed(definitions),
+                    schema_store,
+                )
                 .await
-                .get_mut(&SchemaAccessor::from(&accessors[0]))
-                && let Ok(Some(CurrentSchema {
-                    value_schema,
-                    schema_uri,
-                    definitions,
-                })) = property_schema
-                    .resolve(
-                        Cow::Borrowed(schema_uri),
-                        Cow::Borrowed(definitions),
-                        schema_store,
-                    )
-                    .await
+                .inspect_err(|err| log::warn!("{err}"))
+                .ok()
+                .flatten();
+
+            if let Some(CurrentSchema {
+                value_schema,
+                schema_uri,
+                definitions,
+            }) = current_schema
             {
                 return value_schema
                     .find_schema_candidates(
