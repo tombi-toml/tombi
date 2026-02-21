@@ -172,12 +172,13 @@ async fn validate_table(
             property_schema, ..
         }) = table_schema
             .properties
-            .write()
+            .read()
             .await
-            .get_mut(&SchemaAccessor::from(&accessor))
+            .get(&SchemaAccessor::from(&accessor))
         {
             matched_key = true;
 
+            let mut property_schema = property_schema.clone();
             if let Ok(Some(current_schema)) = property_schema
                 .resolve(
                     current_schema.schema_uri.clone(),
@@ -200,12 +201,13 @@ async fn validate_table(
         }
 
         if let Some(pattern_properties) = &table_schema.pattern_properties {
+            let pattern_props = pattern_properties.read().await.clone();
             for (
                 pattern_key,
                 PropertySchema {
                     property_schema, ..
                 },
-            ) in pattern_properties.write().await.iter_mut()
+            ) in pattern_props.iter()
             {
                 let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
                     log::warn!("Invalid regex pattern property: {}", pattern_key);
@@ -213,6 +215,7 @@ async fn validate_table(
                 };
                 if pattern.is_match(accessor_raw_text) {
                     matched_key = true;
+                    let mut property_schema = property_schema.clone();
                     if let Ok(Some(current_schema)) = property_schema
                         .resolve(
                             current_schema.schema_uri.clone(),
@@ -282,7 +285,7 @@ async fn validate_table(
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
             {
-                let mut referable_schema = referable_additional_property_schema.write().await;
+                let mut referable_schema = referable_additional_property_schema.read().await.clone();
                 if let Ok(Some(current_schema)) = referable_schema
                     .resolve(
                         current_schema.schema_uri.clone(),

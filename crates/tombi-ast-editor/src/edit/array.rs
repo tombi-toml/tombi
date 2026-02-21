@@ -8,7 +8,6 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
     Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, DocumentSchema, OneOfSchema, ValueSchema,
 };
-use tombi_validator::Validate;
 
 use crate::rule::{array_comma_trailing_comment, array_values_order};
 
@@ -35,7 +34,9 @@ impl crate::Edit for tombi_ast::Array {
                     ValueSchema::AllOf(AllOfSchema { schemas, .. })
                     | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                     | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                        for referable_schema in schemas.write().await.iter_mut() {
+                        let schemas_snapshot = schemas.read().await.clone();
+                        for referable_schema in schemas_snapshot.iter() {
+                            let mut referable_schema = referable_schema.clone();
                             if let Ok(Some(current_schema)) = referable_schema
                                 .resolve(
                                     current_schema.schema_uri.clone(),
@@ -44,14 +45,12 @@ impl crate::Edit for tombi_ast::Array {
                                 )
                                 .await
                                 .inspect_err(|err| log::warn!("{err}"))
-                                && array_node
-                                    .validate(
-                                        accessors.as_ref(),
-                                        Some(&current_schema),
-                                        schema_context,
-                                    )
-                                    .await
-                                    .is_ok()
+                                && crate::matches_schema::matches_schema_array(
+                                    array_node,
+                                    &current_schema,
+                                    schema_context,
+                                )
+                                .await
                             {
                                 return self
                                     .edit(
@@ -188,7 +187,9 @@ fn edit_item<'a: 'b, 'b>(
                 ValueSchema::AllOf(AllOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                    for referable_schema in schemas.write().await.iter_mut() {
+                    let schemas_snapshot = schemas.read().await.clone();
+                    for referable_schema in schemas_snapshot.iter() {
+                        let mut referable_schema = referable_schema.clone();
                         if let Ok(Some(current_schema)) = referable_schema
                             .resolve(
                                 current_schema.schema_uri.clone(),
@@ -199,10 +200,12 @@ fn edit_item<'a: 'b, 'b>(
                             .inspect_err(|err| log::warn!("{err}"))
                         {
                             let current_schema = current_schema.into_owned();
-                            if node
-                                .validate(accessors.as_ref(), Some(&current_schema), schema_context)
-                                .await
-                                .is_ok()
+                            if crate::matches_schema::matches_schema_array(
+                                node,
+                                &current_schema,
+                                schema_context,
+                            )
+                            .await
                             {
                                 return edit_item(
                                     node,

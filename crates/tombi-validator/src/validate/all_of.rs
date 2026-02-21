@@ -28,8 +28,9 @@ where
         let mut total_diagnostics = vec![];
         let mut total_score = 0;
 
-        let mut schemas = all_of_schema.schemas.write().await;
-        for referable_schema in schemas.iter_mut() {
+        let schemas = all_of_schema.schemas.read().await.clone();
+        for referable_schema in schemas.iter() {
+            let mut referable_schema = referable_schema.clone();
             let current_schema = if let Ok(Some(current_schema)) = referable_schema
                 .resolve(
                     current_schema.schema_uri.clone(),
