@@ -283,16 +283,6 @@ impl Referable<ValueSchema> {
                         }
                     };
 
-                    match value_schema {
-                        // Do not eagerly resolve nested composite schemas here.
-                        // Nested refs are resolved lazily by `resolve_and_collect_schemas`
-                        // at each call site to avoid recursive expansion on cyclic schemas.
-                        ValueSchema::OneOf(OneOfSchema { .. })
-                        | ValueSchema::AnyOf(AnyOfSchema { .. })
-                        | ValueSchema::AllOf(AllOfSchema { .. }) => {}
-                        _ => {}
-                    }
-
                     Ok(Some(CurrentSchema {
                         value_schema: CurrentValueSchema::Borrowed(value_schema),
                         schema_uri,
