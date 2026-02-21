@@ -1,8 +1,8 @@
-# 新しいコメント解釈ロジック実装計画（DANGLING_COMMENTS ノードアプローチ）
+# 新しいコメント解釈ロジック実装計画（DANGLING_COMMENT_GROUP ノードアプローチ）
 
 ## 概要
 
-`draft/new_comment_treatment.md` の仕様に基づき、パーサーレベルで `DANGLING_COMMENTS` ノードを導入することで、空行で区切られたコメントグループを明示的にASTに保存します。これにより、情報の損失を防ぎ、フォーマッターとエディターの実装を大幅に簡略化します。
+`draft/new_comment_treatment.md` の仕様に基づき、パーサーレベルで `DANGLING_COMMENT_GROUP` ノードを導入することで、空行で区切られたコメントグループを明示的にASTに保存します。これにより、情報の損失を防ぎ、フォーマッターとエディターの実装を大幅に簡略化します。
 
 ## 設計方針の転換
 
@@ -12,10 +12,10 @@
 - グループ境界の判定が複雑で、コメントが消える問題が発生
 
 ### 新しいアプローチ
-- **パーサーレベルで `DANGLING_COMMENTS` ノードを作成**
+- **パーサーレベルで `DANGLING_COMMENT_GROUP` ノードを作成**
   - 空行で区切られたコメントグループを明示的にパース
   - グループ境界の判定はパーサーが一度だけ行う
-- **`DANGLING_COMMENTS` を `AstNode` として実装**
+- **`DANGLING_COMMENT_GROUP` を `AstNode` として実装**
   - `syntax()` メソッドで子要素にアクセス可能
   - `comment_groups()` メソッドでグループ化されたコメントを取得
 - **KeyValueGroup / ValueGroup を Enum として実装**
@@ -32,7 +32,7 @@
 
 ## 実装フェーズ
 
-- [ ] Phase 1: DANGLING_COMMENTS ノードの導入
+- [ ] Phase 1: DANGLING_COMMENT_GROUP ノードの導入
 - [ ] Phase 2: KeyValueGroup / ValueGroup の Enum 化
 - [ ] Phase 3: パーサーの更新
 - [ ] Phase 4: フォーマッターの更新
@@ -41,21 +41,21 @@
 
 ---
 
-## Phase 1: DANGLING_COMMENTS ノードの導入
+## Phase 1: DANGLING_COMMENT_GROUP ノードの導入
 
 ### 目的
-パーサーレベルで空行で区切られたコメントグループを `DANGLING_COMMENTS` ノードとして明示的に認識し、ASTに保存する。
+パーサーレベルで空行で区切られたコメントグループを `DANGLING_COMMENT_GROUP` ノードとして明示的に認識し、ASTに保存する。
 
 ### タスク
 
-#### Task 1.1: SyntaxKind に DANGLING_COMMENTS を追加
+#### Task 1.1: SyntaxKind に DANGLING_COMMENT_GROUP を追加
 
 **ファイル**: `crates/tombi-syntax/src/syntax_kind.rs`
 
 ```rust
 pub enum SyntaxKind {
     // ... existing kinds
-    DANGLING_COMMENTS,  // 空行で区切られたコメントグループ
+    DANGLING_COMMENT_GROUP,  // 空行で区切られたコメントグループ
 }
 ```
 
@@ -74,7 +74,7 @@ pub struct DanglingComments {
 
 impl AstNode for DanglingComments {
     fn cast(syntax: SyntaxNode) -> Option<Self> {
-        if syntax.kind() == DANGLING_COMMENTS {
+        if syntax.kind() == DANGLING_COMMENT_GROUP {
             Some(Self { syntax })
         } else {
             None
@@ -151,11 +151,11 @@ impl Parse for tombi_ast::DanglingComments {
             }
         }
 
-        m.complete(p, DANGLING_COMMENTS);
+        m.complete(p, DANGLING_COMMENT_GROUP);
     }
 }
 
-/// Check if we should parse a DANGLING_COMMENTS node
+/// Check if we should parse a DANGLING_COMMENT_GROUP node
 /// Returns true if current position has comments/line breaks that form
 /// a dangling comments group (separated by empty line from next element)
 pub(crate) fn should_parse_dangling_comments(p: &Parser<'_>) -> bool {
@@ -299,7 +299,7 @@ impl KeyValueGroup {
 ## Phase 3: パーサーの更新
 
 ### 目的
-テーブル、配列、array of table のパーサーを更新し、`DANGLING_COMMENTS` ノードを適切にパースする。
+テーブル、配列、array of table のパーサーを更新し、`DANGLING_COMMENT_GROUP` ノードを適切にパースする。
 
 ### タスク
 
@@ -496,7 +496,7 @@ for group in table.key_value_groups() {
 
 ## 実装の優先順位
 
-1. **Phase 1**: DANGLING_COMMENTS ノードの基礎実装（最優先）
+1. **Phase 1**: DANGLING_COMMENT_GROUP ノードの基礎実装（最優先）
 2. **Phase 2**: Enum 化（Phase 1 完了後すぐ）
 3. **Phase 3**: パーサー更新（一つずつ、テーブルから開始）
 4. **Phase 4**: フォーマッター更新（パーサーと並行可能）

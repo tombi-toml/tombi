@@ -26,7 +26,7 @@ impl AstNode for ValueOrKeyValue {
         if Value::can_cast(syntax.kind()) {
             Value::cast(syntax).map(ValueOrKeyValue::Value)
         } else if KeyValue::can_cast(syntax.kind()) {
-            KeyValue::cast(syntax).map(ValueOrKeyValue::KeyValue)
+            Some(ValueOrKeyValue::KeyValue(KeyValue { syntax }))
         } else {
             None
         }

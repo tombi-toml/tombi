@@ -3,11 +3,9 @@ use tombi_syntax::{SyntaxKind::*, T};
 use super::Parse;
 use crate::{
     ErrorKind::*,
-    parse::{
-        TS_LINE_END, begin_dangling_comments, end_dangling_comments, invalid_line,
-        leading_comments, peek_leading_comments, trailing_comment,
-    },
+    parse::{TS_LINE_END, invalid_line},
     parser::Parser,
+    support::{leading_comments, peek_leading_comments, trailing_comment},
     token_set::TS_NEXT_SECTION,
 };
 
@@ -34,12 +32,12 @@ impl Parse for tombi_ast::ArrayOfTable {
         }
         p.eat(LINE_BREAK);
 
-        begin_dangling_comments(p);
-
         loop {
             while p.eat(LINE_BREAK) {}
-            let n = peek_leading_comments(p);
 
+            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+
+            let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
@@ -50,8 +48,6 @@ impl Parse for tombi_ast::ArrayOfTable {
                 invalid_line(p, ExpectedLineBreak);
             }
         }
-
-        end_dangling_comments(p, false);
 
         m.complete(p, ARRAY_OF_TABLE);
     }
@@ -142,6 +138,84 @@ mod test {
             r#"
             [[0b1010]]
             flags = true
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_array_of_table_dangling_comment(
+            r#"
+            [[header]]
+            # dangling comment
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_array_of_table_new_line_dangling_comment(
+            r#"
+            [[header]]
+
+            # dangling comment
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_array_of_table_dangling_comment_group(
+            r#"
+            [[header]]
+            # dangling comment group 1
+            # dangling comment group 1
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_array_of_table_dangling_comment_groups(
+            r#"
+            [[header]]
+            # dangling comment group 1
+            # dangling comment group 1
+
+            # dangling comment group 2
+            # dangling comment group 2
+
+
+            # dangling comment group 3
+            # dangling comment group 3
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_array_of_table_key_value_group_and_dangling_comment_groups(
+            r#"
+            [[header]]
+            key1 = "value1"
+            key2 = "value2"
+            # dangling comment group 1
+            # dangling comment group 1
+
+            # dangling comment group 2
+            # dangling comment group 2
+
+            key3 = "value3"
+            key4 = "value4"
+
+            # leading comment 1
+            # leading comment 1
+            key5 = "value5"
+            # leading comment 2
+            key6 = "value6"
+
+            # dangling comment group 3
+            # dangling comment group 3
             "#
         ) -> Ok(_)
     }

@@ -74,13 +74,13 @@ impl crate::Edit for tombi_ast::Root {
                             get_comment_directive_content::<
                                 TableCommonFormatRules,
                                 TableCommonLintRules,
-                            >(table.header_comment_directives())
+                            >(table.comment_directives())
                         }
                         tombi_ast::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
                             get_comment_directive_content::<
                                 TableCommonFormatRules,
                                 TableCommonLintRules,
-                            >(array_of_table.header_comment_directives())
+                            >(array_of_table.comment_directives())
                         }
                     };
 
@@ -90,10 +90,8 @@ impl crate::Edit for tombi_ast::Root {
                             .unwrap_or(false);
                         let order = comment_directive.table_keys_order().map(Into::into);
                         if disabled || order.is_some() {
-                            table_order_overrides.insert(
-                                header_accessors,
-                                TableOrderOverride { disabled, order },
-                            );
+                            table_order_overrides
+                                .insert(header_accessors, TableOrderOverride { disabled, order });
                         }
                     }
                 }

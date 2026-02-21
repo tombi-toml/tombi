@@ -1,7 +1,7 @@
 use tombi_syntax::T;
 
 use super::{Parse, Parser};
-use crate::parse::{leading_comments, trailing_comment};
+use crate::support::{leading_comments, trailing_comment};
 
 impl Parse for tombi_ast::Comma {
     fn parse(p: &mut Parser<'_>) {

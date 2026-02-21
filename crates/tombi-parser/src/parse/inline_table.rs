@@ -3,11 +3,13 @@ use tombi_syntax::{SyntaxKind::*, T};
 
 use crate::{
     ErrorKind::*,
-    parse::{
-        Parse, begin_dangling_comments, end_dangling_comments, leading_comments,
-        peek_leading_comments, trailing_comment,
-    },
+    parse::Parse,
     parser::Parser,
+    support::{
+        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
+        trailing_comment,
+    },
+    token_set::TS_INLINE_TABLE_END,
 };
 
 impl Parse for tombi_ast::InlineTable {
@@ -32,7 +34,7 @@ impl Parse for tombi_ast::InlineTable {
             while p.eat(LINE_BREAK) {}
 
             let n = peek_leading_comments(p);
-            if p.nth_at(n, EOF) || p.nth_at(n, T!['}']) {
+            if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
                 break;
             }
 
