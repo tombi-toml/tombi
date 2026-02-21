@@ -9,8 +9,6 @@ impl Rule<tombi_ast::InlineTable> for InlineTableTomlVersionRule {
         if l.toml_version() != TomlVersion::V1_0_0 {
             return;
         }
-
-        // InlineTableMustSingleLine: inline table must be single line in TOML v1.0.0
         let brace_start = match node.brace_start() {
             Some(t) => t,
             None => return,
@@ -31,8 +29,6 @@ impl Rule<tombi_ast::InlineTable> for InlineTableTomlVersionRule {
                 range: node.range(),
             });
         }
-
-        // ForbiddenInlineTableLastComma: trailing comma not allowed in TOML v1.0.0
         if node.has_last_key_value_trailing_comma() {
             if let Some(comma_range) = node
                 .key_values_with_comma()

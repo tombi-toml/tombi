@@ -4195,9 +4195,14 @@ dependencies = [
  "serde",
  "serde_json",
  "textwrap",
+ "tokio",
  "tombi-ast",
+ "tombi-config",
+ "tombi-diagnostic",
  "tombi-document-tree",
+ "tombi-linter",
  "tombi-parser",
+ "tombi-schema-store",
  "tombi-toml-version",
 ]
 
