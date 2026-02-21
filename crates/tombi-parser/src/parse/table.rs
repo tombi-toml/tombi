@@ -4,10 +4,7 @@ use crate::{
     ErrorKind::*,
     parse::{Parse, TS_LINE_END, invalid_line},
     parser::Parser,
-    support::{
-        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
-        trailing_comment,
-    },
+    support::{leading_comments, peek_leading_comments, trailing_comment},
     token_set::TS_NEXT_SECTION,
 };
 
@@ -34,9 +31,9 @@ impl Parse for tombi_ast::Table {
         }
         p.eat(LINE_BREAK);
 
-        begin_dangling_comments(p);
-
         loop {
+            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+
             while p.eat(LINE_BREAK) {}
             let n = peek_leading_comments(p);
 
@@ -50,8 +47,6 @@ impl Parse for tombi_ast::Table {
                 invalid_line(p, ExpectedLineBreak);
             }
         }
-
-        end_dangling_comments(p, false);
 
         m.complete(p, TABLE);
     }
@@ -163,5 +158,54 @@ mod test {
             value = "binary key"
             "#
         ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_table_dangling_comment_groups(
+            r#"
+            [table]
+            # dangling 1
+            # dangling 2
+
+            # dangling 3
+
+            key = 1
+            "#
+        ) -> Ok(|root| -> {
+            let table = root.items().find_map(|item| match item {
+                tombi_ast::RootItem::Table(table) => Some(table),
+                _ => None,
+            });
+
+            table
+                .map(|table| {
+                    table
+                        .dangling_comment_groups()
+                        .map(|group| group.comments().count())
+                        .collect::<Vec<_>>()
+                })
+                == Some(vec![2, 1])
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn keeps_key_value_leading_comments_as_non_dangling(
+            r#"
+            [table]
+            # leading comment
+            key = 1
+            "#
+        ) -> Ok(|root| -> {
+            let table = root.items().find_map(|item| match item {
+                tombi_ast::RootItem::Table(table) => Some(table),
+                _ => None,
+            });
+
+            table
+                .map(|table| table.dangling_comment_groups().count() == 0 && table.key_values().count() == 1)
+                .unwrap_or(false)
+        })
     }
 }

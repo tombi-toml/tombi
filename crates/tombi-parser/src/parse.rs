@@ -1,6 +1,7 @@
 mod array;
 mod array_of_table;
 mod comma;
+mod dangling_comment_group;
 mod inline_table;
 mod key;
 mod key_value;
