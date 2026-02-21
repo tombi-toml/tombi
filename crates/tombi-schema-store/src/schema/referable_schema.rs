@@ -4,7 +4,7 @@ use tombi_x_keyword::StringFormat;
 
 use crate::x_taplo::XTaplo;
 
-use super::{AllOfSchema, AnyOfSchema, OneOfSchema, SchemaDefinitions, SchemaUri, ValueSchema};
+use super::{SchemaDefinitions, SchemaUri, ValueSchema};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Referable<T> {
