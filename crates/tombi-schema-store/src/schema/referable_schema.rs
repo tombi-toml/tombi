@@ -408,7 +408,7 @@ pub async fn resolve_and_collect_schemas(
     };
 
     let Some(_cycle_guard) = try_enter_composite_schema_cycle(schemas) else {
-        log::warn!(
+        log::debug!(
             "detected composite schema cycle while collecting schemas: schema_uri={} accessors={} reason=reentrant_schema_traversal",
             schema_uri_for_log,
             accessors_for_log
@@ -421,7 +421,7 @@ pub async fn resolve_and_collect_schemas(
         guard.clone()
     } else {
         // try_read() failed -- a write lock is held.
-        log::warn!(
+        log::debug!(
             "failed to acquire read lock for composite schema collection: schema_uri={} accessors={} reason=write_lock_held",
             schema_uri_for_log,
             accessors_for_log
@@ -452,7 +452,7 @@ pub async fn resolve_and_collect_schemas(
     // Write back only entries that transitioned from Ref -> Resolved.
     if !resolved_indices.is_empty() {
         let Ok(mut guard) = schemas.try_write() else {
-            log::warn!(
+            log::debug!(
                 "failed to acquire write lock for composite schema resolution: schema_uri={} accessors={} reason=lock_contention",
                 schema_uri_for_log,
                 accessors_for_log
@@ -460,7 +460,7 @@ pub async fn resolve_and_collect_schemas(
             return Some(collected);
         };
 
-        log::warn!(
+        log::debug!(
             "acquired write lock for composite schema resolution: schema_uri={} accessors={} mode=cache_resolved_refs",
             schema_uri_for_log,
             accessors_for_log
@@ -476,7 +476,7 @@ pub async fn resolve_and_collect_schemas(
             }
         }
 
-        log::warn!(
+        log::debug!(
             "finished composite schema resolution under write lock: schema_uri={} accessors={} resolved_count={}",
             schema_uri_for_log,
             accessors_for_log,
