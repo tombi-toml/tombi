@@ -139,6 +139,7 @@ async fn get_comment_directive_toml_content_hover_content(
             toml_version,
             root_schema: source_schema.root_schema.as_deref(),
             sub_schema_uri_map: None,
+            schema_visits: Default::default(),
             store: schema_store,
             strict: None,
         };

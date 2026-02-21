@@ -477,6 +477,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
         toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
         root_schema: source_schema.root_schema.as_deref(),
         sub_schema_uri_map: None,
+        schema_visits: Default::default(),
         store: schema_store,
         strict: None,
     };

@@ -72,6 +72,7 @@ fn edit_recursive<'a: 'b, 'b>(
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
+                        &schema_context.schema_visits,
                         accessors.as_ref(),
                     )
                     .await

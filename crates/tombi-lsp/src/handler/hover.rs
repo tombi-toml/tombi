@@ -96,6 +96,7 @@ pub async fn handle_hover(
                 .as_ref()
                 .and_then(|s| s.root_schema.as_deref()),
             sub_schema_uri_map: source_schema.as_ref().map(|s| &s.sub_schema_uri_map),
+            schema_visits: Default::default(),
             store: &schema_store,
             strict: None,
         },

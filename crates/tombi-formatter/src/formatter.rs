@@ -146,6 +146,7 @@ impl<'a> Formatter<'a> {
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
+                schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive
                     .as_ref()

@@ -438,6 +438,32 @@ impl ValueSchema {
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, Vec<ValueSchema>> {
         async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.match_flattened_schemas_with_visits(
+                condition,
+                schema_uri,
+                definitions,
+                schema_store,
+                &schema_visits,
+            )
+            .await
+        }
+        .boxed()
+    }
+
+    fn match_flattened_schemas_with_visits<
+        'a: 'b,
+        'b,
+        T: Fn(&ValueSchema) -> bool + Sync + Send,
+    >(
+        &'a self,
+        condition: &'a T,
+        schema_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
+    ) -> BoxFuture<'b, Vec<ValueSchema>> {
+        async move {
             let mut matched_schemas = Vec::new();
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
@@ -448,6 +474,7 @@ impl ValueSchema {
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
                         schema_store,
+                        schema_visits,
                         &[],
                     )
                     .await
@@ -459,11 +486,12 @@ impl ValueSchema {
                         matched_schemas.extend(
                             current_schema
                                 .value_schema
-                                .match_flattened_schemas(
+                                .match_flattened_schemas_with_visits(
                                     condition,
                                     &current_schema.schema_uri,
                                     &current_schema.definitions,
                                     schema_store,
+                                    schema_visits,
                                 )
                                 .await,
                         );
@@ -492,6 +520,31 @@ impl ValueSchema {
         'a: 'b,
     {
         async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.is_match_with_visits(
+                condition,
+                schema_uri,
+                definitions,
+                schema_store,
+                &schema_visits,
+            )
+            .await
+        }
+        .boxed()
+    }
+
+    fn is_match_with_visits<'a, 'b, T: Fn(&ValueSchema) -> bool + Sync + Send>(
+        &'a self,
+        condition: &'a T,
+        schema_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
+    ) -> BoxFuture<'b, bool>
+    where
+        'a: 'b,
+    {
+        async move {
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => {
@@ -500,6 +553,7 @@ impl ValueSchema {
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
                         schema_store,
+                        schema_visits,
                         &[],
                     )
                     .await
@@ -510,11 +564,12 @@ impl ValueSchema {
                     join_all(collected.iter().map(|current_schema| async {
                         current_schema
                             .value_schema
-                            .is_match(
+                            .is_match_with_visits(
                                 condition,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
                                 schema_store,
+                                schema_visits,
                             )
                             .await
                     }))
@@ -528,6 +583,7 @@ impl ValueSchema {
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
                         schema_store,
+                        schema_visits,
                         &[],
                     )
                     .await
@@ -538,11 +594,12 @@ impl ValueSchema {
                     join_all(collected.iter().map(|current_schema| async {
                         current_schema
                             .value_schema
-                            .is_match(
+                            .is_match_with_visits(
                                 condition,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
                                 schema_store,
+                                schema_visits,
                             )
                             .await
                     }))
@@ -555,15 +612,14 @@ impl ValueSchema {
         }
         .boxed()
     }
-}
 
-impl FindSchemaCandidates for ValueSchema {
-    fn find_schema_candidates<'a: 'b, 'b>(
+    fn find_schema_candidates_with_visits<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
             match self {
@@ -593,6 +649,7 @@ impl FindSchemaCandidates for ValueSchema {
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
                         schema_store,
+                        schema_visits,
                         accessors,
                     )
                     .await
@@ -603,11 +660,12 @@ impl FindSchemaCandidates for ValueSchema {
                     for current_schema in &collected {
                         let (mut schema_candidates, schema_errors) = current_schema
                             .value_schema
-                            .find_schema_candidates(
+                            .find_schema_candidates_with_visits(
                                 accessors,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
                                 schema_store,
+                                schema_visits,
                             )
                             .await;
 
@@ -627,6 +685,29 @@ impl FindSchemaCandidates for ValueSchema {
                 ValueSchema::Null => (Vec::with_capacity(0), Vec::with_capacity(0)),
                 _ => (vec![self.clone()], Vec::with_capacity(0)),
             }
+        }
+        .boxed()
+    }
+}
+
+impl FindSchemaCandidates for ValueSchema {
+    fn find_schema_candidates<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [Accessor],
+        schema_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        schema_store: &'a SchemaStore,
+    ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
+        async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.find_schema_candidates_with_visits(
+                accessors,
+                schema_uri,
+                definitions,
+                schema_store,
+                &schema_visits,
+            )
+            .await
         }
         .boxed()
     }

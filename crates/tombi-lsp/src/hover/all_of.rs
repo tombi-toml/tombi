@@ -44,6 +44,7 @@ where
             Cow::Borrowed(schema_uri),
             Cow::Borrowed(definitions),
             schema_context.store,
+            &schema_context.schema_visits,
             accessors,
         )
         .await
@@ -193,6 +194,7 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
                 schema_context.store,
+                &schema_context.schema_visits,
                 accessors,
             )
             .await

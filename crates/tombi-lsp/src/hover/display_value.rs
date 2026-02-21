@@ -320,6 +320,7 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
             std::borrow::Cow::Borrowed(schema_uri),
             std::borrow::Cow::Borrowed(definitions),
             schema_context.store,
+            &schema_context.schema_visits,
             &[],
         )
         .await

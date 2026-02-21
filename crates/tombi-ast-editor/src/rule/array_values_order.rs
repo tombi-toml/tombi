@@ -197,6 +197,7 @@ async fn get_sorted_values_order_groups<'a>(
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
                 schema_context.store,
+                &schema_context.schema_visits,
                 accessors,
             )
             .await
@@ -301,6 +302,7 @@ fn try_array_values_order_by_from_item_schema<'a: 'b, 'b>(
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
+                        &schema_context.schema_visits,
                         accessors,
                     )
                     .await

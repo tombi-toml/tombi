@@ -306,12 +306,14 @@ impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
+            let schema_visits = tombi_schema_store::SchemaVisits::default();
 
             if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                 self.schemas(),
                 Cow::Borrowed(schema_uri),
                 Cow::Borrowed(definitions),
                 schema_store,
+                &schema_visits,
                 &[],
             )
             .await
@@ -353,12 +355,14 @@ impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
+            let schema_visits = tombi_schema_store::SchemaVisits::default();
 
             if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
                 self.schemas(),
                 Cow::Borrowed(schema_uri),
                 Cow::Borrowed(definitions),
                 schema_store,
+                &schema_visits,
                 &[],
             )
             .await

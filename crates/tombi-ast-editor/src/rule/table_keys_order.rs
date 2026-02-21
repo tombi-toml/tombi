@@ -125,6 +125,7 @@ where
                         Cow::Borrowed(schema_uri),
                         Cow::Borrowed(definitions),
                         schema_context.store,
+                        &schema_context.schema_visits,
                         accessors,
                     )
                     .await

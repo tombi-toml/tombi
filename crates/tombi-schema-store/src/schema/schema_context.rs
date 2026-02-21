@@ -1,11 +1,14 @@
 use itertools::Itertools;
 
+use crate::schema::schema_cycle_guard::SchemaVisits;
+
 use super::SchemaAccessor;
 
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
+    pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
     pub strict: Option<bool>,
 }

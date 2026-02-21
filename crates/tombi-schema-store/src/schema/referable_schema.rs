@@ -1,10 +1,4 @@
-use std::{
-    borrow::Cow,
-    collections::HashSet,
-    ops::Deref,
-    str::FromStr,
-    sync::{Arc, Mutex, MutexGuard, OnceLock},
-};
+use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use tombi_x_keyword::StringFormat;
 
@@ -92,42 +86,6 @@ impl<T> Referable<T> {
             Self::Resolved { value, .. } => Some(value),
             Self::Ref { .. } => None,
         }
-    }
-}
-
-fn composite_schema_cycle_set() -> &'static Mutex<HashSet<usize>> {
-    static CYCLE_SET: OnceLock<Mutex<HashSet<usize>>> = OnceLock::new();
-    CYCLE_SET.get_or_init(|| Mutex::new(HashSet::new()))
-}
-
-fn lock_composite_schema_cycle_set() -> MutexGuard<'static, HashSet<usize>> {
-    composite_schema_cycle_set()
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-}
-
-pub struct CompositeSchemaCycleGuard {
-    key: usize,
-}
-
-impl Drop for CompositeSchemaCycleGuard {
-    fn drop(&mut self) {
-        lock_composite_schema_cycle_set().remove(&self.key);
-    }
-}
-
-/// Global re-entrancy guard for recursive composite schema traversal.
-///
-/// We intentionally guard by `schemas` pointer identity so cycles like
-/// `oneOf -> sequence_task -> tasks_array -> oneOf` can short-circuit.
-pub fn try_enter_composite_schema_cycle(
-    schemas: &super::ReferableValueSchemas,
-) -> Option<CompositeSchemaCycleGuard> {
-    let key = std::sync::Arc::as_ptr(schemas) as usize;
-    if lock_composite_schema_cycle_set().insert(key) {
-        Some(CompositeSchemaCycleGuard { key })
-    } else {
-        None
     }
 }
 
@@ -398,6 +356,7 @@ pub async fn resolve_and_collect_schemas(
     schema_uri: Cow<'_, SchemaUri>,
     definitions: Cow<'_, SchemaDefinitions>,
     schema_store: &crate::SchemaStore,
+    schema_visits: &crate::SchemaVisits,
     accessors: &[crate::Accessor],
 ) -> Option<Vec<CurrentSchema<'static>>> {
     let schema_uri_for_log = schema_uri.as_ref().to_string();
@@ -407,7 +366,7 @@ pub async fn resolve_and_collect_schemas(
         crate::Accessors::from(accessors.to_vec()).to_string()
     };
 
-    let Some(_cycle_guard) = try_enter_composite_schema_cycle(schemas) else {
+    let Some(_cycle_guard) = schema_visits.get_cycle_guard(schemas) else {
         log::debug!(
             "detected composite schema cycle while collecting schemas: schema_uri={} accessors={} reason=reentrant_schema_traversal",
             schema_uri_for_log,
