@@ -33,11 +33,11 @@ impl Parse for tombi_ast::ArrayOfTable {
         p.eat(LINE_BREAK);
 
         loop {
+            while p.eat(LINE_BREAK) {}
+
             Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
 
-            while p.eat(LINE_BREAK) {}
             let n = peek_leading_comments(p);
-
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }

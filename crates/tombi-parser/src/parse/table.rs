@@ -1,4 +1,5 @@
-use tombi_syntax::{SyntaxKind::*, T};
+use tombi_syntax::SyntaxKind::*;
+use tombi_syntax::T;
 
 use crate::{
     ErrorKind::*,
@@ -32,17 +33,16 @@ impl Parse for tombi_ast::Table {
         p.eat(LINE_BREAK);
 
         loop {
+            while p.eat(LINE_BREAK) {}
+
             Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
 
-            while p.eat(LINE_BREAK) {}
             let n = peek_leading_comments(p);
-
             if p.nth_at_ts(n, TS_NEXT_SECTION) {
                 break;
             }
 
-            tombi_ast::KeyValue::parse(p);
-
+            tombi_ast::KeyValueGroup::parse(p);
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);
             }
@@ -162,35 +162,6 @@ mod test {
 
     test_parser! {
         #[test]
-        fn parses_table_dangling_comment_groups(
-            r#"
-            [table]
-            # dangling 1
-            # dangling 2
-
-            # dangling 3
-
-            key = 1
-            "#
-        ) -> Ok(|root| -> {
-            let table = root.items().find_map(|item| match item {
-                tombi_ast::RootItem::Table(table) => Some(table),
-                _ => None,
-            });
-
-            table
-                .map(|table| {
-                    table
-                        .dangling_comment_groups()
-                        .map(|group| group.comments().count())
-                        .collect::<Vec<_>>()
-                })
-                == Some(vec![2, 1])
-        })
-    }
-
-    test_parser! {
-        #[test]
         fn keeps_key_value_leading_comments_as_non_dangling(
             r#"
             [table]
@@ -204,8 +175,86 @@ mod test {
             });
 
             table
-                .map(|table| table.dangling_comment_groups().count() == 0 && table.key_values().count() == 1)
+                .map(|table| table.dangling_comment_groups().count() == 0 && table.key_value_groups().count() == 1)
                 .unwrap_or(false)
         })
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_table_dangling_comment(
+            r#"
+            [header]
+            # dangling comment
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_table_new_line_dangling_comment(
+            r#"
+            [header]
+
+            # dangling comment
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_table_dangling_comment_group(
+            r#"
+            [header]
+            # dangling comment group 1
+            # dangling comment group 1
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_table_dangling_comment_groups(
+            r#"
+            [header]
+            # dangling comment group 1
+            # dangling comment group 1
+
+            # dangling comment group 2
+            # dangling comment group 2
+
+
+            # dangling comment group 3
+            # dangling comment group 3
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn parses_table_key_value_group_and_dangling_comment_groups(
+            r#"
+            [header]
+            key1 = "value1"
+            key2 = "value2"
+            # dangling comment group 1
+            # dangling comment group 1
+
+            # dangling comment group 2
+            # dangling comment group 2
+
+            key3 = "value3"
+            key4 = "value4"
+
+            # leading comment 1
+            # leading comment 1
+            key5 = "value5"
+            # leading comment 2
+            key6 = "value6"
+
+            # dangling comment group 3
+            # dangling comment group 3
+            "#
+        ) -> Ok(_)
     }
 }

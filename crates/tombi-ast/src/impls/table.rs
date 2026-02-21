@@ -61,7 +61,9 @@ impl crate::Table {
             self.syntax()
                 .children_with_tokens()
                 .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!(']')))
-                .skip_while(|node_or_token| !matches!(node_or_token.kind(), LINE_BREAK)),
+                .skip_while(|node_or_token| {
+                    !matches!(node_or_token.kind(), LINE_BREAK | DANGLING_COMMENT_GROUP)
+                }),
         )
     }
 

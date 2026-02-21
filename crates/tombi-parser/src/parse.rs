@@ -5,6 +5,7 @@ mod dangling_comment_group;
 mod inline_table;
 mod key;
 mod key_value;
+mod key_value_group;
 mod root;
 mod table;
 mod value;
