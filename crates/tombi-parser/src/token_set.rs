@@ -3,6 +3,7 @@ use tombi_syntax::{SyntaxKind, SyntaxKind::*, T};
 pub(crate) const TS_LINE_END: TokenSet = TokenSet::new(&[LINE_BREAK, EOF]);
 pub(crate) const TS_COMMEMT_OR_LINE_END: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK, EOF]);
 pub(crate) const TS_NEXT_SECTION: TokenSet = TokenSet::new(&[T!['['], T!("[["), EOF]);
+pub(crate) const TS_INLINE_TABLE_END: TokenSet = TokenSet::new(&[T!['}'], EOF]);
 pub(crate) const TS_DANGLING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);
 pub(crate) const TS_LEADING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);
 pub(crate) const TS_KEY_FIRST: TokenSet = TokenSet::new(&[
