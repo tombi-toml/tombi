@@ -137,12 +137,19 @@ pub fn load_with_path_and_level(
                     pyproject_toml_path
                 );
 
-                match try_from_path(&pyproject_toml_path)? {
-                    Some(config) => {
+                match try_from_path(&pyproject_toml_path) {
+                    Ok(Some(config)) => {
                         return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
                     }
-                    None => {
+                    Ok(None) => {
                         log::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
+                    }
+                    Err(error) => {
+                        log::debug!(
+                            "Failed to parse pyproject.toml file for config at {:?}: {}",
+                            &pyproject_toml_path,
+                            error
+                        );
                     }
                 };
             }
