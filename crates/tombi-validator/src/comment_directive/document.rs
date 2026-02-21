@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
@@ -36,13 +38,14 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
         )
         .await;
         let source_schema = tombi_schema_store::SourceSchema {
-            root_schema: Some(document_schema),
+            root_schema: Some(Arc::new(document_schema)),
             sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
         };
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-            root_schema: source_schema.root_schema.as_ref(),
+            root_schema: source_schema.root_schema.as_deref(),
             sub_schema_uri_map: None,
+            schema_visits: Default::default(),
             store: schema_store,
             strict: None,
         };

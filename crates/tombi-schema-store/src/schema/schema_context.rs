@@ -1,11 +1,14 @@
 use itertools::Itertools;
 
+use crate::schema::schema_cycle_guard::SchemaVisits;
+
 use super::SchemaAccessor;
 
 pub struct SchemaContext<'a> {
     pub toml_version: tombi_config::TomlVersion,
     pub root_schema: Option<&'a crate::DocumentSchema>,
     pub sub_schema_uri_map: Option<&'a crate::SubSchemaUriMap>,
+    pub schema_visits: SchemaVisits,
     pub store: &'a crate::SchemaStore,
     pub strict: Option<bool>,
 }
@@ -20,7 +23,7 @@ impl SchemaContext<'_> {
         &self,
         accessors: &[crate::Accessor],
         current_schema: Option<&crate::CurrentSchema<'_>>,
-    ) -> Option<Result<crate::DocumentSchema, crate::Error>> {
+    ) -> Option<Result<std::sync::Arc<crate::DocumentSchema>, crate::Error>> {
         if let Some(sub_schema_uri_map) = self.sub_schema_uri_map
             && let Some(sub_schema_uri) =
                 sub_schema_uri_map.get(&accessors.iter().map(SchemaAccessor::from).collect_vec())
