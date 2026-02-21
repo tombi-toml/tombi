@@ -13,6 +13,7 @@ mod offset_date_time_schema;
 mod one_of_schema;
 mod referable_schema;
 mod schema_context;
+mod schema_cycle_guard;
 mod source_schema;
 mod string_schema;
 mod table_schema;
@@ -34,8 +35,12 @@ pub use local_time_schema::LocalTimeSchema;
 pub use not_schema::NotSchema;
 pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
-pub use referable_schema::{CurrentSchema, Referable, is_online_url};
+pub use referable_schema::{
+    CurrentSchema, CurrentValueSchema, Referable, is_online_url, resolve_and_collect_schemas,
+    resolve_schema_item,
+};
 pub use schema_context::SchemaContext;
+pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
 pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
 pub use table_schema::{TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};

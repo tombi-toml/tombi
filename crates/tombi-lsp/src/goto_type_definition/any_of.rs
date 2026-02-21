@@ -4,7 +4,7 @@ use itertools::Itertools;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 
-use super::{GetTypeDefinition, TypeDefinition};
+use super::{GetTypeDefinition, TypeDefinition, schema_type_definition};
 
 pub fn get_any_of_type_definition<'a: 'b, 'b, T>(
     value: &'a T,
@@ -31,29 +31,31 @@ where
     log::trace!("schema_uri: {:?}", schema_uri);
 
     async move {
-        for referable_schema in any_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &any_of_schema.schemas,
+            Cow::Borrowed(schema_uri),
+            Cow::Borrowed(definitions),
+            schema_context.store,
+            &schema_context.schema_visits,
+            accessors,
+        )
+        .await
+        else {
+            return None;
+        };
 
+        for resolved_schema in &resolved_schemas {
             if let Some(type_definition) = value
                 .get_type_definition(
                     position,
                     keys,
                     accessors,
-                    Some(&current_schema),
+                    Some(resolved_schema),
                     schema_context,
                 )
                 .await
                 && value
-                    .validate(accessors, Some(&current_schema), schema_context)
+                    .validate(accessors, Some(resolved_schema), schema_context)
                     .await
                     .is_ok()
             {
@@ -87,14 +89,11 @@ impl GetTypeDefinition for tombi_schema_store::AnyOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut schema_uri = current_schema.schema_uri.as_ref().to_owned();
-            schema_uri.set_fragment(Some(&format!("L{}", self.range.start.line + 1)));
-
-            Some(TypeDefinition {
-                schema_uri,
-                schema_accessors: accessors.iter().map(Into::into).collect_vec(),
-                range: tombi_text::Range::default(),
-            })
+            Some(schema_type_definition(
+                current_schema.schema_uri.as_ref(),
+                accessors,
+                self.range,
+            ))
         }
         .boxed()
     }

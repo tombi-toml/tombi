@@ -28,24 +28,22 @@ where
         let mut total_diagnostics = vec![];
         let mut total_score = 0;
 
-        let mut schemas = all_of_schema.schemas.write().await;
-        for referable_schema in schemas.iter_mut() {
-            let current_schema = if let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}"))
-            {
-                current_schema
-            } else {
-                continue;
-            };
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &all_of_schema.schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+            &schema_context.schema_visits,
+            accessors,
+        )
+        .await
+        else {
+            return Ok(());
+        };
 
+        for resolved_schema in &resolved_schemas {
             if let Err(crate::Error { diagnostics, score }) = value
-                .validate(accessors, Some(&current_schema), schema_context)
+                .validate(accessors, Some(resolved_schema), schema_context)
                 .await
             {
                 total_diagnostics.extend(diagnostics);

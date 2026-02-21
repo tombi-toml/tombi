@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, Accessors, ArraySchema, CurrentSchema, DocumentSchema, ValueSchema, ValueType,
+    Accessor, Accessors, ArraySchema, CurrentSchema, CurrentValueSchema, ValueSchema, ValueType,
 };
 
 use crate::{
@@ -45,20 +45,19 @@ impl GetHoverContent for tombi_document_tree::Array {
                 return Some(hover_content);
             }
 
-            if let Some(Ok(DocumentSchema {
-                value_schema,
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
             {
-                let current_schema = value_schema.map(|value_schema| CurrentSchema {
-                    value_schema: Cow::Owned(value_schema),
-                    schema_uri: Cow::Owned(schema_uri),
-                    definitions: Cow::Owned(definitions),
-                });
+                let current_schema =
+                    document_schema
+                        .value_schema
+                        .as_ref()
+                        .map(|value_schema| CurrentSchema {
+                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
+                        });
 
                 return self
                     .get_hover_content(
@@ -79,9 +78,9 @@ impl GetHoverContent for tombi_document_tree::Array {
                                 let accessor = Accessor::Index(index);
 
                                 if let Some(items) = &array_schema.items {
-                                    let mut referable_schema = items.write().await;
-                                    if let Ok(Some(current_schema)) = referable_schema
-                                        .resolve(
+                                    if let Ok(Some(current_schema)) =
+                                        tombi_schema_store::resolve_schema_item(
+                                            items,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,

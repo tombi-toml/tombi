@@ -1,4 +1,4 @@
-use std::{borrow::Cow, str::FromStr};
+use std::str::FromStr;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
@@ -315,18 +315,24 @@ fn get_enum_from_schemas<'a: 'b, 'b>(
 ) -> tombi_future::BoxFuture<'b, Option<Vec<DisplayValue>>> {
     async move {
         let mut enum_values = Vec::new();
-        for schema in schemas.write().await.iter_mut() {
-            if let Ok(Some(resolved)) = schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            schemas,
+            std::borrow::Cow::Borrowed(schema_uri),
+            std::borrow::Cow::Borrowed(definitions),
+            schema_context.store,
+            &schema_context.schema_visits,
+            &[],
+        )
+        .await
+        else {
+            return None;
+        };
+
+        for resolved in &resolved_schemas {
+            if let Some(values) = resolved
+                .value_schema
+                .get_enum(&resolved.schema_uri, &resolved.definitions, schema_context)
                 .await
-                && let Some(values) = resolved
-                    .value_schema
-                    .get_enum(schema_uri, definitions, schema_context)
-                    .await
             {
                 enum_values.extend(values);
             }

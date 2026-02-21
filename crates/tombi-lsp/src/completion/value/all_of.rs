@@ -1,26 +1,11 @@
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, AllOfSchema, CurrentSchema, ReferableValueSchemas};
+use tombi_schema_store::{Accessor, CurrentSchema};
 
 use crate::completion::{
-    CompletionCandidate, CompletionContent, CompletionHint, CompositeSchemaImpl,
-    FindCompletionContents, tombi_json_value_to_completion_default_item,
-    tombi_json_value_to_completion_example_item,
+    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
-
-impl CompositeSchemaImpl for AllOfSchema {
-    fn title(&self) -> Option<String> {
-        self.title.clone()
-    }
-
-    fn description(&self) -> Option<String> {
-        self.description.clone()
-    }
-
-    fn schemas(&self) -> &ReferableValueSchemas {
-        &self.schemas
-    }
-}
 
 pub fn find_all_of_completion_items<'a: 'b, 'b, T>(
     value: &'a T,
@@ -45,28 +30,32 @@ where
     async move {
         let mut completion_items = Vec::new();
 
-        for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
-            if let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-            {
-                let schema_completions = value
-                    .find_completion_contents(
-                        position,
-                        keys,
-                        accessors,
-                        Some(&current_schema),
-                        schema_context,
-                        completion_hint,
-                    )
-                    .await;
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &all_of_schema.schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+            &schema_context.schema_visits,
+            accessors,
+        )
+        .await
+        else {
+            return completion_items;
+        };
 
-                completion_items.extend(schema_completions);
-            }
+        for resolved_schema in &resolved_schemas {
+            let schema_completions = value
+                .find_completion_contents(
+                    position,
+                    keys,
+                    accessors,
+                    Some(resolved_schema),
+                    schema_context,
+                    completion_hint,
+                )
+                .await;
+
+            completion_items.extend(schema_completions);
         }
 
         let detail = all_of_schema

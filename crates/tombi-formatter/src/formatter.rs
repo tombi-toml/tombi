@@ -142,10 +142,11 @@ impl<'a> Formatter<'a> {
                 toml_version: self.toml_version,
                 root_schema: source_schema
                     .as_ref()
-                    .and_then(|schema| schema.root_schema.as_ref()),
+                    .and_then(|schema| schema.root_schema.as_deref()),
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
+                schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive
                     .as_ref()

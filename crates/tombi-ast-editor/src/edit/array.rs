@@ -6,7 +6,7 @@ use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRule
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, DocumentSchema, OneOfSchema, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, CurrentValueSchema, OneOfSchema, ValueSchema,
 };
 use tombi_validator::Validate;
 
@@ -35,33 +35,37 @@ impl crate::Edit for tombi_ast::Array {
                     ValueSchema::AllOf(AllOfSchema { schemas, .. })
                     | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                     | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                        for referable_schema in schemas.write().await.iter_mut() {
-                            if let Ok(Some(current_schema)) = referable_schema
-                                .resolve(
-                                    current_schema.schema_uri.clone(),
-                                    current_schema.definitions.clone(),
-                                    schema_context.store,
-                                )
-                                .await
-                                .inspect_err(|err| log::warn!("{err}"))
-                                && array_node
+                        if let Some(resolved_schemas) =
+                            tombi_schema_store::resolve_and_collect_schemas(
+                                schemas,
+                                current_schema.schema_uri.clone(),
+                                current_schema.definitions.clone(),
+                                schema_context.store,
+                                &schema_context.schema_visits,
+                                accessors,
+                            )
+                            .await
+                        {
+                            for current_schema in &resolved_schemas {
+                                if array_node
                                     .validate(
                                         accessors.as_ref(),
-                                        Some(&current_schema),
+                                        Some(current_schema),
                                         schema_context,
                                     )
                                     .await
                                     .is_ok()
-                            {
-                                return self
-                                    .edit(
-                                        node,
-                                        accessors,
-                                        source_path,
-                                        Some(&current_schema),
-                                        schema_context,
-                                    )
-                                    .await;
+                                {
+                                    return self
+                                        .edit(
+                                            node,
+                                            accessors,
+                                            source_path,
+                                            Some(current_schema),
+                                            schema_context,
+                                        )
+                                        .await;
+                                }
                             }
                         }
                         None
@@ -160,23 +164,19 @@ fn edit_item<'a: 'b, 'b>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
 ) -> BoxFuture<'b, Vec<crate::Change>> {
     async move {
-        if let Some(Ok(DocumentSchema {
-            value_schema: Some(value_schema),
-            schema_uri,
-            definitions,
-            ..
-        })) = schema_context
+        if let Some(Ok(document_schema)) = schema_context
             .get_subschema(accessors.as_ref(), current_schema.as_ref())
             .await
+            && let Some(value_schema) = &document_schema.value_schema
         {
             return edit_item(
                 node,
                 edit_fn,
                 accessors,
                 Some(CurrentSchema {
-                    value_schema: Cow::Owned(value_schema),
-                    schema_uri: Cow::Owned(schema_uri),
-                    definitions: Cow::Owned(definitions),
+                    value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                    schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
+                    definitions: Cow::Owned(document_schema.definitions.clone()),
                 }),
                 schema_context,
             )
@@ -188,17 +188,17 @@ fn edit_item<'a: 'b, 'b>(
                 ValueSchema::AllOf(AllOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::OneOf(OneOfSchema { schemas, .. }) => {
-                    for referable_schema in schemas.write().await.iter_mut() {
-                        if let Ok(Some(current_schema)) = referable_schema
-                            .resolve(
-                                current_schema.schema_uri.clone(),
-                                current_schema.definitions.clone(),
-                                schema_context.store,
-                            )
-                            .await
-                            .inspect_err(|err| log::warn!("{err}"))
-                        {
-                            let current_schema = current_schema.into_owned();
+                    if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                        schemas,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                        &schema_context.schema_visits,
+                        accessors.as_ref(),
+                    )
+                    .await
+                    {
+                        for current_schema in resolved_schemas {
                             if node
                                 .validate(accessors.as_ref(), Some(&current_schema), schema_context)
                                 .await
@@ -223,18 +223,16 @@ fn edit_item<'a: 'b, 'b>(
         if let Some(current_schema) = current_schema.as_ref()
             && let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref()
             && let Some(item_schema) = &array_schema.items
-            && let Ok(Some(current_schema)) = item_schema
-                .write()
-                .await
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-                .inspect_err(|err| log::warn!("{err}"))
+            && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+                item_schema,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
+            .inspect_err(|err| log::warn!("{err}"))
         {
-            return edit_fn(node, accessors, Some(current_schema.into_owned())).await;
+            return edit_fn(node, accessors, Some(current_schema)).await;
         }
 
         edit_fn(node, accessors, None).await
