@@ -7,6 +7,7 @@ impl Lint for tombi_ast::InlineTable {
         async move {
             crate::rule::KeyEmptyRule::check(self, l).await;
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
+            crate::rule::InlineTableTomlVersionRule::check(self, l).await;
 
             for key_value in self.key_values() {
                 key_value.lint(l).await;

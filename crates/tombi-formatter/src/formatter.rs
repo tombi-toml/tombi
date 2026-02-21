@@ -2,7 +2,7 @@ pub mod definitions;
 
 use std::fmt::Write;
 
-use itertools::{Either, Itertools};
+use itertools::Either;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
@@ -110,16 +110,6 @@ impl<'a> Formatter<'a> {
         };
 
         let (root, errors) = parsed.into_root_and_errors();
-        let errors = errors
-            .into_iter()
-            .filter(|error| {
-                !matches!(
-                    error.kind(),
-                    tombi_parser::ErrorKind::InlineTableMustSingleLine
-                        | tombi_parser::ErrorKind::ForbiddenInlineTableLastComma
-                )
-            })
-            .collect_vec();
 
         if !errors.is_empty() {
             let mut diagnostics = vec![];

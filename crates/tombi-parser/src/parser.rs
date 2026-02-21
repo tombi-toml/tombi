@@ -10,6 +10,7 @@ pub(crate) struct Parser<'t> {
     source: &'t str,
     input_tokens: &'t [tombi_lexer::Token],
     pos: usize,
+    #[allow(dead_code)] // Reserved for future TOML version–dependent parsing
     pub toml_version: tombi_config::TomlVersion,
     pub tokens: Vec<tombi_lexer::Token>,
     pub(crate) events: Vec<crate::Event>,

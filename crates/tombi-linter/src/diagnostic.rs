@@ -6,6 +6,10 @@ pub enum DiagnosticKind {
     DottedKeysOutOfOrder,
     #[error("Defining tables out-of-order is discouraged")]
     TablesOutOfOrder,
+    #[error("inline table must be single line in TOML v1.0.0 or earlier")]
+    InlineTableMustSingleLine,
+    #[error("trailing comma in inline table not allowed in TOML v1.0.0 or earlier")]
+    ForbiddenInlineTableLastComma,
 }
 
 #[derive(Debug)]
@@ -21,6 +25,8 @@ impl Diagnostic {
             DiagnosticKind::KeyEmpty => "key-empty",
             DiagnosticKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
             DiagnosticKind::TablesOutOfOrder => "tables-out-of-order",
+            DiagnosticKind::InlineTableMustSingleLine => "inline-table-must-single-line",
+            DiagnosticKind::ForbiddenInlineTableLastComma => "forbidden-inline-table-last-comma",
         }
     }
 }
