@@ -1,28 +1,11 @@
 use tombi_extension::CompletionContentPriority;
 use tombi_future::Boxable;
-use tombi_schema_store::{
-    Accessor, CurrentSchema, OneOfSchema, ReferableValueSchemas, SchemaAccessor, ValueSchema,
-};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, ValueSchema};
 
 use crate::completion::{
-    CompletionCandidate, CompletionContent, CompletionHint, CompositeSchemaImpl,
-    FindCompletionContents, tombi_json_value_to_completion_default_item,
-    tombi_json_value_to_completion_example_item,
+    CompletionCandidate, CompletionContent, CompletionHint, FindCompletionContents,
+    tombi_json_value_to_completion_default_item, tombi_json_value_to_completion_example_item,
 };
-
-impl CompositeSchemaImpl for OneOfSchema {
-    fn title(&self) -> Option<String> {
-        self.title.clone()
-    }
-
-    fn description(&self) -> Option<String> {
-        self.description.clone()
-    }
-
-    fn schemas(&self) -> &ReferableValueSchemas {
-        &self.schemas
-    }
-}
 
 pub fn find_one_of_completion_items<'a: 'b, 'b, T>(
     value: &'a T,
@@ -55,21 +38,23 @@ where
         // Only narrow when at least one branch has the key, so we never return [] by over-narrowing.
         let first_key = (keys.len() == 1 && !keys[0].value.is_empty()).then(|| &keys[0].value);
 
-        let mut branch_results: Vec<(bool, Vec<CompletionContent>)> = Vec::new();
-        for referable_schema in one_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    current_schema.schema_uri.clone(),
-                    current_schema.definitions.clone(),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &one_of_schema.schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+            &schema_context.schema_visits,
+            accessors,
+        )
+        .await
+        else {
+            return completion_items;
+        };
 
+        let mut branch_results: Vec<(bool, Vec<CompletionContent>)> = Vec::new();
+        for resolved_schema in &resolved_schemas {
             let branch_has_key = if let Some(ref first_key) = first_key {
-                match current_schema.value_schema.as_ref() {
+                match resolved_schema.value_schema.as_ref() {
                     ValueSchema::Table(table_schema) => table_schema
                         .properties
                         .read()
@@ -86,7 +71,7 @@ where
                     position,
                     keys,
                     accessors,
-                    Some(&current_schema),
+                    Some(resolved_schema),
                     schema_context,
                     completion_hint,
                 )

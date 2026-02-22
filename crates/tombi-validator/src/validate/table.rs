@@ -4,10 +4,7 @@ use itertools::Itertools;
 use tombi_comment_directive::value::TableCommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{
-    Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, SchemaAccessors,
-    ValueSchema,
-};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
 
 use crate::{
@@ -32,22 +29,18 @@ impl Validate for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
-            if let Some(Ok(DocumentSchema {
-                value_schema: Some(value_schema),
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
+                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
                     .validate(
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: Cow::Borrowed(&value_schema),
-                            schema_uri: Cow::Borrowed(&schema_uri),
-                            definitions: Cow::Borrowed(&definitions),
+                            value_schema: value_schema.clone(),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
                         }),
                         schema_context,
                     )
@@ -168,18 +161,18 @@ async fn validate_table(
             .collect_vec();
 
         let mut matched_key = false;
-        if let Some(PropertySchema {
-            property_schema, ..
-        }) = table_schema
+        let schema_accessor = SchemaAccessor::from(&accessor);
+        if table_schema
             .properties
-            .write()
+            .read()
             .await
-            .get_mut(&SchemaAccessor::from(&accessor))
+            .contains_key(&schema_accessor)
         {
             matched_key = true;
 
-            if let Ok(Some(current_schema)) = property_schema
-                .resolve(
+            if let Ok(Some(current_schema)) = table_schema
+                .resolve_property_schema(
+                    &schema_accessor,
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
                     schema_context.store,
@@ -200,21 +193,22 @@ async fn validate_table(
         }
 
         if let Some(pattern_properties) = &table_schema.pattern_properties {
-            for (
-                pattern_key,
-                PropertySchema {
-                    property_schema, ..
-                },
-            ) in pattern_properties.write().await.iter_mut()
-            {
-                let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
+            let pattern_keys = pattern_properties
+                .read()
+                .await
+                .keys()
+                .cloned()
+                .collect_vec();
+            for pattern_key in pattern_keys {
+                let Ok(pattern) = tombi_regex::Regex::new(&pattern_key) else {
                     log::warn!("Invalid regex pattern property: {}", pattern_key);
                     continue;
                 };
                 if pattern.is_match(accessor_raw_text) {
                     matched_key = true;
-                    if let Ok(Some(current_schema)) = property_schema
-                        .resolve(
+                    if let Ok(Some(current_schema)) = table_schema
+                        .resolve_pattern_property_schema(
+                            &pattern_key,
                             current_schema.schema_uri.clone(),
                             current_schema.definitions.clone(),
                             schema_context.store,
@@ -282,15 +276,14 @@ async fn validate_table(
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
             {
-                let mut referable_schema = referable_additional_property_schema.write().await;
-                if let Ok(Some(current_schema)) = referable_schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                    .inspect_err(|err| log::warn!("{err}"))
+                if let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+                    referable_additional_property_schema,
+                    current_schema.schema_uri.clone(),
+                    current_schema.definitions.clone(),
+                    schema_context.store,
+                )
+                .await
+                .inspect_err(|err| log::warn!("{err}"))
                 {
                     handle_deprecated_value(
                         &mut total_diagnostics,

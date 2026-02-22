@@ -564,7 +564,7 @@ mod tests {
     #[case("[1, 2, 3,]", true)]
     #[case("[1, 2, 3]", false)]
     fn has_last_value_trailing_comma(#[case] source: &str, #[case] expected: bool) {
-        let p = tombi_parser::parse_as::<tombi_ast::Array>(source, TomlVersion::default());
+        let p = tombi_parser::parse_as::<tombi_ast::Array>(source);
         pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
 
         let ast = tombi_ast::Array::cast(p.syntax_node()).unwrap();

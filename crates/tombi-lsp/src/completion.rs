@@ -16,10 +16,12 @@ use tombi_extension::{
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, ReferableValueSchemas, SchemaDefinitions,
-    SchemaStore, SchemaUri, ValueSchema,
+    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, SchemaDefinitions, SchemaStore,
+    SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
+
+use crate::composite_schema::CompositeSchema;
 
 pub fn get_comment_context(
     root: &tombi_ast::Root,
@@ -211,7 +213,7 @@ pub async fn find_completion_contents_with_tree(
             .value_schema
             .as_ref()
             .map(|value_schema| CurrentSchema {
-                value_schema: Cow::Borrowed(value_schema),
+                value_schema: value_schema.clone(),
                 schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                 definitions: Cow::Borrowed(&document_schema.definitions),
             })
@@ -294,13 +296,7 @@ pub trait CompletionCandidate {
     }
 }
 
-trait CompositeSchemaImpl {
-    fn title(&self) -> Option<String>;
-    fn description(&self) -> Option<String>;
-    fn schemas(&self) -> &ReferableValueSchemas;
-}
-
-impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
+impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
     fn title<'a: 'b, 'b>(
         &'a self,
         schema_uri: &'a SchemaUri,
@@ -310,43 +306,42 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
-            {
-                for referable_schema in self.schemas().write().await.iter_mut() {
-                    if let Ok(Some(CurrentSchema {
-                        value_schema,
-                        schema_uri,
-                        definitions,
-                    })) = referable_schema
-                        .resolve(
-                            Cow::Borrowed(schema_uri),
-                            Cow::Borrowed(definitions),
-                            schema_store,
-                        )
-                        .await
-                    {
-                        if matches!(value_schema.as_ref(), ValueSchema::Null) {
-                            continue;
-                        }
+            let schema_visits = tombi_schema_store::SchemaVisits::default();
 
-                        if let Some(candidate) = CompletionCandidate::title(
-                            value_schema.as_ref(),
-                            &schema_uri,
-                            &definitions,
-                            schema_store,
-                            completion_hint,
-                        )
-                        .await
-                        {
-                            candidates.insert(candidate.to_string());
-                        }
+            if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                self.schemas(),
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_store,
+                &schema_visits,
+                &[],
+            )
+            .await
+            {
+                for current_schema in &resolved_schemas {
+                    if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
+                        continue;
+                    }
+
+                    if let Some(candidate) = CompletionCandidate::title(
+                        current_schema.value_schema.as_ref(),
+                        &current_schema.schema_uri,
+                        &current_schema.definitions,
+                        schema_store,
+                        completion_hint,
+                    )
+                    .await
+                    {
+                        candidates.insert(candidate.to_string());
                     }
                 }
             }
+
             if candidates.len() == 1 {
                 return candidates.into_iter().next();
             }
 
-            self.title().as_deref().map(|title| title.into())
+            self.composite_title().as_deref().map(|title| title.into())
         }
         .boxed()
     }
@@ -360,35 +355,33 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
             let mut candidates = ahash::AHashSet::new();
-            {
-                for referable_schema in self.schemas().write().await.iter_mut() {
-                    if let Ok(Some(CurrentSchema {
-                        value_schema,
-                        schema_uri,
-                        definitions,
-                    })) = referable_schema
-                        .resolve(
-                            Cow::Borrowed(schema_uri),
-                            Cow::Borrowed(definitions),
-                            schema_store,
-                        )
-                        .await
-                    {
-                        if matches!(value_schema.as_ref(), ValueSchema::Null) {
-                            continue;
-                        }
+            let schema_visits = tombi_schema_store::SchemaVisits::default();
 
-                        if let Some(candidate) = CompletionCandidate::description(
-                            value_schema.as_ref(),
-                            &schema_uri,
-                            &definitions,
-                            schema_store,
-                            completion_hint,
-                        )
-                        .await
-                        {
-                            candidates.insert(candidate.to_string());
-                        }
+            if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                self.schemas(),
+                Cow::Borrowed(schema_uri),
+                Cow::Borrowed(definitions),
+                schema_store,
+                &schema_visits,
+                &[],
+            )
+            .await
+            {
+                for current_schema in &resolved_schemas {
+                    if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
+                        continue;
+                    }
+
+                    if let Some(candidate) = CompletionCandidate::description(
+                        current_schema.value_schema.as_ref(),
+                        &current_schema.schema_uri,
+                        &current_schema.definitions,
+                        schema_store,
+                        completion_hint,
+                    )
+                    .await
+                    {
+                        candidates.insert(candidate.to_string());
                     }
                 }
             }
@@ -397,7 +390,7 @@ impl<T: CompositeSchemaImpl + Sync + Send> CompletionCandidate for T {
                 return candidates.into_iter().next();
             }
 
-            self.description()
+            self.composite_description()
                 .as_deref()
                 .map(|description| description.into())
         }

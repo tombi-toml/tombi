@@ -4,8 +4,8 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, DocumentSchema, FindSchemaCandidates, PropertySchema, Referable,
-    SchemaAccessor, SchemaStore, TableSchema, ValueSchema, is_online_url,
+    Accessor, CurrentSchema, FindSchemaCandidates, Referable, SchemaAccessor, SchemaStore,
+    TableSchema, ValueSchema, is_online_url,
 };
 
 use crate::{
@@ -71,20 +71,18 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
             // `range.end` points to the cursor position right after `}`.
             // At that point, completion should not behave as "inside inline table".
-            if matches!(self.kind(), tombi_document_tree::TableKind::InlineTable { .. })
-                && position >= self.range().end
+            if matches!(
+                self.kind(),
+                tombi_document_tree::TableKind::InlineTable { .. }
+            ) && position >= self.range().end
             {
                 return Vec::with_capacity(0);
             }
 
-            if let Some(Ok(DocumentSchema {
-                value_schema: Some(value_schema),
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
+                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
                     .find_completion_contents(
@@ -92,9 +90,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         keys,
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: Cow::Borrowed(&value_schema),
-                            schema_uri: Cow::Borrowed(&schema_uri),
-                            definitions: Cow::Borrowed(&definitions),
+                            value_schema: value_schema.clone(),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
                         }),
                         schema_context,
                         completion_hint,
@@ -111,24 +109,26 @@ impl FindCompletionContents for tombi_document_tree::Table {
                             let accessor_str = &key.value;
                             if let Some(value) = self.get(key) {
                                 let accessor: Accessor = Accessor::Key(accessor_str.to_string());
+                                let schema_accessor = SchemaAccessor::from(&accessor);
+                                let need_magic_trigger = match completion_hint {
+                                    Some(
+                                        CompletionHint::DotTrigger { range, .. }
+                                        | CompletionHint::EqualTrigger { range, .. },
+                                    ) => range.end <= key.range().start,
+                                    Some(
+                                        CompletionHint::InArray { .. }
+                                        | CompletionHint::InTableHeader
+                                        | CompletionHint::Comma { .. },
+                                    ) => false,
+                                    None => true,
+                                };
 
-                                let mut properties = table_schema.properties.write().await;
-                                if let Some(PropertySchema {
-                                    property_schema, ..
-                                }) = properties.get_mut(&SchemaAccessor::from(&accessor))
+                                if table_schema
+                                    .properties
+                                    .read()
+                                    .await
+                                    .contains_key(&schema_accessor)
                                 {
-                                    let need_magic_trigger = match completion_hint {
-                                        Some(
-                                            CompletionHint::DotTrigger { range, .. }
-                                            | CompletionHint::EqualTrigger { range, .. },
-                                        ) => range.end <= key.range().start,
-                                        Some(
-                                            CompletionHint::InArray { .. }
-                                            | CompletionHint::InTableHeader
-                                            | CompletionHint::Comma { .. },
-                                        ) => false,
-                                        None => true,
-                                    };
                                     if matches!(
                                         value,
                                         tombi_document_tree::Value::Incomplete { .. }
@@ -141,8 +141,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         );
                                     }
 
-                                    if let Ok(Some(current_schema)) = property_schema
-                                        .resolve(
+                                    if let Ok(Some(current_schema)) = table_schema
+                                        .resolve_property_schema(
+                                            &schema_accessor,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
@@ -183,19 +184,20 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         return contents;
                                     }
                                 } else if keys.len() == 1 {
-                                    for (
-                                        key,
-                                        PropertySchema {
-                                            property_schema, ..
-                                        },
-                                    ) in properties.iter_mut()
-                                    {
-                                        let key_name = &key.to_string();
+                                    let property_keys = table_schema
+                                        .properties
+                                        .read()
+                                        .await
+                                        .keys()
+                                        .cloned()
+                                        .collect_vec();
+                                    for property_key in property_keys {
+                                        let key_name = property_key.to_string();
                                         if !key_name.starts_with(accessor_str) {
                                             continue;
                                         }
 
-                                        if let Some(value) = self.get(key_name)
+                                        if let Some(value) = self.get(&key_name)
                                             && check_used_table_value(
                                                 value,
                                                 accessors.is_empty(),
@@ -205,8 +207,9 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             continue;
                                         }
 
-                                        if let Ok(Some(current_schema)) = property_schema
-                                            .resolve(
+                                        if let Ok(Some(current_schema)) = table_schema
+                                            .resolve_property_schema(
+                                                &property_key,
                                                 current_schema.schema_uri.clone(),
                                                 current_schema.definitions.clone(),
                                                 schema_context.store,
@@ -221,7 +224,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                             let Some(mut contents) =
                                                 collect_table_key_completion_contents(
                                                     self,
-                                                    key_name,
+                                                    &key_name,
                                                     position,
                                                     accessors,
                                                     table_schema,
@@ -255,14 +258,14 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
 
                                 if let Some(pattern_properties) = &table_schema.pattern_properties {
-                                    for (
-                                        property_key,
-                                        PropertySchema {
-                                            property_schema, ..
-                                        },
-                                    ) in pattern_properties.write().await.iter_mut()
-                                    {
-                                        let Ok(pattern) = tombi_regex::Regex::new(property_key)
+                                    let pattern_keys = pattern_properties
+                                        .read()
+                                        .await
+                                        .keys()
+                                        .cloned()
+                                        .collect_vec();
+                                    for property_key in pattern_keys {
+                                        let Ok(pattern) = tombi_regex::Regex::new(&property_key)
                                         else {
                                             log::warn!(
                                                 "Invalid regex pattern property: {}",
@@ -273,10 +276,11 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                         if pattern.is_match(accessor_str) {
                                             log::trace!(
                                                 "pattern_property_schema = {:?}",
-                                                &property_schema
+                                                &current_schema.value_schema
                                             );
-                                            if let Ok(Some(current_schema)) = property_schema
-                                                .resolve(
+                                            if let Ok(Some(current_schema)) = table_schema
+                                                .resolve_pattern_property_schema(
+                                                    &property_key,
                                                     current_schema.schema_uri.clone(),
                                                     current_schema.definitions.clone(),
                                                     schema_context.store,
@@ -325,15 +329,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     );
 
                                     if let Ok(Some(current_schema)) =
-                                        referable_additional_property_schema
-                                            .write()
-                                            .await
-                                            .resolve(
-                                                current_schema.schema_uri.clone(),
-                                                current_schema.definitions.clone(),
-                                                schema_context.store,
-                                            )
-                                            .await
+                                        tombi_schema_store::resolve_schema_item(
+                                            referable_additional_property_schema,
+                                            current_schema.schema_uri.clone(),
+                                            current_schema.definitions.clone(),
+                                            schema_context.store,
+                                        )
+                                        .await
                                     {
                                         let mut contents = get_property_value_completion_contents(
                                             value,
@@ -379,16 +381,17 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 }
                             }
                         } else {
-                            for (
-                                schema_accessor,
-                                PropertySchema {
-                                    property_schema, ..
-                                },
-                            ) in table_schema.properties.write().await.iter_mut()
-                            {
-                                let key_name = &schema_accessor.to_string();
+                            let schema_accessors = table_schema
+                                .properties
+                                .read()
+                                .await
+                                .keys()
+                                .cloned()
+                                .collect_vec();
+                            for schema_accessor in schema_accessors {
+                                let key_name = schema_accessor.to_string();
 
-                                if let Some(value) = self.get(key_name)
+                                if let Some(value) = self.get(&key_name)
                                     && check_used_table_value(
                                         value,
                                         accessors.is_empty(),
@@ -398,34 +401,49 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     continue;
                                 }
 
-                                // NOTE: To avoid downloading unnecessary schema files,
-                                //       if the property is an unresolved online URL(like https:// or http://),
-                                //       only the overview is used to generate completion candidates.
-                                match property_schema {
-                                    Referable::Ref {
-                                        reference,
+                                let online_ref_metadata = {
+                                    let properties = table_schema.properties.read().await;
+                                    properties
+                                        .get(&schema_accessor)
+                                        .and_then(|property_schema| {
+                                            if let Referable::Ref {
+                                                reference,
+                                                title,
+                                                description,
+                                                deprecated,
+                                                ..
+                                            } = &property_schema.property_schema
+                                                && is_online_url(reference)
+                                            {
+                                                Some((
+                                                    title.clone(),
+                                                    description.clone(),
+                                                    *deprecated,
+                                                ))
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                };
+
+                                if let Some((title, description, deprecated)) = online_ref_metadata
+                                {
+                                    completion_contents.push(CompletionContent::new_key(
+                                        &key_name,
+                                        position,
                                         title,
                                         description,
+                                        table_schema.required.as_ref(),
+                                        Some(current_schema.schema_uri.as_ref()),
                                         deprecated,
-                                        ..
-                                    } if is_online_url(reference) => {
-                                        completion_contents.push(CompletionContent::new_key(
-                                            key_name,
-                                            position,
-                                            title.clone(),
-                                            description.clone(),
-                                            table_schema.required.as_ref(),
-                                            Some(current_schema.schema_uri.as_ref()),
-                                            *deprecated,
-                                            completion_hint,
-                                        ));
-                                        continue;
-                                    }
-                                    _ => {}
+                                        completion_hint,
+                                    ));
+                                    continue;
                                 }
 
-                                if let Ok(Some(current_schema)) = property_schema
-                                    .resolve(
+                                if let Ok(Some(current_schema)) = table_schema
+                                    .resolve_property_schema(
+                                        &schema_accessor,
                                         current_schema.schema_uri.clone(),
                                         current_schema.definitions.clone(),
                                         schema_context.store,
@@ -434,7 +452,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                 {
                                     let Some(contents) = collect_table_key_completion_contents(
                                         self,
-                                        key_name,
+                                        &key_name,
                                         position,
                                         accessors,
                                         table_schema,
@@ -446,7 +464,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     else {
                                         continue;
                                     };
-                                    completion_contents.extend(contents);
+                                    completion_contents.extend(contents)
                                 }
                             }
 
@@ -514,15 +532,13 @@ impl FindCompletionContents for tombi_document_tree::Table {
                                     value_schema,
                                     schema_uri,
                                     ..
-                                })) = additional_property_schema
-                                    .write()
-                                    .await
-                                    .resolve(
-                                        current_schema.schema_uri.clone(),
-                                        current_schema.definitions.clone(),
-                                        schema_context.store,
-                                    )
-                                    .await
+                                })) = tombi_schema_store::resolve_schema_item(
+                                    additional_property_schema,
+                                    current_schema.schema_uri.clone(),
+                                    current_schema.definitions.clone(),
+                                    schema_context.store,
+                                )
+                                .await
                             {
                                 completion_contents.push(CompletionContent::new_additional_key(
                                     table_schema.additional_key_label.as_deref(),
@@ -628,71 +644,72 @@ impl FindCompletionContents for TableSchema {
 
             let mut completion_items = Vec::new();
 
-            for (
-                key,
-                PropertySchema {
-                    property_schema, ..
-                },
-            ) in self.properties.write().await.iter_mut()
-            {
-                let label = &key.to_string();
-
-                if let Ok(Some(current_schema)) = property_schema
-                    .resolve(
+            let property_keys = self.properties.read().await.keys().cloned().collect_vec();
+            for key in property_keys {
+                let label = key.to_string();
+                let current_schema = match self
+                    .resolve_property_schema(
+                        &key,
                         current_schema.schema_uri.clone(),
                         current_schema.definitions.clone(),
                         schema_context.store,
                     )
                     .await
                 {
-                    let (schema_candidates, errors) = current_schema
-                        .value_schema
-                        .find_schema_candidates(
-                            accessors,
-                            &current_schema.schema_uri,
-                            &current_schema.definitions,
-                            schema_context.store,
-                        )
-                        .await;
+                    Ok(Some(current_schema)) => current_schema,
+                    Ok(None) => continue,
+                    Err(err) => {
+                        log::warn!("{err}");
+                        continue;
+                    }
+                };
 
-                    for error in errors {
-                        log::warn!("{}", error);
+                let (schema_candidates, errors) = current_schema
+                    .value_schema
+                    .find_schema_candidates(
+                        accessors,
+                        &current_schema.schema_uri,
+                        &current_schema.definitions,
+                        schema_context.store,
+                    )
+                    .await;
+
+                for error in errors {
+                    log::warn!("{}", error);
+                }
+
+                for schema_candidate in schema_candidates {
+                    if let Some(CompletionHint::InTableHeader) = completion_hint
+                        && count_table_or_array_schema(&current_schema, schema_context.store).await
+                            == 0
+                    {
+                        continue;
                     }
 
-                    for schema_candidate in schema_candidates {
-                        if let Some(CompletionHint::InTableHeader) = completion_hint
-                            && count_table_or_array_schema(&current_schema, schema_context.store)
-                                .await
-                                == 0
-                        {
-                            continue;
-                        }
-
-                        completion_items.push(CompletionContent::new_key(
-                            label,
-                            position,
-                            schema_candidate
-                                .detail(
-                                    &current_schema.schema_uri,
-                                    &current_schema.definitions,
-                                    schema_context.store,
-                                    completion_hint,
-                                )
-                                .await,
-                            schema_candidate
-                                .documentation(
-                                    &current_schema.schema_uri,
-                                    &current_schema.definitions,
-                                    schema_context.store,
-                                    completion_hint,
-                                )
-                                .await,
-                            self.required.as_ref(),
-                            Some(current_schema.schema_uri.as_ref()),
-                            current_schema.value_schema.deprecated().await,
-                            completion_hint,
-                        ));
-                    }
+                    completion_items.push(CompletionContent::new_key(
+                        &label,
+                        position,
+                        schema_candidate
+                            .detail(
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_context.store,
+                                completion_hint,
+                            )
+                            .await,
+                        schema_candidate
+                            .documentation(
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_context.store,
+                                completion_hint,
+                            )
+                            .await,
+                        self.required.as_ref(),
+                        Some(current_schema.schema_uri.as_ref()),
+                        current_schema.value_schema.deprecated().await,
+                        completion_hint,
+                    ));
                 }
             }
 
@@ -731,15 +748,13 @@ async fn count_table_or_array_schema(
                                 schema_uri,
                                 value_schema,
                                 definitions,
-                            })) = item
-                                .write()
-                                .await
-                                .resolve(
-                                    Cow::Borrowed(&current_schema.schema_uri),
-                                    Cow::Borrowed(&current_schema.definitions),
-                                    schema_store,
-                                )
-                                .await
+                            })) = tombi_schema_store::resolve_schema_item(
+                                &item,
+                                Cow::Borrowed(&current_schema.schema_uri),
+                                Cow::Borrowed(&current_schema.definitions),
+                                schema_store,
+                            )
+                            .await
                         {
                             return value_schema
                                 .is_match(

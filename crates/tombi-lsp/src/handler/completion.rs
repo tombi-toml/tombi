@@ -83,7 +83,7 @@ pub async fn handle_completion(
 
     let root_schema = source_schema
         .as_ref()
-        .and_then(|schema| schema.root_schema.as_ref());
+        .and_then(|schema| schema.root_schema.as_deref());
 
     // Skip completion if the trigger character is a whitespace or if there is no schema.
     if let Some(CompletionContext {
@@ -149,6 +149,7 @@ pub async fn handle_completion(
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|schema| &schema.sub_schema_uri_map),
+                schema_visits: Default::default(),
                 store: &schema_store,
                 strict: None,
             };

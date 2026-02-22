@@ -91,14 +91,14 @@ impl Deserializer<'_> {
     where
         T: DeserializeOwned,
     {
-        let toml_version = self.get_toml_version(toml_text).await?;
-        let parsed = tombi_parser::parse(toml_text, toml_version);
+        let parsed = tombi_parser::parse(toml_text);
         // Check if there are any parsing errors
         if !parsed.errors.is_empty() {
             return Err(parsed.errors.into());
         }
 
         let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
+        let toml_version = self.get_toml_version(&root).await?;
         from_document(self.try_to_document(root, toml_version)?)
     }
 
@@ -112,7 +112,20 @@ impl Deserializer<'_> {
         Ok(T::deserialize(&document)?)
     }
 
-    async fn get_toml_version(&self, toml_text: &str) -> Result<TomlVersion, crate::de::Error> {
+    async fn get_toml_version(
+        &self,
+        root: &tombi_ast::Root,
+    ) -> Result<TomlVersion, crate::de::Error> {
+        // 1. Check comment directive first (highest priority)
+        if let Some(directive) =
+            tombi_validator::comment_directive::get_tombi_document_comment_directive(root).await
+        {
+            if let Some(toml_version) = directive.toml_version {
+                return Ok(toml_version);
+            }
+        }
+
+        // 2. Fall back to config toml_version
         let schema_store = match self.schema_store {
             Some(schema_store) => schema_store,
             None => &SchemaStore::new(),
@@ -145,14 +158,10 @@ impl Deserializer<'_> {
             }
         }
 
-        let parsed = tombi_parser::parse_document_header_comments(toml_text)
-            .cast::<tombi_ast::Root>()
-            .expect("AST Root must be present");
-        let root = parsed.tree();
-
+        // 3. Fall back to schema toml_version
         if let Some(source_path) = self.source_path {
             match schema_store
-                .resolve_source_schema_from_ast(&root, Some(Either::Right(source_path)))
+                .resolve_source_schema_from_ast(root, Some(Either::Right(source_path)))
                 .await
             {
                 Ok(Some(SourceSchema {

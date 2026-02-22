@@ -9,7 +9,7 @@ use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 use super::{
     AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema, FindSchemaCandidates, FloatSchema,
     IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
-    OneOfSchema, SchemaUri, StringSchema, TableSchema, referable_schema::CurrentSchema,
+    OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
 use crate::{Accessor, Referable, SchemaDefinitions, SchemaStore, schema::not_schema::NotSchema};
 
@@ -53,7 +53,7 @@ impl ValueSchema {
                     })
                     .map(|value_schema| Referable::Resolved {
                         schema_uri: None,
-                        value: value_schema,
+                        value: Arc::new(value_schema),
                     })
                     .collect();
 
@@ -211,7 +211,7 @@ impl ValueSchema {
                     if let Some(schema) = Self::new_single(value_type, object, string_formats) {
                         schemas.push(Referable::Resolved {
                             schema_uri: None,
-                            value: schema,
+                            value: Arc::new(schema),
                         });
                     }
                 }
@@ -296,7 +296,10 @@ impl ValueSchema {
                 } else {
                     let mut has_deprecated = false;
                     for schema in schemas.read().await.iter() {
-                        if schema.value_type().await == crate::ValueType::Null {
+                        if schema
+                            .resolved()
+                            .is_some_and(|value_schema| matches!(value_schema, ValueSchema::Null))
+                        {
                             continue;
                         }
                         if schema.deprecated().await != Some(true) {
@@ -435,32 +438,63 @@ impl ValueSchema {
         schema_store: &'a SchemaStore,
     ) -> BoxFuture<'b, Vec<ValueSchema>> {
         async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.match_flattened_schemas_with_visits(
+                condition,
+                schema_uri,
+                definitions,
+                schema_store,
+                &schema_visits,
+            )
+            .await
+        }
+        .boxed()
+    }
+
+    fn match_flattened_schemas_with_visits<
+        'a: 'b,
+        'b,
+        T: Fn(&ValueSchema) -> bool + Sync + Send,
+    >(
+        &'a self,
+        condition: &'a T,
+        schema_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
+    ) -> BoxFuture<'b, Vec<ValueSchema>> {
+        async move {
             let mut matched_schemas = Vec::new();
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
-                    for referable_schema in schemas.write().await.iter_mut() {
-                        if let Ok(Some(current_schema)) = referable_schema
-                            .resolve(
-                                Cow::Borrowed(schema_uri),
-                                Cow::Borrowed(definitions),
-                                schema_store,
-                            )
-                            .await
-                        {
-                            matched_schemas.extend(
-                                current_schema
-                                    .value_schema
-                                    .match_flattened_schemas(
-                                        condition,
-                                        &current_schema.schema_uri,
-                                        &current_schema.definitions,
-                                        schema_store,
-                                    )
-                                    .await,
-                            )
-                        }
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        schema_visits,
+                        &[],
+                    )
+                    .await
+                    else {
+                        return matched_schemas;
+                    };
+
+                    for current_schema in &collected {
+                        matched_schemas.extend(
+                            current_schema
+                                .value_schema
+                                .match_flattened_schemas_with_visits(
+                                    condition,
+                                    &current_schema.schema_uri,
+                                    &current_schema.definitions,
+                                    schema_store,
+                                    schema_visits,
+                                )
+                                .await,
+                        );
                     }
                 }
                 _ => {
@@ -486,80 +520,106 @@ impl ValueSchema {
         'a: 'b,
     {
         async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.is_match_with_visits(
+                condition,
+                schema_uri,
+                definitions,
+                schema_store,
+                &schema_visits,
+            )
+            .await
+        }
+        .boxed()
+    }
+
+    fn is_match_with_visits<'a, 'b, T: Fn(&ValueSchema) -> bool + Sync + Send>(
+        &'a self,
+        condition: &'a T,
+        schema_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
+    ) -> BoxFuture<'b, bool>
+    where
+        'a: 'b,
+    {
+        async move {
             match self {
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
-                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => join_all(
-                    schemas
-                        .write()
-                        .await
-                        .iter_mut()
-                        .map(|referable_schema| async {
-                            if let Ok(Some(CurrentSchema {
-                                value_schema,
-                                schema_uri,
-                                definitions,
-                            })) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                value_schema
-                                    .is_match(condition, &schema_uri, &definitions, schema_store)
-                                    .await
-                            } else {
-                                false
-                            }
-                        }),
-                )
-                .await
-                .into_iter()
-                .any(|is_matched| is_matched),
-                ValueSchema::AllOf(AllOfSchema { schemas, .. }) => join_all(
-                    schemas
-                        .write()
-                        .await
-                        .iter_mut()
-                        .map(|referable_schema| async {
-                            if let Ok(Some(CurrentSchema {
-                                value_schema,
-                                schema_uri,
-                                definitions,
-                            })) = referable_schema
-                                .resolve(
-                                    Cow::Borrowed(schema_uri),
-                                    Cow::Borrowed(definitions),
-                                    schema_store,
-                                )
-                                .await
-                            {
-                                value_schema
-                                    .is_match(condition, &schema_uri, &definitions, schema_store)
-                                    .await
-                            } else {
-                                false
-                            }
-                        }),
-                )
-                .await
-                .into_iter()
-                .all(|is_matched| is_matched),
+                | ValueSchema::AnyOf(AnyOfSchema { schemas, .. }) => {
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        schema_visits,
+                        &[],
+                    )
+                    .await
+                    else {
+                        return false;
+                    };
+
+                    join_all(collected.iter().map(|current_schema| async {
+                        current_schema
+                            .value_schema
+                            .is_match_with_visits(
+                                condition,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_store,
+                                schema_visits,
+                            )
+                            .await
+                    }))
+                    .await
+                    .into_iter()
+                    .any(|is_matched| is_matched)
+                }
+                ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        schema_visits,
+                        &[],
+                    )
+                    .await
+                    else {
+                        return false;
+                    };
+
+                    join_all(collected.iter().map(|current_schema| async {
+                        current_schema
+                            .value_schema
+                            .is_match_with_visits(
+                                condition,
+                                &current_schema.schema_uri,
+                                &current_schema.definitions,
+                                schema_store,
+                                schema_visits,
+                            )
+                            .await
+                    }))
+                    .await
+                    .into_iter()
+                    .all(|is_matched| is_matched)
+                }
                 _ => condition(self),
             }
         }
         .boxed()
     }
-}
 
-impl FindSchemaCandidates for ValueSchema {
-    fn find_schema_candidates<'a: 'b, 'b>(
+    fn find_schema_candidates_with_visits<'a: 'b, 'b>(
         &'a self,
         accessors: &'a [Accessor],
         schema_uri: &'a SchemaUri,
         definitions: &'a SchemaDefinitions,
         schema_store: &'a SchemaStore,
+        schema_visits: &'a crate::SchemaVisits,
     ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
         async move {
             match self {
@@ -584,25 +644,28 @@ impl FindSchemaCandidates for ValueSchema {
                     let mut candidates = Vec::new();
                     let mut errors = Vec::new();
 
-                    for referable_schema in schemas.write().await.iter_mut() {
-                        let Ok(Some(current_schema)) = referable_schema
-                            .resolve(
-                                Cow::Borrowed(schema_uri),
-                                Cow::Borrowed(definitions),
-                                schema_store,
-                            )
-                            .await
-                        else {
-                            continue;
-                        };
+                    let Some(collected) = crate::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_store,
+                        schema_visits,
+                        accessors,
+                    )
+                    .await
+                    else {
+                        return (candidates, errors);
+                    };
 
+                    for current_schema in &collected {
                         let (mut schema_candidates, schema_errors) = current_schema
                             .value_schema
-                            .find_schema_candidates(
+                            .find_schema_candidates_with_visits(
                                 accessors,
                                 &current_schema.schema_uri,
                                 &current_schema.definitions,
                                 schema_store,
+                                schema_visits,
                             )
                             .await;
 
@@ -622,6 +685,29 @@ impl FindSchemaCandidates for ValueSchema {
                 ValueSchema::Null => (Vec::with_capacity(0), Vec::with_capacity(0)),
                 _ => (vec![self.clone()], Vec::with_capacity(0)),
             }
+        }
+        .boxed()
+    }
+}
+
+impl FindSchemaCandidates for ValueSchema {
+    fn find_schema_candidates<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [Accessor],
+        schema_uri: &'a SchemaUri,
+        definitions: &'a SchemaDefinitions,
+        schema_store: &'a SchemaStore,
+    ) -> BoxFuture<'b, (Vec<ValueSchema>, Vec<crate::Error>)> {
+        async move {
+            let schema_visits = crate::SchemaVisits::default();
+            self.find_schema_candidates_with_visits(
+                accessors,
+                schema_uri,
+                definitions,
+                schema_store,
+                &schema_visits,
+            )
+            .await
         }
         .boxed()
     }

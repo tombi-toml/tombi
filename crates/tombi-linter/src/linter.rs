@@ -35,10 +35,13 @@ impl<'a> Linter<'a> {
 
     pub async fn lint(mut self, source: &str) -> Result<(), Vec<Diagnostic>> {
         self.source_text = Cow::Borrowed(source);
-        let (source_schema, tombi_document_comment_directive) = if let Some(parsed) =
-            tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
-        {
-            let root = parsed.tree();
+
+        let (root, errors) = tombi_parser::parse(source).into_root_and_errors();
+        for error in errors {
+            error.set_diagnostics(&mut self.diagnostics);
+        }
+
+        let (source_schema, tombi_document_comment_directive) = {
             let (source_schema, error_with_range) =
                 tombi_schema_store::lint_source_schema_from_ast(
                     &root,
@@ -60,8 +63,6 @@ impl<'a> Linter<'a> {
             self.diagnostics.extend(diagnostics);
 
             (source_schema, tombi_document_comment_directive)
-        } else {
-            (None, None)
         };
 
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
@@ -102,11 +103,6 @@ impl<'a> Linter<'a> {
                     .unwrap_or(self.toml_version)
             });
 
-        let (root, errors) = tombi_parser::parse(source, self.toml_version).into_root_and_errors();
-        for error in errors {
-            error.set_diagnostics(&mut self.diagnostics);
-        }
-
         {
             root.lint(&mut self).await;
         }
@@ -129,10 +125,11 @@ impl<'a> Linter<'a> {
                 toml_version: self.toml_version,
                 root_schema: source_schema
                     .as_ref()
-                    .and_then(|source_schema| source_schema.root_schema.as_ref()),
+                    .and_then(|source_schema| source_schema.root_schema.as_deref()),
                 sub_schema_uri_map: source_schema
                     .as_ref()
                     .map(|source_schema| &source_schema.sub_schema_uri_map),
+                schema_visits: Default::default(),
                 store: self.schema_store,
                 strict: tombi_document_comment_directive
                     .as_ref()

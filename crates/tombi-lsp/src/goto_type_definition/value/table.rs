@@ -3,10 +3,7 @@ use std::borrow::Cow;
 use itertools::Itertools;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{
-    Accessor, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor, TableSchema,
-    ValueSchema,
-};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, TableSchema, ValueSchema};
 
 use crate::{
     comment_directive::get_table_comment_directive_content_with_schema_uri,
@@ -44,20 +41,19 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                 return Some(hover_content);
             }
 
-            if let Some(Ok(DocumentSchema {
-                value_schema,
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
             {
-                let current_schema = value_schema.map(|value_schema| CurrentSchema {
-                    value_schema: Cow::Owned(value_schema),
-                    schema_uri: Cow::Owned(schema_uri),
-                    definitions: Cow::Owned(definitions),
-                });
+                let current_schema =
+                    document_schema
+                        .value_schema
+                        .as_ref()
+                        .map(|value_schema| CurrentSchema {
+                            value_schema: value_schema.clone(),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
+                        });
 
                 return self
                     .get_type_definition(
@@ -83,20 +79,16 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     .chain(std::iter::once(accessor))
                                     .collect_vec();
 
-                                if let Some(PropertySchema {
-                                    key_range,
-                                    property_schema,
-                                    ..
-                                }) = table_schema
+                                if let Some(key_range) = table_schema
                                     .properties
-                                    .write()
+                                    .read()
                                     .await
-                                    .get_mut(&schema_accessor)
+                                    .get(&schema_accessor)
+                                    .map(|property_schema| property_schema.key_range)
                                 {
-                                    log::trace!("property_schema = {:?}", property_schema);
-
-                                    if let Ok(Some(current_schema)) = property_schema
-                                        .resolve(
+                                    if let Ok(Some(current_schema)) = table_schema
+                                        .resolve_property_schema(
+                                            &schema_accessor,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
@@ -113,7 +105,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             )
                                             .await
                                             .map(|type_definition| {
-                                                type_definition.update_range(&accessors, key_range)
+                                                type_definition.update_range(&accessors, &key_range)
                                             });
                                     }
 
@@ -128,19 +120,21 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                         .await;
                                 }
                                 if let Some(pattern_properties) = &table_schema.pattern_properties {
-                                    for (
-                                        property_key,
-                                        PropertySchema {
-                                            property_schema,
-                                            key_range,
-                                            ..
-                                        },
-                                    ) in pattern_properties.write().await.iter_mut()
-                                    {
-                                        if let Ok(pattern) = tombi_regex::Regex::new(property_key) {
+                                    let pattern_properties = pattern_properties
+                                        .read()
+                                        .await
+                                        .iter()
+                                        .map(|(key, property_schema)| {
+                                            (key.to_string(), property_schema.key_range)
+                                        })
+                                        .collect_vec();
+                                    for (property_key, key_range) in pattern_properties {
+                                        if let Ok(pattern) = tombi_regex::Regex::new(&property_key)
+                                        {
                                             if pattern.is_match(&key.value) {
-                                                if let Ok(Some(current_schema)) = property_schema
-                                                    .resolve(
+                                                if let Ok(Some(current_schema)) = table_schema
+                                                    .resolve_pattern_property_schema(
+                                                        &property_key,
                                                         current_schema.schema_uri.clone(),
                                                         current_schema.definitions.clone(),
                                                         schema_context.store,
@@ -157,8 +151,9 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                                         )
                                                         .await
                                                         .map(|type_definition| {
-                                                            type_definition
-                                                                .update_range(&accessors, key_range)
+                                                            type_definition.update_range(
+                                                                &accessors, &key_range,
+                                                            )
                                                         });
                                                 }
 
@@ -186,10 +181,9 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     referable_additional_property_schema,
                                 )) = &table_schema.additional_property_schema
                                 {
-                                    let mut referable_schema =
-                                        referable_additional_property_schema.write().await;
-                                    if let Ok(Some(current_schema)) = referable_schema
-                                        .resolve(
+                                    if let Ok(Some(current_schema)) =
+                                        tombi_schema_store::resolve_schema_item(
+                                            referable_additional_property_schema,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,

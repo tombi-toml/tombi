@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use itertools::Itertools;
 use serde::Deserialize;
 use tombi_comment_directive::{
@@ -465,14 +467,17 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
     let schema_store = tombi_comment_directive_store::schema_store().await;
 
     let source_schema = tombi_schema_store::SourceSchema {
-        root_schema: Some(comment_directive_document_schema(schema_store, schema_uri).await),
+        root_schema: Some(Arc::new(
+            comment_directive_document_schema(schema_store, schema_uri).await,
+        )),
         sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
     };
 
     let schema_context = tombi_schema_store::SchemaContext {
         toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
-        root_schema: source_schema.root_schema.as_ref(),
+        root_schema: source_schema.root_schema.as_deref(),
         sub_schema_uri_map: None,
+        schema_visits: Default::default(),
         store: schema_store,
         strict: None,
     };
@@ -483,7 +488,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
         ..
     } in comment_directives
     {
-        let (root, errors) = tombi_parser::parse(content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        let (root, errors) = tombi_parser::parse(content)
             .into_root_and_errors();
         // Check if there are any parsing errors
         if !errors.is_empty() {

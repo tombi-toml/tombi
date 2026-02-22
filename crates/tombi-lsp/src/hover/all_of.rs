@@ -39,22 +39,28 @@ where
             .as_ref()
             .and_then(|default| DisplayValue::try_from(default).ok());
 
-        for referable_schema in all_of_schema.schemas.write().await.iter_mut() {
-            let Ok(Some(current_schema)) = referable_schema
-                .resolve(
-                    Cow::Borrowed(schema_uri),
-                    Cow::Borrowed(definitions),
-                    schema_context.store,
-                )
-                .await
-            else {
-                continue;
-            };
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            &all_of_schema.schemas,
+            Cow::Borrowed(schema_uri),
+            Cow::Borrowed(definitions),
+            schema_context.store,
+            &schema_context.schema_visits,
+            accessors,
+        )
+        .await
+        else {
+            return None;
+        };
 
-            if let Some(values) = current_schema
+        for resolved_schema in &resolved_schemas {
+            if let Some(values) = resolved_schema
                 .value_schema
                 .as_ref()
-                .get_enum(schema_uri, definitions, schema_context)
+                .get_enum(
+                    &resolved_schema.schema_uri,
+                    &resolved_schema.definitions,
+                    schema_context,
+                )
                 .await
             {
                 enum_values.extend(values);
@@ -65,7 +71,7 @@ where
                     position,
                     keys,
                     accessors,
-                    Some(&current_schema),
+                    Some(resolved_schema),
                     schema_context,
                 )
                 .await
@@ -183,33 +189,44 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 .as_ref()
                 .and_then(|default| DisplayValue::try_from(default).ok());
 
-            for referable_schema in self.schemas.write().await.iter_mut() {
-                let Ok(Some(CurrentSchema {
-                    value_schema,
-                    schema_uri,
-                    definitions,
-                    ..
-                })) = referable_schema
-                    .resolve(
-                        current_schema.schema_uri.clone(),
-                        current_schema.definitions.clone(),
-                        schema_context.store,
-                    )
-                    .await
-                else {
-                    continue;
-                };
-                if value_schema.title().is_some() || value_schema.description().is_some() {
+            let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                &self.schemas,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+                &schema_context.schema_visits,
+                accessors,
+            )
+            .await
+            else {
+                return None;
+            };
+
+            for resolved_schema in &resolved_schemas {
+                if resolved_schema.value_schema.title().is_some()
+                    || resolved_schema.value_schema.description().is_some()
+                {
                     title_description_set.insert((
-                        value_schema.title().map(ToString::to_string),
-                        value_schema.description().map(ToString::to_string),
+                        resolved_schema
+                            .value_schema
+                            .title()
+                            .map(ToString::to_string),
+                        resolved_schema
+                            .value_schema
+                            .description()
+                            .map(ToString::to_string),
                     ));
                 }
-                value_type_set.insert(value_schema.value_type().await);
+                value_type_set.insert(resolved_schema.value_schema.value_type().await);
 
-                if let Some(values) = value_schema
+                if let Some(values) = resolved_schema
+                    .value_schema
                     .as_ref()
-                    .get_enum(&schema_uri, &definitions, schema_context)
+                    .get_enum(
+                        &resolved_schema.schema_uri,
+                        &resolved_schema.definitions,
+                        schema_context,
+                    )
                     .await
                 {
                     enum_values.extend(values);

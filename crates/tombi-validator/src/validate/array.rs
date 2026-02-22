@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tombi_comment_directive::value::ArrayCommonLintRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, DocumentSchema, ValueSchema};
+use tombi_schema_store::{CurrentSchema, ValueSchema};
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
@@ -25,22 +25,18 @@ impl Validate for tombi_document_tree::Array {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
-            if let Some(Ok(DocumentSchema {
-                value_schema: Some(value_schema),
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
+                && let Some(value_schema) = &document_schema.value_schema
             {
                 return self
                     .validate(
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: Cow::Borrowed(&value_schema),
-                            schema_uri: Cow::Borrowed(&schema_uri),
-                            definitions: Cow::Borrowed(&definitions),
+                            value_schema: value_schema.clone(),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
                         }),
                         schema_context,
                     )
@@ -153,15 +149,14 @@ async fn validate_array(
     let mut total_diagnostics = vec![];
 
     if let Some(items) = &array_schema.items {
-        let mut referable_schema = items.write().await;
-        if let Ok(Some(current_schema)) = referable_schema
-            .resolve(
-                current_schema.schema_uri.clone(),
-                current_schema.definitions.clone(),
-                schema_context.store,
-            )
-            .await
-            .inspect_err(|err| log::warn!("{err}"))
+        if let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+            items,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        .inspect_err(|err| log::warn!("{err}"))
         {
             for (index, value) in array_value.values().iter().enumerate() {
                 let new_accessors = accessors

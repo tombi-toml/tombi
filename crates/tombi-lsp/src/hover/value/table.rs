@@ -4,8 +4,7 @@ use itertools::Itertools;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, Accessors, CurrentSchema, DocumentSchema, PropertySchema, SchemaAccessor,
-    TableSchema, ValueSchema, ValueType,
+    Accessor, Accessors, CurrentSchema, SchemaAccessor, TableSchema, ValueSchema, ValueType,
 };
 
 use crate::{
@@ -45,20 +44,19 @@ impl GetHoverContent for tombi_document_tree::Table {
                 return Some(hover_content);
             }
 
-            if let Some(Ok(DocumentSchema {
-                value_schema,
-                schema_uri,
-                definitions,
-                ..
-            })) = schema_context
+            if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
             {
-                let current_schema = value_schema.map(|value_schema| CurrentSchema {
-                    value_schema: Cow::Owned(value_schema),
-                    schema_uri: Cow::Owned(schema_uri),
-                    definitions: Cow::Owned(definitions),
-                });
+                let current_schema =
+                    document_schema
+                        .value_schema
+                        .as_ref()
+                        .map(|value_schema| CurrentSchema {
+                            value_schema: value_schema.clone(),
+                            schema_uri: Cow::Borrowed(&document_schema.schema_uri),
+                            definitions: Cow::Borrowed(&document_schema.definitions),
+                        });
 
                 return self
                     .get_hover_content(
@@ -89,23 +87,21 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     None => None,
                                 };
 
-                                if let Some(PropertySchema {
-                                    property_schema, ..
-                                }) = table_schema
+                                if table_schema
                                     .properties
-                                    .write()
+                                    .read()
                                     .await
-                                    .get_mut(&SchemaAccessor::from(&accessor))
+                                    .contains_key(&SchemaAccessor::from(&accessor))
                                 {
-                                    log::trace!("property_schema = {:?}", property_schema);
                                     let required = table_schema
                                         .required
                                         .as_ref()
                                         .map(|r| r.contains(&key.value))
                                         .unwrap_or(false);
 
-                                    if let Ok(Some(current_schema)) = property_schema
-                                        .resolve(
+                                    if let Ok(Some(current_schema)) = table_schema
+                                        .resolve_property_schema(
+                                            &SchemaAccessor::from(&accessor),
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,
@@ -200,17 +196,19 @@ impl GetHoverContent for tombi_document_tree::Table {
                                     return hover_content;
                                 }
                                 if let Some(pattern_properties) = &table_schema.pattern_properties {
-                                    for (
-                                        property_key,
-                                        PropertySchema {
-                                            property_schema, ..
-                                        },
-                                    ) in pattern_properties.write().await.iter_mut()
-                                    {
-                                        if let Ok(pattern) = tombi_regex::Regex::new(property_key) {
+                                    let pattern_keys = pattern_properties
+                                        .read()
+                                        .await
+                                        .keys()
+                                        .cloned()
+                                        .collect_vec();
+                                    for property_key in pattern_keys {
+                                        if let Ok(pattern) = tombi_regex::Regex::new(&property_key)
+                                        {
                                             if pattern.is_match(&key.value) {
-                                                if let Ok(Some(current_schema)) = property_schema
-                                                    .resolve(
+                                                if let Ok(Some(current_schema)) = table_schema
+                                                    .resolve_pattern_property_schema(
+                                                        &property_key,
                                                         current_schema.schema_uri.clone(),
                                                         current_schema.definitions.clone(),
                                                         schema_context.store,
@@ -321,10 +319,9 @@ impl GetHoverContent for tombi_document_tree::Table {
                                 if let Some((_, referable_additional_property_schema)) =
                                     &table_schema.additional_property_schema
                                 {
-                                    let mut referable_schema =
-                                        referable_additional_property_schema.write().await;
-                                    if let Ok(Some(current_schema)) = referable_schema
-                                        .resolve(
+                                    if let Ok(Some(current_schema)) =
+                                        tombi_schema_store::resolve_schema_item(
+                                            referable_additional_property_schema,
                                             current_schema.schema_uri.clone(),
                                             current_schema.definitions.clone(),
                                             schema_context.store,

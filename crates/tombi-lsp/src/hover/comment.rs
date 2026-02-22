@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
@@ -109,7 +111,7 @@ async fn get_comment_directive_toml_content_hover_content(
 ) -> Option<HoverContent> {
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     // Parse the directive content as TOML
-    let (directive_ast, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
+    let (directive_ast, _) = tombi_parser::parse(&content).into_root_and_errors();
 
     // Get hover information from the directive AST
     if let Some((keys, range)) =
@@ -127,14 +129,17 @@ async fn get_comment_directive_toml_content_hover_content(
 
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let source_schema = tombi_schema_store::SourceSchema {
-            root_schema: Some(comment_directive_document_schema(schema_store, schema_uri).await),
+            root_schema: Some(Arc::new(
+                comment_directive_document_schema(schema_store, schema_uri).await,
+            )),
             sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
         };
 
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version,
-            root_schema: source_schema.root_schema.as_ref(),
+            root_schema: source_schema.root_schema.as_deref(),
             sub_schema_uri_map: None,
+            schema_visits: Default::default(),
             store: schema_store,
             strict: None,
         };

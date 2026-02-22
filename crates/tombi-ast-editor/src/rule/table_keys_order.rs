@@ -9,7 +9,7 @@ use tombi_comment_directive::value::{
 };
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, PropertySchema, SchemaContext,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaContext,
     TableKeysOrderGroup, TableSchema, ValueSchema, XTombiTableKeysOrder,
 };
 use tombi_syntax::SyntaxElement;
@@ -120,30 +120,33 @@ where
                     keys_order,
                     ..
                 }) => {
-                    for schema in schemas.write().await.iter_mut() {
-                        if let Ok(Some(current_schema)) = schema
-                            .resolve(
-                                Cow::Borrowed(schema_uri),
-                                Cow::Borrowed(definitions),
-                                schema_context.store,
-                            )
-                            .await
-                            .inspect_err(|err| log::warn!("{err}"))
-                            && value
-                                .validate(accessors, Some(&current_schema), schema_context)
+                    if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+                        schemas,
+                        Cow::Borrowed(schema_uri),
+                        Cow::Borrowed(definitions),
+                        schema_context.store,
+                        &schema_context.schema_visits,
+                        accessors,
+                    )
+                    .await
+                    {
+                        for current_schema in &resolved_schemas {
+                            if value
+                                .validate(accessors, Some(current_schema), schema_context)
                                 .await
                                 .is_ok()
-                        {
-                            return get_sorted_accessors(
-                                value,
-                                accessors,
-                                targets.clone(),
-                                Some(&current_schema),
-                                schema_context,
-                                order.or(*keys_order),
-                                table_order_overrides,
-                            )
-                            .await;
+                            {
+                                return get_sorted_accessors(
+                                    value,
+                                    accessors,
+                                    targets.clone(),
+                                    Some(current_schema),
+                                    schema_context,
+                                    order.or(*keys_order),
+                                    table_order_overrides,
+                                )
+                                .await;
+                            }
                         }
                     }
                     return None;
@@ -205,17 +208,15 @@ where
                         && let (Some(current_schema), Some(table_schema)) =
                             (current_schema, table_schema)
                     {
-                        if let Some(PropertySchema {
-                            property_schema, ..
-                        }) = table_schema.properties.write().await.get_mut(&accessor)
-                            && let Ok(Some(current_schema)) = property_schema
-                                .resolve(
-                                    current_schema.schema_uri.clone(),
-                                    current_schema.definitions.clone(),
-                                    schema_context.store,
-                                )
-                                .await
-                                .inspect_err(|err| log::warn!("{err}"))
+                        if let Ok(Some(current_schema)) = table_schema
+                            .resolve_property_schema(
+                                &tombi_schema_store::SchemaAccessor::from(&accessor),
+                                current_schema.schema_uri.clone(),
+                                current_schema.definitions.clone(),
+                                schema_context.store,
+                            )
+                            .await
+                            .inspect_err(|err| log::warn!("{err}"))
                         {
                             results.extend(
                                 get_sorted_accessors(
@@ -237,10 +238,9 @@ where
                         }
                         if let Some((_, referable_schema)) =
                             &table_schema.additional_property_schema
-                            && let Ok(Some(current_schema)) = referable_schema
-                                .write()
-                                .await
-                                .resolve(
+                            && let Ok(Some(current_schema)) =
+                                tombi_schema_store::resolve_schema_item(
+                                    referable_schema,
                                     current_schema.schema_uri.clone(),
                                     current_schema.definitions.clone(),
                                     schema_context.store,
@@ -296,16 +296,14 @@ where
                 if let Some(current_schema) = current_schema
                     && let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref()
                     && let Some(referable_schema) = &array_schema.items
-                    && let Ok(Some(current_schema)) = referable_schema
-                        .write()
-                        .await
-                        .resolve(
-                            current_schema.schema_uri.clone(),
-                            current_schema.definitions.clone(),
-                            schema_context.store,
-                        )
-                        .await
-                        .inspect_err(|err| log::warn!("{err}"))
+                    && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+                        referable_schema,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
                 {
                     for (index, (value, (_, targets))) in
                         array.iter().zip(sort_targets_map).enumerate()
@@ -383,8 +381,14 @@ async fn extract_pattern_properties<T>(
     let Some(pattern_properties) = &table_schema.pattern_properties else {
         return sorted_targets;
     };
-    for (pattern_key, ..) in pattern_properties.write().await.iter_mut() {
-        let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
+    let pattern_keys = pattern_properties
+        .read()
+        .await
+        .keys()
+        .cloned()
+        .collect_vec();
+    for pattern_key in pattern_keys {
+        let Ok(pattern) = tombi_regex::Regex::new(&pattern_key) else {
             log::warn!("Invalid regex pattern property: {}", pattern_key);
             continue;
         };

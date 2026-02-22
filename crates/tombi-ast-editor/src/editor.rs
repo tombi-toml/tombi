@@ -43,7 +43,7 @@ impl<'a> Editor<'a> {
                 .value_schema
                 .as_ref()
                 .map(|value_schema| CurrentSchema {
-                    value_schema: Cow::Borrowed(value_schema),
+                    value_schema: value_schema.clone(),
                     schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                     definitions: Cow::Borrowed(&document_schema.definitions),
                 })

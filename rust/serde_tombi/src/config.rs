@@ -19,8 +19,7 @@ pub(crate) fn from_str(
         .config_path(config_path)
         .build();
 
-    let toml_version = TOMBI_CONFIG_TOML_VERSION;
-    let parsed = tombi_parser::parse(toml_text, toml_version);
+    let parsed = tombi_parser::parse(toml_text);
     let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
     // Check if there are any parsing errors
     if !parsed.errors.is_empty() {
@@ -42,8 +41,7 @@ impl PyProjectToml {
             .config_path(config_path)
             .build();
 
-        let toml_version = TOMBI_CONFIG_TOML_VERSION;
-        let parsed = tombi_parser::parse(toml_text, toml_version);
+        let parsed = tombi_parser::parse(toml_text);
         let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
         // Check if there are any parsing errors
         if !parsed.errors.is_empty() {
@@ -137,12 +135,19 @@ pub fn load_with_path_and_level(
                     pyproject_toml_path
                 );
 
-                match try_from_path(&pyproject_toml_path)? {
-                    Some(config) => {
+                match try_from_path(&pyproject_toml_path) {
+                    Ok(Some(config)) => {
                         return Ok((config, Some(pyproject_toml_path), ConfigLevel::Project));
                     }
-                    None => {
+                    Ok(None) => {
                         log::debug!("No [tool.tombi] found in {:?}", &pyproject_toml_path);
+                    }
+                    Err(error) => {
+                        log::debug!(
+                            "Failed to parse pyproject.toml file for config at {:?}: {}",
+                            &pyproject_toml_path,
+                            error
+                        );
                     }
                 };
             }

@@ -25,7 +25,34 @@ fn main() -> Result<(), anyhow::Error> {
 }
 
 fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Error> {
-    let p = tombi_parser::parse(source, toml_version);
+    // Run full linter in a dedicated thread so block_on does not deadlock with async runtime.
+    let source_owned = source.to_string();
+    let lint_result = std::thread::spawn(move || {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let schema_store = tombi_schema_store::SchemaStore::new();
+        let lint_options = tombi_config::LintOptions::default();
+        let linter = tombi_linter::Linter::new(
+            toml_version,
+            &lint_options,
+            None,
+            &schema_store,
+        );
+        rt.block_on(linter.lint(&source_owned))
+    })
+    .join()
+    .map_err(|_| anyhow::anyhow!("linter thread panicked"))?;
+
+    if let Err(diagnostics) = lint_result {
+        let errors: Vec<_> = diagnostics.iter().filter(|d| d.is_error()).collect();
+        if !errors.is_empty() {
+            for d in &errors {
+                eprintln!("{}", d.message());
+            }
+            return Err(anyhow::anyhow!(INVALID_MESSAGE));
+        }
+    }
+
+    let p = tombi_parser::parse(source);
 
     if !p.errors.is_empty() {
         for error in p.errors {
@@ -59,8 +86,7 @@ macro_rules! test_decode {
         fn $name:ident($source:expr, $toml_version:expr) -> Ok($expected:expr)
     } => {
         #[test]
-        fn $name() -> Result<(), Box<dyn std::error::Error>>
-        {
+        fn $name() -> Result<(), Box<dyn std::error::Error>> {
             let source = textwrap::dedent($source);
             let value = crate::decode(source.trim(), $toml_version)?;
             pretty_assertions::assert_eq!(
