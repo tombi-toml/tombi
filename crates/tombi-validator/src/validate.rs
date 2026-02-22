@@ -208,7 +208,7 @@ fn handle_unused_noqa(
     } in comment_directive
     {
         let Ok(root) =
-            tombi_parser::parse(content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION).try_into_root()
+            tombi_parser::parse(content).try_into_root()
         else {
             continue;
         };

@@ -3042,6 +3042,7 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
+ "tombi-validator",
  "typed-builder",
 ]
 
@@ -3568,7 +3569,6 @@ dependencies = [
  "tombi-regex",
  "tombi-schema-store",
  "tombi-syntax",
- "tombi-toml-version",
  "tombi-validator",
  "tombi-version-sort",
  "tombi-x-keyword",
@@ -3814,7 +3814,6 @@ dependencies = [
  "tokio",
  "tombi-ast",
  "tombi-ast-editor",
- "tombi-comment-directive",
  "tombi-config",
  "tombi-diagnostic",
  "tombi-parser",
@@ -3995,7 +3994,6 @@ dependencies = [
  "textwrap",
  "thiserror 2.0.12",
  "tombi-ast",
- "tombi-config",
  "tombi-diagnostic",
  "tombi-lexer",
  "tombi-rg-tree",
@@ -4195,9 +4193,13 @@ dependencies = [
  "serde",
  "serde_json",
  "textwrap",
+ "tokio",
  "tombi-ast",
+ "tombi-config",
  "tombi-document-tree",
+ "tombi-linter",
  "tombi-parser",
+ "tombi-schema-store",
  "tombi-toml-version",
 ]
 

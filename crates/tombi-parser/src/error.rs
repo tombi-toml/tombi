@@ -68,12 +68,6 @@ pub enum ErrorKind {
 
     #[error("forbidden last period in keys")]
     ForbiddenKeysLastPeriod,
-
-    #[error("inline table must be single line in TOML v1.0.0 or earlier")]
-    InlineTableMustSingleLine,
-
-    #[error("trailing comma in inline table not allowed in TOML v1.0.0 or earlier")]
-    ForbiddenInlineTableLastComma,
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
@@ -116,8 +110,6 @@ impl Error {
             ErrorKind::ExpectedBraceEnd => "expected-brace-end",
             ErrorKind::ExpectedLineBreak => "expected-line-break",
             ErrorKind::ForbiddenKeysLastPeriod => "forbidden-keys-last-period",
-            ErrorKind::InlineTableMustSingleLine => "inline-table-must-single-line",
-            ErrorKind::ForbiddenInlineTableLastComma => "forbidden-inline-table-last-comma",
         }
     }
 

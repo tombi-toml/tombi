@@ -139,7 +139,7 @@ impl Backend {
             .await;
 
         let source_schema = if let Some(parsed) =
-            tombi_parser::parse_document_header_comments(text).cast::<tombi_ast::Root>()
+            tombi_parser::parse(text).cast::<tombi_ast::Root>()
         {
             let root = parsed.tree();
             if let Some(TombiDocumentDirectiveContent {

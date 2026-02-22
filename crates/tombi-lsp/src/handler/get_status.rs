@@ -35,16 +35,13 @@ pub async fn handle_get_status(
                 .await;
 
             // Get schema information
-            let schema = if let Some(parsed) =
-                tombi_parser::parse_document_header_comments(document_source.text())
-                    .cast::<tombi_ast::Root>()
-            {
-                let root = parsed.tree();
+            let schema = {
+                let root = document_source.ast();
 
                 // Get schema URI from resolve_source_schema_from_ast
                 // (internally checks comment directive first, then falls back to other methods)
                 let schema_uri = match schema_store
-                    .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
+                    .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
                     .await
                 {
                     Ok(Some(source_schema)) => source_schema
@@ -97,8 +94,6 @@ pub async fn handle_get_status(
                 } else {
                     None
                 }
-            } else {
-                None
             };
 
             (toml_version, source, schema)

@@ -120,7 +120,7 @@ macro_rules! test_deserialize {
             tombi_test_lib::init_log();
 
             let source = textwrap::dedent($source);
-            let p = tombi_parser::parse(&source.trim(), $toml_version);
+            let p = tombi_parser::parse(&source.trim());
             pretty_assertions::assert_eq!(p.errors, Vec::<tombi_parser::Error>::new());
             let root = tombi_ast::Root::cast(p.into_syntax_node()).unwrap();
             let (document_tree, errors) = root.into_document_tree_and_errors($toml_version).into();
@@ -144,7 +144,7 @@ macro_rules! test_deserialize {
             use tombi_document_tree::IntoDocumentTreeAndErrors;
 
             let source = textwrap::dedent($source);
-            let p = tombi_parser::parse(&source.trim(), $toml_version);
+            let p = tombi_parser::parse(&source.trim());
             let expected_errors = $errors
                 .into_iter()
                 .map(|(m, r)| (m.to_string(), tombi_text::Range::from(r)))
