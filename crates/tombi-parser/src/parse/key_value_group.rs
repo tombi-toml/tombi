@@ -1,7 +1,10 @@
 use tombi_syntax::SyntaxKind::*;
 
 use crate::{
-    parse::Parse, parser::Parser, support::peek_leading_comments, token_set::TS_KEY_FIRST,
+    parse::{Parse, is_group_separator},
+    parser::Parser,
+    support::peek_leading_comments,
+    token_set::TS_KEY_FIRST,
 };
 
 impl Parse for tombi_ast::KeyValueGroup {
@@ -9,7 +12,9 @@ impl Parse for tombi_ast::KeyValueGroup {
         let m = p.start();
 
         loop {
-            while p.eat(LINE_BREAK) {}
+            if is_group_separator(p) {
+                break;
+            }
 
             tombi_ast::KeyValue::parse(p);
 

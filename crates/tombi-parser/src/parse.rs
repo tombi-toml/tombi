@@ -17,10 +17,14 @@ pub(crate) trait Parse {
     fn parse(p: &mut Parser<'_>);
 }
 
-pub fn invalid_line(p: &mut Parser<'_>, kind: crate::ErrorKind) {
+fn invalid_line(p: &mut Parser<'_>, kind: crate::ErrorKind) {
     p.error(crate::Error::new(kind, p.current_range()));
     p.bump_any();
     while !p.at_ts(TS_LINE_END) {
         p.bump_any();
     }
+}
+
+fn is_group_separator(p: &mut Parser<'_>) -> bool {
+    p.at_ts(TS_LINE_END) && p.nth_at_ts(1, TS_LINE_END)
 }
