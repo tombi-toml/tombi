@@ -60,11 +60,18 @@ fn dangling_comments(p: &mut crate::parser::Parser<'_>) {
 
 pub fn peek_leading_comments(p: &mut crate::parser::Parser<'_>) -> usize {
     let mut n = 0;
-    while p.nth_at_ts(n, TS_LEADING_COMMENTS_KINDS) {
-        n += 1;
+    loop {
+        if p.nth_at(n, LINE_BREAK) {
+            n += 1;
+        } else if p.nth_at(n, COMMENT)
+            && p.nth_at(n + 1, LINE_BREAK)
+            && !p.nth_at(n + 2, LINE_BREAK)
+        {
+            n += 2;
+        } else {
+            return n;
+        }
     }
-
-    n
 }
 
 #[inline]

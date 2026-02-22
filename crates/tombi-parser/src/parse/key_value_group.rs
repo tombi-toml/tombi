@@ -1,10 +1,7 @@
 use tombi_syntax::SyntaxKind::*;
 
 use crate::{
-    parse::Parse,
-    parser::Parser,
-    support::peek_leading_comments,
-    token_set::{TS_KEY_FIRST, TS_NEXT_SECTION},
+    parse::Parse, parser::Parser, support::peek_leading_comments, token_set::TS_KEY_FIRST,
 };
 
 impl Parse for tombi_ast::KeyValueGroup {
@@ -14,16 +11,17 @@ impl Parse for tombi_ast::KeyValueGroup {
         tombi_ast::KeyValue::parse(p);
 
         loop {
-            if !p.eat(LINE_BREAK) {
+            if !p.at(LINE_BREAK) {
                 break;
             }
+
             let n = peek_leading_comments(p);
-            if p.nth_at_ts(n, TS_NEXT_SECTION) {
-                break;
-            }
             if !p.nth_at_ts(n, TS_KEY_FIRST) {
                 break;
             }
+
+            while p.eat(LINE_BREAK) {}
+
             tombi_ast::KeyValue::parse(p);
         }
 
