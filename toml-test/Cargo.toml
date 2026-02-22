@@ -19,7 +19,6 @@ serde_json.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 tombi-ast.workspace = true
 tombi-config.workspace = true
-tombi-diagnostic.workspace = true
 tombi-document-tree.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true
