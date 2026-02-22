@@ -52,7 +52,7 @@ fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Erro
         }
     }
 
-    let p = tombi_parser::parse(source, toml_version);
+    let p = tombi_parser::parse(source);
 
     if !p.errors.is_empty() {
         for error in p.errors {

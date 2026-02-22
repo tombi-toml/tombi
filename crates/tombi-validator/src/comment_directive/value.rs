@@ -488,7 +488,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
         ..
     } in comment_directives
     {
-        let (root, errors) = tombi_parser::parse(content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        let (root, errors) = tombi_parser::parse(content)
             .into_root_and_errors();
         // Check if there are any parsing errors
         if !errors.is_empty() {

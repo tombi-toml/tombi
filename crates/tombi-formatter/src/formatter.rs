@@ -3,7 +3,7 @@ pub mod definitions;
 use std::fmt::Write;
 
 use itertools::Either;
-use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
+use tombi_ast::AstNode;
 use tombi_config::{IndentStyle, TomlVersion};
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use unicode_segmentation::UnicodeSegmentation;
@@ -50,22 +50,22 @@ impl<'a> Formatter<'a> {
 
     /// Format a TOML document and return the result as a string
     pub async fn format(mut self, source: &str) -> Result<String, Vec<Diagnostic>> {
-        let (source_schema, tombi_document_comment_directive) = if let Some(parsed) =
-            tombi_parser::parse_document_header_comments(source).cast::<tombi_ast::Root>()
-        {
-            let root = parsed.tree();
-            (
-                self.schema_store
-                    .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
-                    .await
-                    .ok()
-                    .flatten(),
-                tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
-                    .await,
-            )
-        } else {
-            (None, None)
-        };
+        let parsed = tombi_parser::parse(source);
+
+        let (source_schema, tombi_document_comment_directive) =
+            if let Some(root) = tombi_ast::Root::cast(parsed.syntax_node()) {
+                (
+                    self.schema_store
+                        .resolve_source_schema_from_ast(&root, self.source_uri_or_path)
+                        .await
+                        .ok()
+                        .flatten(),
+                    tombi_validator::comment_directive::get_tombi_document_comment_directive(&root)
+                        .await,
+                )
+            } else {
+                (None, None)
+            };
 
         if let Some(tombi_document_comment_directive) = &tombi_document_comment_directive
             && let Some(format) = &tombi_document_comment_directive.format
@@ -102,7 +102,6 @@ impl<'a> Formatter<'a> {
                     .unwrap_or(self.toml_version)
             });
 
-        let parsed = tombi_parser::parse(source, self.toml_version);
         self.line_ending = match self.definitions.line_ending {
             tombi_config::LineEnding::Auto => parsed.line_ending.into(),
             tombi_config::LineEnding::Lf => "\n",
@@ -195,9 +194,7 @@ impl<'a> Formatter<'a> {
         &mut self,
         content: &str,
     ) -> Result<String, std::fmt::Error> {
-        let Ok(root) =
-            tombi_parser::parse(content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION).try_into_root()
-        else {
+        let Ok(root) = tombi_parser::parse(content).try_into_root() else {
             return Ok(content.trim().to_string());
         };
         self.single_line_mode = true;

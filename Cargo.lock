@@ -3042,6 +3042,7 @@ dependencies = [
  "tombi-test-lib",
  "tombi-toml-text",
  "tombi-toml-version",
+ "tombi-validator",
  "typed-builder",
 ]
 
@@ -3995,7 +3996,6 @@ dependencies = [
  "textwrap",
  "thiserror 2.0.12",
  "tombi-ast",
- "tombi-config",
  "tombi-diagnostic",
  "tombi-lexer",
  "tombi-rg-tree",

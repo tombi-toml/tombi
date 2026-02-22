@@ -72,51 +72,6 @@ pub fn lex(source: &str) -> Lexed {
     lexed
 }
 
-pub fn lex_document_header_comments(source: &str) -> Lexed {
-    let mut lexed = Lexed::default();
-    let mut was_joint = false;
-    let mut last_offset = tombi_text::Offset::default();
-    let mut last_position = tombi_text::Position::default();
-    let mut cursor = Cursor::new(source);
-
-    for result in tokenize(&mut cursor) {
-        match result {
-            Ok(token) => match token.kind() {
-                SyntaxKind::COMMENT => {
-                    if was_joint {
-                        lexed.set_joint();
-                    }
-                    was_joint = true;
-                    let (last_span, last_range) = lexed.push_result_token(Ok(token));
-                    last_offset = last_span.end;
-                    last_position = last_range.end;
-                }
-                SyntaxKind::LINE_BREAK | SyntaxKind::WHITESPACE => {
-                    let (last_span, last_range) = lexed.push_result_token(Ok(token));
-                    last_offset = last_span.end;
-                    last_position = last_range.end;
-                }
-                _ => break,
-            },
-            Err(_) => break,
-        }
-    }
-
-    lexed.line_ending = cursor.line_ending;
-    lexed.tokens.push(crate::Token::new(
-        SyntaxKind::EOF,
-        (
-            tombi_text::Span::new(last_offset, tombi_text::Offset::new(source.len() as u32)),
-            tombi_text::Range::new(
-                last_position,
-                last_position + tombi_text::RelativePosition::of(&source[last_offset.into()..]),
-            ),
-        ),
-    ));
-
-    lexed
-}
-
 pub fn tokenize(cursor: &mut Cursor) -> impl Iterator<Item = Result<Token, crate::Error>> {
     std::iter::from_fn(move || match cursor.advance_token() {
         Ok(token) => match token.kind() {

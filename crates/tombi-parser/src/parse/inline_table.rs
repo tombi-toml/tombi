@@ -58,8 +58,6 @@ impl Parse for tombi_ast::InlineTable {
 
 #[cfg(test)]
 mod test {
-    use tombi_config::TomlVersion;
-
     use crate::test_parser;
 
     test_parser! {
@@ -80,8 +78,7 @@ mod test {
     test_parser! {
         #[test]
         fn inline_table_multi_keys_with_trailing_comma_v1_1_0(
-            "key = { key = 1, key = 2, }",
-            TomlVersion::V1_1_0
+            "key = { key = 1, key = 2, }"
         ) -> Ok(_)
     }
 
@@ -97,8 +94,7 @@ mod test {
               3,
               4,
        	    ]}
-            "#,
-            TomlVersion::V1_0_0
+            "#
         ) -> Ok(_)
     }
 
@@ -109,8 +105,7 @@ mod test {
                 key1 = 1,
                 key2 = 2,
             }
-            "#,
-            TomlVersion::V1_1_0
+            "#
         ) -> Ok(_)
     }
 
@@ -121,8 +116,7 @@ mod test {
                 key1 = 1, # trailing comment
                 key2 = 2,
             } # trailing comment
-            "#,
-            TomlVersion::V1_1_0
+            "#
         ) -> Ok(_)
     }
 }

@@ -39,7 +39,7 @@ impl DocumentSource {
     ) -> Self {
         let text = text.into();
 
-        let (ast, errors) = tombi_parser::parse(&text, toml_version).into_root_and_errors();
+        let (ast, errors) = tombi_parser::parse(&text).into_root_and_errors();
 
         // Convert parser errors to diagnostics
         let mut ast_errors = Vec::with_capacity(errors.len());
@@ -83,7 +83,7 @@ impl DocumentSource {
         self.line_index = LineIndex::new(text_ref, self.line_index.encoding_kind);
 
         // Re-parse the text and collect errors
-        let (ast, errors) = tombi_parser::parse(&self.text, toml_version).into_root_and_errors();
+        let (ast, errors) = tombi_parser::parse(&self.text).into_root_and_errors();
         self.ast = ast;
 
         // Convert parser errors to diagnostics

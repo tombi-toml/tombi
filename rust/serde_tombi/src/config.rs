@@ -19,8 +19,7 @@ pub(crate) fn from_str(
         .config_path(config_path)
         .build();
 
-    let toml_version = TOMBI_CONFIG_TOML_VERSION;
-    let parsed = tombi_parser::parse(toml_text, toml_version);
+    let parsed = tombi_parser::parse(toml_text);
     let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
     // Check if there are any parsing errors
     if !parsed.errors.is_empty() {
@@ -42,8 +41,7 @@ impl PyProjectToml {
             .config_path(config_path)
             .build();
 
-        let toml_version = TOMBI_CONFIG_TOML_VERSION;
-        let parsed = tombi_parser::parse(toml_text, toml_version);
+        let parsed = tombi_parser::parse(toml_text);
         let root = tombi_ast::Root::cast(parsed.syntax_node()).expect("AST Root must be present");
         // Check if there are any parsing errors
         if !parsed.errors.is_empty() {

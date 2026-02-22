@@ -111,7 +111,7 @@ async fn get_comment_directive_toml_content_hover_content(
 ) -> Option<HoverContent> {
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     // Parse the directive content as TOML
-    let (directive_ast, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
+    let (directive_ast, _) = tombi_parser::parse(&content).into_root_and_errors();
 
     // Get hover information from the directive AST
     if let Some((keys, range)) =
