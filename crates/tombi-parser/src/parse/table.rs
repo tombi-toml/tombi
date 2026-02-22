@@ -137,7 +137,49 @@ mod test {
             submodule = "extensions/0x96f"
             version = "1.3.5"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "0x96f"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "submodule"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"extensions/0x96f\""
+                            }
+                        },
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "version"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"1.3.5\""
+                            }
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -147,7 +189,35 @@ mod test {
             [0o755]
             value = "octal key"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "0o755"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "value"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"octal key\""
+                            }
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -157,7 +227,35 @@ mod test {
             [0b1010]
             value = "binary key"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "0b1010"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "value"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"binary key\""
+                            }
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -187,7 +285,23 @@ mod test {
             [header]
             # dangling comment
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -198,7 +312,24 @@ mod test {
 
             # dangling comment
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -209,7 +340,25 @@ mod test {
             # dangling comment group 1
             # dangling comment group 1
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 1"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -227,7 +376,40 @@ mod test {
             # dangling comment group 3
             # dangling comment group 3
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 1"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 2",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 2"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 3",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 3"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -255,6 +437,136 @@ mod test {
             # dangling comment group 3
             # dangling comment group 3
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                TABLE: {
+                    BRACKET_START: "[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    BRACKET_END: "]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key1"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value1\""
+                            }
+                        },
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key2"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value2\""
+                            }
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 1"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 2",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 2"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key3"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value3\""
+                            }
+                        },
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key4"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value4\""
+                            }
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            COMMENT: "# leading comment 1",
+                            LINE_BREAK: "\n",
+                            COMMENT: "# leading comment 1",
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key5"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value5\""
+                            }
+                        },
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            COMMENT: "# leading comment 2",
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key6"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value6\""
+                            }
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 3",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 3"
+                    }
+                }
+            }
+        )
     }
 }

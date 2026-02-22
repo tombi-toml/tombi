@@ -61,17 +61,97 @@ mod test {
 
     test_parser! {
         #[test]
-        fn empty_array("key = []") -> Ok(_)
+        fn empty_array("key = []") -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        ARRAY: {
+                            BRACKET_START: "[",
+                            BRACKET_END: "]"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
         #[test]
-        fn number_array("key = [1, 2]") -> Ok(_)
+        fn number_array("key = [1, 2]") -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        ARRAY: {
+                            BRACKET_START: "[",
+                            INTEGER_DEC: {
+                                INTEGER_DEC: "1"
+                            },
+                            COMMA: {
+                                COMMA: ","
+                            },
+                            WHITESPACE: " ",
+                            INTEGER_DEC: {
+                                INTEGER_DEC: "2"
+                            },
+                            BRACKET_END: "]"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
         #[test]
-        fn number_array_with_trailing_comma("key = [1, 2,]") -> Ok(_)
+        fn number_array_with_trailing_comma("key = [1, 2,]") -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        ARRAY: {
+                            BRACKET_START: "[",
+                            INTEGER_DEC: {
+                                INTEGER_DEC: "1"
+                            },
+                            COMMA: {
+                                COMMA: ","
+                            },
+                            WHITESPACE: " ",
+                            INTEGER_DEC: {
+                                INTEGER_DEC: "2"
+                            },
+                            COMMA: {
+                                COMMA: ","
+                            },
+                            BRACKET_END: "]"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {

@@ -49,29 +49,193 @@ mod test {
 
     test_parser! {
         #[test]
-        fn empty_inline_table("key = {}") -> Ok(_)
+        fn empty_inline_table("key = {}") -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
         #[test]
-        fn inline_table_single_key("key = { key = 1 }") -> Ok(_)
+        fn inline_table_single_key("key = { key = 1 }") -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "1"
+                                    }
+                                }
+                            },
+                            WHITESPACE: " ",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
         #[test]
-        fn inline_table_multi_keys("key = { key = 1, key = 2 }") -> Ok(_)
+        fn inline_table_multi_keys("key = { key = 1, key = 2 }") -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "1"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                WHITESPACE: " ",
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "2"
+                                    }
+                                }
+                            },
+                            WHITESPACE: " ",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
         #[test]
-        fn inline_table_multi_keys_with_trailing_comma_v1_1_0(
+        fn inline_table_multi_keys_with_trailing_comma(
             "key = { key = 1, key = 2, }"
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "1"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                WHITESPACE: " ",
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "2"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            WHITESPACE: " ",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
         #[test]
-        fn inline_table_multi_line_in_multi_line_value_v1_0_0(
+        fn inline_table_multi_line_in_multi_line_value(
             r#"
             a = { a = [
             ]}
@@ -83,7 +247,132 @@ mod test {
               4,
        	    ]}
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "a"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "a"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    ARRAY: {
+                                        BRACKET_START: "[",
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "     ",
+                                        BRACKET_END: "]"
+                                    }
+                                }
+                            },
+                            BRACE_END: "}"
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        WHITESPACE: "     ",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "b"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "a"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    ARRAY: {
+                                        BRACKET_START: "[",
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "       ",
+                                        INTEGER_DEC: {
+                                            INTEGER_DEC: "1"
+                                        },
+                                        COMMA: {
+                                            COMMA: ","
+                                        },
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "       ",
+                                        INTEGER_DEC: {
+                                            INTEGER_DEC: "2"
+                                        },
+                                        COMMA: {
+                                            COMMA: ","
+                                        },
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "\t    ",
+                                        BRACKET_END: "]"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                WHITESPACE: " ",
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "b"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    ARRAY: {
+                                        BRACKET_START: "[",
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "       ",
+                                        INTEGER_DEC: {
+                                            INTEGER_DEC: "3"
+                                        },
+                                        COMMA: {
+                                            COMMA: ","
+                                        },
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "       ",
+                                        INTEGER_DEC: {
+                                            INTEGER_DEC: "4"
+                                        },
+                                        COMMA: {
+                                            COMMA: ","
+                                        },
+                                        LINE_BREAK: "\n",
+                                        WHITESPACE: "\t    ",
+                                        BRACKET_END: "]"
+                                    }
+                                }
+                            },
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -95,7 +384,65 @@ mod test {
                 key2 = 2,
             }
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key1"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "1"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                KEY_VALUE: {
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key2"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "2"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            LINE_BREAK: "\n",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -107,7 +454,71 @@ mod test {
                 key2 = 2,
             } # trailing comment
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            COMMENT: "# trailing comment",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key1"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "1"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ",",
+                                    WHITESPACE: " ",
+                                    COMMENT: "# trailing comment"
+                                },
+                                KEY_VALUE: {
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key2"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    INTEGER_DEC: {
+                                        INTEGER_DEC: "2"
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            LINE_BREAK: "\n",
+                            BRACE_END: "}",
+                            WHITESPACE: " ",
+                            COMMENT: "# trailing comment"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -155,7 +566,33 @@ mod test {
                 # dangling comment
             }
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment"
+                            },
+                            LINE_BREAK: "\n",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -174,7 +611,54 @@ mod test {
                 # dangling comment group 3
             }
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment group 1",
+                                LINE_BREAK: "\n",
+                                WHITESPACE: "    ",
+                                COMMENT: "# dangling comment group 1"
+                            },
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment group 2",
+                                LINE_BREAK: "\n",
+                                WHITESPACE: "    ",
+                                COMMENT: "# dangling comment group 2"
+                            },
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment group 3",
+                                LINE_BREAK: "\n",
+                                WHITESPACE: "    ",
+                                COMMENT: "# dangling comment group 3"
+                            },
+                            LINE_BREAK: "\n",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -203,6 +687,177 @@ mod test {
                 # dangling comment group 3
             }
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key1"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value1\""
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                KEY_VALUE: {
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key2"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value2\""
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment group 1",
+                                LINE_BREAK: "\n",
+                                WHITESPACE: "    ",
+                                COMMENT: "# dangling comment group 1"
+                            },
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment group 2",
+                                LINE_BREAK: "\n",
+                                WHITESPACE: "    ",
+                                COMMENT: "# dangling comment group 2"
+                            },
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key3"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value3\""
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                KEY_VALUE: {
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key4"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value4\""
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    COMMENT: "# leading comment 1",
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    COMMENT: "# leading comment 1",
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key5"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value5\""
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                KEY_VALUE: {
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    COMMENT: "# leading comment 2",
+                                    LINE_BREAK: "\n",
+                                    WHITESPACE: "    ",
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "key6"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value6\""
+                                    }
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
+                            },
+                            LINE_BREAK: "\n",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment group 3",
+                                LINE_BREAK: "\n",
+                                WHITESPACE: "    ",
+                                COMMENT: "# dangling comment group 3"
+                            },
+                            LINE_BREAK: "\n",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 }

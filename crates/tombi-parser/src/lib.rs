@@ -62,6 +62,37 @@ pub fn build_green_tree(
     builder.finish()
 }
 
+pub fn format_tree_as_macro(node: &SyntaxNode, base_indent: usize) -> String {
+    use tombi_rg_tree::NodeOrToken;
+    fn fmt_items(
+        node: &SyntaxNode,
+        indent: usize,
+        out: &mut String,
+    ) {
+        let children: Vec<_> = node.children_with_tokens().collect();
+        for (i, child) in children.iter().enumerate() {
+            let prefix = "    ".repeat(indent);
+            let comma = if i < children.len() - 1 { "," } else { "" };
+            match child {
+                NodeOrToken::Token(t) => {
+                    let kind = format!("{:?}", t.kind());
+                    let value = t.text().to_string();
+                    out.push_str(&format!("{}{}: {:?}{}\n", prefix, kind, value, comma));
+                }
+                NodeOrToken::Node(n) => {
+                    let kind = format!("{:?}", n.kind());
+                    out.push_str(&format!("{}{}: {{\n", prefix, kind));
+                    fmt_items(n, indent + 1, out);
+                    out.push_str(&format!("{}}}{}\n", prefix, comma));
+                }
+            }
+        }
+    }
+    let mut out = String::new();
+    fmt_items(node, base_indent, &mut out);
+    out
+}
+
 #[cfg(test)]
 #[derive(PartialEq, Eq)]
 pub enum SyntaxTreePattern {

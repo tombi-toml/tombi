@@ -118,7 +118,33 @@ mod test {
             [[0x96f]]
             name = "hex-like"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "0x96f"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "name"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"hex-like\""
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -128,7 +154,33 @@ mod test {
             [[0o755]]
             mode = "permissions"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "0o755"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "mode"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"permissions\""
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -138,7 +190,33 @@ mod test {
             [[0b1010]]
             flags = true
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "0b1010"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "flags"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BOOLEAN: {
+                            BOOLEAN: "true"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -148,7 +226,23 @@ mod test {
             [[header]]
             # dangling comment
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -159,7 +253,24 @@ mod test {
 
             # dangling comment
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -170,7 +281,25 @@ mod test {
             # dangling comment group 1
             # dangling comment group 1
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 1"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -188,7 +317,40 @@ mod test {
             # dangling comment group 3
             # dangling comment group 3
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 1"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 2",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 2"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 3",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 3"
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -216,6 +378,130 @@ mod test {
             # dangling comment group 3
             # dangling comment group 3
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                ARRAY_OF_TABLE: {
+                    DOUBLE_BRACKET_START: "[[",
+                    KEYS: {
+                        BARE_KEY: {
+                            BARE_KEY: "header"
+                        }
+                    },
+                    DOUBLE_BRACKET_END: "]]",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key1"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"value1\""
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key2"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"value2\""
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 1"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 2",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 2"
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key3"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"value3\""
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key4"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"value4\""
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        COMMENT: "# leading comment 1",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# leading comment 1",
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key5"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"value5\""
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    KEY_VALUE: {
+                        COMMENT: "# leading comment 2",
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key6"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"value6\""
+                        }
+                    },
+                    LINE_BREAK: "\n",
+                    LINE_BREAK: "\n",
+                    DANGLING_COMMENT_GROUP: {
+                        COMMENT: "# dangling comment group 3",
+                        LINE_BREAK: "\n",
+                        COMMENT: "# dangling comment group 3"
+                    }
+                }
+            }
+        )
     }
 }
