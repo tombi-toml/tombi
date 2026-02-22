@@ -4,10 +4,7 @@ use crate::{
     ErrorKind::*,
     parse::Parse,
     parser::Parser,
-    support::{
-        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
-        trailing_comment,
-    },
+    support::{leading_comments, peek_leading_comments, trailing_comment},
     token_set::TS_INLINE_TABLE_END,
 };
 
@@ -23,30 +20,18 @@ impl Parse for tombi_ast::InlineTable {
 
         trailing_comment(p);
 
-        begin_dangling_comments(p);
-
         loop {
             while p.eat(LINE_BREAK) {}
+
+            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
 
             let n = peek_leading_comments(p);
             if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
                 break;
             }
 
-            tombi_ast::KeyValue::parse(p);
-
-            let n = peek_leading_comments(p);
-            if p.nth_at(n, T![,]) {
-                tombi_ast::Comma::parse(p);
-            } else {
-                if !p.nth_at(n, T!['}']) {
-                    p.error(crate::Error::new(ExpectedComma, p.current_range()));
-                    p.bump_any();
-                }
-            }
+            tombi_ast::KeyValueWithCommaGroup::parse(p);
         }
-
-        end_dangling_comments(p, true);
 
         if !p.eat(T!['}']) {
             p.error(crate::Error::new(ExpectedBraceEnd, p.current_range()));
@@ -86,7 +71,8 @@ mod test {
 
     test_parser! {
         #[test]
-        fn inline_table_multi_line_in_multi_line_value_v1_0_0(r#"
+        fn inline_table_multi_line_in_multi_line_value_v1_0_0(
+            r#"
             a = { a = [
             ]}
             b = { a = [
@@ -102,7 +88,8 @@ mod test {
 
     test_parser! {
         #[test]
-        fn inline_table_multi_line_in_v1_1_0(r#"
+        fn inline_table_multi_line_in_v1_1_0(
+            r#"
             key = {
                 key1 = 1,
                 key2 = 2,
@@ -113,11 +100,83 @@ mod test {
 
     test_parser! {
         #[test]
-        fn inline_table_multi_line_in_v1_1_0_with_trailing_comment(r#"
+        fn inline_table_multi_line_in_v1_1_0_with_trailing_comment(
+            r#"
             key = { # trailing comment
                 key1 = 1, # trailing comment
                 key2 = 2,
             } # trailing comment
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_dangling_comment(
+            r#"
+            key = {
+                # dangling comment
+            }
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_new_line_dangling_comment(
+            r#"
+            key = {
+
+                # dangling comment
+            }
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_dangling_comment_groups(
+            r#"
+            key = {
+                # dangling comment group 1
+                # dangling comment group 1
+
+                # dangling comment group 2
+                # dangling comment group 2
+
+
+                # dangling comment group 3
+                # dangling comment group 3
+            }
+            "#
+        ) -> Ok(_)
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_key_value_with_comma_group_and_dangling_comment_groups(
+            r#"
+            key = {
+                key1 = "value1",
+                key2 = "value2",
+                # dangling comment group 1
+                # dangling comment group 1
+
+                # dangling comment group 2
+                # dangling comment group 2
+
+                key3 = "value3",
+                key4 = "value4",
+
+                # leading comment 1
+                # leading comment 1
+                key5 = "value5",
+                # leading comment 2
+                key6 = "value6",
+
+                # dangling comment group 3
+                # dangling comment group 3
+            }
             "#
         ) -> Ok(_)
     }

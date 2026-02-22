@@ -23,6 +23,7 @@ impl Parse for tombi_ast::Root {
             }
 
             tombi_ast::KeyValueGroup::parse(p);
+
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);
             }

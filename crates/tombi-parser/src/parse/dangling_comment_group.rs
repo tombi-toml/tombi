@@ -1,6 +1,6 @@
 use tombi_syntax::SyntaxKind::*;
 
-use crate::{parse::Parse, parser::Parser};
+use crate::{parse::Parse, parser::Parser, token_set::TS_NEXT_SECTION};
 
 impl Parse for Vec<tombi_ast::DanglingCommentGroup> {
     fn parse(p: &mut Parser<'_>) {
@@ -41,7 +41,17 @@ fn dangling_comment_group_len(p: &Parser<'_>) -> Option<usize> {
             continue;
         }
 
+        if p.nth_at_ts(n, TS_NEXT_SECTION) {
+            return Some(n);
+        }
+
         if p.nth_at(n + 1, LINE_BREAK) || p.nth_at(n + 1, EOF) {
+            return Some(n);
+        }
+
+        // Closing brackets can't have leading comments,
+        // so comments before them are dangling.
+        if p.nth_at(n + 1, BRACE_END) || p.nth_at(n + 1, BRACKET_END) {
             return Some(n);
         }
 

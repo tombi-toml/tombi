@@ -8,13 +8,7 @@ impl Parse for tombi_ast::KeyValueGroup {
     fn parse(p: &mut Parser<'_>) {
         let m = p.start();
 
-        tombi_ast::KeyValue::parse(p);
-
         loop {
-            if !p.at(LINE_BREAK) {
-                break;
-            }
-
             let n = peek_leading_comments(p);
             if !p.nth_at_ts(n, TS_KEY_FIRST) {
                 break;
@@ -23,6 +17,10 @@ impl Parse for tombi_ast::KeyValueGroup {
             while p.eat(LINE_BREAK) {}
 
             tombi_ast::KeyValue::parse(p);
+
+            if !p.at(LINE_BREAK) {
+                break;
+            }
         }
 
         m.complete(p, KEY_VALUE_GROUP);

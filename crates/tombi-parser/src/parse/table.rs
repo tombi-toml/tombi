@@ -30,7 +30,6 @@ impl Parse for tombi_ast::Table {
         if !p.at_ts(TS_LINE_END) {
             invalid_line(p, ExpectedLineBreak);
         }
-        p.eat(LINE_BREAK);
 
         loop {
             while p.eat(LINE_BREAK) {}
@@ -43,6 +42,7 @@ impl Parse for tombi_ast::Table {
             }
 
             tombi_ast::KeyValueGroup::parse(p);
+
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);
             }
