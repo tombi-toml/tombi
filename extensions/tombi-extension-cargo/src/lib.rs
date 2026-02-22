@@ -41,7 +41,7 @@ fn load_cargo_toml(
     let toml_text = std::fs::read_to_string(cargo_toml_path).ok()?;
 
     let root =
-        tombi_ast::Root::cast(tombi_parser::parse(&toml_text, toml_version).into_syntax_node())?;
+        tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
 
     Some((
         root.clone(),

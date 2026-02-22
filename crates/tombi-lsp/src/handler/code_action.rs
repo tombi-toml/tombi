@@ -130,7 +130,7 @@ mod tests {
     async fn test_get_completion_keys_with_context_simple_keyvalue() {
         let src = r#"foo = 1\nbar = 2\n"#;
         let root =
-            tombi_ast::Root::cast(parse(src, TomlVersion::V1_0_0).into_syntax_node()).unwrap();
+            tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
         let pos = Position::new(0, 2); // somewhere in 'foo'
         let toml_version = TomlVersion::V1_0_0;
         let result = get_completion_keys_with_context(&root, pos, toml_version).await;
@@ -145,7 +145,7 @@ mod tests {
     async fn test_get_completion_keys_with_context_table_header() {
         let src = r#"[table]\nfoo = 1\n"#;
         let root =
-            tombi_ast::Root::cast(parse(src, TomlVersion::V1_0_0).into_syntax_node()).unwrap();
+            tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
         let pos = Position::new(0, 2); // somewhere in 'table'
         let toml_version = TomlVersion::V1_0_0;
         let result = get_completion_keys_with_context(&root, pos, toml_version).await;
@@ -160,7 +160,7 @@ mod tests {
     async fn test_get_completion_keys_with_context_empty() {
         let src = r#"# just a comment\n"#;
         let root =
-            tombi_ast::Root::cast(parse(src, TomlVersion::V1_0_0).into_syntax_node()).unwrap();
+            tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
         let pos = Position::new(0, 0);
         let toml_version = TomlVersion::V1_0_0;
         let result = get_completion_keys_with_context(&root, pos, toml_version).await;
@@ -172,7 +172,7 @@ mod tests {
     async fn test_get_completion_keys_with_context_simple_keyvalue_range() {
         let src = "foo = 1\nbar = 2\n";
         let root =
-            tombi_ast::Root::cast(parse(src, TomlVersion::V1_0_0).into_syntax_node()).unwrap();
+            tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
         let pos = Position::new(0, 2); // somewhere in 'foo'
         let toml_version = TomlVersion::V1_0_0;
         let result = get_completion_keys_with_context(&root, pos, toml_version).await;
@@ -191,7 +191,7 @@ mod tests {
     async fn test_get_completion_keys_with_context_table_header_range() {
         let src = "[table]\nfoo = 1\n";
         let root =
-            tombi_ast::Root::cast(parse(src, TomlVersion::V1_0_0).into_syntax_node()).unwrap();
+            tombi_ast::Root::cast(parse(src).into_syntax_node()).unwrap();
         let pos = Position::new(0, 2); // somewhere in 'table'
         let toml_version = TomlVersion::V1_0_0;
         let result = get_completion_keys_with_context(&root, pos, toml_version).await;

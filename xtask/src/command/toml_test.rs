@@ -45,7 +45,7 @@ fn decode_test(
 
     match xshell::cmd!(
         sh,
-        "toml-test test {options...} -color=never -toml={toml_test_version} -decoder {decoder}"
+        "toml-test test {options...} -color=never -timeout=10s -toml={toml_test_version} -decoder {decoder}"
     )
     .ignore_status()
     .output()

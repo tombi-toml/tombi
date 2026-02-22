@@ -17,7 +17,7 @@ where
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
 
     for tombi_ast::TombiValueCommentDirective { content, .. } in comment_directives {
-        let root = tombi_parser::parse(&content, TOMBI_COMMENT_DIRECTIVE_TOML_VERSION)
+        let root = tombi_parser::parse(&content)
             .try_into_root()
             .ok()?;
 

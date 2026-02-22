@@ -10,21 +10,15 @@ pub(crate) struct Parser<'t> {
     source: &'t str,
     input_tokens: &'t [tombi_lexer::Token],
     pos: usize,
-    pub toml_version: tombi_config::TomlVersion,
     pub tokens: Vec<tombi_lexer::Token>,
     pub(crate) events: Vec<crate::Event>,
 }
 
 impl<'t> Parser<'t> {
-    pub(crate) fn new(
-        source: &'t str,
-        toml_version: Option<tombi_config::TomlVersion>,
-        input_tokens: &'t [tombi_lexer::Token],
-    ) -> Self {
+    pub(crate) fn new(source: &'t str, input_tokens: &'t [tombi_lexer::Token]) -> Self {
         Self {
             source,
             input_tokens,
-            toml_version: toml_version.unwrap_or_default(),
             pos: 0, // Start from the beginning to preserve leading trivia
             tokens: Vec::new(),
             events: Vec::new(),

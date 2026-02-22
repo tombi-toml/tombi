@@ -137,7 +137,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     };
 
     let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
-    let (root, _) = tombi_parser::parse(&content, toml_version).into_root_and_errors();
+    let (root, _) = tombi_parser::parse(&content).into_root_and_errors();
 
     let Some((keys, completion_hint)) =
         extract_keys_and_hint(&root, position_in_content, toml_version, None)
