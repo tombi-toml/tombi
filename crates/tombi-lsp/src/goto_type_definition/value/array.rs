@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use itertools::Itertools;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, CurrentValueSchema, ValueSchema};
+use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, ValueSchema};
 
 use crate::{
     comment_directive::get_array_comment_directive_content_with_schema_uri,
@@ -50,7 +50,7 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                         .value_schema
                         .as_ref()
                         .map(|value_schema| CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                             definitions: Cow::Borrowed(&document_schema.definitions),
                         });

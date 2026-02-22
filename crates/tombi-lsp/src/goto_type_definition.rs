@@ -9,7 +9,7 @@ use std::{borrow::Cow, ops::Deref};
 use ahash::AHashMap;
 pub use comment::get_tombi_document_comment_directive_type_definition;
 use itertools::Itertools;
-use tombi_schema_store::{Accessor, CurrentSchema, CurrentValueSchema, SchemaUri};
+use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 use tower_lsp::lsp_types::GotoDefinitionResponse;
 
 use crate::{Backend, goto_definition::open_remote_file};
@@ -28,7 +28,7 @@ pub async fn get_type_definition(
                     .value_schema
                     .as_ref()
                     .map(|value_schema| CurrentSchema {
-                        value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                        value_schema: value_schema.clone(),
                         schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });

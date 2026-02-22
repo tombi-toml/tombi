@@ -53,7 +53,7 @@ impl ValueSchema {
                     })
                     .map(|value_schema| Referable::Resolved {
                         schema_uri: None,
-                        value: value_schema,
+                        value: Arc::new(value_schema),
                     })
                     .collect();
 
@@ -211,7 +211,7 @@ impl ValueSchema {
                     if let Some(schema) = Self::new_single(value_type, object, string_formats) {
                         schemas.push(Referable::Resolved {
                             schema_uri: None,
-                            value: schema,
+                            value: Arc::new(schema),
                         });
                     }
                 }

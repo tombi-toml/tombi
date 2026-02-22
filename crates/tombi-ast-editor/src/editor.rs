@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use tombi_ast::AstNode;
 use tombi_document_tree::TryIntoDocumentTree;
-use tombi_schema_store::{CurrentSchema, CurrentValueSchema, SchemaContext};
+use tombi_schema_store::{CurrentSchema, SchemaContext};
 
 use crate::{Edit, change::Change};
 
@@ -43,7 +43,7 @@ impl<'a> Editor<'a> {
                 .value_schema
                 .as_ref()
                 .map(|value_schema| CurrentSchema {
-                    value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                    value_schema: value_schema.clone(),
                     schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                     definitions: Cow::Borrowed(&document_schema.definitions),
                 })

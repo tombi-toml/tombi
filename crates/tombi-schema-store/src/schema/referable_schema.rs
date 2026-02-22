@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use itertools::Itertools;
 use tombi_x_keyword::StringFormat;
@@ -11,7 +11,7 @@ use super::{SchemaDefinitions, SchemaUri, ValueSchema};
 pub enum Referable<T> {
     Resolved {
         schema_uri: Option<SchemaUri>,
-        value: T,
+        value: Arc<T>,
     },
     Ref {
         reference: String,
@@ -21,43 +21,9 @@ pub enum Referable<T> {
     },
 }
 
-#[derive(Clone, Debug)]
-pub enum CurrentValueSchema<'a> {
-    Borrowed(&'a ValueSchema),
-    Shared(Arc<ValueSchema>),
-}
-
-impl CurrentValueSchema<'_> {
-    pub fn into_owned(self) -> CurrentValueSchema<'static> {
-        match self {
-            CurrentValueSchema::Borrowed(value_schema) => {
-                CurrentValueSchema::Shared(Arc::new(value_schema.clone()))
-            }
-            CurrentValueSchema::Shared(value_schema) => CurrentValueSchema::Shared(value_schema),
-        }
-    }
-}
-
-impl AsRef<ValueSchema> for CurrentValueSchema<'_> {
-    fn as_ref(&self) -> &ValueSchema {
-        match self {
-            CurrentValueSchema::Borrowed(value_schema) => value_schema,
-            CurrentValueSchema::Shared(value_schema) => value_schema,
-        }
-    }
-}
-
-impl Deref for CurrentValueSchema<'_> {
-    type Target = ValueSchema;
-
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
-    }
-}
-
 #[derive(Clone)]
 pub struct CurrentSchema<'a> {
-    pub value_schema: CurrentValueSchema<'a>,
+    pub value_schema: Arc<ValueSchema>,
     pub schema_uri: Cow<'a, SchemaUri>,
     pub definitions: Cow<'a, SchemaDefinitions>,
 }
@@ -65,7 +31,7 @@ pub struct CurrentSchema<'a> {
 impl<'a> CurrentSchema<'a> {
     pub fn into_owned(self) -> CurrentSchema<'static> {
         CurrentSchema {
-            value_schema: self.value_schema.into_owned(),
+            value_schema: self.value_schema,
             schema_uri: Cow::Owned(self.schema_uri.into_owned()),
             definitions: Cow::Owned(self.definitions.into_owned()),
         }
@@ -84,7 +50,7 @@ impl std::fmt::Debug for CurrentSchema<'_> {
 impl<T> Referable<T> {
     pub fn resolved(&self) -> Option<&T> {
         match self {
-            Self::Resolved { value, .. } => Some(value),
+            Self::Resolved { value, .. } => Some(value.as_ref()),
             Self::Ref { .. } => None,
         }
     }
@@ -118,7 +84,7 @@ impl Referable<ValueSchema> {
 
         ValueSchema::new(object, string_formats).map(|value_schema| Referable::Resolved {
             schema_uri: None,
-            value: value_schema,
+            value: Arc::new(value_schema),
         })
     }
 
@@ -170,6 +136,7 @@ impl Referable<ValueSchema> {
                             ..
                         } = &mut referable_schema
                         {
+                            let value_schema = Arc::make_mut(value_schema);
                             if title.is_some() || description.is_some() {
                                 value_schema.set_title(title.to_owned());
                                 value_schema.set_description(description.to_owned());
@@ -201,9 +168,7 @@ impl Referable<ValueSchema> {
                                 }
 
                                 return Ok(Some(CurrentSchema {
-                                    value_schema: CurrentValueSchema::Shared(Arc::new(
-                                        resolved_schema,
-                                    )),
+                                    value_schema: Arc::new(resolved_schema),
                                     schema_uri: Cow::Owned(schema_uri.as_ref().clone()),
                                     definitions: Cow::Owned(definitions.clone().into_owned()),
                                 }));
@@ -222,18 +187,20 @@ impl Referable<ValueSchema> {
                             schema_store.try_get_document_schema(&schema_uri).await?
                         {
                             if let Some(value_schema) = document_schema.value_schema.as_ref() {
-                                let mut value_schema = value_schema.as_ref().clone();
+                                let mut resolved_value = value_schema.clone();
                                 if title.is_some() || description.is_some() {
+                                    let value_schema = Arc::make_mut(&mut resolved_value);
                                     value_schema.set_title(title.to_owned());
                                     value_schema.set_description(description.to_owned());
                                 }
                                 if let Some(deprecated) = deprecated {
+                                    let value_schema = Arc::make_mut(&mut resolved_value);
                                     value_schema.set_deprecated(*deprecated);
                                 }
 
                                 *self = Referable::Resolved {
                                     schema_uri: Some(document_schema.schema_uri.clone()),
-                                    value: value_schema,
+                                    value: resolved_value,
                                 };
 
                                 return self
@@ -285,7 +252,7 @@ impl Referable<ValueSchema> {
                     };
 
                     Ok(Some(CurrentSchema {
-                        value_schema: CurrentValueSchema::Borrowed(value_schema),
+                        value_schema: value_schema.clone(),
                         schema_uri,
                         definitions,
                     }))
@@ -328,7 +295,7 @@ impl Referable<ValueSchema> {
                 };
 
                 Ok(Some(CurrentSchema {
-                    value_schema: CurrentValueSchema::Shared(Arc::new(value_schema.clone())),
+                    value_schema: value_schema.clone(),
                     schema_uri: Cow::Owned(schema_uri.into_owned()),
                     definitions: Cow::Owned(definitions.into_owned()),
                 }))
@@ -416,7 +383,7 @@ pub async fn resolve_and_collect_schemas(
                 };
 
             collected.push(CurrentSchema {
-                value_schema: CurrentValueSchema::Shared(Arc::new(value_schema)),
+                value_schema,
                 schema_uri: Cow::Owned(current_schema_uri),
                 definitions: Cow::Owned(current_definitions),
             });
