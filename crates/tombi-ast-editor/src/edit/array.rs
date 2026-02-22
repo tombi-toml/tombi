@@ -6,7 +6,7 @@ use tombi_comment_directive::value::{ArrayCommonFormatRules, ArrayCommonLintRule
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, CurrentValueSchema, OneOfSchema, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, ValueSchema,
 };
 use tombi_validator::Validate;
 
@@ -174,7 +174,7 @@ fn edit_item<'a: 'b, 'b>(
                 edit_fn,
                 accessors,
                 Some(CurrentSchema {
-                    value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                    value_schema: value_schema.clone(),
                     schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
                     definitions: Cow::Owned(document_schema.definitions.clone()),
                 }),

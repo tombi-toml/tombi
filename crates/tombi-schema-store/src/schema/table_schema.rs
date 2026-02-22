@@ -242,7 +242,7 @@ impl TableSchema {
         definitions: Cow<'_, SchemaDefinitions>,
         schema_store: &SchemaStore,
     ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
-        {
+        let mut property_schema = {
             let properties = self.properties.read().await;
             let Some(PropertySchema {
                 property_schema, ..
@@ -251,31 +251,34 @@ impl TableSchema {
                 return Ok(None);
             };
 
-            if matches!(property_schema, Referable::Resolved { .. }) {
+            if property_schema.is_resolved() {
                 return property_schema
-                    .to_current_schema(schema_uri.clone(), definitions.clone(), schema_store)
+                    .to_current_schema(schema_uri, definitions, schema_store)
                     .await;
+            }
+
+            property_schema.clone()
+        };
+
+        let resolved = property_schema
+            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .await?
+            .map(CurrentSchema::into_owned);
+
+        // Preserve policy: only perform Ref -> Resolved cache transition under write lock.
+        if property_schema.is_resolved() {
+            let mut properties = self.properties.write().await;
+            if let Some(PropertySchema {
+                property_schema: new_property_schema,
+                ..
+            }) = properties.get_mut(accessor)
+                && new_property_schema.is_ref()
+            {
+                *new_property_schema = property_schema;
             }
         }
 
-        let mut properties = self.properties.write().await;
-        let Some(PropertySchema {
-            property_schema, ..
-        }) = properties.get_mut(accessor)
-        else {
-            return Ok(None);
-        };
-
-        if matches!(property_schema, Referable::Resolved { .. }) {
-            return property_schema
-                .to_current_schema(schema_uri, definitions, schema_store)
-                .await;
-        }
-
-        property_schema
-            .resolve(schema_uri, definitions, schema_store)
-            .await
-            .map(|current_schema| current_schema.map(CurrentSchema::into_owned))
+        Ok(resolved)
     }
 
     pub async fn resolve_pattern_property_schema(
@@ -289,7 +292,7 @@ impl TableSchema {
             return Ok(None);
         };
 
-        {
+        let mut pattern_property_schema = {
             let pattern_properties = pattern_properties.read().await;
             let Some(PropertySchema {
                 property_schema, ..
@@ -298,31 +301,34 @@ impl TableSchema {
                 return Ok(None);
             };
 
-            if matches!(property_schema, Referable::Resolved { .. }) {
+            if property_schema.is_resolved() {
                 return property_schema
-                    .to_current_schema(schema_uri.clone(), definitions.clone(), schema_store)
+                    .to_current_schema(schema_uri, definitions, schema_store)
                     .await;
+            }
+
+            property_schema.clone()
+        };
+
+        let resolved = pattern_property_schema
+            .resolve(schema_uri.clone(), definitions.clone(), schema_store)
+            .await?
+            .map(CurrentSchema::into_owned);
+
+        // Preserve policy: only perform Ref -> Resolved cache transition under write lock.
+        if pattern_property_schema.is_resolved() {
+            let mut pattern_properties = pattern_properties.write().await;
+            if let Some(PropertySchema {
+                property_schema: new_pattern_property_schema,
+                ..
+            }) = pattern_properties.get_mut(pattern_key)
+                && new_pattern_property_schema.is_ref()
+            {
+                *new_pattern_property_schema = pattern_property_schema;
             }
         }
 
-        let mut pattern_properties = pattern_properties.write().await;
-        let Some(PropertySchema {
-            property_schema, ..
-        }) = pattern_properties.get_mut(pattern_key)
-        else {
-            return Ok(None);
-        };
-
-        if matches!(property_schema, Referable::Resolved { .. }) {
-            return property_schema
-                .to_current_schema(schema_uri, definitions, schema_store)
-                .await;
-        }
-
-        property_schema
-            .resolve(schema_uri, definitions, schema_store)
-            .await
-            .map(|current_schema| current_schema.map(CurrentSchema::into_owned))
+        Ok(resolved)
     }
 }
 

@@ -13,7 +13,7 @@ use constraints::ValueConstraints;
 
 use tombi_extension::get_tombi_github_uri;
 use tombi_schema_store::{
-    Accessor, Accessors, CurrentSchema, CurrentValueSchema, SchemaUri, ValueType, get_schema_name,
+    Accessor, Accessors, CurrentSchema, SchemaUri, ValueType, get_schema_name,
 };
 use tombi_text::{FromLsp, IntoLsp};
 
@@ -31,7 +31,7 @@ pub async fn get_hover_content(
                     .value_schema
                     .as_ref()
                     .map(|value_schema| CurrentSchema {
-                        value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                        value_schema: value_schema.clone(),
                         schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                         definitions: Cow::Borrowed(&document_schema.definitions),
                     });

@@ -30,7 +30,7 @@ pub use one_of::validate_one_of;
 use tombi_comment_directive::TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
 use tombi_document_tree::{TryIntoDocumentTree, dig_keys};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, CurrentValueSchema};
+use tombi_schema_store::CurrentSchema;
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_text::RelativePosition;
 
@@ -49,7 +49,7 @@ pub fn validate<'a: 'b, 'b>(
                         .value_schema
                         .as_ref()
                         .map(|value_schema| CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&root_schema.schema_uri),
                             definitions: Cow::Borrowed(&root_schema.definitions),
                         })

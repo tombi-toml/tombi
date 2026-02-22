@@ -4,8 +4,8 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, CurrentSchema, CurrentValueSchema, FindSchemaCandidates, Referable, SchemaAccessor,
-    SchemaStore, TableSchema, ValueSchema, is_online_url,
+    Accessor, CurrentSchema, FindSchemaCandidates, Referable, SchemaAccessor, SchemaStore,
+    TableSchema, ValueSchema, is_online_url,
 };
 
 use crate::{
@@ -90,7 +90,7 @@ impl FindCompletionContents for tombi_document_tree::Table {
                         keys,
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                             definitions: Cow::Borrowed(&document_schema.definitions),
                         }),

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use itertools::Itertools;
 use tombi_x_keyword::StringFormat;
@@ -11,7 +11,7 @@ use super::{SchemaDefinitions, SchemaUri, ValueSchema};
 pub enum Referable<T> {
     Resolved {
         schema_uri: Option<SchemaUri>,
-        value: T,
+        value: Arc<T>,
     },
     Ref {
         reference: String,
@@ -21,43 +21,9 @@ pub enum Referable<T> {
     },
 }
 
-#[derive(Clone, Debug)]
-pub enum CurrentValueSchema<'a> {
-    Borrowed(&'a ValueSchema),
-    Shared(Arc<ValueSchema>),
-}
-
-impl CurrentValueSchema<'_> {
-    pub fn into_owned(self) -> CurrentValueSchema<'static> {
-        match self {
-            CurrentValueSchema::Borrowed(value_schema) => {
-                CurrentValueSchema::Shared(Arc::new(value_schema.clone()))
-            }
-            CurrentValueSchema::Shared(value_schema) => CurrentValueSchema::Shared(value_schema),
-        }
-    }
-}
-
-impl AsRef<ValueSchema> for CurrentValueSchema<'_> {
-    fn as_ref(&self) -> &ValueSchema {
-        match self {
-            CurrentValueSchema::Borrowed(value_schema) => value_schema,
-            CurrentValueSchema::Shared(value_schema) => value_schema,
-        }
-    }
-}
-
-impl Deref for CurrentValueSchema<'_> {
-    type Target = ValueSchema;
-
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
-    }
-}
-
 #[derive(Clone)]
 pub struct CurrentSchema<'a> {
-    pub value_schema: CurrentValueSchema<'a>,
+    pub value_schema: Arc<ValueSchema>,
     pub schema_uri: Cow<'a, SchemaUri>,
     pub definitions: Cow<'a, SchemaDefinitions>,
 }
@@ -65,7 +31,7 @@ pub struct CurrentSchema<'a> {
 impl<'a> CurrentSchema<'a> {
     pub fn into_owned(self) -> CurrentSchema<'static> {
         CurrentSchema {
-            value_schema: self.value_schema.into_owned(),
+            value_schema: self.value_schema,
             schema_uri: Cow::Owned(self.schema_uri.into_owned()),
             definitions: Cow::Owned(self.definitions.into_owned()),
         }
@@ -84,7 +50,7 @@ impl std::fmt::Debug for CurrentSchema<'_> {
 impl<T> Referable<T> {
     pub fn resolved(&self) -> Option<&T> {
         match self {
-            Self::Resolved { value, .. } => Some(value),
+            Self::Resolved { value, .. } => Some(value.as_ref()),
             Self::Ref { .. } => None,
         }
     }
@@ -118,8 +84,16 @@ impl Referable<ValueSchema> {
 
         ValueSchema::new(object, string_formats).map(|value_schema| Referable::Resolved {
             schema_uri: None,
-            value: value_schema,
+            value: Arc::new(value_schema),
         })
+    }
+
+    pub fn is_resolved(&self) -> bool {
+        matches!(self, Referable::Resolved { .. })
+    }
+
+    pub fn is_ref(&self) -> bool {
+        matches!(self, Referable::Ref { .. })
     }
 
     pub fn deprecated<'a: 'b, 'b>(&'a self) -> tombi_future::BoxFuture<'b, Option<bool>> {
@@ -170,6 +144,7 @@ impl Referable<ValueSchema> {
                             ..
                         } = &mut referable_schema
                         {
+                            let value_schema = Arc::make_mut(value_schema);
                             if title.is_some() || description.is_some() {
                                 value_schema.set_title(title.to_owned());
                                 value_schema.set_description(description.to_owned());
@@ -201,9 +176,7 @@ impl Referable<ValueSchema> {
                                 }
 
                                 return Ok(Some(CurrentSchema {
-                                    value_schema: CurrentValueSchema::Shared(Arc::new(
-                                        resolved_schema,
-                                    )),
+                                    value_schema: Arc::new(resolved_schema),
                                     schema_uri: Cow::Owned(schema_uri.as_ref().clone()),
                                     definitions: Cow::Owned(definitions.clone().into_owned()),
                                 }));
@@ -222,18 +195,20 @@ impl Referable<ValueSchema> {
                             schema_store.try_get_document_schema(&schema_uri).await?
                         {
                             if let Some(value_schema) = document_schema.value_schema.as_ref() {
-                                let mut value_schema = value_schema.as_ref().clone();
+                                let mut resolved_value = value_schema.clone();
                                 if title.is_some() || description.is_some() {
+                                    let value_schema = Arc::make_mut(&mut resolved_value);
                                     value_schema.set_title(title.to_owned());
                                     value_schema.set_description(description.to_owned());
                                 }
                                 if let Some(deprecated) = deprecated {
+                                    let value_schema = Arc::make_mut(&mut resolved_value);
                                     value_schema.set_deprecated(*deprecated);
                                 }
 
                                 *self = Referable::Resolved {
                                     schema_uri: Some(document_schema.schema_uri.clone()),
-                                    value: value_schema,
+                                    value: resolved_value,
                                 };
 
                                 return self
@@ -285,7 +260,7 @@ impl Referable<ValueSchema> {
                     };
 
                     Ok(Some(CurrentSchema {
-                        value_schema: CurrentValueSchema::Borrowed(value_schema),
+                        value_schema: value_schema.clone(),
                         schema_uri,
                         definitions,
                     }))
@@ -328,7 +303,7 @@ impl Referable<ValueSchema> {
                 };
 
                 Ok(Some(CurrentSchema {
-                    value_schema: CurrentValueSchema::Shared(Arc::new(value_schema.clone())),
+                    value_schema: value_schema.clone(),
                     schema_uri: Cow::Owned(schema_uri.into_owned()),
                     definitions: Cow::Owned(definitions.into_owned()),
                 }))
@@ -338,10 +313,10 @@ impl Referable<ValueSchema> {
 }
 
 /// Two-path schema collection: tries a read lock first for already-resolved schemas,
-/// resolves refs on a local clone, and writes back only newly-resolved entries.
+/// resolves refs on cloned entries, and writes back only newly-resolved entries.
 ///
 /// Returns `None` when schema traversal is re-entrant (cycle guard) or when
-/// an initial read snapshot cannot be acquired due to concurrent mutation.
+/// an initial read lock cannot be acquired due to concurrent mutation.
 pub async fn resolve_and_collect_schemas(
     schemas: &super::ReferableValueSchemas,
     schema_uri: Cow<'_, SchemaUri>,
@@ -359,42 +334,45 @@ pub async fn resolve_and_collect_schemas(
         return None;
     };
 
-    let guard = if let Ok(guard) = schemas.try_read() {
-        guard
-    } else {
-        // try_read() failed -- a write lock is held.
-        log::debug!(
-            "failed to acquire read lock for composite schema collection: schema_uri={schema_uri} accessors={accessors} reason=write_lock_held",
-            schema_uri = schema_uri.as_ref().to_string(),
-            accessors = crate::Accessors::from(accessors.to_vec())
-        );
-        return None;
+    let mut schema_entries = Vec::new();
+    let resolved_schemas = {
+        let Ok(schema_guard) = schemas.try_read() else {
+            // try_read() failed -- a write lock is held.
+            log::debug!(
+                "failed to acquire read lock for composite schema collection: schema_uri={schema_uri} accessors={accessors} reason=write_lock_held",
+                schema_uri = schema_uri.as_ref().to_string(),
+                accessors = crate::Accessors::from(accessors.to_vec())
+            );
+            return None;
+        };
+
+        if schema_guard.iter().all(Referable::is_resolved) {
+            Some(
+                schema_guard
+                    .iter()
+                    .filter_map(|referable_schema| match referable_schema {
+                        Referable::Resolved {
+                            schema_uri: resolved_schema_uri,
+                            value,
+                        } => Some((resolved_schema_uri.clone(), value.clone())),
+                        Referable::Ref { .. } => None,
+                    })
+                    .collect_vec(),
+            )
+        } else {
+            schema_entries = schema_guard.clone();
+            None
+        }
     };
 
     // Fast path: all schemas are already resolved.
-    // Build output from read snapshot and avoid cloning the whole referable vector.
-    if guard
-        .iter()
-        .all(|referable_schema| matches!(referable_schema, Referable::Resolved { .. }))
-    {
-        let resolved_snapshot = guard
-            .iter()
-            .map(|referable_schema| match referable_schema {
-                Referable::Resolved {
-                    schema_uri: resolved_schema_uri,
-                    value,
-                } => (resolved_schema_uri.clone(), value.clone()),
-                Referable::Ref { .. } => unreachable!("all entries are checked as resolved"),
-            })
-            .collect_vec();
-
-        drop(guard);
-
-        let mut collected = Vec::with_capacity(resolved_snapshot.len());
+    // Build output from read result and avoid cloning the whole referable vector.
+    if let Some(resolved_schemas) = resolved_schemas {
+        let mut collected = Vec::with_capacity(resolved_schemas.len());
         let default_schema_uri = schema_uri.as_ref().clone();
         let default_definitions = definitions.clone().into_owned();
 
-        for (resolved_schema_uri, value_schema) in resolved_snapshot {
+        for (resolved_schema_uri, value_schema) in resolved_schemas {
             let (current_schema_uri, current_definitions) =
                 if let Some(resolved_schema_uri) = resolved_schema_uri {
                     match schema_store
@@ -416,7 +394,7 @@ pub async fn resolve_and_collect_schemas(
                 };
 
             collected.push(CurrentSchema {
-                value_schema: CurrentValueSchema::Shared(Arc::new(value_schema)),
+                value_schema,
                 schema_uri: Cow::Owned(current_schema_uri),
                 definitions: Cow::Owned(current_definitions),
             });
@@ -425,14 +403,11 @@ pub async fn resolve_and_collect_schemas(
         return Some(collected);
     }
 
-    // Slow path: unresolved refs exist. Resolve on local clone and cache back.
-    let mut local = guard.clone();
-    drop(guard);
-
-    let mut collected = Vec::with_capacity(local.len());
+    // Slow path: unresolved refs exist. Resolve on cloned entries and cache back.
+    let mut collected = Vec::with_capacity(schema_entries.len());
     let mut resolved_indices = Vec::new();
-    for (index, referable_schema) in local.iter_mut().enumerate() {
-        let was_ref = matches!(referable_schema, Referable::Ref { .. });
+    for (index, referable_schema) in schema_entries.iter_mut().enumerate() {
+        let was_ref = referable_schema.is_ref();
         match referable_schema
             .resolve(schema_uri.clone(), definitions.clone(), schema_store)
             .await
@@ -444,14 +419,14 @@ pub async fn resolve_and_collect_schemas(
             }
         }
 
-        if was_ref && matches!(referable_schema, Referable::Resolved { .. }) {
+        if was_ref && referable_schema.is_resolved() {
             resolved_indices.push(index);
         }
     }
 
     // Write back only entries that transitioned from Ref -> Resolved.
     if !resolved_indices.is_empty() {
-        let Ok(mut guard) = schemas.try_write() else {
+        let Ok(mut schema_guard) = schemas.try_write() else {
             log::debug!(
                 "failed to acquire write lock for composite schema resolution: schema_uri={schema_uri} accessors={accessors} reason=lock_contention",
                 schema_uri = schema_uri.as_ref().to_string(),
@@ -461,12 +436,12 @@ pub async fn resolve_and_collect_schemas(
         };
 
         for index in resolved_indices {
-            if let (Some(cached_schema), Some(local_schema)) =
-                (guard.get_mut(index), local.get(index))
-                && matches!(cached_schema, Referable::Ref { .. })
-                && matches!(local_schema, Referable::Resolved { .. })
+            if let (Some(cached_schema), Some(resolved_schema)) =
+                (schema_guard.get_mut(index), schema_entries.get(index))
+                && cached_schema.is_ref()
+                && resolved_schema.is_resolved()
             {
-                *cached_schema = local_schema.clone();
+                *cached_schema = resolved_schema.clone();
             }
         }
     }
@@ -478,7 +453,7 @@ pub async fn resolve_and_collect_schemas(
 ///
 /// 1. Clone under read lock.
 /// 2. If already resolved, build `CurrentSchema` directly.
-/// 3. If unresolved, resolve on the local clone.
+/// 3. If unresolved, resolve on the cloned item.
 /// 4. Write back only the resolved cache state.
 pub async fn resolve_schema_item(
     item: &super::SchemaItem,
@@ -486,24 +461,25 @@ pub async fn resolve_schema_item(
     definitions: Cow<'_, SchemaDefinitions>,
     schema_store: &crate::SchemaStore,
 ) -> Result<Option<CurrentSchema<'static>>, crate::Error> {
-    let mut local = { item.read().await.clone() };
+    let mut item_schema = {
+        let item_schema = item.read().await;
+        if item_schema.is_resolved() {
+            return item_schema
+                .to_current_schema(schema_uri, definitions, schema_store)
+                .await;
+        }
+        item_schema.clone()
+    };
 
-    if matches!(local, Referable::Resolved { .. }) {
-        return local
-            .to_current_schema(schema_uri, definitions, schema_store)
-            .await;
-    }
-
-    let was_ref = matches!(local, Referable::Ref { .. });
-    let resolved = local
+    let resolved = item_schema
         .resolve(schema_uri.clone(), definitions.clone(), schema_store)
         .await?
-        .map(|current_schema| current_schema.into_owned());
+        .map(CurrentSchema::into_owned);
 
-    if was_ref && matches!(local, Referable::Resolved { .. }) {
-        let mut guard = item.write().await;
-        if matches!(*guard, Referable::Ref { .. }) {
-            *guard = local;
+    if item_schema.is_resolved() {
+        let mut new_item_schema = item.write().await;
+        if new_item_schema.is_ref() {
+            *new_item_schema = item_schema;
         }
     }
 

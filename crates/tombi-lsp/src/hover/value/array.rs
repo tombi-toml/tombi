@@ -3,9 +3,7 @@ use std::borrow::Cow;
 use itertools::Itertools;
 
 use tombi_future::Boxable;
-use tombi_schema_store::{
-    Accessor, Accessors, ArraySchema, CurrentSchema, CurrentValueSchema, ValueSchema, ValueType,
-};
+use tombi_schema_store::{Accessor, Accessors, ArraySchema, CurrentSchema, ValueSchema, ValueType};
 
 use crate::{
     HoverContent,
@@ -54,7 +52,7 @@ impl GetHoverContent for tombi_document_tree::Array {
                         .value_schema
                         .as_ref()
                         .map(|value_schema| CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                             definitions: Cow::Borrowed(&document_schema.definitions),
                         });
