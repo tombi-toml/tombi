@@ -16,8 +16,8 @@ use tombi_extension::{
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, CurrentSchema, CurrentValueSchema, KeyContext, SchemaDefinitions,
-    SchemaStore, SchemaUri, ValueSchema,
+    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, SchemaDefinitions, SchemaStore,
+    SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -213,7 +213,7 @@ pub async fn find_completion_contents_with_tree(
             .value_schema
             .as_ref()
             .map(|value_schema| CurrentSchema {
-                value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                value_schema: value_schema.clone(),
                 schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                 definitions: Cow::Borrowed(&document_schema.definitions),
             })

@@ -3,8 +3,7 @@ use std::{borrow::Cow, sync::Arc};
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{
-    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, CurrentValueSchema, OneOfSchema,
-    SchemaAccessor, ValueSchema,
+    Accessor, AllOfSchema, AnyOfSchema, CurrentSchema, OneOfSchema, SchemaAccessor, ValueSchema,
 };
 use tombi_validator::Validate;
 
@@ -53,7 +52,7 @@ fn edit_recursive<'a: 'b, 'b>(
                 key_accessors,
                 accessors,
                 Some(CurrentSchema {
-                    value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                    value_schema: value_schema.clone(),
                     schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
                     definitions: Cow::Owned(document_schema.definitions.clone()),
                 }),

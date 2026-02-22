@@ -4,9 +4,7 @@ use std::borrow::Cow;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
 use tombi_extension::{AddLeadingComma, AddTrailingComma, CompletionKind};
 use tombi_future::Boxable;
-use tombi_schema_store::{
-    Accessor, ArraySchema, CurrentSchema, CurrentValueSchema, SchemaUri, ValueSchema,
-};
+use tombi_schema_store::{Accessor, ArraySchema, CurrentSchema, SchemaUri, ValueSchema};
 
 use super::{
     CompletionHint, FindCompletionContents, all_of::find_all_of_completion_items,
@@ -67,7 +65,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         keys,
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                             definitions: Cow::Borrowed(&document_schema.definitions),
                         }),

@@ -4,8 +4,7 @@ use itertools::Itertools;
 
 use tombi_future::Boxable;
 use tombi_schema_store::{
-    Accessor, Accessors, CurrentSchema, CurrentValueSchema, SchemaAccessor, TableSchema,
-    ValueSchema, ValueType,
+    Accessor, Accessors, CurrentSchema, SchemaAccessor, TableSchema, ValueSchema, ValueType,
 };
 
 use crate::{
@@ -54,7 +53,7 @@ impl GetHoverContent for tombi_document_tree::Table {
                         .value_schema
                         .as_ref()
                         .map(|value_schema| CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                             definitions: Cow::Borrowed(&document_schema.definitions),
                         });

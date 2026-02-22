@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tombi_comment_directive::value::ArrayCommonLintRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::{CurrentSchema, CurrentValueSchema, ValueSchema};
+use tombi_schema_store::{CurrentSchema, ValueSchema};
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
@@ -34,7 +34,7 @@ impl Validate for tombi_document_tree::Array {
                     .validate(
                         accessors,
                         Some(&CurrentSchema {
-                            value_schema: CurrentValueSchema::Shared(value_schema.clone()),
+                            value_schema: value_schema.clone(),
                             schema_uri: Cow::Borrowed(&document_schema.schema_uri),
                             definitions: Cow::Borrowed(&document_schema.definitions),
                         }),
