@@ -10,6 +10,7 @@ mod key_value_with_comma_group;
 mod root;
 mod table;
 mod value;
+mod value_with_comma_group;
 
 use crate::{parser::Parser, token_set::TS_LINE_END};
 

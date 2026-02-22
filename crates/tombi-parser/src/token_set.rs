@@ -4,6 +4,26 @@ pub(crate) const TS_LINE_END: TokenSet = TokenSet::new(&[LINE_BREAK, EOF]);
 pub(crate) const TS_COMMEMT_OR_LINE_END: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK, EOF]);
 pub(crate) const TS_NEXT_SECTION: TokenSet = TokenSet::new(&[T!['['], T!("[["), EOF]);
 pub(crate) const TS_INLINE_TABLE_END: TokenSet = TokenSet::new(&[T!['}'], EOF]);
+pub(crate) const TS_ARRAY_END: TokenSet = TokenSet::new(&[T![']'], EOF]);
+pub(crate) const TS_VALUE_FIRST: TokenSet = TokenSet::new(&[
+    BASIC_STRING,
+    MULTI_LINE_BASIC_STRING,
+    LITERAL_STRING,
+    MULTI_LINE_LITERAL_STRING,
+    INTEGER_DEC,
+    INTEGER_BIN,
+    INTEGER_OCT,
+    INTEGER_HEX,
+    FLOAT,
+    BOOLEAN,
+    OFFSET_DATE_TIME,
+    LOCAL_DATE_TIME,
+    LOCAL_DATE,
+    LOCAL_TIME,
+    T!['['],
+    T!['{'],
+    BARE_KEY,
+]);
 pub(crate) const TS_DANGLING_COMMENT_GROUP_END: TokenSet =
     TokenSet::new(&[T!['}'], T![']'], LINE_BREAK, EOF]);
 pub(crate) const TS_DANGLING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);

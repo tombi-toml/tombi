@@ -4,10 +4,8 @@ use crate::{
     ErrorKind::*,
     parse::Parse,
     parser::Parser,
-    support::{
-        begin_dangling_comments, end_dangling_comments, leading_comments, peek_leading_comments,
-        trailing_comment,
-    },
+    support::{leading_comments, peek_leading_comments, trailing_comment},
+    token_set::TS_ARRAY_END,
 };
 
 impl Parse for tombi_ast::Array {
@@ -22,28 +20,18 @@ impl Parse for tombi_ast::Array {
 
         trailing_comment(p);
 
-        begin_dangling_comments(p);
-
         loop {
             while p.eat(LINE_BREAK) {}
 
+            Vec::<tombi_ast::DanglingCommentGroup>::parse(p);
+
             let n = peek_leading_comments(p);
-            if p.nth_at(n, EOF) || p.nth_at(n, T![']']) {
+            if p.nth_at_ts(n, TS_ARRAY_END) {
                 break;
             }
 
-            tombi_ast::Value::parse(p);
-
-            let n = peek_leading_comments(p);
-            if p.nth_at(n, T![,]) {
-                tombi_ast::Comma::parse(p);
-            } else if !p.nth_at(n, T![']']) {
-                p.error(crate::Error::new(ExpectedComma, p.current_range()));
-                p.bump_any();
-            }
+            tombi_ast::ValueWithCommaGroup::parse(p);
         }
-
-        end_dangling_comments(p, true);
 
         if !p.eat(T![']']) {
             p.error(crate::Error::new(ExpectedBracketEnd, p.current_range()));
@@ -99,15 +87,17 @@ mod test {
                         WHITESPACE: " ",
                         ARRAY: {
                             BRACKET_START: "[",
-                            INTEGER_DEC: {
-                                INTEGER_DEC: "1"
-                            },
-                            COMMA: {
-                                COMMA: ","
-                            },
-                            WHITESPACE: " ",
-                            INTEGER_DEC: {
-                                INTEGER_DEC: "2"
+                            VALUE_WITH_COMMA_GROUP: {
+                                INTEGER_DEC: {
+                                    INTEGER_DEC: "1"
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                WHITESPACE: " ",
+                                INTEGER_DEC: {
+                                    INTEGER_DEC: "2"
+                                }
                             },
                             BRACKET_END: "]"
                         }
@@ -133,18 +123,20 @@ mod test {
                         WHITESPACE: " ",
                         ARRAY: {
                             BRACKET_START: "[",
-                            INTEGER_DEC: {
-                                INTEGER_DEC: "1"
-                            },
-                            COMMA: {
-                                COMMA: ","
-                            },
-                            WHITESPACE: " ",
-                            INTEGER_DEC: {
-                                INTEGER_DEC: "2"
-                            },
-                            COMMA: {
-                                COMMA: ","
+                            VALUE_WITH_COMMA_GROUP: {
+                                INTEGER_DEC: {
+                                    INTEGER_DEC: "1"
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                },
+                                WHITESPACE: " ",
+                                INTEGER_DEC: {
+                                    INTEGER_DEC: "2"
+                                },
+                                COMMA: {
+                                    COMMA: ","
+                                }
                             },
                             BRACKET_END: "]"
                         }

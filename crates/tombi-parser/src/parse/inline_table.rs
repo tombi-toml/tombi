@@ -311,19 +311,21 @@ mod test {
                                         BRACKET_START: "[",
                                         LINE_BREAK: "\n",
                                         WHITESPACE: "       ",
-                                        INTEGER_DEC: {
-                                            INTEGER_DEC: "1"
-                                        },
-                                        COMMA: {
-                                            COMMA: ","
-                                        },
-                                        LINE_BREAK: "\n",
-                                        WHITESPACE: "       ",
-                                        INTEGER_DEC: {
-                                            INTEGER_DEC: "2"
-                                        },
-                                        COMMA: {
-                                            COMMA: ","
+                                        VALUE_WITH_COMMA_GROUP: {
+                                            INTEGER_DEC: {
+                                                INTEGER_DEC: "1"
+                                            },
+                                            COMMA: {
+                                                COMMA: ","
+                                            },
+                                            INTEGER_DEC: {
+                                                LINE_BREAK: "\n",
+                                                WHITESPACE: "       ",
+                                                INTEGER_DEC: "2"
+                                            },
+                                            COMMA: {
+                                                COMMA: ","
+                                            }
                                         },
                                         LINE_BREAK: "\n",
                                         WHITESPACE: "\t    ",
@@ -347,19 +349,21 @@ mod test {
                                         BRACKET_START: "[",
                                         LINE_BREAK: "\n",
                                         WHITESPACE: "       ",
-                                        INTEGER_DEC: {
-                                            INTEGER_DEC: "3"
-                                        },
-                                        COMMA: {
-                                            COMMA: ","
-                                        },
-                                        LINE_BREAK: "\n",
-                                        WHITESPACE: "       ",
-                                        INTEGER_DEC: {
-                                            INTEGER_DEC: "4"
-                                        },
-                                        COMMA: {
-                                            COMMA: ","
+                                        VALUE_WITH_COMMA_GROUP: {
+                                            INTEGER_DEC: {
+                                                INTEGER_DEC: "3"
+                                            },
+                                            COMMA: {
+                                                COMMA: ","
+                                            },
+                                            INTEGER_DEC: {
+                                                LINE_BREAK: "\n",
+                                                WHITESPACE: "       ",
+                                                INTEGER_DEC: "4"
+                                            },
+                                            COMMA: {
+                                                COMMA: ","
+                                            }
                                         },
                                         LINE_BREAK: "\n",
                                         WHITESPACE: "\t    ",
