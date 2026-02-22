@@ -9,16 +9,16 @@ impl Parse for tombi_ast::KeyValueGroup {
         let m = p.start();
 
         loop {
-            let n = peek_leading_comments(p);
-            if !p.nth_at_ts(n, TS_KEY_FIRST) {
-                break;
-            }
-
             while p.eat(LINE_BREAK) {}
 
             tombi_ast::KeyValue::parse(p);
 
             if !p.at(LINE_BREAK) {
+                break;
+            }
+
+            let n = peek_leading_comments(p);
+            if !p.nth_at_ts(n, TS_KEY_FIRST) {
                 break;
             }
         }
