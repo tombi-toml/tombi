@@ -118,7 +118,32 @@ mod test {
                 # dangling comment
             }
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "key"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            LINE_BREAK: "\n",
+                            WHITESPACE: "    ",
+                            DANGLING_COMMENT_GROUP: {
+                                COMMENT: "# dangling comment"
+                            },
+                            LINE_BREAK: "\n",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
