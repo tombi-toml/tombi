@@ -1,13 +1,18 @@
+use std::borrow::Cow;
+
 use itertools::Itertools;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::Accessor;
+use tombi_schema_store::{Accessor, CurrentSchema};
 use tombi_syntax::SyntaxElement;
 
+use crate::node::make_dangling_comment_group_from_leading_comments;
 use crate::rule::root_table_keys_order;
 use crate::rule::{TableOrderOverride, TableOrderOverrides};
-use tombi_ast::{AstNode, DanglingCommentGroupOr, GetHeaderAccessors};
+use tombi_ast::{
+    ArrayOfTable, AstNode, DanglingCommentGroupOr, GetHeaderAccessors, KeyValueGroup, Table,
+};
 
 impl crate::Edit for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
@@ -23,19 +28,36 @@ impl crate::Edit for tombi_ast::Root {
             let mut key_value_groups = vec![];
             let mut table_or_array_of_tables = vec![];
             let mut table_order_overrides = TableOrderOverrides::default();
+            let has_root_document_comment_directive =
+                has_root_document_comment_directive(self, source_path);
+            let mut current_schema_from_first_leading_comments: Option<CurrentSchema<'a>> = None;
+
+            if current_schema.is_none() && !has_root_document_comment_directive {
+                current_schema_from_first_leading_comments =
+                    resolve_current_schema_from_first_item_document_comment_directive(
+                        self,
+                        source_path,
+                        schema_context,
+                    )
+                    .await;
+            }
+            let current_schema = current_schema_from_first_leading_comments
+                .as_ref()
+                .or(current_schema);
 
             // Move document schema/tombi comment directive to the top.
-            if self.document_comment_directive(source_path).is_none()
-                && let Some(DanglingCommentGroupOr::ItemGroup(first_key_value_group)) =
-                    self.key_value_groups().next()
+            if !has_root_document_comment_directive
+                && let Some(first_leading_comments) =
+                    first_item_document_leading_comments(self, source_path)
+                && let Some(dangling_comment_group) =
+                    make_dangling_comment_group_from_leading_comments(&first_leading_comments)
             {
-                let first_leading_comments = first_key_value_group.leading_comments().collect_vec();
-                if !first_leading_comments.is_empty() {
-                    changes.push(crate::Change::AppendTop {
-                        new: first_leading_comments
-                            .into_iter()
-                            .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
-                            .collect_vec(),
+                changes.push(crate::Change::AppendTop {
+                    new: vec![SyntaxElement::Node(dangling_comment_group)],
+                });
+                for comment in first_leading_comments {
+                    changes.push(crate::Change::Remove {
+                        target: SyntaxElement::Token(comment.syntax().clone()),
                     });
                 }
             }
@@ -127,4 +149,74 @@ impl crate::Edit for tombi_ast::Root {
         }
         .boxed()
     }
+}
+
+fn has_root_document_comment_directive(
+    root: &tombi_ast::Root,
+    source_path: Option<&std::path::Path>,
+) -> bool {
+    root.dangling_comment_groups().any(|comment_group| {
+        comment_group.comments().any(|comment| {
+            comment.get_document_schema_directive(source_path).is_some()
+                || comment.get_tombi_document_directive().is_some()
+        })
+    })
+}
+
+fn first_item_document_leading_comments(
+    root: &tombi_ast::Root,
+    source_path: Option<&std::path::Path>,
+) -> Option<Vec<tombi_ast::LeadingComment>> {
+    let comments = root.syntax().children().find_map(|node| {
+        if let Some(key_value_group) = KeyValueGroup::cast(node.clone()) {
+            Some(key_value_group.leading_comments().collect_vec())
+        } else if let Some(table) = Table::cast(node.clone()) {
+            Some(table.header_leading_comments().collect_vec())
+        } else {
+            ArrayOfTable::cast(node)
+                .map(|array_of_table| array_of_table.header_leading_comments().collect_vec())
+        }
+    })?;
+
+    comments
+        .iter()
+        .any(|comment| {
+            comment.get_document_schema_directive(source_path).is_some()
+                || comment.get_tombi_document_directive().is_some()
+        })
+        .then_some(comments)
+}
+
+async fn resolve_current_schema_from_first_item_document_comment_directive<'a>(
+    root: &tombi_ast::Root,
+    source_path: Option<&'a std::path::Path>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> Option<CurrentSchema<'a>> {
+    let leading_comments = first_item_document_leading_comments(root, source_path)?;
+
+    for comment in leading_comments {
+        let Some(schema_directive) = comment.get_document_schema_directive(source_path) else {
+            continue;
+        };
+        let Ok(schema_uri) = schema_directive.uri else {
+            continue;
+        };
+        let Ok(Some(document_schema)) = schema_context
+            .store
+            .try_get_document_schema(&schema_uri)
+            .await
+        else {
+            continue;
+        };
+        let Some(value_schema) = document_schema.value_schema.clone() else {
+            continue;
+        };
+        return Some(CurrentSchema {
+            value_schema,
+            schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
+            definitions: Cow::Owned(document_schema.definitions.clone()),
+        });
+    }
+
+    None
 }
