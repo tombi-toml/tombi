@@ -47,7 +47,7 @@ pub async fn array_values_order<'a>(
 
     if comment_directive
         .as_ref()
-        .and_then(|c| c.array_values_order_disabled())
+        .and_then(|content| content.array_values_order_disabled())
         .unwrap_or(false)
     {
         return Vec::with_capacity(0);

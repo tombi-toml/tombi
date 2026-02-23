@@ -80,6 +80,13 @@ impl crate::Table {
     }
 
     #[inline]
+    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue> {
+        self.key_value_groups()
+            .filter_map(DanglingCommentGroupOr::into_item_group)
+            .flat_map(KeyValueGroup::into_key_values)
+    }
+
+    #[inline]
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
         self.bracket_start().unwrap().range().end <= position
             && position <= self.bracket_end().unwrap().range().start

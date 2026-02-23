@@ -1,11 +1,10 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
 use crate::{
-    ErrorKind::*,
     parse::{Parse, is_group_separator},
     parser::Parser,
     support::peek_leading_comments,
-    token_set::TS_KEY_FIRST,
+    token_set::{TS_INLINE_TABLE_END, TS_KEY_FIRST},
 };
 
 impl Parse for tombi_ast::KeyValueWithCommaGroup {
@@ -22,9 +21,8 @@ impl Parse for tombi_ast::KeyValueWithCommaGroup {
             let n = peek_leading_comments(p);
             if p.nth_at(n, T![,]) {
                 tombi_ast::Comma::parse(p);
-            } else if !p.nth_at(n, T!['}']) {
-                p.error(crate::Error::new(ExpectedComma, p.current_range()));
-                p.bump_any();
+            } else if p.nth_at_ts(n, TS_INLINE_TABLE_END) {
+                break;
             }
 
             let n = peek_leading_comments(p);

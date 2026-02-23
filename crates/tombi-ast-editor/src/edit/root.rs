@@ -7,7 +7,7 @@ use tombi_syntax::SyntaxElement;
 
 use crate::rule::root_table_keys_order;
 use crate::rule::{TableOrderOverride, TableOrderOverrides};
-use tombi_ast::{AstToken, GetHeaderAccessors};
+use tombi_ast::{AstNode, DanglingCommentGroupOr, GetHeaderAccessors};
 
 impl crate::Edit for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
@@ -20,32 +20,39 @@ impl crate::Edit for tombi_ast::Root {
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
-            let mut key_values = vec![];
+            let mut key_value_groups = vec![];
             let mut table_or_array_of_tables = vec![];
             let mut table_order_overrides = TableOrderOverrides::default();
 
             // Move document schema/tombi comment directive to the top.
-            if (self
-                .schema_document_comment_directive(source_path)
-                .is_some()
-                || !self.tombi_document_comment_directives().is_empty())
-                && let Some(document_header_comments) = self.get_document_header_comments()
+            if self.document_comment_directive(source_path).is_none()
+                && let Some(DanglingCommentGroupOr::ItemGroup(first_key_value_group)) =
+                    self.key_value_groups().next()
             {
-                changes.push(crate::Change::AppendTop {
-                    new: document_header_comments
-                        .into_iter()
-                        .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
-                        .collect_vec(),
-                });
+                let first_leading_comments = first_key_value_group.leading_comments().collect_vec();
+                if !first_leading_comments.is_empty() {
+                    changes.push(crate::Change::AppendTop {
+                        new: first_leading_comments
+                            .into_iter()
+                            .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
+                            .collect_vec(),
+                    });
+                }
             }
 
-            for key_value in self.key_values() {
-                changes.extend(
-                    key_value
-                        .edit(node, &[], source_path, current_schema, schema_context)
-                        .await,
-                );
-                key_values.push(key_value);
+            for group in self.key_value_groups() {
+                let DanglingCommentGroupOr::ItemGroup(key_value_group) = group else {
+                    continue;
+                };
+
+                for key_value in key_value_group.key_values() {
+                    changes.extend(
+                        key_value
+                            .edit(node, &[], source_path, current_schema, schema_context)
+                            .await,
+                    );
+                }
+                key_value_groups.push(key_value_group);
             }
 
             for table_or_array_of_table in self.table_or_array_of_tables() {
@@ -106,7 +113,7 @@ impl crate::Edit for tombi_ast::Root {
 
             changes.extend(
                 root_table_keys_order(
-                    key_values,
+                    key_value_groups,
                     table_or_array_of_tables,
                     current_schema,
                     schema_context,

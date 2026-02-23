@@ -14,6 +14,26 @@ pub enum DanglingCommentGroupOr<T> {
     ItemGroup(T),
 }
 
+impl<T> DanglingCommentGroupOr<T> {
+    #[inline]
+    pub fn into_dangling_comment_group(self) -> Option<DanglingCommentGroup> {
+        match self {
+            DanglingCommentGroupOr::DanglingCommentGroup(dangling_comment_group) => {
+                Some(dangling_comment_group)
+            }
+            _ => None,
+        }
+    }
+
+    #[inline]
+    pub fn into_item_group(self) -> Option<T> {
+        match self {
+            DanglingCommentGroupOr::ItemGroup(item) => Some(item),
+            _ => None,
+        }
+    }
+}
+
 impl<T: AstNode> AstNode for DanglingCommentGroupOr<T> {
     #[inline]
     fn can_cast(kind: tombi_syntax::SyntaxKind) -> bool {

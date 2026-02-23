@@ -1,6 +1,5 @@
 use std::ops::Deref;
 
-use itertools::Itertools;
 use tombi_toml_version::TomlVersion;
 
 use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, Table};
@@ -39,57 +38,31 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
         self,
         toml_version: TomlVersion,
     ) -> crate::DocumentTreeAndErrors<crate::DocumentTree> {
-        let key_values = self.key_values().collect_vec();
         let mut errors = vec![];
 
         let mut tree = {
             let mut table = crate::Table::new_root(&self);
 
-            {
-                let mut inner_comment_directives = vec![];
-                if !matches!(self.items().next(), Some(tombi_ast::RootItem::KeyValue(_))) {
-                    for comments in self.key_values_dangling_comments() {
-                        for comment in comments {
-                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                                errors.push(error);
-                            }
-                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                                inner_comment_directives.push(comment_directive);
-                            }
-                        }
+            let mut inner_comment_directives = vec![];
+            for comment_group in self.dangling_comment_groups() {
+                for comment in comment_group.comments() {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
                     }
-                } else {
-                    for comments in self.key_values_begin_dangling_comments() {
-                        for comment in comments {
-                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                                errors.push(error);
-                            }
-                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                                inner_comment_directives.push(comment_directive);
-                            }
-                        }
-                    }
-                    for comments in self.key_values_end_dangling_comments() {
-                        for comment in comments {
-                            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                                errors.push(error);
-                            }
-                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                                inner_comment_directives.push(comment_directive);
-                            }
-                        }
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
                     }
                 }
+            }
 
-                if !inner_comment_directives.is_empty() {
-                    table.inner_comment_directives = Some(inner_comment_directives);
-                }
+            if !inner_comment_directives.is_empty() {
+                table.inner_comment_directives = Some(inner_comment_directives);
             }
 
             crate::DocumentTree(table)
         };
 
-        for key_value in key_values {
+        for key_value in self.key_values() {
             let (table, errs) = key_value.into_document_tree_and_errors(toml_version).into();
 
             if !errs.is_empty() {

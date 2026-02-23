@@ -29,8 +29,12 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
-    let tombi_directives = root.tombi_document_comment_directives();
-    if !tombi_directives.is_empty() {
+    let mut tombi_directive_iter = root
+        .tombi_document_comment_directives()
+        .into_iter()
+        .peekable();
+
+    if tombi_directive_iter.peek().is_some() {
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let document_schema = comment_directive_document_schema(
             schema_store,
@@ -54,11 +58,9 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
             content,
             content_range,
             ..
-        } in tombi_directives
+        } in tombi_directive_iter
         {
-            let (root, errors) =
-                tombi_parser::parse(&content)
-                    .into_root_and_errors();
+            let (root, errors) = tombi_parser::parse(&content).into_root_and_errors();
             // Check if there are any parsing errors
             if !errors.is_empty() {
                 let mut diagnostics = Vec::new();

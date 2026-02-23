@@ -10,6 +10,10 @@ pub enum DiagnosticKind {
     InlineTableMustSingleLine,
     #[error("trailing comma in inline table not allowed in TOML v1.0.0 or earlier")]
     ForbiddenInlineTableLastComma,
+    #[error("missing ','")]
+    MissingArrayComma,
+    #[error("missing ','")]
+    MissingInlineTableComma,
 }
 
 #[derive(Debug)]
@@ -27,6 +31,8 @@ impl Diagnostic {
             DiagnosticKind::TablesOutOfOrder => "tables-out-of-order",
             DiagnosticKind::InlineTableMustSingleLine => "inline-table-must-single-line",
             DiagnosticKind::ForbiddenInlineTableLastComma => "forbidden-inline-table-last-comma",
+            DiagnosticKind::MissingArrayComma => "missing-array-comma",
+            DiagnosticKind::MissingInlineTableComma => "missing-inline-table-comma",
         }
     }
 }

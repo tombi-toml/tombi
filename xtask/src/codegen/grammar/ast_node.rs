@@ -5,6 +5,17 @@ use quote::{format_ident, quote};
 use super::ast_src::AstSrc;
 use crate::utils::reformat;
 
+fn is_excluded_auto_generated_method(node_name: &str, method_name: &str) -> bool {
+    matches!(
+        (node_name, method_name),
+        ("Array", "values")
+            | ("Root", "key_values")
+            | ("Table", "key_values")
+            | ("ArrayOfTable", "key_values")
+            | ("InlineTable", "key_values")
+    )
+}
+
 pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
     let (node_defs, node_boilerplate_impls): (Vec<_>, Vec<_>) = ast
         .nodes
@@ -17,31 +28,35 @@ pub fn generate_ast_node(ast: &AstSrc) -> Result<String, anyhow::Error> {
                 quote!(impl tombi_ast::#trait_name for #name {})
             });
 
-            let methods = node.fields.iter().map(|field| {
-                let method_name = format_ident!("{}", field.method_name());
+            let methods = node.fields.iter().filter_map(|field| {
+                let method_name_str = field.method_name();
+                if is_excluded_auto_generated_method(&node.name, &method_name_str) {
+                    return None;
+                }
+                let method_name = format_ident!("{}", method_name_str);
                 let ty = field.ty();
 
                 if field.is_many() {
-                    quote! {
+                    Some(quote! {
                         #[inline]
                         pub fn #method_name(&self) -> AstChildren<#ty> {
                             support::node::children(&self.syntax)
                         }
-                    }
+                    })
                 } else if let Some(token_kind) = field.token_kind() {
-                    quote! {
+                    Some(quote! {
                         #[inline]
                         pub fn #method_name(&self) -> Option<#ty> {
                             support::node::token(&self.syntax, #token_kind)
                         }
-                    }
+                    })
                 } else {
-                    quote! {
+                    Some(quote! {
                         #[inline]
                         pub fn #method_name(&self) -> Option<#ty> {
                             support::node::child(&self.syntax)
                         }
-                    }
+                    })
                 }
             });
             (

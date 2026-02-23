@@ -45,7 +45,9 @@ impl Parse for tombi_ast::InlineTable {
 
 #[cfg(test)]
 mod test {
-    use crate::test_parser;
+    use itertools::Itertools;
+
+    use crate::{ErrorKind::*, test_parser};
 
     test_parser! {
         #[test]
@@ -231,6 +233,99 @@ mod test {
                 }
             }
         )
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_key_values_with_comma_with_comment_and_line_break(
+            r#"
+            key = {
+              a = 1
+              # comma leading
+              , # comma trailing
+              # key b leading
+              b = 2
+            }
+            "#
+        ) -> Ok(|root| -> {
+            let table = root
+                .key_value_groups()
+                .find_map(|group| group.into_item_group())
+                .and_then(|group| group.key_values().next())
+                .and_then(|key_value| key_value.value())
+                .and_then(|value| match value {
+                    tombi_ast::Value::InlineTable(table) => Some(table),
+                    _ => None,
+                })
+                .unwrap();
+
+            let key_value_group = table
+                .key_value_with_comma_groups()
+                .find_map(|group| group.into_item_group())
+                .unwrap();
+
+            let borrowed = key_value_group
+                .key_values_with_comma()
+                .map(|(_, comma)| comma.is_some())
+                .collect_vec();
+            let owned = key_value_group
+                .clone()
+                .into_key_values_with_comma()
+                .map(|(_, comma)| comma.is_some())
+                .collect_vec();
+
+            borrowed == vec![true, false] && owned == borrowed
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_key_values_with_comma_without_comma_with_comment_and_line_break(
+            r#"
+            key = {
+              a = 1
+              # key b leading
+              b = 2, # comma trailing
+              c = 3
+            }
+            "#
+        ) -> Ok(|root| -> {
+            let table = root
+                .key_value_groups()
+                .find_map(|group| group.into_item_group())
+                .and_then(|group| group.key_values().next())
+                .and_then(|key_value| key_value.value())
+                .and_then(|value| match value {
+                    tombi_ast::Value::InlineTable(table) => Some(table),
+                    _ => None,
+                })
+                .unwrap();
+
+            let key_value_group = table
+                .key_value_with_comma_groups()
+                .find_map(|group| group.into_item_group())
+                .unwrap();
+
+            let borrowed = key_value_group
+                .key_values_with_comma()
+                .map(|(_, comma)| comma.is_some())
+                .collect_vec();
+            let owned = key_value_group
+                .clone()
+                .into_key_values_with_comma()
+                .map(|(_, comma)| comma.is_some())
+                .collect_vec();
+
+            borrowed == vec![false, true, false] && owned == borrowed
+        })
+    }
+
+    test_parser! {
+        #[test]
+        fn inline_table_only_key_dot("key = { key = 1. }") -> Err([
+            SyntaxError(ExpectedValue, 0:14..0:15),
+            SyntaxError(ForbiddenKeysLastPeriod, 0:17..0:18),
+        ])
     }
 
     test_parser! {

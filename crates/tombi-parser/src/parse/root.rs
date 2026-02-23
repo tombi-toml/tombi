@@ -388,17 +388,19 @@ mod test {
                     },
                     DOUBLE_BRACKET_END: "]]",
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key4"
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key4"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value4\""
                             }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value4\""
                         }
                     }
                 }

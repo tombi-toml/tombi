@@ -1,85 +1,70 @@
 use std::fmt::Write;
 
-use tombi_ast::{
-    BeginDanglingComment, DanglingComment, EndDanglingComment, LeadingComment, TrailingComment,
-};
+use tombi_ast::{AstNode, DanglingCommentGroupOr, LeadingComment, TrailingComment};
 
-use super::Format;
+use super::{Format, has_empty_line_before};
 
-impl Format for Vec<Vec<DanglingComment>> {
-    #[inline]
+impl Format for tombi_ast::DanglingCommentGroup {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
         }
-        for (i, comments) in self.iter().enumerate() {
-            debug_assert!(!comments.is_empty());
-            if i != 0 {
-                write!(f, "{}{}", f.line_ending(), f.line_ending())?;
-            }
 
-            for (j, comment) in comments.iter().enumerate() {
-                if j == 0 {
-                    f.write_indent()?;
-                    format_comment(f, comment.as_ref(), true)?;
-                } else {
-                    write!(f, "{}", f.line_ending())?;
-                    f.write_indent()?;
-                    format_comment(f, comment.as_ref(), false)?;
-                }
+        for (i, comment) in self.comments().enumerate() {
+            if i != 0 {
+                write!(f, "{}", f.line_ending())?;
             }
+            f.write_indent()?;
+            format_comment(f, comment.as_ref(), i == 0)?;
         }
         Ok(())
     }
 }
 
-impl Format for Vec<Vec<BeginDanglingComment>> {
-    #[inline]
+impl Format for Vec<tombi_ast::DanglingCommentGroup> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if f.skip_comment() {
             return Ok(());
         }
-        for comments in self {
-            debug_assert!(!comments.is_empty());
 
-            for (i, comment) in comments.iter().enumerate() {
-                f.write_indent()?;
-                if i == 0 {
-                    format_comment(f, comment.as_ref(), true)?;
-                } else {
-                    format_comment(f, comment.as_ref(), false)?;
-                }
+        for (i, group) in self.iter().enumerate() {
+            if i != 0 {
+                write!(f, "{}", f.line_ending())?;
                 write!(f, "{}", f.line_ending())?;
             }
-            write!(f, "{}", f.line_ending())?;
+            group.format(f)?;
         }
 
         Ok(())
     }
 }
 
-impl Format for Vec<Vec<EndDanglingComment>> {
-    #[inline]
+impl<T: Format + AstNode> Format for Vec<DanglingCommentGroupOr<T>> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        if f.skip_comment() || self.is_empty() {
-            return Ok(());
-        }
-
-        for (i, comments) in self.iter().enumerate() {
-            if i != 0 {
-                write!(f, "{}", f.line_ending())?;
-            }
-
-            for (j, comment) in comments.iter().enumerate() {
-                write!(f, "{}", f.line_ending())?;
-                f.write_indent()?;
-                if j == 0 {
-                    format_comment(f, comment.as_ref(), true)?;
-                } else {
-                    format_comment(f, comment.as_ref(), false)?;
+        for (i, group) in self.iter().enumerate() {
+            match group {
+                DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                    if f.skip_comment() {
+                        return Ok(());
+                    }
+                    if i != 0 {
+                        if has_empty_line_before(comment_group) {
+                            write!(f, "{}", f.line_ending())?;
+                        }
+                        write!(f, "{}", f.line_ending())?;
+                    }
+                    comment_group.format(f)?;
+                }
+                DanglingCommentGroupOr::ItemGroup(item_group) => {
+                    if i != 0 {
+                        write!(f, "{}", f.line_ending())?;
+                        write!(f, "{}", f.line_ending())?;
+                    }
+                    item_group.format(f)?;
                 }
             }
         }
+
         Ok(())
     }
 }

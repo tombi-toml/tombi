@@ -17,6 +17,13 @@ impl KeyValueGroup {
     }
 
     #[inline]
+    pub fn into_key_values(self) -> impl Iterator<Item = crate::KeyValue> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|el| el.into_node().and_then(crate::KeyValue::cast))
+    }
+
+    #[inline]
     pub fn range(&self) -> tombi_text::Range {
         self.syntax.range()
     }

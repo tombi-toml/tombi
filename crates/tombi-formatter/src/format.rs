@@ -9,8 +9,9 @@ mod value;
 use std::fmt::Write;
 
 use itertools::Itertools;
-use tombi_ast::AstChildren;
+use tombi_ast::{AstChildren, AstNode};
 use tombi_config::TomlVersion;
+use tombi_syntax::SyntaxKind::{LINE_BREAK, WHITESPACE};
 
 use crate::types::AlignmentWidth;
 
@@ -22,10 +23,12 @@ fn write_trailing_comment_alignment_space(
     f: &mut crate::Formatter,
     trailing_comment_alignment_width: AlignmentWidth,
 ) -> Result<(), std::fmt::Error> {
+    let spaces = (trailing_comment_alignment_width.value() as usize)
+        .saturating_sub(f.current_line_width());
     write!(
         f,
         "{}",
-        " ".repeat(trailing_comment_alignment_width.value() as usize - f.current_line_width())
+        " ".repeat(spaces)
     )?;
     Ok(())
 }
@@ -39,4 +42,35 @@ fn filter_map_unique_keys<'a>(
         .filter(move |keys| keys.clone().count() < header_keys.clone().count())
         .map(move |keys| keys.map(|key| key.to_raw_text(toml_version)).collect_vec())
         .unique()
+}
+
+pub(crate) fn has_empty_line_before<T: AstNode>(node: &T) -> bool {
+    fn previous_non_whitespace(
+        mut element: tombi_syntax::SyntaxElement,
+    ) -> Option<tombi_syntax::SyntaxElement> {
+        loop {
+            if element.kind() != WHITESPACE {
+                return Some(element);
+            }
+            element = element.prev_sibling_or_token()?;
+        }
+    }
+
+    let Some(prev) = node
+        .syntax()
+        .prev_sibling_or_token()
+        .and_then(previous_non_whitespace)
+    else {
+        return false;
+    };
+    if prev.kind() != LINE_BREAK {
+        return false;
+    }
+    let Some(prev_prev) = prev
+        .prev_sibling_or_token()
+        .and_then(previous_non_whitespace)
+    else {
+        return false;
+    };
+    prev_prev.kind() == LINE_BREAK
 }

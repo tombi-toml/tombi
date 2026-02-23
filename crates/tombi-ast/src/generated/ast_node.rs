@@ -11,10 +11,6 @@ pub struct Array {
 }
 impl Array {
     #[inline]
-    pub fn values(&self) -> AstChildren<Value> {
-        support::node::children(&self.syntax)
-    }
-    #[inline]
     pub fn bracket_start(&self) -> Option<SyntaxToken> {
         support::node::token(&self.syntax, T!['['])
     }
@@ -36,10 +32,6 @@ impl ArrayOfTable {
     #[inline]
     pub fn header(&self) -> Option<Keys> {
         support::node::child(&self.syntax)
-    }
-    #[inline]
-    pub fn key_values(&self) -> AstChildren<KeyValue> {
-        support::node::children(&self.syntax)
     }
     #[inline]
     pub fn double_bracket_start(&self) -> Option<SyntaxToken> {
@@ -135,10 +127,6 @@ pub struct InlineTable {
     pub(crate) syntax: SyntaxNode,
 }
 impl InlineTable {
-    #[inline]
-    pub fn key_values(&self) -> AstChildren<KeyValue> {
-        support::node::children(&self.syntax)
-    }
     #[inline]
     pub fn brace_start(&self) -> Option<SyntaxToken> {
         support::node::token(&self.syntax, T!['{'])
@@ -379,10 +367,6 @@ impl Table {
     #[inline]
     pub fn header(&self) -> Option<Keys> {
         support::node::child(&self.syntax)
-    }
-    #[inline]
-    pub fn key_values(&self) -> AstChildren<KeyValue> {
-        support::node::children(&self.syntax)
     }
     #[inline]
     pub fn bracket_start(&self) -> Option<SyntaxToken> {

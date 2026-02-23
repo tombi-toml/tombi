@@ -40,31 +40,37 @@ pub(crate) fn exceeds_line_width(
     length += f.inline_table_brace_space().len() * 2;
     let mut first = true;
 
-    for key_value in node.key_values() {
-        // Check if nested value should be multiline
-        if let Some(value) = key_value.value() {
-            let should_be_multiline = match value {
-                tombi_ast::Value::Array(array) => {
-                    array.should_be_multiline(f.toml_version())
-                        || crate::format::value::array::exceeds_line_width(&array, f)?
-                }
-                tombi_ast::Value::InlineTable(table) => {
-                    table.should_be_multiline(f.toml_version()) || exceeds_line_width(&table, f)?
-                }
-                _ => false,
-            };
+    for group in node.key_value_with_comma_groups() {
+        let tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) = group else {
+            continue;
+        };
+        for key_value in item_group.key_values() {
+            // Check if nested value should be multiline
+            if let Some(value) = key_value.value() {
+                let should_be_multiline = match value {
+                    tombi_ast::Value::Array(array) => {
+                        array.should_be_multiline(f.toml_version())
+                            || crate::format::value::array::exceeds_line_width(&array, f)?
+                    }
+                    tombi_ast::Value::InlineTable(table) => {
+                        table.should_be_multiline(f.toml_version())
+                            || exceeds_line_width(&table, f)?
+                    }
+                    _ => false,
+                };
 
-            if should_be_multiline {
-                return Ok(true);
+                if should_be_multiline {
+                    return Ok(true);
+                }
             }
-        }
 
-        if !first {
-            length += 1; // ","
-            length += f.inline_table_comma_space().len();
+            if !first {
+                length += 1; // ","
+                length += f.inline_table_comma_space().len();
+            }
+            length += f.format_to_string(&key_value)?.graphemes(true).count();
+            first = false;
         }
-        length += f.format_to_string(&key_value)?.graphemes(true).count();
-        first = false;
     }
 
     if let Some(trailing_comment) = node.trailing_comment() {
@@ -187,15 +193,14 @@ fn format_singleline_inline_table(
 
     f.write_indent()?;
 
-    let key_values = table.key_values().collect_vec();
-    let is_empty = key_values.is_empty() && table.inner_dangling_comments().is_empty();
+    let mut key_values = table.key_values().peekable();
 
-    if is_empty {
+    if key_values.peek().is_none() {
         write!(f, "{{}}")?;
     } else {
         write!(f, "{{{}", f.inline_table_brace_space())?;
 
-        for (i, key_value) in key_values.into_iter().enumerate() {
+        for (i, key_value) in key_values.enumerate() {
             if i > 0 {
                 write!(f, ",{}", f.inline_table_comma_space())?;
             }
@@ -240,6 +245,13 @@ mod tests {
     test_format! {
         #[tokio::test]
         async fn inline_table_key_value3(r#"animal = { type.name = "pug" }"#) -> Ok(source)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn inline_table_missing_comma_single_line(
+            r#"table = { a = 1 b = 2 }"#
+        ) -> Ok(r#"table = { a = 1, b = 2 }"#)
     }
 
     test_format! {

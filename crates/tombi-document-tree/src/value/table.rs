@@ -124,13 +124,8 @@ impl Table {
     }
 
     pub(crate) fn new_inline_table(node: &tombi_ast::InlineTable) -> Self {
-        let has_comment = !node.inner_begin_dangling_comments().is_empty()
-            || node
-                .inner_end_dangling_comments()
-                .into_iter()
-                .flatten()
-                .next()
-                .is_some()
+        let has_comment = node.brace_start_trailing_comment().is_some()
+            || node.dangling_comment_groups().next().is_some()
             || node.has_inner_comments();
 
         let symbol_range = tombi_text::Range::new(
@@ -477,7 +472,6 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
     ) -> DocumentTreeAndErrors<crate::Table> {
         let mut table = Table::new_table(&self);
         let mut errors = vec![];
-        let key_values = self.key_values().collect_vec();
 
         {
             let mut comment_directives = vec![];
@@ -502,37 +496,13 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
                 }
             }
 
-            if key_values.is_empty() {
-                for comments in self.key_values_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+            for comment_group in self.dangling_comment_groups() {
+                for comment in comment_group.comments() {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
                     }
-                }
-            } else {
-                for comments in self.key_values_begin_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
-                    }
-                }
-
-                for comments in self.key_values_end_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
                     }
                 }
             }
@@ -564,7 +534,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
             errors.extend(errs);
         }
 
-        for key_value in key_values {
+        for key_value in self.key_values() {
             let (other, errs) = key_value.into_document_tree_and_errors(toml_version).into();
             if !errs.is_empty() {
                 errors.extend(errs);
@@ -610,7 +580,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
     ) -> DocumentTreeAndErrors<Table> {
         let mut table = Table::new_array_of_table(&self);
         let mut errors = vec![];
-        let key_values = self.key_values().collect_vec();
 
         {
             let mut comment_directives = vec![];
@@ -634,37 +603,13 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
                 }
             }
 
-            if key_values.is_empty() {
-                for comments in self.key_values_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+            for comment_group in self.dangling_comment_groups() {
+                for comment in comment_group.comments() {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
                     }
-                }
-            } else {
-                for comments in self.key_values_begin_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
-                    }
-                }
-
-                for comments in self.key_values_end_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
                     }
                 }
             }
@@ -698,7 +643,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
             errors.extend(errs);
         }
 
-        for key_value in key_values {
+        for key_value in self.key_values() {
             let (other, errs) = key_value.into_document_tree_and_errors(toml_version).into();
             if !errs.is_empty() {
                 errors.extend(errs);
@@ -880,7 +825,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
         let mut table = Table::new_inline_table(&self);
         let table_kind = table.kind;
         let mut errors = vec![];
-        let key_values = self.key_values().collect_vec();
         {
             let mut comment_directives = vec![];
             let mut inner_comment_directives = vec![];
@@ -894,37 +838,13 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                 }
             }
 
-            if key_values.is_empty() {
-                for comments in self.inner_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+            for comment_group in self.dangling_comment_groups() {
+                for comment in comment_group.comments() {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
                     }
-                }
-            } else {
-                for comments in self.inner_begin_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
-                    }
-                }
-
-                for comments in self.inner_end_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        inner_comment_directives.push(comment_directive);
                     }
                 }
             }
@@ -947,46 +867,52 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
         }
         table.kind = TableKind::Table;
 
-        for (key_value, comma) in self.key_values_with_comma() {
-            let keys = key_value.keys().map(|k| k.keys());
-            let (mut other, errs) = key_value.into_document_tree_and_errors(toml_version).into();
+        for group in self.key_value_with_comma_groups() {
+            let tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) = group else {
+                continue;
+            };
+            for (key_value, comma) in item_group.key_values_with_comma() {
+                let keys = key_value.keys().map(|k| k.keys());
+                let (mut other, errs) =
+                    key_value.into_document_tree_and_errors(toml_version).into();
 
-            if let Some(comma) = comma {
-                let mut comment_directives = vec![];
-                for comment in comma.leading_comments() {
-                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                        errors.push(error);
+                if let Some(comma) = comma {
+                    let mut comment_directives = vec![];
+                    for comment in comma.leading_comments() {
+                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                            errors.push(error);
+                        }
+                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                            comment_directives.push(comment_directive);
+                        }
                     }
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        comment_directives.push(comment_directive);
+                    if let Some(comment) = comma.trailing_comment() {
+                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                            errors.push(error);
+                        }
+                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                            comment_directives.push(comment_directive);
+                        }
+                    }
+
+                    if !comment_directives.is_empty() {
+                        if let Some(keys) = keys {
+                            append_comment_directives(
+                                &mut other,
+                                keys.into_iter(),
+                                &comment_directives,
+                            );
+                        }
+                        other.comment_directives = Some(comment_directives);
                     }
                 }
-                if let Some(comment) = comma.trailing_comment() {
-                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                        errors.push(error);
-                    }
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        comment_directives.push(comment_directive);
-                    }
-                }
 
-                if !comment_directives.is_empty() {
-                    if let Some(keys) = keys {
-                        append_comment_directives(
-                            &mut other,
-                            keys.into_iter(),
-                            &comment_directives,
-                        );
-                    }
-                    other.comment_directives = Some(comment_directives);
+                if !errs.is_empty() {
+                    errors.extend(errs)
                 }
-            }
-
-            if !errs.is_empty() {
-                errors.extend(errs)
-            }
-            if let Err(errs) = table.merge(other) {
-                errors.extend(errs)
+                if let Err(errs) = table.merge(other) {
+                    errors.extend(errs)
+                }
             }
         }
 

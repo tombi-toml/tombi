@@ -10,7 +10,10 @@ pub fn dangling_comment_groups<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
     iter: I,
 ) -> impl Iterator<Item = crate::DanglingCommentGroup> {
     iter.take_while(|node_or_token| {
-        matches!(node_or_token.kind(), DANGLING_COMMENT_GROUP | LINE_BREAK)
+        matches!(
+            node_or_token.kind(),
+            DANGLING_COMMENT_GROUP | LINE_BREAK | WHITESPACE
+        )
     })
     .filter_map(|node_or_token| match node_or_token {
         SyntaxElement::Node(node) => crate::DanglingCommentGroup::cast(node),
@@ -22,7 +25,13 @@ pub fn dangling_comment_groups<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
 pub fn dangling_comment_group_or<T: AstNode, I: Iterator<Item = tombi_syntax::SyntaxElement>>(
     iter: I,
 ) -> impl Iterator<Item = DanglingCommentGroupOr<T>> {
-    iter.filter_map(|node_or_token| match node_or_token {
+    iter.skip_while(|node_or_token| {
+        matches!(
+            node_or_token.kind(),
+            DANGLING_COMMENT_GROUP | LINE_BREAK | WHITESPACE
+        )
+    })
+    .filter_map(|node_or_token| match node_or_token {
         SyntaxElement::Node(node) => {
             if crate::DanglingCommentGroup::can_cast(node.kind()) {
                 crate::DanglingCommentGroup::cast(node)
@@ -76,21 +85,38 @@ pub fn trailing_comment<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
 }
 
 #[inline]
+pub fn skip_trailing_comment<I>(mut iter: std::iter::Peekable<I>) -> std::iter::Peekable<I>
+where
+    I: Iterator<Item = tombi_syntax::SyntaxElement>,
+{
+    iter.next_if(|node_or_token| matches!(node_or_token.kind(), SyntaxKind::WHITESPACE));
+    if iter
+        .next_if(|node_or_token| matches!(node_or_token.kind(), SyntaxKind::COMMENT))
+        .is_some()
+    {
+        iter.next_if(|node_or_token| matches!(node_or_token.kind(), SyntaxKind::LINE_BREAK));
+    }
+
+    iter
+}
+
+#[inline]
 pub fn has_inner_comments<I: Iterator<Item = tombi_syntax::SyntaxElement>>(
     iter: I,
     start: SyntaxKind,
     end: SyntaxKind,
 ) -> bool {
+    fn contains_comment(node_or_token: tombi_syntax::SyntaxElement) -> bool {
+        match node_or_token {
+            tombi_syntax::SyntaxElement::Token(token) => token.kind() == COMMENT,
+            tombi_syntax::SyntaxElement::Node(node) => {
+                node.children_with_tokens().any(contains_comment)
+            }
+        }
+    }
+
     iter.skip_while(|node| node.kind() != start)
         .skip(1)
         .take_while(|node| node.kind() != end)
-        .any(|node| {
-            node.kind() == COMMENT
-                || match node {
-                    tombi_syntax::SyntaxElement::Node(node) => node
-                        .children_with_tokens()
-                        .any(|node| node.kind() == COMMENT),
-                    _ => false,
-                }
-        })
+        .any(contains_comment)
 }

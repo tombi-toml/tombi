@@ -26,7 +26,6 @@ pub(crate) const TS_VALUE_FIRST: TokenSet = TokenSet::new(&[
 ]);
 pub(crate) const TS_DANGLING_COMMENT_GROUP_END: TokenSet =
     TokenSet::new(&[T!['}'], T![']'], LINE_BREAK, EOF]);
-pub(crate) const TS_DANGLING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);
 pub(crate) const TS_LEADING_COMMENTS_KINDS: TokenSet = TokenSet::new(&[COMMENT, LINE_BREAK]);
 pub(crate) const TS_KEY_FIRST: TokenSet = TokenSet::new(&[
     // name = "Tom"

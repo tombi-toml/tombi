@@ -12,6 +12,10 @@ impl crate::Edit for tombi_ast::Value {
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
+            log::trace!("node = {:?}", node);
+            log::trace!("accessors = {:?}", accessors);
+            log::trace!("current_schema = {:?}", current_schema);
+
             match (self, node) {
                 (tombi_ast::Value::Array(array), tombi_document_tree::Value::Array(_)) => {
                     array

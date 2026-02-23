@@ -9,7 +9,7 @@ use tombi_syntax::SyntaxElement;
 use crate::rule::{inline_table_comma_trailing_comment, table_keys_order::get_sorted_accessors};
 
 pub async fn inline_table_keys_order<'a>(
-    value: &'a tombi_document_tree::Value,
+    node: &'a tombi_document_tree::Value,
     key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -46,7 +46,7 @@ pub async fn inline_table_keys_order<'a>(
     );
 
     let Some(mut sorted_key_values_with_comma) = get_sorted_accessors(
-        value,
+        node,
         &[],
         key_values_with_comma
             .into_iter()

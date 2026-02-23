@@ -1,3 +1,9 @@
+#[derive(Debug, Default)]
+pub struct DocumentCommentDirectives {
+    pub schema: Option<SchemaDocumentCommentDirective>,
+    pub tombi: Vec<TombiDocumentCommentDirective>,
+}
+
 #[derive(Debug)]
 pub struct SchemaDocumentCommentDirective {
     /// The range of the directive.

@@ -2,59 +2,48 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use crate::types::WithAlignmentHint;
-
 use super::Format;
 
 impl Format for tombi_ast::Root {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         f.reset();
 
-        let key_values = self.key_values().collect_vec();
-        let table_or_array_of_tables = self.table_or_array_of_tables().collect_vec();
-        let key_values_dangling_comments = self.key_values_dangling_comments();
+        let dangling_comment_groups = self.dangling_comment_groups().collect_vec();
+        dangling_comment_groups.format(f)?;
 
-        if !key_values.is_empty() {
-            self.key_values_begin_dangling_comments().format(f)?;
-
-            let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
-            let trailing_comment_alignment_width =
-                f.trailing_comment_alignment_width(key_values.iter(), equal_alignment_width)?;
-
-            for (i, key_value) in key_values.iter().enumerate() {
-                if i != 0 {
-                    write!(f, "{}", f.line_ending())?;
-                }
-                WithAlignmentHint {
-                    value: key_value,
-                    equal_alignment_width,
-                    trailing_comment_alignment_width,
-                }
-                .format(f)?;
-            }
-
-            self.key_values_end_dangling_comments().format(f)?;
-        } else {
-            key_values_dangling_comments.format(f)?;
+        let key_value_groups = self.key_value_groups().collect_vec();
+        if !dangling_comment_groups.is_empty() && !key_value_groups.is_empty() {
+            write!(f, "{}", f.line_ending())?;
+            write!(f, "{}", f.line_ending())?;
         }
+        key_value_groups.format(f)?;
 
-        if !(table_or_array_of_tables.is_empty()
-            || key_values.is_empty() && key_values_dangling_comments.is_empty())
+        let table_or_array_of_tables = self.table_or_array_of_tables().collect_vec();
+
+        if (!dangling_comment_groups.is_empty() || !key_value_groups.is_empty())
+            && !table_or_array_of_tables.is_empty()
         {
             write!(f, "{}", f.line_ending())?;
             write!(f, "{}", f.line_ending())?;
         }
+        table_or_array_of_tables.format(f)?;
 
+        Ok(())
+    }
+}
+
+impl Format for Vec<tombi_ast::TableOrArrayOfTable> {
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let mut header = Header::Root;
-        for (i, table_or_array_of_tables) in table_or_array_of_tables.iter().enumerate() {
+        for (i, table_or_array_of_table) in self.iter().enumerate() {
             if i != 0 {
                 write!(f, "{}", f.line_ending())?;
             }
-            match table_or_array_of_tables {
+            match table_or_array_of_table {
                 tombi_ast::TableOrArrayOfTable::Table(table) => {
                     let header_keys = table.header().unwrap().keys();
                     let key_value_size = table.key_values().count();
-                    let has_dangling_comments = !table.key_values_dangling_comments().is_empty();
+                    let has_dangling_comments = table.dangling_comment_groups().next().is_some();
 
                     match header {
                         Header::Root => {}
@@ -88,7 +77,7 @@ impl Format for tombi_ast::Root {
                     let header_keys = array_of_table.header().unwrap().keys();
                     let key_value_size = array_of_table.key_values().count();
                     let has_dangling_comments =
-                        !array_of_table.key_values_dangling_comments().is_empty();
+                        array_of_table.dangling_comment_groups().next().is_some();
 
                     match header {
                         Header::Root => {}
@@ -118,6 +107,7 @@ impl Format for tombi_ast::Root {
                             }
                         }
                     };
+
                     array_of_table.format(f)?;
 
                     header = Header::ArrayOfTable {
@@ -130,16 +120,6 @@ impl Format for tombi_ast::Root {
         }
 
         Ok(())
-    }
-}
-
-impl Format for tombi_ast::RootItem {
-    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
-        match self {
-            tombi_ast::RootItem::Table(it) => it.format(f),
-            tombi_ast::RootItem::ArrayOfTable(it) => it.format(f),
-            tombi_ast::RootItem::KeyValue(it) => it.format(f),
-        }
     }
 }
 

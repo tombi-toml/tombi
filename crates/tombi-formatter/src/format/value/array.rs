@@ -165,6 +165,37 @@ fn format_multiline_array(
     Ok(())
 }
 
+fn has_empty_line_before_value_group(group: &tombi_ast::ValueWithCommaGroup) -> bool {
+    fn previous_non_whitespace(
+        mut element: tombi_syntax::SyntaxElement,
+    ) -> Option<tombi_syntax::SyntaxElement> {
+        loop {
+            if element.kind() != WHITESPACE {
+                return Some(element);
+            }
+            element = element.prev_sibling_or_token()?;
+        }
+    }
+
+    let Some(prev) = group
+        .syntax()
+        .prev_sibling_or_token()
+        .and_then(previous_non_whitespace)
+    else {
+        return false;
+    };
+    if prev.kind() != LINE_BREAK {
+        return false;
+    }
+    let Some(prev_prev) = prev
+        .prev_sibling_or_token()
+        .and_then(previous_non_whitespace)
+    else {
+        return false;
+    };
+    prev_prev.kind() == LINE_BREAK
+}
+
 fn format_singleline_array(
     WithAlignmentHint {
         value: array,
@@ -177,15 +208,14 @@ fn format_singleline_array(
 
     f.write_indent()?;
 
-    let values = array.values().collect_vec();
-    let is_empty = values.is_empty() && array.inner_dangling_comments().is_empty();
+    let mut values = array.values().peekable();
 
-    if is_empty {
+    if values.peek().is_none() {
         write!(f, "[]")?;
     } else {
         write!(f, "[{}", f.array_bracket_space())?;
 
-        for (i, value) in values.into_iter().enumerate() {
+        for (i, value) in values.enumerate() {
             if i > 0 {
                 write!(f, ",{}", f.array_comma_space())?;
             }
@@ -213,7 +243,7 @@ fn format_singleline_array(
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use tombi_config::{StringQuoteStyle, TomlVersion, format::FormatRules};
+    use tombi_config::{StringQuoteStyle, format::FormatRules};
 
     use super::*;
     use crate::{Formatter, test_format};
@@ -271,6 +301,13 @@ mod tests {
                 }),
             }
         ) -> Ok(r#"string_array = ["all", 'strings', """are the same""", '''type''']"#)
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn singleline_array_missing_comma(
+            "array = [1 2, 3]"
+        ) -> Ok("array = [1, 2, 3]")
     }
 
     test_format! {

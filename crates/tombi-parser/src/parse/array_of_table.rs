@@ -41,7 +41,7 @@ impl Parse for tombi_ast::ArrayOfTable {
                 break;
             }
 
-            tombi_ast::KeyValue::parse(p);
+            tombi_ast::KeyValueGroup::parse(p);
 
             if !p.at_ts(TS_LINE_END) {
                 invalid_line(p, ExpectedLineBreak);
@@ -129,17 +129,19 @@ mod test {
                     },
                     DOUBLE_BRACKET_END: "]]",
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "name"
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "name"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"hex-like\""
                             }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"hex-like\""
                         }
                     }
                 }
@@ -165,17 +167,19 @@ mod test {
                     },
                     DOUBLE_BRACKET_END: "]]",
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "mode"
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "mode"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"permissions\""
                             }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"permissions\""
                         }
                     }
                 }
@@ -201,17 +205,19 @@ mod test {
                     },
                     DOUBLE_BRACKET_END: "]]",
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "flags"
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "flags"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BOOLEAN: {
+                                BOOLEAN: "true"
                             }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BOOLEAN: {
-                            BOOLEAN: "true"
                         }
                     }
                 }
@@ -389,31 +395,33 @@ mod test {
                     },
                     DOUBLE_BRACKET_END: "]]",
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key1"
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key1"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value1\""
                             }
                         },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value1\""
-                        }
-                    },
-                    LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key2"
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key2"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value2\""
                             }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value2\""
                         }
                     },
                     LINE_BREAK: "\n",
@@ -431,66 +439,70 @@ mod test {
                     },
                     LINE_BREAK: "\n",
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key3"
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key3"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value3\""
                             }
                         },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value3\""
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key4"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value4\""
+                            }
                         }
                     },
                     LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key4"
+                    LINE_BREAK: "\n",
+                    KEY_VALUE_GROUP: {
+                        KEY_VALUE: {
+                            COMMENT: "# leading comment 1",
+                            LINE_BREAK: "\n",
+                            COMMENT: "# leading comment 1",
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key5"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value5\""
                             }
                         },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value4\""
-                        }
-                    },
-                    LINE_BREAK: "\n",
-                    LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        COMMENT: "# leading comment 1",
-                        LINE_BREAK: "\n",
-                        COMMENT: "# leading comment 1",
-                        LINE_BREAK: "\n",
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key5"
+                        KEY_VALUE: {
+                            LINE_BREAK: "\n",
+                            COMMENT: "# leading comment 2",
+                            LINE_BREAK: "\n",
+                            KEYS: {
+                                BARE_KEY: {
+                                    BARE_KEY: "key6"
+                                }
+                            },
+                            WHITESPACE: " ",
+                            EQUAL: "=",
+                            WHITESPACE: " ",
+                            BASIC_STRING: {
+                                BASIC_STRING: "\"value6\""
                             }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value5\""
-                        }
-                    },
-                    LINE_BREAK: "\n",
-                    KEY_VALUE: {
-                        COMMENT: "# leading comment 2",
-                        LINE_BREAK: "\n",
-                        KEYS: {
-                            BARE_KEY: {
-                                BARE_KEY: "key6"
-                            }
-                        },
-                        WHITESPACE: " ",
-                        EQUAL: "=",
-                        WHITESPACE: " ",
-                        BASIC_STRING: {
-                            BASIC_STRING: "\"value6\""
                         }
                     },
                     LINE_BREAK: "\n",
