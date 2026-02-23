@@ -82,28 +82,37 @@ impl crate::Edit for tombi_ast::Array {
                     },
                 );
 
-            let mut start_index = 0;
+            let array_schema_values_order = current_schema.and_then(|current_schema| {
+                if let ValueSchema::Array(array_schema) = current_schema.value_schema.as_ref() {
+                    array_schema.values_order.clone()
+                } else {
+                    None
+                }
+            });
+            let mut nodes_iter = array_node.values().iter().enumerate();
             for group in self.value_with_comma_groups() {
                 let DanglingCommentGroupOr::ItemGroup(value_group) = group else {
                     continue;
                 };
 
                 let values_with_comma = value_group.values_with_comma().collect_vec();
-                let group_len = values_with_comma.len();
+                let nodes = nodes_iter
+                    .by_ref()
+                    .take(values_with_comma.len())
+                    .collect_vec();
 
                 changes.extend(
                     array_values_order(
-                        node,
+                        nodes,
                         values_with_comma,
-                        start_index,
                         accessors,
-                        current_schema,
+                        current_item_schema.as_ref(),
                         schema_context,
+                        array_schema_values_order.clone(),
                         comment_directive.clone(),
                     )
                     .await,
                 );
-                start_index += group_len;
             }
 
             changes

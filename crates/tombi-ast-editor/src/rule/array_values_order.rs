@@ -31,9 +31,8 @@ use string::create_string_sortable_values;
 use crate::rule::array_comma_trailing_comment;
 
 pub async fn array_values_order<'a>(
+    nodes: Vec<(usize, &'a tombi_document_tree::Value)>,
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_node: &'a tombi_document_tree::Array,
-    start_index: usize,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -78,19 +77,11 @@ pub async fn array_values_order<'a>(
         SyntaxElement::Node(values_with_comma.first().unwrap().0.syntax().clone()),
         SyntaxElement::Node(values_with_comma.last().unwrap().0.syntax().clone()),
     );
-    let value_nodes = array_node
-        .values()
-        .iter()
-        .enumerate()
-        .skip(start_index)
-        .take(values_with_comma.len())
-        .collect_vec();
-
     let sorted_values_with_comma = match values_order {
         XTombiArrayValuesOrder::All(values_order) => {
             get_sorted_values_order_all(
                 values_with_comma,
-                value_nodes,
+                nodes,
                 accessors,
                 current_schema,
                 schema_context,
@@ -101,7 +92,7 @@ pub async fn array_values_order<'a>(
         XTombiArrayValuesOrder::Groups(values_order_group) => {
             get_sorted_values_order_groups(
                 values_with_comma,
-                value_nodes,
+                nodes,
                 accessors,
                 current_schema,
                 schema_context,
