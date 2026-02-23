@@ -591,9 +591,9 @@ fn calculate_inline_table_insertion(
         // Empty inline table - insert after opening brace
         // { } -> { serde = "1.0" }
         return if let Some(dangling_comment) = ast_inline_table
-            .inner_dangling_comments()
+            .dangling_comment_groups()
             .last()
-            .and_then(|comments| comments.last())
+            .and_then(|group| group.comments().last())
         {
             Some((
                 dangling_comment.syntax().range().end,
