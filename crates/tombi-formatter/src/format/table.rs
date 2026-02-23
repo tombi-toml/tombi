@@ -23,8 +23,8 @@ impl Format for tombi_ast::Table {
         f.write_indent()?;
         write!(f, "[{header}]")?;
 
-        if let Some(comment) = self.header_trailing_comment() {
-            comment.format(f)?;
+        if let Some(trailing_comment) = self.header_trailing_comment() {
+            trailing_comment.format(f)?;
         }
 
         if f.indent_table_key_values() {
