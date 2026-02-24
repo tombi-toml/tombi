@@ -150,4 +150,45 @@ impl crate::InlineTable {
     pub fn has_inner_comments(&self) -> bool {
         support::comment::has_inner_comments(self.syntax().children_with_tokens(), T!('{'), T!('}'))
     }
+
+    /// Returns `true` if there are `LINE_BREAK` tokens at inline-table level
+    /// between `{` and `}`.
+    ///
+    /// Newlines inside nested values (e.g., multi-line arrays) are ignored.
+    #[inline]
+    pub fn has_newlines_between_braces(&self) -> bool {
+        fn has_line_break_in_groups(node_or_token: tombi_syntax::SyntaxElement) -> bool {
+            fn has_direct_line_break(node_or_token: tombi_syntax::SyntaxElement) -> bool {
+                matches!(
+                    node_or_token,
+                    tombi_syntax::SyntaxElement::Token(token)
+                        if token.kind() == tombi_syntax::SyntaxKind::LINE_BREAK
+                )
+            }
+
+            match node_or_token {
+                tombi_syntax::SyntaxElement::Token(token) => {
+                    token.kind() == tombi_syntax::SyntaxKind::LINE_BREAK
+                }
+                tombi_syntax::SyntaxElement::Node(node) => match node.kind() {
+                    tombi_syntax::SyntaxKind::DANGLING_COMMENT_GROUP
+                    | tombi_syntax::SyntaxKind::KEY_VALUE_GROUP
+                    | tombi_syntax::SyntaxKind::KEY_VALUE_WITH_COMMA_GROUP => {
+                        node.children_with_tokens().any(has_line_break_in_groups)
+                    }
+                    tombi_syntax::SyntaxKind::KEY_VALUE | tombi_syntax::SyntaxKind::COMMA => {
+                        node.children_with_tokens().any(has_direct_line_break)
+                    }
+                    _ => false,
+                },
+            }
+        }
+
+        self.syntax()
+            .children_with_tokens()
+            .skip_while(|el| el.kind() != T!['{'])
+            .skip(1)
+            .take_while(|el| el.kind() != T!['}'])
+            .any(has_line_break_in_groups)
+    }
 }

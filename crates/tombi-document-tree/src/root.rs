@@ -62,14 +62,34 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
             crate::DocumentTree(table)
         };
 
-        for key_value in self.key_values() {
-            let (table, errs) = key_value.into_document_tree_and_errors(toml_version).into();
-
-            if !errs.is_empty() {
-                errors.extend(errs);
+        {
+            let mut group_boundary_comment_directives = Vec::new();
+            for group in self.key_value_groups() {
+                match group {
+                    tombi_ast::DanglingCommentGroupOr::ItemGroup(key_value_group) => {
+                        for key_value in key_value_group.into_key_values() {
+                            let (table, errs) =
+                                key_value.into_document_tree_and_errors(toml_version).into();
+                            if !errs.is_empty() {
+                                errors.extend(errs);
+                            }
+                            if let Err(errs) = tree.0.merge(table) {
+                                errors.extend(errs);
+                            }
+                        }
+                    }
+                    tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                        for comment in comment_group.comments() {
+                            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                                group_boundary_comment_directives.push(comment_directive);
+                            }
+                        }
+                    }
+                }
             }
-            if let Err(errs) = tree.0.merge(table) {
-                errors.extend(errs);
+            if !group_boundary_comment_directives.is_empty() {
+                tree.0.group_boundary_comment_directives =
+                    Some(group_boundary_comment_directives);
             }
         }
 

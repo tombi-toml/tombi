@@ -27,12 +27,12 @@ pub fn get_comment_context(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<CommentContext> {
-    if let Some(comments) = root.get_document_header_comments() {
-        for comment in comments {
+    if let Some(comment_group) = root.dangling_comment_groups().next() {
+        for comment in comment_group.comments() {
             if comment.syntax().range().contains(position)
                 && comment.syntax().text()[1..].trim_start().starts_with(":")
             {
-                return Some(CommentContext::DocumentDirective(comment));
+                return Some(CommentContext::DocumentDirective(comment.into()));
             }
         }
     }

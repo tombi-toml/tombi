@@ -147,6 +147,158 @@ pub enum DanglingCommentGroupOr<T> {
   - 各テーブルスコープでヘッダ直後にある **最初の dangling comment group** は例外で空行なしとして出力する
   - フォーマット時は `DANGLING_COMMENT_GROUP` の直前に LINE_BREAK が2つ以上連続している場合のみ空行を 1 行出力し、その後でコメントを出力する
 
+### 8. コメントディレクティブの有効位置（重要）
+
+コメントディレクティブは、コンテナ内の **アイテムが出現する前** にある `dangling_comment_groups()` のみがルール制御に有効である。
+`key_value_groups()` / `value_with_comma_groups()` / `key_value_with_comma_groups()` のイテレーション中に出現する `DanglingCommentGroupOr::DanglingCommentGroup`（以降「グループ境界ディレクティブ」）は、**フォーマッター・リンターのルール制御として認識してはならない**。
+
+**理由**: アイテム出現後の dangling comment group は、ディレクティブの「対象ノード」が空（＝何もない空間を指す）となり、適用先が存在しないため意味を持たない。
+
+#### 有効位置の一覧
+
+| コンテナ | ルール制御に有効な位置 | ルール制御に無効な位置（グループ境界） |
+|---|---|---|
+| Array | `bracket_start_trailing_comment()`, `dangling_comment_groups()` | `value_with_comma_groups()` 内の `DanglingCommentGroupOr::DanglingCommentGroup` |
+| InlineTable | `brace_start_trailing_comment()`, `dangling_comment_groups()` | `key_value_with_comma_groups()` 内の `DanglingCommentGroupOr::DanglingCommentGroup` |
+| Table | `header_leading_comments()`, `header_trailing_comment()`, `dangling_comment_groups()` | `key_value_groups()` 内の `DanglingCommentGroupOr::DanglingCommentGroup` |
+| ArrayOfTable | `header_leading_comments()`, `header_trailing_comment()`, `dangling_comment_groups()` | `key_value_groups()` 内の `DanglingCommentGroupOr::DanglingCommentGroup` |
+| Root | `dangling_comment_groups()` | `key_value_groups()` 内の `DanglingCommentGroupOr::DanglingCommentGroup` |
+
+#### グループ境界ディレクティブの扱い: `TombiGroupBoundaryDirectiveContent`
+
+グループ境界（アイテム出現後の `DanglingCommentGroupOr::DanglingCommentGroup`）に書かれた `tombi:` コメントは、ルール制御には使用されないが、LSP の**補完・ホバー・バリデーション**は引き続き提供される。
+
+この場合、`TombiGroupBoundaryDirectiveContent` として解釈される。`TombiGroupBoundaryDirectiveContent` は `TombiValueDirectiveContent<GroupBoundaryFormatRules, GroupBoundaryLintRules>` の型エイリアスであり、`GroupBoundaryFormatRules` と `GroupBoundaryLintRules` は共にフィールドを持たない空の構造体（`deny_unknown_fields` / `additionalProperties: false`）である。
+
+これにより各機能で以下の動作となる:
+
+| 機能 | 動作 |
+|---|---|
+| **フォーマッター**（ルール制御） | 無視する。グループ境界ディレクティブはフォーマットルールの制御に使用されない |
+| **リンター**（ルール制御） | 無視する。グループ境界ディレクティブはリントルールの制御に使用されない |
+| **LSP 補完** | `tombi:` の後に補完候補が表示されるが、`format.rules` / `lint.rules` 配下のルール項目は空のため、実質的に補完可能な項目がない |
+| **LSP ホバー** | `tombi:` コメントとして認識され、空のルール情報が表示される |
+| **LSP バリデーション** | 空の JSON スキーマ（`additionalProperties: false`）に対してバリデーションされるため、任意のルールキーを記述すると `KeyNotAllowed` 診断が発生する |
+
+#### `document-tree` での扱い
+
+`document-tree` はグループ境界ディレクティブを格納する必要がない。ルールが空であることが最初から確定しているため、フォーマッター・リンターのルール制御においてグループ境界ディレクティブの処理をスキップできる。
+
+#### 有効例: Array
+
+```toml
+my_array = [
+    #: format.rules.array-values-order.ascending
+
+    "banana",
+    "apple",
+
+    "date",
+    "cherry",
+]
+```
+
+`#: format.rules.array-values-order.ascending` は `dangling_comment_groups()` に属する（values が出現する前）。
+→ **有効**: 配列全体にソートディレクティブが適用される。各グループ内で昇順ソートが行われる。
+
+#### 無効例: Array
+
+```toml
+my_array = [
+    "banana",
+    "apple",
+
+    # tombi: format.rules.array-values-order = "ascending"
+
+    "date",
+    "cherry",
+]
+```
+
+`# tombi: format.rules.array-values-order = "ascending"` は `value_with_comma_groups()` の `DanglingCommentGroupOr::DanglingCommentGroup` に属する（values 出現後の空白行に挟まれたコメント）。
+→ **ルール制御には無効**: この配列にはソートディレクティブが存在しないものとして扱われる。
+→ **LSP バリデーション**: `TombiGroupBoundaryDirectiveContent` として解釈され、`array-values-order` は空スキーマに対して `KeyNotAllowed` となる。
+
+#### 有効例: Table
+
+```toml
+[package]
+#: format.rules.table-keys-order.ascending
+
+name = "my-package"
+version = "1.0.0"
+
+description = "A package"
+license = "MIT"
+```
+
+`#: format.rules.table-keys-order.ascending` は `dangling_comment_groups()` に属する（テーブルヘッダーの後、最初の key_value 出現前）。
+→ **有効**: テーブル全体にソートディレクティブが適用される。
+
+#### 無効例: Table
+
+```toml
+[package]
+name = "my-package"
+version = "1.0.0"
+
+# tombi: format.rules.table-keys-order = "ascending"
+
+description = "A package"
+license = "MIT"
+```
+
+`# tombi: format.rules.table-keys-order = "ascending"` は `key_value_groups()` の `DanglingCommentGroupOr::DanglingCommentGroup` に属する（key_values 出現後）。
+→ **ルール制御には無効**: テーブルにはソートディレクティブが存在しないものとして扱われる。
+→ **LSP バリデーション**: `TombiGroupBoundaryDirectiveContent` として解釈され、`table-keys-order` は `KeyNotAllowed` となる。
+
+#### 無効例: Root
+
+```toml
+key1 = "value1"
+key2 = "value2"
+
+# tombi: format.rules.table-keys-order = "ascending"
+
+key3 = "value3"
+```
+
+`# tombi: format.rules.table-keys-order = "ascending"` は `key_value_groups()` の `DanglingCommentGroupOr::DanglingCommentGroup` に属する（key_values 出現後）。
+→ **ルール制御には無効**: ルートテーブルにはソートディレクティブが存在しないものとして扱われる。
+
+#### 実装上の注意
+
+##### AST 層: `comment_directives()` メソッド
+
+`comment_directives()` メソッドで `*_groups()` 系イテレータの `DanglingCommentGroup` を含めてはならない:
+
+```rust
+// ❌ 間違い: value_with_comma_groups() の DanglingCommentGroup を含めている
+pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+    itertools::chain!(
+        self.bracket_start_trailing_comment()...,
+        self.dangling_comment_groups()...,
+        self.value_with_comma_groups()                    // ← 仕様違反
+            .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+            .flat_map(...)
+    )
+}
+
+// ✅ 正しい: dangling_comment_groups() のみ
+pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+    itertools::chain!(
+        self.bracket_start_trailing_comment()...,
+        self.dangling_comment_groups()...,
+    )
+}
+```
+
+同様に、`document-tree` 層で `inner_comment_directives` を収集する際も、`value_with_comma_groups()` / `key_value_groups()` 内の `DanglingCommentGroup` を含めてはならない。
+
+##### LSP 層: グループ境界ディレクティブの解釈
+
+LSP のホバー・補完・バリデーション処理では、`*_groups()` 系イテレータの `DanglingCommentGroupOr::DanglingCommentGroup` 内のコメントも `tombi:` プレフィックスで解釈する。ただし、その際のスキーマは `TombiGroupBoundaryDirectiveContent` の空ルールスキーマ（`tombi-group-boundary-directive.json`）を使用する。
+
 ## 仕様案
 
 ### フォーマット挙動

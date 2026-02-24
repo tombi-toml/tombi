@@ -75,6 +75,13 @@ impl crate::Array {
     }
 
     #[inline]
+    pub fn values_with_comma(&self) -> impl Iterator<Item = (crate::Value, Option<crate::Comma>)> {
+        self.value_with_comma_groups()
+            .filter_map(DanglingCommentGroupOr::into_item_group)
+            .flat_map(ValueWithCommaGroup::into_values_with_comma)
+    }
+
+    #[inline]
     pub fn value_or_key_values(&self) -> impl Iterator<Item = crate::ValueOrKeyValue> {
         support::node::children(self.syntax())
     }

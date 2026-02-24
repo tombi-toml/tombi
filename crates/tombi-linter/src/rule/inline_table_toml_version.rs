@@ -9,20 +9,7 @@ impl Rule<tombi_ast::InlineTable> for InlineTableTomlVersionRule {
         if l.toml_version() != TomlVersion::V1_0_0 {
             return;
         }
-        let brace_start = match node.brace_start() {
-            Some(t) => t,
-            None => return,
-        };
-        let brace_end = match node.brace_end() {
-            Some(t) => t,
-            None => return,
-        };
-        let table_span = brace_end.range().start.line - brace_start.range().start.line;
-        let key_value_lines: u32 = node
-            .key_values()
-            .map(|kv| kv.range().end.line - kv.range().start.line)
-            .sum();
-        if table_span != key_value_lines {
+        if node.has_newlines_between_braces() {
             l.extend_diagnostics(Diagnostic {
                 kind: DiagnosticKind::InlineTableMustSingleLine,
                 level: SeverityLevel::Error,
@@ -115,6 +102,33 @@ mod tests {
             }
             "#,
             TomlVersion::V1_1_0,
+        ) -> Ok(_)
+    }
+
+    test_lint! {
+        #[test]
+        fn inline_table_with_multiline_array_value_v1_0_0_ok(
+            r#"
+            key = { arr = [
+                1,
+                2,
+                3
+            ] }
+            "#,
+            TomlVersion::V1_0_0,
+        ) -> Ok(_)
+    }
+
+    test_lint! {
+        #[test]
+        fn inline_table_with_multiline_array_and_other_value_v1_0_0_ok(
+            r#"
+            key = { arr = [
+                1,
+                2
+            ], b = 2 }
+            "#,
+            TomlVersion::V1_0_0,
         ) -> Ok(_)
     }
 }

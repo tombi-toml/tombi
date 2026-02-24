@@ -45,6 +45,7 @@ pub struct Array {
     values: Vec<Value>,
     pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
     pub(crate) inner_comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) group_boundary_comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl Array {
@@ -62,6 +63,7 @@ impl Array {
             },
             comment_directives: None,
             inner_comment_directives: None,
+            group_boundary_comment_directives: None,
         }
     }
 
@@ -74,6 +76,7 @@ impl Array {
             symbol_range: table.symbol_range(),
             comment_directives: None,
             inner_comment_directives: None,
+            group_boundary_comment_directives: None,
         }
     }
 
@@ -86,6 +89,7 @@ impl Array {
             symbol_range: table.symbol_range(),
             comment_directives: None,
             inner_comment_directives: None,
+            group_boundary_comment_directives: None,
         }
     }
 
@@ -196,6 +200,11 @@ impl Array {
     }
 
     #[inline]
+    pub fn group_boundary_comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+        self.group_boundary_comment_directives.as_deref()
+    }
+
+    #[inline]
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
         self.values.iter()
     }
@@ -246,6 +255,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         let mut array = Array::new_array(&self);
         let mut errors = Vec::new();
 
+        let mut group_boundary_comment_directives = Vec::new();
         let value_or_key_values_with_comma = self
             .value_with_comma_groups()
             .filter_map(|group| match group {
@@ -255,7 +265,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                         .map(|(value, comma)| (tombi_ast::ValueOrKeyValue::Value(value), comma))
                         .collect_vec(),
                 ),
-                tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(_) => None,
+                tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                    for comment in comment_group.comments() {
+                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                            group_boundary_comment_directives.push(comment_directive);
+                        }
+                    }
+                    None
+                }
             })
             .flatten()
             .collect_vec();
@@ -301,6 +318,10 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
             if !inner_comment_directives.is_empty() {
                 array.inner_comment_directives = Some(inner_comment_directives);
             }
+        }
+
+        if !group_boundary_comment_directives.is_empty() {
+            array.group_boundary_comment_directives = Some(group_boundary_comment_directives);
         }
 
         for (value_or_key, comma) in value_or_key_values_with_comma {

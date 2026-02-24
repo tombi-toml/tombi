@@ -6,14 +6,14 @@ use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     value::{
         ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules,
-        ArrayOfTableCommonLintRules, ArrayOfTableLintRules, InlineTableCommonFormatRules,
-        InlineTableCommonLintRules, InlineTableLintRules, KeyArrayOfTableCommonFormatRules,
-        KeyArrayOfTableCommonLintRules, KeyCommonExtensibleLintRules, KeyFormatRules,
-        KeyTableCommonFormatRules, KeyTableCommonLintRules, LintOptions,
-        ParentTableCommonLintRules, RootTableCommonLintRules, RootTableLintRules,
-        TableCommonFormatRules, TableCommonLintRules, TombiValueDirectiveContent,
-        WithCommonExtensibleLintRules, WithCommonLintRules, WithKeyFormatRules, WithKeyLintRules,
-        WithKeyTableLintRules,
+        ArrayOfTableCommonLintRules, ArrayOfTableLintRules, GroupBoundaryFormatRules,
+        GroupBoundaryLintRules, InlineTableCommonFormatRules, InlineTableCommonLintRules,
+        InlineTableLintRules, KeyArrayOfTableCommonFormatRules, KeyArrayOfTableCommonLintRules,
+        KeyCommonExtensibleLintRules, KeyFormatRules, KeyTableCommonFormatRules,
+        KeyTableCommonLintRules, LintOptions, ParentTableCommonLintRules, RootTableCommonLintRules,
+        RootTableLintRules, TableCommonFormatRules, TableCommonLintRules,
+        TombiValueDirectiveContent, WithCommonExtensibleLintRules, WithCommonLintRules,
+        WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
     },
 };
 use tombi_comment_directive_store::comment_directive_document_schema;
@@ -166,6 +166,15 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
             }
         }
     };
+
+    if let Some(group_boundary_directives) = array.group_boundary_comment_directives() {
+        let (_, diagnostics) = get_tombi_value_comment_directive_and_diagnostics::<
+            GroupBoundaryFormatRules,
+            GroupBoundaryLintRules,
+        >(group_boundary_directives)
+        .await;
+        total_diagnostics.extend(diagnostics);
+    }
 
     (array_common_rules, total_diagnostics)
 }
@@ -354,6 +363,15 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
         }
     };
 
+    if let Some(group_boundary_directives) = table.group_boundary_comment_directives() {
+        let (_, diagnostics) = get_tombi_value_comment_directive_and_diagnostics::<
+            GroupBoundaryFormatRules,
+            GroupBoundaryLintRules,
+        >(group_boundary_directives)
+        .await;
+        total_diagnostics.extend(diagnostics);
+    }
+
     (table_common_rules, total_diagnostics)
 }
 
@@ -488,8 +506,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics(
         ..
     } in comment_directives
     {
-        let (root, errors) = tombi_parser::parse(content)
-            .into_root_and_errors();
+        let (root, errors) = tombi_parser::parse(content).into_root_and_errors();
         // Check if there are any parsing errors
         if !errors.is_empty() {
             let mut diagnostics = Vec::new();

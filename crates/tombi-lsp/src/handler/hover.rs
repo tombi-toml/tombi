@@ -1,5 +1,5 @@
 use itertools::{Either, Itertools};
-use tombi_ast::{AstNode, algo::ancestors_at_position};
+use tombi_ast::{AstNode, DanglingCommentGroupOr, algo::ancestors_at_position};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
 use tombi_schema_store::SchemaContext;
 use tombi_text::IntoLsp;
@@ -178,20 +178,17 @@ pub async fn get_hover_keys_with_range(
                     || table
                         .trailing_comment()
                         .is_some_and(|comment| comment.syntax().range().contains(position))
+                    || table.dangling_comment_groups().any(|comment_group| {
+                        comment_group
+                            .comments()
+                            .any(|comment| comment.syntax().range().contains(position))
+                    })
                     || table
-                        .key_values_begin_dangling_comments()
-                        .into_iter()
-                        .any(|comments| {
-                            comments
-                                .into_iter()
-                                .any(|comment| comment.syntax().range().contains(position))
-                        })
-                    || table
-                        .key_values_end_dangling_comments()
-                        .into_iter()
-                        .any(|comments| {
-                            comments
-                                .into_iter()
+                        .key_value_groups()
+                        .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+                        .any(|comment_group| {
+                            comment_group
+                                .comments()
                                 .any(|comment| comment.syntax().range().contains(position))
                         }))
             {
@@ -222,19 +219,18 @@ pub async fn get_hover_keys_with_range(
                         .trailing_comment()
                         .is_some_and(|comment| comment.syntax().range().contains(position))
                     || array_of_table
-                        .key_values_begin_dangling_comments()
-                        .into_iter()
-                        .any(|comments| {
-                            comments
-                                .into_iter()
+                        .dangling_comment_groups()
+                        .any(|comment_group| {
+                            comment_group
+                                .comments()
                                 .any(|comment| comment.syntax().range().contains(position))
                         })
                     || array_of_table
-                        .key_values_end_dangling_comments()
-                        .into_iter()
-                        .any(|comments| {
-                            comments
-                                .into_iter()
+                        .key_value_groups()
+                        .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+                        .any(|comment_group| {
+                            comment_group
+                                .comments()
                                 .any(|comment| comment.syntax().range().contains(position))
                         }))
             {
@@ -251,22 +247,18 @@ pub async fn get_hover_keys_with_range(
             header
         } else if let Some(root) = tombi_ast::Root::cast(node.to_owned()) {
             if hover_range.is_none()
-                && (root
-                    .key_values_begin_dangling_comments()
-                    .into_iter()
-                    .any(|comments| {
-                        comments
-                            .into_iter()
+                && (root.dangling_comment_groups().any(|comment_group| {
+                    comment_group
+                        .comments()
+                        .any(|comment| comment.syntax().range().contains(position))
+                }) || root
+                    .key_value_groups()
+                    .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+                    .any(|comment_group| {
+                        comment_group
+                            .comments()
                             .any(|comment| comment.syntax().range().contains(position))
-                    })
-                    || root
-                        .key_values_end_dangling_comments()
-                        .into_iter()
-                        .any(|comments| {
-                            comments
-                                .into_iter()
-                                .any(|comment| comment.syntax().range().contains(position))
-                        }))
+                    }))
             {
                 hover_range = Some(root.syntax().range());
             }
