@@ -232,10 +232,10 @@ pub async fn get_hover_keys_with_range(
                     .last()
                     .is_none_or(|key| key.syntax().range().contains(position))
                     || table
-                        .leading_comments()
+                        .header_leading_comments()
                         .any(|comment| comment.syntax().range().contains(position))
                     || table
-                        .trailing_comment()
+                        .header_trailing_comment()
                         .is_some_and(|comment| comment.syntax().range().contains(position))
                     || table.dangling_comment_groups().any(|comment_group| {
                         comment_group
@@ -277,10 +277,10 @@ pub async fn get_hover_keys_with_range(
                     .last()
                     .is_none_or(|key| key.syntax().range().contains(position))
                     || array_of_table
-                        .leading_comments()
+                        .header_leading_comments()
                         .any(|comment| comment.syntax().range().contains(position))
                     || array_of_table
-                        .trailing_comment()
+                        .header_trailing_comment()
                         .is_some_and(|comment| comment.syntax().range().contains(position))
                     || array_of_table
                         .dangling_comment_groups()
