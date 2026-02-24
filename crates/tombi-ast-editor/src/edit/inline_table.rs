@@ -22,6 +22,9 @@ impl crate::Edit for tombi_ast::InlineTable {
 
         async move {
             let mut changes = vec![];
+            let total_key_values = self.key_values().count();
+            let has_last_comma = !self.has_last_key_value_trailing_comma();
+            let mut key_value_index = 0usize;
 
             for group in self.key_value_with_comma_groups() {
                 let DanglingCommentGroupOr::ItemGroup(kv_group) = group else {
@@ -29,15 +32,18 @@ impl crate::Edit for tombi_ast::InlineTable {
                 };
 
                 for (key_value, comma) in kv_group.key_values_with_comma() {
+                    let is_last_key_value = key_value_index + 1 == total_key_values;
                     changes.extend(inline_table_comma_trailing_comment(
                         &key_value,
                         comma.as_ref(),
+                        !has_last_comma || !is_last_key_value,
                     ));
                     changes.extend(
                         key_value
                             .edit(node, accessors, source_path, current_schema, schema_context)
                             .await,
                     );
+                    key_value_index += 1;
                 }
             }
 

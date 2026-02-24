@@ -77,15 +77,22 @@ pub async fn inline_table_keys_order<'a>(
         *comma = None;
     }
 
-    for (value, comma) in &sorted_key_values_with_comma {
-        changes.extend(inline_table_comma_trailing_comment(value, comma.as_ref()));
+    let sorted_len = sorted_key_values_with_comma.len();
+    for (i, (value, comma)) in sorted_key_values_with_comma.iter().enumerate() {
+        changes.extend(inline_table_comma_trailing_comment(
+            value,
+            comma.as_ref(),
+            is_last_comma || i + 1 != sorted_len,
+        ));
     }
 
     let new = sorted_key_values_with_comma
         .iter()
-        .flat_map(|(value, comma)| {
+        .enumerate()
+        .flat_map(|(i, (value, comma))| {
             if let Some(comma) = comma {
                 if !is_last_comma
+                    && i + 1 == sorted_len
                     && comma.leading_comments().next().is_none()
                     && comma.trailing_comment().is_none()
                 {

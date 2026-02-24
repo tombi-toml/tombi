@@ -5,11 +5,7 @@ use tombi_ast::AstNode;
 use tombi_config::TomlVersion;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{
-    Format,
-    format::write_trailing_comment_alignment_space,
-    types::WithAlignmentHint,
-};
+use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 impl Format for tombi_ast::InlineTable {
     #[inline]
@@ -238,10 +234,6 @@ impl Format for WithAlignmentHint<&tombi_ast::KeyValueWithCommaGroup> {
                         )?;
                     }
                     trailing_comment.format(f)?;
-                }
-            } else {
-                if key_values.peek().is_some() {
-                    write!(f, ",")?;
                 }
             }
         }

@@ -48,8 +48,7 @@ impl<T> WithAlignmentHint<T> {
         group: tombi_ast::DanglingCommentGroupOr<T>,
         equal_alignment_width: Option<AlignmentWidth>,
         trailing_comment_alignment_width: Option<AlignmentWidth>,
-    ) -> tombi_ast::DanglingCommentGroupOr<Self>
-    {
+    ) -> tombi_ast::DanglingCommentGroupOr<Self> {
         match group {
             tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
                 tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group)

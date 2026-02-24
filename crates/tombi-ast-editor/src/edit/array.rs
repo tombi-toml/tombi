@@ -39,6 +39,9 @@ impl crate::Edit for tombi_ast::Array {
 
             let mut changes = vec![];
             let mut value_nodes_iter = array_node.values().iter().enumerate();
+            let total_values = self.values().count();
+            let has_last_comma = !self.has_last_value_trailing_comma();
+            let mut value_index = 0usize;
 
             for group in self.value_with_comma_groups() {
                 let DanglingCommentGroupOr::ItemGroup(value_group) = group else {
@@ -49,7 +52,12 @@ impl crate::Edit for tombi_ast::Array {
                     .values_with_comma()
                     .zip(value_nodes_iter.by_ref())
                 {
-                    changes.extend(array_comma_trailing_comment(&value, comma.as_ref()));
+                    let is_last_value = value_index + 1 == total_values;
+                    changes.extend(array_comma_trailing_comment(
+                        &value,
+                        comma.as_ref(),
+                        !has_last_comma || !is_last_value,
+                    ));
                     changes.extend(
                         value
                             .edit(
@@ -65,6 +73,7 @@ impl crate::Edit for tombi_ast::Array {
                             )
                             .await,
                     );
+                    value_index += 1;
                 }
             }
 

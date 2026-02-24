@@ -4,11 +4,7 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{
-    Format,
-    format::write_trailing_comment_alignment_space,
-    types::WithAlignmentHint,
-};
+use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
 
 impl Format for tombi_ast::Array {
     #[inline]
@@ -192,11 +188,6 @@ impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
             ..
         } = self;
 
-        let has_last_value_trailing_comma = value_group
-            .values_with_comma()
-            .last()
-            .is_some_and(|(_, comma)| comma.is_some());
-
         let mut values = value_group.values_with_comma().enumerate().peekable();
         while let Some((i, (value, comma))) = values.next() {
             if i > 0 {
@@ -230,8 +221,6 @@ impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
                     }
                     trailing_comment.format(f)?;
                 }
-            } else if has_last_value_trailing_comma || values.peek().is_some() {
-                write!(f, ",")?;
             }
         }
 
@@ -322,6 +311,58 @@ mod tests {
 
     test_format! {
         #[tokio::test]
+        async fn singleline_array_missing_comma_with_last_comma(
+            "array = [1 2 3,]"
+        ) -> Ok(r#"
+            array = [
+              1,
+              2,
+              3,
+            ]
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn singleline_array_missing_comma_with_last_comma_and_trailing_comment(
+            "array = [
+              1, # comment1
+              2  # comment2
+              3, # comment3
+            ]"
+        ) -> Ok(
+            r#"
+            array = [
+              1,  # comment1
+              2,  # comment2
+              3,  # comment3
+            ]
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn singleline_array_missing_comma_with_trailing_comment(
+            "array = [
+              1, # comment1
+              2  # comment2
+              3  # comment3
+            ]"
+        ) -> Ok(
+            r#"
+            array = [
+              1,  # comment1
+              2,  # comment2
+              3  # comment3
+            ]
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn multiline_array1(
             "array = [1, 2, 3,]"
         ) -> Ok(
@@ -359,7 +400,7 @@ mod tests {
         ) -> Ok(
             r#"
             array = [
-              1,  # comment
+              1  # comment
             ]
             "#
         )
@@ -395,6 +436,27 @@ mod tests {
             r#"
             array = [
               1,  # comment
+            ]
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
+        async fn multiline_array6(
+            r#"
+            array = [
+              1  # comment
+              # comment2
+              , # comment3
+            ]
+            "#
+        ) -> Ok(
+            r#"
+            array = [
+              1  # comment
+              # comment2
+              ,  # comment3
             ]
             "#
         )
@@ -452,7 +514,7 @@ mod tests {
               ,  # value2 comma trailing comment
               # value3 leading comment1
               # value3 leading comment2
-              3,  # value3 trailing comment
+              3  # value3 trailing comment
               # array end dangling comment group 1-1
               # array end dangling comment group 1-2
 
