@@ -23,13 +23,9 @@ fn write_trailing_comment_alignment_space(
     f: &mut crate::Formatter,
     trailing_comment_alignment_width: AlignmentWidth,
 ) -> Result<(), std::fmt::Error> {
-    let spaces = (trailing_comment_alignment_width.value() as usize)
-        .saturating_sub(f.current_line_width());
-    write!(
-        f,
-        "{}",
-        " ".repeat(spaces)
-    )?;
+    let spaces =
+        (trailing_comment_alignment_width.value() as usize).saturating_sub(f.current_line_width());
+    write!(f, "{}", " ".repeat(spaces))?;
     Ok(())
 }
 
