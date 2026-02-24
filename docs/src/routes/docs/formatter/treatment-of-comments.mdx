@@ -1,361 +1,258 @@
 # Treatment of Comments
 
-Tombi provides sophisticated comment interpretation to support automatic sorting.
+Tombi uses a group-based comment model to keep formatting stable and auto-sorting predictable.
 
-While most users will learn how comments are handled by observing the formatter's behavior,
-this page offers a systematic understanding of Tombi's comment treatment.
+This page explains the behavior in plain TOML examples, without implementation details.
 
-## Terminology
+## Quick Summary
 
-In TOML files, there are three types of comments:
+- Tombi treats blank-line-separated comment blocks as meaningful boundaries.
+- Sorting happens inside each group, not across group boundaries.
+- `# tombi:` directives only control formatter/linter rules when placed in a position that has a clear target.
 
-1. Leading comments
-2. Trailing comment
-3. Dangling comments
+## Comment Roles in TOML
 
-Types 1 and 2 are associated with specific elements.
-Leading comments appear on the lines before an element and can span multiple consecutive lines.
-Trailing comment appear at the end of the line after an element and are limited to one per line.
+### Leading comments
+Comments directly attached to the item below.
 
 ```toml
-# leading comment1
-# leading comment2
+# leading comment 1
+# leading comment 2
+key = "value"
+```
+
+### Trailing comments
+A comment at the end of the same line.
+
+```toml
 key = "value" # trailing comment
 ```
 
-Type 3, Dangling comments, are comments that are not associated with any specific element.
+### Dangling comment groups
+Comment blocks separated by blank lines. These create visual/logical boundaries.
 
 ```toml
-# dangling comment1
-# dangling comment2
+# dangling comment group A line 1
+# dangling comment group A line 2
 
-key = "value"
-
-# dangling comment3
-
-# dangling comment4
+# dangling comment group B line 1
+# dangling comment group B line 2
 ```
 
-It is impossible to automatically sort Dangling Comments.
+## Blank Lines Define Boundaries
 
-Consider this example:
+A blank line is treated as a boundary between groups.
+
+That boundary is important because Tombi does not move values/keys across it when sorting.
 
 ```toml
-# dangling comment1
+[tool.demo]
+b = 2
+a = 1
 
-key2 = "value2"
-
-# dangling comment2
-
-# leading comment1
-# leading comment2
-key1 = "value1" # trailing comment
-# dangling comment3
-
-# dangling comment4
+z = 26
+y = 25
 ```
 
-When sorting keys in ascending order, `key1` should come before `key2`.
-But where should `dangling comment2` be placed? Before `key1` or after `key2`?
-Tombi cannot determine which element the comment is intended for.
+Tombi may reorder `b/a` and `z/y` inside each group, but it does not merge or cross the boundary.
 
-Should we use AI to interpret the comment content?
+## Where `# tombi:` Directives Are Effective
 
-No, Tombi solves this problem through a set of special rules.
+A simple rule:
 
-## Limiting the Use of Dangling Comments
+- Effective: before the first item of the current container.
+- Not effective for rule control: between groups after items already appeared.
 
-The key to Tombi's ability to auto-sort is treating some comments that appear to be Dangling Comments as Leading Comments.
+Below are concrete examples.
 
-Tombi allows Dangling Comments to be placed before and after key values, and before and after the brackets of arrays and inline tables.
+### Root-level example
+
+Effective at root level (before first key):
 
 ```toml
-# dangling comment
-# dangling comment
+# root directive: effective for the root table
+# tombi: format.rules.table-keys-order = "ascending"
 
-key = "value"
+b = 2
+a = 1
+```
 
-# dangling comment
-# dangling comment
+Not effective at root level (appears after root items started):
 
-[table]
-# dangling comment
-# dangling comment
+```toml
+b = 2
+a = 1
 
-key = [
-  # dangling comment
-  # dangling comment
-  
-  "value",
-  
-  # dangling comment
-  # dangling comment
+# root group-boundary directive:
+# interpreted as an empty key-value group directive
+# (not used for rule control)
+# tombi: format.rules.table-keys-order = "ascending"
+
+z = 26
+y = 25
+```
+
+In this position, Tombi interprets the directive as belonging to an **empty key-value group** at the boundary.  
+So it is recognized by tooling, but it does not affect formatter/linter rule control.
+
+### Standard table example
+
+Effective for `[package]` (before first key in that table):
+
+```toml
+[package]
+# package directive: effective for this table
+# tombi: format.rules.table-keys-order = "ascending"
+
+name = "demo"
+version = "1.0.0"
+```
+
+Not effective for `[package]` (between table groups after keys already appeared):
+
+```toml
+[package]
+name = "demo"
+version = "1.0.0"
+
+# package group-boundary directive: not used for rule control
+# tombi: format.rules.table-keys-order = "ascending"
+
+description = "example"
+license = "MIT"
+```
+
+### Array example
+
+Effective for the array (before first value):
+
+```toml
+items = [
+  # array directive: effective for this array
+  # tombi: format.rules.array-values-order = "ascending"
+
+  "banana",
+  "apple",
 ]
+```
 
-# dangling comment
-# dangling comment
+Not effective for the array (between value groups after values already appeared):
 
-[[array_of_table]]
-# dangling comment
-# dangling comment
+```toml
+items = [
+  "banana",
+  "apple",
 
-key = {
-  # dangling comment
-  # dangling comment
-  
-  key = "value"
-  
-  # dangling comment
-  # dangling comment
+  # array group-boundary directive: not used for rule control
+  # tombi: format.rules.array-values-order = "ascending"
+
+  "date",
+  "cherry",
+]
+```
+
+### Inline table example
+
+Effective for the inline table (before first key-value in the inline table):
+
+```toml
+point = {
+  # inline-table directive: effective for this inline table
+  # tombi: format.rules.table-keys-order = "ascending"
+
+  y = 20,
+  x = 10,
 }
-
-# dangling comment
-# dangling comment
 ```
 
-<Note>
-Dangling comments can be separated by blank lines, allowing multiple groups to be placed.
+Not effective for the inline table (between groups after key-values already appeared):
 
 ```toml
-# dangling comment
-# dangling comment
+point = {
+  y = 20,
+  x = 10,
 
-# dangling comment
-# dangling comment
+  # inline-table group-boundary directive: not used for rule control
+  # tombi: format.rules.table-keys-order = "ascending"
 
-# dangling comment
-# dangling comment
+  z = 30,
+}
 ```
-</Note>
 
-<Tip>
-The proposed TOML v1.1.0 specification allows multi-line and trailing commas in Inline Tables.
-</Tip>
+### Array-of-tables example
 
-What happens to dangling comments in other locations?
-
-## Merging Leading Comments
-
-Consider a case where comments exist between key values, where dangling comments are not allowed:
+Effective for each `[[servers]]` block only when placed before that block's first key:
 
 ```toml
-key1 = 1
+[[servers]]
+# array-of-table directive: effective for this table item
+# tombi: format.rules.table-keys-order = "ascending"
 
-# dangling comment?
-# dangling comment?
-
-# dangling comment?
-# dangling comment?
-
-key2 = 2
+port = 8080
+host = "localhost"
 ```
 
-In such cases, Tombi treats these dangling comments as leading comments and removes blank lines between them:
+Not effective when placed between groups after keys already appeared:
 
 ```toml
-key1 = 1
-# dangling comment?
-# dangling comment?
-# dangling comment?
-# dangling comment?
-key2 = 2
+[[servers]]
+port = 8080
+host = "localhost"
+
+# array-of-table group-boundary directive: not used for rule control
+# tombi: format.rules.table-keys-order = "ascending"
+
+protocol = "http"
 ```
 
-Through this special pre-processing, Tombi maintains the meaning of comments while enabling automatic sorting.
+## What Happens to Non-Effective Directives?
 
-## Summary of Comment Handling
+When a directive is placed at a group boundary (not rule-effective):
 
-Let's examine a comprehensive example to understand how Tombi handles comments:
+- Formatter rule control: no available rules in this position
+- Linter rule control: no available rules in this position
+- Editor support (completion/hover/validation): still available
+
+So you still get language-server assistance, but the directive does not change formatting/linting behavior.
+
+## One Annotated Walkthrough
 
 ```toml
-# dangling comment
-# dangling comment
+# [root directive: effective for root]
+# tombi: format.rules.table-keys-order = "ascending"
 
-# leading comment
-# leading comment
-key1 = 1 # trailing comment
+# [root dangling comment group]
 
-# leading comment
-# leading comment
+[package]
+# [table directive: effective for package table]
+# tombi: format.rules.table-keys-order = "ascending"
 
-# leading comment
-# leading comment
-key2 = 2 # trailing comment
+name = "demo"
+version = "1.0.0"
 
-# dangling comment
-# dangling comment
+# [table group-boundary directive: not effective for rule control]
+# tombi: format.rules.table-keys-order = "descending"
 
-# leading comment
-# leading comment
-[table]
-# dangling comment
+description = "example"
 
-# dangling comment
-# dangling comment
+items = [
+  # [array directive: effective for this array]
+  # tombi: format.rules.array-values-order = "ascending"
 
-# leading comment
-# leading comment
-key1 = 1 # trailing comment
+  "b",
+  "a",
 
-# leading comment
-# leading comment
+  # [array group-boundary directive: not effective for rule control]
+  # tombi: format.rules.array-values-order = "descending"
 
-# leading comment
-key2 = [
-  # dangling comment
-  # dangling comment
-  
-  # leading comment
-  # leading comment
-  "value1", # trailing comment
-
-  # leading comment
-  # leading comment
-
-  # leading comment
-  # leading comment
-  "value2", # trailing comment
-
-  # dangling comment
-  # dangling comment
-  
-  # dangling comment
-  # dangling comment
-] # trailing comment
-
-# dangling comment
-# dangling comment
-
-# leading comment
-[[array_of_table]]
-# dangling comment
-# dangling comment
-
-key1 = {
-  # dangling comment
-  # dangling comment
-
-  # dangling comment
-  # dangling comment
-  
-  # leading comment
-  # leading comment
-  key1 = "value1", # trailing comment
-
-  # leading comment
-  # leading comment
-
-  # leading comment
-  # leading comment
-  key2 = "value2" # trailing comment
-  # leading comment
-
-  # leading comment
-  # leading comment
-  , # trailing comment
-  # dangling comment
-  # dangling comment
-
-  # dangling comment
-  # dangling comment
-} # trailing comment
-
-# dangling comment
-# dangling comment
-
-# dangling comment
+  "d",
+  "c",
+]
 ```
 
-After formatting, the comments are rearranged as follows:
+Reading rule:
 
-```toml
-# dangling comment
-# dangling comment
+- Comments labeled "directive: effective" are used for rule control.
+- Comments labeled "group-boundary directive" are treated as boundary comments and are not used for formatter/linter rule control.
 
-# leading comment
-# leading comment
-key1 = 1  # trailing comment
-# leading comment
-# leading comment
-# leading comment
-# leading comment
-key2 = 2  # trailing comment
-
-# dangling comment
-# dangling comment
-
-# leading comment
-# leading comment
-[table]
-# dangling comment
-
-# dangling comment
-# dangling comment
-
-# leading comment
-# leading comment
-key1 = 1  # trailing comment
-# leading comment
-# leading comment
-# leading comment
-key2 = [
-  # dangling comment
-  # dangling comment
-
-  # leading comment
-  # leading comment
-  "value1",  # trailing comment
-  # leading comment
-  # leading comment
-  # leading comment
-  # leading comment
-  "value2",  # trailing comment
-
-  # dangling comment
-  # dangling comment
-
-  # dangling comment
-  # dangling comment
-]  # trailing comment
-
-# dangling comment
-# dangling comment
-
-# leading comment
-[[array_of_table]]
-# dangling comment
-# dangling comment
-
-key1 = {
-  # dangling comment
-  # dangling comment
-
-  # dangling comment
-  # dangling comment
-
-  # leading comment
-  # leading comment
-  key1 = "value1",  # trailing comment
-  # leading comment
-  # leading comment
-  # leading comment
-  # leading comment
-  key2 = "value2"  # trailing comment
-  # leading comment
-  # leading comment
-  # leading comment
-  ,  # trailing comment
-  # dangling comment
-  # dangling comment
-
-  # dangling comment
-  # dangling comment
-}  # trailing comment
-
-# dangling comment
-# dangling comment
-
-# dangling comment
-```
-
-Through this intelligent comment interpretation, Tombi enables automatic sorting 🚀
+For directive syntax and available options, see [Comment Directive](/docs/comment-directive/).
