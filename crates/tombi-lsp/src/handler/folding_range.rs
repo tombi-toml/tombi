@@ -513,48 +513,6 @@ impl GetCommentFoldingRange for Vec<tombi_ast::LeadingComment> {
     }
 }
 
-impl GetCommentFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
-    fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
-        let last = self
-            .iter()
-            .rev()
-            .find(|group| !group.is_empty())?
-            .iter()
-            .next_back()?;
-
-        if first.syntax().range().start.line == last.syntax().range().end.line {
-            return None;
-        }
-
-        Some(tombi_text::Range::new(
-            first.syntax().range().start,
-            last.syntax().range().end,
-        ))
-    }
-}
-
-impl GetCommentFoldingRange for Vec<Vec<tombi_ast::EndDanglingComment>> {
-    fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
-        let last = self
-            .iter()
-            .rev()
-            .find(|group| !group.is_empty())?
-            .iter()
-            .next_back()?;
-
-        if first.syntax().range().start.line == last.syntax().range().end.line {
-            return None;
-        }
-
-        Some(tombi_text::Range::new(
-            first.syntax().range().start,
-            last.syntax().range().end,
-        ))
-    }
-}
-
 impl GetCommentFoldingRange for Vec<tombi_ast::DanglingComment> {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let first = self.first()?;

@@ -69,10 +69,10 @@ mod test {
 
     test_parser! {
         #[test]
-        fn parses_root_begin_dangling_comments(
+        fn parses_root_dangling_comments_before_table(
             r#"
-            # begin dangling_comment1
-            # begin dangling_comment2
+            # dangling_comment1
+            # dangling_comment2
 
             # table leading comment1
             # table leading comment2
@@ -81,9 +81,9 @@ mod test {
         ) -> Ok(
             {
                 DANGLING_COMMENT_GROUP: {
-                    COMMENT: "# begin dangling_comment1",
+                    COMMENT: "# dangling_comment1",
                     LINE_BREAK: "\n",
-                    COMMENT: "# begin dangling_comment2"
+                    COMMENT: "# dangling_comment2"
                 },
                 LINE_BREAK: "\n",
                 LINE_BREAK: "\n",

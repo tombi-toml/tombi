@@ -66,16 +66,6 @@ impl_comment!(
 
 impl_comment!(
     #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
-    pub struct BeginDanglingComment(crate::Comment);
-);
-
-impl_comment!(
-    #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
-    pub struct EndDanglingComment(crate::Comment);
-);
-
-impl_comment!(
-    #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
     pub struct LeadingComment(crate::Comment);
 );
 
