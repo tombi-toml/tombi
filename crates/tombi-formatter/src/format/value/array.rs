@@ -4,7 +4,11 @@ use itertools::Itertools;
 use tombi_ast::AstNode;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{Format, format::write_trailing_comment_alignment_space, types::WithAlignmentHint};
+use crate::{
+    Format,
+    format::{has_empty_line_before, write_trailing_comment_alignment_space},
+    types::WithAlignmentHint,
+};
 
 impl Format for tombi_ast::Array {
     #[inline]
@@ -35,30 +39,35 @@ pub(crate) fn exceeds_line_width(
     length += f.array_bracket_space().len() * 2; // Space after '[' and before ']'
     let mut first = true;
 
-    for value in node.values() {
-        // Check if nested value should be multiline
-        let should_be_multiline = match &value {
-            tombi_ast::Value::Array(array) => {
-                array.should_be_multiline(f.toml_version()) || exceeds_line_width(array, f)?
-            }
-            tombi_ast::Value::InlineTable(table) => {
-                table.should_be_multiline(f.toml_version())
-                    || crate::format::value::inline_table::exceeds_line_width(table, f)?
-            }
-            _ => false,
+    for group in node.value_with_comma_groups() {
+        let tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) = group else {
+            continue;
         };
 
-        if should_be_multiline {
-            return Ok(true);
-        }
+        for value in item_group.values() {
+            // Check if nested value should be multiline
+            let should_be_multiline = match &value {
+                tombi_ast::Value::Array(array) => {
+                    array.should_be_multiline(f.toml_version()) || exceeds_line_width(array, f)?
+                }
+                tombi_ast::Value::InlineTable(table) => {
+                    table.should_be_multiline(f.toml_version())
+                        || crate::format::value::inline_table::exceeds_line_width(table, f)?
+                }
+                _ => false,
+            };
 
-        // Calculate total length
-        if !first {
-            length += 1; // ","
-            length += f.array_comma_space().len();
+            if should_be_multiline {
+                return Ok(true);
+            }
+
+            if !first {
+                length += 1; // ","
+                length += f.array_comma_space().len();
+            }
+            length += f.format_to_string(&value)?.graphemes(true).count();
+            first = false;
         }
-        length += f.format_to_string(&value)?.graphemes(true).count();
-        first = false;
     }
 
     if let Some(trailing_comment) = node.trailing_comment() {
@@ -83,70 +92,53 @@ fn format_multiline_array(
     array.leading_comments().collect_vec().format(f)?;
 
     f.write_indent()?;
-    write!(f, "[{}", f.line_ending())?;
+    write!(f, "[")?;
+
+    if let Some(trailing_comment) = array.bracket_start_trailing_comment() {
+        trailing_comment.format(f)?;
+    }
+
+    write!(f, "{}", f.line_ending())?;
 
     f.inc_indent();
 
-    let values_with_comma = array.values_with_comma().collect_vec();
+    let dangling_comment_groups = array.dangling_comment_groups().collect_vec();
+    dangling_comment_groups.format(f)?;
 
-    if values_with_comma.is_empty() {
-        array.inner_dangling_comments().format(f)?;
-    } else {
-        array.inner_begin_dangling_comments().format(f)?;
+    let groups = array.value_with_comma_groups().collect_vec();
+    if !groups.is_empty() {
+        if !dangling_comment_groups.is_empty() {
+            write!(f, "{}", f.line_ending())?;
+            write!(f, "{}", f.line_ending())?;
+        }
 
-        let has_last_value_trailing_comma = array.has_last_value_trailing_comma();
-        let values_len = values_with_comma.len();
-
-        for (i, (value, comma)) in values_with_comma.into_iter().enumerate() {
-            // value format
-            {
-                if i > 0 {
-                    write!(f, "{}", f.line_ending())?;
-                }
-                WithAlignmentHint::new_with_trailing_comment_alignment_width(
-                    &value,
-                    *trailing_comment_alignment_width,
-                )
-                .format(f)?;
-            }
-
-            // comma format
-            {
-                let (comma_leading_comments, comma_trailing_comment) = match comma {
-                    Some(comma) => (
-                        comma.leading_comments().collect_vec(),
-                        comma.trailing_comment(),
-                    ),
-                    None => (vec![], None),
-                };
-
-                if !comma_leading_comments.is_empty() {
-                    write!(f, "{}", f.line_ending())?;
-                    comma_leading_comments.format(f)?;
-                    f.write_indent()?;
-                    write!(f, ",")?;
-                } else if value.trailing_comment().is_some() {
-                    write!(f, "{}", f.line_ending())?;
-                    f.write_indent()?;
-                    write!(f, ",")?;
-                } else if has_last_value_trailing_comma || i + 1 != values_len {
-                    write!(f, ",")?;
-                }
-
-                if let Some(comment) = comma_trailing_comment {
-                    if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width
-                    {
-                        write_trailing_comment_alignment_space(
-                            f,
-                            *trailing_comment_alignment_width,
-                        )?;
+        for (i, group) in groups.iter().enumerate() {
+            match group {
+                tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                    if f.skip_comment() {
+                        return Ok(());
                     }
-                    comment.format(f)?;
+                    if i != 0 {
+                        if has_empty_line_before(comment_group) {
+                            write!(f, "{}", f.line_ending())?;
+                        }
+                        write!(f, "{}", f.line_ending())?;
+                    }
+                    comment_group.format(f)?;
+                }
+                tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) => {
+                    if i != 0 {
+                        write!(f, "{}", f.line_ending())?;
+                        write!(f, "{}", f.line_ending())?;
+                    }
+                    WithAlignmentHint::new_with_trailing_comment_alignment_width(
+                        item_group,
+                        *trailing_comment_alignment_width,
+                    )
+                    .format(f)?;
                 }
             }
         }
-
-        array.inner_end_dangling_comments().format(f)?;
     }
 
     f.dec_indent();
@@ -163,37 +155,6 @@ fn format_multiline_array(
     }
 
     Ok(())
-}
-
-fn has_empty_line_before_value_group(group: &tombi_ast::ValueWithCommaGroup) -> bool {
-    fn previous_non_whitespace(
-        mut element: tombi_syntax::SyntaxElement,
-    ) -> Option<tombi_syntax::SyntaxElement> {
-        loop {
-            if element.kind() != WHITESPACE {
-                return Some(element);
-            }
-            element = element.prev_sibling_or_token()?;
-        }
-    }
-
-    let Some(prev) = group
-        .syntax()
-        .prev_sibling_or_token()
-        .and_then(previous_non_whitespace)
-    else {
-        return false;
-    };
-    if prev.kind() != LINE_BREAK {
-        return false;
-    }
-    let Some(prev_prev) = prev
-        .prev_sibling_or_token()
-        .and_then(previous_non_whitespace)
-    else {
-        return false;
-    };
-    prev_prev.kind() == LINE_BREAK
 }
 
 fn format_singleline_array(
@@ -238,6 +199,61 @@ fn format_singleline_array(
     }
 
     Ok(())
+}
+
+impl Format for WithAlignmentHint<'_, tombi_ast::ValueWithCommaGroup> {
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        let WithAlignmentHint {
+            value: value_group,
+            trailing_comment_alignment_width,
+            ..
+        } = self;
+
+        let has_last_value_trailing_comma = value_group
+            .values_with_comma()
+            .last()
+            .is_some_and(|(_, comma)| comma.is_some());
+
+        let mut values = value_group.values_with_comma().enumerate().peekable();
+        while let Some((i, (value, comma))) = values.next() {
+            if i > 0 {
+                write!(f, "{}", f.line_ending())?;
+            }
+
+            WithAlignmentHint::new_with_trailing_comment_alignment_width(
+                &value,
+                *trailing_comment_alignment_width,
+            )
+            .format(f)?;
+
+            if let Some(comma) = &comma {
+                let leading_comments = comma.leading_comments().collect_vec();
+                if !leading_comments.is_empty() {
+                    write!(f, "{}", f.line_ending())?;
+                    leading_comments.format(f)?;
+                    f.write_indent()?;
+                } else if value.trailing_comment().is_some() {
+                    write!(f, "{}", f.line_ending())?;
+                    f.write_indent()?;
+                }
+                write!(f, ",")?;
+                if let Some(trailing_comment) = comma.trailing_comment() {
+                    if let Some(trailing_comment_alignment_width) = trailing_comment_alignment_width
+                    {
+                        write_trailing_comment_alignment_space(
+                            f,
+                            *trailing_comment_alignment_width,
+                        )?;
+                    }
+                    trailing_comment.format(f)?;
+                }
+            } else if has_last_value_trailing_comma || values.peek().is_some() {
+                write!(f, ",")?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
