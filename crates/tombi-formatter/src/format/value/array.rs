@@ -6,7 +6,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     Format,
-    format::{has_empty_line_before, write_trailing_comment_alignment_space},
+    format::write_trailing_comment_alignment_space,
     types::WithAlignmentHint,
 };
 
@@ -105,40 +105,23 @@ fn format_multiline_array(
     let dangling_comment_groups = array.dangling_comment_groups().collect_vec();
     dangling_comment_groups.format(f)?;
 
-    let groups = array.value_with_comma_groups().collect_vec();
+    let groups = array
+        .value_with_comma_groups()
+        .map(|group| {
+            WithAlignmentHint::new_with_dangling_comment_group_or(
+                group,
+                None,
+                *trailing_comment_alignment_width,
+            )
+        })
+        .collect_vec();
     if !groups.is_empty() {
         if !dangling_comment_groups.is_empty() {
             write!(f, "{}", f.line_ending())?;
             write!(f, "{}", f.line_ending())?;
         }
 
-        for (i, group) in groups.iter().enumerate() {
-            match group {
-                tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
-                    if f.skip_comment() {
-                        return Ok(());
-                    }
-                    if i != 0 {
-                        if has_empty_line_before(comment_group) {
-                            write!(f, "{}", f.line_ending())?;
-                        }
-                        write!(f, "{}", f.line_ending())?;
-                    }
-                    comment_group.format(f)?;
-                }
-                tombi_ast::DanglingCommentGroupOr::ItemGroup(item_group) => {
-                    if i != 0 {
-                        write!(f, "{}", f.line_ending())?;
-                        write!(f, "{}", f.line_ending())?;
-                    }
-                    WithAlignmentHint::new_with_trailing_comment_alignment_width(
-                        item_group,
-                        *trailing_comment_alignment_width,
-                    )
-                    .format(f)?;
-                }
-            }
-        }
+        groups.format(f)?;
     }
 
     f.dec_indent();
@@ -253,6 +236,17 @@ impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
         }
 
         Ok(())
+    }
+}
+
+impl Format for WithAlignmentHint<tombi_ast::ValueWithCommaGroup> {
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        WithAlignmentHint {
+            value: &self.value,
+            equal_alignment_width: self.equal_alignment_width,
+            trailing_comment_alignment_width: self.trailing_comment_alignment_width,
+        }
+        .format(f)
     }
 }
 
