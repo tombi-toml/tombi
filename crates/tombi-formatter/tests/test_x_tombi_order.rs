@@ -1068,6 +1068,33 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_array_with_inner_comment_directive_with_separator_line_without_trailing_comma(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  2, 1,
+
+                  4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  1,
+                  2,
+
+                  3,
+                  4
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_array_with_trailing_comment_directive(
                 r#"
                 key = [
@@ -1152,6 +1179,34 @@ mod table_keys_order {
                   key3 = 3,
                   key4 = 4,
                   key5 = 5
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_inner_comment_directive_with_separator_line_without_trailing_comma(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  b = 2, a = 1,
+
+                  d = 4, c = 3
+                }
+                "#,
+                TomlVersion::V1_1_0,
+            ) -> Ok(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  a = 1,
+                  b = 2,
+
+                  c = 3,
+                  d = 4
                 }
                 "#
             )
