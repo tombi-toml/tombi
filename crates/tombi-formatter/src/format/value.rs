@@ -19,7 +19,7 @@ impl Format for tombi_ast::Value {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::Value> {
+impl Format for WithAlignmentHint<&tombi_ast::Value> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         match self.value {
             tombi_ast::Value::Array(value) => WithAlignmentHint {
@@ -136,7 +136,7 @@ where
     }
 }
 
-impl<T> Format for WithAlignmentHint<'_, T>
+impl<T> Format for WithAlignmentHint<&T>
 where
     T: LiteralNode + tombi_ast::AstNode,
 {

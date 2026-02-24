@@ -255,7 +255,7 @@ impl<'a> Formatter<'a> {
         equal_alignment_width: Option<AlignmentWidth>,
     ) -> Result<Option<AlignmentWidth>, std::fmt::Error>
     where
-        WithAlignmentHint<'b, T>: Format,
+        WithAlignmentHint<&'b T>: Format,
     {
         if self.definitions.trailing_comment_alignment {
             let mut widths = vec![];

@@ -18,7 +18,7 @@ impl Format for tombi_ast::InlineTable {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::InlineTable> {
+impl Format for WithAlignmentHint<&tombi_ast::InlineTable> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
             && (self.value.should_be_multiline(f.toml_version())
@@ -93,7 +93,7 @@ fn format_multiline_inline_table(
         value: table,
         trailing_comment_alignment_width,
         ..
-    }: &WithAlignmentHint<'_, tombi_ast::InlineTable>,
+    }: &WithAlignmentHint<&tombi_ast::InlineTable>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     table.leading_comments().collect_vec().format(f)?;
@@ -173,7 +173,7 @@ fn format_singleline_inline_table(
         value: table,
         trailing_comment_alignment_width,
         ..
-    }: &WithAlignmentHint<'_, tombi_ast::InlineTable>,
+    }: &WithAlignmentHint<&tombi_ast::InlineTable>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     table.leading_comments().collect_vec().format(f)?;
@@ -212,7 +212,7 @@ fn format_singleline_inline_table(
     Ok(())
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::KeyValueWithCommaGroup> {
+impl Format for WithAlignmentHint<&tombi_ast::KeyValueWithCommaGroup> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let WithAlignmentHint {
             value: key_value_group,

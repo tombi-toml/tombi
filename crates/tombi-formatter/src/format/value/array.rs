@@ -17,7 +17,7 @@ impl Format for tombi_ast::Array {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::Array> {
+impl Format for WithAlignmentHint<&tombi_ast::Array> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         if !f.single_line_mode()
             && (self.value.should_be_multiline(f.toml_version())
@@ -86,7 +86,7 @@ fn format_multiline_array(
         value: array,
         trailing_comment_alignment_width,
         ..
-    }: &WithAlignmentHint<'_, tombi_ast::Array>,
+    }: &WithAlignmentHint<&tombi_ast::Array>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     array.leading_comments().collect_vec().format(f)?;
@@ -162,7 +162,7 @@ fn format_singleline_array(
         value: array,
         trailing_comment_alignment_width,
         ..
-    }: &WithAlignmentHint<'_, tombi_ast::Array>,
+    }: &WithAlignmentHint<&tombi_ast::Array>,
     f: &mut crate::Formatter,
 ) -> Result<(), std::fmt::Error> {
     array.leading_comments().collect_vec().format(f)?;
@@ -201,7 +201,7 @@ fn format_singleline_array(
     Ok(())
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::ValueWithCommaGroup> {
+impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let WithAlignmentHint {
             value: value_group,

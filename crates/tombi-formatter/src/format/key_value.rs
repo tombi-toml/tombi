@@ -12,7 +12,7 @@ impl Format for tombi_ast::KeyValue {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
+impl Format for WithAlignmentHint<&tombi_ast::KeyValue> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let key_value = self.value;
         key_value.leading_comments().collect_vec().format(f)?;
