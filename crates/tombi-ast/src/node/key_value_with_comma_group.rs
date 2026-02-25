@@ -1,6 +1,7 @@
 use tombi_syntax::SyntaxNode;
 
 use crate::AstNode;
+use crate::support::iter::WithCommaIter;
 use tombi_syntax::SyntaxKind::KEY_VALUE_WITH_COMMA_GROUP;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -27,14 +28,14 @@ impl KeyValueWithCommaGroup {
     pub fn key_values_with_comma(
         &self,
     ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
-        KeyValuesWithCommaIter::new(self.syntax().children())
+        WithCommaIter::new(self.syntax().children())
     }
 
     #[inline]
     pub fn into_key_values_with_comma(
         self,
     ) -> impl Iterator<Item = (crate::KeyValue, Option<crate::Comma>)> {
-        KeyValuesWithCommaIter::new(self.syntax.children())
+        WithCommaIter::new(self.syntax.children())
     }
 
     #[inline]
@@ -61,52 +62,5 @@ impl AstNode for KeyValueWithCommaGroup {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
-    }
-}
-
-struct KeyValuesWithCommaIter<I> {
-    nodes: I,
-    pending_key_value: Option<crate::KeyValue>,
-}
-
-impl<I> KeyValuesWithCommaIter<I> {
-    fn new(elements: I) -> Self {
-        Self {
-            nodes: elements,
-            pending_key_value: None,
-        }
-    }
-}
-
-impl<I> Iterator for KeyValuesWithCommaIter<I>
-where
-    I: Iterator<Item = tombi_syntax::SyntaxNode>,
-{
-    type Item = (crate::KeyValue, Option<crate::Comma>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let Some(node) = self.nodes.next() else {
-                return self
-                    .pending_key_value
-                    .take()
-                    .map(|key_value| (key_value, None));
-            };
-
-            if crate::KeyValue::can_cast(node.kind()) {
-                let key_value = crate::KeyValue::cast(node).unwrap();
-                if let Some(prev) = self.pending_key_value.replace(key_value) {
-                    return Some((prev, None));
-                }
-                continue;
-            }
-
-            if crate::Comma::can_cast(node.kind()) {
-                let comma = crate::Comma::cast(node).unwrap();
-                if let Some(prev) = self.pending_key_value.take() {
-                    return Some((prev, Some(comma)));
-                }
-            }
-        }
     }
 }

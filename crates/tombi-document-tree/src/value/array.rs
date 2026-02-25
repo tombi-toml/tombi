@@ -261,8 +261,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
             .filter_map(|group| match group {
                 tombi_ast::DanglingCommentGroupOr::ItemGroup(value_group) => Some(
                     value_group
-                        .values_with_comma()
-                        .map(|(value, comma)| (tombi_ast::ValueOrKeyValue::Value(value), comma))
+                        .value_or_key_values_with_comma()
                         .collect_vec(),
                 ),
                 tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
