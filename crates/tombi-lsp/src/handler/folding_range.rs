@@ -274,7 +274,7 @@ fn create_folding_ranges(root: &tombi_ast::Root) -> Vec<FoldingRange> {
                         }
                     }
                     DanglingCommentGroupOr::ItemGroup(value_group) => {
-                        for (_, comma) in value_group.values_with_comma() {
+                        for (_, comma) in value_group.value_or_key_values_with_comma() {
                             let Some(comma) = comma else {
                                 continue;
                             };

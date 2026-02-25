@@ -144,9 +144,11 @@ pub async fn get_hover_keys_with_range(
                             }
                         }
                         DanglingCommentGroupOr::ItemGroup(value_group) => {
-                            for (value, comma) in value_group.values_with_comma() {
+                            for (value_or_key_value, comma) in
+                                value_group.value_or_key_values_with_comma()
+                            {
                                 if hover_range.is_none() {
-                                    let mut range = value.range();
+                                    let mut range = value_or_key_value.range();
                                     if let Some(comma) = comma {
                                         range += comma.range()
                                     };

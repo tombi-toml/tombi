@@ -267,6 +267,13 @@ impl FindCompletionContents for tombi_document_tree::Array {
                         if let tombi_document_tree::Value::Table(table) = value
                             && keys.len() == 1
                             && table.kind() == tombi_document_tree::TableKind::KeyValue
+                            && !matches!(
+                                completion_hint,
+                                Some(
+                                    CompletionHint::DotTrigger { .. }
+                                        | CompletionHint::EqualTrigger { .. }
+                                )
+                            )
                         {
                             let key = &keys.first().unwrap();
                             return vec![CompletionContent::new_type_hint_key(

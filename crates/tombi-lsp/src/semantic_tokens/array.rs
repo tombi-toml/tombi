@@ -22,8 +22,17 @@ impl AppendSemanticTokens for tombi_ast::Array {
                     }
                 }
                 DanglingCommentGroupOr::ItemGroup(value_group) => {
-                    for (value, comma) in value_group.values_with_comma() {
-                        value.append_semantic_tokens(builder);
+                    for (value_or_key_value, comma) in
+                        value_group.value_or_key_values_with_comma()
+                    {
+                        match value_or_key_value {
+                            tombi_ast::ValueOrKeyValue::Value(value) => {
+                                value.append_semantic_tokens(builder);
+                            }
+                            tombi_ast::ValueOrKeyValue::KeyValue(key_value) => {
+                                key_value.append_semantic_tokens(builder);
+                            }
+                        }
                         if let Some(comma) = comma {
                             for comment in comma.leading_comments() {
                                 comment.append_semantic_tokens(builder);
