@@ -37,6 +37,26 @@ pub fn get_comment_context(
         }
     }
 
+    if let Some(leading_comments) = root
+        .key_values()
+        .next()
+        .map(|kv| kv.leading_comments().collect_vec())
+        .or_else(|| {
+            root.table_or_array_of_tables()
+                .next()
+                .map(|ta| ta.leading_comments().collect_vec())
+        })
+    {
+        for leading_comment in leading_comments {
+            let comment: tombi_ast::Comment = leading_comment.into();
+            if comment.syntax().range().contains(position)
+                && comment.syntax().text()[1..].trim_start().starts_with(":")
+            {
+                return Some(CommentContext::DocumentDirective(comment.into()));
+            }
+        }
+    }
+
     match root.syntax().token_at_position(position) {
         TokenAtOffset::Single(token) if token.kind() == SyntaxKind::COMMENT => {
             if let Some(comment) = tombi_ast::Comment::cast(token) {
