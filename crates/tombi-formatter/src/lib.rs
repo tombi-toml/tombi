@@ -266,6 +266,22 @@ mod test {
     }
 
     test_format! {
+        // https://github.com/tombi-toml/tombi/issues/1527
+        #[tokio::test]
+        async fn test_issue_1527_toml(
+            r#"
+            some-global-entry = "a value"
+
+            # The comment which will get removed
+
+            [[some-array]]
+            an-optional = "entry"
+            "#,
+            TomlVersion::V1_1_0
+        ) -> Ok(source)
+    }
+
+    test_format! {
         #[tokio::test]
         async fn test_sample_toml(
 r#"

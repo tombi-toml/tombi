@@ -111,7 +111,12 @@ impl crate::Root {
         support::node::end_dangling_comments(
             self.syntax()
                 .children_with_tokens()
-                .take_while(|node_or_token| node_or_token.kind() != SyntaxKind::TABLE),
+                .take_while(|node_or_token| {
+                    !matches!(
+                        node_or_token.kind(),
+                        SyntaxKind::TABLE | SyntaxKind::ARRAY_OF_TABLE
+                    )
+                }),
         )
     }
 
