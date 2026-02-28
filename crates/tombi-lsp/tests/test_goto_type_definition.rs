@@ -218,7 +218,7 @@ mod goto_type_definition_tests {
                 "#,
                 SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
-            ) -> Ok("tombi://www.schemastore.tombi/tombi-root-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-group-boundary-directive.json");
         );
 
         test_goto_type_definition!(
@@ -328,7 +328,7 @@ mod goto_type_definition_tests {
                 "#,
                 SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
-            ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-group-boundary-directive.json");
         );
 
         test_goto_type_definition!(
