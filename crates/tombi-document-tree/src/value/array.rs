@@ -290,6 +290,15 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                 }
             }
 
+            if let Some(comment) = self.bracket_start_trailing_comment() {
+                if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                    errors.push(error);
+                }
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                    body_comment_directives.push(comment_directive);
+                }
+            }
+
             for comment_group in self.dangling_comment_groups() {
                 for comment in comment_group.comments() {
                     if let Err(error) = crate::support::comment::try_new_comment(&comment) {
@@ -309,7 +318,6 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     body_comment_directives.push(comment_directive);
                 }
             }
-
             if !body_comment_directives.is_empty() {
                 array.body_comment_directives = Some(body_comment_directives);
             }

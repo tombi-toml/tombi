@@ -33,7 +33,7 @@ where
                 not_schema,
                 current_schema,
                 schema_context,
-                comment_directives,
+                comment_directives.map(|directives| directives.iter()),
                 common_rules,
             )
             .await?;

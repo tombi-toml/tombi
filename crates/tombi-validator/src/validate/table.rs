@@ -479,10 +479,7 @@ async fn validate_table(
             not_schema,
             current_schema,
             schema_context,
-            table_value
-                .comment_directives()
-                .map(|directives| directives.cloned().collect_vec())
-                .as_deref(),
+            table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
         )
         .await

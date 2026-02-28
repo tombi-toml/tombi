@@ -187,7 +187,8 @@ mod tests {
                 "#,
                 SchemaPath(type_test_schema_path()),
             ) -> Err([
-                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()},
+                tombi_validator::DiagnosticKind::UnusedNoqa { rule_name: "array-min-values" },
             ])
         }
     }
