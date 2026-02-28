@@ -11,7 +11,7 @@ pub async fn validate_not<'a, T>(
     not_schema: &tombi_schema_store::NotSchema,
     current_schema: &CurrentSchema<'a>,
     schema_context: &SchemaContext<'a>,
-    comment_directives: &'a [TombiValueCommentDirective],
+    comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<(), crate::Error>
 where

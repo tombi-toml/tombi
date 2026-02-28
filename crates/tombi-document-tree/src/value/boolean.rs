@@ -36,11 +36,10 @@ impl Boolean {
     }
 
     #[inline]
-    pub fn comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        self.comment_directives
-            .as_deref()
-            .unwrap_or_default()
-            .iter()
+    pub fn comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.comment_directives.as_deref().map(|d| d.iter())
     }
 }
 

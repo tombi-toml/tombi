@@ -40,7 +40,9 @@ impl Validate for LocalDate {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -52,7 +54,9 @@ impl Validate for LocalDate {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -64,7 +68,9 @@ impl Validate for LocalDate {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await

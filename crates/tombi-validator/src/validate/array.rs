@@ -66,7 +66,9 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -78,7 +80,9 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -90,7 +94,9 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -140,7 +146,10 @@ async fn validate_array(
             not_schema,
             current_schema,
             schema_context,
-            &array_value.comment_directives().cloned().collect_vec(),
+            array_value
+                .comment_directives()
+                .map(|directives| directives.cloned().collect_vec())
+                .as_deref(),
             lint_rules.as_ref().map(|rules| &rules.common),
         )
         .await?;

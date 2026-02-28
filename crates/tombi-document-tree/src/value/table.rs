@@ -188,41 +188,40 @@ impl Table {
     }
 
     #[inline]
-    pub fn comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        itertools::chain!(
-            self.header_comment_directives(),
-            self.body_comment_directives()
-        )
+    pub fn comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        if self.header_comment_directives.is_none() && self.body_comment_directives.is_none() {
+            None
+        } else {
+            Some(itertools::chain!(
+                self.header_comment_directives.iter().flatten(),
+                self.body_comment_directives.iter().flatten()
+            ))
+        }
     }
 
     #[inline]
     pub fn header_comment_directives(
         &self,
-    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        self.header_comment_directives
-            .as_deref()
-            .unwrap_or_default()
-            .iter()
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.header_comment_directives.as_deref().map(|d| d.iter())
     }
 
     #[inline]
     pub fn body_comment_directives(
         &self,
-    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        self.body_comment_directives
-            .as_deref()
-            .unwrap_or_default()
-            .iter()
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.body_comment_directives.as_deref().map(|d| d.iter())
     }
 
     #[inline]
     pub fn group_boundary_comment_directives(
         &self,
-    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
         self.group_boundary_comment_directives
             .as_deref()
-            .unwrap_or_default()
-            .iter()
+            .map(|d| d.iter())
     }
 
     #[inline]
@@ -737,7 +736,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
         );
 
         if let Some(mut key) = header_keys.pop() {
-            key.comment_directives = table.header_comment_directives.clone();
+            key.comment_directives = table.header_comment_directives.take();
             if let Err(errs) = insert_array_of_tables(&mut table, key, Array::new_array_of_tables) {
                 errors.extend(errs);
             }
@@ -836,7 +835,9 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                     errors.extend(errs);
                 }
 
-                body_comment_directives.extend(value.comment_directives().cloned());
+                if let Some(directives) = value.comment_directives() {
+                    body_comment_directives.extend(directives.cloned());
+                }
 
                 if !body_comment_directives.is_empty() {
                     table.body_comment_directives = Some(body_comment_directives.clone());

@@ -190,37 +190,40 @@ impl Array {
     }
 
     #[inline]
-    pub fn comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        itertools::chain!(
-            self.header_comment_directives(),
-            self.body_comment_directives()
-        )
+    pub fn comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        if self.header_comment_directives.is_none() && self.body_comment_directives.is_none() {
+            None
+        } else {
+            Some(itertools::chain!(
+                self.header_comment_directives.iter().flatten(),
+                self.body_comment_directives.iter().flatten()
+            ))
+        }
     }
 
     #[inline]
-    pub fn header_comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        self.header_comment_directives
-            .as_deref()
-            .unwrap_or_default()
-            .iter()
+    pub fn header_comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.header_comment_directives.as_deref().map(|d| d.iter())
     }
 
     #[inline]
-    pub fn body_comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
-        self.body_comment_directives
-            .as_deref()
-            .unwrap_or_default()
-            .iter()
+    pub fn body_comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.body_comment_directives.as_deref().map(|d| d.iter())
     }
 
     #[inline]
     pub fn group_boundary_comment_directives(
         &self,
-    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
         self.group_boundary_comment_directives
             .as_deref()
-            .unwrap_or_default()
-            .iter()
+            .map(|d| d.iter())
     }
 
     #[inline]

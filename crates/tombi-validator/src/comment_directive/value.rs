@@ -24,7 +24,7 @@ use tombi_schema_store::{Accessor, SchemaUri};
 use crate::comment_directive::into_directive_diagnostic;
 
 pub async fn get_tombi_value_comment_directive_and_diagnostics<'a, FormatRules, LintRules>(
-    comment_directives: impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a>,
 ) -> (
     Option<TombiValueDirectiveContent<FormatRules, LintRules>>,
     Vec<tombi_diagnostic::Diagnostic>,
@@ -34,6 +34,10 @@ where
     LintRules: serde::de::DeserializeOwned,
     TombiValueDirectiveContent<FormatRules, LintRules>: TombiCommentDirectiveImpl,
 {
+    let Some(comment_directives) = comment_directives else {
+        return (None, vec![]);
+    };
+
     let schema_uri =
         TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url();
 
@@ -256,7 +260,7 @@ pub async fn get_tombi_table_comment_directive_and_diagnostics(
 }
 
 pub async fn get_tombi_key_rules_and_diagnostics<'a>(
-    comment_directives: impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a>,
 ) -> (
     Option<KeyCommonExtensibleLintRules>,
     Vec<tombi_diagnostic::Diagnostic>,
@@ -268,7 +272,7 @@ pub async fn get_tombi_key_rules_and_diagnostics<'a>(
 }
 
 pub async fn get_tombi_value_rules_and_diagnostics<'a, FormatRules, LintRules>(
-    comment_directives: impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a>,
 ) -> (Option<LintRules>, Vec<tombi_diagnostic::Diagnostic>)
 where
     FormatRules: serde::de::DeserializeOwned,
@@ -290,7 +294,7 @@ where
 }
 
 pub async fn get_tombi_key_value_rules_and_diagnostics<'a, FormatRules, LintRules>(
-    comment_directives: impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<LintRules>, Vec<tombi_diagnostic::Diagnostic>)
 where
@@ -322,7 +326,7 @@ where
 }
 
 pub async fn get_tombi_key_table_value_rules_and_diagnostics<'a, FormatRules, LintRules>(
-    comment_directives: impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a>,
     accessors: &[tombi_schema_store::Accessor],
 ) -> (Option<LintRules>, Vec<tombi_diagnostic::Diagnostic>)
 where

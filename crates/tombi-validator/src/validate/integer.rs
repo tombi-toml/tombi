@@ -54,7 +54,9 @@ impl Validate for tombi_document_tree::Integer {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -66,7 +68,9 @@ impl Validate for tombi_document_tree::Integer {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -78,7 +82,9 @@ impl Validate for tombi_document_tree::Integer {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            &self.comment_directives().cloned().collect_vec(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await

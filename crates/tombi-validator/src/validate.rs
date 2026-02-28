@@ -82,7 +82,9 @@ pub fn handle_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
-    comment_directives: impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) where
     T: tombi_document_tree::ValueImpl,
@@ -118,7 +120,9 @@ pub fn handle_deprecated_value<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
-    comment_directives: impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) where
     T: tombi_document_tree::ValueImpl + ToString,
@@ -185,10 +189,16 @@ fn handle_type_mismatch(
 
 fn handle_unused_noqa<'a>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-    comment_directives: impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
     rule_name: &'static str,
 ) {
+    let Some(comment_directives) = comment_directives else {
+        return;
+    };
+
     if common_rules
         .and_then(|rules| rules.unused_noqa.as_ref())
         .and_then(|rules| rules.disabled)
@@ -248,7 +258,9 @@ fn validate_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
-    comment_directives: &'a [tombi_ast::TombiValueCommentDirective],
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<(), crate::Error>
 where
@@ -276,7 +288,7 @@ pub fn validate_resolved_schema<'a: 'b, 'b, T>(
     accessors: &'a [tombi_schema_store::Accessor],
     resolved_schema: &'a tombi_schema_store::CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_directives: &'a [tombi_ast::TombiValueCommentDirective],
+    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
 ) -> BoxFuture<'b, Option<Result<(), crate::Error>>>
 where
