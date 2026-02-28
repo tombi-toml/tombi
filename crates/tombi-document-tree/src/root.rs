@@ -43,20 +43,20 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
         let mut tree = {
             let mut table = crate::Table::new_root(&self);
 
-            let mut inner_comment_directives = vec![];
+            let mut body_comment_directives = vec![];
             for comment_group in self.dangling_comment_groups() {
                 for comment in comment_group.comments() {
                     if let Err(error) = crate::support::comment::try_new_comment(&comment) {
                         errors.push(error);
                     }
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        inner_comment_directives.push(comment_directive);
+                        body_comment_directives.push(comment_directive);
                     }
                 }
             }
 
-            if !inner_comment_directives.is_empty() {
-                table.inner_comment_directives = Some(inner_comment_directives);
+            if !body_comment_directives.is_empty() {
+                table.body_comment_directives = Some(body_comment_directives);
             }
 
             crate::DocumentTree(table)
@@ -88,8 +88,7 @@ impl IntoDocumentTreeAndErrors<crate::DocumentTree> for tombi_ast::Root {
                 }
             }
             if !group_boundary_comment_directives.is_empty() {
-                tree.0.group_boundary_comment_directives =
-                    Some(group_boundary_comment_directives);
+                tree.0.group_boundary_comment_directives = Some(group_boundary_comment_directives);
             }
         }
 

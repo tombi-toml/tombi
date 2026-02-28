@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::value::CommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -18,7 +19,7 @@ pub fn validate_one_of<'a: 'b, 'b, T>(
     one_of_schema: &'a OneOfSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: &'a [TombiValueCommentDirective],
     common_rules: Option<&'a CommonLintRules>,
 ) -> BoxFuture<'b, Result<(), crate::Error>>
 where

@@ -70,7 +70,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            &self.comment_directives().cloned().collect_vec(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -82,7 +82,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            &self.comment_directives().cloned().collect_vec(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -94,7 +94,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            &self.comment_directives().cloned().collect_vec(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -139,16 +139,11 @@ async fn validate_table(
 ) -> Result<(), crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
-
     for (key, value) in table_value.key_values() {
-        let key_rules = if let Some(directives) = key.comment_directives() {
-            get_tombi_key_rules_and_diagnostics(directives)
-                .await
-                .0
-                .map(|rules| rules.value)
-        } else {
-            None
-        };
+        let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
+            .await
+            .0
+            .map(|rules| rules.value);
 
         let key_rules = key_rules.as_ref();
 
@@ -471,19 +466,20 @@ async fn validate_table(
         );
     }
 
-    if let Some(not_schema) = table_schema.not.as_ref()
-        && let Err(error) = validate_not(
+    if let Some(not_schema) = table_schema.not.as_ref() {
+        if let Err(error) = validate_not(
             table_value,
             accessors,
             not_schema,
             current_schema,
             schema_context,
-            table_value.comment_directives(),
+            &table_value.comment_directives().cloned().collect_vec(),
             table_rules.as_ref().map(|rules| &rules.common),
         )
         .await
-    {
-        total_diagnostics.extend(error.diagnostics);
+        {
+            total_diagnostics.extend(error.diagnostics);
+        }
     }
 
     if total_diagnostics.is_empty() {

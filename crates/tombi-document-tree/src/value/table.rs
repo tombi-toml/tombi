@@ -64,8 +64,8 @@ pub struct Table {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     key_values: IndexMap<Key, Value>,
-    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
-    pub(crate) inner_comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) header_comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) body_comment_directives: Option<Vec<TombiValueCommentDirective>>,
     pub(crate) group_boundary_comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
@@ -76,8 +76,8 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::default(),
             symbol_range: tombi_text::Range::default(),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -88,8 +88,8 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -105,8 +105,8 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -122,8 +122,8 @@ impl Table {
                     .unwrap_or_else(|| node.range().start),
                 node.range().end,
             ),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -145,8 +145,8 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range,
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -157,8 +157,8 @@ impl Table {
             key_values: Default::default(),
             range: node.syntax().range(),
             symbol_range: node.syntax().range(),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -169,8 +169,8 @@ impl Table {
             key_values: Default::default(),
             range: self.range,
             symbol_range: self.symbol_range,
-            comment_directives: self.comment_directives.clone(),
-            inner_comment_directives: None,
+            header_comment_directives: self.header_comment_directives.clone(),
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
@@ -181,25 +181,48 @@ impl Table {
             key_values: Default::default(),
             range: tombi_text::Range::new(parent_key.range().start, self.range.end),
             symbol_range: tombi_text::Range::new(parent_key.range().start, self.symbol_range.end),
-            comment_directives: parent_key.comment_directives.clone(),
-            inner_comment_directives: None,
+            header_comment_directives: parent_key.comment_directives.clone(),
+            body_comment_directives: None,
             group_boundary_comment_directives: None,
         }
     }
 
     #[inline]
-    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref()
+    pub fn comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
+        itertools::chain!(
+            self.header_comment_directives(),
+            self.body_comment_directives()
+        )
     }
 
     #[inline]
-    pub fn inner_comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.inner_comment_directives.as_deref()
+    pub fn header_comment_directives(
+        &self,
+    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
+        self.header_comment_directives
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
     }
 
     #[inline]
-    pub fn group_boundary_comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.group_boundary_comment_directives.as_deref()
+    pub fn body_comment_directives(
+        &self,
+    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
+        self.body_comment_directives
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+    }
+
+    #[inline]
+    pub fn group_boundary_comment_directives(
+        &self,
+    ) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
+        self.group_boundary_comment_directives
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
     }
 
     #[inline]
@@ -488,8 +511,8 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
         let mut errors = vec![];
 
         {
-            let mut comment_directives = vec![];
-            let mut inner_comment_directives = vec![];
+            let mut header_comment_directives = vec![];
+            let mut body_comment_directives = vec![];
 
             for comment in self.header_leading_comments() {
                 if let Err(error) = crate::support::comment::try_new_comment(&comment) {
@@ -497,7 +520,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
                 }
 
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+                    header_comment_directives.push(comment_directive);
                 }
             }
 
@@ -506,7 +529,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+                    header_comment_directives.push(comment_directive);
                 }
             }
 
@@ -516,16 +539,16 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
                         errors.push(error);
                     }
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        inner_comment_directives.push(comment_directive);
+                        body_comment_directives.push(comment_directive);
                     }
                 }
             }
 
-            if !comment_directives.is_empty() {
-                table.comment_directives = Some(comment_directives);
+            if !header_comment_directives.is_empty() {
+                table.header_comment_directives = Some(header_comment_directives);
             }
-            if !inner_comment_directives.is_empty() {
-                table.inner_comment_directives = Some(inner_comment_directives);
+            if !body_comment_directives.is_empty() {
+                table.body_comment_directives = Some(body_comment_directives);
             }
         }
 
@@ -574,8 +597,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
                 }
             }
             if !group_boundary_comment_directives.is_empty() {
-                table.group_boundary_comment_directives =
-                    Some(group_boundary_comment_directives);
+                table.group_boundary_comment_directives = Some(group_boundary_comment_directives);
             }
         }
 
@@ -587,7 +609,7 @@ impl IntoDocumentTreeAndErrors<crate::Table> for tombi_ast::Table {
 
         let mut is_array_of_table = false;
         while let Some(mut key) = header_keys.pop() {
-            key.comment_directives = table.comment_directives.clone();
+            key.comment_directives = table.header_comment_directives.clone();
             if is_array_of_table {
                 if let Err(errs) =
                     insert_array_of_tables(&mut table, key, Array::new_parent_array_of_tables)
@@ -650,10 +672,10 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
             }
 
             if !comment_directives.is_empty() {
-                table.comment_directives = Some(comment_directives);
+                table.header_comment_directives = Some(comment_directives);
             }
             if !inner_comment_directives.is_empty() {
-                table.inner_comment_directives = Some(inner_comment_directives);
+                table.body_comment_directives = Some(inner_comment_directives);
             }
         }
 
@@ -704,8 +726,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
                 }
             }
             if !group_boundary_comment_directives.is_empty() {
-                table.group_boundary_comment_directives =
-                    Some(group_boundary_comment_directives);
+                table.group_boundary_comment_directives = Some(group_boundary_comment_directives);
             }
         }
 
@@ -716,7 +737,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::ArrayOfTable {
         );
 
         if let Some(mut key) = header_keys.pop() {
-            key.comment_directives = table.comment_directives.clone();
+            key.comment_directives = table.header_comment_directives.clone();
             if let Err(errs) = insert_array_of_tables(&mut table, key, Array::new_array_of_tables) {
                 errors.extend(errs);
             }
@@ -768,15 +789,26 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         let mut table = Table::new_key_value(&self);
         let mut errors = Vec::new();
 
-        let mut comment_directives = vec![];
+        let mut header_comment_directives = vec![];
 
         for comment in self.leading_comments() {
             if let Err(error) = crate::support::comment::try_new_comment(&comment) {
                 errors.push(error);
             }
             if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                comment_directives.push(comment_directive);
+                header_comment_directives.push(comment_directive);
             }
+        }
+        if let Some(comment) = self.trailing_comment() {
+            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                errors.push(error);
+            }
+            if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                header_comment_directives.push(comment_directive);
+            }
+        }
+        if !header_comment_directives.is_empty() {
+            table.header_comment_directives = Some(header_comment_directives.clone());
         }
 
         let empty_table = table.clone();
@@ -796,6 +828,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
             errors.extend(errs);
         }
 
+        let mut body_comment_directives = vec![];
         let value = match self.value() {
             Some(value) => {
                 let (mut value, errs) = value.into_document_tree_and_errors(toml_version).into();
@@ -803,13 +836,11 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                     errors.extend(errs);
                 }
 
-                if let Some(value_comment_directives) = value.comment_directives() {
-                    comment_directives.extend(value_comment_directives.iter().cloned());
-                }
+                body_comment_directives.extend(value.comment_directives().cloned());
 
-                if !comment_directives.is_empty() {
-                    table.comment_directives = Some(comment_directives.clone());
-                    value.set_comment_directives(comment_directives.clone());
+                if !body_comment_directives.is_empty() {
+                    table.body_comment_directives = Some(body_comment_directives.clone());
+                    value.set_comment_directives(body_comment_directives.clone());
                 }
 
                 value
@@ -827,8 +858,8 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         let mut table = if let Some(mut key) = keys.pop() {
             table.range = key.range() + value.range();
             table.symbol_range = key.range() + value.symbol_range();
-            if !comment_directives.is_empty() {
-                key.comment_directives = Some(comment_directives.clone());
+            if !header_comment_directives.is_empty() {
+                key.comment_directives = Some(header_comment_directives.clone());
             }
 
             match table.insert(key, value) {
@@ -851,8 +882,8 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
 
         for mut key in keys.into_iter().rev() {
             let dummy_table = table.clone();
-            if !comment_directives.is_empty() {
-                key.comment_directives = Some(comment_directives.clone());
+            if !header_comment_directives.is_empty() {
+                key.comment_directives = Some(header_comment_directives.clone());
             }
 
             match table.new_parent_key(&key).insert(
@@ -882,15 +913,14 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
         let table_kind = table.kind;
         let mut errors = vec![];
         {
-            let mut comment_directives = vec![];
-            let mut inner_comment_directives = vec![];
+            let mut body_comment_directives = vec![];
 
             for comment in self.leading_comments() {
                 if let Err(error) = crate::support::comment::try_new_comment(&comment) {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+                    body_comment_directives.push(comment_directive);
                 }
             }
 
@@ -900,7 +930,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                         errors.push(error);
                     }
                     if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        inner_comment_directives.push(comment_directive);
+                        body_comment_directives.push(comment_directive);
                     }
                 }
             }
@@ -910,15 +940,12 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+                    body_comment_directives.push(comment_directive);
                 }
             }
 
-            if !comment_directives.is_empty() {
-                table.comment_directives = Some(comment_directives);
-            }
-            if !inner_comment_directives.is_empty() {
-                table.inner_comment_directives = Some(inner_comment_directives);
+            if !body_comment_directives.is_empty() {
+                table.body_comment_directives = Some(body_comment_directives);
             }
         }
         table.kind = TableKind::Table;
@@ -940,17 +967,16 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                             key_value.into_document_tree_and_errors(toml_version).into();
 
                         if let Some(comma) = comma {
-                            let mut comment_directives = vec![];
+                            let mut header_comment_directives = vec![];
                             for comment in comma.leading_comments() {
                                 if let Err(error) =
                                     crate::support::comment::try_new_comment(&comment)
                                 {
                                     errors.push(error);
                                 }
-                                if let Some(comment_directive) =
-                                    comment.get_tombi_value_directive()
+                                if let Some(comment_directive) = comment.get_tombi_value_directive()
                                 {
-                                    comment_directives.push(comment_directive);
+                                    header_comment_directives.push(comment_directive);
                                 }
                             }
                             if let Some(comment) = comma.trailing_comment() {
@@ -959,22 +985,21 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                                 {
                                     errors.push(error);
                                 }
-                                if let Some(comment_directive) =
-                                    comment.get_tombi_value_directive()
+                                if let Some(comment_directive) = comment.get_tombi_value_directive()
                                 {
-                                    comment_directives.push(comment_directive);
+                                    header_comment_directives.push(comment_directive);
                                 }
                             }
 
-                            if !comment_directives.is_empty() {
+                            if !header_comment_directives.is_empty() {
                                 if let Some(keys) = keys {
-                                    append_comment_directives(
+                                    append_header_comment_directives(
                                         &mut other,
                                         keys.into_iter(),
-                                        &comment_directives,
+                                        &header_comment_directives,
                                     );
                                 }
-                                other.comment_directives = Some(comment_directives);
+                                other.header_comment_directives = Some(header_comment_directives);
                             }
                         }
 
@@ -1090,7 +1115,7 @@ fn insert_array_of_tables(
     let mut array = new_array_of_tables_fn(table);
     let new_table = table.new_parent_table();
     array.push(Value::Table(std::mem::replace(table, new_table)));
-    array.comment_directives = key.comment_directives.clone();
+    array.header_comment_directives = key.comment_directives.clone();
     match table.new_parent_table().insert(key, Value::Array(array)) {
         Ok(t) => {
             *table = t;
@@ -1100,18 +1125,18 @@ fn insert_array_of_tables(
     }
 }
 
-fn append_comment_directives(
+fn append_header_comment_directives(
     table: &mut Table,
     mut keys: impl Iterator<Item = tombi_ast::Key>,
-    comment_directives: &Vec<TombiValueCommentDirective>,
+    header_comment_directives: &Vec<TombiValueCommentDirective>,
 ) {
     // Get the next key in the path
     let Some(ast_key) = keys.next() else {
         // No more keys, append comment directives to the final table
-        if let Some(table_comment_directives) = table.comment_directives.as_mut() {
-            table_comment_directives.extend(comment_directives.iter().cloned());
+        if let Some(table_comment_directives) = table.header_comment_directives.as_mut() {
+            table_comment_directives.extend(header_comment_directives.iter().cloned());
         } else {
-            table.comment_directives = Some(comment_directives.clone());
+            table.header_comment_directives = Some(header_comment_directives.clone());
         }
         return;
     };
@@ -1128,14 +1153,14 @@ fn append_comment_directives(
     if key == ast_key {
         // Update the key's comment directives
         if let Some(key_comment_directives) = key.comment_directives.as_mut() {
-            key_comment_directives.extend(comment_directives.iter().cloned());
+            key_comment_directives.extend(header_comment_directives.iter().cloned());
         } else {
-            key.comment_directives = Some(comment_directives.clone());
+            key.comment_directives = Some(header_comment_directives.clone());
         }
 
         if let Value::Table(mut nested_table) = value {
             // Recursively process the remaining keys
-            append_comment_directives(&mut nested_table, keys, comment_directives);
+            append_header_comment_directives(&mut nested_table, keys, header_comment_directives);
             table.key_values.insert(key, Value::Table(nested_table));
         } else {
             // Put the value back if it's not a table

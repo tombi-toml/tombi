@@ -1,3 +1,4 @@
+use tombi_ast::TombiValueCommentDirective;
 use tombi_document_tree::ValueImpl;
 use tombi_schema_store::{CurrentSchema, SchemaContext};
 use tombi_severity_level::SeverityLevelDefaultError;
@@ -10,7 +11,7 @@ pub async fn validate_not<'a, T>(
     not_schema: &tombi_schema_store::NotSchema,
     current_schema: &CurrentSchema<'a>,
     schema_context: &SchemaContext<'a>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: &'a [TombiValueCommentDirective],
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<(), crate::Error>
 where

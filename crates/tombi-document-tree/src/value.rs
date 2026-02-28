@@ -74,20 +74,27 @@ impl Value {
     }
 
     #[inline]
-    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
+    pub fn comment_directives(&self) -> impl Iterator<Item = &TombiValueCommentDirective> + '_ {
         match self {
-            Value::Boolean(value) => value.comment_directives(),
-            Value::Integer(value) => value.comment_directives(),
-            Value::Float(value) => value.comment_directives(),
-            Value::String(value) => value.comment_directives(),
-            Value::OffsetDateTime(value) => value.comment_directives(),
-            Value::LocalDateTime(value) => value.comment_directives(),
-            Value::LocalDate(value) => value.comment_directives(),
-            Value::LocalTime(value) => value.comment_directives(),
-            Value::Array(value) => value.comment_directives(),
-            Value::Table(value) => value.comment_directives(),
-            Value::Incomplete { .. } => None,
+            Value::Boolean(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::Integer(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::Float(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::String(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::OffsetDateTime(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::LocalDateTime(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::LocalDate(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::LocalTime(value) => value.comment_directives.as_deref().unwrap_or_default(),
+            Value::Array(value) => value
+                .header_comment_directives
+                .as_deref()
+                .unwrap_or_default(),
+            Value::Table(value) => value
+                .header_comment_directives
+                .as_deref()
+                .unwrap_or_default(),
+            Value::Incomplete { .. } => &[],
         }
+        .iter()
     }
 
     pub fn is_inline(&self) -> bool {
@@ -127,8 +134,8 @@ impl Value {
             Value::LocalTime(local_time) => {
                 local_time.comment_directives = Some(comment_directives)
             }
-            Value::Array(array) => array.comment_directives = Some(comment_directives),
-            Value::Table(table) => table.comment_directives = Some(comment_directives),
+            Value::Array(array) => array.body_comment_directives = Some(comment_directives),
+            Value::Table(table) => table.body_comment_directives = Some(comment_directives),
             Value::Incomplete { .. } => (),
         }
     }
@@ -146,8 +153,8 @@ impl Value {
             Value::LocalDateTime(local_date_time) => &mut local_date_time.comment_directives,
             Value::LocalDate(local_date) => &mut local_date.comment_directives,
             Value::LocalTime(local_time) => &mut local_time.comment_directives,
-            Value::Array(array) => &mut array.comment_directives,
-            Value::Table(table) => &mut table.comment_directives,
+            Value::Array(array) => &mut array.body_comment_directives,
+            Value::Table(table) => &mut table.body_comment_directives,
             Value::Incomplete { .. } => return,
         };
 
@@ -162,12 +169,7 @@ impl Value {
         self.range().contains(position)
             || self
                 .comment_directives()
-                .map(|comment_directives| {
-                    comment_directives
-                        .iter()
-                        .any(|comment_directive| comment_directive.range().contains(position))
-                })
-                .unwrap_or_default()
+                .any(|comment_directive| comment_directive.range().contains(position))
     }
 }
 

@@ -267,6 +267,20 @@ mod test {
 
     test_format! {
         #[tokio::test]
+        async fn test_document_comment_directive_format(r#"
+            #:tombi toml-version = "v1.1.0"
+            key1 = 1  # key value1 trailing comment
+            "#
+        ) -> Ok(r#"
+            #:tombi toml-version = "v1.1.0"
+
+            key1 = 1  # key value1 trailing comment
+            "#
+        )
+    }
+
+    test_format! {
+        #[tokio::test]
         async fn test_sample_toml(
 r#"
 # key values begin dangling comment1

@@ -8,7 +8,8 @@ pub mod support;
 mod token;
 
 pub use comment_directive::{
-    SchemaDocumentCommentDirective, TombiDocumentCommentDirective, TombiValueCommentDirective,
+    DocumentCommentDirectives, SchemaDocumentCommentDirective, TombiDocumentCommentDirective,
+    TombiValueCommentDirective,
 };
 pub use generated::*;
 use itertools::Itertools;

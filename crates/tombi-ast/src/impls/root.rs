@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     AstNode, DanglingCommentGroupOr, KeyValueGroup, SchemaDocumentCommentDirective,
     TombiDocumentCommentDirective, TombiValueCommentDirective,
@@ -6,56 +8,34 @@ use crate::{
 
 impl crate::Root {
     /// Returns the leading comments of the first item (key-value or table/array-of-table).
-    ///
-    /// When a document directive comment is immediately followed by content
-    /// without a blank line, the comment becomes a leading comment of the first
-    /// item instead of a dangling comment group.
-    fn first_item_leading_comments(&self) -> Vec<crate::Comment> {
+    pub fn first_item_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
         if let Some(first_key_value) = self.key_values().next() {
-            first_key_value.leading_comments().map(Into::into).collect()
+            first_key_value.leading_comments().collect()
         } else if let Some(first_table_or_aot) = self.table_or_array_of_tables().next() {
-            first_table_or_aot
-                .leading_comments()
-                .map(Into::into)
-                .collect()
+            first_table_or_aot.leading_comments().collect()
         } else {
             Vec::with_capacity(0)
         }
+        .into_iter()
     }
 
     pub fn document_comment_directive(
         &self,
         source_path: Option<&std::path::Path>,
     ) -> Option<DocumentCommentDirectives> {
-        let mut document_comment_directives = DocumentCommentDirectives::default();
-        let mut has_document_comment_directive = false;
-        for comment_group in self.dangling_comment_groups() {
-            for comment in comment_group.comments() {
-                if let Some(schema_directive) = comment.get_document_schema_directive(source_path) {
-                    has_document_comment_directive = true;
-                    document_comment_directives.schema = Some(schema_directive);
-                }
-                if let Some(tombi_directive) = comment.get_tombi_document_directive() {
-                    has_document_comment_directive = true;
-                    document_comment_directives.tombi.push(tombi_directive);
-                }
-            }
-        }
-
-        if !has_document_comment_directive {
-            for comment in self.first_item_leading_comments() {
-                if let Some(schema_directive) = comment.get_document_schema_directive(source_path) {
-                    has_document_comment_directive = true;
-                    document_comment_directives.schema = Some(schema_directive);
-                }
-                if let Some(tombi_directive) = comment.get_tombi_document_directive() {
-                    has_document_comment_directive = true;
-                    document_comment_directives.tombi.push(tombi_directive);
-                }
-            }
-        }
-
-        has_document_comment_directive.then(|| document_comment_directives)
+        DocumentCommentDirectives::from_comments(
+            self.dangling_comment_groups()
+                .flat_map(|comment_group| comment_group.into_comments().map(Into::into)),
+            source_path,
+        )
+        .or_else(|| {
+            DocumentCommentDirectives::from_comments(
+                self.first_item_leading_comments()
+                    .into_iter()
+                    .map(Into::into),
+                source_path,
+            )
+        })
     }
 
     pub fn schema_document_comment_directive(
@@ -82,14 +62,14 @@ impl crate::Root {
     pub fn tombi_document_comment_directives(
         &self,
     ) -> impl Iterator<Item = TombiDocumentCommentDirective> {
-        let mut directives: Vec<_> = self
+        let mut directives = self
             .dangling_comment_groups()
             .flat_map(|comment_group| {
                 comment_group
                     .into_comments()
                     .filter_map(|comment| comment.get_tombi_document_directive())
             })
-            .collect();
+            .collect_vec();
 
         if directives.is_empty() {
             directives.extend(
