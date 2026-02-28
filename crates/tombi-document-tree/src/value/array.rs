@@ -278,6 +278,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         let mut errors = Vec::new();
 
         {
+            let mut header_comment_directives = Vec::new();
             let mut body_comment_directives = Vec::new();
 
             // Collect comment directives from the array.
@@ -315,8 +316,11 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    body_comment_directives.push(comment_directive);
+                    header_comment_directives.push(comment_directive);
                 }
+            }
+            if !header_comment_directives.is_empty() {
+                array.header_comment_directives = Some(header_comment_directives);
             }
             if !body_comment_directives.is_empty() {
                 array.body_comment_directives = Some(body_comment_directives);

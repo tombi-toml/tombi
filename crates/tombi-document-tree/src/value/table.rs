@@ -914,6 +914,7 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
         let table_kind = table.kind;
         let mut errors = vec![];
         {
+            let mut header_comment_directives = vec![];
             let mut body_comment_directives = vec![];
 
             for comment in self.leading_comments() {
@@ -950,8 +951,11 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::InlineTable {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    body_comment_directives.push(comment_directive);
+                    header_comment_directives.push(comment_directive);
                 }
+            }
+            if !header_comment_directives.is_empty() {
+                table.header_comment_directives = Some(header_comment_directives);
             }
             if !body_comment_directives.is_empty() {
                 table.body_comment_directives = Some(body_comment_directives);
