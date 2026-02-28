@@ -1,6 +1,8 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{Parse, key::eat_key, leading_comments, peek_leading_comments, trailing_comment};
+use super::Parse;
+use crate::parse::key::eat_keys;
+use crate::support::{leading_comments, peek_leading_comments, trailing_comment};
 use crate::{ErrorKind::*, parser::Parser, token_set::TS_COMMEMT_OR_LINE_END};
 
 impl Parse for tombi_ast::Value {
@@ -32,7 +34,7 @@ impl Parse for tombi_ast::Value {
                 leading_comments(p);
                 {
                     let m = p.start();
-                    if eat_key(p) {
+                    if eat_keys(p) {
                         m.complete(p, KEYS);
                     }
                 }

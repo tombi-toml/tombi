@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind, FoldingRangeParams};
 
 use crate::backend::Backend;
@@ -43,43 +43,59 @@ fn create_folding_ranges(root: &tombi_ast::Root) -> Vec<FoldingRange> {
                 ranges.push(folding_range);
             }
         } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
-            for folding_range in [
+            for folding_range in itertools::chain!(
                 table
                     .header_leading_comments()
                     .collect_vec()
                     .get_comment_folding_range(),
                 table.get_region_folding_range(),
                 table
-                    .key_values_begin_dangling_comments()
+                    .dangling_comment_groups()
+                    .map(|comment_group| comment_group.into_comments().collect_vec())
+                    .collect_vec()
                     .get_comment_folding_range(),
-                table
-                    .key_values_end_dangling_comments()
-                    .get_comment_folding_range(),
-            ]
-            .into_iter()
-            .flatten()
-            {
+            ) {
                 ranges.push(folding_range);
             }
+
+            ranges.extend(
+                table
+                    .key_value_groups()
+                    .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+                    .flat_map(|comment_group| {
+                        comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_range()
+                    }),
+            );
         } else if let Some(array_of_table) = tombi_ast::ArrayOfTable::cast(node.to_owned()) {
-            for folding_range in [
+            for folding_range in itertools::chain!(
                 array_of_table
                     .header_leading_comments()
                     .collect_vec()
                     .get_comment_folding_range(),
                 array_of_table.get_region_folding_range(),
                 array_of_table
-                    .key_values_begin_dangling_comments()
+                    .dangling_comment_groups()
+                    .map(|comment_group| comment_group.into_comments().collect_vec())
+                    .collect_vec()
                     .get_comment_folding_range(),
-                array_of_table
-                    .key_values_end_dangling_comments()
-                    .get_comment_folding_range(),
-            ]
-            .into_iter()
-            .flatten()
-            {
+            ) {
                 ranges.push(folding_range);
             }
+
+            ranges.extend(
+                array_of_table
+                    .key_value_groups()
+                    .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+                    .flat_map(|comment_group| {
+                        comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_range()
+                    }),
+            );
         } else if let Some(boolean) = tombi_ast::Boolean::cast(node.to_owned()) {
             for folding_range in [boolean
                 .leading_comments()
@@ -231,35 +247,47 @@ fn create_folding_ranges(root: &tombi_ast::Root) -> Vec<FoldingRange> {
                 ranges.push(folding_range);
             }
         } else if let Some(array) = tombi_ast::Array::cast(node.to_owned()) {
-            for folding_range in [
+            for folding_range in itertools::chain!(
                 array
                     .leading_comments()
                     .collect_vec()
                     .get_comment_folding_range(),
                 array
-                    .inner_begin_dangling_comments()
+                    .dangling_comment_groups()
+                    .map(|comment_group| comment_group.into_comments().collect_vec())
+                    .collect_vec()
                     .get_comment_folding_range(),
                 array.get_region_folding_range(),
-                array
-                    .inner_end_dangling_comments()
-                    .get_comment_folding_range(),
-            ]
-            .into_iter()
-            .flatten()
-            {
+            ) {
                 ranges.push(folding_range);
             }
-            for (_, comma) in array.values_with_comma() {
-                let Some(comma) = comma else {
-                    continue;
-                };
 
-                if let Some(folding_range) = comma
-                    .leading_comments()
-                    .collect_vec()
-                    .get_comment_folding_range()
-                {
-                    ranges.push(folding_range);
+            for group in array.value_with_comma_groups() {
+                match group {
+                    DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                        if let Some(folding_range) = comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_range()
+                        {
+                            ranges.push(folding_range);
+                        }
+                    }
+                    DanglingCommentGroupOr::ItemGroup(value_group) => {
+                        for (_, comma) in value_group.value_or_key_values_with_comma() {
+                            let Some(comma) = comma else {
+                                continue;
+                            };
+
+                            if let Some(folding_range) = comma
+                                .leading_comments()
+                                .collect_vec()
+                                .get_comment_folding_range()
+                            {
+                                ranges.push(folding_range);
+                            }
+                        }
+                    }
                 }
             }
         } else if let Some(inline_table) = tombi_ast::InlineTable::cast(node.to_owned()) {
@@ -269,43 +297,66 @@ fn create_folding_ranges(root: &tombi_ast::Root) -> Vec<FoldingRange> {
                     .collect_vec()
                     .get_comment_folding_range(),
                 inline_table
-                    .inner_begin_dangling_comments()
+                    .dangling_comment_groups()
+                    .map(|comment_group| comment_group.into_comments().collect_vec())
+                    .collect_vec()
                     .get_comment_folding_range(),
                 inline_table.get_region_folding_range(),
-                inline_table
-                    .inner_end_dangling_comments()
-                    .get_comment_folding_range(),
             ]
             .into_iter()
             .flatten()
             {
                 ranges.push(folding_range);
             }
-            for (_, comma) in inline_table.key_values_with_comma() {
-                let Some(comma) = comma else {
-                    continue;
-                };
 
-                if let Some(folding_range) = comma
-                    .leading_comments()
-                    .collect_vec()
-                    .get_comment_folding_range()
-                {
-                    ranges.push(folding_range);
+            for group in inline_table.key_value_with_comma_groups() {
+                match group {
+                    DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                        if let Some(folding_range) = comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_range()
+                        {
+                            ranges.push(folding_range);
+                        }
+                    }
+                    DanglingCommentGroupOr::ItemGroup(key_value_group) => {
+                        for (_, comma) in key_value_group.key_values_with_comma() {
+                            let Some(comma) = comma else {
+                                continue;
+                            };
+
+                            if let Some(folding_range) = comma
+                                .leading_comments()
+                                .collect_vec()
+                                .get_comment_folding_range()
+                            {
+                                ranges.push(folding_range);
+                            }
+                        }
+                    }
                 }
             }
         } else if let Some(root) = tombi_ast::Root::cast(node.to_owned()) {
-            for folding_range in [
-                root.key_values_begin_dangling_comments()
-                    .get_comment_folding_range(),
-                root.key_values_end_dangling_comments()
-                    .get_comment_folding_range(),
-            ]
-            .into_iter()
-            .flatten()
-            {
+            for folding_range in itertools::chain!(
+                root.dangling_comment_groups()
+                    .map(|comment_group| comment_group.into_comments().collect_vec())
+                    .collect_vec()
+                    .get_comment_folding_range()
+            ) {
                 ranges.push(folding_range);
             }
+
+            ranges.extend(
+                root.key_value_groups()
+                    .filter_map(DanglingCommentGroupOr::into_dangling_comment_group)
+                    .flat_map(|comment_group| {
+                        comment_group
+                            .into_comments()
+                            .collect_vec()
+                            .get_comment_folding_range()
+                    }),
+            );
         }
     }
 
@@ -462,20 +513,10 @@ impl GetCommentFoldingRange for Vec<tombi_ast::LeadingComment> {
     }
 }
 
-impl GetCommentFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
+impl GetCommentFoldingRange for Vec<tombi_ast::DanglingComment> {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
-        let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
-        let last = self
-            .iter()
-            .rev()
-            .find(|group| !group.is_empty())?
-            .iter()
-            .next_back()?;
-
-        if first.syntax().range().start.line == last.syntax().range().end.line {
-            return None;
-        }
-
+        let first = self.first()?;
+        let last = self.last()?;
         Some(tombi_text::Range::new(
             first.syntax().range().start,
             last.syntax().range().end,
@@ -483,7 +524,7 @@ impl GetCommentFoldingRange for Vec<Vec<tombi_ast::BeginDanglingComment>> {
     }
 }
 
-impl GetCommentFoldingRange for Vec<Vec<tombi_ast::EndDanglingComment>> {
+impl GetCommentFoldingRange for Vec<Vec<tombi_ast::DanglingComment>> {
     fn get_folding_range(&self) -> Option<tombi_text::Range> {
         let first = self.iter().find(|group| !group.is_empty())?.iter().next()?;
         let last = self

@@ -12,7 +12,7 @@ impl Format for tombi_ast::KeyValue {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
+impl Format for WithAlignmentHint<&tombi_ast::KeyValue> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let key_value = self.value;
         key_value.leading_comments().collect_vec().format(f)?;
@@ -41,6 +41,30 @@ impl Format for WithAlignmentHint<'_, tombi_ast::KeyValue> {
         .format(f)?;
 
         // NOTE: trailing comment is output by `value.fmt(f)`.
+
+        Ok(())
+    }
+}
+
+impl Format for tombi_ast::KeyValueGroup {
+    fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
+        let key_values = self.key_values().collect_vec();
+        let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
+        let trailing_comment_alignment_width =
+            f.trailing_comment_alignment_width(key_values.iter(), equal_alignment_width)?;
+
+        for (i, key_value) in key_values.iter().enumerate() {
+            if i != 0 {
+                write!(f, "{}", f.line_ending())?;
+            }
+
+            WithAlignmentHint {
+                value: key_value,
+                equal_alignment_width,
+                trailing_comment_alignment_width,
+            }
+            .format(f)?;
+        }
 
         Ok(())
     }

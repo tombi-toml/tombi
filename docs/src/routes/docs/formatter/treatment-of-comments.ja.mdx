@@ -1,0 +1,258 @@
+# コメントの扱い
+
+Tombi は、フォーマットの安定性と自動ソートの予測可能性を保つために、コメントをグループ単位で扱います。
+
+このページでは、実装詳細ではなく、TOML の具体例で挙動を説明します。
+
+## 要点
+
+- Tombi は、空行で分かれたコメントブロックを意味のある境界として扱います。
+- ソートは各グループ内でのみ行われ、グループ境界をまたいで並び替えません。
+- `# tombi:` ディレクティブは、適用対象が明確な位置に置かれた場合にのみ formatter/linter のルール制御に使われます。
+
+## TOML におけるコメントの役割
+
+### leading comment
+直下の要素に直接ひも付くコメントです。
+
+```toml
+# leading comment 1
+# leading comment 2
+key = "value"
+```
+
+### trailing comment
+同じ行の末尾にあるコメントです。
+
+```toml
+key = "value" # trailing comment
+```
+
+### dangling comment group
+空行で区切られたコメントブロックです。視覚的・論理的な境界として機能します。
+
+```toml
+# dangling comment group A line 1
+# dangling comment group A line 2
+
+# dangling comment group B line 1
+# dangling comment group B line 2
+```
+
+## 空行は境界を定義する
+
+空行はグループ間の境界として扱われます。
+
+この境界が重要なのは、Tombi がソート時に値やキーをこの境界の外へ移動させないためです。
+
+```toml
+[tool.demo]
+b = 2
+a = 1
+
+z = 26
+y = 25
+```
+
+Tombi は各グループ内（`b/a` と `z/y`）で並び替えることはありますが、境界をまたいで結合・移動はしません。
+
+## `# tombi:` ディレクティブが有効になる場所
+
+ルールはシンプルです。
+
+- 有効: そのコンテナの最初の要素より前
+- ルール制御としては無効: 要素出現後のグループ境界上
+
+以下に具体例を示します。
+
+### Root レベルの例
+
+Root で有効（最初のキーより前）:
+
+```toml
+# root の directive: ルートテーブルに有効
+# tombi: format.rules.table-keys-order = "ascending"
+
+b = 2
+a = 1
+```
+
+Root で無効（すでに root の要素が出現した後）:
+
+```toml
+b = 2
+a = 1
+
+# root の group-boundary directive:
+# 空の key-value group に対する directive として解釈される
+# （ルール制御には使われない）
+# tombi: format.rules.table-keys-order = "ascending"
+
+z = 26
+y = 25
+```
+
+この位置では、Tombi はこの directive を境界上の **空の key-value group** に属するものとして解釈します。  
+そのためツール側では認識されますが、formatter/linter のルール制御には影響しません。
+
+### 通常の Table の例
+
+`[package]` に有効（この table の最初のキーより前）:
+
+```toml
+[package]
+# package の directive: この table に有効
+# tombi: format.rules.table-keys-order = "ascending"
+
+name = "demo"
+version = "1.0.0"
+```
+
+`[package]` に無効（キー出現後のグループ境界）:
+
+```toml
+[package]
+name = "demo"
+version = "1.0.0"
+
+# package の group-boundary directive: ルール制御には使われない
+# tombi: format.rules.table-keys-order = "ascending"
+
+description = "example"
+license = "MIT"
+```
+
+### Array の例
+
+Array に有効（最初の値より前）:
+
+```toml
+items = [
+  # array の directive: この array に有効
+  # tombi: format.rules.array-values-order = "ascending"
+
+  "banana",
+  "apple",
+]
+```
+
+Array に無効（値出現後のグループ境界）:
+
+```toml
+items = [
+  "banana",
+  "apple",
+
+  # array の group-boundary directive: ルール制御には使われない
+  # tombi: format.rules.array-values-order = "ascending"
+
+  "date",
+  "cherry",
+]
+```
+
+### Inline Table の例
+
+Inline Table に有効（その inline table 内の最初の key-value より前）:
+
+```toml
+point = {
+  # inline table の directive: この inline table に有効
+  # tombi: format.rules.table-keys-order = "ascending"
+
+  y = 20,
+  x = 10,
+}
+```
+
+Inline Table に無効（key-value 出現後のグループ境界）:
+
+```toml
+point = {
+  y = 20,
+  x = 10,
+
+  # inline table の group-boundary directive: ルール制御には使われない
+  # tombi: format.rules.table-keys-order = "ascending"
+
+  z = 30,
+}
+```
+
+### Array of Tables の例
+
+各 `[[servers]]` ブロックで有効なのは、そのブロックの最初のキーより前に置いた場合のみです。
+
+```toml
+[[servers]]
+# array of tables の directive: この table item に有効
+# tombi: format.rules.table-keys-order = "ascending"
+
+port = 8080
+host = "localhost"
+```
+
+キー出現後のグループ境界に置いた場合は無効です。
+
+```toml
+[[servers]]
+port = 8080
+host = "localhost"
+
+# array of tables の group-boundary directive: ルール制御には使われない
+# tombi: format.rules.table-keys-order = "ascending"
+
+protocol = "http"
+```
+
+## 無効な位置のディレクティブはどうなるか
+
+グループ境界上（ルール制御として無効な位置）にディレクティブを置いた場合:
+
+- Formatter のルール制御: 利用できるルールがない
+- Linter のルール制御: 利用できるルールがない
+- エディター支援（completion/hover/validation）: 利用できる
+
+つまり、Language Server の補助は得られますが、フォーマット/リントの挙動は変わりません。
+
+## 注釈付きの通し例
+
+```toml
+# [root の directive: 有効]
+# tombi: format.rules.table-keys-order = "ascending"
+
+# [root dangling comment group]
+
+[package]
+# [table の directive: package table に有効]
+# tombi: format.rules.table-keys-order = "ascending"
+
+name = "demo"
+version = "1.0.0"
+
+# [table の group-boundary directive: ルール制御には無効]
+# tombi: format.rules.table-keys-order = "descending"
+
+description = "example"
+
+items = [
+  # [array の directive: この array に有効]
+  # tombi: format.rules.array-values-order = "ascending"
+
+  "b",
+  "a",
+
+  # [array の group-boundary directive: ルール制御には無効]
+  # tombi: format.rules.array-values-order = "descending"
+
+  "d",
+  "c",
+]
+```
+
+読み方:
+
+- 「有効」と書かれた directive コメントはルール制御に使われます。
+- 「group-boundary directive」と書かれたコメントは境界コメントとして扱われ、formatter/linter のルール制御には使われません。
+
+ディレクティブの構文や利用可能なオプションは、[Comment Directive](/docs/comment-directive/) を参照してください。

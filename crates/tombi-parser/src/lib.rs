@@ -6,6 +6,7 @@ mod output;
 mod parse;
 mod parsed;
 mod parser;
+mod support;
 mod token_set;
 
 pub use error::{Error, ErrorKind};
@@ -61,6 +62,127 @@ pub fn build_green_tree(
     builder.finish()
 }
 
+pub fn format_tree_as_macro(node: &SyntaxNode, base_indent: usize) -> String {
+    use tombi_rg_tree::NodeOrToken;
+    fn fmt_items(
+        node: &SyntaxNode,
+        indent: usize,
+        out: &mut String,
+    ) {
+        let children: Vec<_> = node.children_with_tokens().collect();
+        for (i, child) in children.iter().enumerate() {
+            let prefix = "    ".repeat(indent);
+            let comma = if i < children.len() - 1 { "," } else { "" };
+            match child {
+                NodeOrToken::Token(t) => {
+                    let kind = format!("{:?}", t.kind());
+                    let value = t.text().to_string();
+                    out.push_str(&format!("{}{}: {:?}{}\n", prefix, kind, value, comma));
+                }
+                NodeOrToken::Node(n) => {
+                    let kind = format!("{:?}", n.kind());
+                    out.push_str(&format!("{}{}: {{\n", prefix, kind));
+                    fmt_items(n, indent + 1, out);
+                    out.push_str(&format!("{}}}{}\n", prefix, comma));
+                }
+            }
+        }
+    }
+    let mut out = String::new();
+    fmt_items(node, base_indent, &mut out);
+    out
+}
+
+#[cfg(test)]
+#[derive(PartialEq, Eq)]
+pub enum SyntaxTreePattern {
+    Token(String, String),
+    Node(String, Vec<SyntaxTreePattern>),
+}
+
+#[cfg(test)]
+pub fn syntax_node_to_patterns(node: &SyntaxNode) -> Vec<SyntaxTreePattern> {
+    use tombi_rg_tree::NodeOrToken;
+    node.children_with_tokens()
+        .map(|child| match child {
+            NodeOrToken::Token(t) => SyntaxTreePattern::Token(
+                format!("{:?}", t.kind()),
+                t.text().to_string(),
+            ),
+            NodeOrToken::Node(n) => SyntaxTreePattern::Node(
+                format!("{:?}", n.kind()),
+                syntax_node_to_patterns(&n),
+            ),
+        })
+        .collect()
+}
+
+#[cfg(test)]
+pub fn format_tree(patterns: &[SyntaxTreePattern], indent: usize) -> String {
+    let mut out = String::new();
+    for p in patterns {
+        let prefix = "  ".repeat(indent);
+        match p {
+            SyntaxTreePattern::Token(kind, value) => {
+                out += &format!("{}{}: {:?}\n", prefix, kind, value);
+            }
+            SyntaxTreePattern::Node(kind, children) => {
+                out += &format!("{}{}: {{\n", prefix, kind);
+                out += &format_tree(children, indent + 1);
+                out += &format!("{}}}\n", prefix);
+            }
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+#[macro_export]
+macro_rules! syntax_tree {
+    ($($tt:tt)*) => {{
+        #[allow(unused_mut)]
+        let mut __items: Vec<$crate::SyntaxTreePattern> = Vec::new();
+        $crate::syntax_tree_items!(__items; $($tt)*);
+        __items
+    }};
+}
+
+#[cfg(test)]
+#[macro_export]
+macro_rules! syntax_tree_items {
+    ($items:ident;) => {};
+
+    ($items:ident; $kind:ident : { $($inner:tt)* } , $($rest:tt)*) => {
+        $items.push($crate::SyntaxTreePattern::Node(
+            stringify!($kind).to_string(),
+            $crate::syntax_tree!($($inner)*),
+        ));
+        $crate::syntax_tree_items!($items; $($rest)*);
+    };
+
+    ($items:ident; $kind:ident : { $($inner:tt)* }) => {
+        $items.push($crate::SyntaxTreePattern::Node(
+            stringify!($kind).to_string(),
+            $crate::syntax_tree!($($inner)*),
+        ));
+    };
+
+    ($items:ident; $kind:ident : $value:literal , $($rest:tt)*) => {
+        $items.push($crate::SyntaxTreePattern::Token(
+            stringify!($kind).to_string(),
+            $value.to_string(),
+        ));
+        $crate::syntax_tree_items!($items; $($rest)*);
+    };
+
+    ($items:ident; $kind:ident : $value:literal) => {
+        $items.push($crate::SyntaxTreePattern::Token(
+            stringify!($kind).to_string(),
+            $value.to_string(),
+        ));
+    };
+}
+
 #[cfg(test)]
 #[macro_export]
 macro_rules! test_parser {
@@ -76,6 +198,29 @@ macro_rules! test_parser {
             pretty_assertions::assert_eq!(
                 p.errors,
                 Vec::<$crate::Error>::new()
+            );
+        }
+    };
+
+    {#[test] fn $name:ident($source:expr) -> Ok({ $($expected:tt)* })} => {
+        #[test]
+        fn $name() {
+            tombi_test_lib::init_log();
+
+            let p = $crate::parse(textwrap::dedent($source).trim());
+
+            log::debug!("syntax_node: {:#?}", p.syntax_node());
+
+            pretty_assertions::assert_eq!(
+                p.errors,
+                Vec::<$crate::Error>::new()
+            );
+
+            let expected = $crate::syntax_tree!($($expected)*);
+            let actual = $crate::syntax_node_to_patterns(&p.syntax_node());
+            pretty_assertions::assert_eq!(
+                $crate::format_tree(&actual, 0),
+                $crate::format_tree(&expected, 0),
             );
         }
     };

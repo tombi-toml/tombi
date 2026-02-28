@@ -248,14 +248,14 @@ fn calculate_array_insertion(
     insertion_index: usize,
     new_element: &tombi_document_tree::String,
 ) -> Option<(tombi_text::Position, String)> {
-    let values_with_comma: Vec<_> = ast_array.values_with_comma().collect();
+    let values_with_comma: Vec<_> = ast_array.value_or_key_values_with_comma().collect();
 
     if values_with_comma.is_empty() {
         // Empty array - insert without comma
         return if let Some(dangling_comment) = ast_array
-            .inner_dangling_comments()
+            .dangling_comment_groups()
             .last()
-            .and_then(|comments| comments.last())
+            .and_then(|group| group.comments().last())
         {
             Some((
                 dangling_comment.syntax().range().end,

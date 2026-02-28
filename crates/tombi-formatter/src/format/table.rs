@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use crate::{Format, format::filter_map_unique_keys, types::WithAlignmentHint};
+use crate::{Format, format::filter_map_unique_keys};
 
 impl Format for tombi_ast::Table {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
@@ -23,45 +23,27 @@ impl Format for tombi_ast::Table {
         f.write_indent()?;
         write!(f, "[{header}]")?;
 
-        if let Some(comment) = self.header_trailing_comment() {
-            comment.format(f)?;
+        if let Some(trailing_comment) = self.header_trailing_comment() {
+            trailing_comment.format(f)?;
         }
-
-        let key_values = self.key_values().collect_vec();
 
         if f.indent_table_key_values() {
             f.inc_indent();
         }
 
-        if key_values.is_empty() {
-            let dangling_comments = self.key_values_dangling_comments();
-
-            if !dangling_comments.is_empty() {
-                write!(f, "{}", f.line_ending())?;
-                dangling_comments.format(f)?;
-            }
-        } else {
+        let dangling_comment_groups = self.dangling_comment_groups().collect_vec();
+        if !dangling_comment_groups.is_empty() {
             write!(f, "{}", f.line_ending())?;
+            dangling_comment_groups.format(f)?;
+        }
 
-            self.key_values_begin_dangling_comments().format(f)?;
-
-            let equal_alignment_width = f.key_value_equal_alignment_width(key_values.iter());
-            let trailing_comment_alignment_width =
-                f.trailing_comment_alignment_width(key_values.iter(), equal_alignment_width)?;
-
-            for (i, key_value) in key_values.iter().enumerate() {
-                if i != 0 {
-                    write!(f, "{}", f.line_ending())?;
-                }
-                WithAlignmentHint {
-                    value: key_value,
-                    equal_alignment_width,
-                    trailing_comment_alignment_width,
-                }
-                .format(f)?;
+        let key_value_groups = self.key_value_groups().collect_vec();
+        if !key_value_groups.is_empty() {
+            if !dangling_comment_groups.is_empty() {
+                write!(f, "{}", f.line_ending())?;
             }
-
-            self.key_values_end_dangling_comments().format(f)?;
+            write!(f, "{}", f.line_ending())?;
+            key_value_groups.format(f)?;
         }
 
         if f.indent_table_key_values() {

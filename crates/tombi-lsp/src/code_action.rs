@@ -122,15 +122,7 @@ pub fn inline_table_to_dot_keys_code_action(
                 && matches!(table.kind(), TableKind::InlineTable { has_comment: false }) =>
         {
             let node = get_ast_inline_table_node(root, table)?;
-            if !node.inner_begin_dangling_comments().is_empty()
-                || node
-                    .inner_end_dangling_comments()
-                    .into_iter()
-                    .flatten()
-                    .next()
-                    .is_some()
-                || node.has_inner_comments()
-            {
+            if node.has_inner_comments() {
                 return None;
             }
             let (key, value) = table.key_values().iter().next()?;

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use itertools::Itertools;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
@@ -19,6 +20,7 @@ pub async fn get_tombi_document_comment_directive_type_definition(
 ) -> Option<TypeDefinition> {
     if let Some(comment_directive_context) = root
         .tombi_document_comment_directives()
+        .collect_vec()
         .get_context(position)
     {
         get_tombi_value_comment_directive_type_definition(

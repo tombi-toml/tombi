@@ -2,18 +2,35 @@ use tombi_syntax::{SyntaxKind::*, T};
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    ArrayOfTable, AstChildren, AstNode, TableOrArrayOfTable, TombiValueCommentDirective, support,
+    ArrayOfTable, AstChildren, AstNode, DanglingCommentGroupOr, KeyValueGroup, TableOrArrayOfTable,
+    TombiValueCommentDirective, support,
 };
 
 impl crate::Table {
+    #[inline]
+    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
+        itertools::chain!(
+            self.header_leading_comments()
+                .filter_map(|comment| comment.get_tombi_value_directive()),
+            self.header_trailing_comment()
+                .into_iter()
+                .filter_map(|comment| comment.get_tombi_value_directive()),
+            self.dangling_comment_groups()
+                .flat_map(|comment_group| comment_group
+                    .into_comments()
+                    .filter_map(|comment| comment.get_tombi_value_directive()))
+        )
+    }
+
     /// The leading comments of the table header.
     ///
     /// ```toml
     /// # This comment
     /// [table]
     /// ```
+    #[inline]
     pub fn header_leading_comments(&self) -> impl Iterator<Item = crate::LeadingComment> {
-        support::node::leading_comments(self.syntax().children_with_tokens())
+        support::comment::leading_comments(self.syntax().children_with_tokens())
     }
 
     /// The trailing comment of the table header.
@@ -21,8 +38,9 @@ impl crate::Table {
     /// ```toml
     /// [table]  # This comment
     /// ```
+    #[inline]
     pub fn header_trailing_comment(&self) -> Option<crate::TrailingComment> {
-        support::node::trailing_comment(self.syntax().children_with_tokens(), T!(']'))
+        support::comment::trailing_comment(self.syntax().children_with_tokens(), T!(']'))
     }
 
     /// The dangling comments of the table (without key-value pairs).
@@ -31,103 +49,44 @@ impl crate::Table {
     /// [table]
     /// # This comments
     /// # This comments
-    /// ```
-    pub fn key_values_dangling_comments(&self) -> Vec<Vec<crate::DanglingComment>> {
-        support::node::dangling_comments(
-            self.syntax()
-                .children_with_tokens()
-                .skip_while(|node| !matches!(node.kind(), T!(']')))
-                .skip_while(|node| !matches!(node.kind(), LINE_BREAK))
-                .take_while(|node| matches!(node.kind(), COMMENT | LINE_BREAK | WHITESPACE)),
-        )
-    }
-
-    /// The begin dangling comments of the table.
     ///
-    /// ```toml
-    /// [table]
     /// # This comments
     /// # This comments
+    ///
     /// key = "value"
     /// ```
-    pub fn key_values_begin_dangling_comments(&self) -> Vec<Vec<crate::BeginDanglingComment>> {
-        support::node::begin_dangling_comments(
+    #[inline]
+    pub fn dangling_comment_groups(&self) -> impl Iterator<Item = crate::DanglingCommentGroup> {
+        support::comment::dangling_comment_groups(
             self.syntax()
                 .children_with_tokens()
-                .skip_while(|node| !matches!(node.kind(), T!(']')))
-                .skip_while(|node| !matches!(node.kind(), LINE_BREAK))
-                .take_while(|node| matches!(node.kind(), COMMENT | LINE_BREAK | WHITESPACE)),
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!(']')))
+                .skip_while(|node_or_token| {
+                    !matches!(node_or_token.kind(), LINE_BREAK | DANGLING_COMMENT_GROUP)
+                }),
         )
     }
 
-    /// The end dangling comments of the table.
-    ///
-    /// ```toml
-    /// [table]
-    /// key = "value"
-    /// # This comments
-    /// # This comments
-    /// ```
-    pub fn key_values_end_dangling_comments(&self) -> Vec<Vec<crate::EndDanglingComment>> {
-        support::node::end_dangling_comments(self.syntax().children_with_tokens())
-    }
-
-    pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
-        itertools::chain!(
-            self.header_comment_directives(),
-            self.key_values_comment_directives(),
+    #[inline]
+    pub fn key_value_groups(&self) -> impl Iterator<Item = DanglingCommentGroupOr<KeyValueGroup>> {
+        support::comment::dangling_comment_group_or(
+            self.syntax()
+                .children_with_tokens()
+                .skip_while(|node_or_token| !matches!(node_or_token.kind(), T!(']')))
+                .skip_while(|node_or_token| {
+                    !matches!(node_or_token.kind(), LINE_BREAK | DANGLING_COMMENT_GROUP)
+                }),
         )
     }
 
-    pub fn header_comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
-        let mut header_comment_directives = vec![];
-
-        for comment in self.header_leading_comments() {
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                header_comment_directives.push(comment_directive);
-            }
-        }
-        if let Some(comment) = self.header_trailing_comment()
-            && let Some(comment_directive) = comment.get_tombi_value_directive()
-        {
-            header_comment_directives.push(comment_directive);
-        }
-
-        header_comment_directives.into_iter()
+    #[inline]
+    pub fn key_values(&self) -> impl Iterator<Item = crate::KeyValue> {
+        self.key_value_groups()
+            .filter_map(DanglingCommentGroupOr::into_item_group)
+            .flat_map(KeyValueGroup::into_key_values)
     }
 
-    pub fn key_values_comment_directives(
-        &self,
-    ) -> impl Iterator<Item = TombiValueCommentDirective> {
-        let mut key_values_comment_directives = vec![];
-        if self.key_values().next().is_none() {
-            for comments in self.key_values_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        key_values_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        } else {
-            for comments in self.key_values_begin_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        key_values_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-            for comments in self.key_values_end_dangling_comments() {
-                for comment in comments {
-                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                        key_values_comment_directives.push(comment_directive);
-                    }
-                }
-            }
-        }
-
-        key_values_comment_directives.into_iter()
-    }
-
+    #[inline]
     pub fn contains_header(&self, position: tombi_text::Position) -> bool {
         self.bracket_start().unwrap().range().end <= position
             && position <= self.bracket_end().unwrap().range().start
@@ -143,6 +102,7 @@ impl crate::Table {
     /// [[foo.bar.baz]]  # <- This is also a subtable
     /// key = true
     /// ```
+    #[inline]
     pub fn sub_tables(&self) -> impl Iterator<Item = TableOrArrayOfTable> + '_ {
         support::node::next_siblings_nodes(self)
             .skip(1)
@@ -158,6 +118,7 @@ impl crate::Table {
             })
     }
 
+    #[inline]
     pub fn parent_table_or_array_of_table_keys(
         &self,
         toml_version: TomlVersion,
@@ -186,6 +147,7 @@ impl crate::Table {
             })
     }
 
+    #[inline]
     pub fn parent_array_of_tables_keys(
         &self,
         toml_version: TomlVersion,

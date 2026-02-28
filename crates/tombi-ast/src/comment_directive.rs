@@ -1,3 +1,31 @@
+#[derive(Debug, Default)]
+pub struct DocumentCommentDirectives {
+    pub schema: Option<SchemaDocumentCommentDirective>,
+    pub tombi: Vec<TombiDocumentCommentDirective>,
+}
+
+impl DocumentCommentDirectives {
+    pub fn from_comments(
+        comments: impl Iterator<Item = crate::Comment>,
+        source_path: Option<&std::path::Path>,
+    ) -> Option<Self> {
+        let mut document_comment_directives = DocumentCommentDirectives::default();
+        let mut found = false;
+        for comment in comments {
+            if let Some(schema_directive) = comment.get_document_schema_directive(source_path) {
+                found = true;
+                document_comment_directives.schema = Some(schema_directive);
+            }
+            if let Some(tombi_directive) = comment.get_tombi_document_directive() {
+                found = true;
+                document_comment_directives.tombi.push(tombi_directive);
+            }
+        }
+
+        found.then(|| document_comment_directives)
+    }
+}
+
 #[derive(Debug)]
 pub struct SchemaDocumentCommentDirective {
     /// The range of the directive.

@@ -1,72 +1,44 @@
-use itertools::Itertools;
+use tombi_ast::DanglingCommentGroupOr;
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder};
 
 impl AppendSemanticTokens for tombi_ast::Root {
     fn append_semantic_tokens(&self, builder: &mut SemanticTokensBuilder) {
-        let key_values = self.key_values().collect_vec();
-
         let source_path = builder.text_document_uri.to_file_path().ok();
         let schema_document_directive =
             self.schema_document_comment_directive(source_path.as_deref());
-        if key_values.is_empty() {
-            for comments in self.key_values_dangling_comments() {
-                for comment in comments {
-                    if let Some(schema_comment_directive) = &schema_document_directive
-                        && comment
-                            .syntax()
-                            .range()
-                            .contains(schema_comment_directive.directive_range.start)
-                    {
-                        builder.add_comment_directive(
-                            &comment,
-                            schema_comment_directive.directive_range,
-                        );
-                        continue;
-                    }
-                    if let Some(tombi_comment_directive) = comment.get_tombi_document_directive() {
-                        builder.add_comment_directive(
-                            &comment,
-                            tombi_comment_directive.directive_range,
-                        );
-                    } else {
-                        comment.append_semantic_tokens(builder);
-                    }
+        for comment_group in self.dangling_comment_groups() {
+            for comment in comment_group.comments() {
+                if let Some(schema_document_directive) = &schema_document_directive
+                    && comment
+                        .syntax()
+                        .range()
+                        .contains(schema_document_directive.directive_range.start)
+                {
+                    builder
+                        .add_comment_directive(&comment, schema_document_directive.directive_range);
+                    continue;
                 }
-            }
-        } else {
-            for comments in self.key_values_begin_dangling_comments() {
-                for comment in comments {
-                    if let Some(schema_document_directive) = &schema_document_directive
-                        && comment
-                            .syntax()
-                            .range()
-                            .contains(schema_document_directive.directive_range.start)
-                    {
-                        builder.add_comment_directive(
-                            &comment,
-                            schema_document_directive.directive_range,
-                        );
-                        continue;
-                    }
-                    if let Some(tombi_document_directive) = comment.get_tombi_document_directive() {
-                        builder.add_comment_directive(
-                            &comment,
-                            tombi_document_directive.directive_range,
-                        );
-                    } else {
-                        comment.append_semantic_tokens(builder);
-                    }
-                }
-            }
-
-            for key_value in self.key_values() {
-                key_value.append_semantic_tokens(builder);
-            }
-
-            for comments in self.key_values_end_dangling_comments() {
-                for comment in comments {
+                if let Some(tombi_document_directive) = comment.get_tombi_document_directive() {
+                    builder
+                        .add_comment_directive(&comment, tombi_document_directive.directive_range);
+                } else {
                     comment.append_semantic_tokens(builder);
+                }
+            }
+        }
+
+        for group in self.key_value_groups() {
+            match group {
+                DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                    for comment in comment_group.comments() {
+                        comment.append_semantic_tokens(builder);
+                    }
+                }
+                DanglingCommentGroupOr::ItemGroup(key_value_group) => {
+                    for key_value in key_value_group.key_values() {
+                        key_value.append_semantic_tokens(builder);
+                    }
                 }
             }
         }

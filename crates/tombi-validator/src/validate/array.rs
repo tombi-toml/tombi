@@ -24,6 +24,10 @@ impl Validate for tombi_document_tree::Array {
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
+        let comment_directives = self
+            .comment_directives()
+            .map(|directives| directives.cloned().collect_vec());
+
         async move {
             if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
@@ -66,7 +70,7 @@ impl Validate for tombi_document_tree::Array {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -78,7 +82,7 @@ impl Validate for tombi_document_tree::Array {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -90,7 +94,7 @@ impl Validate for tombi_document_tree::Array {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await

@@ -292,6 +292,34 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_dependency_groups_multiple_lines_include_group_with_separator_line(
+                r#"
+                [dependency-groups]
+                dev = [
+                  { include-group = "stub" },
+                  "pytest>=8.3.3",
+
+                  { include-group = "ci" },
+                  "ruff>=0.7.4",
+                ]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                dev = [
+                  "pytest>=8.3.3",
+                  { include-group = "stub" },
+
+                  "ruff>=0.7.4",
+                  { include-group = "ci" },
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_tool_poetry_dependencies(
                 r#"
                 [project]
@@ -419,6 +447,7 @@ mod table_keys_order {
             ) -> Ok(
                 r#"
                 project.name = "test-project"
+
                 tool = { uv = {}, pyright = {} }  # tombi: format.rules.table-keys-order.disabled = true
                 "#
             )
@@ -443,6 +472,7 @@ mod table_keys_order {
             ) -> Ok(
                 r#"
                 project.name = "test-project"
+
                 tool = {uv = {}, pyright = {}}  # tombi: format.rules.table-keys-order.disabled = true
                 "#
             )
@@ -716,6 +746,51 @@ mod table_keys_order {
                 serde.workspace = true
                 serde.version = "^1.0.0"
                 serde.features = ["derive"]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_workspace_dependencies_complex_with_separator_line(
+                r#"
+                [workspace.dependencies]
+
+                # Serde dependency
+
+                serde.version = "^1.0.0"
+                serde.workspace = true
+                serde.features = ["derive"]
+
+                # Other dependencies
+
+                anyhow = "1.0.89"
+                chrono = { version = "0.4.38", features = ["serde"] }
+
+                # Reqwest dependency
+                reqwest.default-features = false
+                reqwest.version = "0.12.9"
+                reqwest.features = ["json", "rustls-tls"]
+                "#,
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [workspace.dependencies]
+                # Serde dependency
+
+                serde.workspace = true
+                serde.version = "^1.0.0"
+                serde.features = ["derive"]
+
+                # Other dependencies
+
+                anyhow = "1.0.89"
+                chrono = { version = "0.4.38", features = ["serde"] }
+
+                reqwest.version = "0.12.9"
+                # Reqwest dependency
+                reqwest.default-features = false
+                reqwest.features = ["json", "rustls-tls"]
                 "#
             )
         }
@@ -993,6 +1068,33 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_array_with_inner_comment_directive_with_separator_line_without_trailing_comma(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  2, 1,
+
+                  4, 3
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  # tombi: format.rules.array-values-order = "ascending"
+
+                  1,
+                  2,
+
+                  3,
+                  4
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_array_with_trailing_comment_directive(
                 r#"
                 key = [
@@ -1077,6 +1179,34 @@ mod table_keys_order {
                   key3 = 3,
                   key4 = 4,
                   key5 = 5
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_with_inner_comment_directive_with_separator_line_without_trailing_comma(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  b = 2, a = 1,
+
+                  d = 4, c = 3
+                }
+                "#,
+                TomlVersion::V1_1_0,
+            ) -> Ok(
+                r#"
+                key = {
+                  # tombi: format.rules.table-keys-order = "ascending"
+
+                  a = 1,
+                  b = 2,
+
+                  c = 3,
+                  d = 4
                 }
                 "#
             )
@@ -1520,6 +1650,37 @@ mod table_keys_order {
 
                 # table b key values end dangling comment3
                 # table b key values end dangling comment4
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_values_order_nested_groups_with_file_schema_keeps_order_for_schema_mismatch(
+                r#"
+                #:schema ./schemas/x-tombi-table-keys-order.schema.json
+
+                [a.key]
+                nested = [
+                  "b",
+                  "a",
+
+                  "d",
+                  "c",
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                #:schema ./schemas/x-tombi-table-keys-order.schema.json
+
+                [a.key]
+                nested = [
+                  "b",
+                  "a",
+
+                  "d",
+                  "c",
+                ]
                 "#
             )
         }

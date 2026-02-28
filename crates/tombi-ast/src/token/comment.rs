@@ -39,22 +39,29 @@ macro_rules! impl_comment {
                 comment.0
             }
         }
+
+        impl AstToken for $name {
+            #[inline]
+            fn can_cast(kind: tombi_syntax::SyntaxKind) -> bool {
+                crate::Comment::can_cast(kind)
+            }
+
+            #[inline]
+            fn cast(syntax: tombi_syntax::SyntaxToken) -> Option<Self> {
+                crate::Comment::cast(syntax).map($name::from)
+            }
+
+            #[inline]
+            fn syntax(&self) -> &tombi_syntax::SyntaxToken {
+                self.0.syntax()
+            }
+        }
     };
 }
 
 impl_comment!(
     #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
     pub struct DanglingComment(crate::Comment);
-);
-
-impl_comment!(
-    #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
-    pub struct BeginDanglingComment(crate::Comment);
-);
-
-impl_comment!(
-    #[derive(Debug, Clone, PartialEq, Eq, AsRef, From, Into)]
-    pub struct EndDanglingComment(crate::Comment);
 );
 
 impl_comment!(

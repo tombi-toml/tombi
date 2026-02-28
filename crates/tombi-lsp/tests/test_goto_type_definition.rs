@@ -218,7 +218,7 @@ mod goto_type_definition_tests {
                 "#,
                 SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
-            ) -> Ok("tombi://www.schemastore.tombi/tombi-root-table-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-group-boundary-directive.json");
         );
 
         test_goto_type_definition!(
@@ -328,7 +328,7 @@ mod goto_type_definition_tests {
                 "#,
                 SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
-            ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-group-boundary-directive.json");
         );
 
         test_goto_type_definition!(
@@ -343,6 +343,59 @@ mod goto_type_definition_tests {
                 SourcePath(type_test_schema_path()),
                 SchemaPath(type_test_schema_path()),
             ) -> Ok("tombi://www.schemastore.tombi/tombi-key-array-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_nested_array_leading_comment_directive(
+                r#"
+                array = [
+                  # tombi: lint.rules.array-min-items█ = "off"
+                  []
+                ]
+                "#,
+                SourcePath(type_test_schema_path()),
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-array-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_inline_table_directive_leading(
+                r#"
+                # tombi: lint.rules.table-min-properties█ = "off"
+                inline-table = { key = "value", }
+                "#,
+                SourcePath(type_test_schema_path()),
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_nested_inline_table_leading_comment_directive(
+                r#"
+                array = [
+                  # tombi: lint.rules.table-min-properties█ = "off"
+                  { key = "value", }
+                ]
+                "#,
+                SourcePath(type_test_schema_path()),
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-inline-table-directive.json");
+        );
+
+        test_goto_type_definition!(
+            #[tokio::test]
+            async fn type_test_tombi_key_inline_table_directive_inner_dangling(
+                r#"
+                inline-table = { # tombi: lint.rules.table-min-properties█ = "off"
+                  key = "value",
+                }
+                "#,
+                SourcePath(type_test_schema_path()),
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok("tombi://www.schemastore.tombi/tombi-key-inline-table-directive.json");
         );
 
         test_goto_type_definition!(

@@ -6,10 +6,9 @@ use tombi_comment_directive::{
     value::{
         ArrayCommonFormatRules, ArrayCommonLintRules, ArrayOfTableCommonFormatRules,
         ArrayOfTableCommonLintRules, InlineTableCommonFormatRules, InlineTableCommonLintRules,
-        TombiArrayDirectiveContent, TombiInlineTableDirectiveContent,
-        TombiKeyArrayOfTableDirectiveContent, TombiKeyTableDirectiveContent,
-        TombiRootTableDirectiveContent, TombiTableDirectiveContent, TombiValueDirectiveContent,
-        WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
+        TombiGroupBoundaryDirectiveContent, TombiKeyArrayOfTableDirectiveContent,
+        TombiKeyTableDirectiveContent, TombiRootTableDirectiveContent, TombiTableDirectiveContent,
+        TombiValueDirectiveContent, WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
     },
 };
 use tombi_document_tree::{ArrayKind, TableKind};
@@ -154,8 +153,10 @@ impl GetCommentDirectiveContext<String> for Vec<TombiDocumentCommentDirective> {
     }
 }
 
-pub fn get_key_value_comment_directive_content_and_schema_uri<FormatRules, LintRules>(
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+pub fn get_key_value_comment_directive_content_and_schema_uri<'a, FormatRules, LintRules>(
+    comment_directives: Option<
+        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)>
@@ -164,28 +165,31 @@ where
     TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyLintRules<LintRules>>:
         TombiCommentDirectiveImpl,
 {
-    if let Some(comment_directive) = comment_directives {
-        for comment_directive in comment_directive {
-            if let Some(comment_directive_context) = comment_directive.get_context(position) {
-                let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) =
-                    accessors.last()
-                {
-                    TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url()
-                } else {
-                    TombiValueDirectiveContent::<
-                        WithKeyFormatRules<FormatRules>,
-                        WithKeyLintRules<LintRules>,
-                    >::comment_directive_schema_url()
-                };
-                return Some((comment_directive_context, schema_uri));
-            }
+    let Some(comment_directives) = comment_directives else {
+        return None;
+    };
+
+    for comment_directive in comment_directives {
+        if let Some(comment_directive_context) = comment_directive.get_context(position) {
+            let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last()
+            {
+                TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url()
+            } else {
+                TombiValueDirectiveContent::<
+                    WithKeyFormatRules<FormatRules>,
+                    WithKeyLintRules<LintRules>,
+                >::comment_directive_schema_url()
+            };
+            return Some((comment_directive_context, schema_uri));
         }
     }
     None
 }
 
-pub fn get_key_table_value_comment_directive_content_and_schema_uri<FormatRules, LintRules>(
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+pub fn get_key_table_value_comment_directive_content_and_schema_uri<'a, FormatRules, LintRules>(
+    comment_directives: Option<
+        impl Iterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)>
@@ -194,21 +198,22 @@ where
     TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyTableLintRules<LintRules>>:
         TombiCommentDirectiveImpl,
 {
-    if let Some(comment_directive) = comment_directives {
-        for comment_directive in comment_directive {
-            if let Some(comment_directive_context) = comment_directive.get_context(position) {
-                let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) =
-                    accessors.last()
-                {
-                    TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url()
-                } else {
-                    TombiValueDirectiveContent::<
-                        WithKeyFormatRules<FormatRules>,
-                        WithKeyTableLintRules<LintRules>,
-                    >::comment_directive_schema_url()
-                };
-                return Some((comment_directive_context, schema_uri));
-            }
+    let Some(comment_directives) = comment_directives else {
+        return None;
+    };
+
+    for comment_directive in comment_directives {
+        if let Some(comment_directive_context) = comment_directive.get_context(position) {
+            let schema_uri = if let Some(tombi_schema_store::Accessor::Index(_)) = accessors.last()
+            {
+                TombiValueDirectiveContent::<FormatRules, LintRules>::comment_directive_schema_url()
+            } else {
+                TombiValueDirectiveContent::<
+                    WithKeyFormatRules<FormatRules>,
+                    WithKeyTableLintRules<LintRules>,
+                >::comment_directive_schema_url()
+            };
+            return Some((comment_directive_context, schema_uri));
         }
     }
     None
@@ -219,25 +224,47 @@ pub fn get_array_comment_directive_content_with_schema_uri(
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
-    if let Some((comment_directive, schema_uri)) = match array.kind() {
-        ArrayKind::Array => get_key_table_value_comment_directive_content_and_schema_uri::<
-            ArrayCommonFormatRules,
-            ArrayCommonLintRules,
-        >(array.comment_directives(), position, accessors),
-        ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
-            get_key_value_comment_directive_content_and_schema_uri::<
-                ArrayOfTableCommonFormatRules,
-                ArrayOfTableCommonLintRules,
-            >(array.comment_directives(), position, accessors)
+    match array.kind() {
+        ArrayKind::Array => {
+            if let Some((comment_directive, schema_uri)) =
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    ArrayCommonFormatRules,
+                    ArrayCommonLintRules,
+                >(array.header_comment_directives(), position, accessors)
+            {
+                return Some((comment_directive, schema_uri));
+            }
+
+            if let Some(body_comment_directives) = array.body_comment_directives() {
+                for comment_directive in body_comment_directives {
+                    if let Some(comment_directive_context) = comment_directive.get_context(position)
+                    {
+                        let schema_uri = TombiValueDirectiveContent::<
+                            ArrayCommonFormatRules,
+                            ArrayCommonLintRules,
+                        >::comment_directive_schema_url();
+
+                        return Some((comment_directive_context, schema_uri));
+                    }
+                }
+            }
         }
-    } {
-        return Some((comment_directive, schema_uri));
+        ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
+            if let Some((comment_directive, schema_uri)) =
+                get_key_value_comment_directive_content_and_schema_uri::<
+                    ArrayOfTableCommonFormatRules,
+                    ArrayOfTableCommonLintRules,
+                >(array.header_comment_directives(), position, accessors)
+            {
+                return Some((comment_directive, schema_uri));
+            }
+        }
     }
 
-    if let Some(comment_directive) = array.inner_comment_directives() {
-        for comment_directive in comment_directive {
+    if let Some(group_boundary_comment_directives) = array.group_boundary_comment_directives() {
+        for comment_directive in group_boundary_comment_directives {
             if let Some(comment_directive_context) = comment_directive.get_context(position) {
-                let schema_uri = TombiArrayDirectiveContent::comment_directive_schema_url();
+                let schema_uri = TombiGroupBoundaryDirectiveContent::comment_directive_schema_url();
                 return Some((comment_directive_context, schema_uri));
             }
         }
@@ -261,20 +288,10 @@ pub fn get_table_comment_directive_content_with_schema_uri(
             {
                 return Some((comment_directive, schema_uri));
             }
-            if let Some(comment_directive) = table.inner_comment_directives() {
-                for comment_directive in comment_directive {
-                    if let Some(comment_directive_context) = comment_directive.get_context(position)
-                    {
-                        let schema_uri =
-                            TombiInlineTableDirectiveContent::comment_directive_schema_url();
-                        return Some((comment_directive_context, schema_uri));
-                    }
-                }
-            }
         }
-        TableKind::Table | TableKind::ParentTable => {
-            if let Some(comment_directive) = table.comment_directives() {
-                for comment_directive in comment_directive {
+        TableKind::Table => {
+            if let Some(header_comment_directives) = table.header_comment_directives() {
+                for comment_directive in header_comment_directives {
                     if let Some(comment_directive_context) = comment_directive.get_context(position)
                     {
                         let schema_uri = if matches!(accessors.last(), Some(Accessor::Index(_))) {
@@ -287,8 +304,9 @@ pub fn get_table_comment_directive_content_with_schema_uri(
                     }
                 }
             }
-            if let Some(comment_directive) = table.inner_comment_directives() {
-                for comment_directive in comment_directive {
+
+            if let Some(body_comment_directives) = table.body_comment_directives() {
+                for comment_directive in body_comment_directives {
                     if let Some(comment_directive_context) = comment_directive.get_context(position)
                     {
                         let schema_uri = TombiTableDirectiveContent::comment_directive_schema_url();
@@ -298,10 +316,26 @@ pub fn get_table_comment_directive_content_with_schema_uri(
                 }
             }
         }
+        TableKind::ParentTable => {
+            if let Some(header_comment_directives) = table.header_comment_directives() {
+                for comment_directive in header_comment_directives {
+                    if let Some(comment_directive_context) = comment_directive.get_context(position)
+                    {
+                        let schema_uri = if matches!(accessors.last(), Some(Accessor::Index(_))) {
+                            TombiKeyArrayOfTableDirectiveContent::comment_directive_schema_url()
+                        } else {
+                            TombiKeyTableDirectiveContent::comment_directive_schema_url()
+                        };
+
+                        return Some((comment_directive_context, schema_uri));
+                    }
+                }
+            }
+        }
         TableKind::KeyValue | TableKind::ParentKey => {}
         TableKind::Root => {
-            if let Some(comment_directive) = table.inner_comment_directives() {
-                for comment_directive in comment_directive {
+            if let Some(comment_directives) = table.comment_directives() {
+                for comment_directive in comment_directives {
                     if let Some(comment_directive_context) = comment_directive.get_context(position)
                     {
                         let schema_uri =
@@ -309,6 +343,15 @@ pub fn get_table_comment_directive_content_with_schema_uri(
                         return Some((comment_directive_context, schema_uri));
                     }
                 }
+            }
+        }
+    }
+
+    if let Some(group_boundary_comment_directives) = table.group_boundary_comment_directives() {
+        for comment_directive in group_boundary_comment_directives {
+            if let Some(comment_directive_context) = comment_directive.get_context(position) {
+                let schema_uri = TombiGroupBoundaryDirectiveContent::comment_directive_schema_url();
+                return Some((comment_directive_context, schema_uri));
             }
         }
     }

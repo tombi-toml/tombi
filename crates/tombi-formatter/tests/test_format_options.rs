@@ -847,7 +847,7 @@ mod format_options {
                 key3.key4 = [
                   1,             # comment 3-1
                   2,             # comment 3-2
-                  3,             # comment 3-3
+                  3              # comment 3-3
                 ]                # comment 4
                 "#
             )
@@ -910,7 +910,7 @@ mod format_options {
                 key3.key4 = {
                   a = 1,         # comment 3-1
                   b = 2,         # comment 3-2
-                  c = 3,         # comment 3-3
+                  c = 3          # comment 3-3
                 }                # comment 4
                 "#
             )

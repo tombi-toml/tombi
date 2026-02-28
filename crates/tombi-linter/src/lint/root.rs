@@ -8,8 +8,25 @@ impl Lint for tombi_ast::Root {
             crate::rule::KeyEmptyRule::check(self, l).await;
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
             crate::rule::TablesOutOfOrderRule::check(self, l).await;
-            for item in self.items() {
+
+            for key_value in self.key_values() {
+                key_value.lint(l).await;
+            }
+
+            for item in self.table_or_array_of_tables() {
                 item.lint(l).await;
+            }
+        }
+        .boxed()
+    }
+}
+
+impl Lint for tombi_ast::TableOrArrayOfTable {
+    fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
+        async move {
+            match self {
+                Self::Table(table) => table.lint(l).await,
+                Self::ArrayOfTable(array_of_table) => array_of_table.lint(l).await,
             }
         }
         .boxed()

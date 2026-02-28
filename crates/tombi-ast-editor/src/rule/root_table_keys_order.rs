@@ -10,7 +10,7 @@ use tombi_syntax::SyntaxElement;
 use crate::rule::table_keys_order::{TableOrderOverrides, get_sorted_accessors, table_keys_order};
 
 pub async fn root_table_keys_order<'a>(
-    key_values: Vec<tombi_ast::KeyValue>,
+    key_value_groups: Vec<tombi_ast::KeyValueGroup>,
     table_or_array_of_tables: Vec<tombi_ast::TableOrArrayOfTable>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -19,7 +19,7 @@ pub async fn root_table_keys_order<'a>(
     >,
     table_order_overrides: Option<&TableOrderOverrides>,
 ) -> Vec<crate::Change> {
-    if key_values.is_empty() && table_or_array_of_tables.is_empty() {
+    if key_value_groups.is_empty() && table_or_array_of_tables.is_empty() {
         return Vec::with_capacity(0);
     }
 
@@ -35,19 +35,29 @@ pub async fn root_table_keys_order<'a>(
         .as_ref()
         .and_then(|comment_directive| comment_directive.table_keys_order().map(Into::into));
 
-    let mut changes = table_keys_order(
-        &tombi_document_tree::Value::Table(
-            key_values
-                .clone()
-                .into_document_tree_and_errors(schema_context.toml_version)
-                .tree,
-        ),
-        key_values,
-        current_schema,
-        schema_context,
-        comment_directive,
-    )
-    .await;
+    let mut changes = Vec::new();
+    for key_value_group in key_value_groups {
+        let key_values = key_value_group.key_values().collect_vec();
+        if key_values.is_empty() {
+            continue;
+        }
+
+        changes.extend(
+            table_keys_order(
+                &tombi_document_tree::Value::Table(
+                    key_values
+                        .clone()
+                        .into_document_tree_and_errors(schema_context.toml_version)
+                        .tree,
+                ),
+                key_values,
+                current_schema,
+                schema_context,
+                comment_directive.clone(),
+            )
+            .await,
+        );
+    }
 
     if table_or_array_of_tables.is_empty() {
         return changes;
@@ -84,7 +94,7 @@ pub async fn root_table_keys_order<'a>(
     )
     .await
     else {
-        return Vec::with_capacity(0);
+        return changes;
     };
 
     let new = sorted_table

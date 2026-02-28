@@ -1,10 +1,12 @@
 use tombi_future::Boxable;
 
-use crate::Lint;
+use crate::{Lint, rule::Rule};
 
 impl Lint for tombi_ast::Array {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
+            crate::rule::MissingCommaRule::check(self, l).await;
+
             for value in self.values() {
                 value.lint(l).await;
             }
@@ -95,7 +97,15 @@ mod tests {
                 ]
                 "#,
                 SchemaPath(type_test_schema_path()),
-            ) -> Ok(_)
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed {
+                    key: "array-min-values".to_string(),
+                },
+                tombi_validator::DiagnosticKind::ArrayMinValues {
+                    min_values: 2,
+                    actual: 1,
+                }
+            ])
         }
 
         test_lint! {
@@ -123,6 +133,21 @@ mod tests {
                 SchemaPath(type_test_schema_path()),
             ) -> Err([
                 tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+            ])
+        }
+
+        test_lint! {
+            #[test]
+            fn test_array_min_values_with_duplicate_comment_directive_key_on_header_and_body(
+                r#"
+                # tombi: lint.rules.array-min-values.disabled = true
+                array = [
+                    # tombi: lint.rules.array-min-values.disabled = true
+                ]
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Err([
+                "duplicate key: disabled"
             ])
         }
 
@@ -177,7 +202,8 @@ mod tests {
                 "#,
                 SchemaPath(type_test_schema_path()),
             ) -> Err([
-                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()}
+                tombi_validator::DiagnosticKind::KeyNotAllowed {key: "key-empty".to_string()},
+                tombi_validator::DiagnosticKind::UnusedNoqa { rule_name: "array-min-values" },
             ])
         }
     }

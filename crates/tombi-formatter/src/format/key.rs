@@ -8,7 +8,7 @@ use crate::{
     types::{AlignmentWidth, WithAlignmentHint},
 };
 
-impl Format for WithAlignmentHint<'_, tombi_ast::Keys> {
+impl Format for WithAlignmentHint<&tombi_ast::Keys> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let keys = self.value;
         let mut keys_string = keys

@@ -77,12 +77,14 @@ pub trait Validate {
     ) -> BoxFuture<'b, Result<(), crate::Error>>;
 }
 
-pub fn handle_deprecated<T>(
+pub fn handle_deprecated<'a, T>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) where
     T: tombi_document_tree::ValueImpl,
@@ -113,12 +115,14 @@ pub fn handle_deprecated<T>(
     }
 }
 
-pub fn handle_deprecated_value<T>(
+pub fn handle_deprecated_value<'a, T>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) where
     T: tombi_document_tree::ValueImpl + ToString,
@@ -183,13 +187,15 @@ fn handle_type_mismatch(
     }
 }
 
-fn handle_unused_noqa(
+fn handle_unused_noqa<'a>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
     rule_name: &'static str,
 ) {
-    let Some(comment_directive) = comment_directives else {
+    let Some(comment_directives) = comment_directives else {
         return;
     };
 
@@ -205,11 +211,9 @@ fn handle_unused_noqa(
         content,
         content_range,
         ..
-    } in comment_directive
+    } in comment_directives
     {
-        let Ok(root) =
-            tombi_parser::parse(content).try_into_root()
-        else {
+        let Ok(root) = tombi_parser::parse(content).try_into_root() else {
             continue;
         };
 
@@ -250,11 +254,13 @@ fn is_success_or_warning(result: &Result<(), crate::Error>) -> bool {
     }
 }
 
-fn validate_deprecated<T>(
+fn validate_deprecated<'a, T>(
     deprecated: Option<bool>,
     accessors: &[tombi_schema_store::Accessor],
     value: &T,
-    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
+    comment_directives: Option<
+        impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
+    >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
 ) -> Result<(), crate::Error>
 where

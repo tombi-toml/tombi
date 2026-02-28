@@ -51,9 +51,6 @@ pub enum ErrorKind {
     #[error("expected '='")]
     ExpectedEqual,
 
-    #[error("expected ','")]
-    ExpectedComma,
-
     #[error("expected ']'")]
     ExpectedBracketEnd,
 
@@ -104,7 +101,6 @@ impl Error {
             ErrorKind::ExpectedKey => "expected-key",
             ErrorKind::ExpectedValue => "expected-value",
             ErrorKind::ExpectedEqual => "expected-equal",
-            ErrorKind::ExpectedComma => "expected-comma",
             ErrorKind::ExpectedBracketEnd => "expected-bracket-end",
             ErrorKind::ExpectedDoubleBracketEnd => "expected-double-bracket-end",
             ErrorKind::ExpectedBraceEnd => "expected-brace-end",

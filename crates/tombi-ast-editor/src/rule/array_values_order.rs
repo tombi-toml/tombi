@@ -31,8 +31,8 @@ use string::create_string_sortable_values;
 use crate::rule::array_comma_trailing_comment;
 
 pub async fn array_values_order<'a>(
+    nodes: Vec<(usize, &'a tombi_document_tree::Value)>,
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_node: &'a tombi_document_tree::Array,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -47,7 +47,7 @@ pub async fn array_values_order<'a>(
 
     if comment_directive
         .as_ref()
-        .and_then(|c| c.array_values_order_disabled())
+        .and_then(|content| content.array_values_order_disabled())
         .unwrap_or(false)
     {
         return Vec::with_capacity(0);
@@ -77,12 +77,11 @@ pub async fn array_values_order<'a>(
         SyntaxElement::Node(values_with_comma.first().unwrap().0.syntax().clone()),
         SyntaxElement::Node(values_with_comma.last().unwrap().0.syntax().clone()),
     );
-
     let sorted_values_with_comma = match values_order {
         XTombiArrayValuesOrder::All(values_order) => {
             get_sorted_values_order_all(
                 values_with_comma,
-                array_node,
+                nodes,
                 accessors,
                 current_schema,
                 schema_context,
@@ -93,7 +92,7 @@ pub async fn array_values_order<'a>(
         XTombiArrayValuesOrder::Groups(values_order_group) => {
             get_sorted_values_order_groups(
                 values_with_comma,
-                array_node.values().iter().collect_vec(),
+                nodes,
                 accessors,
                 current_schema,
                 schema_context,
@@ -116,15 +115,22 @@ pub async fn array_values_order<'a>(
         *comma = None;
     }
 
-    for (value, comma) in &sorted_values_with_comma {
-        changes.extend(array_comma_trailing_comment(value, comma.as_ref()));
+    let sorted_len = sorted_values_with_comma.len();
+    for (i, (value, comma)) in sorted_values_with_comma.iter().enumerate() {
+        changes.extend(array_comma_trailing_comment(
+            value,
+            comma.as_ref(),
+            is_last_comma || i + 1 != sorted_len,
+        ));
     }
 
     let new = sorted_values_with_comma
         .iter()
-        .flat_map(|(value, comma)| {
+        .enumerate()
+        .flat_map(|(i, (value, comma))| {
             if let Some(comma) = comma {
                 if !is_last_comma
+                    && i + 1 == sorted_len
                     && comma.leading_comments().next().is_none()
                     && comma.trailing_comment().is_none()
                 {
@@ -148,7 +154,7 @@ pub async fn array_values_order<'a>(
 
 async fn get_sorted_values_order_all<'a>(
     values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    array_node: &'a tombi_document_tree::Array,
+    value_nodes: Vec<(usize, &'a tombi_document_tree::Value)>,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -156,7 +162,7 @@ async fn get_sorted_values_order_all<'a>(
 ) -> Option<Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>> {
     let sortable_values = match SortableValues::try_new(
         values_with_comma,
-        &array_node.values().iter().collect_vec(),
+        value_nodes.as_slice(),
         accessors,
         current_schema,
         schema_context,
@@ -174,7 +180,7 @@ async fn get_sorted_values_order_all<'a>(
 
 async fn get_sorted_values_order_groups<'a>(
     mut values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-    mut value_nodes: Vec<&'a tombi_document_tree::Value>,
+    mut value_nodes: Vec<(usize, &'a tombi_document_tree::Value)>,
     accessors: &'a [Accessor],
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -213,6 +219,7 @@ async fn get_sorted_values_order_groups<'a>(
                 while i < values_with_comma.len() {
                     // check if the value is compatible with the schema
                     if value_nodes[i]
+                        .1
                         .validate(&[], Some(current_schema), schema_context)
                         .await
                         .is_ok()
@@ -480,39 +487,40 @@ enum SortFailReason {
 impl SortableValues {
     pub async fn try_new<'a>(
         values_with_comma: Vec<(tombi_ast::Value, Option<tombi_ast::Comma>)>,
-        value_nodes: &'a [&'a tombi_document_tree::Value],
+        value_nodes: &'a [(usize, &'a tombi_document_tree::Value)],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a SchemaContext<'a>,
     ) -> Result<Self, SortFailReason> {
-        let mut values_with_comma_iter = values_with_comma.iter().zip(value_nodes).enumerate();
+        let mut values_with_comma_iter = values_with_comma.iter().zip(value_nodes.iter());
 
-        let sortable_type =
-            if let Some((index, ((value, _), value_node))) = values_with_comma_iter.next() {
-                SortableType::try_new(
-                    value,
-                    value_node,
-                    &accessors
-                        .iter()
-                        .cloned()
-                        .chain(std::iter::once(Accessor::Index(index)))
-                        .collect_vec(),
-                    current_schema,
-                    schema_context,
-                )
-                .await?
-            } else {
-                unreachable!("values_with_comma is not empty");
-            };
+        let sortable_type = if let Some(((value, _), &(value_node_index, value_node))) =
+            values_with_comma_iter.next()
+        {
+            SortableType::try_new(
+                value,
+                value_node,
+                &accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(Accessor::Index(value_node_index)))
+                    .collect_vec(),
+                current_schema,
+                schema_context,
+            )
+            .await?
+        } else {
+            unreachable!("values_with_comma is not empty");
+        };
 
-        for (index, ((value, _), value_node)) in values_with_comma_iter {
+        for ((value, _), &(value_node_index, value_node)) in values_with_comma_iter {
             if SortableType::try_new(
                 value,
                 value_node,
                 &accessors
                     .iter()
                     .cloned()
-                    .chain(std::iter::once(Accessor::Index(index)))
+                    .chain(std::iter::once(Accessor::Index(value_node_index)))
                     .collect_vec(),
                 current_schema,
                 schema_context,

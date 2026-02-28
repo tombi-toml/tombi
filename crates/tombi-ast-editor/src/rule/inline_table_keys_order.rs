@@ -9,7 +9,7 @@ use tombi_syntax::SyntaxElement;
 use crate::rule::{inline_table_comma_trailing_comment, table_keys_order::get_sorted_accessors};
 
 pub async fn inline_table_keys_order<'a>(
-    value: &'a tombi_document_tree::Value,
+    node: &'a tombi_document_tree::Value,
     key_values_with_comma: Vec<(tombi_ast::KeyValue, Option<tombi_ast::Comma>)>,
     current_schema: Option<&'a CurrentSchema<'a>>,
     schema_context: &'a SchemaContext<'a>,
@@ -46,7 +46,7 @@ pub async fn inline_table_keys_order<'a>(
     );
 
     let Some(mut sorted_key_values_with_comma) = get_sorted_accessors(
-        value,
+        node,
         &[],
         key_values_with_comma
             .into_iter()
@@ -77,15 +77,22 @@ pub async fn inline_table_keys_order<'a>(
         *comma = None;
     }
 
-    for (value, comma) in &sorted_key_values_with_comma {
-        changes.extend(inline_table_comma_trailing_comment(value, comma.as_ref()));
+    let sorted_len = sorted_key_values_with_comma.len();
+    for (i, (value, comma)) in sorted_key_values_with_comma.iter().enumerate() {
+        changes.extend(inline_table_comma_trailing_comment(
+            value,
+            comma.as_ref(),
+            is_last_comma || i + 1 != sorted_len,
+        ));
     }
 
     let new = sorted_key_values_with_comma
         .iter()
-        .flat_map(|(value, comma)| {
+        .enumerate()
+        .flat_map(|(i, (value, comma))| {
             if let Some(comma) = comma {
                 if !is_last_comma
+                    && i + 1 == sorted_len
                     && comma.leading_comments().next().is_none()
                     && comma.trailing_comment().is_none()
                 {

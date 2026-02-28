@@ -1,7 +1,11 @@
 use tombi_syntax::{SyntaxKind::*, T};
 
-use super::{Parse, TS_LINE_END, leading_comments, trailing_comment};
-use crate::{ErrorKind::*, parser::Parser};
+use super::{Parse, TS_LINE_END};
+use crate::{
+    ErrorKind::*,
+    parser::Parser,
+    support::{leading_comments, trailing_comment},
+};
 
 impl Parse for tombi_ast::KeyValue {
     fn parse(p: &mut Parser) {
@@ -188,7 +192,73 @@ mod test {
             a.2001-02-09.2001-02-10 = 8
             2001-02-11.a.2001-02-12 = 9
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "a"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "2001-02-08"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INTEGER_DEC: {
+                            INTEGER_DEC: "7"
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "a"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "2001-02-09"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "2001-02-10"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INTEGER_DEC: {
+                            INTEGER_DEC: "8"
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "2001-02-11"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "a"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "2001-02-12"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INTEGER_DEC: {
+                            INTEGER_DEC: "9"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -197,7 +267,25 @@ mod test {
             r#"
             -01   = true
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "-01"
+                            }
+                        },
+                        WHITESPACE: "   ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BOOLEAN: {
+                            BOOLEAN: "true"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -208,7 +296,57 @@ mod test {
             0xDEADBEEF = "another hex-like"
             a.0xABC = "dotted hex"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0x96f"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"hex-like key\""
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0xDEADBEEF"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"another hex-like\""
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "a"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "0xABC"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"dotted hex\""
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -218,7 +356,43 @@ mod test {
             0o755 = "octal-like key"
             0o777.permissions = "dotted octal"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0o755"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"octal-like key\""
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0o777"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "permissions"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"dotted octal\""
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -228,7 +402,43 @@ mod test {
             0b1010 = "binary-like key"
             0b11.0b00 = "dotted binary"
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0b1010"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"binary-like key\""
+                        }
+                    },
+                    KEY_VALUE: {
+                        LINE_BREAK: "\n",
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0b11"
+                            },
+                            DOT: ".",
+                            BARE_KEY: {
+                                BARE_KEY: "0b00"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        BASIC_STRING: {
+                            BASIC_STRING: "\"dotted binary\""
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -237,7 +447,25 @@ mod test {
             r#"
             0x96f = 0x96f
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "0x96f"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INTEGER_HEX: {
+                            INTEGER_HEX: "0x96f"
+                        }
+                    }
+                }
+            }
+        )
     }
 
     test_parser! {
@@ -246,6 +474,42 @@ mod test {
             r#"
             table = { 0x96f = "value" }
             "#
-        ) -> Ok(_)
+        ) -> Ok(
+            {
+                KEY_VALUE_GROUP: {
+                    KEY_VALUE: {
+                        KEYS: {
+                            BARE_KEY: {
+                                BARE_KEY: "table"
+                            }
+                        },
+                        WHITESPACE: " ",
+                        EQUAL: "=",
+                        WHITESPACE: " ",
+                        INLINE_TABLE: {
+                            BRACE_START: "{",
+                            WHITESPACE: " ",
+                            KEY_VALUE_WITH_COMMA_GROUP: {
+                                KEY_VALUE: {
+                                    KEYS: {
+                                        BARE_KEY: {
+                                            BARE_KEY: "0x96f"
+                                        }
+                                    },
+                                    WHITESPACE: " ",
+                                    EQUAL: "=",
+                                    WHITESPACE: " ",
+                                    BASIC_STRING: {
+                                        BASIC_STRING: "\"value\""
+                                    }
+                                }
+                            },
+                            WHITESPACE: " ",
+                            BRACE_END: "}"
+                        }
+                    }
+                }
+            }
+        )
     }
 }

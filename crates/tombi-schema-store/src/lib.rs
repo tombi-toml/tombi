@@ -198,6 +198,11 @@ pub fn get_tombi_schemastore_content(schema_uri: &tombi_uri::Uri) -> Option<&'st
                 tombi_uri::comment_directive_schemastore_hostname!(),
                 "/tombi-key-directive.json"
             ))),
+            "/tombi-group-boundary-directive.json" => Some(include_str!(concat!(
+                "../../../",
+                tombi_uri::comment_directive_schemastore_hostname!(),
+                "/tombi-group-boundary-directive.json"
+            ))),
             _ => None,
         },
 

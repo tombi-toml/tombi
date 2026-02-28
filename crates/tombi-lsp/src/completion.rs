@@ -27,12 +27,32 @@ pub fn get_comment_context(
     root: &tombi_ast::Root,
     position: tombi_text::Position,
 ) -> Option<CommentContext> {
-    if let Some(comments) = root.get_document_header_comments() {
-        for comment in comments {
+    if let Some(comment_group) = root.dangling_comment_groups().next() {
+        for comment in comment_group.comments() {
             if comment.syntax().range().contains(position)
                 && comment.syntax().text()[1..].trim_start().starts_with(":")
             {
-                return Some(CommentContext::DocumentDirective(comment));
+                return Some(CommentContext::DocumentDirective(comment.into()));
+            }
+        }
+    }
+
+    if let Some(leading_comments) = root
+        .key_values()
+        .next()
+        .map(|kv| kv.leading_comments().collect_vec())
+        .or_else(|| {
+            root.table_or_array_of_tables()
+                .next()
+                .map(|ta| ta.leading_comments().collect_vec())
+        })
+    {
+        for leading_comment in leading_comments {
+            let comment: tombi_ast::Comment = leading_comment.into();
+            if comment.syntax().range().contains(position)
+                && comment.syntax().text()[1..].trim_start().starts_with(":")
+            {
+                return Some(CommentContext::DocumentDirective(comment.into()));
             }
         }
     }

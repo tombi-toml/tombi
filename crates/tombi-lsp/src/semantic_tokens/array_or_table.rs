@@ -1,5 +1,4 @@
-use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, DanglingCommentGroupOr};
 
 use super::{AppendSemanticTokens, SemanticTokensBuilder, TokenType};
 
@@ -27,28 +26,23 @@ impl AppendSemanticTokens for tombi_ast::ArrayOfTable {
             comment.append_semantic_tokens(builder);
         }
 
-        let key_values = self.key_values().collect_vec();
+        for comment_group in self.dangling_comment_groups() {
+            for comment in comment_group.comments() {
+                comment.append_semantic_tokens(builder);
+            }
+        }
 
-        if key_values.is_empty() {
-            for comments in self.key_values_dangling_comments() {
-                for comment in comments {
-                    comment.append_semantic_tokens(builder);
+        for group in self.key_value_groups() {
+            match group {
+                DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                    for comment in comment_group.comments() {
+                        comment.append_semantic_tokens(builder);
+                    }
                 }
-            }
-        } else {
-            for comments in self.key_values_begin_dangling_comments() {
-                for comment in comments {
-                    comment.append_semantic_tokens(builder);
-                }
-            }
-
-            for key_value in key_values {
-                key_value.append_semantic_tokens(builder);
-            }
-
-            for comments in self.key_values_end_dangling_comments() {
-                for comment in comments {
-                    comment.append_semantic_tokens(builder);
+                DanglingCommentGroupOr::ItemGroup(key_value_group) => {
+                    for key_value in key_value_group.key_values() {
+                        key_value.append_semantic_tokens(builder);
+                    }
                 }
             }
         }

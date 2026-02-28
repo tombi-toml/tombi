@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tombi_comment_directive::value::{IntegerCommonFormatRules, IntegerCommonLintRules};
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -20,15 +21,11 @@ impl Validate for tombi_document_tree::Integer {
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             let (lint_rules, lint_rules_diagnostics) =
-                if let Some(comment_directives) = self.comment_directives() {
-                    get_tombi_key_table_value_rules_and_diagnostics::<
-                        IntegerCommonFormatRules,
-                        IntegerCommonLintRules,
-                    >(comment_directives, accessors)
-                    .await
-                } else {
-                    (None, Vec::with_capacity(0))
-                };
+                get_tombi_key_table_value_rules_and_diagnostics::<
+                    IntegerCommonFormatRules,
+                    IntegerCommonLintRules,
+                >(self.comment_directives(), accessors)
+                .await;
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
@@ -57,7 +54,9 @@ impl Validate for tombi_document_tree::Integer {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -69,7 +68,9 @@ impl Validate for tombi_document_tree::Integer {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -81,7 +82,9 @@ impl Validate for tombi_document_tree::Integer {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives(),
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await

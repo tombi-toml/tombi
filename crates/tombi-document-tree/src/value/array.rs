@@ -43,8 +43,9 @@ pub struct Array {
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
     values: Vec<Value>,
-    pub(crate) comment_directives: Option<Vec<TombiValueCommentDirective>>,
-    pub(crate) inner_comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) header_comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) body_comment_directives: Option<Vec<TombiValueCommentDirective>>,
+    pub(crate) group_boundary_comment_directives: Option<Vec<TombiValueCommentDirective>>,
 }
 
 impl Array {
@@ -60,8 +61,9 @@ impl Array {
                 }
                 _ => node.range(),
             },
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
+            group_boundary_comment_directives: None,
         }
     }
 
@@ -72,8 +74,9 @@ impl Array {
             values: vec![],
             range: table.range(),
             symbol_range: table.symbol_range(),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
+            group_boundary_comment_directives: None,
         }
     }
 
@@ -84,8 +87,9 @@ impl Array {
             values: vec![],
             range: table.range(),
             symbol_range: table.symbol_range(),
-            comment_directives: None,
-            inner_comment_directives: None,
+            header_comment_directives: None,
+            body_comment_directives: None,
+            group_boundary_comment_directives: None,
         }
     }
 
@@ -186,13 +190,40 @@ impl Array {
     }
 
     #[inline]
-    pub fn comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.comment_directives.as_deref()
+    pub fn comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        if self.header_comment_directives.is_none() && self.body_comment_directives.is_none() {
+            None
+        } else {
+            Some(itertools::chain!(
+                self.header_comment_directives.iter().flatten(),
+                self.body_comment_directives.iter().flatten()
+            ))
+        }
     }
 
     #[inline]
-    pub fn inner_comment_directives(&self) -> Option<&[TombiValueCommentDirective]> {
-        self.inner_comment_directives.as_deref()
+    pub fn header_comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.header_comment_directives.as_deref().map(|d| d.iter())
+    }
+
+    #[inline]
+    pub fn body_comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.body_comment_directives.as_deref().map(|d| d.iter())
+    }
+
+    #[inline]
+    pub fn group_boundary_comment_directives(
+        &self,
+    ) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.group_boundary_comment_directives
+            .as_deref()
+            .map(|d| d.iter())
     }
 
     #[inline]
@@ -246,11 +277,9 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
         let mut array = Array::new_array(&self);
         let mut errors = Vec::new();
 
-        let value_or_key_values_with_comma = self.value_or_key_values_with_comma().collect_vec();
-
         {
-            let mut comment_directives = Vec::new();
-            let mut inner_comment_directives = Vec::new();
+            let mut header_comment_directives = Vec::new();
+            let mut body_comment_directives = Vec::new();
 
             // Collect comment directives from the array.
             for comment in self.leading_comments() {
@@ -258,42 +287,26 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+                    body_comment_directives.push(comment_directive);
                 }
             }
 
-            if value_or_key_values_with_comma.is_empty() {
-                for comments in self.inner_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
-                    }
+            if let Some(comment) = self.bracket_start_trailing_comment() {
+                if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                    errors.push(error);
                 }
-            } else {
-                // Collect comment directives from the array.
-                for comments in self.inner_begin_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
-                    }
+                if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                    body_comment_directives.push(comment_directive);
                 }
+            }
 
-                for comments in self.inner_end_dangling_comments() {
-                    for comment in comments {
-                        if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                            errors.push(error);
-                        }
-                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                            inner_comment_directives.push(comment_directive);
-                        }
+            for comment_group in self.dangling_comment_groups() {
+                for comment in comment_group.comments() {
+                    if let Err(error) = crate::support::comment::try_new_comment(&comment) {
+                        errors.push(error);
+                    }
+                    if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                        body_comment_directives.push(comment_directive);
                     }
                 }
             }
@@ -303,17 +316,38 @@ impl IntoDocumentTreeAndErrors<crate::Value> for tombi_ast::Array {
                     errors.push(error);
                 }
                 if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                    comment_directives.push(comment_directive);
+                    header_comment_directives.push(comment_directive);
                 }
             }
-
-            if !comment_directives.is_empty() {
-                array.comment_directives = Some(comment_directives);
+            if !header_comment_directives.is_empty() {
+                array.header_comment_directives = Some(header_comment_directives);
             }
-
-            if !inner_comment_directives.is_empty() {
-                array.inner_comment_directives = Some(inner_comment_directives);
+            if !body_comment_directives.is_empty() {
+                array.body_comment_directives = Some(body_comment_directives);
             }
+        }
+
+        let mut group_boundary_comment_directives = Vec::new();
+        let value_or_key_values_with_comma = self
+            .value_with_comma_groups()
+            .filter_map(|group| match group {
+                tombi_ast::DanglingCommentGroupOr::ItemGroup(value_group) => {
+                    Some(value_group.value_or_key_values_with_comma().collect_vec())
+                }
+                tombi_ast::DanglingCommentGroupOr::DanglingCommentGroup(comment_group) => {
+                    for comment in comment_group.comments() {
+                        if let Some(comment_directive) = comment.get_tombi_value_directive() {
+                            group_boundary_comment_directives.push(comment_directive);
+                        }
+                    }
+                    None
+                }
+            })
+            .flatten()
+            .collect_vec();
+
+        if !group_boundary_comment_directives.is_empty() {
+            array.group_boundary_comment_directives = Some(group_boundary_comment_directives);
         }
 
         for (value_or_key, comma) in value_or_key_values_with_comma {

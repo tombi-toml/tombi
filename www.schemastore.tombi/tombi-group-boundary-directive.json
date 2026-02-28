@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TombiValueDirectiveContent",
+  "type": "object",
+  "properties": {
+    "format": {
+      "title": "Formatter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FormatOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lint": {
+      "title": "Linter options",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/LintOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "FormatOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Format rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/GroupBoundaryFormatRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "GroupBoundaryFormatRules": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "LintOptions": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "title": "Lint rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/GroupBoundaryLintRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "GroupBoundaryLintRules": {
+      "type": "object",
+      "additionalProperties": false
+    }
+  }
+}

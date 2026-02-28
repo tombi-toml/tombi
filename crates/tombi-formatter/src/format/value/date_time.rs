@@ -15,7 +15,7 @@ macro_rules! impl_date_time_format {
             }
         }
 
-        impl Format for WithAlignmentHint<'_, $type> {
+        impl Format for WithAlignmentHint<&$type> {
             fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
                 let value = self.value;
                 value.leading_comments().collect_vec().format(f)?;

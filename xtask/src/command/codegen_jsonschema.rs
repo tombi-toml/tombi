@@ -2,7 +2,8 @@ use schemars::{SchemaGenerator, generate::SchemaSettings};
 use tombi_comment_directive::document::TombiDocumentDirectiveContent;
 use tombi_comment_directive::value::{
     TombiArrayDirectiveContent, TombiArrayOfTableDirectiveContent, TombiBooleanDirectiveContent,
-    TombiFloatDirectiveContent, TombiInlineTableDirectiveContent, TombiIntegerDirectiveContent,
+    TombiFloatDirectiveContent, TombiGroupBoundaryDirectiveContent,
+    TombiInlineTableDirectiveContent, TombiIntegerDirectiveContent,
     TombiKeyArrayDirectiveContent, TombiKeyArrayOfTableDirectiveContent,
     TombiKeyBooleanDirectiveContent, TombiKeyDirectiveContent, TombiKeyFloatDirectiveContent,
     TombiKeyInlineTableDirectiveContent, TombiKeyIntegerDirectiveContent,
@@ -342,6 +343,17 @@ pub fn run() -> Result<(), anyhow::Error> {
             &generator
                 .clone()
                 .into_root_schema_for::<TombiKeyDirectiveContent>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
+        project_root_path()
+            .join(tombi_uri::comment_directive_schemastore_hostname!())
+            .join("tombi-group-boundary-directive.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<TombiGroupBoundaryDirectiveContent>(),
         )? + "\n",
     )?;
 

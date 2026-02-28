@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use itertools::Itertools;
 use tombi_comment_directive::{
     TOMBI_COMMENT_DIRECTIVE_TOML_VERSION, TombiCommentDirectiveImpl,
     document::TombiDocumentDirectiveContent,
@@ -49,6 +50,7 @@ pub async fn get_document_comment_directive_hover_content(
 
     match root
         .tombi_document_comment_directives()
+        .collect_vec()
         .get_context(position)
     {
         Some(CommentDirectiveContext::Content {

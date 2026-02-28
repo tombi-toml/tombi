@@ -14,7 +14,7 @@ impl Parse for tombi_ast::Keys {
     }
 }
 
-fn eat_keys(p: &mut Parser<'_>) -> bool {
+pub fn eat_keys(p: &mut Parser<'_>) -> bool {
     if p.nth_at(1, T![.]) {
         let mut has_error = false;
         // Dotted keys Mode

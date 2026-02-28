@@ -5,48 +5,6 @@ import { Tip, Warning } from "~/components/Highlight";
 One of Tombi's most distinctive features is automatic sorting.
 It can automatically sort content including comments, using its [own unique treatment of comments](/docs/formatter/treatment-of-comments).
 
-<Tip>
-Tombi cannot insert empty newlines between key-value pairs, but that is a trade-off for automatic sorting.
-
-```toml
-# BEFORE
-key1 = "value1"
-
-key2 = "value2"
-
-# AFTER
-key1 = "value1"
-key2 = "value2"
-```
-
-If you would like to have a blank line between key-value pairs, we recommend inserting an empty comment line. For example:
-
-```toml
-key1 = "value1"
-#
-# ↑ Add an empty comment line here for separation instead of newlines
-key2 = "value2"
-```
-
-This way, Tombi's formatter will preserve the separation without interfering with auto sorting.
-
-
-</Tip>
-
-<Warning>
-If you don't like the automatic sorting provided by Tombi, we recommend disabling the formatter,
-and instead using another formatter such as [dprint](https://github.com/dprint/dprint) that meets your requirements.
-
-```toml
-[lsp]
-formatting.enabled = false
-```
-
-Using Tombi's formatter without the auto-sorting feature is extremely high-maintenance.
-To bypass the default sorting, you must either add comment directives throughout your code,
-or build and maintain your own JSON Schema.
-</Warning>
-
 ## How to Specify Auto-Sorting Methods
 
 Tombi does not perform automatic sorting unless a sorting method is specified.

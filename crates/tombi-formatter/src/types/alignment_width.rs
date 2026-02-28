@@ -20,7 +20,7 @@ impl AlignmentWidth {
     #[inline]
     pub fn new(text: &str) -> Self {
         Self(
-            text.split('\n')
+            text.lines()
                 .map(|line| UnicodeSegmentation::graphemes(line, true).count() as u32)
                 .max()
                 .unwrap(),

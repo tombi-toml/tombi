@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use tombi_ast::AstNode;
+use tombi_ast::{AstNode, DanglingCommentGroupOr};
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
@@ -16,21 +16,35 @@ impl crate::Edit for tombi_ast::InlineTable {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     ) -> BoxFuture<'b, Vec<crate::Change>> {
+        log::trace!("node = {:?}", node);
+        log::trace!("accessors = {:?}", accessors);
         log::trace!("current_schema = {:?}", current_schema);
 
         async move {
             let mut changes = vec![];
+            let total_key_values = self.key_values().count();
+            let has_last_comma = !self.has_last_key_value_trailing_comma();
+            let mut key_value_index = 0usize;
 
-            for (key_value, comma) in self.key_values_with_comma() {
-                changes.extend(inline_table_comma_trailing_comment(
-                    &key_value,
-                    comma.as_ref(),
-                ));
-                changes.extend(
-                    key_value
-                        .edit(node, accessors, source_path, current_schema, schema_context)
-                        .await,
-                );
+            for group in self.key_value_with_comma_groups() {
+                let DanglingCommentGroupOr::ItemGroup(kv_group) = group else {
+                    continue;
+                };
+
+                for (key_value, comma) in kv_group.key_values_with_comma() {
+                    let is_last_key_value = key_value_index + 1 == total_key_values;
+                    changes.extend(inline_table_comma_trailing_comment(
+                        &key_value,
+                        comma.as_ref(),
+                        !has_last_comma || !is_last_key_value,
+                    ));
+                    changes.extend(
+                        key_value
+                            .edit(node, accessors, source_path, current_schema, schema_context)
+                            .await,
+                    );
+                    key_value_index += 1;
+                }
             }
 
             let comment_directive =
@@ -47,16 +61,22 @@ impl crate::Edit for tombi_ast::InlineTable {
                     },
                 );
 
-            changes.extend(
-                inline_table_keys_order(
-                    node,
-                    self.key_values_with_comma().collect_vec(),
-                    current_schema,
-                    schema_context,
-                    comment_directive,
-                )
-                .await,
-            );
+            for group in self.key_value_with_comma_groups() {
+                let DanglingCommentGroupOr::ItemGroup(key_value_group) = group else {
+                    continue;
+                };
+
+                changes.extend(
+                    inline_table_keys_order(
+                        node,
+                        key_value_group.key_values_with_comma().collect_vec(),
+                        current_schema,
+                        schema_context,
+                        comment_directive.clone(),
+                    )
+                    .await,
+                );
+            }
 
             changes
         }

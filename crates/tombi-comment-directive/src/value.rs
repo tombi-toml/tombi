@@ -1,6 +1,7 @@
 mod array;
 mod boolean;
 mod float;
+mod group_boundary;
 mod integer;
 mod key;
 mod local_date;
@@ -13,6 +14,7 @@ mod table;
 pub use array::*;
 pub use boolean::*;
 pub use float::*;
+pub use group_boundary::*;
 pub use integer::*;
 pub use key::*;
 pub use local_date::*;

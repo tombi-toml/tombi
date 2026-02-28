@@ -1,13 +1,16 @@
-use itertools::Itertools;
+use std::borrow::Cow;
+
+use tombi_ast::DocumentCommentDirectives;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_future::{BoxFuture, Boxable};
-use tombi_schema_store::Accessor;
+use tombi_schema_store::{Accessor, CurrentSchema};
 use tombi_syntax::SyntaxElement;
 
+use crate::node::make_dangling_comment_group_from_leading_comments;
 use crate::rule::root_table_keys_order;
 use crate::rule::{TableOrderOverride, TableOrderOverrides};
-use tombi_ast::{AstToken, GetHeaderAccessors};
+use tombi_ast::{DanglingCommentGroupOr, GetHeaderAccessors};
 
 impl crate::Edit for tombi_ast::Root {
     fn edit<'a: 'b, 'b>(
@@ -20,32 +23,69 @@ impl crate::Edit for tombi_ast::Root {
     ) -> BoxFuture<'b, Vec<crate::Change>> {
         async move {
             let mut changes = vec![];
-            let mut key_values = vec![];
+            let mut key_value_groups = vec![];
             let mut table_or_array_of_tables = vec![];
             let mut table_order_overrides = TableOrderOverrides::default();
 
-            // Move document schema/tombi comment directive to the top.
-            if (self
-                .schema_document_comment_directive(source_path)
-                .is_some()
-                || !self.tombi_document_comment_directives().is_empty())
-                && let Some(document_header_comments) = self.get_document_header_comments()
-            {
-                changes.push(crate::Change::AppendTop {
-                    new: document_header_comments
-                        .into_iter()
-                        .map(|comment| SyntaxElement::Token(comment.syntax().clone()))
-                        .collect_vec(),
-                });
-            }
+            // Detect document comment directives.
+            // If dangling comments exist, directives should already be there.
+            // Otherwise, check first item's leading comments and move them to the top.
+            let document_comment_directives = if self.dangling_comment_groups().next().is_some() {
+                DocumentCommentDirectives::from_comments(
+                    self.dangling_comment_groups()
+                        .flat_map(|comment_group| comment_group.into_comments().map(Into::into)),
+                    source_path,
+                )
+            } else {
+                DocumentCommentDirectives::from_comments(
+                    self.first_item_leading_comments().map(Into::into),
+                    source_path,
+                )
+                .inspect(|_| {
+                    if let Some(dangling_comment_group) =
+                        make_dangling_comment_group_from_leading_comments(
+                            self.first_item_leading_comments(),
+                        )
+                    {
+                        changes.push(crate::Change::AppendTop {
+                            new: vec![SyntaxElement::Node(dangling_comment_group)],
+                        });
+                        for comment in self.first_item_leading_comments() {
+                            changes.push(crate::Change::Remove {
+                                target: SyntaxElement::Token(comment.syntax().clone()),
+                            });
+                        }
+                    }
+                })
+            };
 
-            for key_value in self.key_values() {
-                changes.extend(
-                    key_value
-                        .edit(node, &[], source_path, current_schema, schema_context)
-                        .await,
-                );
-                key_values.push(key_value);
+            let current_schema_from_directive =
+                if let Some(ref document_comment_directives) = document_comment_directives {
+                    resolve_current_schema_from_comment_directive(
+                        document_comment_directives,
+                        current_schema,
+                        schema_context,
+                    )
+                    .await
+                } else {
+                    None
+                };
+
+            let current_schema = current_schema_from_directive.as_ref().or(current_schema);
+
+            for group in self.key_value_groups() {
+                let DanglingCommentGroupOr::ItemGroup(key_value_group) = group else {
+                    continue;
+                };
+
+                for key_value in key_value_group.key_values() {
+                    changes.extend(
+                        key_value
+                            .edit(node, &[], source_path, current_schema, schema_context)
+                            .await,
+                    );
+                }
+                key_value_groups.push(key_value_group);
             }
 
             for table_or_array_of_table in self.table_or_array_of_tables() {
@@ -74,13 +114,13 @@ impl crate::Edit for tombi_ast::Root {
                             get_comment_directive_content::<
                                 TableCommonFormatRules,
                                 TableCommonLintRules,
-                            >(table.header_comment_directives())
+                            >(table.comment_directives())
                         }
                         tombi_ast::TableOrArrayOfTable::ArrayOfTable(array_of_table) => {
                             get_comment_directive_content::<
                                 TableCommonFormatRules,
                                 TableCommonLintRules,
-                            >(array_of_table.header_comment_directives())
+                            >(array_of_table.comment_directives())
                         }
                     };
 
@@ -106,7 +146,7 @@ impl crate::Edit for tombi_ast::Root {
 
             changes.extend(
                 root_table_keys_order(
-                    key_values,
+                    key_value_groups,
                     table_or_array_of_tables,
                     current_schema,
                     schema_context,
@@ -120,4 +160,27 @@ impl crate::Edit for tombi_ast::Root {
         }
         .boxed()
     }
+}
+
+async fn resolve_current_schema_from_comment_directive<'a>(
+    document_comment_directives: &DocumentCommentDirectives,
+    current_schema: Option<&'a CurrentSchema<'a>>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> Option<CurrentSchema<'a>> {
+    if current_schema.is_some() {
+        return None;
+    }
+    let schema_directive = document_comment_directives.schema.as_ref()?;
+    let schema_uri = schema_directive.uri.as_ref().ok()?;
+    let document_schema = schema_context
+        .store
+        .try_get_document_schema(schema_uri)
+        .await
+        .ok()??;
+    let value_schema = document_schema.value_schema.clone()?;
+    Some(CurrentSchema {
+        value_schema,
+        schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
+        definitions: Cow::Owned(document_schema.definitions.clone()),
+    })
 }

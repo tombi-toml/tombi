@@ -17,7 +17,7 @@ impl Format for tombi_ast::BasicString {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::BasicString> {
+impl Format for WithAlignmentHint<&tombi_ast::BasicString> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;
         value.leading_comments().collect_vec().format(f)?;
@@ -54,7 +54,7 @@ impl Format for tombi_ast::LiteralString {
     }
 }
 
-impl Format for WithAlignmentHint<'_, tombi_ast::LiteralString> {
+impl Format for WithAlignmentHint<&tombi_ast::LiteralString> {
     fn format(&self, f: &mut crate::Formatter) -> Result<(), std::fmt::Error> {
         let value = self.value;
         value.leading_comments().collect_vec().format(f)?;

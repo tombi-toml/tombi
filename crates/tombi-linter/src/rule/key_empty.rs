@@ -21,7 +21,18 @@ impl Rule<tombi_ast::Root> for KeyEmptyRule {
 impl Rule<tombi_ast::Table> for KeyEmptyRule {
     async fn check(node: &tombi_ast::Table, l: &mut crate::Linter<'_>) {
         if let Some(keys) = node.header() {
-            check_key_empty(keys, node.header_comment_directives(), l).await;
+            check_key_empty(
+                keys,
+                itertools::chain!(
+                    node.header_leading_comments()
+                        .filter_map(|comment| comment.get_tombi_value_directive()),
+                    node.header_trailing_comment()
+                        .into_iter()
+                        .filter_map(|comment| comment.get_tombi_value_directive()),
+                ),
+                l,
+            )
+            .await;
         }
 
         for key_value in node.key_values() {
@@ -35,7 +46,18 @@ impl Rule<tombi_ast::Table> for KeyEmptyRule {
 impl Rule<tombi_ast::ArrayOfTable> for KeyEmptyRule {
     async fn check(node: &tombi_ast::ArrayOfTable, l: &mut crate::Linter<'_>) {
         if let Some(keys) = node.header() {
-            check_key_empty(keys, node.header_comment_directives(), l).await;
+            check_key_empty(
+                keys,
+                itertools::chain!(
+                    node.header_leading_comments()
+                        .filter_map(|comment| comment.get_tombi_value_directive()),
+                    node.header_trailing_comment()
+                        .into_iter()
+                        .filter_map(|comment| comment.get_tombi_value_directive()),
+                ),
+                l,
+            )
+            .await;
         }
 
         for key_value in node.key_values() {
@@ -48,9 +70,15 @@ impl Rule<tombi_ast::ArrayOfTable> for KeyEmptyRule {
 
 impl Rule<tombi_ast::InlineTable> for KeyEmptyRule {
     async fn check(node: &tombi_ast::InlineTable, l: &mut crate::Linter<'_>) {
-        for key_value in node.key_values() {
-            if let Some(keys) = key_value.keys() {
-                check_key_empty(keys, key_value.comment_directives(), l).await;
+        for group in node.key_value_with_comma_groups() {
+            let tombi_ast::DanglingCommentGroupOr::ItemGroup(key_value_group) = group else {
+                continue;
+            };
+
+            for key_value in key_value_group.key_values() {
+                if let Some(keys) = key_value.keys() {
+                    check_key_empty(keys, key_value.comment_directives(), l).await;
+                }
             }
         }
     }
