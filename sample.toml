@@ -77,7 +77,7 @@ array4 = [
 ]
 array5 = [
   1,
-  {
+  {  # inline table trailing comment
     # inline begin dangling comment1
     # inline begin dangling comment2
 
@@ -147,6 +147,10 @@ key6 = 3  # key value trailing comment
 
 # table key values end dangling comment1
 # table key values end dangling comment2
+
+# table key values end dangling comment1
+# table key values end dangling comment2
+key7 = 4
 
 # table key values end dangling comment3
 # table key values end dangling comment4
