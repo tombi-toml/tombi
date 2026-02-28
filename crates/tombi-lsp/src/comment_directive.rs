@@ -224,19 +224,41 @@ pub fn get_array_comment_directive_content_with_schema_uri(
     position: tombi_text::Position,
     accessors: &[tombi_schema_store::Accessor],
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)> {
-    if let Some((comment_directive, schema_uri)) = match array.kind() {
-        ArrayKind::Array => get_key_table_value_comment_directive_content_and_schema_uri::<
-            ArrayCommonFormatRules,
-            ArrayCommonLintRules,
-        >(array.comment_directives(), position, accessors),
-        ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
-            get_key_value_comment_directive_content_and_schema_uri::<
-                ArrayOfTableCommonFormatRules,
-                ArrayOfTableCommonLintRules,
-            >(array.header_comment_directives(), position, accessors)
+    match array.kind() {
+        ArrayKind::Array => {
+            if let Some((comment_directive, schema_uri)) =
+                get_key_table_value_comment_directive_content_and_schema_uri::<
+                    ArrayCommonFormatRules,
+                    ArrayCommonLintRules,
+                >(array.header_comment_directives(), position, accessors)
+            {
+                return Some((comment_directive, schema_uri));
+            }
+
+            if let Some(body_comment_directives) = array.body_comment_directives() {
+                for comment_directive in body_comment_directives {
+                    if let Some(comment_directive_context) = comment_directive.get_context(position)
+                    {
+                        let schema_uri = TombiValueDirectiveContent::<
+                            ArrayCommonFormatRules,
+                            ArrayCommonLintRules,
+                        >::comment_directive_schema_url();
+
+                        return Some((comment_directive_context, schema_uri));
+                    }
+                }
+            }
         }
-    } {
-        return Some((comment_directive, schema_uri));
+        ArrayKind::ArrayOfTable | ArrayKind::ParentArrayOfTable => {
+            if let Some((comment_directive, schema_uri)) =
+                get_key_value_comment_directive_content_and_schema_uri::<
+                    ArrayOfTableCommonFormatRules,
+                    ArrayOfTableCommonLintRules,
+                >(array.header_comment_directives(), position, accessors)
+            {
+                return Some((comment_directive, schema_uri));
+            }
+        }
     }
 
     if let Some(group_boundary_comment_directives) = array.group_boundary_comment_directives() {
