@@ -10,7 +10,6 @@ itertools.workspace = true
 log.workspace = true
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-serde_valid = "2.0.1"
 tokio.workspace = true
 unicode-segmentation.workspace = true
 
