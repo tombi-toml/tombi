@@ -14,6 +14,9 @@ itertools.workspace = true
 log.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+unicode-segmentation.workspace = true
+uuid.workspace = true
+
 tombi-ast.workspace = true
 tombi-comment-directive.workspace = true
 tombi-comment-directive-store.workspace = true
@@ -28,5 +31,3 @@ tombi-severity-level.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
-unicode-segmentation.workspace = true
-uuid.workspace = true

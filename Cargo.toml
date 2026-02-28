@@ -78,6 +78,18 @@ textwrap = { version = "0.16.2" }
 thiserror = { version = "2.0.12" }
 time = { version = "0.3.47" }
 tokio = { version = "1.45.0", default-features = false }
+tower-lsp = { version = "0.20.0" }
+typed-builder = "0.21.0"
+ungrammar.version = "1.16.1"
+unicode-segmentation = "1.12.0"
+uuid = { version = "1.18.0", features = ["v1", "v3", "v4", "v5", "v7", "v8"] }
+wasi = { version = "0.13.0" }
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4.50"
+xshell.version = "0.2.7"
+zed_extension_api = "0.7.0"
+zip = { version = "2.3.0" }
+
 tombi-accessor = { path = "crates/tombi-accessor" }
 tombi-ast = { path = "crates/tombi-ast" }
 tombi-ast-editor = { path = "crates/tombi-ast-editor" }
@@ -119,17 +131,6 @@ tombi-uri = { path = "crates/tombi-uri" }
 tombi-validator = { path = "crates/tombi-validator" }
 tombi-version-sort = { path = "crates/tombi-version-sort" }
 tombi-x-keyword = { path = "crates/tombi-x-keyword" }
-tower-lsp = { version = "0.20.0" }
-typed-builder = "0.21.0"
-ungrammar.version = "1.16.1"
-unicode-segmentation = "1.12.0"
-uuid = { version = "1.18.0", features = ["v1", "v3", "v4", "v5", "v7", "v8"] }
-wasi = { version = "0.13.0" }
-wasm-bindgen = "0.2.100"
-wasm-bindgen-futures = "0.4.50"
-xshell.version = "0.2.7"
-zed_extension_api = "0.7.0"
-zip = { version = "2.3.0" }
 
 [workspace.metadata.cargo-shear]
 ignored = [

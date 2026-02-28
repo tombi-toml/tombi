@@ -16,6 +16,7 @@ rayon.workspace = true
 serde_tombi = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
+
 tombi-config.workspace = true
 
 [dev-dependencies]

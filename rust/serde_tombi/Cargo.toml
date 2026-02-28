@@ -20,6 +20,8 @@ serde.workspace = true
 textwrap.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+typed-builder.workspace = true
+
 tombi-ast.workspace = true
 tombi-config.workspace = true
 tombi-date-time.workspace = true
@@ -31,11 +33,11 @@ tombi-schema-store.workspace = true
 tombi-toml-text.workspace = true
 tombi-toml-version.workspace = true
 tombi-validator.workspace = true
-typed-builder.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
 tokio = { workspace = true, features = ["macros"] }
+
 tombi-test-lib.workspace = true
 
 [features]

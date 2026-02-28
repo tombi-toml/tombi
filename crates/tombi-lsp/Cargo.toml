@@ -23,6 +23,9 @@ serde.workspace = true
 serde_json.workspace = true
 serde_tombi.workspace = true
 tokio = { workspace = true, features = ["fs", "io-std", "rt-multi-thread"] }
+tower-lsp.workspace = true
+unicode-segmentation.workspace = true
+
 tombi-ast.workspace = true
 tombi-cache.workspace = true
 tombi-comment-directive.workspace = true
@@ -49,8 +52,6 @@ tombi-text = { workspace = true, features = ["lsp"] }
 tombi-uri.workspace = true
 tombi-validator.workspace = true
 tombi-x-keyword.workspace = true
-tower-lsp.workspace = true
-unicode-segmentation.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
@@ -58,6 +59,7 @@ rstest.workspace = true
 tempfile.workspace = true
 textwrap.workspace = true
 tokio = { workspace = true, features = ["fs", "macros", "rt"] }
+
 tombi-test-lib.workspace = true
 
 [features]

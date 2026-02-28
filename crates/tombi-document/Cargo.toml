@@ -10,6 +10,7 @@ indexmap.workspace = true
 itertools.workspace = true
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
+
 tombi-ast.workspace = true
 tombi-date-time.workspace = true
 tombi-document-tree.workspace = true
@@ -21,6 +22,7 @@ tombi-toml-version.workspace = true
 pretty_assertions.workspace = true
 serde_json.workspace = true
 textwrap.workspace = true
+
 tombi-test-lib.workspace = true
 
 [features]

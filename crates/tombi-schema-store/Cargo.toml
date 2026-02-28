@@ -21,6 +21,7 @@ serde_json.workspace = true
 surf = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
+
 tombi-accessor.workspace = true
 tombi-ast.workspace = true
 tombi-cache.workspace = true
@@ -36,6 +37,7 @@ tombi-x-keyword.workspace = true
 pretty_assertions.workspace = true
 reqwest = { workspace = true, features = ["blocking"] }
 tokio = { workspace = true, features = ["macros", "test-util"] }
+
 tombi-test-lib.workspace = true
 
 [features]

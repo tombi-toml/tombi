@@ -12,6 +12,7 @@ indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
+
 tombi-ast.workspace = true
 tombi-comment-directive.workspace = true
 tombi-comment-directive-serde.workspace = true

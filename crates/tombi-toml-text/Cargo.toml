@@ -8,4 +8,5 @@ license.workspace = true
 
 [dependencies]
 thiserror.workspace = true
+
 tombi-toml-version.workspace = true

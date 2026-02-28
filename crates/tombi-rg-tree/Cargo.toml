@@ -11,6 +11,7 @@ countme.workspace = true
 hashbrown.workspace = true
 itertools.workspace = true
 rustc-hash.workspace = true
+
 tombi-text.workspace = true
 
 [dev-dependencies]

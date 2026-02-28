@@ -10,6 +10,7 @@ drop_bomb.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
+
 tombi-ast.workspace = true
 tombi-diagnostic = { workspace = true, optional = true }
 tombi-lexer.workspace = true

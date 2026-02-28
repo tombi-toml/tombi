@@ -10,6 +10,7 @@ license.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
+
 tombi-text.workspace = true
 
 [dev-dependencies]

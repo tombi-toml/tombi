@@ -10,6 +10,7 @@ ahash.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
+
 tombi-ast.workspace = true
 tombi-comment-directive.workspace = true
 tombi-comment-directive-serde.workspace = true
@@ -27,5 +28,6 @@ tombi-validator.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 tokio = { workspace = true, features = ["fs", "macros"] }
+
 tombi-schema-store = { workspace = true, features = ["native"] }
 tombi-test-lib.workspace = true

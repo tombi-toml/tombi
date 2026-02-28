@@ -7,4 +7,5 @@ license.workspace = true
 
 [dependencies]
 thiserror.workspace = true
+
 tombi-rg-tree.workspace = true

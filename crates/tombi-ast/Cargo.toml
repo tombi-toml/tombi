@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 itertools.workspace = true
 thiserror.workspace = true
+
 tombi-accessor.workspace = true
 tombi-syntax.workspace = true
 tombi-text.workspace = true

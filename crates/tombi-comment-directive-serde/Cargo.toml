@@ -8,6 +8,7 @@ license.workspace = true
 
 [dependencies]
 serde.workspace = true
+
 tombi-ast.workspace = true
 tombi-comment-directive.workspace = true
 tombi-document.workspace = true
