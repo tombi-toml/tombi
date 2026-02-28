@@ -798,14 +798,6 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
                 header_comment_directives.push(comment_directive);
             }
         }
-        if let Some(comment) = self.trailing_comment() {
-            if let Err(error) = crate::support::comment::try_new_comment(&comment) {
-                errors.push(error);
-            }
-            if let Some(comment_directive) = comment.get_tombi_value_directive() {
-                header_comment_directives.push(comment_directive);
-            }
-        }
         if !header_comment_directives.is_empty() {
             table.header_comment_directives = Some(header_comment_directives.clone());
         }
@@ -828,6 +820,7 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         }
 
         let mut body_comment_directives = vec![];
+        let mut combined_comment_directives = vec![];
         let value = match self.value() {
             Some(value) => {
                 let (mut value, errs) = value.into_document_tree_and_errors(toml_version).into();
@@ -841,7 +834,14 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
 
                 if !body_comment_directives.is_empty() {
                     table.body_comment_directives = Some(body_comment_directives.clone());
-                    value.set_comment_directives(body_comment_directives.clone());
+                }
+
+                // Combine header (leading) + body (value's own) directives
+                // for setting on both value and key, matching main branch behavior
+                combined_comment_directives.extend(header_comment_directives.clone());
+                combined_comment_directives.extend(body_comment_directives);
+                if !combined_comment_directives.is_empty() {
+                    value.set_comment_directives(combined_comment_directives.clone());
                 }
 
                 value
@@ -859,8 +859,8 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
         let mut table = if let Some(mut key) = keys.pop() {
             table.range = key.range() + value.range();
             table.symbol_range = key.range() + value.symbol_range();
-            if !header_comment_directives.is_empty() {
-                key.comment_directives = Some(header_comment_directives.clone());
+            if !combined_comment_directives.is_empty() {
+                key.comment_directives = Some(combined_comment_directives.clone());
             }
 
             match table.insert(key, value) {
@@ -883,8 +883,8 @@ impl IntoDocumentTreeAndErrors<Table> for tombi_ast::KeyValue {
 
         for mut key in keys.into_iter().rev() {
             let dummy_table = table.clone();
-            if !header_comment_directives.is_empty() {
-                key.comment_directives = Some(header_comment_directives.clone());
+            if !combined_comment_directives.is_empty() {
+                key.comment_directives = Some(combined_comment_directives.clone());
             }
 
             match table.new_parent_key(&key).insert(

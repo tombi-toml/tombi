@@ -130,8 +130,8 @@ impl Value {
             Value::LocalTime(local_time) => {
                 local_time.comment_directives = Some(comment_directives)
             }
-            Value::Array(array) => array.body_comment_directives = Some(comment_directives),
-            Value::Table(table) => table.body_comment_directives = Some(comment_directives),
+            Value::Array(array) => array.header_comment_directives = Some(comment_directives),
+            Value::Table(table) => table.header_comment_directives = Some(comment_directives),
             Value::Incomplete { .. } => (),
         }
     }
@@ -149,8 +149,8 @@ impl Value {
             Value::LocalDateTime(local_date_time) => &mut local_date_time.comment_directives,
             Value::LocalDate(local_date) => &mut local_date.comment_directives,
             Value::LocalTime(local_time) => &mut local_time.comment_directives,
-            Value::Array(array) => &mut array.body_comment_directives,
-            Value::Table(table) => &mut table.body_comment_directives,
+            Value::Array(array) => &mut array.header_comment_directives,
+            Value::Table(table) => &mut table.header_comment_directives,
             Value::Incomplete { .. } => return,
         };
 
