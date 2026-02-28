@@ -138,6 +138,21 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_array_min_values_with_duplicate_comment_directive_key_on_header_and_body(
+                r#"
+                # tombi: lint.rules.array-min-values.disabled = true
+                array = [
+                    # tombi: lint.rules.array-min-values.disabled = true
+                ]
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Err([
+                "duplicate key: disabled"
+            ])
+        }
+
+        test_lint! {
+            #[test]
             fn test_nested_array(
                 r#"
                 array = [[
