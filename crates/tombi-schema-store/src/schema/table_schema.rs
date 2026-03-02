@@ -30,6 +30,7 @@ pub struct TableSchema {
         tombi_text::Range, // JSON Schema property name range (for GoToTypeDefinition)
         SchemaItem,
     )>,
+    pub property_names: Option<SchemaItem>,
     pub required: Option<Vec<String>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
@@ -196,6 +197,11 @@ impl TableSchema {
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             not: NotSchema::new(object_node, string_formats),
+            property_names: object_node
+                .get("propertyNames")
+                .and_then(|v| v.as_object())
+                .and_then(|v| Referable::<ValueSchema>::new(v, string_formats))
+                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema))),
         }
     }
 

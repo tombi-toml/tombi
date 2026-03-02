@@ -98,6 +98,65 @@ impl ValueSchema {
             return Self::new_single(inferred_type, object, string_formats);
         }
 
+        // Infer type from type-specific keywords when "type" is not explicitly specified
+        if let Some(inferred_type) = Self::infer_type_from_keywords(object) {
+            return Self::new_single(inferred_type, object, string_formats);
+        }
+
+        None
+    }
+
+    /// Infer the JSON Schema type from type-specific keywords.
+    ///
+    /// When "type" is not explicitly specified, we can infer the type from keywords
+    /// that are only valid for specific types:
+    /// - String: minLength, maxLength, pattern, format
+    /// - Number: minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf
+    /// - Array: items, prefixItems, minItems, maxItems, uniqueItems
+    /// - Object: properties, patternProperties, additionalProperties, required,
+    ///           minProperties, maxProperties, propertyNames
+    fn infer_type_from_keywords(object: &tombi_json::ObjectNode) -> Option<&'static str> {
+        // String-specific keywords
+        if object.get("minLength").is_some()
+            || object.get("maxLength").is_some()
+            || object.get("pattern").is_some()
+            || object.get("format").is_some()
+        {
+            return Some("string");
+        }
+
+        // Numeric-specific keywords (use "number" as the broader type)
+        if object.get("minimum").is_some()
+            || object.get("maximum").is_some()
+            || object.get("exclusiveMinimum").is_some()
+            || object.get("exclusiveMaximum").is_some()
+            || object.get("multipleOf").is_some()
+        {
+            return Some("number");
+        }
+
+        // Array-specific keywords
+        if object.get("items").is_some()
+            || object.get("prefixItems").is_some()
+            || object.get("minItems").is_some()
+            || object.get("maxItems").is_some()
+            || object.get("uniqueItems").is_some()
+        {
+            return Some("array");
+        }
+
+        // Object-specific keywords
+        if object.get("properties").is_some()
+            || object.get("patternProperties").is_some()
+            || object.get("additionalProperties").is_some()
+            || object.get("required").is_some()
+            || object.get("minProperties").is_some()
+            || object.get("maxProperties").is_some()
+            || object.get("propertyNames").is_some()
+        {
+            return Some("object");
+        }
+
         None
     }
 
@@ -919,5 +978,165 @@ mod tests {
             schemars.get(1).unwrap().value_type().await,
             ValueType::String
         ));
+    }
+
+    // --- Tests for type inference from type-specific keywords ---
+
+    #[test]
+    fn test_infer_string_from_min_length() {
+        let schema = parse_schema(r#"{ "minLength": 1 }"#);
+        assert!(matches!(schema, Some(ValueSchema::String(_))));
+    }
+
+    #[test]
+    fn test_infer_string_from_max_length() {
+        let schema = parse_schema(r#"{ "maxLength": 100 }"#);
+        assert!(matches!(schema, Some(ValueSchema::String(_))));
+    }
+
+    #[test]
+    fn test_infer_string_from_pattern() {
+        let schema = parse_schema(r#"{ "pattern": "^[a-z]+$" }"#);
+        assert!(matches!(schema, Some(ValueSchema::String(_))));
+    }
+
+    #[test]
+    fn test_infer_string_from_format() {
+        let schema = parse_schema(r#"{ "format": "date" }"#);
+        assert!(matches!(schema, Some(ValueSchema::LocalDate(_))));
+    }
+
+    #[test]
+    fn test_infer_string_from_format_datetime() {
+        let schema = parse_schema(r#"{ "format": "date-time" }"#);
+        assert!(matches!(schema, Some(ValueSchema::OffsetDateTime(_))));
+    }
+
+    #[test]
+    fn test_infer_number_from_minimum() {
+        let schema = parse_schema(r#"{ "minimum": 0 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[test]
+    fn test_infer_number_from_maximum() {
+        let schema = parse_schema(r#"{ "maximum": 100 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[test]
+    fn test_infer_number_from_exclusive_minimum() {
+        let schema = parse_schema(r#"{ "exclusiveMinimum": 0 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[test]
+    fn test_infer_number_from_exclusive_maximum() {
+        let schema = parse_schema(r#"{ "exclusiveMaximum": 100 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[test]
+    fn test_infer_number_from_multiple_of() {
+        let schema = parse_schema(r#"{ "multipleOf": 5 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+    }
+
+    #[test]
+    fn test_infer_array_from_items() {
+        let schema = parse_schema(r#"{ "items": { "type": "string" } }"#);
+        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+    }
+
+    #[test]
+    fn test_infer_array_from_min_items() {
+        let schema = parse_schema(r#"{ "minItems": 1 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+    }
+
+    #[test]
+    fn test_infer_array_from_max_items() {
+        let schema = parse_schema(r#"{ "maxItems": 10 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+    }
+
+    #[test]
+    fn test_infer_array_from_unique_items() {
+        let schema = parse_schema(r#"{ "uniqueItems": true }"#);
+        assert!(matches!(schema, Some(ValueSchema::Array(_))));
+    }
+
+    #[test]
+    fn test_infer_object_from_properties() {
+        let schema = parse_schema(r#"{ "properties": { "name": { "type": "string" } } }"#);
+        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    #[test]
+    fn test_infer_object_from_required() {
+        let schema = parse_schema(r#"{ "required": ["name"] }"#);
+        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    #[test]
+    fn test_infer_object_from_additional_properties() {
+        let schema = parse_schema(r#"{ "additionalProperties": false }"#);
+        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    #[test]
+    fn test_infer_object_from_min_properties() {
+        let schema = parse_schema(r#"{ "minProperties": 1 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    #[test]
+    fn test_infer_object_from_max_properties() {
+        let schema = parse_schema(r#"{ "maxProperties": 10 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    #[test]
+    fn test_infer_object_from_property_names() {
+        let schema = parse_schema(r#"{ "propertyNames": { "pattern": "^[a-z]+$" } }"#);
+        assert!(matches!(schema, Some(ValueSchema::Table(_))));
+    }
+
+    #[test]
+    fn test_infer_string_with_additional_metadata() {
+        let schema = parse_schema(
+            r#"{ "minLength": 1, "maxLength": 50, "title": "Name", "description": "A name" }"#,
+        );
+        assert!(matches!(schema, Some(ValueSchema::String(_))));
+        if let Some(ValueSchema::String(s)) = schema {
+            assert_eq!(s.min_length, Some(1));
+            assert_eq!(s.max_length, Some(50));
+            assert_eq!(s.title.as_deref(), Some("Name"));
+            assert_eq!(s.description.as_deref(), Some("A name"));
+        }
+    }
+
+    #[test]
+    fn test_infer_number_with_range() {
+        let schema = parse_schema(r#"{ "minimum": 0, "maximum": 100 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Float(_))));
+        if let Some(ValueSchema::Float(f)) = schema {
+            assert_eq!(f.minimum, Some(0.0));
+            assert_eq!(f.maximum, Some(100.0));
+        }
+    }
+
+    #[test]
+    fn test_no_inference_without_type_specific_keywords() {
+        // Only common keywords like title/description should not trigger inference
+        let schema = parse_schema(r#"{ "title": "Something", "description": "A thing" }"#);
+        assert!(schema.is_none());
+    }
+
+    #[test]
+    fn test_explicit_type_takes_precedence_over_inference() {
+        // When type is explicitly specified, it should be used regardless of keywords
+        let schema = parse_schema(r#"{ "type": "integer", "minimum": 0 }"#);
+        assert!(matches!(schema, Some(ValueSchema::Integer(_))));
     }
 }
