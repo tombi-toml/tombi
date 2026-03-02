@@ -201,7 +201,7 @@ pub(crate) fn validate_raw_string<'a>(
     }
 
     if let Some(r#enum) = &string_schema.r#enum
-        && !r#enum.iter().any(|e| e == value)
+        && !r#enum.iter().any(|item| item == value)
     {
         let level = lint_rules
             .map(|rules| &rules.common)
