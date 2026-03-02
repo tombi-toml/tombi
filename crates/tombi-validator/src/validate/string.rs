@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
@@ -113,12 +114,60 @@ async fn validate_string(
     string_schema: &tombi_schema_store::StringSchema,
     lint_rules: Option<&StringCommonLintRules>,
 ) -> Result<(), crate::Error> {
+    let result = validate_raw_string(
+        string_value.value(),
+        &string_value.to_string(),
+        string_value.range(),
+        string_schema,
+        lint_rules,
+        string_value.comment_directives(),
+    );
+
+    match result {
+        Ok(()) => {
+            let mut diagnostics = vec![];
+
+            handle_deprecated_value(
+                &mut diagnostics,
+                string_schema.deprecated,
+                accessors,
+                string_value,
+                string_value.comment_directives(),
+                lint_rules.as_ref().map(|rules| &rules.common),
+            );
+
+            if diagnostics.is_empty() {
+                Ok(())
+            } else {
+                Err(diagnostics.into())
+            }
+        }
+        Err(error) => Err(error),
+    }
+}
+
+/// Validate a string value against a `StringSchema`.
+///
+/// This is the core string schema validation logic shared between
+/// string value validation and `propertyNames` validation in tables.
+///
+/// When `lint_rules` is `None`, all checks use default error severity
+/// and noqa handling is skipped.
+pub(crate) fn validate_raw_string<'a>(
+    value: &str,
+    display_value: &str,
+    range: tombi_text::Range,
+    string_schema: &tombi_schema_store::StringSchema,
+    lint_rules: Option<&StringCommonLintRules>,
+    comment_directives: Option<impl IntoIterator<Item = &'a TombiValueCommentDirective> + 'a>,
+) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
-    let value = string_value.value().to_string();
-    let range = string_value.range();
+
+    let comment_directives =
+        comment_directives.map(|directives| directives.into_iter().cloned().collect_vec());
 
     if let Some(const_value) = &string_schema.const_value
-        && value != *const_value
+        && value != const_value.as_str()
     {
         let level = lint_rules
             .map(|rules| &rules.common)
@@ -133,7 +182,7 @@ async fn validate_string(
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::Const {
                 expected: format!("\"{const_value}\""),
-                actual: string_value.to_string(),
+                actual: display_value.to_string(),
             }),
             range,
         }
@@ -145,14 +194,14 @@ async fn validate_string(
     {
         handle_unused_noqa(
             &mut diagnostics,
-            string_value.comment_directives(),
+            comment_directives.as_ref(),
             lint_rules.as_ref().map(|rules| &rules.common),
             "const-value",
         );
     }
 
     if let Some(r#enum) = &string_schema.r#enum
-        && !r#enum.contains(&value)
+        && !r#enum.iter().any(|e| e == value)
     {
         let level = lint_rules
             .map(|rules| &rules.common)
@@ -162,7 +211,7 @@ async fn validate_string(
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::Enum {
                 expected: r#enum.iter().map(|s| format!("\"{s}\"")).collect(),
-                actual: string_value.to_string(),
+                actual: display_value.to_string(),
             }),
             range,
         }
@@ -174,13 +223,13 @@ async fn validate_string(
     {
         handle_unused_noqa(
             &mut diagnostics,
-            string_value.comment_directives(),
+            comment_directives.as_ref(),
             lint_rules.as_ref().map(|rules| &rules.common),
             "enum",
         );
     }
 
-    let length = UnicodeSegmentation::graphemes(value.as_str(), true).count();
+    let length = UnicodeSegmentation::graphemes(value, true).count();
 
     if let Some(max_length) = &string_schema.max_length
         && length > *max_length
@@ -210,7 +259,7 @@ async fn validate_string(
     {
         handle_unused_noqa(
             &mut diagnostics,
-            string_value.comment_directives(),
+            comment_directives.as_ref(),
             lint_rules.as_ref().map(|rules| &rules.common),
             "string-max-length",
         );
@@ -243,7 +292,7 @@ async fn validate_string(
     {
         handle_unused_noqa(
             &mut diagnostics,
-            string_value.comment_directives(),
+            comment_directives.as_ref(),
             lint_rules.as_ref().map(|rules| &rules.common),
             "string-min-length",
         );
@@ -251,10 +300,10 @@ async fn validate_string(
 
     if let Some(format) = string_schema.format
         && !match format {
-            StringFormat::Email => format::email::validate_format(&value),
-            StringFormat::Hostname => format::hostname::validate_format(&value),
-            StringFormat::Uri => format::uri::validate_format(&value),
-            StringFormat::Uuid => format::uuid::validate_format(&value),
+            StringFormat::Email => format::email::validate_format(value),
+            StringFormat::Hostname => format::hostname::validate_format(value),
+            StringFormat::Uri => format::uri::validate_format(value),
+            StringFormat::Uuid => format::uuid::validate_format(value),
         }
     {
         let level = lint_rules
@@ -270,7 +319,7 @@ async fn validate_string(
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::StringFormat {
                 format,
-                actual: string_value.to_string(),
+                actual: display_value.to_string(),
             }),
             range,
         }
@@ -282,7 +331,7 @@ async fn validate_string(
     {
         handle_unused_noqa(
             &mut diagnostics,
-            string_value.comment_directives(),
+            comment_directives.as_ref(),
             lint_rules.as_ref().map(|rules| &rules.common),
             "string-format",
         );
@@ -290,8 +339,8 @@ async fn validate_string(
 
     if let Some(pattern) = &string_schema.pattern
         && let Ok(regex) =
-            Regex::new(pattern).inspect_err(|_| log::warn!("Invalid regex pattern: {:?}", pattern))
-        && !regex.is_match(&value)
+            Regex::new(pattern).inspect_err(|_| log::debug!("Invalid regex pattern: {:?}", pattern))
+        && !regex.is_match(value)
     {
         let level = lint_rules
             .map(|rules| &rules.value)
@@ -306,7 +355,7 @@ async fn validate_string(
         crate::Diagnostic {
             kind: Box::new(crate::DiagnosticKind::StringPattern {
                 pattern: pattern.clone(),
-                actual: string_value.to_string(),
+                actual: display_value.to_string(),
             }),
             range,
         }
@@ -318,20 +367,9 @@ async fn validate_string(
     {
         handle_unused_noqa(
             &mut diagnostics,
-            string_value.comment_directives(),
+            comment_directives.as_ref(),
             lint_rules.as_ref().map(|rules| &rules.common),
             "string-pattern",
-        );
-    }
-
-    if diagnostics.is_empty() {
-        handle_deprecated_value(
-            &mut diagnostics,
-            string_schema.deprecated,
-            accessors,
-            string_value,
-            string_value.comment_directives(),
-            lint_rules.as_ref().map(|rules| &rules.common),
         );
     }
 
