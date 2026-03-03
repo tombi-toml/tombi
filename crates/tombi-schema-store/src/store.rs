@@ -77,11 +77,6 @@ impl SchemaStore {
         self.options.strict.unwrap_or(true)
     }
 
-    /// JSON Schema dialect mode
-    pub fn dialect(&self) -> tombi_config::JsonSchemaDialect {
-        self.options.dialect.unwrap_or_default()
-    }
-
     pub async fn refresh_cache(
         &self,
         config: &tombi_config::Config,

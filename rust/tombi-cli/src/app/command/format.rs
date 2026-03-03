@@ -127,7 +127,6 @@ where
         tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
             offline: args.common.offline.then_some(true),
             strict: schema_options.and_then(|schema_options| schema_options.strict()),
-            dialect: schema_options.map(|schema_options| schema_options.dialect()),
             cache: Some(tombi_cache::Options {
                 no_cache: args.common.no_cache.then_some(true),
                 ..Default::default()

@@ -54,7 +54,6 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
             tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
                 offline: None,
                 strict: schema_options.and_then(|schema_options| schema_options.strict()),
-                dialect: schema_options.map(|schema_options| schema_options.dialect()),
                 cache: None,
             });
 
@@ -144,7 +143,6 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
                 offline: None,
                 strict: schema_options.and_then(|schema_options| schema_options.strict()),
-                dialect: schema_options.map(|schema_options| schema_options.dialect()),
                 cache: None,
             });
 
