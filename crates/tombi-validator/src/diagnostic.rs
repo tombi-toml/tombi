@@ -6,6 +6,9 @@ use tombi_x_keyword::StringFormat;
 
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
+    #[error("An empty key is discouraged")]
+    KeyEmpty,
+
     #[error("Don't need to use `{rule_name}.disabled = true`. Please remove it.")]
     UnusedNoqa { rule_name: &'static str },
 
@@ -129,10 +132,9 @@ pub struct Diagnostic {
     pub range: tombi_text::Range,
 }
 
-impl Diagnostic {
-    #[inline]
+impl DiagnosticKind {
     pub fn code(&self) -> &'static str {
-        match *self.kind {
+        match *self {
             DiagnosticKind::UnusedNoqa { .. } => "unused-noqa",
             DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
                 "deprecated"
@@ -165,7 +167,15 @@ impl Diagnostic {
             DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
             DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
             DiagnosticKind::NotSchemaMatch => "not-schema-match",
+            DiagnosticKind::KeyEmpty => "key-empty",
         }
+    }
+}
+
+impl Diagnostic {
+    #[inline]
+    pub fn code(&self) -> &'static str {
+        self.kind.code()
     }
 
     pub fn push_diagnostic_with_level(

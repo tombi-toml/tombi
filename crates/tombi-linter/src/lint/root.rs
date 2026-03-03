@@ -5,7 +5,6 @@ use crate::{Lint, Rule};
 impl Lint for tombi_ast::Root {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
-            crate::rule::KeyEmptyRule::check(self, l).await;
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
             crate::rule::TablesOutOfOrderRule::check(self, l).await;
 
@@ -128,6 +127,84 @@ mod tests {
                 "#,
                 SchemaPath(type_test_schema_path()),
             ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_key_empty(
+                r#"
+                #:tombi schema.strict = false
+
+                # tombi: lint.rules.table-min-keys.disabled = true
+                "" = 1
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyNotAllowed { key: "".to_string() },
+                tombi_validator::DiagnosticKind::KeyEmpty,
+            ])
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_key_empty_with_leading_comment_directive(
+                r#"
+                #:tombi schema.strict = false
+
+                # tombi: lint.rules.key-empty.disabled = true
+                # tombi: lint.rules.key-not-allowed.disabled = true
+                "" = 1
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_key_empty_with_trailing_comment_directive(
+                r#"
+                #:tombi schema.strict = false
+
+                "" = 1 # tombi: lint.rules = { key-empty.disabled = true, key-not-allowed.disabled = true }
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_key_empty_with_lint_options_off(
+                r#"
+                "" = 1
+                "#,
+                crate::LintOptions {
+                    rules: Some(tombi_config::LintRules {
+                        key_empty: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
+                            tombi_severity_level::SeverityLevel::Off,
+                        )),
+                        ..Default::default()
+                    }),
+                },
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_key_empty_with_lint_options_error(
+                r#"
+                "" = 1
+                "#,
+                crate::LintOptions {
+                    rules: Some(tombi_config::LintRules {
+                        key_empty: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
+                            tombi_severity_level::SeverityLevel::Error,
+                        )),
+                        ..Default::default()
+                    }),
+                },
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyEmpty,
+            ])
         }
 
         test_lint! {

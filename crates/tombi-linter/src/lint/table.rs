@@ -5,7 +5,6 @@ use crate::{Lint, rule::Rule};
 impl Lint for tombi_ast::Table {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
-            crate::rule::KeyEmptyRule::check(self, l).await;
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
 
             for key_value in self.key_values() {
@@ -59,7 +58,7 @@ mod tests {
                 [table.""]
                 "#,
                 SchemaPath(type_test_schema_path()),
-            ) -> Err([crate::DiagnosticKind::KeyEmpty])
+            ) -> Err([tombi_validator::DiagnosticKind::KeyEmpty])
         }
 
         test_lint! {
@@ -100,7 +99,18 @@ mod tests {
                 # tombi: lint.rules.key-empty.disabled = true
                 "#,
                 SchemaPath(type_test_schema_path()),
-            ) -> Err([crate::DiagnosticKind::KeyEmpty])
+            ) -> Err([tombi_validator::DiagnosticKind::KeyEmpty])
+        }
+
+        test_lint! {
+            #[test]
+            fn test_table_allows_empty_key_with_property_names_min_length_0(
+                r#"
+                [table-allows-empty-key]
+                "" = 1
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok(_)
         }
     }
 }

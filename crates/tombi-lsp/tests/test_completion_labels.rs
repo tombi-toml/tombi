@@ -1739,6 +1739,7 @@ mod completion_labels {
                 "offset-date-time",
                 "string",
                 "table",
+                "table-allows-empty-key",
             ]);
         }
 
@@ -1765,6 +1766,7 @@ mod completion_labels {
                 "offset-date-time",
                 "string",
                 "table",
+                "table-allows-empty-key",
             ]);
         }
     }

@@ -6,7 +6,7 @@ use tombi_comment_directive::value::{
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema};
-use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
     comment_directive::{
@@ -463,49 +463,56 @@ async fn validate_table(
         );
     }
 
-    if let Some(property_names_item) = &table_schema.property_names {
-        if let Ok(Some(property_names_current_schema)) = tombi_schema_store::resolve_schema_item(
-            property_names_item,
+    if let Some(property_name_schema) = &table_schema.property_names
+        && let Ok(Some(property_name_current_schema)) = tombi_schema_store::resolve_schema_item(
+            property_name_schema,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
             schema_context.store,
         )
         .await
         .inspect_err(|err| log::warn!("{err}"))
-        {
-            if let ValueSchema::String(string_schema) =
-                property_names_current_schema.value_schema.as_ref()
-            {
-                for key in table_value.keys() {
-                    let (lint_rules, lint_rules_diagnostics) =
-                        get_tombi_key_table_value_rules_and_diagnostics::<
-                            StringCommonFormatRules,
-                            StringCommonLintRules,
-                        >(key.comment_directives(), accessors)
-                        .await;
+        && let ValueSchema::String(string_schema) =
+            property_name_current_schema.value_schema.as_ref()
+    {
+        let allows_empty_key = string_schema.min_length == Some(0);
 
-                    let result = validate_raw_string(
-                        &key.value,
-                        &key.value,
-                        key.range(),
-                        string_schema,
-                        lint_rules.as_ref(),
-                        key.comment_directives(),
-                    );
+        for key in table_value.keys() {
+            if !allows_empty_key {
+                check_key_empty(key, &mut total_diagnostics).await;
+            }
 
-                    match result {
-                        Ok(()) => {
-                            if !lint_rules_diagnostics.is_empty() {
-                                total_diagnostics.extend(lint_rules_diagnostics);
-                            }
-                        }
-                        Err(mut error) => {
-                            error.prepend_diagnostics(lint_rules_diagnostics);
-                            total_diagnostics.extend(error.diagnostics);
-                        }
+            let (lint_rules, lint_rules_diagnostics) =
+                get_tombi_key_table_value_rules_and_diagnostics::<
+                    StringCommonFormatRules,
+                    StringCommonLintRules,
+                >(key.comment_directives(), accessors)
+                .await;
+
+            let result = validate_raw_string(
+                &key.value,
+                &key.value,
+                key.range(),
+                string_schema,
+                lint_rules.as_ref(),
+                key.comment_directives(),
+            );
+
+            match result {
+                Ok(()) => {
+                    if !lint_rules_diagnostics.is_empty() {
+                        total_diagnostics.extend(lint_rules_diagnostics);
                     }
                 }
+                Err(mut error) => {
+                    error.prepend_diagnostics(lint_rules_diagnostics);
+                    total_diagnostics.extend(error.diagnostics);
+                }
             }
+        }
+    } else {
+        for key in table_value.keys() {
+            check_key_empty(key, &mut total_diagnostics).await;
         }
     }
 
@@ -555,6 +562,8 @@ async fn validate_table_without_schema(
 
     // Validate without schema
     for (key, value) in table_value.key_values() {
+        check_key_empty(key, &mut total_diagnostics).await;
+
         if let Err(crate::Error { diagnostics, .. }) = value
             .validate(
                 &accessors
@@ -576,6 +585,32 @@ async fn validate_table_without_schema(
     } else {
         Err(total_diagnostics.into())
     }
+}
+
+async fn check_key_empty(
+    key: &tombi_document_tree::Key,
+    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
+) {
+    if !key.value.is_empty() {
+        return;
+    }
+
+    let (key_rules, key_rules_diagnostics) =
+        get_tombi_key_rules_and_diagnostics(key.comment_directives()).await;
+    let key_rules = key_rules.map(|rules| rules.value);
+
+    diagnostics.extend(key_rules_diagnostics);
+
+    let level = key_rules
+        .as_ref()
+        .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
+        .unwrap_or_default();
+
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::KeyEmpty),
+        range: key.range(),
+    }
+    .push_diagnostic_with_level(level, diagnostics);
 }
 
 /// Convert deprecated diagnostics to warnings for the given value

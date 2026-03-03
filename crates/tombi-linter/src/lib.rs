@@ -406,7 +406,7 @@ mod tests {
                 "" = 1
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 
@@ -449,7 +449,7 @@ mod tests {
                 "" = 1
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 
@@ -461,7 +461,7 @@ mod tests {
                 "" = 1
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 
@@ -472,7 +472,7 @@ mod tests {
                 key = { "" = 1 }
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 
@@ -483,7 +483,7 @@ mod tests {
                 key = { key2 = { "" = 1 } }
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 
@@ -495,7 +495,7 @@ mod tests {
                 key = { "" = 1 }
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 
@@ -507,7 +507,7 @@ mod tests {
                 key = { "" = 1 }
                 "#,
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
 

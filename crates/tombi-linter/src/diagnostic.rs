@@ -1,7 +1,5 @@
 #[derive(thiserror::Error, Debug)]
 pub enum DiagnosticKind {
-    #[error("An empty key is discouraged")]
-    KeyEmpty,
     #[error("Defining dotted keys out-of-order is discouraged")]
     DottedKeysOutOfOrder,
     #[error("Defining tables out-of-order is discouraged")]
@@ -26,7 +24,6 @@ pub struct Diagnostic {
 impl Diagnostic {
     pub fn code(&self) -> &'static str {
         match self.kind {
-            DiagnosticKind::KeyEmpty => "key-empty",
             DiagnosticKind::DottedKeysOutOfOrder => "dotted-keys-out-of-order",
             DiagnosticKind::TablesOutOfOrder => "tables-out-of-order",
             DiagnosticKind::InlineTableMustSingleLine => "inline-table-must-single-line",
