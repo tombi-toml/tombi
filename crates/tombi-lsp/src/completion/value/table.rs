@@ -183,72 +183,100 @@ impl FindCompletionContents for tombi_document_tree::Table {
 
                                         return contents;
                                     }
-                                } else if keys.len() == 1 {
-                                    let property_keys = table_schema
-                                        .properties
-                                        .read()
+                                } else {
+                                    // When the key is not in the schema properties,
+                                    // still try the value for comment directive handling.
+                                    let contents = value
+                                        .find_completion_contents(
+                                            position,
+                                            &keys[1..],
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor))
+                                                .collect_vec(),
+                                            None,
+                                            schema_context,
+                                            completion_hint,
+                                        )
                                         .await
-                                        .keys()
-                                        .cloned()
+                                        .into_iter()
+                                        .filter(|c| c.in_comment)
                                         .collect_vec();
-                                    for property_key in property_keys {
-                                        let key_name = property_key.to_string();
-                                        if !key_name.starts_with(accessor_str) {
-                                            continue;
-                                        }
+                                    if !contents.is_empty() {
+                                        return contents;
+                                    }
 
-                                        if let Some(value) = self.get(&key_name)
-                                            && check_used_table_value(
-                                                value,
-                                                accessors.is_empty(),
-                                                completion_hint,
-                                            )
-                                        {
-                                            continue;
-                                        }
-
-                                        if let Ok(Some(current_schema)) = table_schema
-                                            .resolve_property_schema(
-                                                &property_key,
-                                                current_schema.schema_uri.clone(),
-                                                current_schema.definitions.clone(),
-                                                schema_context.store,
-                                            )
+                                    if keys.len() == 1 {
+                                        let property_keys = table_schema
+                                            .properties
+                                            .read()
                                             .await
-                                        {
-                                            log::trace!(
-                                                "property_schema = {:?}",
-                                                &current_schema.value_schema
-                                            );
-
-                                            let Some(mut contents) =
-                                                collect_table_key_completion_contents(
-                                                    self,
-                                                    &key_name,
-                                                    position,
-                                                    accessors,
-                                                    table_schema,
-                                                    &current_schema,
-                                                    schema_context,
-                                                    completion_hint,
-                                                )
-                                                .await
-                                            else {
+                                            .keys()
+                                            .cloned()
+                                            .collect_vec();
+                                        for property_key in property_keys {
+                                            let key_name = property_key.to_string();
+                                            if !key_name.starts_with(accessor_str) {
                                                 continue;
-                                            };
-
-                                            if !contents.is_empty()
-                                                && current_schema.value_schema.deprecated().await
-                                                    == Some(true)
-                                            {
-                                                for content in &mut contents {
-                                                    if !content.in_comment {
-                                                        content.deprecated = Some(true);
-                                                    }
-                                                }
                                             }
 
-                                            completion_contents.extend(contents);
+                                            if let Some(value) = self.get(&key_name)
+                                                && check_used_table_value(
+                                                    value,
+                                                    accessors.is_empty(),
+                                                    completion_hint,
+                                                )
+                                            {
+                                                continue;
+                                            }
+
+                                            if let Ok(Some(current_schema)) = table_schema
+                                                .resolve_property_schema(
+                                                    &property_key,
+                                                    current_schema.schema_uri.clone(),
+                                                    current_schema.definitions.clone(),
+                                                    schema_context.store,
+                                                )
+                                                .await
+                                            {
+                                                log::trace!(
+                                                    "property_schema = {:?}",
+                                                    &current_schema.value_schema
+                                                );
+
+                                                let Some(mut contents) =
+                                                    collect_table_key_completion_contents(
+                                                        self,
+                                                        &key_name,
+                                                        position,
+                                                        accessors,
+                                                        table_schema,
+                                                        &current_schema,
+                                                        schema_context,
+                                                        completion_hint,
+                                                    )
+                                                    .await
+                                                else {
+                                                    continue;
+                                                };
+
+                                                if !contents.is_empty()
+                                                    && current_schema
+                                                        .value_schema
+                                                        .deprecated()
+                                                        .await
+                                                        == Some(true)
+                                                {
+                                                    for content in &mut contents {
+                                                        if !content.in_comment {
+                                                            content.deprecated = Some(true);
+                                                        }
+                                                    }
+                                                }
+
+                                                completion_contents.extend(contents);
+                                            }
                                         }
                                     }
                                 }
