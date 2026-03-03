@@ -132,10 +132,9 @@ pub struct Diagnostic {
     pub range: tombi_text::Range,
 }
 
-impl Diagnostic {
-    #[inline]
+impl DiagnosticKind {
     pub fn code(&self) -> &'static str {
-        match *self.kind {
+        match *self {
             DiagnosticKind::UnusedNoqa { .. } => "unused-noqa",
             DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
                 "deprecated"
@@ -170,6 +169,13 @@ impl Diagnostic {
             DiagnosticKind::NotSchemaMatch => "not-schema-match",
             DiagnosticKind::KeyEmpty => "key-empty",
         }
+    }
+}
+
+impl Diagnostic {
+    #[inline]
+    pub fn code(&self) -> &'static str {
+        self.kind.code()
     }
 
     pub fn push_diagnostic_with_level(

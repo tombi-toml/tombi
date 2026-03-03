@@ -4,6 +4,7 @@ use itertools::Either;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::{Diagnostic, SetDiagnostics};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
+use tombi_severity_level::SeverityLevelDefaultWarn;
 
 use crate::lint::Lint;
 
@@ -175,44 +176,37 @@ impl<'a> Linter<'a> {
         diagnostics.set_diagnostics(&mut self.diagnostics);
     }
 
-    fn apply_lint_rules_to_diagnostics(
-        &self,
-        diagnostics: Vec<Diagnostic>,
-    ) -> Vec<Diagnostic> {
+    fn apply_lint_rules_to_diagnostics(&self, diagnostics: Vec<Diagnostic>) -> Vec<Diagnostic> {
         let Some(key_empty_severity) = self
             .options
             .rules
             .as_ref()
             .and_then(|rules| rules.key_empty)
+            .filter(|severity| *severity != SeverityLevelDefaultWarn::default())
         else {
             return diagnostics;
         };
 
-        let key_empty_level =
-            tombi_severity_level::SeverityLevel::from(key_empty_severity);
+        let key_empty_level = tombi_severity_level::SeverityLevel::from(key_empty_severity);
 
         diagnostics
             .into_iter()
             .filter_map(|d| {
-                if d.code() != "key-empty" {
+                if d.code() != tombi_validator::DiagnosticKind::KeyEmpty.code() {
                     return Some(d);
                 }
                 match key_empty_level {
                     tombi_severity_level::SeverityLevel::Off => None,
-                    tombi_severity_level::SeverityLevel::Error => {
-                        Some(Diagnostic::new_error(
-                            d.message().to_string(),
-                            d.code().to_string(),
-                            d.range(),
-                        ))
-                    }
-                    tombi_severity_level::SeverityLevel::Warn => {
-                        Some(Diagnostic::new_warning(
-                            d.message().to_string(),
-                            d.code().to_string(),
-                            d.range(),
-                        ))
-                    }
+                    tombi_severity_level::SeverityLevel::Warn => Some(Diagnostic::new_warning(
+                        d.message().to_string(),
+                        d.code().to_string(),
+                        d.range(),
+                    )),
+                    tombi_severity_level::SeverityLevel::Error => Some(Diagnostic::new_error(
+                        d.message().to_string(),
+                        d.code().to_string(),
+                        d.range(),
+                    )),
                 }
             })
             .collect()
