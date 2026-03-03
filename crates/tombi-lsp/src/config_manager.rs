@@ -454,6 +454,7 @@ fn schema_store_options(
     tombi_schema_store::Options {
         offline: backend_options.offline,
         strict: config.schema.as_ref().and_then(|schema| schema.strict()),
+        dialect: config.schema.as_ref().map(|schema| schema.dialect()),
         cache: Some(tombi_cache::Options {
             no_cache: backend_options.no_cache,
             ..Default::default()

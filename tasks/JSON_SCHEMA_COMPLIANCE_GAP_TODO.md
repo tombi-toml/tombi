@@ -79,7 +79,7 @@
 
 ### Phase A: Dialect 基盤
 
-- [ ] `schema.options` と `SchemaStore::Options` に dialect 設定を追加する
+- [x] `schema.options` と `SchemaStore::Options` に dialect 設定を追加する（2026-03-03 対応）
 - [ ] キーワード判定を `dialect x vocabulary` ベースへ変更する
 - [ ] 廃止キーワード判定フック（`deprecated_in`）を導入する
 

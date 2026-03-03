@@ -10,6 +10,7 @@ pub async fn schema_store() -> &'static tombi_schema_store::SchemaStore {
         .get_or_init(|| async {
             tombi_schema_store::SchemaStore::new_with_options(tombi_schema_store::Options {
                 strict: Some(false),
+                dialect: None,
                 ..Default::default()
             })
         })
