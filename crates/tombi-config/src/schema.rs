@@ -200,4 +200,5 @@ mod tests {
         let expected: Vec<SchemaCatalogPath> = vec![];
         pretty_assertions::assert_eq!(schema.catalog_paths(), Some(expected));
     }
+
 }
