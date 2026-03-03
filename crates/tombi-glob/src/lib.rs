@@ -1,6 +1,7 @@
 mod error;
 mod file_match;
 mod file_search;
+mod pattern;
 mod walk_dir;
 
 use std::path::Path;

@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use fast_glob::glob_match;
 use tombi_config::{Config, ConfigLevel, FilesOptions};
 
 use crate::WalkDir;
@@ -137,19 +136,8 @@ pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
 }
 
 fn is_excluded(path: &Path, root: &Path, exclude_patterns: Option<&[String]>) -> bool {
-    if let Some(exclude_patterns) = exclude_patterns {
-        let relative_path = if let Ok(rel_path) = path.strip_prefix(root) {
-            rel_path.to_string_lossy()
-        } else {
-            path.to_string_lossy()
-        };
-        for pattern in exclude_patterns {
-            if glob_match(pattern, &relative_path) {
-                return true;
-            }
-        }
-    }
-    false
+    exclude_patterns
+        .is_some_and(|patterns| crate::pattern::path_matches_patterns(path, root, patterns))
 }
 
 fn is_glob_pattern(path_str: &str) -> bool {
