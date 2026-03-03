@@ -1,4 +1,6 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use fast_glob::glob_match;
 use tombi_config::{Config, ConfigLevel, FilesOptions};
 
 use crate::WalkDir;
@@ -63,7 +65,7 @@ impl FileSearch {
                                 root,
                                 FilesOptions {
                                     include: Some(vec![file_path.to_string()]),
-                                    exclude: None,
+                                    exclude: files_options.exclude.clone(),
                                 },
                             )
                             .await,
@@ -71,7 +73,14 @@ impl FileSearch {
                     } else {
                         let path = PathBuf::from(file_path);
                         if path.is_file() {
-                            matched_paths.push(Ok(path));
+                            if is_excluded(&path, root, files_options.exclude.as_deref()) {
+                                log::debug!(
+                                    "Skipping {:?} because it matches an exclude pattern",
+                                    path
+                                );
+                            } else {
+                                matched_paths.push(Ok(path));
+                            }
                         } else if path.is_dir() {
                             matched_paths.extend(
                                 search_pattern_matched_paths(path, files_options.clone()).await,
@@ -119,6 +128,22 @@ pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
             vec![Err(err)]
         }
     }
+}
+
+fn is_excluded(path: &Path, root: &Path, exclude_patterns: Option<&[String]>) -> bool {
+    if let Some(exclude_patterns) = exclude_patterns {
+        let relative_path = if let Ok(rel_path) = path.strip_prefix(root) {
+            rel_path.to_string_lossy()
+        } else {
+            path.to_string_lossy()
+        };
+        for pattern in exclude_patterns {
+            if glob_match(pattern, &relative_path) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn is_glob_pattern(path_str: &str) -> bool {
