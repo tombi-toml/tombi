@@ -22,12 +22,6 @@ pub struct SchemaOverviewOptions {
     /// which is different from the JSON Schema specification.
     pub strict: Option<BoolDefaultTrue>,
 
-    /// # JSON Schema dialect
-    ///
-    /// Selects the JSON Schema dialect used for compliance behavior.
-    /// If not specified, `draft-07` is used.
-    pub dialect: Option<JsonSchemaDialect>,
-
     /// # Schema catalog options
     pub catalog: Option<SchemaCatalog>,
 }
@@ -37,7 +31,6 @@ impl SchemaOverviewOptions {
         Self {
             enabled: None,
             strict: None,
-            dialect: None,
             catalog: None,
         }
     }
@@ -58,23 +51,6 @@ impl SchemaOverviewOptions {
     pub fn strict(&self) -> Option<bool> {
         self.strict.as_ref().map(|strict| strict.value())
     }
-
-    pub fn dialect(&self) -> JsonSchemaDialect {
-        self.dialect.unwrap_or_default()
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
-pub enum JsonSchemaDialect {
-    #[default]
-    #[cfg_attr(feature = "serde", serde(rename = "draft-07"))]
-    Draft07,
-    #[cfg_attr(feature = "serde", serde(rename = "draft-2019-09"))]
-    Draft2019_09,
-    #[cfg_attr(feature = "serde", serde(rename = "draft-2020-12"))]
-    Draft2020_12,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -225,18 +201,4 @@ mod tests {
         pretty_assertions::assert_eq!(schema.catalog_paths(), Some(expected));
     }
 
-    #[test]
-    fn schema_dialect_default_is_draft_07() {
-        let schema = SchemaOverviewOptions::default();
-        pretty_assertions::assert_eq!(schema.dialect(), JsonSchemaDialect::Draft07);
-    }
-
-    #[test]
-    fn schema_dialect_respects_config_value() {
-        let schema = SchemaOverviewOptions {
-            dialect: Some(JsonSchemaDialect::Draft2020_12),
-            ..Default::default()
-        };
-        pretty_assertions::assert_eq!(schema.dialect(), JsonSchemaDialect::Draft2020_12);
-    }
 }

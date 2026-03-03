@@ -1,5 +1,6 @@
 mod error;
 mod http_client;
+mod json_schema_dialect;
 pub mod json;
 pub mod macros;
 mod options;
@@ -11,6 +12,7 @@ mod x_taplo;
 pub use error::Error;
 pub use http_client::*;
 use itertools::{Either, Itertools};
+pub use json_schema_dialect::JsonSchemaDialect;
 pub use options::Options;
 pub use schema::*;
 pub use store::{AssociateSchemaOptions, SchemaStore};

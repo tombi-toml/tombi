@@ -9,11 +9,12 @@ use tombi_x_keyword::{StringFormat, X_TOMBI_STRING_FORMATS, X_TOMBI_TOML_VERSION
 use super::{
     FindSchemaCandidates, SchemaDefinitions, SchemaUri, ValueSchema, referable_schema::Referable,
 };
-use crate::{Accessor, SchemaStore};
+use crate::{Accessor, JsonSchemaDialect, SchemaStore};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {
     pub schema_uri: SchemaUri,
+    pub(crate) dialect: Option<JsonSchemaDialect>,
     pub(crate) toml_version: Option<TomlVersion>,
     pub value_schema: Option<Arc<ValueSchema>>,
     pub definitions: SchemaDefinitions,
@@ -21,6 +22,11 @@ pub struct DocumentSchema {
 
 impl DocumentSchema {
     pub fn new(object: tombi_json::ObjectNode, schema_uri: SchemaUri) -> Self {
+        let dialect = object.get("$schema").and_then(|value| match value {
+            tombi_json::ValueNode::String(s) => JsonSchemaDialect::try_from(s.value.as_str()).ok(),
+            _ => None,
+        });
+
         let toml_version = object.get(X_TOMBI_TOML_VERSION).and_then(|obj| match obj {
             tombi_json::ValueNode::String(version) => TomlVersion::from_str(&version.value).ok(),
             _ => None,
@@ -74,10 +80,15 @@ impl DocumentSchema {
 
         Self {
             schema_uri,
+            dialect,
             toml_version,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
         }
+    }
+
+    pub fn dialect(&self) -> Option<JsonSchemaDialect> {
+        self.dialect
     }
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
