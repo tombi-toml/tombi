@@ -82,8 +82,7 @@ impl FileSearch {
                         if path.is_file() {
                             if is_excluded(&path, root, files_options.exclude.as_deref()) {
                                 log::debug!(
-                                    "Skipping {:?} because it matches an exclude pattern",
-                                    path
+                                    "Skipping {path:?} because it matches an exclude pattern"
                                 );
                                 matched_paths.push(FileSearchEntry::Skipped(path));
                             } else {
