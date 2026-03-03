@@ -477,6 +477,38 @@ mod table_keys_order {
                 "#
             )
         }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_dependency_groups_empty_key_value_group(
+                r#"
+                [dependency-groups]
+                "" = []
+                dev = [
+                  "pytest>=8.3.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub" },
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#,
+                SchemaPath(pyproject_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependency-groups]
+                "" = []
+                dev = [
+                  "pytest>=8.3.3",
+                  "ruff>=0.7.4",
+                  { include-group = "stub" },
+                ]
+                stub = [
+                  "pytest-stub>=1.1.0",
+                ]
+                "#
+            )
+        }
     }
 
     mod cargo {
@@ -1261,6 +1293,72 @@ mod table_keys_order {
                   # leading comment2
                   ,  # trailing comment2
                 }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_empty_key_value_group_version_sort(
+                r#"
+                # tombi: format.rules.table-keys-order = "version-sort"
+
+                dev-1 = []
+                "" = []
+                dev = []
+                "#,
+                TomlVersion::V1_1_0,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "version-sort"
+
+                "" = []
+                dev = []
+                dev-1 = []
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_empty_key_value_group_ascending(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+
+                stub = []
+                "" = []
+                dev = []
+                "#,
+                TomlVersion::V1_1_0,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+
+                "" = []
+                dev = []
+                stub = []
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_empty_key_value_group_descending(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                stub = []
+                "" = []
+                dev = []
+                "#,
+                TomlVersion::V1_1_0,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "descending"
+
+                stub = []
+                dev = []
+                "" = []
                 "#
             )
         }

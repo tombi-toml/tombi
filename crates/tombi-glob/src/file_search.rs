@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
 use tombi_config::{Config, ConfigLevel, FilesOptions};
 
 use crate::WalkDir;
@@ -9,7 +10,15 @@ use crate::WalkDir;
 #[derive(Debug)]
 pub enum FileSearch {
     Stdin,
-    Files(Vec<Result<PathBuf, crate::Error>>),
+    Files(Vec<FileSearchEntry>),
+}
+
+/// An entry in the file search results.
+#[derive(Debug)]
+pub enum FileSearchEntry {
+    Found(PathBuf),
+    Skipped(PathBuf),
+    Error(crate::Error),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -63,7 +72,7 @@ impl FileSearch {
                                 root,
                                 FilesOptions {
                                     include: Some(vec![file_path.to_string()]),
-                                    exclude: None,
+                                    exclude: files_options.exclude.clone(),
                                 },
                             )
                             .await,
@@ -71,13 +80,22 @@ impl FileSearch {
                     } else {
                         let path = PathBuf::from(file_path);
                         if path.is_file() {
-                            matched_paths.push(Ok(path));
+                            if is_excluded(&path, root, files_options.exclude.as_deref()) {
+                                log::debug!(
+                                    "Skipping {:?} because it matches an exclude pattern",
+                                    path
+                                );
+                                matched_paths.push(FileSearchEntry::Skipped(path));
+                            } else {
+                                matched_paths.push(FileSearchEntry::Found(path));
+                            }
                         } else if path.is_dir() {
                             matched_paths.extend(
                                 search_pattern_matched_paths(path, files_options.clone()).await,
                             );
                         } else {
-                            matched_paths.push(Err(crate::Error::FileNotFound(path)));
+                            matched_paths
+                                .push(FileSearchEntry::Error(crate::Error::FileNotFound(path)));
                         }
                     }
                 }
@@ -105,20 +123,21 @@ impl FileSearch {
 pub async fn search_pattern_matched_paths<P: AsRef<std::path::Path>>(
     root: P,
     files_options: FilesOptions,
-) -> Vec<Result<PathBuf, crate::Error>> {
+) -> Vec<FileSearchEntry> {
     log::debug!("Include patterns: {:?}", files_options.include);
     log::debug!("Exclude patterns: {:?}", files_options.exclude);
 
     match WalkDir::new_with_options(root, files_options).walk().await {
-        Ok(results) => {
-            let matched_paths: Vec<Result<PathBuf, crate::Error>> =
-                results.into_iter().map(Ok).collect();
-            matched_paths
-        }
+        Ok(results) => results.into_iter().map(FileSearchEntry::Found).collect(),
         Err(err) => {
-            vec![Err(err)]
+            vec![FileSearchEntry::Error(err)]
         }
     }
+}
+
+fn is_excluded(path: &Path, root: &Path, exclude_patterns: Option<&[String]>) -> bool {
+    exclude_patterns
+        .is_some_and(|patterns| crate::pattern::path_matches_patterns(path, root, patterns))
 }
 
 fn is_glob_pattern(path_str: &str) -> bool {

@@ -93,6 +93,16 @@
           "type": "null"
         }
       ]
+    },
+    "table-allows-empty-key": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TableValueAllowsEmptyKey"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -255,6 +265,15 @@
         }
       },
       "minProperties": 2
+    },
+    "TableValueAllowsEmptyKey": {
+      "type": "object",
+      "propertyNames": {
+        "minLength": 0
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
     },
     "TableValue": {
       "type": "object",

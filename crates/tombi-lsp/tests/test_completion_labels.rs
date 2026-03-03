@@ -1710,6 +1710,47 @@ mod completion_labels {
         }
     }
 
+    mod type_test_schema {
+        use tombi_test_lib::type_test_schema_path;
+
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn type_test_schema(
+                "█",
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok([
+                "array",
+                "boolean",
+                "float",
+                "integer",
+                "literal",
+                "local-date",
+                "local-date-time",
+                "local-time",
+                "offset-date-time",
+                "string",
+                "table",
+                "table-allows-empty-key",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn type_test_schema_invalid_key_comment_directive(
+                r#"
+                # tombi: lint.█
+                "" = 1
+                "#,
+                SchemaPath(type_test_schema_path()),
+            ) -> Ok([
+                "rules",
+                "{}",
+            ]);
+        }
+    }
+
     mod with_subschema {
         use tombi_test_lib::{pyproject_schema_path, type_test_schema_path};
 
@@ -1739,6 +1780,7 @@ mod completion_labels {
                 "offset-date-time",
                 "string",
                 "table",
+                "table-allows-empty-key",
             ]);
         }
 
@@ -1765,6 +1807,7 @@ mod completion_labels {
                 "offset-date-time",
                 "string",
                 "table",
+                "table-allows-empty-key",
             ]);
         }
     }

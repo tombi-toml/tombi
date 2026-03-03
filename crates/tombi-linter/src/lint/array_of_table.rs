@@ -5,7 +5,6 @@ use crate::{Lint, rule::Rule};
 impl Lint for tombi_ast::ArrayOfTable {
     fn lint<'a: 'b, 'b>(&'a self, l: &'a mut crate::Linter<'_>) -> tombi_future::BoxFuture<'b, ()> {
         async move {
-            crate::rule::KeyEmptyRule::check(self, l).await;
             crate::rule::DottedKeysOutOfOrderRule::check(self, l).await;
 
             for key_value in self.key_values() {
@@ -122,7 +121,7 @@ mod tests {
                 "#,
                 SchemaPath(type_test_schema_path()),
             ) -> Err([
-                crate::DiagnosticKind::KeyEmpty
+                tombi_validator::DiagnosticKind::KeyEmpty
             ])
         }
     }

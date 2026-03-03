@@ -479,6 +479,10 @@ Check if the key is empty.
 "" = true
 ```
 
+<Note>
+This rule is disabled when the JSON Schema for the table specifies `propertyNames.minLength: 0`, since the schema explicitly allows empty keys.
+</Note>
+
 ### lint.rules.dotted-keys-out-of-order
 
 Check if dotted keys are defined out of order.
