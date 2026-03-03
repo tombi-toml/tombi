@@ -595,10 +595,11 @@ async fn check_key_empty(
         return;
     }
 
-    let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
-        .await
-        .0
-        .map(|rules| rules.value);
+    let (key_rules, key_rules_diagnostics) =
+        get_tombi_key_rules_and_diagnostics(key.comment_directives()).await;
+    let key_rules = key_rules.map(|rules| rules.value);
+
+    diagnostics.extend(key_rules_diagnostics);
 
     let level = key_rules
         .as_ref()

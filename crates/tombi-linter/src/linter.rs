@@ -142,6 +142,7 @@ impl<'a> Linter<'a> {
                 tombi_validator::validate(document_tree, source_schema.as_ref(), &schema_context)
                     .await
             {
+                let diagnostics = self.apply_lint_rules_to_diagnostics(diagnostics);
                 self.diagnostics.extend(diagnostics);
             }
         }
@@ -172,5 +173,48 @@ impl<'a> Linter<'a> {
     #[inline]
     pub(crate) fn extend_diagnostics(&mut self, diagnostics: impl SetDiagnostics) {
         diagnostics.set_diagnostics(&mut self.diagnostics);
+    }
+
+    fn apply_lint_rules_to_diagnostics(
+        &self,
+        diagnostics: Vec<Diagnostic>,
+    ) -> Vec<Diagnostic> {
+        let Some(key_empty_severity) = self
+            .options
+            .rules
+            .as_ref()
+            .and_then(|rules| rules.key_empty)
+        else {
+            return diagnostics;
+        };
+
+        let key_empty_level =
+            tombi_severity_level::SeverityLevel::from(key_empty_severity);
+
+        diagnostics
+            .into_iter()
+            .filter_map(|d| {
+                if d.code() != "key-empty" {
+                    return Some(d);
+                }
+                match key_empty_level {
+                    tombi_severity_level::SeverityLevel::Off => None,
+                    tombi_severity_level::SeverityLevel::Error => {
+                        Some(Diagnostic::new_error(
+                            d.message().to_string(),
+                            d.code().to_string(),
+                            d.range(),
+                        ))
+                    }
+                    tombi_severity_level::SeverityLevel::Warn => {
+                        Some(Diagnostic::new_warning(
+                            d.message().to_string(),
+                            d.code().to_string(),
+                            d.range(),
+                        ))
+                    }
+                }
+            })
+            .collect()
     }
 }
