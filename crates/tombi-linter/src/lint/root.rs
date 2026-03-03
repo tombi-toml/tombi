@@ -173,6 +173,42 @@ mod tests {
 
         test_lint! {
             #[test]
+            fn test_root_key_empty_with_lint_options_off(
+                r#"
+                "" = 1
+                "#,
+                crate::LintOptions {
+                    rules: Some(tombi_config::LintRules {
+                        key_empty: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
+                            tombi_severity_level::SeverityLevel::Off,
+                        )),
+                        ..Default::default()
+                    }),
+                },
+            ) -> Ok(_)
+        }
+
+        test_lint! {
+            #[test]
+            fn test_root_key_empty_with_lint_options_error(
+                r#"
+                "" = 1
+                "#,
+                crate::LintOptions {
+                    rules: Some(tombi_config::LintRules {
+                        key_empty: Some(tombi_severity_level::SeverityLevelDefaultWarn::from(
+                            tombi_severity_level::SeverityLevel::Error,
+                        )),
+                        ..Default::default()
+                    }),
+                },
+            ) -> Err([
+                tombi_validator::DiagnosticKind::KeyEmpty,
+            ])
+        }
+
+        test_lint! {
+            #[test]
             fn test_root_table_unknown_key_not_allowed(
                 r#"
                 #:tombi schema.strict = false
