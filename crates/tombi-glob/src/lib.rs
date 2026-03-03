@@ -1,6 +1,7 @@
 mod error;
 mod file_match;
 mod file_search;
+mod pattern;
 mod walk_dir;
 
 use std::path::Path;
@@ -10,7 +11,7 @@ use tombi_config::{FormatOptions, LintOptions, OverrideFilesOptions};
 
 pub use error::Error;
 pub use file_match::{MatchResult, matches_file_patterns};
-pub use file_search::{FileInputType, FileSearch, search_pattern_matched_paths};
+pub use file_search::{FileInputType, FileSearch, FileSearchEntry, search_pattern_matched_paths};
 pub use walk_dir::WalkDir;
 
 pub fn get_format_options(

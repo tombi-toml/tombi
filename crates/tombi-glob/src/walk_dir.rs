@@ -1,9 +1,11 @@
-use fast_glob::glob_match;
 use ignore::WalkBuilder;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use tombi_config::FilesOptions;
+
+#[cfg(test)]
+use fast_glob::glob_match;
 
 /// WalkDir-like structure for parallel async directory walking
 pub struct WalkDir {
@@ -67,31 +69,22 @@ impl WalkDir {
                             && file_type.is_file()
                         {
                             let path = entry.path();
-                            let relative_path = if let Ok(rel_path) = path.strip_prefix(&root_path)
-                            {
-                                rel_path.to_string_lossy()
-                            } else {
-                                path.to_string_lossy()
-                            };
+                            let path_for_patterns =
+                                crate::pattern::path_for_patterns(path, &root_path);
 
                             // Check if file matches any include pattern
-                            let mut should_include = include_patterns.is_empty();
-                            for pattern in &include_patterns {
-                                if glob_match(pattern, &relative_path) {
-                                    should_include = true;
-                                    break;
-                                }
-                            }
+                            let should_include = include_patterns.is_empty()
+                                || crate::pattern::matches_any_pattern(
+                                    path_for_patterns.as_ref(),
+                                    &include_patterns,
+                                );
 
                             if should_include {
                                 // Check if file should be excluded
-                                let mut should_exclude = false;
-                                for pattern in &exclude_patterns {
-                                    if glob_match(pattern, &relative_path) {
-                                        should_exclude = true;
-                                        break;
-                                    }
-                                }
+                                let should_exclude = crate::pattern::matches_any_pattern(
+                                    path_for_patterns.as_ref(),
+                                    &exclude_patterns,
+                                );
 
                                 if !should_exclude
                                     && let Ok(mut results_guard) = results_clone.lock()
