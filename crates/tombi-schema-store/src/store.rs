@@ -485,7 +485,31 @@ impl SchemaStore {
             }
             None => return Ok(None),
         };
-        let document_schema = DocumentSchema::new(object, schema_uri.clone());
+        let document_schema = DocumentSchema::new(object.clone(), schema_uri.clone());
+        let deprecated_keyword_usages = crate::collect_deprecated_keyword_usages(
+            &object,
+            document_schema.dialect().unwrap_or_default(),
+        );
+        if !deprecated_keyword_usages.is_empty() {
+            for usage in deprecated_keyword_usages {
+                if let Some(replacement_hint) = usage.replacement_hint {
+                    log::warn!(
+                        "deprecated JSON Schema keyword used for current dialect: schema_uri={} keyword={} pointer={} hint={}",
+                        schema_uri,
+                        usage.keyword,
+                        usage.pointer,
+                        replacement_hint,
+                    );
+                } else {
+                    log::warn!(
+                        "deprecated JSON Schema keyword used for current dialect: schema_uri={} keyword={} pointer={}",
+                        schema_uri,
+                        usage.keyword,
+                        usage.pointer,
+                    );
+                }
+            }
+        }
         if let Some(
             ValueSchema::AllOf(AllOfSchema { schemas, .. })
             | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })

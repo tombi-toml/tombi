@@ -30,7 +30,11 @@ pub struct ArraySchema {
 }
 
 impl ArraySchema {
-    pub fn new(object: &tombi_json::ObjectNode, string_formats: Option<&[StringFormat]>) -> Self {
+    pub fn new(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Self {
         Self {
             title: object
                 .get("title")
@@ -41,7 +45,7 @@ impl ArraySchema {
             items: object.get("items").and_then(|value| {
                 value
                     .as_object()
-                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats))
+                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             }),
             min_items: object
@@ -72,7 +76,7 @@ impl ArraySchema {
                 .and_then(XTombiArrayValuesOrder::new),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
             range: object.range,
-            not: NotSchema::new(object, string_formats),
+            not: NotSchema::new(object, string_formats, dialect),
         }
     }
 

@@ -35,10 +35,11 @@ impl ValueSchema {
     pub fn new(
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         match object.get("type") {
             Some(tombi_json::ValueNode::String(type_str)) => {
-                return Self::new_single(type_str.value.as_str(), object, string_formats);
+                return Self::new_single(type_str.value.as_str(), object, string_formats, dialect);
             }
             Some(tombi_json::ValueNode::Array(types)) => {
                 let schemas = types
@@ -46,7 +47,12 @@ impl ValueSchema {
                     .iter()
                     .filter_map(|type_value| {
                         if let tombi_json::ValueNode::String(type_str) = type_value {
-                            Self::new_single(type_str.value.as_str(), object, string_formats)
+                            Self::new_single(
+                                type_str.value.as_str(),
+                                object,
+                                string_formats,
+                                dialect,
+                            )
                         } else {
                             None
                         }
@@ -66,16 +72,28 @@ impl ValueSchema {
         }
 
         if object.get("oneOf").is_some() {
-            return Some(ValueSchema::OneOf(OneOfSchema::new(object, string_formats)));
+            return Some(ValueSchema::OneOf(OneOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+            )));
         }
         if object.get("anyOf").is_some() {
-            return Some(ValueSchema::AnyOf(AnyOfSchema::new(object, string_formats)));
+            return Some(ValueSchema::AnyOf(AnyOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+            )));
         }
         if object.get("allOf").is_some() {
-            return Some(ValueSchema::AllOf(AllOfSchema::new(object, string_formats)));
+            return Some(ValueSchema::AllOf(AllOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+            )));
         }
         if let Some(tombi_json::ValueNode::Array(enum_values)) = object.get("enum") {
-            return Self::new_enum_value(object, enum_values, string_formats);
+            return Self::new_enum_value(object, enum_values, string_formats, dialect);
         }
 
         // Handle "const" keyword without explicit "type"
@@ -95,12 +113,12 @@ impl ValueSchema {
                 tombi_json::ValueNode::Array(_) => "array",
                 tombi_json::ValueNode::Object(_) => "object",
             };
-            return Self::new_single(inferred_type, object, string_formats);
+            return Self::new_single(inferred_type, object, string_formats, dialect);
         }
 
         // Infer type from type-specific keywords when "type" is not explicitly specified
-        if let Some(inferred_type) = Self::infer_type_from_keywords(object) {
-            return Self::new_single(inferred_type, object, string_formats);
+        if let Some(inferred_type) = Self::infer_type_from_keywords(object, dialect) {
+            return Self::new_single(inferred_type, object, string_formats, dialect);
         }
 
         None
@@ -115,44 +133,51 @@ impl ValueSchema {
     /// - Array: items, prefixItems, minItems, maxItems, uniqueItems
     /// - Object: properties, patternProperties, additionalProperties, required,
     ///           minProperties, maxProperties, propertyNames
-    fn infer_type_from_keywords(object: &tombi_json::ObjectNode) -> Option<&'static str> {
+    fn infer_type_from_keywords(
+        object: &tombi_json::ObjectNode,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Option<&'static str> {
+        let dialect = dialect.unwrap_or_default();
+        let supports_keyword = |keyword: &str| crate::supports_keyword(dialect, keyword);
+
         // String-specific keywords
-        if object.get("minLength").is_some()
-            || object.get("maxLength").is_some()
-            || object.get("pattern").is_some()
-            || object.get("format").is_some()
+        if (supports_keyword("minLength") && object.get("minLength").is_some())
+            || (supports_keyword("maxLength") && object.get("maxLength").is_some())
+            || (supports_keyword("pattern") && object.get("pattern").is_some())
+            || (supports_keyword("format") && object.get("format").is_some())
         {
             return Some("string");
         }
 
         // Numeric-specific keywords (use "number" as the broader type)
-        if object.get("minimum").is_some()
-            || object.get("maximum").is_some()
-            || object.get("exclusiveMinimum").is_some()
-            || object.get("exclusiveMaximum").is_some()
-            || object.get("multipleOf").is_some()
+        if (supports_keyword("minimum") && object.get("minimum").is_some())
+            || (supports_keyword("maximum") && object.get("maximum").is_some())
+            || (supports_keyword("exclusiveMinimum") && object.get("exclusiveMinimum").is_some())
+            || (supports_keyword("exclusiveMaximum") && object.get("exclusiveMaximum").is_some())
+            || (supports_keyword("multipleOf") && object.get("multipleOf").is_some())
         {
             return Some("number");
         }
 
         // Array-specific keywords
-        if object.get("items").is_some()
-            || object.get("prefixItems").is_some()
-            || object.get("minItems").is_some()
-            || object.get("maxItems").is_some()
-            || object.get("uniqueItems").is_some()
+        if (supports_keyword("items") && object.get("items").is_some())
+            || (supports_keyword("prefixItems") && object.get("prefixItems").is_some())
+            || (supports_keyword("minItems") && object.get("minItems").is_some())
+            || (supports_keyword("maxItems") && object.get("maxItems").is_some())
+            || (supports_keyword("uniqueItems") && object.get("uniqueItems").is_some())
         {
             return Some("array");
         }
 
         // Object-specific keywords
-        if object.get("properties").is_some()
-            || object.get("patternProperties").is_some()
-            || object.get("additionalProperties").is_some()
-            || object.get("required").is_some()
-            || object.get("minProperties").is_some()
-            || object.get("maxProperties").is_some()
-            || object.get("propertyNames").is_some()
+        if (supports_keyword("properties") && object.get("properties").is_some())
+            || (supports_keyword("patternProperties") && object.get("patternProperties").is_some())
+            || (supports_keyword("additionalProperties")
+                && object.get("additionalProperties").is_some())
+            || (supports_keyword("required") && object.get("required").is_some())
+            || (supports_keyword("minProperties") && object.get("minProperties").is_some())
+            || (supports_keyword("maxProperties") && object.get("maxProperties").is_some())
+            || (supports_keyword("propertyNames") && object.get("propertyNames").is_some())
         {
             return Some("object");
         }
@@ -164,6 +189,7 @@ impl ValueSchema {
         type_str: &str,
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         match type_str {
             "null" => Some(ValueSchema::Null),
@@ -218,8 +244,16 @@ impl ValueSchema {
                     string_format,
                 )))
             }
-            "array" => Some(ValueSchema::Array(ArraySchema::new(object, string_formats))),
-            "object" => Some(ValueSchema::Table(TableSchema::new(object, string_formats))),
+            "array" => Some(ValueSchema::Array(ArraySchema::new(
+                object,
+                string_formats,
+                dialect,
+            ))),
+            "object" => Some(ValueSchema::Table(TableSchema::new(
+                object,
+                string_formats,
+                dialect,
+            ))),
             _ => None,
         }
     }
@@ -228,6 +262,7 @@ impl ValueSchema {
         object: &tombi_json::ObjectNode,
         enum_values: &tombi_json::ArrayNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         let mut enum_types = IndexSet::new();
         for enum_value in &enum_values.items {
@@ -262,12 +297,14 @@ impl ValueSchema {
             0 => None,
             1 => {
                 let value_type = enum_types.into_iter().next().unwrap();
-                Self::new_single(value_type, object, string_formats)
+                Self::new_single(value_type, object, string_formats, dialect)
             }
             _ => {
                 let mut schemas = Vec::with_capacity(enum_types.len());
                 for value_type in enum_types {
-                    if let Some(schema) = Self::new_single(value_type, object, string_formats) {
+                    if let Some(schema) =
+                        Self::new_single(value_type, object, string_formats, dialect)
+                    {
                         schemas.push(Referable::Resolved {
                             schema_uri: None,
                             value: Arc::new(schema),
@@ -297,7 +334,7 @@ impl ValueSchema {
                     keys_order: object
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-                    not: NotSchema::new(object, string_formats),
+                    not: NotSchema::new(object, string_formats, dialect),
                 }))
             }
         }
@@ -782,7 +819,16 @@ mod tests {
     fn parse_schema(json: &str) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new(object, None)
+        ValueSchema::new(object, None, Some(crate::JsonSchemaDialect::Draft07))
+    }
+
+    fn parse_schema_with_dialect(
+        json: &str,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Option<ValueSchema> {
+        let value_node = tombi_json::ValueNode::from_str(json).unwrap();
+        let object = value_node.as_object().unwrap();
+        ValueSchema::new(object, None, dialect)
     }
 
     #[test]
@@ -902,7 +948,11 @@ mod tests {
     fn parse_schema_with_formats(json: &str, formats: &[StringFormat]) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new(object, Some(formats))
+        ValueSchema::new(
+            object,
+            Some(formats),
+            Some(crate::JsonSchemaDialect::Draft07),
+        )
     }
 
     #[test]
@@ -1064,6 +1114,21 @@ mod tests {
     fn test_infer_array_from_unique_items() {
         let schema = parse_schema(r#"{ "uniqueItems": true }"#);
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
+    }
+
+    #[test]
+    fn test_infer_array_from_prefix_items_only_in_2020_12() {
+        let schema_2020 = parse_schema_with_dialect(
+            r#"{ "prefixItems": [ { "type": "string" } ] }"#,
+            Some(crate::JsonSchemaDialect::Draft2020_12),
+        );
+        assert!(matches!(schema_2020, Some(ValueSchema::Array(_))));
+
+        let schema_07 = parse_schema_with_dialect(
+            r#"{ "prefixItems": [ { "type": "string" } ] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(schema_07.is_none());
     }
 
     #[test]

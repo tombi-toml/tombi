@@ -21,7 +21,11 @@ pub struct AnyOfSchema {
 }
 
 impl AnyOfSchema {
-    pub fn new(object: &tombi_json::ObjectNode, string_formats: Option<&[StringFormat]>) -> Self {
+    pub fn new(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Self {
         let title = object
             .get("title")
             .and_then(|v| v.as_str())
@@ -38,7 +42,7 @@ impl AnyOfSchema {
                     .items
                     .iter()
                     .filter_map(|value| value.as_object())
-                    .filter_map(|obj| Referable::<ValueSchema>::new(obj, string_formats))
+                    .filter_map(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
                     .collect_vec()
             })
             .unwrap_or_default();
@@ -57,7 +61,7 @@ impl AnyOfSchema {
             keys_order: object
                 .get(X_TOMBI_TABLE_KEYS_ORDER)
                 .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-            not: NotSchema::new(object, string_formats),
+            not: NotSchema::new(object, string_formats, dialect),
         }
     }
 

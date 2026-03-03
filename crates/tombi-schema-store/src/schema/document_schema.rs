@@ -51,7 +51,8 @@ impl DocumentSchema {
                 _ => None,
             });
 
-        let value_schema = ValueSchema::new(&object, string_formats.as_deref()).map(Arc::new);
+        let value_schema =
+            ValueSchema::new(&object, string_formats.as_deref(), dialect).map(Arc::new);
         let mut definitions = AHashMap::default();
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
             for (key, value) in object.properties.iter() {
@@ -59,7 +60,7 @@ impl DocumentSchema {
                     continue;
                 };
                 if let Some(value_schema) =
-                    Referable::<ValueSchema>::new(object, string_formats.as_deref())
+                    Referable::<ValueSchema>::new(object, string_formats.as_deref(), dialect)
                 {
                     definitions.insert(format!("#/definitions/{}", key.value), value_schema);
                 }
@@ -71,7 +72,7 @@ impl DocumentSchema {
                     continue;
                 };
                 if let Some(value_schema) =
-                    Referable::<ValueSchema>::new(object, string_formats.as_deref())
+                    Referable::<ValueSchema>::new(object, string_formats.as_deref(), dialect)
                 {
                     definitions.insert(format!("#/$defs/{}", key.value), value_schema);
                 }
