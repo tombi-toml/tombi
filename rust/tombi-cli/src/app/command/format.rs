@@ -4,7 +4,7 @@ use similar::{ChangeTag, TextDiff};
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 use tombi_config::{FormatOptions, TomlVersion};
 use tombi_diagnostic::{Diagnostic, Print};
-use tombi_glob::{FileInputType, FileSearch};
+use tombi_glob::{FileInputType, FileSearch, FileSearchEntry};
 
 use crate::app::CommonArgs;
 
@@ -42,10 +42,23 @@ pub struct Args {
     common: CommonArgs,
 }
 
+#[derive(Debug, Default)]
+struct FormatRunSummary {
+    success_num: usize,
+    not_needed_num: usize,
+    skipped_num: usize,
+    error_num: usize,
+}
+
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
-    let (success_num, not_needed_num, error_num) = match inner_run(args, crate::app::printer()) {
-        Ok((success_num, not_needed_num, error_num)) => (success_num, not_needed_num, error_num),
+    let FormatRunSummary {
+        success_num,
+        not_needed_num,
+        skipped_num,
+        error_num,
+    } = match inner_run(args, crate::app::printer()) {
+        Ok(summary) => summary,
         Err(error) => {
             log::error!("{}", error);
             std::process::exit(1);
@@ -55,7 +68,7 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
     if !quiet {
         match (success_num, not_needed_num) {
             (0, 0) => {
-                if error_num == 0 {
+                if error_num == 0 && skipped_num == 0 {
                     eprintln!("No files formatted")
                 }
             }
@@ -72,6 +85,11 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
                 }
             }
         };
+        match skipped_num {
+            0 => {}
+            1 => eprintln!("1 file skipped"),
+            _ => eprintln!("{skipped_num} files skipped"),
+        };
         match error_num {
             0 => {}
             1 => eprintln!("1 file failed to be formatted"),
@@ -86,10 +104,7 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
     Ok(())
 }
 
-fn inner_run<P>(
-    args: Args,
-    mut printer: P,
-) -> Result<(usize, usize, usize), Box<dyn std::error::Error>>
+fn inner_run<P>(args: Args, mut printer: P) -> Result<FormatRunSummary, Box<dyn std::error::Error>>
 where
     Diagnostic: Print<P>,
     crate::Error: Print<P>,
@@ -135,9 +150,7 @@ where
 
         schema_result?;
         let total_num = input.len();
-        let mut success_num = 0;
-        let mut not_needed_num = 0;
-        let mut error_num = 0;
+        let mut summary = FormatRunSummary::default();
 
         match input {
             FileSearch::Stdin => {
@@ -151,8 +164,8 @@ where
                     config_path.as_deref(),
                 ) else {
                     log::debug!("Formatting disabled for stdin by override");
-                    not_needed_num += 1;
-                    return Ok((success_num, not_needed_num, error_num));
+                    summary.not_needed_num += 1;
+                    return Ok(summary);
                 };
 
                 match format_stdin(
@@ -166,9 +179,9 @@ where
                 )
                 .await
                 {
-                    Ok(true) => success_num += 1,
-                    Ok(false) => not_needed_num += 1,
-                    Err(_) => error_num += 1,
+                    Ok(true) => summary.success_num += 1,
+                    Ok(false) => summary.not_needed_num += 1,
+                    Err(_) => summary.error_num += 1,
                 }
             }
             FileSearch::Files(files) => {
@@ -176,7 +189,7 @@ where
                 let mut errors = Vec::new();
                 for file in files {
                     match file {
-                        Ok(source_path) => {
+                        FileSearchEntry::Found(source_path) => {
                             log::debug!("Formatting... {:?}", &source_path);
 
                             // Get format options with override support
@@ -189,7 +202,7 @@ where
                                     "Formatting disabled for {:?} by override",
                                     source_path
                                 );
-                                not_needed_num += 1;
+                                summary.not_needed_num += 1;
                                 continue;
                             };
 
@@ -221,13 +234,16 @@ where
                                     } else {
                                         crate::Error::Io(err).print(&mut printer);
                                     }
-                                    error_num += 1;
+                                    summary.error_num += 1;
                                 }
                             }
                         }
-                        Err(err) => {
+                        FileSearchEntry::Skipped(_) => {
+                            summary.skipped_num += 1;
+                        }
+                        FileSearchEntry::Error(err) => {
                             crate::Error::TombiGlob(err).print(&mut printer);
-                            error_num += 1;
+                            summary.error_num += 1;
                         }
                     }
                 }
@@ -236,18 +252,18 @@ where
                     match result {
                         Ok(Ok(formatted)) => {
                             if formatted {
-                                success_num += 1;
+                                summary.success_num += 1;
                             } else {
-                                not_needed_num += 1;
+                                summary.not_needed_num += 1;
                             }
                         }
                         Ok(Err(error)) => {
                             errors.push(error);
-                            error_num += 1;
+                            summary.error_num += 1;
                         }
                         Err(e) => {
                             log::error!("Task failed {}", e);
-                            error_num += 1;
+                            summary.error_num += 1;
                         }
                     }
                 }
@@ -260,9 +276,12 @@ where
             }
         };
 
-        debug_assert_eq!(success_num + not_needed_num + error_num, total_num);
+        debug_assert_eq!(
+            summary.success_num + summary.not_needed_num + summary.skipped_num + summary.error_num,
+            total_num
+        );
 
-        Ok((success_num, not_needed_num, error_num))
+        Ok(summary)
     })
 }
 

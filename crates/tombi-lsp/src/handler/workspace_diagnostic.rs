@@ -61,7 +61,7 @@ async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_ur
             search_pattern_matched_paths(workspace_config.workspace_folder_path, files_options)
                 .await
         {
-            let Ok(path) = matched_path else {
+            let tombi_glob::FileSearchEntry::Found(path) = matched_path else {
                 continue;
             };
 

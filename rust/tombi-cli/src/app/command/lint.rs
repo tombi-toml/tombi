@@ -1,7 +1,7 @@
 use tokio::io::AsyncReadExt;
 use tombi_config::{LintOptions, TomlVersion};
 use tombi_diagnostic::{Diagnostic, Print};
-use tombi_glob::FileSearch;
+use tombi_glob::{FileSearch, FileSearchEntry};
 
 use crate::app::CommonArgs;
 
@@ -37,10 +37,21 @@ pub struct Args {
     common: CommonArgs,
 }
 
+#[derive(Debug, Default)]
+struct LintRunSummary {
+    success_num: usize,
+    skipped_num: usize,
+    error_num: usize,
+}
+
 pub fn run(args: Args) -> Result<(), crate::Error> {
     let quiet = args.quiet;
-    let (success_num, error_num) = match inner_run(args, crate::app::printer()) {
-        Ok((success_num, error_num)) => (success_num, error_num),
+    let LintRunSummary {
+        success_num,
+        skipped_num,
+        error_num,
+    } = match inner_run(args, crate::app::printer()) {
+        Ok(summary) => summary,
         Err(error) => {
             log::error!("{}", error);
             std::process::exit(1);
@@ -50,12 +61,18 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
     if !quiet {
         match success_num {
             0 => {
-                if error_num == 0 {
+                if error_num == 0 && skipped_num == 0 {
                     eprintln!("No files linted")
                 }
             }
             1 => eprintln!("1 file linted successfully"),
             _ => eprintln!("{success_num} files linted successfully"),
+        }
+
+        match skipped_num {
+            0 => {}
+            1 => eprintln!("1 file skipped"),
+            _ => eprintln!("{skipped_num} files skipped"),
         }
 
         match error_num {
@@ -72,7 +89,7 @@ pub fn run(args: Args) -> Result<(), crate::Error> {
     Ok(())
 }
 
-fn inner_run<P>(args: Args, mut printer: P) -> Result<(usize, usize), Box<dyn std::error::Error>>
+fn inner_run<P>(args: Args, mut printer: P) -> Result<LintRunSummary, Box<dyn std::error::Error>>
 where
     Diagnostic: Print<P>,
     crate::Error: Print<P>,
@@ -110,8 +127,7 @@ where
 
         schema_result?;
         let total_num = input.len();
-        let mut success_num = 0;
-        let mut error_num = 0;
+        let mut summary = LintRunSummary::default();
 
         match input {
             FileSearch::Stdin => {
@@ -123,8 +139,8 @@ where
                     tombi_glob::get_lint_options(&config, stdin_path, config_path.as_deref())
                 else {
                     log::debug!("Linting disabled for stdin by override");
-                    success_num += 1;
-                    return Ok((success_num, error_num));
+                    summary.success_num += 1;
+                    return Ok(summary);
                 };
 
                 if lint_file(
@@ -138,9 +154,9 @@ where
                 )
                 .await
                 {
-                    success_num += 1;
+                    summary.success_num += 1;
                 } else {
-                    error_num += 1;
+                    summary.error_num += 1;
                 }
             }
             FileSearch::Files(files) => {
@@ -148,7 +164,7 @@ where
 
                 for file in files {
                     match file {
-                        Ok(source_path) => {
+                        FileSearchEntry::Found(source_path) => {
                             log::debug!("linting... {:?}", source_path);
 
                             // Get lint options with override support
@@ -158,7 +174,7 @@ where
                                 config_path.as_deref(),
                             ) else {
                                 log::debug!("Linting disabled for {:?} by override", source_path);
-                                success_num += 1;
+                                summary.success_num += 1;
                                 continue;
                             };
 
@@ -189,13 +205,16 @@ where
                                     } else {
                                         crate::Error::Io(err).print(&mut printer);
                                     }
-                                    error_num += 1;
+                                    summary.error_num += 1;
                                 }
                             }
                         }
-                        Err(err) => {
+                        FileSearchEntry::Skipped(_) => {
+                            summary.skipped_num += 1;
+                        }
+                        FileSearchEntry::Error(err) => {
                             crate::Error::TombiGlob(err).print(&mut printer);
-                            error_num += 1;
+                            summary.error_num += 1;
                         }
                     }
                 }
@@ -204,23 +223,26 @@ where
                     match result {
                         Ok(success) => {
                             if success {
-                                success_num += 1;
+                                summary.success_num += 1;
                             } else {
-                                error_num += 1;
+                                summary.error_num += 1;
                             }
                         }
                         Err(e) => {
                             log::error!("Task failed {}", e);
-                            error_num += 1;
+                            summary.error_num += 1;
                         }
                     }
                 }
             }
         }
 
-        debug_assert_eq!(success_num + error_num, total_num);
+        debug_assert_eq!(
+            summary.success_num + summary.skipped_num + summary.error_num,
+            total_num
+        );
 
-        Ok((success_num, error_num))
+        Ok(summary)
     })
 }
 
