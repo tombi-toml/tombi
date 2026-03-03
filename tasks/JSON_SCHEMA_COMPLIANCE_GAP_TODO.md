@@ -28,7 +28,7 @@
 ## 2. draft-07 TODO（基線）
 
 - [ ] `if` / `then` / `else` を実装する
-- [ ] `propertyNames` を実装する
+- [x] `propertyNames` を実装する（2026-03-03 対応）
 - [ ] `contains` を実装する（draft-07 の意味論）
 - [ ] `dependencies` を実装する  
   備考: 2019-09 以降は `dependentRequired` / `dependentSchemas` へ置換（将来版では legacy 扱い）
@@ -245,7 +245,7 @@ pub struct SchemaOverviewOptions {
 
 ### 中規模拡張で対応可能な領域（構造維持で進めやすい）
 
-- `if/then/else`, `propertyNames`, `dependentRequired`, `contains`, `minContains/maxContains` の追加
+- `if/then/else`, `dependentRequired`, `contains`, `minContains/maxContains` の追加
 - object/array の `const` / `enum` 検証追加
 - `format` サポート拡張、`readOnly`/`writeOnly`/content 系 annotation の保持
 
