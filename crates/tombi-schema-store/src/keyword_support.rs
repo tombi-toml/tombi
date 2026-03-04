@@ -64,11 +64,11 @@ pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
     match keyword {
         // 2020-12 で追加
         "prefixItems" | "$dynamicRef" | "$dynamicAnchor" => {
-            matches!(dialect, JsonSchemaDialect::Draft2020_12)
+            dialect >= JsonSchemaDialect::Draft2020_12
         }
         // 2020-12 で廃止
         "additionalItems" | "dependencies" | "$recursiveRef" | "$recursiveAnchor" => {
-            !matches!(dialect, JsonSchemaDialect::Draft2020_12)
+            dialect < JsonSchemaDialect::Draft2020_12
         }
         // 2019-09 以降
         "dependentRequired"
@@ -78,7 +78,7 @@ pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
         | "minContains"
         | "maxContains"
         | "$vocabulary"
-        | "$anchor" => !matches!(dialect, JsonSchemaDialect::Draft07),
+        | "$anchor" => dialect > JsonSchemaDialect::Draft07,
         _ => keyword_vocabulary(keyword)
             .map(|v| dialect_supports_vocabulary(dialect, v))
             .unwrap_or(true),
