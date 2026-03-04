@@ -62,15 +62,15 @@ pub fn dialect_supports_vocabulary(
 
 pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
     match keyword {
-        // 2020-12 で追加
+        // Added in 2020-12
         "prefixItems" | "$dynamicRef" | "$dynamicAnchor" => {
             dialect >= JsonSchemaDialect::Draft2020_12
         }
-        // 2020-12 で廃止
+        // Deprecated/removed in 2020-12
         "additionalItems" | "dependencies" | "$recursiveRef" | "$recursiveAnchor" => {
             dialect < JsonSchemaDialect::Draft2020_12
         }
-        // 2019-09 以降
+        // Available since 2019-09
         "dependentRequired"
         | "dependentSchemas"
         | "unevaluatedProperties"
