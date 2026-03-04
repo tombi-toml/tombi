@@ -67,9 +67,10 @@ pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
             dialect >= JsonSchemaDialect::Draft2020_12
         }
         // Deprecated/removed in 2020-12
-        "additionalItems" | "dependencies" | "$recursiveRef" | "$recursiveAnchor" => {
+        "additionalItems" | "dependencies" => {
             dialect < JsonSchemaDialect::Draft2020_12
         }
+        "$recursiveRef" | "$recursiveAnchor" => dialect == JsonSchemaDialect::Draft2019_09,
         // Available since 2019-09
         "dependentRequired"
         | "dependentSchemas"
@@ -127,57 +128,69 @@ pub fn collect_deprecated_keyword_usages(
     dialect: JsonSchemaDialect,
 ) -> Vec<DeprecatedKeywordUsage> {
     let mut usages = Vec::new();
-    collect_from_value_node(
-        &tombi_json::ValueNode::Object(root_object.clone()),
-        "#",
-        dialect,
-        &mut usages,
-    );
+    collect_from_object_node(root_object, "#", dialect, &mut usages);
     usages
 }
 
-fn collect_from_value_node(
-    node: &tombi_json::ValueNode,
+fn collect_from_object_node(
+    object: &tombi_json::ObjectNode,
     pointer: &str,
     dialect: JsonSchemaDialect,
     usages: &mut Vec<DeprecatedKeywordUsage>,
 ) {
-    match node {
-        tombi_json::ValueNode::Object(object) => {
-            for (key, value) in &object.properties {
-                let keyword = key.value.as_str();
-                let child_pointer = format!("{pointer}/{}", escape_json_pointer_token(keyword));
+    for (key, value) in &object.properties {
+        let keyword = key.value.as_str();
+        let child_pointer = format!("{pointer}/{}", escape_json_pointer_token(keyword));
 
-                if is_deprecated_in_dialect(dialect, keyword) {
-                    usages.push(DeprecatedKeywordUsage {
-                        keyword: keyword.to_string(),
-                        pointer: child_pointer.clone(),
-                        replacement_hint: replacement_hint(keyword),
-                    });
-                }
-
-                // draft-2020-12: array-form items is deprecated in favor of prefixItems.
-                if keyword == "items"
-                    && matches!(dialect, JsonSchemaDialect::Draft2020_12)
-                    && matches!(value, tombi_json::ValueNode::Array(_))
-                {
-                    usages.push(DeprecatedKeywordUsage {
-                        keyword: "tuple-items".to_string(),
-                        pointer: child_pointer.clone(),
-                        replacement_hint: replacement_hint("tuple-items"),
-                    });
-                }
-
-                collect_from_value_node(value, &child_pointer, dialect, usages);
-            }
+        if is_deprecated_in_dialect(dialect, keyword) {
+            usages.push(DeprecatedKeywordUsage {
+                keyword: keyword.to_string(),
+                pointer: child_pointer.clone(),
+                replacement_hint: replacement_hint(keyword),
+            });
         }
-        tombi_json::ValueNode::Array(array) => {
-            for (idx, value) in array.items.iter().enumerate() {
-                let child_pointer = format!("{pointer}/{idx}");
-                collect_from_value_node(value, &child_pointer, dialect, usages);
-            }
+
+        // draft-2020-12: array-form items is deprecated in favor of prefixItems.
+        if keyword == "items"
+            && matches!(dialect, JsonSchemaDialect::Draft2020_12)
+            && matches!(value, tombi_json::ValueNode::Array(_))
+        {
+            usages.push(DeprecatedKeywordUsage {
+                keyword: "tuple-items".to_string(),
+                pointer: child_pointer.clone(),
+                replacement_hint: replacement_hint("tuple-items"),
+            });
         }
-        _ => {}
+
+        match value {
+            tombi_json::ValueNode::Object(object) => {
+                collect_from_object_node(object, &child_pointer, dialect, usages);
+            }
+            tombi_json::ValueNode::Array(array) => {
+                collect_from_array_node(array, &child_pointer, dialect, usages);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn collect_from_array_node(
+    array: &tombi_json::ArrayNode,
+    pointer: &str,
+    dialect: JsonSchemaDialect,
+    usages: &mut Vec<DeprecatedKeywordUsage>,
+) {
+    for (idx, value) in array.items.iter().enumerate() {
+        let child_pointer = format!("{pointer}/{idx}");
+        match value {
+            tombi_json::ValueNode::Object(object) => {
+                collect_from_object_node(object, &child_pointer, dialect, usages);
+            }
+            tombi_json::ValueNode::Array(array) => {
+                collect_from_array_node(array, &child_pointer, dialect, usages);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -220,6 +233,10 @@ mod tests {
             JsonSchemaDialect::Draft2020_12,
             "additionalItems"
         ));
+        assert!(!supports_keyword(
+            JsonSchemaDialect::Draft2020_12,
+            "$recursiveRef"
+        ));
     }
 
     #[test]
@@ -231,6 +248,18 @@ mod tests {
         assert!(supports_keyword(
             JsonSchemaDialect::Draft2019_09,
             "dependentSchemas"
+        ));
+        assert!(supports_keyword(
+            JsonSchemaDialect::Draft2019_09,
+            "$recursiveAnchor"
+        ));
+    }
+
+    #[test]
+    fn draft_07_rejects_recursive_keywords() {
+        assert!(!supports_keyword(
+            JsonSchemaDialect::Draft07,
+            "$recursiveRef"
         ));
     }
 

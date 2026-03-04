@@ -35,6 +35,13 @@ impl ValueSchema {
     pub fn new(
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
+    ) -> Option<Self> {
+        Self::new_in_dialect(object, string_formats, None)
+    }
+
+    pub fn new_in_dialect(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         match object.get("type") {
@@ -822,7 +829,7 @@ mod tests {
     ) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new(object, None, dialect)
+        ValueSchema::new_in_dialect(object, None, dialect)
     }
 
     #[test]
@@ -976,7 +983,7 @@ mod tests {
     fn parse_schema_with_formats(json: &str, formats: &[StringFormat]) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new(
+        ValueSchema::new_in_dialect(
             object,
             Some(formats),
             Some(crate::JsonSchemaDialect::Draft07),

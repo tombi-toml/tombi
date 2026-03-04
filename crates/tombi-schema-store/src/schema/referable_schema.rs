@@ -83,9 +83,11 @@ impl Referable<ValueSchema> {
             });
         }
 
-        ValueSchema::new(object, string_formats, dialect).map(|value_schema| Referable::Resolved {
-            schema_uri: None,
-            value: Arc::new(value_schema),
+        ValueSchema::new_in_dialect(object, string_formats, dialect).map(|value_schema| {
+            Referable::Resolved {
+                schema_uri: None,
+                value: Arc::new(value_schema),
+            }
         })
     }
 
@@ -165,11 +167,13 @@ impl Referable<ValueSchema> {
                         if let Some(schema_value) =
                             schema_store.fetch_schema_value(&schema_uri).await?
                         {
-                            let dialect = schema_store
-                                .try_get_document_schema(schema_uri.as_ref())
-                                .await?
-                                .as_ref()
-                                .and_then(|doc| doc.dialect());
+                            let dialect = schema_value
+                                .as_object()
+                                .and_then(|object| object.get("$schema"))
+                                .and_then(|value| value.as_str())
+                                .and_then(|dialect_uri| {
+                                    crate::JsonSchemaDialect::try_from(dialect_uri).ok()
+                                });
                             if let Some(mut resolved_schema) = resolve_json_pointer(
                                 &schema_value,
                                 pointer,
@@ -525,7 +529,7 @@ pub fn resolve_json_pointer(
     if path.is_empty() {
         return Ok(schema_node
             .as_object()
-            .and_then(|obj| ValueSchema::new(obj, string_formats, dialect)));
+            .and_then(|obj| ValueSchema::new_in_dialect(obj, string_formats, dialect)));
     }
 
     // RFC 6901: Percent-decode the path before splitting on '/'
@@ -563,7 +567,9 @@ pub fn resolve_json_pointer(
 
     // Convert the final ValueNode to ValueSchema
     match current {
-        tombi_json::ValueNode::Object(obj) => Ok(ValueSchema::new(obj, string_formats, dialect)),
+        tombi_json::ValueNode::Object(obj) => {
+            Ok(ValueSchema::new_in_dialect(obj, string_formats, dialect))
+        }
         _ => Ok(None),
     }
 }

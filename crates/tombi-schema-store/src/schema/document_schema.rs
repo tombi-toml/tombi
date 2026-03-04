@@ -52,7 +52,7 @@ impl DocumentSchema {
             });
 
         let value_schema =
-            ValueSchema::new(&object, string_formats.as_deref(), dialect).map(Arc::new);
+            ValueSchema::new_in_dialect(&object, string_formats.as_deref(), dialect).map(Arc::new);
         let mut definitions = AHashMap::default();
         if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
             for (key, value) in object.properties.iter() {

@@ -485,29 +485,46 @@ impl SchemaStore {
             }
             None => return Ok(None),
         };
-        let document_schema = DocumentSchema::new(object.clone(), schema_uri.clone());
-        let deprecated_keyword_usages = crate::collect_deprecated_keyword_usages(
-            &object,
-            document_schema.dialect().unwrap_or_default(),
-        );
+        let dialect = object
+            .get("$schema")
+            .and_then(|value| value.as_str())
+            .and_then(|dialect_uri| crate::JsonSchemaDialect::try_from(dialect_uri).ok())
+            .unwrap_or_default();
+        let deprecated_keyword_usages = crate::collect_deprecated_keyword_usages(&object, dialect);
+        let document_schema = DocumentSchema::new(object, schema_uri.clone());
         if !deprecated_keyword_usages.is_empty() {
-            for usage in deprecated_keyword_usages {
-                if let Some(replacement_hint) = usage.replacement_hint {
-                    log::warn!(
-                        "deprecated JSON Schema keyword used for current dialect: schema_uri={} keyword={} pointer={} hint={}",
-                        schema_uri,
-                        usage.keyword,
-                        usage.pointer,
-                        replacement_hint,
-                    );
-                } else {
-                    log::warn!(
-                        "deprecated JSON Schema keyword used for current dialect: schema_uri={} keyword={} pointer={}",
-                        schema_uri,
-                        usage.keyword,
-                        usage.pointer,
-                    );
-                }
+            let total = deprecated_keyword_usages.len();
+            let sample_limit = 3;
+            let samples: Vec<String> = deprecated_keyword_usages
+                .iter()
+                .take(sample_limit)
+                .map(|usage| {
+                    if let Some(replacement_hint) = usage.replacement_hint {
+                        format!(
+                            "keyword={} pointer={} hint={}",
+                            usage.keyword, usage.pointer, replacement_hint
+                        )
+                    } else {
+                        format!("keyword={} pointer={}", usage.keyword, usage.pointer)
+                    }
+                })
+                .collect();
+            let remaining = total.saturating_sub(samples.len());
+            if remaining > 0 {
+                log::warn!(
+                    "deprecated JSON Schema keywords used for current dialect: schema_uri={} count={} samples=[{}] ... ({} more occurrences not shown)",
+                    schema_uri,
+                    total,
+                    samples.join("; "),
+                    remaining,
+                );
+            } else {
+                log::warn!(
+                    "deprecated JSON Schema keywords used for current dialect: schema_uri={} count={} samples=[{}]",
+                    schema_uri,
+                    total,
+                    samples.join("; "),
+                );
             }
         }
         if let Some(
