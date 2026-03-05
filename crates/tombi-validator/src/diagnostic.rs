@@ -110,6 +110,9 @@ pub enum DiagnosticKind {
     #[error("Array values must be unique")]
     ArrayUniqueValues,
 
+    #[error("Additional items are not allowed (tuple schema has {max_items} items)")]
+    ArrayAdditionalItems { max_items: usize },
+
     #[error("Table must contain at most {max_keys} keys, but found {actual}")]
     TableMaxKeys { max_keys: usize, actual: usize },
 
@@ -173,6 +176,7 @@ impl DiagnosticKind {
             DiagnosticKind::ArrayMinValues { .. } => "array-min-values",
             DiagnosticKind::ArrayContains => "array-contains",
             DiagnosticKind::ArrayUniqueValues => "array-unique-values",
+            DiagnosticKind::ArrayAdditionalItems { .. } => "array-additional-items",
             DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
             DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
             DiagnosticKind::TableKeyRequired { .. } => "table-key-required",

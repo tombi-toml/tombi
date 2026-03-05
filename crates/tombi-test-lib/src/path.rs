@@ -65,3 +65,9 @@ pub fn dependencies_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("dependencies-test.schema.json")
 }
+
+pub fn tuple_items_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("tuple-items-test.schema.json")
+}

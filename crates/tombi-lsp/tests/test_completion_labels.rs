@@ -612,6 +612,7 @@ mod completion_labels {
                 "if-then-else-test.schema.json",
                 "partial-taskipy.schema.json",
                 "recursive-schema.schema.json",
+                "tuple-items-test.schema.json",
                 "type-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",
