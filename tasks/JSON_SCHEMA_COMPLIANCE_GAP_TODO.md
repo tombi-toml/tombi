@@ -80,8 +80,8 @@
 ### Phase A: Dialect 基盤
 
 - [x] `schema.options` と `SchemaStore::Options` に dialect 設定を追加する（2026-03-03 対応）
-- [ ] キーワード判定を `dialect x vocabulary` ベースへ変更する
-- [ ] 廃止キーワード判定フック（`deprecated_in`）を導入する
+- [x] キーワード判定を `dialect x vocabulary` ベースへ変更する（2026-03-03 対応）
+- [x] 廃止キーワード判定フック（`deprecated_in`）を導入する（2026-03-03 対応）
 
 ### Phase B: draft-07 準拠を固定
 

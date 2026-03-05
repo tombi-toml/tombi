@@ -39,9 +39,17 @@ impl ValueSchema {
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
     ) -> Option<Self> {
+        Self::new_in_dialect(object, string_formats, None)
+    }
+
+    pub fn new_in_dialect(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Option<Self> {
         match object.get("type") {
             Some(tombi_json::ValueNode::String(type_str)) => {
-                return Self::new_single(type_str.value.as_str(), object, string_formats);
+                return Self::new_single(type_str.value.as_str(), object, string_formats, dialect);
             }
             Some(tombi_json::ValueNode::Array(types)) => {
                 let schemas = types
@@ -49,7 +57,12 @@ impl ValueSchema {
                     .iter()
                     .filter_map(|type_value| {
                         if let tombi_json::ValueNode::String(type_str) = type_value {
-                            Self::new_single(type_str.value.as_str(), object, string_formats)
+                            Self::new_single(
+                                type_str.value.as_str(),
+                                object,
+                                string_formats,
+                                dialect,
+                            )
                         } else {
                             None
                         }
@@ -69,16 +82,28 @@ impl ValueSchema {
         }
 
         if object.get("oneOf").is_some() {
-            return Some(ValueSchema::OneOf(OneOfSchema::new(object, string_formats)));
+            return Some(ValueSchema::OneOf(OneOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+            )));
         }
         if object.get("anyOf").is_some() {
-            return Some(ValueSchema::AnyOf(AnyOfSchema::new(object, string_formats)));
+            return Some(ValueSchema::AnyOf(AnyOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+            )));
         }
         if object.get("allOf").is_some() {
-            return Some(ValueSchema::AllOf(AllOfSchema::new(object, string_formats)));
+            return Some(ValueSchema::AllOf(AllOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+            )));
         }
         if let Some(tombi_json::ValueNode::Array(enum_values)) = object.get("enum") {
-            return Self::new_enum_value(object, enum_values, string_formats);
+            return Self::new_enum_value(object, enum_values, string_formats, dialect);
         }
 
         // Handle "const" keyword without explicit "type"
@@ -98,12 +123,12 @@ impl ValueSchema {
                 tombi_json::ValueNode::Array(_) => "array",
                 tombi_json::ValueNode::Object(_) => "object",
             };
-            return Self::new_single(inferred_type, object, string_formats);
+            return Self::new_single(inferred_type, object, string_formats, dialect);
         }
 
         // Infer type from type-specific keywords when "type" is not explicitly specified
-        if let Some(inferred_type) = Self::infer_type_from_keywords(object) {
-            return Self::new_single(inferred_type, object, string_formats);
+        if let Some(inferred_type) = Self::infer_type_from_keywords(object, dialect) {
+            return Self::new_single(inferred_type, object, string_formats, dialect);
         }
 
         None
@@ -118,44 +143,51 @@ impl ValueSchema {
     /// - Array: items, prefixItems, minItems, maxItems, uniqueItems
     /// - Object: properties, patternProperties, additionalProperties, required,
     ///           minProperties, maxProperties, propertyNames
-    fn infer_type_from_keywords(object: &tombi_json::ObjectNode) -> Option<&'static str> {
+    fn infer_type_from_keywords(
+        object: &tombi_json::ObjectNode,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Option<&'static str> {
+        let dialect = dialect.unwrap_or_default();
+        let supports_keyword = |keyword: &str| crate::supports_keyword(dialect, keyword);
+
         // String-specific keywords
-        if object.get("minLength").is_some()
-            || object.get("maxLength").is_some()
-            || object.get("pattern").is_some()
-            || object.get("format").is_some()
+        if (supports_keyword("minLength") && object.get("minLength").is_some())
+            || (supports_keyword("maxLength") && object.get("maxLength").is_some())
+            || (supports_keyword("pattern") && object.get("pattern").is_some())
+            || (supports_keyword("format") && object.get("format").is_some())
         {
             return Some("string");
         }
 
         // Numeric-specific keywords (use "number" as the broader type)
-        if object.get("minimum").is_some()
-            || object.get("maximum").is_some()
-            || object.get("exclusiveMinimum").is_some()
-            || object.get("exclusiveMaximum").is_some()
-            || object.get("multipleOf").is_some()
+        if (supports_keyword("minimum") && object.get("minimum").is_some())
+            || (supports_keyword("maximum") && object.get("maximum").is_some())
+            || (supports_keyword("exclusiveMinimum") && object.get("exclusiveMinimum").is_some())
+            || (supports_keyword("exclusiveMaximum") && object.get("exclusiveMaximum").is_some())
+            || (supports_keyword("multipleOf") && object.get("multipleOf").is_some())
         {
             return Some("number");
         }
 
         // Array-specific keywords
-        if object.get("items").is_some()
-            || object.get("prefixItems").is_some()
-            || object.get("minItems").is_some()
-            || object.get("maxItems").is_some()
-            || object.get("uniqueItems").is_some()
+        if (supports_keyword("items") && object.get("items").is_some())
+            || (supports_keyword("prefixItems") && object.get("prefixItems").is_some())
+            || (supports_keyword("minItems") && object.get("minItems").is_some())
+            || (supports_keyword("maxItems") && object.get("maxItems").is_some())
+            || (supports_keyword("uniqueItems") && object.get("uniqueItems").is_some())
         {
             return Some("array");
         }
 
         // Object-specific keywords
-        if object.get("properties").is_some()
-            || object.get("patternProperties").is_some()
-            || object.get("additionalProperties").is_some()
-            || object.get("required").is_some()
-            || object.get("minProperties").is_some()
-            || object.get("maxProperties").is_some()
-            || object.get("propertyNames").is_some()
+        if (supports_keyword("properties") && object.get("properties").is_some())
+            || (supports_keyword("patternProperties") && object.get("patternProperties").is_some())
+            || (supports_keyword("additionalProperties")
+                && object.get("additionalProperties").is_some())
+            || (supports_keyword("required") && object.get("required").is_some())
+            || (supports_keyword("minProperties") && object.get("minProperties").is_some())
+            || (supports_keyword("maxProperties") && object.get("maxProperties").is_some())
+            || (supports_keyword("propertyNames") && object.get("propertyNames").is_some())
         {
             return Some("object");
         }
@@ -167,6 +199,7 @@ impl ValueSchema {
         type_str: &str,
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         match type_str {
             "null" => Some(ValueSchema::Null),
@@ -221,8 +254,16 @@ impl ValueSchema {
                     string_format,
                 )))
             }
-            "array" => Some(ValueSchema::Array(ArraySchema::new(object, string_formats))),
-            "object" => Some(ValueSchema::Table(TableSchema::new(object, string_formats))),
+            "array" => Some(ValueSchema::Array(ArraySchema::new(
+                object,
+                string_formats,
+                dialect,
+            ))),
+            "object" => Some(ValueSchema::Table(TableSchema::new(
+                object,
+                string_formats,
+                dialect,
+            ))),
             _ => None,
         }
     }
@@ -231,6 +272,7 @@ impl ValueSchema {
         object: &tombi_json::ObjectNode,
         enum_values: &tombi_json::ArrayNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         let mut enum_types = IndexSet::new();
         for enum_value in &enum_values.items {
@@ -265,12 +307,14 @@ impl ValueSchema {
             0 => None,
             1 => {
                 let value_type = enum_types.into_iter().next().unwrap();
-                Self::new_single(value_type, object, string_formats)
+                Self::new_single(value_type, object, string_formats, dialect)
             }
             _ => {
                 let mut schemas = Vec::with_capacity(enum_types.len());
                 for value_type in enum_types {
-                    if let Some(schema) = Self::new_single(value_type, object, string_formats) {
+                    if let Some(schema) =
+                        Self::new_single(value_type, object, string_formats, dialect)
+                    {
                         schemas.push(Referable::Resolved {
                             schema_uri: None,
                             value: Arc::new(schema),
@@ -300,8 +344,8 @@ impl ValueSchema {
                     keys_order: object
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-                    not: NotSchema::new(object, string_formats),
-                    if_then_else: IfThenElseSchema::new(object, string_formats).map(Box::new),
+                    not: NotSchema::new(object, string_formats, dialect),
+                    if_then_else: IfThenElseSchema::new(object, string_formats, dialect).map(Box::new),
                 }))
             }
         }
@@ -783,15 +827,21 @@ mod tests {
     use super::*;
     use std::str::FromStr;
 
-    fn parse_schema(json: &str) -> Option<ValueSchema> {
+    fn parse_schema_with_dialect(
+        json: &str,
+        dialect: Option<crate::JsonSchemaDialect>,
+    ) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new(object, None)
+        ValueSchema::new_in_dialect(object, None, dialect)
     }
 
     #[test]
     fn test_const_string_creates_string_schema() {
-        let schema = parse_schema(r#"{ "const": "dynamic" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": "dynamic" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::String(_))));
 
         let Some(ValueSchema::String(s)) = schema else {
@@ -802,7 +852,10 @@ mod tests {
 
     #[test]
     fn test_const_boolean_creates_boolean_schema() {
-        let schema = parse_schema(r#"{ "const": true }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": true }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Boolean(_))));
 
         let Some(ValueSchema::Boolean(b)) = schema else {
@@ -813,7 +866,10 @@ mod tests {
 
     #[test]
     fn test_const_integer_creates_integer_schema() {
-        let schema = parse_schema(r#"{ "const": 42 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": 42 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Integer(_))));
 
         let Some(ValueSchema::Integer(i)) = schema else {
@@ -825,7 +881,10 @@ mod tests {
     #[test]
     #[allow(clippy::approx_constant)]
     fn test_const_float_creates_float_schema() {
-        let schema = parse_schema(r#"{ "const": 3.14 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": 3.14 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
 
         if let Some(ValueSchema::Float(f)) = schema {
@@ -835,20 +894,24 @@ mod tests {
 
     #[test]
     fn test_const_null_creates_null_schema() {
-        let schema = parse_schema(r#"{ "const": null }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": null }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Null)));
     }
 
     #[tokio::test]
     async fn test_anyof_with_const_and_ref_style_integer() {
         // Simulates ruff schema: anyOf with integer and const "dynamic"
-        let schema = parse_schema(
+        let schema = parse_schema_with_dialect(
             r#"{
                 "anyOf": [
                     { "type": "integer" },
                     { "const": "dynamic" }
                 ]
             }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(matches!(schema, Some(ValueSchema::AnyOf(_))));
 
@@ -869,58 +932,86 @@ mod tests {
 
     #[test]
     fn test_const_array_creates_array_schema() {
-        let schema = parse_schema(r#"{ "const": [1, 2, 3] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": [1, 2, 3] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
     fn test_const_empty_array_creates_array_schema() {
-        let schema = parse_schema(r#"{ "const": [] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": [] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
     fn test_const_object_creates_table_schema() {
-        let schema = parse_schema(r#"{ "const": {"key": "value"} }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": {"key": "value"} }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_const_empty_object_creates_table_schema() {
-        let schema = parse_schema(r#"{ "const": {} }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": {} }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_const_nested_array_creates_array_schema() {
-        let schema = parse_schema(r#"{ "const": [[1, 2], [3, 4]] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": [[1, 2], [3, 4]] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
     fn test_const_nested_object_creates_table_schema() {
-        let schema = parse_schema(r#"{ "const": {"nested": {"key": "value"}} }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": {"nested": {"key": "value"}} }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     fn parse_schema_with_formats(json: &str, formats: &[StringFormat]) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new(object, Some(formats))
+        ValueSchema::new_in_dialect(
+            object,
+            Some(formats),
+            Some(crate::JsonSchemaDialect::Draft07),
+        )
     }
 
     #[test]
     fn test_const_string_with_format_uses_new_single() {
         // When const has a format field, it should be processed through new_single
         // which handles date-time formats properly
-        let schema = parse_schema(r#"{ "const": "2024-01-10", "format": "date" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": "2024-01-10", "format": "date" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         // Should create LocalDateSchema, not StringSchema
         assert!(matches!(schema, Some(ValueSchema::LocalDate(_))));
     }
 
     #[test]
     fn test_const_string_with_datetime_format() {
-        let schema = parse_schema(r#"{ "const": "2024-01-10T12:00:00Z", "format": "date-time" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "const": "2024-01-10T12:00:00Z", "format": "date-time" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::OffsetDateTime(_))));
     }
 
@@ -941,14 +1032,20 @@ mod tests {
     #[test]
     fn test_enum_integer_creates_integer_schema() {
         // enum with integers should create IntegerSchema, not FloatSchema
-        let schema = parse_schema(r#"{ "enum": [1, 2, 3] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "enum": [1, 2, 3] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Integer(_))));
     }
 
     #[test]
     fn test_enum_float_creates_float_schema() {
         // enum with floats should create FloatSchema
-        let schema = parse_schema(r#"{ "enum": [1.5, 2.5, 3.5] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "enum": [1.5, 2.5, 3.5] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
 
@@ -958,7 +1055,10 @@ mod tests {
         // and only number should remain, resulting in FloatSchema
         // This tests the logic at lines 198-200: if enum_types contains both
         // "number" and "integer", "integer" is removed
-        let schema = parse_schema(r#"{ "enum": [1, 2.5] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "enum": [1, 2.5] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         // After removing integer, only number remains, so FloatSchema should be created
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
@@ -968,7 +1068,10 @@ mod tests {
         // When enum contains integers, floats, and other types (e.g., string),
         // integer should be removed (lines 198-200), leaving number and string,
         // resulting in OneOf with FloatSchema and StringSchema (but not IntegerSchema)
-        let schema = parse_schema(r#"{ "enum": [1, 2.5, "text"] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "enum": [1, 2.5, "text"] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
 
         let Some(ValueSchema::OneOf(one_of)) = schema else {
             panic!("schema is not a OneOf schema");
@@ -988,128 +1091,204 @@ mod tests {
 
     #[test]
     fn test_infer_string_from_min_length() {
-        let schema = parse_schema(r#"{ "minLength": 1 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "minLength": 1 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::String(_))));
     }
 
     #[test]
     fn test_infer_string_from_max_length() {
-        let schema = parse_schema(r#"{ "maxLength": 100 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "maxLength": 100 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::String(_))));
     }
 
     #[test]
     fn test_infer_string_from_pattern() {
-        let schema = parse_schema(r#"{ "pattern": "^[a-z]+$" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "pattern": "^[a-z]+$" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::String(_))));
     }
 
     #[test]
     fn test_infer_string_from_format() {
-        let schema = parse_schema(r#"{ "format": "date" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "format": "date" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::LocalDate(_))));
     }
 
     #[test]
     fn test_infer_string_from_format_datetime() {
-        let schema = parse_schema(r#"{ "format": "date-time" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "format": "date-time" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::OffsetDateTime(_))));
     }
 
     #[test]
     fn test_infer_number_from_minimum() {
-        let schema = parse_schema(r#"{ "minimum": 0 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "minimum": 0 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
 
     #[test]
     fn test_infer_number_from_maximum() {
-        let schema = parse_schema(r#"{ "maximum": 100 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "maximum": 100 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
 
     #[test]
     fn test_infer_number_from_exclusive_minimum() {
-        let schema = parse_schema(r#"{ "exclusiveMinimum": 0 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "exclusiveMinimum": 0 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
 
     #[test]
     fn test_infer_number_from_exclusive_maximum() {
-        let schema = parse_schema(r#"{ "exclusiveMaximum": 100 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "exclusiveMaximum": 100 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
 
     #[test]
     fn test_infer_number_from_multiple_of() {
-        let schema = parse_schema(r#"{ "multipleOf": 5 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "multipleOf": 5 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
     }
 
     #[test]
     fn test_infer_array_from_items() {
-        let schema = parse_schema(r#"{ "items": { "type": "string" } }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "items": { "type": "string" } }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
     fn test_infer_array_from_min_items() {
-        let schema = parse_schema(r#"{ "minItems": 1 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "minItems": 1 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
     fn test_infer_array_from_max_items() {
-        let schema = parse_schema(r#"{ "maxItems": 10 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "maxItems": 10 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
     fn test_infer_array_from_unique_items() {
-        let schema = parse_schema(r#"{ "uniqueItems": true }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "uniqueItems": true }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
     }
 
     #[test]
+    fn test_infer_array_from_prefix_items_only_in_2020_12() {
+        let schema_2020 = parse_schema_with_dialect(
+            r#"{ "prefixItems": [ { "type": "string" } ] }"#,
+            Some(crate::JsonSchemaDialect::Draft2020_12),
+        );
+        assert!(matches!(schema_2020, Some(ValueSchema::Array(_))));
+
+        let schema_07 = parse_schema_with_dialect(
+            r#"{ "prefixItems": [ { "type": "string" } ] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(schema_07.is_none());
+    }
+
+    #[test]
     fn test_infer_object_from_properties() {
-        let schema = parse_schema(r#"{ "properties": { "name": { "type": "string" } } }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "properties": { "name": { "type": "string" } } }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_infer_object_from_required() {
-        let schema = parse_schema(r#"{ "required": ["name"] }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "required": ["name"] }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_infer_object_from_additional_properties() {
-        let schema = parse_schema(r#"{ "additionalProperties": false }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "additionalProperties": false }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_infer_object_from_min_properties() {
-        let schema = parse_schema(r#"{ "minProperties": 1 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "minProperties": 1 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_infer_object_from_max_properties() {
-        let schema = parse_schema(r#"{ "maxProperties": 10 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "maxProperties": 10 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_infer_object_from_property_names() {
-        let schema = parse_schema(r#"{ "propertyNames": { "pattern": "^[a-z]+$" } }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "propertyNames": { "pattern": "^[a-z]+$" } }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Table(_))));
     }
 
     #[test]
     fn test_infer_string_with_additional_metadata() {
-        let schema = parse_schema(
+        let schema = parse_schema_with_dialect(
             r#"{ "minLength": 1, "maxLength": 50, "title": "Name", "description": "A name" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(matches!(schema, Some(ValueSchema::String(_))));
         if let Some(ValueSchema::String(s)) = schema {
@@ -1122,7 +1301,10 @@ mod tests {
 
     #[test]
     fn test_infer_number_with_range() {
-        let schema = parse_schema(r#"{ "minimum": 0, "maximum": 100 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "minimum": 0, "maximum": 100 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Float(_))));
         if let Some(ValueSchema::Float(f)) = schema {
             assert_eq!(f.minimum, Some(0.0));
@@ -1133,14 +1315,20 @@ mod tests {
     #[test]
     fn test_no_inference_without_type_specific_keywords() {
         // Only common keywords like title/description should not trigger inference
-        let schema = parse_schema(r#"{ "title": "Something", "description": "A thing" }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "title": "Something", "description": "A thing" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(schema.is_none());
     }
 
     #[test]
     fn test_explicit_type_takes_precedence_over_inference() {
         // When type is explicitly specified, it should be used regardless of keywords
-        let schema = parse_schema(r#"{ "type": "integer", "minimum": 0 }"#);
+        let schema = parse_schema_with_dialect(
+            r#"{ "type": "integer", "minimum": 0 }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(matches!(schema, Some(ValueSchema::Integer(_))));
     }
 }

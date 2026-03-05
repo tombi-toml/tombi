@@ -2,7 +2,7 @@ use tombi_uri::Uri;
 
 const JSON_SCHEMA_HOST: &str = "json-schema.org";
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchemaDialect {
     #[default]
     Draft07,

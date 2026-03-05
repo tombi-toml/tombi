@@ -53,6 +53,7 @@ impl TableSchema {
     pub fn new(
         object_node: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Self {
         let mut properties = IndexMap::new();
         if let Some(tombi_json::ValueNode::Object(object_node)) = object_node.get("properties") {
@@ -60,7 +61,8 @@ impl TableSchema {
                 let Some(object) = value_node.as_object() else {
                     continue;
                 };
-                if let Some(property_schema) = Referable::<ValueSchema>::new(object, string_formats)
+                if let Some(property_schema) =
+                    Referable::<ValueSchema>::new(object, string_formats, dialect)
                 {
                     properties.insert(
                         SchemaAccessor::Key(key_node.value.to_string()),
@@ -80,7 +82,7 @@ impl TableSchema {
                         continue;
                     };
                     if let Some(value_schema) =
-                        Referable::<ValueSchema>::new(object, string_formats)
+                        Referable::<ValueSchema>::new(object, string_formats, dialect)
                     {
                         pattern_properties.insert(pattern.clone(), value_schema);
                     }
@@ -94,7 +96,8 @@ impl TableSchema {
             match object_node.get("additionalProperties") {
                 Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
                 Some(tombi_json::ValueNode::Object(object_node)) => {
-                    let value_schema = Referable::<ValueSchema>::new(object_node, string_formats);
+                    let value_schema =
+                        Referable::<ValueSchema>::new(object_node, string_formats, dialect);
                     (
                         Some(true),
                         value_schema.map(|schema| {
@@ -200,12 +203,12 @@ impl TableSchema {
             additional_key_label: object_node
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
-            not: NotSchema::new(object_node, string_formats),
-            if_then_else: IfThenElseSchema::new(object_node, string_formats).map(Box::new),
+            not: NotSchema::new(object_node, string_formats, dialect),
+            if_then_else: IfThenElseSchema::new(object_node, string_formats, dialect).map(Box::new),
             property_names: object_node
                 .get("propertyNames")
                 .and_then(|v| v.as_object())
-                .and_then(|v| Referable::<ValueSchema>::new(v, string_formats))
+                .and_then(|v| Referable::<ValueSchema>::new(v, string_formats, dialect))
                 .map(|schema| Arc::new(tokio::sync::RwLock::new(schema))),
         }
     }

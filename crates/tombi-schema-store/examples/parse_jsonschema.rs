@@ -47,7 +47,10 @@ fn main() {
                 }
             };
 
-            println!("{:#?}", DocumentSchema::new(object_node, schema_uri));
+            println!(
+                "{:#?}",
+                DocumentSchema::new(object_node, schema_uri)
+            );
         }
         Err(err) => {
             eprintln!("❌ Parse error: {}", err);
