@@ -30,7 +30,7 @@
 - [x] `if` / `then` / `else` を実装する
 - [x] `propertyNames` を実装する（2026-03-03 対応）
 - [x] `contains` を実装する（draft-07 の意味論）（2026-03-05 対応）
-- [ ] `dependencies` を実装する  
+- [x] `dependencies` を実装する（2026-03-05 対応）
   備考: 2019-09 以降は `dependentRequired` / `dependentSchemas` へ置換（将来版では legacy 扱い）
 - [ ] `items` の tuple 形式（配列）を実装する  
   備考: 2020-12 で廃止、`prefixItems` に置換

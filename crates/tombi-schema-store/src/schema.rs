@@ -44,7 +44,7 @@ pub use schema_context::SchemaContext;
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
 pub use source_schema::{SourceSchema, SubSchemaUriMap};
 pub use string_schema::StringSchema;
-pub use table_schema::{TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
+pub use table_schema::{Dependency, TableKeysOrderGroup, TableSchema, XTombiTableKeysOrder};
 pub use tombi_accessor::{SchemaAccessor, SchemaAccessors};
 pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;

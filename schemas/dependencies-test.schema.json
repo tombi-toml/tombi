@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DependenciesTest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "credit_card": {
+      "type": "string"
+    },
+    "billing_address": {
+      "type": "string"
+    },
+    "shipping_address": {
+      "type": "string"
+    },
+    "use_ssl": {
+      "type": "boolean"
+    },
+    "ssl_certificate": {
+      "type": "string"
+    },
+    "ssl_key": {
+      "type": "string"
+    },
+    "protocol": {
+      "type": "string"
+    },
+    "port": {
+      "type": "integer"
+    }
+  },
+  "dependencies": {
+    "credit_card": ["billing_address", "shipping_address"],
+    "use_ssl": {
+      "properties": {
+        "ssl_certificate": {
+          "type": "string"
+        },
+        "ssl_key": {
+          "type": "string"
+        }
+      },
+      "required": ["ssl_certificate", "ssl_key"],
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
