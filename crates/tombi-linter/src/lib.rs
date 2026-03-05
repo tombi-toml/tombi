@@ -225,7 +225,7 @@ mod tests {
                 aaa = 1
                 "#,
                 SchemaPath(cargo_schema_path()),
-            ) -> Err([tombi_validator::DiagnosticKind::StrictAdditionalKeys {
+            ) -> Err([tombi_validator::DiagnosticKind::TableStrictAdditionalKeys {
                 accessors: tombi_schema_store::SchemaAccessors::from(vec![
                     tombi_schema_store::SchemaAccessor::Key("workspace".to_string()),
                 ]),
@@ -454,11 +454,11 @@ mod tests {
                 "#,
                 SchemaPath(dependencies_test_schema_path()),
             ) -> Err([
-                tombi_validator::DiagnosticKind::DependencyRequired {
+                tombi_validator::DiagnosticKind::TableDependencyRequired {
                     dependent_key: "credit_card".to_string(),
                     required_key: "billing_address".to_string(),
                 },
-                tombi_validator::DiagnosticKind::DependencyRequired {
+                tombi_validator::DiagnosticKind::TableDependencyRequired {
                     dependent_key: "credit_card".to_string(),
                     required_key: "shipping_address".to_string(),
                 },
