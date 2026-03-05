@@ -26,7 +26,7 @@ pub enum DiagnosticKind {
          {schema_uri}, or add `#:tombi schema.strict = false` as a document comment directive at the \
          top of your document, or set `schema.strict = false` in your `tombi.toml`."
     )]
-    StrictAdditionalKeys {
+    TableStrictAdditionalKeys {
         accessors: SchemaAccessors,
         key: String,
         schema_uri: SchemaUri,
@@ -129,7 +129,7 @@ pub enum DiagnosticKind {
     NotSchemaMatch,
 
     #[error("When \"{dependent_key}\" is present, \"{required_key}\" is required")]
-    DependencyRequired {
+    TableDependencyRequired {
         dependent_key: String,
         required_key: String,
     },
@@ -149,7 +149,7 @@ impl DiagnosticKind {
             DiagnosticKind::Deprecated { .. } | DiagnosticKind::DeprecatedValue { .. } => {
                 "deprecated"
             }
-            DiagnosticKind::StrictAdditionalKeys { .. } => "strict-additional-keys",
+            DiagnosticKind::TableStrictAdditionalKeys { .. } => "table-strict-additional-keys",
             DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
             DiagnosticKind::KeyPattern { .. } => "key-pattern",
             DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
@@ -179,7 +179,7 @@ impl DiagnosticKind {
             DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
             DiagnosticKind::NotSchemaMatch => "not-schema-match",
             DiagnosticKind::KeyEmpty => "key-empty",
-            DiagnosticKind::DependencyRequired { .. } => "dependency-required",
+            DiagnosticKind::TableDependencyRequired { .. } => "table-dependency-required",
         }
     }
 }

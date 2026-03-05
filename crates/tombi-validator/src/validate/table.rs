@@ -308,7 +308,7 @@ async fn validate_table(
             }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::StrictAdditionalKeys {
+                    kind: Box::new(crate::DiagnosticKind::TableStrictAdditionalKeys {
                         accessors: SchemaAccessors::from(accessors),
                         schema_uri: current_schema.schema_uri.as_ref().clone(),
                         key: key.to_string(),
@@ -475,7 +475,7 @@ async fn validate_table(
                     for required_key in required_keys {
                         if !keys.contains(&required_key) {
                             crate::Diagnostic {
-                                kind: Box::new(crate::DiagnosticKind::DependencyRequired {
+                                kind: Box::new(crate::DiagnosticKind::TableDependencyRequired {
                                     dependent_key: dependent_key.to_string(),
                                     required_key: required_key.to_string(),
                                 }),
