@@ -7,7 +7,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use super::Validate;
-use crate::validate::not_schema::validate_not;
+use crate::validate::{if_then_else::validate_if_then_else, not_schema::validate_not};
 use crate::validate::{validate_deprecated, validate_resolved_schema};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
@@ -35,6 +35,17 @@ where
                 schema_context,
                 comment_directives.map(|directives| directives.iter()),
                 common_rules,
+            )
+            .await?;
+        }
+
+        if let Some(if_then_else_schema) = any_of_schema.if_then_else.as_ref() {
+            validate_if_then_else(
+                value,
+                accessors,
+                if_then_else_schema,
+                current_schema,
+                schema_context,
             )
             .await?;
         }

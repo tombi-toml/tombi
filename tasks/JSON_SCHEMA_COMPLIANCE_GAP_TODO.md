@@ -27,7 +27,7 @@
 
 ## 2. draft-07 TODO（基線）
 
-- [ ] `if` / `then` / `else` を実装する
+- [x] `if` / `then` / `else` を実装する
 - [x] `propertyNames` を実装する（2026-03-03 対応）
 - [ ] `contains` を実装する（draft-07 の意味論）
 - [ ] `dependencies` を実装する  

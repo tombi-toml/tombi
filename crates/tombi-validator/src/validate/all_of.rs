@@ -6,7 +6,9 @@ use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
-use crate::validate::{handle_deprecated, not_schema::validate_not};
+use crate::validate::{
+    handle_deprecated, if_then_else::validate_if_then_else, not_schema::validate_not,
+};
 
 use super::Validate;
 
@@ -72,6 +74,19 @@ where
                 schema_context,
                 comment_directives.map(|directives| directives.iter()),
                 common_rules,
+            )
+            .await
+        {
+            total_diagnostics.extend(error.diagnostics);
+        }
+
+        if let Some(if_then_else_schema) = all_of_schema.if_then_else.as_ref()
+            && let Err(error) = validate_if_then_else(
+                value,
+                accessors,
+                if_then_else_schema,
+                current_schema,
+                schema_context,
             )
             .await
         {

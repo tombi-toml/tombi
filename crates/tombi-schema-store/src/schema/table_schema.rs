@@ -14,7 +14,10 @@ use super::{
     CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
     SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
-use crate::{Accessor, Referable, SchemaProperties, SchemaStore, schema::not_schema::NotSchema};
+use crate::{
+    Accessor, Referable, SchemaProperties, SchemaStore,
+    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
+};
 
 use tombi_json::StringNode;
 
@@ -43,6 +46,7 @@ pub struct TableSchema {
     pub deprecated: Option<bool>,
     pub additional_key_label: Option<String>,
     pub not: Option<NotSchema>,
+    pub if_then_else: Option<Box<IfThenElseSchema>>,
 }
 
 impl TableSchema {
@@ -200,6 +204,7 @@ impl TableSchema {
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             not: NotSchema::new(object_node, string_formats, dialect),
+            if_then_else: IfThenElseSchema::new(object_node, string_formats, dialect).map(Box::new),
             property_names: object_node
                 .get("propertyNames")
                 .and_then(|v| v.as_object())

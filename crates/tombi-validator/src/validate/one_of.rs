@@ -10,7 +10,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use super::Validate;
 use crate::validate::{
     handle_deprecated, has_error_level_diagnostics, is_success_or_warning,
-    not_schema::validate_not, validate_resolved_schema,
+    if_then_else::validate_if_then_else, not_schema::validate_not, validate_resolved_schema,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -35,6 +35,17 @@ where
                 schema_context,
                 comment_directives.map(|directives| directives.iter()),
                 common_rules,
+            )
+            .await?;
+        }
+
+        if let Some(if_then_else_schema) = one_of_schema.if_then_else.as_ref() {
+            validate_if_then_else(
+                value,
+                accessors,
+                if_then_else_schema,
+                current_schema,
+                schema_context,
             )
             .await?;
         }

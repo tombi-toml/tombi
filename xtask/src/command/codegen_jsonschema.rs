@@ -28,6 +28,15 @@ pub fn run() -> Result<(), anyhow::Error> {
     )?;
 
     std::fs::write(
+        project_root_path().join("schemas/if-then-else-test.schema.json"),
+        serde_json::to_string_pretty(
+            &generator
+                .clone()
+                .into_root_schema_for::<IfThenElseTest>(),
+        )? + "\n",
+    )?;
+
+    std::fs::write(
         project_root_path()
             .join(tombi_uri::schemastore_hostname!())
             .join("tombi.json"),
@@ -455,4 +464,76 @@ struct TableValue2 {
     local_date_time: Option<chrono::NaiveDateTime>,
     local_date: Option<chrono::NaiveDate>,
     local_time: Option<chrono::NaiveTime>,
+}
+
+// ---- if/then/else test schema ----
+
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+struct IfThenElseTest {
+    conditional_table: Option<ConditionalTable>,
+    conditional_table_if_only: Option<ConditionalTableIfOnly>,
+    conditional_table_if_then_only: Option<ConditionalTableIfThenOnly>,
+}
+
+/// if/then/else: country が USA なら zip code (5桁数字), それ以外なら Canada postal code パターン
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+#[schemars(extend(
+    "if" = {
+        "properties": { "country": { "const": "USA" } },
+        "required": ["country"],
+        "additionalProperties": true
+    },
+    "then" = {
+        "properties": { "postal-code": { "type": "string", "pattern": "^[0-9]{5}$" } },
+        "additionalProperties": true
+    },
+    "else" = {
+        "properties": { "postal-code": { "type": "string", "pattern": "^[A-Z][0-9][A-Z] [0-9][A-Z][0-9]$" } },
+        "additionalProperties": true
+    }
+))]
+struct ConditionalTable {
+    country: Option<String>,
+    postal_code: Option<String>,
+}
+
+/// if のみ（then/else なし）: エラーは発生しない
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+#[schemars(extend(
+    "if" = {
+        "properties": { "country": { "const": "USA" } },
+        "required": ["country"],
+        "additionalProperties": true
+    }
+))]
+struct ConditionalTableIfOnly {
+    country: Option<String>,
+    postal_code: Option<String>,
+}
+
+/// if + then のみ（else なし）: if マッチ時に then 適用、不一致時はエラーなし
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+#[schemars(extend(
+    "if" = {
+        "properties": { "country": { "const": "USA" } },
+        "required": ["country"],
+        "additionalProperties": true
+    },
+    "then" = {
+        "properties": { "postal-code": { "type": "string", "pattern": "^[0-9]{5}$" } },
+        "additionalProperties": true
+    }
+))]
+struct ConditionalTableIfThenOnly {
+    country: Option<String>,
+    postal_code: Option<String>,
 }

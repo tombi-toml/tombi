@@ -11,7 +11,10 @@ use super::{
     IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
     OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
-use crate::{Accessor, Referable, SchemaDefinitions, SchemaStore, schema::not_schema::NotSchema};
+use crate::{
+    Accessor, Referable, SchemaDefinitions, SchemaStore,
+    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
+};
 
 #[derive(Debug, Clone)]
 pub enum ValueSchema {
@@ -342,6 +345,7 @@ impl ValueSchema {
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
                     not: NotSchema::new(object, string_formats, dialect),
+                    if_then_else: IfThenElseSchema::new(object, string_formats, dialect).map(Box::new),
                 }))
             }
         }

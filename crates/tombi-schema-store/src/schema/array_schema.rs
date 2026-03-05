@@ -9,7 +9,10 @@ use super::{
     CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUri,
     ValueSchema,
 };
-use crate::{Accessor, SchemaStore, schema::not_schema::NotSchema};
+use crate::{
+    Accessor, SchemaStore,
+    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct ArraySchema {
@@ -27,6 +30,7 @@ pub struct ArraySchema {
     pub values_order: Option<XTombiArrayValuesOrder>,
     pub deprecated: Option<bool>,
     pub not: Option<NotSchema>,
+    pub if_then_else: Option<Box<IfThenElseSchema>>,
 }
 
 impl ArraySchema {
@@ -77,6 +81,7 @@ impl ArraySchema {
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
             range: object.range,
             not: NotSchema::new(object, string_formats, dialect),
+            if_then_else: IfThenElseSchema::new(object, string_formats, dialect).map(Box::new),
         }
     }
 
