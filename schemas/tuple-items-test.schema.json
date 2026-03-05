@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TupleItemsTest",
+  "type": "object",
+  "properties": {
+    "point": {
+      "description": "A 2D point as [x, y] tuple",
+      "type": "array",
+      "items": [
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "additionalItems": false
+    },
+    "record": {
+      "description": "A record as [name, age, active] tuple with no extra items",
+      "type": "array",
+      "items": [
+        { "type": "string" },
+        { "type": "integer" },
+        { "type": "boolean" }
+      ],
+      "additionalItems": false
+    },
+    "extensible": {
+      "description": "A tuple with additional string items allowed",
+      "type": "array",
+      "items": [
+        { "type": "integer" },
+        { "type": "string" }
+      ],
+      "additionalItems": {
+        "type": "string"
+      }
+    },
+    "open_tuple": {
+      "description": "A tuple with no additionalItems constraint (any extra items allowed)",
+      "type": "array",
+      "items": [
+        { "type": "string" },
+        { "type": "integer" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

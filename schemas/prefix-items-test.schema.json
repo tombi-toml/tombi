@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrefixItemsTest",
+  "type": "object",
+  "properties": {
+    "point": {
+      "description": "A 2D point as [x, y] tuple with no overflow",
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false
+    },
+    "extensible": {
+      "description": "A tuple with additional string items via items overflow",
+      "type": "array",
+      "prefixItems": [
+        { "type": "integer" },
+        { "type": "string" }
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "open_tuple": {
+      "description": "A tuple with no items constraint (any extra items allowed)",
+      "type": "array",
+      "prefixItems": [
+        { "type": "string" },
+        { "type": "integer" }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

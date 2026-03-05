@@ -32,9 +32,9 @@
 - [x] `contains` を実装する（draft-07 の意味論）（2026-03-05 対応）
 - [x] `dependencies` を実装する（2026-03-05 対応）
   備考: 2019-09 以降は `dependentRequired` / `dependentSchemas` へ置換（将来版では legacy 扱い）
-- [ ] `items` の tuple 形式（配列）を実装する  
+- [x] `items` の tuple 形式（配列）を実装する（2026-03-05 対応）
   備考: 2020-12 で廃止、`prefixItems` に置換
-- [ ] `additionalItems` を実装する  
+- [x] `additionalItems` を実装する（2026-03-05 対応）
   備考: 2020-12 で廃止、新しい `items` 意味論へ置換
 - [ ] object に対する `const` / `enum` 検証を実装する（`TableSchema` 側）
 - [ ] array に対する `const` / `enum` 検証を実装する（`ArraySchema` 側）
@@ -57,8 +57,8 @@
 ## 4. draft-2020-12 TODO（目標準拠）
 
 - [ ] `$dynamicAnchor` / `$dynamicRef` を実装する
-- [ ] `prefixItems` を実装する
-- [ ] 2020-12 の `items`（旧 `additionalItems` 相当の役割）を実装する
+- [x] `prefixItems` を実装する（2026-03-05 対応）
+- [x] 2020-12 の `items`（旧 `additionalItems` 相当の役割）を実装する（2026-03-05 対応）
 - [ ] `format` を `format-annotation` / `format-assertion` で切替可能にする
 - [ ] 2020-12 モードでは `dependencies` を廃止キーワードとして扱い、`dependent*` へ移行ガイドを出す
 - [ ] 2020-12 モードでは `additionalItems` と tuple `items` を廃止キーワードとして扱い、`prefixItems` + 新 `items` へ移行ガイドを出す

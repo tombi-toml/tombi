@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_x_keyword::{
     ArrayValuesOrder, ArrayValuesOrderGroup, StringFormat, X_TOMBI_ARRAY_VALUES_ORDER,
@@ -20,6 +21,9 @@ pub struct ArraySchema {
     pub description: Option<String>,
     pub range: tombi_text::Range,
     pub items: Option<SchemaItem>,
+    pub prefix_items: Option<Vec<SchemaItem>>,
+    pub additional_items: Option<bool>,
+    pub additional_items_schema: Option<SchemaItem>,
     pub contains: Option<SchemaItem>,
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
@@ -53,6 +57,44 @@ impl ArraySchema {
                     .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             }),
+            prefix_items: object
+                .get("prefixItems")
+                .or_else(|| object.get("items").filter(|v| v.as_array().is_some()))
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.items
+                        .iter()
+                        .filter_map(|v| {
+                            v.as_object()
+                                .and_then(|obj| {
+                                    Referable::<ValueSchema>::new(obj, string_formats, dialect)
+                                })
+                                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+                        })
+                        .collect_vec()
+                }),
+            additional_items: if dialect == Some(crate::JsonSchemaDialect::Draft2020_12) {
+                // In 2020-12, `items: false` means no overflow items (like `additionalItems: false` in draft-07)
+                match object.get("items") {
+                    Some(tombi_json::ValueNode::Bool(b)) => Some(b.value),
+                    _ => None,
+                }
+            } else {
+                match object.get("additionalItems") {
+                    Some(tombi_json::ValueNode::Bool(b)) => Some(b.value),
+                    Some(tombi_json::ValueNode::Object(_)) => Some(true),
+                    _ => None,
+                }
+            },
+            additional_items_schema: if dialect == Some(crate::JsonSchemaDialect::Draft2020_12) {
+                None
+            } else {
+                object
+                    .get("additionalItems")
+                    .and_then(|v| v.as_object())
+                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
+                    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+            },
             contains: object.get("contains").and_then(|value| {
                 value
                     .as_object()
