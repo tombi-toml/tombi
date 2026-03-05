@@ -607,6 +607,7 @@ mod completion_labels {
                 SourcePath(project_root_path().join("schemas").join("tombi.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "contains-test.schema.json",
                 "if-then-else-test.schema.json",
                 "partial-taskipy.schema.json",
                 "recursive-schema.schema.json",

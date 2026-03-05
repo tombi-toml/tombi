@@ -14,7 +14,7 @@
       }
     },
     "numbers": {
-      "description": "Array that must contain at least one number greater than 10",
+      "description": "Array that must contain at least one number greater than or equal to 10",
       "type": "array",
       "items": {
         "type": "integer"
