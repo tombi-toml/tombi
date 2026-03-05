@@ -11,7 +11,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
-        handle_deprecated, handle_type_mismatch, handle_unused_noqa,
+        handle_deprecated, handle_type_mismatch, handle_unused_noqa, is_success_or_warning,
         if_then_else::validate_if_then_else, not_schema::validate_not,
     },
 };
@@ -213,11 +213,10 @@ async fn validate_array(
                     .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                     .collect_vec();
 
-                if value
+                let result = value
                     .validate(&new_accessors, Some(&contains_schema), schema_context)
-                    .await
-                    .is_ok()
-                {
+                    .await;
+                if is_success_or_warning(&result) {
                     contains_match = true;
                     break;
                 }
