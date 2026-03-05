@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IfThenElseTest",
+  "type": "object",
+  "properties": {
+    "conditional-table": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ConditionalTable"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "conditional-table-if-only": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ConditionalTableIfOnly"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "conditional-table-if-then-only": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ConditionalTableIfThenOnly"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "ConditionalTable": {
+      "description": "if/then/else: country が USA なら zip code (5桁数字), それ以外なら Canada postal code パターン",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "postal-code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "country": {
+            "const": "USA"
+          }
+        },
+        "required": [
+          "country"
+        ],
+        "additionalProperties": true
+      },
+      "then": {
+        "properties": {
+          "postal-code": {
+            "type": "string",
+            "pattern": "^[0-9]{5}$"
+          }
+        },
+        "additionalProperties": true
+      },
+      "else": {
+        "properties": {
+          "postal-code": {
+            "type": "string",
+            "pattern": "^[A-Z][0-9][A-Z] [0-9][A-Z][0-9]$"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "ConditionalTableIfOnly": {
+      "description": "if のみ（then/else なし）: エラーは発生しない",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "postal-code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "country": {
+            "const": "USA"
+          }
+        },
+        "required": [
+          "country"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "ConditionalTableIfThenOnly": {
+      "description": "if + then のみ（else なし）: if マッチ時に then 適用、不一致時はエラーなし",
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "postal-code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "country": {
+            "const": "USA"
+          }
+        },
+        "required": [
+          "country"
+        ],
+        "additionalProperties": true
+      },
+      "then": {
+        "properties": {
+          "postal-code": {
+            "type": "string",
+            "pattern": "^[0-9]{5}$"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

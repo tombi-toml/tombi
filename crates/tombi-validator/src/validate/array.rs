@@ -11,7 +11,8 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
-        handle_deprecated, handle_type_mismatch, handle_unused_noqa, not_schema::validate_not,
+        handle_deprecated, handle_type_mismatch, handle_unused_noqa,
+        if_then_else::validate_if_then_else, not_schema::validate_not,
     },
 };
 
@@ -137,8 +138,10 @@ async fn validate_array(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     lint_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<(), crate::Error> {
-    if let Some(not_schema) = array_schema.not.as_ref() {
-        validate_not(
+    let mut total_diagnostics = vec![];
+
+    if let Some(not_schema) = array_schema.not.as_ref()
+        && let Err(error) = validate_not(
             array_value,
             accessors,
             not_schema,
@@ -147,10 +150,23 @@ async fn validate_array(
             array_value.comment_directives(),
             lint_rules.as_ref().map(|rules| &rules.common),
         )
-        .await?;
+        .await
+    {
+        total_diagnostics.extend(error.diagnostics);
     }
 
-    let mut total_diagnostics = vec![];
+    if let Some(if_then_else_schema) = array_schema.if_then_else.as_ref()
+        && let Err(error) = validate_if_then_else(
+            array_value,
+            accessors,
+            if_then_else_schema,
+            current_schema,
+            schema_context,
+        )
+        .await
+    {
+        total_diagnostics.extend(error.diagnostics);
+    }
 
     if let Some(items) = &array_schema.items {
         if let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(

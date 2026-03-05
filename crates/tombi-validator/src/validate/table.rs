@@ -16,7 +16,8 @@ use crate::{
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         handle_deprecated, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        not_schema::validate_not, string::validate_raw_string,
+        if_then_else::validate_if_then_else, not_schema::validate_not,
+        string::validate_raw_string,
     },
 };
 
@@ -536,6 +537,20 @@ async fn validate_table(
             schema_context,
             table_value.comment_directives(),
             table_rules.as_ref().map(|rules| &rules.common),
+        )
+        .await
+        {
+            total_diagnostics.extend(error.diagnostics);
+        }
+    }
+
+    if let Some(if_then_else_schema) = table_schema.if_then_else.as_ref() {
+        if let Err(error) = validate_if_then_else(
+            table_value,
+            accessors,
+            if_then_else_schema,
+            current_schema,
+            schema_context,
         )
         .await
         {
