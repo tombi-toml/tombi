@@ -1,7 +1,8 @@
 mod error;
 mod http_client;
-mod json_schema_dialect;
 pub mod json;
+mod json_schema_dialect;
+mod keyword_support;
 pub mod macros;
 mod options;
 mod schema;
@@ -13,6 +14,7 @@ pub use error::Error;
 pub use http_client::*;
 use itertools::{Either, Itertools};
 pub use json_schema_dialect::JsonSchemaDialect;
+pub use keyword_support::*;
 pub use options::Options;
 pub use schema::*;
 pub use store::{AssociateSchemaOptions, SchemaStore};

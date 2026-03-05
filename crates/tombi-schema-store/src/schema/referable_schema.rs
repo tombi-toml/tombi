@@ -60,6 +60,7 @@ impl Referable<ValueSchema> {
     pub fn new(
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
         if let Some(x_taplo) = object.get("x-taplo")
             && let Ok(x_taplo) = tombi_json::from_value_node::<XTaplo>(x_taplo.to_owned())
@@ -82,9 +83,11 @@ impl Referable<ValueSchema> {
             });
         }
 
-        ValueSchema::new(object, string_formats).map(|value_schema| Referable::Resolved {
-            schema_uri: None,
-            value: Arc::new(value_schema),
+        ValueSchema::new_in_dialect(object, string_formats, dialect).map(|value_schema| {
+            Referable::Resolved {
+                schema_uri: None,
+                value: Arc::new(value_schema),
+            }
         })
     }
 
@@ -164,8 +167,19 @@ impl Referable<ValueSchema> {
                         if let Some(schema_value) =
                             schema_store.fetch_schema_value(&schema_uri).await?
                         {
-                            if let Some(mut resolved_schema) =
-                                resolve_json_pointer(&schema_value, pointer, None)?
+                            let dialect = schema_value
+                                .as_object()
+                                .and_then(|object| object.get("$schema"))
+                                .and_then(|value| value.as_str())
+                                .and_then(|dialect_uri| {
+                                    crate::JsonSchemaDialect::try_from(dialect_uri).ok()
+                                });
+                            if let Some(mut resolved_schema) = resolve_json_pointer(
+                                &schema_value,
+                                pointer,
+                                None,
+                                dialect,
+                            )?
                             {
                                 if title.is_some() || description.is_some() {
                                     resolved_schema.set_title(title.to_owned());
@@ -505,6 +519,7 @@ pub fn resolve_json_pointer(
     schema_node: &tombi_json::ValueNode,
     pointer: &str,
     string_formats: Option<&[StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
 ) -> Result<Option<ValueSchema>, crate::Error> {
     if !pointer.starts_with('#') {
         return Ok(None);
@@ -514,7 +529,7 @@ pub fn resolve_json_pointer(
     if path.is_empty() {
         return Ok(schema_node
             .as_object()
-            .and_then(|obj| ValueSchema::new(obj, string_formats)));
+            .and_then(|obj| ValueSchema::new_in_dialect(obj, string_formats, dialect)));
     }
 
     // RFC 6901: Percent-decode the path before splitting on '/'
@@ -552,7 +567,9 @@ pub fn resolve_json_pointer(
 
     // Convert the final ValueNode to ValueSchema
     match current {
-        tombi_json::ValueNode::Object(obj) => Ok(ValueSchema::new(obj, string_formats)),
+        tombi_json::ValueNode::Object(obj) => {
+            Ok(ValueSchema::new_in_dialect(obj, string_formats, dialect))
+        }
         _ => Ok(None),
     }
 }
@@ -617,7 +634,12 @@ mod test {
         let value_node = ValueNode::from_str(json).unwrap();
 
         // Test with percent-encoded slash
-        let result = resolve_json_pointer(&value_node, "#/foo/bar%2Fbaz", None);
+        let result = resolve_json_pointer(
+            &value_node,
+            "#/foo/bar%2Fbaz",
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             // The schema should be resolved correctly
@@ -632,7 +654,12 @@ mod test {
         }"#;
         let value_node = ValueNode::from_str(json).unwrap();
 
-        let result = resolve_json_pointer(&value_node, "#/test/path%2Fwith%20spaces", None);
+        let result = resolve_json_pointer(
+            &value_node,
+            "#/test/path%2Fwith%20spaces",
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
@@ -648,11 +675,21 @@ mod test {
         let value_node = ValueNode::from_str(json).unwrap();
 
         // These should return None because the keys don't exist after failed decoding
-        let result = resolve_json_pointer(&value_node, "#/foo/bar%2", None);
+        let result = resolve_json_pointer(
+            &value_node,
+            "#/foo/bar%2",
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
 
-        let result = resolve_json_pointer(&value_node, "#/foo/baz%2G", None);
+        let result = resolve_json_pointer(
+            &value_node,
+            "#/foo/baz%2G",
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
 
@@ -666,13 +703,23 @@ mod test {
         let value_node = ValueNode::from_str(json).unwrap();
 
         // Test JSON pointer escape sequences (should work as before)
-        let result = resolve_json_pointer(&value_node, "#/foo/bar~1baz", None);
+        let result = resolve_json_pointer(
+            &value_node,
+            "#/foo/bar~1baz",
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
         }
 
-        let result = resolve_json_pointer(&value_node, "#/foo/qux~0tilde", None);
+        let result = resolve_json_pointer(
+            &value_node,
+            "#/foo/qux~0tilde",
+            None,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
         assert!(result.is_ok());
         if let Ok(Some(schema)) = result {
             assert!(matches!(schema, ValueSchema::String(_)));
