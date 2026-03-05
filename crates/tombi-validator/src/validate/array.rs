@@ -195,6 +195,47 @@ async fn validate_array(
         }
     }
 
+    if let Some(contains) = &array_schema.contains {
+        if let Ok(Some(contains_schema)) = tombi_schema_store::resolve_schema_item(
+            contains,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        .inspect_err(|err| log::warn!("{err}"))
+        {
+            let mut contains_match = false;
+            for (index, value) in array_value.values().iter().enumerate() {
+                let new_accessors = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
+                    .collect_vec();
+
+                if value
+                    .validate(&new_accessors, Some(&contains_schema), schema_context)
+                    .await
+                    .is_ok()
+                {
+                    contains_match = true;
+                    break;
+                }
+            }
+
+            if !contains_match {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::ArrayContains),
+                    range: array_value.range(),
+                }
+                .push_diagnostic_with_level(
+                    SeverityLevelDefaultError::default(),
+                    &mut total_diagnostics,
+                );
+            }
+        }
+    }
+
     if let Some(max_items) = array_schema.max_items
         && array_value.values().len() > max_items
     {

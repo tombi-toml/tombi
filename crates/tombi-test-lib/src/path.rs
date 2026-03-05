@@ -53,3 +53,9 @@ pub fn if_then_else_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("if-then-else-test.schema.json")
 }
+
+pub fn contains_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("contains-test.schema.json")
+}

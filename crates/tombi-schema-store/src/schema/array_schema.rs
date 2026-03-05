@@ -20,6 +20,7 @@ pub struct ArraySchema {
     pub description: Option<String>,
     pub range: tombi_text::Range,
     pub items: Option<SchemaItem>,
+    pub contains: Option<SchemaItem>,
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
     pub unique_items: Option<bool>,
@@ -47,6 +48,12 @@ impl ArraySchema {
                 .get("description")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             items: object.get("items").and_then(|value| {
+                value
+                    .as_object()
+                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
+                    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+            }),
+            contains: object.get("contains").and_then(|value| {
                 value
                     .as_object()
                     .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))

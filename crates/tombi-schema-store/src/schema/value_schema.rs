@@ -175,6 +175,7 @@ impl ValueSchema {
             || (supports_keyword("minItems") && object.get("minItems").is_some())
             || (supports_keyword("maxItems") && object.get("maxItems").is_some())
             || (supports_keyword("uniqueItems") && object.get("uniqueItems").is_some())
+            || (supports_keyword("contains") && object.get("contains").is_some())
         {
             return Some("array");
         }
