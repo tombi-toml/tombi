@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContainsTest",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "description": "Array that must contain at least one string matching the contains schema",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": {
+        "const": "required-tag"
+      }
+    },
+    "numbers": {
+      "description": "Array that must contain at least one number greater than or equal to 10",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "contains": {
+        "type": "integer",
+        "minimum": 10
+      }
+    },
+    "mixed": {
+      "description": "Array with contains but no items constraint",
+      "type": "array",
+      "contains": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

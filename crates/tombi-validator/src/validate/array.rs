@@ -11,7 +11,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
-        handle_deprecated, handle_type_mismatch, handle_unused_noqa,
+        handle_deprecated, handle_type_mismatch, handle_unused_noqa, is_success_or_warning,
         if_then_else::validate_if_then_else, not_schema::validate_not,
     },
 };
@@ -191,6 +191,46 @@ async fn validate_array(
                 {
                     total_diagnostics.extend(diagnostics);
                 }
+            }
+        }
+    }
+
+    if let Some(contains) = &array_schema.contains {
+        if let Ok(Some(contains_schema)) = tombi_schema_store::resolve_schema_item(
+            contains,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        .inspect_err(|err| log::warn!("{err}"))
+        {
+            let mut contains_match = false;
+            for (index, value) in array_value.values().iter().enumerate() {
+                let new_accessors = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
+                    .collect_vec();
+
+                let result = value
+                    .validate(&new_accessors, Some(&contains_schema), schema_context)
+                    .await;
+                if is_success_or_warning(&result) {
+                    contains_match = true;
+                    break;
+                }
+            }
+
+            if !contains_match {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::ArrayContains),
+                    range: array_value.range(),
+                }
+                .push_diagnostic_with_level(
+                    SeverityLevelDefaultError::default(),
+                    &mut total_diagnostics,
+                );
             }
         }
     }
