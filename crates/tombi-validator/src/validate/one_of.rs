@@ -26,8 +26,10 @@ where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
     async move {
-        if let Some(not_schema) = one_of_schema.not.as_ref() {
-            validate_not(
+        let mut total_diagnostics = vec![];
+
+        if let Some(not_schema) = one_of_schema.not.as_ref()
+            && let Err(error) = validate_not(
                 value,
                 accessors,
                 not_schema,
@@ -36,18 +38,22 @@ where
                 comment_directives.map(|directives| directives.iter()),
                 common_rules,
             )
-            .await?;
+            .await
+        {
+            total_diagnostics.extend(error.diagnostics);
         }
 
-        if let Some(if_then_else_schema) = one_of_schema.if_then_else.as_ref() {
-            validate_if_then_else(
+        if let Some(if_then_else_schema) = one_of_schema.if_then_else.as_ref()
+            && let Err(error) = validate_if_then_else(
                 value,
                 accessors,
                 if_then_else_schema,
                 current_schema,
                 schema_context,
             )
-            .await?;
+            .await
+        {
+            total_diagnostics.extend(error.diagnostics);
         }
 
         let mut valid_count = 0;
@@ -62,7 +68,11 @@ where
         )
         .await
         else {
-            return Ok(());
+            if total_diagnostics.is_empty() {
+                return Ok(());
+            } else {
+                return Err(total_diagnostics.into());
+            }
         };
         let total_count = resolved_schemas.len();
 
@@ -91,8 +101,12 @@ where
         if valid_count == 1 {
             for result in each_results {
                 match result {
-                    Ok(()) => return Ok(()),
-                    Err(error) if !has_error_level_diagnostics(&error) => return Err(error),
+                    Ok(()) if total_diagnostics.is_empty() => return Ok(()),
+                    Ok(()) => return Err(total_diagnostics.into()),
+                    Err(error) if !has_error_level_diagnostics(&error) => {
+                        total_diagnostics.extend(error.diagnostics);
+                        return Err(total_diagnostics.into());
+                    }
                     Err(_) => {}
                 }
             }
@@ -120,8 +134,6 @@ where
             }
 
             if !has_error_level_diagnostics(&error) && valid_count > 1 {
-                let mut diagnostics = vec![];
-
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::OneOfMultipleMatch {
                         valid_count,
@@ -134,12 +146,13 @@ where
                         .and_then(|rules| rules.one_of_multiple_match.as_ref())
                         .map(SeverityLevelDefaultError::from)
                         .unwrap_or_default(),
-                    &mut diagnostics,
+                    &mut total_diagnostics,
                 );
 
-                Err(diagnostics.into())
+                Err(total_diagnostics.into())
             } else {
-                Err(error)
+                total_diagnostics.extend(error.diagnostics);
+                Err(total_diagnostics.into())
             }
         }
     }
