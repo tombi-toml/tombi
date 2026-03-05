@@ -41,7 +41,7 @@ pub struct TableSchema {
     )>,
     pub property_names: Option<SchemaItem>,
     pub required: Option<Vec<String>>,
-    pub dependencies: Option<AHashMap<String, Dependency>>,
+    pub dependencies: Option<IndexMap<String, Dependency>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
     pub keys_order: Option<XTombiTableKeysOrder>,
@@ -179,7 +179,7 @@ impl TableSchema {
                 .get("dependencies")
                 .and_then(|v| v.as_object())
                 .map(|deps_obj| {
-                    let mut deps = AHashMap::new();
+                    let mut deps = IndexMap::new();
                     for (key, value) in &deps_obj.properties {
                         match value {
                             tombi_json::ValueNode::Array(arr) => {
