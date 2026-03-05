@@ -19,6 +19,12 @@ use crate::{
     schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
 };
 
+#[derive(Debug, Clone)]
+pub enum Dependency {
+    Property(Vec<String>),
+    Schema(SchemaItem),
+}
+
 use tombi_json::StringNode;
 
 #[derive(Debug, Default, Clone)]
@@ -35,6 +41,7 @@ pub struct TableSchema {
     )>,
     pub property_names: Option<SchemaItem>,
     pub required: Option<Vec<String>>,
+    pub dependencies: Option<AHashMap<String, Dependency>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
     pub keys_order: Option<XTombiTableKeysOrder>,
@@ -168,6 +175,43 @@ impl TableSchema {
                         .collect()
                 })
             }),
+            dependencies: object_node
+                .get("dependencies")
+                .and_then(|v| v.as_object())
+                .map(|deps_obj| {
+                    let mut deps = AHashMap::new();
+                    for (key, value) in &deps_obj.properties {
+                        match value {
+                            tombi_json::ValueNode::Array(arr) => {
+                                let required_keys: Vec<String> = arr
+                                    .items
+                                    .iter()
+                                    .filter_map(|v| v.as_str().map(ToString::to_string))
+                                    .collect();
+                                deps.insert(
+                                    key.value.to_string(),
+                                    Dependency::Property(required_keys),
+                                );
+                            }
+                            tombi_json::ValueNode::Object(obj) => {
+                                if let Some(schema) = Referable::<ValueSchema>::new(
+                                    obj,
+                                    string_formats,
+                                    dialect,
+                                ) {
+                                    deps.insert(
+                                        key.value.to_string(),
+                                        Dependency::Schema(Arc::new(
+                                            tokio::sync::RwLock::new(schema),
+                                        )),
+                                    );
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    deps
+                }),
             min_properties: object_node
                 .get("minProperties")
                 .and_then(|v| v.as_u64().map(|u| u as usize)),

@@ -608,6 +608,7 @@ mod completion_labels {
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
                 "contains-test.schema.json",
+                "dependencies-test.schema.json",
                 "if-then-else-test.schema.json",
                 "partial-taskipy.schema.json",
                 "recursive-schema.schema.json",

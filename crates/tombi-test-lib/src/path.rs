@@ -59,3 +59,9 @@ pub fn contains_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("contains-test.schema.json")
 }
+
+pub fn dependencies_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("dependencies-test.schema.json")
+}

@@ -353,9 +353,9 @@ async fn validate_table(
         }
     }
 
-    if let Some(required) = &table_schema.required {
-        let keys = table_value.keys().map(|key| &key.value).collect_vec();
+    let keys = table_value.keys().map(|key| &key.value).collect_vec();
 
+    if let Some(required) = &table_schema.required {
         for required_key in required {
             if !keys.contains(&required_key) {
                 let level = table_rules
@@ -462,6 +462,52 @@ async fn validate_table(
             table_rules.as_ref().map(|rules| &rules.common),
             "table-min-keys",
         );
+    }
+
+    if let Some(dependencies) = &table_schema.dependencies {
+        for (dependent_key, dependency) in dependencies {
+            if !keys.contains(&dependent_key) {
+                continue;
+            }
+
+            match dependency {
+                tombi_schema_store::Dependency::Property(required_keys) => {
+                    for required_key in required_keys {
+                        if !keys.contains(&required_key) {
+                            crate::Diagnostic {
+                                kind: Box::new(crate::DiagnosticKind::DependencyRequired {
+                                    dependent_key: dependent_key.to_string(),
+                                    required_key: required_key.to_string(),
+                                }),
+                                range: table_value.range(),
+                            }
+                            .push_diagnostic_with_level(
+                                SeverityLevelDefaultError::default(),
+                                &mut total_diagnostics,
+                            );
+                        }
+                    }
+                }
+                tombi_schema_store::Dependency::Schema(schema_item) => {
+                    if let Ok(Some(dep_schema)) = tombi_schema_store::resolve_schema_item(
+                        schema_item,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
+                    {
+                        if let Err(crate::Error { diagnostics, .. }) = table_value
+                            .validate(accessors, Some(&dep_schema), schema_context)
+                            .await
+                        {
+                            total_diagnostics.extend(diagnostics);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if let Some(property_name_schema) = &table_schema.property_names

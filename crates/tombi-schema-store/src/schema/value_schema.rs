@@ -189,6 +189,7 @@ impl ValueSchema {
             || (supports_keyword("minProperties") && object.get("minProperties").is_some())
             || (supports_keyword("maxProperties") && object.get("maxProperties").is_some())
             || (supports_keyword("propertyNames") && object.get("propertyNames").is_some())
+            || (supports_keyword("dependencies") && object.get("dependencies").is_some())
         {
             return Some("object");
         }
