@@ -71,3 +71,9 @@ pub fn tuple_items_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("tuple-items-test.schema.json")
 }
+
+pub fn prefix_items_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("prefix-items-test.schema.json")
+}

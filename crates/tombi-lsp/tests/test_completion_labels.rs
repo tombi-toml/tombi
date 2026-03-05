@@ -611,6 +611,7 @@ mod completion_labels {
                 "dependencies-test.schema.json",
                 "if-then-else-test.schema.json",
                 "partial-taskipy.schema.json",
+                "prefix-items-test.schema.json",
                 "recursive-schema.schema.json",
                 "tuple-items-test.schema.json",
                 "type-test.schema.json",
