@@ -103,9 +103,9 @@ where
                 match result {
                     Ok(()) if total_diagnostics.is_empty() => return Ok(()),
                     Ok(()) => return Err(total_diagnostics.into()),
-                    Err(error) if !has_error_level_diagnostics(&error) => {
-                        total_diagnostics.extend(error.diagnostics);
-                        return Err(total_diagnostics.into());
+                    Err(mut error) if !has_error_level_diagnostics(&error) => {
+                        error.prepend_diagnostics(total_diagnostics);
+                        return Err(error);
                     }
                     Err(_) => {}
                 }
@@ -151,8 +151,8 @@ where
 
                 Err(total_diagnostics.into())
             } else {
-                total_diagnostics.extend(error.diagnostics);
-                Err(total_diagnostics.into())
+                error.prepend_diagnostics(total_diagnostics);
+                Err(error)
             }
         }
     }

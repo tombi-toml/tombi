@@ -114,8 +114,8 @@ where
         if total_error.diagnostics.is_empty() && total_diagnostics.is_empty() {
             Ok(())
         } else {
-            total_diagnostics.extend(total_error.diagnostics);
-            Err(total_diagnostics.into())
+            total_error.prepend_diagnostics(total_diagnostics);
+            Err(total_error)
         }
     }
     .boxed()
