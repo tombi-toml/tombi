@@ -163,12 +163,10 @@ impl Backend {
             None
         };
 
-        if let Some(toml_version) = source_schema.as_ref().and_then(|schema| {
-            schema
-                .root_schema
-                .as_ref()
-                .and_then(|root| root.toml_version())
-        }) {
+        if let Some(toml_version) = source_schema
+            .as_ref()
+            .and_then(|schema| schema.toml_version())
+        {
             return (toml_version, TomlVersionSource::Schema);
         }
 

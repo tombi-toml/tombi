@@ -398,19 +398,21 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
     Option<tombi_document_tree::Table>,
     Vec<tombi_diagnostic::Diagnostic>,
 ) {
+    let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
     let schema_store = tombi_comment_directive_store::schema_store().await;
 
-    let source_schema = tombi_schema_store::SourceSchema {
-        root_schema: Some(Arc::new(
+    let source_schema = tombi_schema_store::SourceSchema::new(
+        Some(Arc::new(
             comment_directive_document_schema(schema_store, schema_uri).await,
         )),
-        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-    };
+        ahash::AHashMap::with_capacity(0),
+        Some(toml_version),
+    );
 
     let schema_context = tombi_schema_store::SchemaContext {
-        toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+        toml_version,
         root_schema: source_schema.root_schema.as_deref(),
         sub_schema_uri_map: None,
         schema_visits: Default::default(),

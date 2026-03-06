@@ -1,0 +1,4 @@
+[[schemas]]
+toml-version = "v1.1.0"
+path = "../schema.json"
+include = ["test.toml"]

@@ -31,12 +31,7 @@ fn decode(source: &str, toml_version: TomlVersion) -> Result<Value, anyhow::Erro
         let rt = tokio::runtime::Runtime::new().unwrap();
         let schema_store = tombi_schema_store::SchemaStore::new();
         let lint_options = tombi_config::LintOptions::default();
-        let linter = tombi_linter::Linter::new(
-            toml_version,
-            &lint_options,
-            None,
-            &schema_store,
-        );
+        let linter = tombi_linter::Linter::new(toml_version, &lint_options, None, &schema_store);
         rt.block_on(linter.lint(&source_owned))
     })
     .join()

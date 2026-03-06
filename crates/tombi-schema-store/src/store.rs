@@ -2,7 +2,7 @@ use std::{borrow::Cow, ops::Deref, str::FromStr, sync::Arc};
 
 use crate::{
     AllOfSchema, AnyOfSchema, CatalogUri, DocumentSchema, OneOfSchema, SchemaAccessor,
-    SchemaAccessors, SourceSchema, ValueSchema, get_tombi_schemastore_content,
+    SchemaAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
     http_client::HttpClient, json::JsonCatalog,
 };
 use ahash::AHashMap;
@@ -593,19 +593,25 @@ impl SchemaStore {
             None
         };
 
-        let (root_schema, sub_schema_uri_map) = if let Some(source_schema) = source_schema {
-            (source_schema.root_schema, source_schema.sub_schema_uri_map)
-        } else {
-            (None, Default::default())
-        };
+        let (root_schema, sub_schema_uri_map, toml_version) =
+            if let Some(source_schema) = source_schema {
+                let toml_version = source_schema.toml_version();
+                (
+                    source_schema.root_schema,
+                    source_schema.sub_schema_uri_map,
+                    toml_version,
+                )
+            } else {
+                (None, Default::default(), None)
+            };
 
-        Ok(Some(SourceSchema {
-            root_schema: self
-                .try_get_document_schema(schema_uri)
+        Ok(Some(SourceSchema::new(
+            self.try_get_document_schema(schema_uri)
                 .await?
                 .or(root_schema),
             sub_schema_uri_map,
-        }))
+            toml_version,
+        )))
     }
 
     pub async fn resolve_source_schema_from_ast(
@@ -722,28 +728,36 @@ impl SchemaStore {
                             }
                         }
                         None => {
-                            let mut new_source_schema = SourceSchema {
-                                root_schema: None,
-                                sub_schema_uri_map: Default::default(),
-                            };
-                            new_source_schema
-                                .sub_schema_uri_map
+                            let mut sub_schema_uri_map = SubSchemaUriMap::default();
+                            sub_schema_uri_map
                                 .insert(sub_root_keys.clone(), document_schema.schema_uri.clone());
-
-                            source_schema = Some(new_source_schema);
+                            source_schema = Some(SourceSchema::new(
+                                None,
+                                sub_schema_uri_map,
+                                matching_schema.toml_version,
+                            ));
                         }
                     },
                     None => match source_schema {
-                        Some(ref mut source_schema) => {
-                            if source_schema.root_schema.is_none() {
-                                source_schema.root_schema = Some(document_schema);
+                        Some(ref mut existing) => {
+                            if existing.root_schema.is_none() {
+                                let toml_version =
+                                    existing.toml_version().or(matching_schema.toml_version);
+                                let sub_schema_uri_map =
+                                    std::mem::take(&mut existing.sub_schema_uri_map);
+                                *existing = SourceSchema::new(
+                                    Some(document_schema),
+                                    sub_schema_uri_map,
+                                    toml_version,
+                                );
                             }
                         }
                         None => {
-                            source_schema = Some(SourceSchema {
-                                root_schema: Some(document_schema),
-                                sub_schema_uri_map: Default::default(),
-                            });
+                            source_schema = Some(SourceSchema::new(
+                                Some(document_schema),
+                                Default::default(),
+                                matching_schema.toml_version,
+                            ));
                         }
                     },
                 },

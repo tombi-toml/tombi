@@ -56,8 +56,7 @@ fn load_pyproject_toml(
 ) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
     let toml_text = std::fs::read_to_string(pyproject_toml_path).ok()?;
 
-    let root =
-        tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+    let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
 
     // Clone the root before converting to document tree
     let root_clone = tombi_ast::Root::cast(root.syntax().clone())?;

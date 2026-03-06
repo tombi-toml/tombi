@@ -194,16 +194,14 @@ impl TableSchema {
                                 );
                             }
                             tombi_json::ValueNode::Object(obj) => {
-                                if let Some(schema) = Referable::<ValueSchema>::new(
-                                    obj,
-                                    string_formats,
-                                    dialect,
-                                ) {
+                                if let Some(schema) =
+                                    Referable::<ValueSchema>::new(obj, string_formats, dialect)
+                                {
                                     deps.insert(
                                         key.value.to_string(),
-                                        Dependency::Schema(Arc::new(
-                                            tokio::sync::RwLock::new(schema),
-                                        )),
+                                        Dependency::Schema(Arc::new(tokio::sync::RwLock::new(
+                                            schema,
+                                        ))),
                                     );
                                 }
                             }

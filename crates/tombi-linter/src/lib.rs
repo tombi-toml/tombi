@@ -197,4 +197,3 @@ macro_rules! test_lint {
         }
     };
 }
-

@@ -136,7 +136,6 @@ pub enum DiagnosticKind {
         dependent_key: String,
         required_key: String,
     },
-
 }
 
 #[derive(Debug)]

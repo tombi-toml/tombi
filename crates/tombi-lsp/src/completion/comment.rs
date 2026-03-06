@@ -149,10 +149,11 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
     let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
-    let source_schema = tombi_schema_store::SourceSchema {
-        root_schema: Some(Arc::new(document_schema)),
-        sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-    };
+    let source_schema = tombi_schema_store::SourceSchema::new(
+        Some(Arc::new(document_schema)),
+        ahash::AHashMap::with_capacity(0),
+        Some(toml_version),
+    );
     let schema_context = tombi_schema_store::SchemaContext {
         toml_version,
         root_schema: source_schema.root_schema.as_deref(),

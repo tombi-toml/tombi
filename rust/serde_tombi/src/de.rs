@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use tombi_ast::AstNode;
 use tombi_document::IntoDocument;
 use tombi_document_tree::IntoDocumentTreeAndErrors;
-use tombi_schema_store::{SchemaStore, SourceSchema};
+use tombi_schema_store::SchemaStore;
 use tombi_toml_version::TomlVersion;
 use typed_builder::TypedBuilder;
 
@@ -164,11 +164,8 @@ impl Deserializer<'_> {
                 .resolve_source_schema_from_ast(root, Some(Either::Right(source_path)))
                 .await
             {
-                Ok(Some(SourceSchema {
-                    root_schema: Some(root_schema),
-                    ..
-                })) => {
-                    if let Some(new_toml_version) = root_schema.toml_version() {
+                Ok(Some(source_schema)) => {
+                    if let Some(new_toml_version) = source_schema.toml_version() {
                         toml_version = new_toml_version;
                     }
                 }

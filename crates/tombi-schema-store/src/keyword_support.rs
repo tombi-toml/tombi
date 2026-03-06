@@ -67,9 +67,7 @@ pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
             dialect >= JsonSchemaDialect::Draft2020_12
         }
         // Deprecated/removed in 2020-12
-        "additionalItems" | "dependencies" => {
-            dialect < JsonSchemaDialect::Draft2020_12
-        }
+        "additionalItems" | "dependencies" => dialect < JsonSchemaDialect::Draft2020_12,
         "$recursiveRef" | "$recursiveAnchor" => dialect == JsonSchemaDialect::Draft2019_09,
         // Available since 2019-09
         "dependentRequired"

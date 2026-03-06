@@ -37,7 +37,7 @@ pub struct GetTomlVersionResponse {
     pub source: TomlVersionSource,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TomlVersionSource {
     /// Comment directive

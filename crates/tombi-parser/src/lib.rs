@@ -64,11 +64,7 @@ pub fn build_green_tree(
 
 pub fn format_tree_as_macro(node: &SyntaxNode, base_indent: usize) -> String {
     use tombi_rg_tree::NodeOrToken;
-    fn fmt_items(
-        node: &SyntaxNode,
-        indent: usize,
-        out: &mut String,
-    ) {
+    fn fmt_items(node: &SyntaxNode, indent: usize, out: &mut String) {
         let children: Vec<_> = node.children_with_tokens().collect();
         for (i, child) in children.iter().enumerate() {
             let prefix = "    ".repeat(indent);
@@ -105,14 +101,12 @@ pub fn syntax_node_to_patterns(node: &SyntaxNode) -> Vec<SyntaxTreePattern> {
     use tombi_rg_tree::NodeOrToken;
     node.children_with_tokens()
         .map(|child| match child {
-            NodeOrToken::Token(t) => SyntaxTreePattern::Token(
-                format!("{:?}", t.kind()),
-                t.text().to_string(),
-            ),
-            NodeOrToken::Node(n) => SyntaxTreePattern::Node(
-                format!("{:?}", n.kind()),
-                syntax_node_to_patterns(&n),
-            ),
+            NodeOrToken::Token(t) => {
+                SyntaxTreePattern::Token(format!("{:?}", t.kind()), t.text().to_string())
+            }
+            NodeOrToken::Node(n) => {
+                SyntaxTreePattern::Node(format!("{:?}", n.kind()), syntax_node_to_patterns(&n))
+            }
         })
         .collect()
 }

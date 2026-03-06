@@ -35,18 +35,22 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
         .peekable();
 
     if tombi_directive_iter.peek().is_some() {
+        let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
         let schema_store = tombi_comment_directive_store::schema_store().await;
         let document_schema = comment_directive_document_schema(
             schema_store,
             TombiDocumentDirectiveContent::comment_directive_schema_url(),
         )
         .await;
-        let source_schema = tombi_schema_store::SourceSchema {
-            root_schema: Some(Arc::new(document_schema)),
-            sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-        };
+
+        let source_schema = tombi_schema_store::SourceSchema::new(
+            Some(Arc::new(document_schema)),
+            ahash::AHashMap::with_capacity(0),
+            Some(toml_version),
+        );
+
         let schema_context = tombi_schema_store::SchemaContext {
-            toml_version: TOMBI_COMMENT_DIRECTIVE_TOML_VERSION,
+            toml_version,
             root_schema: source_schema.root_schema.as_deref(),
             sub_schema_uri_map: None,
             schema_visits: Default::default(),
