@@ -322,6 +322,16 @@ async fn validate_array(
 
         if let Some(const_value) = &array_schema.const_value {
             if actual_value != *const_value {
+                let level = lint_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| {
+                        rules
+                            .const_value
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
+                    .unwrap_or_default();
+
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::Const {
                         expected: const_value.to_string(),
@@ -329,15 +339,28 @@ async fn validate_array(
                     }),
                     range: array_value.range(),
                 }
-                .push_diagnostic_with_level(
-                    SeverityLevelDefaultError::default(),
-                    &mut total_diagnostics,
-                );
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
             }
+        } else if lint_rules
+            .and_then(|rules| rules.common.const_value.as_ref())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                array_value.comment_directives(),
+                lint_rules.as_ref().map(|rules| &rules.common),
+                "const-value",
+            );
         }
 
         if let Some(r#enum) = &array_schema.r#enum {
             if !r#enum.iter().any(|item| *item == actual_value) {
+                let level = lint_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                    .unwrap_or_default();
+
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::Enum {
                         expected: r#enum.iter().map(|item| item.to_string()).collect(),
@@ -345,11 +368,19 @@ async fn validate_array(
                     }),
                     range: array_value.range(),
                 }
-                .push_diagnostic_with_level(
-                    SeverityLevelDefaultError::default(),
-                    &mut total_diagnostics,
-                );
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
             }
+        } else if lint_rules
+            .and_then(|rules| rules.common.r#enum())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                array_value.comment_directives(),
+                lint_rules.as_ref().map(|rules| &rules.common),
+                "enum",
+            );
         }
     }
 

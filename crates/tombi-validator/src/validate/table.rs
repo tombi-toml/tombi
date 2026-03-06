@@ -514,6 +514,16 @@ async fn validate_table(
 
         if let Some(const_value) = &table_schema.const_value {
             if actual_object != *const_value {
+                let level = table_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| {
+                        rules
+                            .const_value
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
+                    .unwrap_or_default();
+
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::Const {
                         expected: tombi_json_value::Value::Object(const_value.clone()).to_string(),
@@ -521,15 +531,28 @@ async fn validate_table(
                     }),
                     range: table_value.range(),
                 }
-                .push_diagnostic_with_level(
-                    SeverityLevelDefaultError::default(),
-                    &mut total_diagnostics,
-                );
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
             }
+        } else if table_rules
+            .and_then(|rules| rules.common.const_value.as_ref())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                table_value.comment_directives(),
+                table_rules.as_ref().map(|rules| &rules.common),
+                "const-value",
+            );
         }
 
         if let Some(r#enum) = &table_schema.r#enum {
             if !r#enum.iter().any(|item| *item == actual_object) {
+                let level = table_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                    .unwrap_or_default();
+
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::Enum {
                         expected: r#enum
@@ -540,11 +563,19 @@ async fn validate_table(
                     }),
                     range: table_value.range(),
                 }
-                .push_diagnostic_with_level(
-                    SeverityLevelDefaultError::default(),
-                    &mut total_diagnostics,
-                );
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
             }
+        } else if table_rules
+            .and_then(|rules| rules.common.r#enum())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                table_value.comment_directives(),
+                table_rules.as_ref().map(|rules| &rules.common),
+                "enum",
+            );
         }
     }
 
