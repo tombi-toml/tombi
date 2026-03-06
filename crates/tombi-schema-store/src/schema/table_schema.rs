@@ -233,15 +233,14 @@ impl TableSchema {
                 .map(|obj| {
                     let mut map = tombi_hashmap::IndexMap::new();
                     for (key, value) in &obj.properties {
-                        if let Some(schema_obj) = value.as_object() {
-                            if let Some(schema) =
+                        if let Some(schema_obj) = value.as_object()
+                            && let Some(schema) =
                                 Referable::<ValueSchema>::new(schema_obj, string_formats, dialect)
-                            {
-                                map.insert(
-                                    key.value.to_string(),
-                                    Arc::new(tokio::sync::RwLock::new(schema)),
-                                );
-                            }
+                        {
+                            map.insert(
+                                key.value.to_string(),
+                                Arc::new(tokio::sync::RwLock::new(schema)),
+                            );
                         }
                     }
                     map

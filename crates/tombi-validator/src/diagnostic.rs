@@ -110,18 +110,12 @@ pub enum DiagnosticKind {
     #[error(
         "Array must contain at least {min_contains} items matching the `contains` schema, but found {actual}"
     )]
-    ArrayMinContains {
-        min_contains: usize,
-        actual: usize,
-    },
+    ArrayMinContains { min_contains: usize, actual: usize },
 
     #[error(
         "Array must contain at most {max_contains} items matching the `contains` schema, but found {actual}"
     )]
-    ArrayMaxContains {
-        max_contains: usize,
-        actual: usize,
-    },
+    ArrayMaxContains { max_contains: usize, actual: usize },
 
     #[error("Array values must be unique")]
     ArrayUniqueValues,

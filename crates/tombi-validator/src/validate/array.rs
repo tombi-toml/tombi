@@ -270,8 +270,8 @@ async fn validate_array(
         }
     }
 
-    if let Some(contains) = &array_schema.contains {
-        if let Ok(Some(contains_schema)) = tombi_schema_store::resolve_schema_item(
+    if let Some(contains) = &array_schema.contains
+        && let Ok(Some(contains_schema)) = tombi_schema_store::resolve_schema_item(
             contains,
             current_schema.schema_uri.clone(),
             current_schema.definitions.clone(),
@@ -279,70 +279,69 @@ async fn validate_array(
         )
         .await
         .inspect_err(|err| log::warn!("{err}"))
+    {
+        let min_contains = array_schema.min_contains.unwrap_or(1);
+        let max_contains = array_schema.max_contains;
+        let needs_full_count = max_contains.is_some();
+
+        let mut match_count = 0usize;
+        for (index, value) in array_value.values().iter().enumerate() {
+            let new_accessors = accessors
+                .iter()
+                .cloned()
+                .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
+                .collect_vec();
+
+            let result = value
+                .validate(&new_accessors, Some(&contains_schema), schema_context)
+                .await;
+            if is_success_or_warning(&result) {
+                match_count += 1;
+                if !needs_full_count && match_count >= min_contains {
+                    break;
+                }
+            }
+        }
+
+        if match_count < min_contains {
+            if array_schema.min_contains.is_some() {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::ArrayMinContains {
+                        min_contains,
+                        actual: match_count,
+                    }),
+                    range: array_value.range(),
+                }
+                .push_diagnostic_with_level(
+                    SeverityLevelDefaultError::default(),
+                    &mut total_diagnostics,
+                );
+            } else {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::ArrayContains),
+                    range: array_value.range(),
+                }
+                .push_diagnostic_with_level(
+                    SeverityLevelDefaultError::default(),
+                    &mut total_diagnostics,
+                );
+            }
+        }
+
+        if let Some(max) = max_contains
+            && match_count > max
         {
-            let min_contains = array_schema.min_contains.unwrap_or(1);
-            let max_contains = array_schema.max_contains;
-            let needs_full_count = max_contains.is_some();
-
-            let mut match_count = 0usize;
-            for (index, value) in array_value.values().iter().enumerate() {
-                let new_accessors = accessors
-                    .iter()
-                    .cloned()
-                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
-                    .collect_vec();
-
-                let result = value
-                    .validate(&new_accessors, Some(&contains_schema), schema_context)
-                    .await;
-                if is_success_or_warning(&result) {
-                    match_count += 1;
-                    if !needs_full_count && match_count >= min_contains {
-                        break;
-                    }
-                }
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::ArrayMaxContains {
+                    max_contains: max,
+                    actual: match_count,
+                }),
+                range: array_value.range(),
             }
-
-            if match_count < min_contains {
-                if array_schema.min_contains.is_some() {
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::ArrayMinContains {
-                            min_contains,
-                            actual: match_count,
-                        }),
-                        range: array_value.range(),
-                    }
-                    .push_diagnostic_with_level(
-                        SeverityLevelDefaultError::default(),
-                        &mut total_diagnostics,
-                    );
-                } else {
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::ArrayContains),
-                        range: array_value.range(),
-                    }
-                    .push_diagnostic_with_level(
-                        SeverityLevelDefaultError::default(),
-                        &mut total_diagnostics,
-                    );
-                }
-            }
-
-            if let Some(max) = max_contains {
-                if match_count > max {
-                    crate::Diagnostic {
-                        kind: Box::new(crate::DiagnosticKind::ArrayMaxContains {
-                            max_contains: max,
-                            actual: match_count,
-                        }),
-                        range: array_value.range(),
-                    }
-                    .push_diagnostic_with_level(
-                        SeverityLevelDefaultError::default(),
-                        &mut total_diagnostics,
-                    );
-                }
-            }
+            .push_diagnostic_with_level(
+                SeverityLevelDefaultError::default(),
+                &mut total_diagnostics,
+            );
         }
     }
 
