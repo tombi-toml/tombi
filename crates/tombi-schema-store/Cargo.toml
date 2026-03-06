@@ -25,7 +25,7 @@ tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-document-tree = { workspace = true, optional = true }
 tombi-future.workspace = true
-tombi-hashmap.workspace = true
+tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-json.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true

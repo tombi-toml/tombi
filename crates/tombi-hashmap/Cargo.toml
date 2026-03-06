@@ -6,6 +6,10 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[features]
+default = []
+serde = ["ahash/serde", "indexmap/serde"]
+
 [dependencies]
-ahash = { version = "0.8.11", features = ["serde"] }
-indexmap = { version = "2.9.0", features = ["serde"] }
+ahash = { version = "0.8.11" }
+indexmap = { version = "2.9.0" }

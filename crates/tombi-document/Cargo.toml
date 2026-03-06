@@ -26,4 +26,4 @@ tombi-test-lib.workspace = true
 [features]
 default = ["serde"]
 lsp = ["tombi-text/lsp"]
-serde = ["dep:serde"]
+serde = ["dep:serde", "tombi-hashmap/serde"]

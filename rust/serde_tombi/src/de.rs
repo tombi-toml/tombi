@@ -202,7 +202,6 @@ mod tests {
     use super::*;
     use chrono::{DateTime, TimeZone, Utc};
     use serde::Deserialize;
-    use tombi_hashmap;
     use tombi_test_lib::project_root_path;
 
     #[tokio::test]

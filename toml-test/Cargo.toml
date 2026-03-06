@@ -19,7 +19,7 @@ tokio = { workspace = true, features = ["rt-multi-thread"] }
 tombi-ast.workspace = true
 tombi-config.workspace = true
 tombi-document-tree.workspace = true
-tombi-hashmap.workspace = true
+tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-linter.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true

@@ -25,7 +25,7 @@ tombi-date-time.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-formatter.workspace = true
-tombi-hashmap.workspace = true
+tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-toml-text.workspace = true

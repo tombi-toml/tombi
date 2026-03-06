@@ -8,7 +8,7 @@ license.workspace = true
 
 [dependencies]
 serde = { workspace = true, optional = true }
-tombi-hashmap.workspace = true
+tombi-hashmap = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
 pretty_assertions.workspace = true
