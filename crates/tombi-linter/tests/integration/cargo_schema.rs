@@ -33,7 +33,7 @@ test_lint! {
 
 test_lint! {
     #[test]
-    fn test_unonkwn_keys(
+    fn test_unknown_keys(
         r#"
         [aaa]
         bbb = 1
