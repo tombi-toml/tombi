@@ -607,11 +607,11 @@ mod completion_labels {
                 SourcePath(project_root_path().join("schemas").join("tombi.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "array-const-enum-test.schema.json",
                 "contains-test.schema.json",
                 "dependencies-test.schema.json",
                 "if-then-else-test.schema.json",
                 "partial-taskipy.schema.json",
-                "array-const-enum-test.schema.json",
                 "prefix-items-test.schema.json",
                 "recursive-schema.schema.json",
                 "table-const-enum-test.schema.json",
