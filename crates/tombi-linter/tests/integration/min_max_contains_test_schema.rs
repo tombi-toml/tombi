@@ -75,3 +75,28 @@ test_lint! {
         },
     ])
 }
+
+test_lint! {
+    #[test]
+    fn test_numbers_min_contains_satisfied(
+        r#"
+        numbers = [5, 15]
+        "#,
+        SchemaPath(min_max_contains_test_schema_path()),
+    ) -> Ok(_)
+}
+
+test_lint! {
+    #[test]
+    fn test_numbers_min_contains_not_satisfied(
+        r#"
+        numbers = [1, 5, 9]
+        "#,
+        SchemaPath(min_max_contains_test_schema_path()),
+    ) -> Err([
+        tombi_validator::DiagnosticKind::ArrayMinContains {
+            min_contains: 1,
+            actual: 0,
+        },
+    ])
+}
