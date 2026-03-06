@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TableConstEnumTest",
+  "type": "object",
+  "properties": {
+    "fixed_config": {
+      "description": "Must be exactly this object",
+      "type": "object",
+      "additionalProperties": true,
+      "const": {
+        "mode": "production",
+        "debug": false
+      }
+    },
+    "env_config": {
+      "description": "Must be one of the allowed environments",
+      "type": "object",
+      "additionalProperties": true,
+      "enum": [
+        { "env": "development", "port": 3000 },
+        { "env": "staging", "port": 8080 },
+        { "env": "production", "port": 443 }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

@@ -11,8 +11,8 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
-        handle_deprecated, handle_type_mismatch, handle_unused_noqa, is_success_or_warning,
-        if_then_else::validate_if_then_else, not_schema::validate_not,
+        handle_deprecated, handle_type_mismatch, handle_unused_noqa,
+        if_then_else::validate_if_then_else, is_success_or_warning, not_schema::validate_not,
     },
 };
 
@@ -170,34 +170,33 @@ async fn validate_array(
 
     if let Some(prefix_items) = &array_schema.prefix_items {
         // Resolve the overflow schema once before the loop
-        let overflow_schema = if let Some(additional_items_schema) =
-            &array_schema.additional_items_schema
-        {
-            tombi_schema_store::resolve_schema_item(
-                additional_items_schema,
-                current_schema.schema_uri.clone(),
-                current_schema.definitions.clone(),
-                schema_context.store,
-            )
-            .await
-            .inspect_err(|err| log::warn!("{err}"))
-            .ok()
-            .flatten()
-        } else if let Some(items) = &array_schema.items {
-            // 2020-12: items acts as additionalItems when prefixItems is present
-            tombi_schema_store::resolve_schema_item(
-                items,
-                current_schema.schema_uri.clone(),
-                current_schema.definitions.clone(),
-                schema_context.store,
-            )
-            .await
-            .inspect_err(|err| log::warn!("{err}"))
-            .ok()
-            .flatten()
-        } else {
-            None
-        };
+        let overflow_schema =
+            if let Some(additional_items_schema) = &array_schema.additional_items_schema {
+                tombi_schema_store::resolve_schema_item(
+                    additional_items_schema,
+                    current_schema.schema_uri.clone(),
+                    current_schema.definitions.clone(),
+                    schema_context.store,
+                )
+                .await
+                .inspect_err(|err| log::warn!("{err}"))
+                .ok()
+                .flatten()
+            } else if let Some(items) = &array_schema.items {
+                // 2020-12: items acts as additionalItems when prefixItems is present
+                tombi_schema_store::resolve_schema_item(
+                    items,
+                    current_schema.schema_uri.clone(),
+                    current_schema.definitions.clone(),
+                    schema_context.store,
+                )
+                .await
+                .inspect_err(|err| log::warn!("{err}"))
+                .ok()
+                .flatten()
+            } else {
+                None
+            };
 
         // Tuple validation: validate each element against its positional schema
         for (index, value) in array_value.values().iter().enumerate() {
@@ -309,6 +308,79 @@ async fn validate_array(
                     &mut total_diagnostics,
                 );
             }
+        }
+    }
+
+    if array_schema.const_value.is_some() || array_schema.r#enum.is_some() {
+        let actual_value = tombi_json_value::Value::Array(
+            array_value
+                .values()
+                .iter()
+                .map(crate::convert::value_to_json_value)
+                .collect(),
+        );
+
+        if let Some(const_value) = &array_schema.const_value {
+            if actual_value != *const_value {
+                let level = lint_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| {
+                        rules
+                            .const_value
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
+                    .unwrap_or_default();
+
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::Const {
+                        expected: const_value.to_string(),
+                        actual: actual_value.to_string(),
+                    }),
+                    range: array_value.range(),
+                }
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
+            }
+        } else if lint_rules
+            .and_then(|rules| rules.common.const_value.as_ref())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                array_value.comment_directives(),
+                lint_rules.as_ref().map(|rules| &rules.common),
+                "const-value",
+            );
+        }
+
+        if let Some(r#enum) = &array_schema.r#enum {
+            if !r#enum.iter().any(|item| *item == actual_value) {
+                let level = lint_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                    .unwrap_or_default();
+
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::Enum {
+                        expected: r#enum.iter().map(|item| item.to_string()).collect(),
+                        actual: actual_value.to_string(),
+                    }),
+                    range: array_value.range(),
+                }
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
+            }
+        } else if lint_rules
+            .and_then(|rules| rules.common.r#enum())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                array_value.comment_directives(),
+                lint_rules.as_ref().map(|rules| &rules.common),
+                "enum",
+            );
         }
     }
 

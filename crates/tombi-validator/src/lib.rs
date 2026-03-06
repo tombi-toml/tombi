@@ -1,4 +1,5 @@
 pub mod comment_directive;
+mod convert;
 mod diagnostic;
 mod error;
 mod validate;

@@ -16,8 +16,7 @@ use crate::{
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         handle_deprecated, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        if_then_else::validate_if_then_else, not_schema::validate_not,
-        string::validate_raw_string,
+        if_then_else::validate_if_then_else, not_schema::validate_not, string::validate_raw_string,
     },
 };
 
@@ -507,6 +506,76 @@ async fn validate_table(
                     }
                 }
             }
+        }
+    }
+
+    if table_schema.const_value.is_some() || table_schema.r#enum.is_some() {
+        let actual_object = crate::convert::table_to_json_object(table_value);
+
+        if let Some(const_value) = &table_schema.const_value {
+            if actual_object != *const_value {
+                let level = table_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| {
+                        rules
+                            .const_value
+                            .as_ref()
+                            .map(SeverityLevelDefaultError::from)
+                    })
+                    .unwrap_or_default();
+
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::Const {
+                        expected: tombi_json_value::Value::Object(const_value.clone()).to_string(),
+                        actual: tombi_json_value::Value::Object(actual_object.clone()).to_string(),
+                    }),
+                    range: table_value.range(),
+                }
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
+            }
+        } else if table_rules
+            .and_then(|rules| rules.common.const_value.as_ref())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                table_value.comment_directives(),
+                table_rules.as_ref().map(|rules| &rules.common),
+                "const-value",
+            );
+        }
+
+        if let Some(r#enum) = &table_schema.r#enum {
+            if !r#enum.iter().any(|item| *item == actual_object) {
+                let level = table_rules
+                    .map(|rules| &rules.common)
+                    .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
+                    .unwrap_or_default();
+
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::Enum {
+                        expected: r#enum
+                            .iter()
+                            .map(|item| tombi_json_value::Value::Object(item.clone()).to_string())
+                            .collect(),
+                        actual: tombi_json_value::Value::Object(actual_object).to_string(),
+                    }),
+                    range: table_value.range(),
+                }
+                .push_diagnostic_with_level(level, &mut total_diagnostics);
+            }
+        } else if table_rules
+            .and_then(|rules| rules.common.r#enum())
+            .and_then(|rules| rules.disabled)
+            == Some(true)
+        {
+            handle_unused_noqa(
+                &mut total_diagnostics,
+                table_value.comment_directives(),
+                table_rules.as_ref().map(|rules| &rules.common),
+                "enum",
+            );
         }
     }
 
