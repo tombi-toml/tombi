@@ -248,19 +248,31 @@ By adding the `x-tombi-string-formats` key to the root of the JSON Schema, you c
     "email",
     "hostname",
     "uri",
-    "uuid"
+    "uuid",
+    "ipv4",
+    "ipv6"
   ]
 }
 ```
 
 Currently supported `format` targets are as follows:
 
-| format         | Specification                                             |
-|----------------|-----------------------------------------------------------|
-| `email`        | [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322) |
-| `hostname`     | [RFC 1034](https://datatracker.ietf.org/doc/html/rfc1034) |
-| `uri`          | [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986) |
-| `uuid`         | [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122) |
+| format              | Specification                                                                                                              | TOML Type       |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------|-----------------|
+| `email`             | [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322)                                                                 |                 |
+| `hostname`          | [RFC 1034](https://datatracker.ietf.org/doc/html/rfc1034)                                                                 |                 |
+| `uri`               | [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)                                                                 |                 |
+| `uri-reference`     | [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)                                                                 |                 |
+| `uuid`              | [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122)                                                                 |                 |
+| `ipv4`              | [RFC 2673 §3.2](https://datatracker.ietf.org/doc/html/rfc2673#section-3.2)                                                |                 |
+| `ipv6`              | [RFC 4291 §2.2](https://datatracker.ietf.org/doc/html/rfc4291#section-2.2)                                                |                 |
+| `date-time`         | [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6)                                                | Offset Date-Time |
+| `date-time-local`   | [OpenAPI Format Registry](https://spec.openapis.org/registry/format/date-time-local.html)                                  | Local Date-Time |
+| `date`              | [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-date                                      | Local Date      |
+| `time`              | [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-time                                      |                 |
+| `time-local`        | [OpenAPI Format Registry](https://spec.openapis.org/registry/format/time-local.html)                                       | Local Time      |
+| `regex`             | [ECMA-262](https://262.ecma-international.org/)                                                                            |                 |
+| `json-pointer`      | [RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901)                                                                 |                 |
 
 <Note>
 If you want to support additional `format` in Tombi, please check if it exists in [JSON Schema Specification](https://json-schema.org/draft/2020-12/json-schema-validation#name-defined-formats) or [OpenAPI Format Registry](https://spec.openapis.org/registry/format/).

@@ -90,6 +90,12 @@ pub fn array_const_enum_test_schema_path() -> PathBuf {
         .join("array-const-enum-test.schema.json")
 }
 
+pub fn string_format_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("string-format-test.schema.json")
+}
+
 pub fn dependent_required_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")

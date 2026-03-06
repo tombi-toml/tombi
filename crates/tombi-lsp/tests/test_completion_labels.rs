@@ -1,7 +1,7 @@
 use tombi_config::{JSON_SCHEMASTORE_CATALOG_URL, TOMBI_SCHEMASTORE_CATALOG_URL};
 use tombi_test_lib::{
-    project_root_path, today_local_date, today_local_date_time, today_local_time,
-    today_offset_date_time,
+    project_root_path, string_format_test_schema_path, today_local_date, today_local_date_time,
+    today_local_time, today_offset_date_time,
 };
 
 mod completion_labels {
@@ -617,6 +617,7 @@ mod completion_labels {
                 "partial-taskipy.schema.json",
                 "prefix-items-test.schema.json",
                 "recursive-schema.schema.json",
+                "string-format-test.schema.json",
                 "table-const-enum-test.schema.json",
                 "tuple-items-test.schema.json",
                 "type-test.schema.json",
@@ -1818,6 +1819,79 @@ mod completion_labels {
                 "string",
                 "table",
                 "table-allows-empty-key",
+            ]);
+        }
+    }
+
+    mod string_format_test_schema {
+        use super::*;
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn completion_date_val_with_string_formats(
+                r#"
+                date_val = █
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "''",
+                today_local_date(),
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn completion_time_local_val_with_string_formats(
+                r#"
+                time_local_val = █
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "''",
+                today_local_time(),
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn completion_date_time_local_val_with_string_formats(
+                r#"
+                date_time_local_val = █
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "''",
+                today_local_date_time(),
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn completion_date_time_val_with_string_formats(
+                r#"
+                date_time_val = █
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "''",
+                today_offset_date_time(),
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn completion_ipv4_addr_no_string_type_hint(
+                r#"
+                ipv4_addr = █
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok([
+                "\"\"",
+                "''",
             ]);
         }
     }

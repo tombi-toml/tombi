@@ -152,8 +152,38 @@ pub enum StringFormat {
     /// [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)
     Uri,
 
+    /// [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)
+    UriReference,
+
     /// [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122)
     Uuid,
+
+    /// [RFC 2673 §3.2](https://datatracker.ietf.org/doc/html/rfc2673#section-3.2)
+    Ipv4,
+
+    /// [RFC 4291 §2.2](https://datatracker.ietf.org/doc/html/rfc4291#section-2.2)
+    Ipv6,
+
+    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6)
+    DateTime,
+
+    /// [OpenAPI Format Registry](https://spec.openapis.org/registry/format/date-time-local.html)
+    DateTimeLocal,
+
+    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-date
+    Date,
+
+    /// [RFC 3339 §5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) full-time
+    Time,
+
+    /// [OpenAPI Format Registry](https://spec.openapis.org/registry/format/time-local.html)
+    TimeLocal,
+
+    /// [ECMA-262](https://262.ecma-international.org/)
+    Regex,
+
+    /// [RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901)
+    JsonPointer,
 }
 
 impl std::fmt::Display for StringFormat {
@@ -162,7 +192,17 @@ impl std::fmt::Display for StringFormat {
             Self::Email => write!(f, "email"),
             Self::Hostname => write!(f, "hostname"),
             Self::Uri => write!(f, "uri"),
+            Self::UriReference => write!(f, "uri-reference"),
             Self::Uuid => write!(f, "uuid"),
+            Self::Ipv4 => write!(f, "ipv4"),
+            Self::Ipv6 => write!(f, "ipv6"),
+            Self::DateTime => write!(f, "date-time"),
+            Self::DateTimeLocal => write!(f, "date-time-local"),
+            Self::Date => write!(f, "date"),
+            Self::Time => write!(f, "time"),
+            Self::TimeLocal => write!(f, "time-local"),
+            Self::Regex => write!(f, "regex"),
+            Self::JsonPointer => write!(f, "json-pointer"),
         }
     }
 }
@@ -175,7 +215,17 @@ impl FromStr for StringFormat {
             "email" => Ok(Self::Email),
             "hostname" => Ok(Self::Hostname),
             "uri" => Ok(Self::Uri),
+            "uri-reference" => Ok(Self::UriReference),
             "uuid" => Ok(Self::Uuid),
+            "ipv4" => Ok(Self::Ipv4),
+            "ipv6" => Ok(Self::Ipv6),
+            "date-time" => Ok(Self::DateTime),
+            "date-time-local" | "partial-date-time" => Ok(Self::DateTimeLocal),
+            "date" => Ok(Self::Date),
+            "time" => Ok(Self::Time),
+            "time-local" | "partial-time" => Ok(Self::TimeLocal),
+            "regex" => Ok(Self::Regex),
+            "json-pointer" => Ok(Self::JsonPointer),
             _ => Err(()),
         }
     }

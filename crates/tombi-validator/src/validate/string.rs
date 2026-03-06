@@ -79,6 +79,41 @@ impl Validate for tombi_document_tree::String {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
+                    // When the schema expects a TOML date/time type but the value is a string,
+                    // check if x-tombi-string-formats includes the corresponding format.
+                    // If so, validate the string against the format instead of reporting type mismatch.
+                    ValueSchema::OffsetDateTime(_) => validate_string_as_date_format(
+                        self,
+                        StringFormat::DateTime,
+                        tombi_schema_store::ValueType::OffsetDateTime,
+                        format::date_time::validate_format,
+                        schema_context,
+                        lint_rules.as_ref(),
+                    ),
+                    ValueSchema::LocalDateTime(_) => validate_string_as_date_format(
+                        self,
+                        StringFormat::DateTimeLocal,
+                        tombi_schema_store::ValueType::LocalDateTime,
+                        format::local_date_time::validate_format,
+                        schema_context,
+                        lint_rules.as_ref(),
+                    ),
+                    ValueSchema::LocalDate(_) => validate_string_as_date_format(
+                        self,
+                        StringFormat::Date,
+                        tombi_schema_store::ValueType::LocalDate,
+                        format::date::validate_format,
+                        schema_context,
+                        lint_rules.as_ref(),
+                    ),
+                    ValueSchema::LocalTime(_) => validate_string_as_date_format(
+                        self,
+                        StringFormat::TimeLocal,
+                        tombi_schema_store::ValueType::LocalTime,
+                        format::local_time::validate_format,
+                        schema_context,
+                        lint_rules.as_ref(),
+                    ),
                     value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),
@@ -303,7 +338,17 @@ pub(crate) fn validate_raw_string<'a>(
             StringFormat::Email => format::email::validate_format(value),
             StringFormat::Hostname => format::hostname::validate_format(value),
             StringFormat::Uri => format::uri::validate_format(value),
+            StringFormat::UriReference => format::uri_reference::validate_format(value),
             StringFormat::Uuid => format::uuid::validate_format(value),
+            StringFormat::Ipv4 => format::ipv4::validate_format(value),
+            StringFormat::Ipv6 => format::ipv6::validate_format(value),
+            StringFormat::DateTime => format::date_time::validate_format(value),
+            StringFormat::DateTimeLocal => format::local_date_time::validate_format(value),
+            StringFormat::Date => format::date::validate_format(value),
+            StringFormat::Time => format::time::validate_format(value),
+            StringFormat::TimeLocal => format::local_time::validate_format(value),
+            StringFormat::Regex => format::regex::validate_format(value),
+            StringFormat::JsonPointer => format::json_pointer::validate_format(value),
         }
     {
         let level = lint_rules
@@ -376,6 +421,53 @@ pub(crate) fn validate_raw_string<'a>(
     if diagnostics.is_empty() {
         Ok(())
     } else {
+        Err(diagnostics.into())
+    }
+}
+
+/// When a string value encounters a TOML date/time schema,
+/// check if x-tombi-string-formats includes the corresponding format.
+/// If so, validate the string against the format; otherwise, report type mismatch.
+fn validate_string_as_date_format(
+    string_value: &tombi_document_tree::String,
+    string_format: StringFormat,
+    expected_value_type: tombi_schema_store::ValueType,
+    validate_fn: fn(&str) -> bool,
+    schema_context: &tombi_schema_store::SchemaContext,
+    lint_rules: Option<&StringCommonLintRules>,
+) -> Result<(), crate::Error> {
+    if !schema_context.has_string_format(string_format) {
+        return handle_type_mismatch(
+            expected_value_type,
+            string_value.value_type(),
+            string_value.range(),
+            lint_rules.map(|rules| &rules.common),
+        );
+    }
+
+    if validate_fn(string_value.value()) {
+        Ok(())
+    } else {
+        let level = lint_rules
+            .map(|rules| &rules.value)
+            .and_then(|rules| {
+                rules
+                    .string_format
+                    .as_ref()
+                    .map(SeverityLevelDefaultError::from)
+            })
+            .unwrap_or_default();
+
+        let mut diagnostics = vec![];
+        crate::Diagnostic {
+            kind: Box::new(crate::DiagnosticKind::StringFormat {
+                format: string_format,
+                actual: string_value.to_string(),
+            }),
+            range: string_value.range(),
+        }
+        .push_diagnostic_with_level(level, &mut diagnostics);
+
         Err(diagnostics.into())
     }
 }

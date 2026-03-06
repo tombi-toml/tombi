@@ -1,5 +1,6 @@
 use tombi_comment_directive::value::{LocalTimeCommonFormatRules, LocalTimeCommonLintRules};
 use tombi_schema_store::{Accessor, CurrentSchema, LocalTimeSchema, ValueSchema};
+use tombi_x_keyword::StringFormat;
 
 use crate::{
     HoverContent,
@@ -123,14 +124,25 @@ impl GetHoverContent for LocalTimeSchema {
         _keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
-        _schema_context: &'a tombi_schema_store::SchemaContext,
+        schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
+            let has_string_format = schema_context.has_string_format(StringFormat::TimeLocal);
+
+            let value_type = if has_string_format {
+                tombi_schema_store::ValueType::AnyOf(vec![
+                    tombi_schema_store::ValueType::LocalTime,
+                    tombi_schema_store::ValueType::String,
+                ])
+            } else {
+                tombi_schema_store::ValueType::LocalTime
+            };
+
             Some(HoverContent::Value(HoverValueContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                value_type: tombi_schema_store::ValueType::LocalTime,
+                value_type,
                 constraints: Some(ValueConstraints {
                     r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
                         DisplayValue::try_new_local_time(value).ok()
@@ -145,6 +157,11 @@ impl GetHoverContent for LocalTimeSchema {
                             .filter_map(|example| DisplayValue::try_new_local_time(example).ok())
                             .collect()
                     }),
+                    format: if has_string_format {
+                        Some(StringFormat::TimeLocal)
+                    } else {
+                        None
+                    },
                     ..Default::default()
                 }),
                 schema_uri: current_schema

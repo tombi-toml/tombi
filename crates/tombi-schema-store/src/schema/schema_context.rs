@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tombi_x_keyword::StringFormat;
 
 use crate::schema::schema_cycle_guard::SchemaVisits;
 
@@ -17,6 +18,13 @@ impl SchemaContext<'_> {
     #[inline]
     pub fn strict(&self) -> bool {
         self.strict.unwrap_or_else(|| self.store.strict())
+    }
+
+    #[inline]
+    pub fn has_string_format(&self, format: StringFormat) -> bool {
+        self.root_schema
+            .and_then(|root| root.string_formats())
+            .is_some_and(|formats| formats.contains(&format))
     }
 
     pub async fn get_subschema(

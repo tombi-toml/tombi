@@ -1,4 +1,6 @@
-use tombi_test_lib::{cargo_schema_path, pyproject_schema_path, tombi_schema_path};
+use tombi_test_lib::{
+    cargo_schema_path, pyproject_schema_path, string_format_test_schema_path, tombi_schema_path,
+};
 mod hover_keys_value {
     use super::*;
 
@@ -444,6 +446,62 @@ mod hover_keys_value {
             ) -> Ok({
                 "Keys": "dependencies.${mod_id}[0].modId",
                 "Value": "String"
+            });
+        );
+    }
+
+    mod string_format_test_schema {
+        use super::*;
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hover_date_val_with_string_formats(
+                r#"
+                date_val = 2024-01-15█
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok({
+                "Keys": "date_val",
+                "Value": "(LocalDate | String)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hover_time_local_val_with_string_formats(
+                r#"
+                time_local_val = 10:30:00█
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok({
+                "Keys": "time_local_val",
+                "Value": "(LocalTime | String)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hover_date_time_local_val_with_string_formats(
+                r#"
+                date_time_local_val = 2024-01-15T10:30:00█
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok({
+                "Keys": "date_time_local_val",
+                "Value": "(LocalDateTime | String)?"
+            });
+        );
+
+        test_hover_keys_value!(
+            #[tokio::test]
+            async fn hover_date_time_val_with_string_formats(
+                r#"
+                date_time_val = 2024-01-15T10:30:00Z█
+                "#,
+                SchemaPath(string_format_test_schema_path()),
+            ) -> Ok({
+                "Keys": "date_time_val",
+                "Value": "(OffsetDateTime | String)?"
             });
         );
     }
