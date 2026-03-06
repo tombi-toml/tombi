@@ -93,12 +93,7 @@ impl<'a> Formatter<'a> {
             .unwrap_or_else(|| {
                 source_schema
                     .as_ref()
-                    .and_then(|schema| {
-                        schema
-                            .root_schema
-                            .as_ref()
-                            .and_then(|root| root.toml_version())
-                    })
+                    .and_then(|schema| schema.toml_version())
                     .unwrap_or(self.toml_version)
             });
 

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use ahash::AHashMap;
 use itertools::Itertools;
+use tombi_config::TomlVersion;
 
 use super::{DocumentSchema, SchemaUri};
 use crate::{SchemaAccessor, SchemaAccessors};
@@ -12,6 +13,35 @@ pub type SubSchemaUriMap = AHashMap<Vec<SchemaAccessor>, SchemaUri>;
 pub struct SourceSchema {
     pub root_schema: Option<Arc<DocumentSchema>>,
     pub sub_schema_uri_map: SubSchemaUriMap,
+    /// TOML version override from `[[schemas]]` config entry.
+    ///
+    /// Use [`toml_version()`](Self::toml_version) to get the resolved value.
+    toml_version: Option<TomlVersion>,
+}
+
+impl SourceSchema {
+    pub fn new(
+        root_schema: Option<Arc<DocumentSchema>>,
+        sub_schema_uri_map: SubSchemaUriMap,
+        toml_version: Option<TomlVersion>,
+    ) -> Self {
+        Self {
+            root_schema,
+            sub_schema_uri_map,
+            toml_version,
+        }
+    }
+
+    /// Returns the resolved TOML version for this source.
+    ///
+    /// Priority: `[[schemas]]` config `toml-version` > JSON Schema `x-tombi-toml-version`.
+    pub fn toml_version(&self) -> Option<TomlVersion> {
+        self.toml_version.or_else(|| {
+            self.root_schema
+                .as_ref()
+                .and_then(|root| root.toml_version())
+        })
+    }
 }
 
 impl std::fmt::Debug for SourceSchema {

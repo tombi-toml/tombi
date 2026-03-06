@@ -130,12 +130,13 @@ async fn get_comment_directive_toml_content_hover_content(
         };
 
         let schema_store = tombi_comment_directive_store::schema_store().await;
-        let source_schema = tombi_schema_store::SourceSchema {
-            root_schema: Some(Arc::new(
+        let source_schema = tombi_schema_store::SourceSchema::new(
+            Some(Arc::new(
                 comment_directive_document_schema(schema_store, schema_uri).await,
             )),
-            sub_schema_uri_map: ahash::AHashMap::with_capacity(0),
-        };
+            ahash::AHashMap::with_capacity(0),
+            Some(toml_version),
+        );
 
         let schema_context = tombi_schema_store::SchemaContext {
             toml_version,
