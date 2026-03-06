@@ -77,3 +77,15 @@ pub fn prefix_items_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("prefix-items-test.schema.json")
 }
+
+pub fn table_const_enum_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("table-const-enum-test.schema.json")
+}
+
+pub fn array_const_enum_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("array-const-enum-test.schema.json")
+}

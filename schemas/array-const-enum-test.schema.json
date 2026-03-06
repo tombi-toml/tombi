@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ArrayConstEnumTest",
+  "type": "object",
+  "properties": {
+    "fixed_list": {
+      "description": "Must be exactly this array",
+      "type": "array",
+      "const": [1, 2, 3]
+    },
+    "color": {
+      "description": "Must be one of the allowed color arrays",
+      "type": "array",
+      "enum": [
+        [255, 0, 0],
+        [0, 255, 0],
+        [0, 0, 255]
+      ]
+    }
+  },
+  "additionalProperties": false
+}

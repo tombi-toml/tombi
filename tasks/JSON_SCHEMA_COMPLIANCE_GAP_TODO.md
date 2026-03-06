@@ -36,8 +36,8 @@
   備考: 2020-12 で廃止、`prefixItems` に置換
 - [x] `additionalItems` を実装する（2026-03-05 対応）
   備考: 2020-12 で廃止、新しい `items` 意味論へ置換
-- [ ] object に対する `const` / `enum` 検証を実装する（`TableSchema` 側）
-- [ ] array に対する `const` / `enum` 検証を実装する（`ArraySchema` 側）
+- [x] object に対する `const` / `enum` 検証を実装する（`TableSchema` 側）（2026-03-06 対応）
+- [x] array に対する `const` / `enum` 検証を実装する（`ArraySchema` 側）（2026-03-06 対応）
 - [ ] `readOnly` / `writeOnly` annotation を保持・公開する
 - [ ] `contentEncoding` / `contentMediaType` / `contentSchema` を annotation として扱う
 - [ ] `format` サポート範囲を仕様語彙（`uri-reference`, `ipv4`, `ipv6`, `iri`, `json-pointer` など）へ拡張する

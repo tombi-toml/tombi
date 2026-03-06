@@ -21,6 +21,7 @@ tombi-diagnostic.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-future.workspace = true
+tombi-json-value.workspace = true
 tombi-parser.workspace = true
 tombi-regex.workspace = true
 tombi-schema-store.workspace = true
@@ -30,3 +31,6 @@ tombi-uri.workspace = true
 tombi-x-keyword.workspace = true
 unicode-segmentation.workspace = true
 uuid.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
