@@ -163,11 +163,9 @@ impl Value {
 
     pub fn contains(&self, position: tombi_text::Position) -> bool {
         self.range().contains(position)
-            || self
-                .comment_directives()
-                .is_some_and(|mut directives| {
-                    directives.any(|comment_directive| comment_directive.range().contains(position))
-                })
+            || self.comment_directives().is_some_and(|mut directives| {
+                directives.any(|comment_directive| comment_directive.range().contains(position))
+            })
     }
 }
 

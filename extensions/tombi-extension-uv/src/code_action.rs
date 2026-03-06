@@ -623,10 +623,8 @@ mod tests {
 [package]
 name = "test"
 "#;
-        let root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = root
             .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -656,10 +654,8 @@ members = ["member1"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = root
             .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -689,10 +685,8 @@ dependencies = ["pydantic>=2.10"]
 [project]
 name = "test"
 "#;
-        let root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = root
             .clone()
             .try_into_document_tree(tombi_config::TomlVersion::default())
@@ -728,11 +722,8 @@ name = "test"
 name = "member"
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(member_toml).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -745,11 +736,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -784,10 +772,8 @@ dependencies = ["pydantic>=2.10,<3.0"]
 name = "member"
 dependencies = ["pydantic[email,dotenv]>=2.10,<3.0"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -799,11 +785,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -834,10 +817,8 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["pydantic"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -849,11 +830,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -884,10 +862,8 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -899,11 +875,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -968,11 +941,8 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let member_root =
+            tombi_ast::Root::cast(tombi_parser::parse(member_toml).into_syntax_node()).unwrap();
         let member_tree = member_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -984,11 +954,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_root_for_tree =
             tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
         let workspace_tree = workspace_root_for_tree
@@ -1034,11 +1001,8 @@ dependencies = ["pydantic>=2.10"]
 name = "member"
 dependencies = ["pydantic>=2.10"]
 "#;
-        let member_root = tombi_ast::Root::cast(
-            tombi_parser::parse(member_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let member_root =
+            tombi_ast::Root::cast(tombi_parser::parse(member_toml).into_syntax_node()).unwrap();
         let member_tree = member_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1050,11 +1014,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_root_for_tree =
             tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
         let workspace_tree = workspace_root_for_tree
@@ -1098,10 +1059,8 @@ dependencies = ["pydantic>=2.10,<3.0"]
 name = "member"
 dependencies = ["pydantic>=2.10"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1113,11 +1072,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10,<3.0"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_root_for_tree =
             tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
         let workspace_tree = workspace_root_for_tree
@@ -1171,10 +1127,8 @@ dependencies = ["pydantic>=2.10,<3.0"]
 name = "member"
 dependencies = ["requests>=2.28"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1186,11 +1140,8 @@ members = ["member"]
 [project]
 dependencies = ["pydantic>=2.10"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_root_for_tree =
             tombi_ast::Root::cast(workspace_root.syntax().clone()).unwrap();
         let workspace_tree = workspace_root_for_tree
@@ -1244,10 +1195,8 @@ name = "member"
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 "#;
-        let document_root = tombi_ast::Root::cast(
-            tombi_parser::parse(toml_text).into_syntax_node(),
-        )
-        .unwrap();
+        let document_root =
+            tombi_ast::Root::cast(tombi_parser::parse(toml_text).into_syntax_node()).unwrap();
         let document_tree = document_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();
@@ -1259,11 +1208,8 @@ members = ["member"]
 [project]
 dependencies = ["pytest>=7.0,<8.0"]
 "#;
-        let workspace_root = tombi_ast::Root::cast(
-            tombi_parser::parse(workspace_toml)
-                .into_syntax_node(),
-        )
-        .unwrap();
+        let workspace_root =
+            tombi_ast::Root::cast(tombi_parser::parse(workspace_toml).into_syntax_node()).unwrap();
         let workspace_tree = workspace_root
             .try_into_document_tree(tombi_config::TomlVersion::default())
             .unwrap();

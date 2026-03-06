@@ -174,12 +174,8 @@ impl Referable<ValueSchema> {
                                 .and_then(|dialect_uri| {
                                     crate::JsonSchemaDialect::try_from(dialect_uri).ok()
                                 });
-                            if let Some(mut resolved_schema) = resolve_json_pointer(
-                                &schema_value,
-                                pointer,
-                                None,
-                                dialect,
-                            )?
+                            if let Some(mut resolved_schema) =
+                                resolve_json_pointer(&schema_value, pointer, None, dialect)?
                             {
                                 if title.is_some() || description.is_some() {
                                     resolved_schema.set_title(title.to_owned());

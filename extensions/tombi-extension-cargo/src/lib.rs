@@ -40,8 +40,7 @@ fn load_cargo_toml(
 ) -> Option<(tombi_ast::Root, tombi_document_tree::DocumentTree)> {
     let toml_text = std::fs::read_to_string(cargo_toml_path).ok()?;
 
-    let root =
-        tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
+    let root = tombi_ast::Root::cast(tombi_parser::parse(&toml_text).into_syntax_node())?;
 
     Some((
         root.clone(),

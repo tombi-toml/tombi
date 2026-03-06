@@ -347,7 +347,8 @@ impl ValueSchema {
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
                     not: NotSchema::new(object, string_formats, dialect),
-                    if_then_else: IfThenElseSchema::new(object, string_formats, dialect).map(Box::new),
+                    if_then_else: IfThenElseSchema::new(object, string_formats, dialect)
+                        .map(Box::new),
                 }))
             }
         }
