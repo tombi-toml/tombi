@@ -2,6 +2,7 @@ use tombi_comment_directive::value::{LocalDateCommonFormatRules, LocalDateCommon
 use tombi_extension::CompletionKind;
 use tombi_future::Boxable;
 use tombi_schema_store::{Accessor, CurrentSchema, LocalDateSchema, SchemaUri};
+use tombi_x_keyword::StringFormat;
 
 use crate::{
     comment_directive::get_key_table_value_comment_directive_content_and_schema_uri,
@@ -56,7 +57,7 @@ impl FindCompletionContents for LocalDateSchema {
         keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
-        _schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+        schema_context: &'a tombi_schema_store::SchemaContext<'a>,
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Vec<CompletionContent>> {
         log::trace!("self = {:?}", self);
@@ -139,6 +140,14 @@ impl FindCompletionContents for LocalDateSchema {
                     schema_uri,
                     completion_hint,
                 ));
+
+                if schema_context.has_string_format(StringFormat::Date) {
+                    completion_items.extend(super::string::type_hint_string(
+                        position,
+                        schema_uri,
+                        completion_hint,
+                    ));
+                }
             }
 
             completion_items

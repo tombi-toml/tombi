@@ -40,7 +40,7 @@
 - [x] array に対する `const` / `enum` 検証を実装する（`ArraySchema` 側）（2026-03-06 対応）
 - [ ] `readOnly` / `writeOnly` annotation を保持・公開する
 - [ ] `contentEncoding` / `contentMediaType` / `contentSchema` を annotation として扱う
-- [ ] `format` サポート範囲を仕様語彙（`uri-reference`, `ipv4`, `ipv6`, `iri`, `json-pointer` など）へ拡張する
+- [x] `format` サポート範囲を仕様語彙（`uri-reference`, `ipv4`, `ipv6`, `date-time`, `date`, `time`, `regex`, `json-pointer` など）へ拡張する（2026-03-06 対応）
 
 ## 3. draft-2019-09 TODO（移行レイヤ）
 

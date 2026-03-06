@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StringFormatTest",
+  "type": "object",
+  "x-tombi-string-formats": [
+    "ipv4",
+    "ipv6",
+    "uri-reference",
+    "date-time",
+    "date-time-local",
+    "date",
+    "time",
+    "time-local",
+    "regex",
+    "json-pointer"
+  ],
+  "properties": {
+    "ipv4_addr": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "ipv6_addr": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "uri_ref": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "date_time_val": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date_time_local_val": {
+      "type": "string",
+      "format": "date-time-local"
+    },
+    "date_val": {
+      "type": "string",
+      "format": "date"
+    },
+    "time_val": {
+      "type": "string",
+      "format": "time"
+    },
+    "time_local_val": {
+      "type": "string",
+      "format": "time-local"
+    },
+    "regex_val": {
+      "type": "string",
+      "format": "regex"
+    },
+    "json_pointer_val": {
+      "type": "string",
+      "format": "json-pointer"
+    }
+  },
+  "additionalProperties": false
+}

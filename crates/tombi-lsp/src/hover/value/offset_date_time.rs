@@ -2,6 +2,7 @@ use tombi_comment_directive::value::{
     OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules,
 };
 use tombi_schema_store::{Accessor, CurrentSchema, OffsetDateTimeSchema, ValueSchema};
+use tombi_x_keyword::StringFormat;
 
 use crate::{
     HoverContent,
@@ -125,14 +126,25 @@ impl GetHoverContent for OffsetDateTimeSchema {
         _keys: &'a [tombi_document_tree::Key],
         accessors: &'a [Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
-        _schema_context: &'a tombi_schema_store::SchemaContext,
+        schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> tombi_future::BoxFuture<'b, Option<HoverContent>> {
         async move {
+            let has_string_format = schema_context.has_string_format(StringFormat::DateTime);
+
+            let value_type = if has_string_format {
+                tombi_schema_store::ValueType::AnyOf(vec![
+                    tombi_schema_store::ValueType::OffsetDateTime,
+                    tombi_schema_store::ValueType::String,
+                ])
+            } else {
+                tombi_schema_store::ValueType::OffsetDateTime
+            };
+
             Some(HoverContent::Value(HoverValueContent {
                 title: self.title.clone(),
                 description: self.description.clone(),
                 accessors: tombi_schema_store::Accessors::from(accessors.to_vec()),
-                value_type: tombi_schema_store::ValueType::OffsetDateTime,
+                value_type,
                 constraints: Some(ValueConstraints {
                     r#enum: build_enum_values(&self.const_value, &self.r#enum, |value| {
                         DisplayValue::try_new_offset_date_time(value).ok()
@@ -149,6 +161,11 @@ impl GetHoverContent for OffsetDateTimeSchema {
                             })
                             .collect()
                     }),
+                    format: if has_string_format {
+                        Some(StringFormat::DateTime)
+                    } else {
+                        None
+                    },
                     ..Default::default()
                 }),
                 schema_uri: current_schema.map(|schema| schema.schema_uri.as_ref().clone()),

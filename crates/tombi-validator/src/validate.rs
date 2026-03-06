@@ -16,9 +16,19 @@ mod table;
 mod value;
 
 pub mod format {
+    pub mod date;
+    pub mod date_time;
     pub mod email;
     pub mod hostname;
+    pub mod ipv4;
+    pub mod ipv6;
+    pub mod json_pointer;
+    pub mod local_date_time;
+    pub mod local_time;
+    pub mod regex;
+    pub mod time;
     pub mod uri;
+    pub mod uri_reference;
     pub mod uuid;
 }
 

@@ -3935,6 +3935,7 @@ dependencies = [
  "tombi-text",
  "tombi-uri",
  "tombi-validator",
+ "tombi-x-keyword",
 ]
 
 [[package]]

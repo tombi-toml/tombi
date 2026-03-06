@@ -15,6 +15,7 @@ pub struct DocumentSchema {
     pub schema_uri: SchemaUri,
     pub(crate) dialect: Option<JsonSchemaDialect>,
     pub(crate) toml_version: Option<TomlVersion>,
+    pub(crate) string_formats: Option<Vec<StringFormat>>,
     pub value_schema: Option<Arc<ValueSchema>>,
     pub definitions: SchemaDefinitions,
 }
@@ -82,6 +83,7 @@ impl DocumentSchema {
             schema_uri,
             dialect,
             toml_version,
+            string_formats,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
         }
@@ -89,6 +91,10 @@ impl DocumentSchema {
 
     pub fn dialect(&self) -> Option<JsonSchemaDialect> {
         self.dialect
+    }
+
+    pub fn string_formats(&self) -> Option<&[StringFormat]> {
+        self.string_formats.as_deref()
     }
 
     pub fn toml_version(&self) -> Option<TomlVersion> {
