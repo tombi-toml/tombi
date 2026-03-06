@@ -6,6 +6,12 @@ mod cargo_schema;
 mod contains_test_schema;
 #[path = "integration/dependencies_test_schema.rs"]
 mod dependencies_test_schema;
+#[path = "integration/dependent_required_test_schema.rs"]
+mod dependent_required_test_schema;
+#[path = "integration/dependent_schemas_test_schema.rs"]
+mod dependent_schemas_test_schema;
+#[path = "integration/min_max_contains_test_schema.rs"]
+mod min_max_contains_test_schema;
 #[path = "integration/non_schema.rs"]
 mod non_schema;
 #[path = "integration/other_schema.rs"]

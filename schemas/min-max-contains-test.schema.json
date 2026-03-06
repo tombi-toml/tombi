@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "MinMaxContainsTest",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "description": "Array must contain between 2 and 4 strings matching the pattern",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": {
+        "type": "string",
+        "pattern": "^important-"
+      },
+      "minContains": 2,
+      "maxContains": 4
+    },
+    "numbers": {
+      "description": "Array must contain at least 1 number >= 10 (minContains only)",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "contains": {
+        "type": "integer",
+        "minimum": 10
+      },
+      "minContains": 1
+    },
+    "limited": {
+      "description": "Array must contain at most 2 even numbers (maxContains only)",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "contains": {
+        "type": "integer",
+        "multipleOf": 2
+      },
+      "maxContains": 2
+    }
+  },
+  "additionalProperties": false
+}

@@ -107,6 +107,16 @@ pub enum DiagnosticKind {
     #[error("Array must contain at least one item matching the `contains` schema")]
     ArrayContains,
 
+    #[error(
+        "Array must contain at least {min_contains} items matching the `contains` schema, but found {actual}"
+    )]
+    ArrayMinContains { min_contains: usize, actual: usize },
+
+    #[error(
+        "Array must contain at most {max_contains} items matching the `contains` schema, but found {actual}"
+    )]
+    ArrayMaxContains { max_contains: usize, actual: usize },
+
     #[error("Array values must be unique")]
     ArrayUniqueValues,
 
@@ -174,6 +184,8 @@ impl DiagnosticKind {
             DiagnosticKind::ArrayMaxValues { .. } => "array-max-values",
             DiagnosticKind::ArrayMinValues { .. } => "array-min-values",
             DiagnosticKind::ArrayContains => "array-contains",
+            DiagnosticKind::ArrayMinContains { .. } => "array-min-contains",
+            DiagnosticKind::ArrayMaxContains { .. } => "array-max-contains",
             DiagnosticKind::ArrayUniqueValues => "array-unique-values",
             DiagnosticKind::ArrayAdditionalItems { .. } => "array-additional-items",
             DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
