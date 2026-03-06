@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "DependentRequiredTest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "credit_card": {
+      "type": "string"
+    },
+    "billing_address": {
+      "type": "string"
+    },
+    "shipping_address": {
+      "type": "string"
+    }
+  },
+  "dependentRequired": {
+    "credit_card": ["billing_address", "shipping_address"]
+  },
+  "additionalProperties": false
+}

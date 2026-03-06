@@ -280,7 +280,11 @@ async fn validate_array(
         .await
         .inspect_err(|err| log::warn!("{err}"))
         {
-            let mut contains_match = false;
+            let min_contains = array_schema.min_contains.unwrap_or(1);
+            let max_contains = array_schema.max_contains;
+            let needs_full_count = max_contains.is_some();
+
+            let mut match_count = 0usize;
             for (index, value) in array_value.values().iter().enumerate() {
                 let new_accessors = accessors
                     .iter()
@@ -292,20 +296,52 @@ async fn validate_array(
                     .validate(&new_accessors, Some(&contains_schema), schema_context)
                     .await;
                 if is_success_or_warning(&result) {
-                    contains_match = true;
-                    break;
+                    match_count += 1;
+                    if !needs_full_count && match_count >= min_contains {
+                        break;
+                    }
                 }
             }
 
-            if !contains_match {
-                crate::Diagnostic {
-                    kind: Box::new(crate::DiagnosticKind::ArrayContains),
-                    range: array_value.range(),
+            if match_count < min_contains {
+                if array_schema.min_contains.is_some() {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::ArrayMinContains {
+                            min_contains,
+                            actual: match_count,
+                        }),
+                        range: array_value.range(),
+                    }
+                    .push_diagnostic_with_level(
+                        SeverityLevelDefaultError::default(),
+                        &mut total_diagnostics,
+                    );
+                } else {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::ArrayContains),
+                        range: array_value.range(),
+                    }
+                    .push_diagnostic_with_level(
+                        SeverityLevelDefaultError::default(),
+                        &mut total_diagnostics,
+                    );
                 }
-                .push_diagnostic_with_level(
-                    SeverityLevelDefaultError::default(),
-                    &mut total_diagnostics,
-                );
+            }
+
+            if let Some(max) = max_contains {
+                if match_count > max {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::ArrayMaxContains {
+                            max_contains: max,
+                            actual: match_count,
+                        }),
+                        range: array_value.range(),
+                    }
+                    .push_diagnostic_with_level(
+                        SeverityLevelDefaultError::default(),
+                        &mut total_diagnostics,
+                    );
+                }
             }
         }
     }

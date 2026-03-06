@@ -48,11 +48,11 @@
 - [ ] `$anchor` を実装する
 - [ ] `$recursiveAnchor` / `$recursiveRef` を実装する  
   備考: 2020-12 で `$dynamicAnchor` / `$dynamicRef` に置換（将来版では compatibility のみ）
-- [ ] `dependentRequired` を実装する（`dependencies` 置換）
-- [ ] `dependentSchemas` を実装する（`dependencies` 置換）
+- [x] `dependentRequired` を実装する（`dependencies` 置換）（2026-03-06 対応）
+- [x] `dependentSchemas` を実装する（`dependencies` 置換）（2026-03-06 対応）
 - [ ] `unevaluatedProperties` を実装する
 - [ ] `unevaluatedItems` を実装する
-- [ ] `minContains` / `maxContains` を実装する
+- [x] `minContains` / `maxContains` を実装する（2026-03-06 対応）
 
 ## 4. draft-2020-12 TODO（目標準拠）
 

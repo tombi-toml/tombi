@@ -25,6 +25,8 @@ pub struct ArraySchema {
     pub additional_items: Option<bool>,
     pub additional_items_schema: Option<SchemaItem>,
     pub contains: Option<SchemaItem>,
+    pub min_contains: Option<usize>,
+    pub max_contains: Option<usize>,
     pub min_items: Option<usize>,
     pub max_items: Option<usize>,
     pub unique_items: Option<bool>,
@@ -101,6 +103,12 @@ impl ArraySchema {
                     .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             }),
+            min_contains: object
+                .get("minContains")
+                .and_then(|v| v.as_u64().map(|n| n as usize)),
+            max_contains: object
+                .get("maxContains")
+                .and_then(|v| v.as_u64().map(|n| n as usize)),
             min_items: object
                 .get("minItems")
                 .and_then(|v| v.as_u64().map(|n| n as usize)),

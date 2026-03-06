@@ -89,3 +89,21 @@ pub fn array_const_enum_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("array-const-enum-test.schema.json")
 }
+
+pub fn dependent_required_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("dependent-required-test.schema.json")
+}
+
+pub fn dependent_schemas_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("dependent-schemas-test.schema.json")
+}
+
+pub fn min_max_contains_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("min-max-contains-test.schema.json")
+}

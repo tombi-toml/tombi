@@ -509,6 +509,55 @@ async fn validate_table(
         }
     }
 
+    if let Some(dependent_required) = &table_schema.dependent_required {
+        for (dependent_key, required_keys) in dependent_required {
+            if !keys.contains(&dependent_key) {
+                continue;
+            }
+
+            for required_key in required_keys {
+                if !keys.contains(&required_key) {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::TableDependencyRequired {
+                            dependent_key: dependent_key.to_string(),
+                            required_key: required_key.to_string(),
+                        }),
+                        range: table_value.range(),
+                    }
+                    .push_diagnostic_with_level(
+                        SeverityLevelDefaultError::default(),
+                        &mut total_diagnostics,
+                    );
+                }
+            }
+        }
+    }
+
+    if let Some(dependent_schemas) = &table_schema.dependent_schemas {
+        for (dependent_key, schema_item) in dependent_schemas {
+            if !keys.contains(&dependent_key) {
+                continue;
+            }
+
+            if let Ok(Some(dep_schema)) = tombi_schema_store::resolve_schema_item(
+                schema_item,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
+            .inspect_err(|err| log::warn!("{err}"))
+            {
+                if let Err(crate::Error { diagnostics, .. }) = table_value
+                    .validate(accessors, Some(&dep_schema), schema_context)
+                    .await
+                {
+                    total_diagnostics.extend(diagnostics);
+                }
+            }
+        }
+    }
+
     if table_schema.const_value.is_some() || table_schema.r#enum.is_some() {
         let actual_object = crate::convert::table_to_json_object(table_value);
 

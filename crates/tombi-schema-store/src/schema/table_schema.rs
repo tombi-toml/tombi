@@ -40,6 +40,8 @@ pub struct TableSchema {
     pub property_names: Option<SchemaItem>,
     pub required: Option<Vec<String>>,
     pub dependencies: Option<tombi_hashmap::IndexMap<String, Dependency>>,
+    pub dependent_required: Option<tombi_hashmap::IndexMap<String, Vec<String>>>,
+    pub dependent_schemas: Option<tombi_hashmap::IndexMap<String, SchemaItem>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
     pub keys_order: Option<XTombiTableKeysOrder>,
@@ -207,6 +209,42 @@ impl TableSchema {
                         }
                     }
                     deps
+                }),
+            dependent_required: object_node
+                .get("dependentRequired")
+                .and_then(|v| v.as_object())
+                .map(|obj| {
+                    let mut map = tombi_hashmap::IndexMap::new();
+                    for (key, value) in &obj.properties {
+                        if let Some(arr) = value.as_array() {
+                            let required_keys: Vec<String> = arr
+                                .items
+                                .iter()
+                                .filter_map(|v| v.as_str().map(ToString::to_string))
+                                .collect();
+                            map.insert(key.value.to_string(), required_keys);
+                        }
+                    }
+                    map
+                }),
+            dependent_schemas: object_node
+                .get("dependentSchemas")
+                .and_then(|v| v.as_object())
+                .map(|obj| {
+                    let mut map = tombi_hashmap::IndexMap::new();
+                    for (key, value) in &obj.properties {
+                        if let Some(schema_obj) = value.as_object() {
+                            if let Some(schema) =
+                                Referable::<ValueSchema>::new(schema_obj, string_formats, dialect)
+                            {
+                                map.insert(
+                                    key.value.to_string(),
+                                    Arc::new(tokio::sync::RwLock::new(schema)),
+                                );
+                            }
+                        }
+                    }
+                    map
                 }),
             min_properties: object_node
                 .get("minProperties")
