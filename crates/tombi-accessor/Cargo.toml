@@ -7,9 +7,9 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
+tombi-hashmap.workspace = true
 tombi-text.workspace = true
 
 [dev-dependencies]

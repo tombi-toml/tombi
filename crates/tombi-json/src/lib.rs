@@ -512,7 +512,7 @@ impl<'de> serde::de::SeqAccess<'de> for SeqAccess {
 }
 
 struct MapAccess {
-    properties: indexmap::map::IntoIter<StringNode, ValueNode>,
+    properties: tombi_hashmap::map::IntoIter<StringNode, ValueNode>,
     key: Option<String>,
     value: Option<ValueNode>,
 }

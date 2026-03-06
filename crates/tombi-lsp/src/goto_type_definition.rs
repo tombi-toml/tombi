@@ -6,7 +6,6 @@ mod value;
 
 use std::{borrow::Cow, ops::Deref};
 
-use ahash::AHashMap;
 pub use comment::get_tombi_document_comment_directive_type_definition;
 use itertools::Itertools;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
@@ -52,7 +51,7 @@ pub async fn into_type_definition_locations(
         return Ok(None);
     };
 
-    let mut uri_set = AHashMap::new();
+    let mut uri_set = tombi_hashmap::HashMap::new();
     for definition in &definitions {
         if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
             uri_set.insert(definition.uri.clone(), remote_uri);

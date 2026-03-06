@@ -1,4 +1,3 @@
-use ahash::AHashMap;
 use itertools::Itertools;
 use serde::Deserialize;
 use tombi_config::TomlVersion;
@@ -29,7 +28,7 @@ struct CratesIoVersionsResponse {
 #[derive(Debug, Deserialize)]
 struct CratesIoVersion {
     num: String,
-    features: AHashMap<String, Vec<String>>,
+    features: tombi_hashmap::HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -576,7 +575,7 @@ async fn fetch_crate_versions(crate_name: &str) -> Option<Vec<String>> {
 async fn fetch_crate_features(
     crate_name: &str,
     version: Option<&str>,
-) -> Option<AHashMap<String, Vec<String>>> {
+) -> Option<tombi_hashmap::HashMap<String, Vec<String>>> {
     let client = HttpClient::new();
     let version = if let Some(ver) = version {
         ver.to_string()
@@ -599,7 +598,7 @@ async fn fetch_local_crate_features(
     cargo_toml_path: &std::path::Path,
     sub_crate_path: &str,
     toml_version: TomlVersion,
-) -> Option<AHashMap<String, Vec<String>>> {
+) -> Option<tombi_hashmap::HashMap<String, Vec<String>>> {
     // Get the directory of the current Cargo.toml file
     let (_, _, subcrate_document_tree) = find_path_crate_cargo_toml(
         cargo_toml_path,
@@ -631,7 +630,7 @@ async fn fetch_local_crate_features(
                 };
                 (feature_name.value.clone(), deps)
             })
-            .collect::<AHashMap<_, _>>();
+            .collect::<tombi_hashmap::HashMap<_, _>>();
 
         if !features.is_empty() {
             return Some(features);

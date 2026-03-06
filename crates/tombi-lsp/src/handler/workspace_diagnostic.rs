@@ -1,4 +1,3 @@
-use ahash::AHashSet;
 use tombi_glob::search_pattern_matched_paths;
 
 use crate::{
@@ -33,7 +32,7 @@ async fn collect_workspace_diagnostic_targets(backend: &Backend) -> Vec<tombi_ur
         return Vec::with_capacity(0);
     };
 
-    let mut targets = AHashSet::new();
+    let mut targets = tombi_hashmap::HashSet::new();
     let home_dir = dirs::home_dir();
 
     for workspace_config in configs.into_values() {

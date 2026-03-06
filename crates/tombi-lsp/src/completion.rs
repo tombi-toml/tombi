@@ -4,7 +4,6 @@ mod value;
 
 use std::borrow::Cow;
 
-use ahash::AHashMap;
 pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
 use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
@@ -250,10 +249,13 @@ pub async fn find_completion_contents_with_tree(
         )
         .await
         .into_iter()
-        .fold(AHashMap::new(), |mut acc: AHashMap<_, Vec<_>>, content| {
-            acc.entry(content.label.clone()).or_default().push(content);
-            acc
-        })
+        .fold(
+            tombi_hashmap::HashMap::new(),
+            |mut acc: tombi_hashmap::HashMap<_, Vec<_>>, content| {
+                acc.entry(content.label.clone()).or_default().push(content);
+                acc
+            },
+        )
         .into_iter()
         .filter_map(|(_, contents)| {
             contents
@@ -325,7 +327,7 @@ impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
-            let mut candidates = ahash::AHashSet::new();
+            let mut candidates = tombi_hashmap::HashSet::new();
             let schema_visits = tombi_schema_store::SchemaVisits::default();
 
             if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
@@ -374,7 +376,7 @@ impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
         completion_hint: Option<CompletionHint>,
     ) -> tombi_future::BoxFuture<'b, Option<String>> {
         async move {
-            let mut candidates = ahash::AHashSet::new();
+            let mut candidates = tombi_hashmap::HashSet::new();
             let schema_visits = tombi_schema_store::SchemaVisits::default();
 
             if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(

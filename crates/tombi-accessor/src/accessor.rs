@@ -74,7 +74,7 @@ impl PartialOrd<Accessor> for Accessor {
     }
 }
 
-impl indexmap::Equivalent<SchemaAccessor> for Accessor {
+impl tombi_hashmap::Equivalent<SchemaAccessor> for Accessor {
     fn equivalent(&self, other: &SchemaAccessor) -> bool {
         match (self, other) {
             (Accessor::Key(key1), SchemaAccessor::Key(key2)) => key1 == key2,

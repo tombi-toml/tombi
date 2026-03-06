@@ -29,8 +29,8 @@ where
     log::trace!("schema_uri = {:?}", schema_uri);
 
     async move {
-        let mut title_description_set = ahash::AHashSet::new();
-        let mut value_type_set = indexmap::IndexSet::new();
+        let mut title_description_set = tombi_hashmap::HashSet::new();
+        let mut value_type_set = tombi_hashmap::IndexSet::new();
         let mut constraints = None;
         let mut enum_values = Vec::new();
         let mut result_accessors = tombi_schema_store::Accessors::from(accessors.to_vec());
@@ -181,8 +181,8 @@ impl GetHoverContent for tombi_schema_store::AllOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut title_description_set = ahash::AHashSet::new();
-            let mut value_type_set = indexmap::IndexSet::new();
+            let mut title_description_set = tombi_hashmap::HashSet::new();
+            let mut value_type_set = tombi_hashmap::IndexSet::new();
             let mut enum_values = Vec::new();
             let default = self
                 .default

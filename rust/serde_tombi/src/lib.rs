@@ -5,7 +5,6 @@
 //! ## Basic usage
 //!
 //! ```rust
-//! use std::collections::HashMap;
 //!
 //! use serde::Serialize;
 //! use tokio;
@@ -20,7 +19,7 @@
 //! #[derive(Serialize)]
 //! struct CargoToml {
 //!     package: Package,
-//!     dependencies: HashMap<String, String>,
+//!     dependencies: tombi_hashmap::HashMap<String, String>,
 //! }
 //!
 //! #[tokio::main]
@@ -45,7 +44,6 @@
 //! ## Using TypedBuilder pattern
 //!
 //! ```rust
-//! use std::collections::HashMap;
 //!
 //! use serde::Serialize;
 //! use serde_tombi::Serializer;
@@ -61,7 +59,7 @@
 //! #[derive(Serialize)]
 //! struct CargoToml {
 //!     package: Package,
-//!     dependencies: HashMap<String, String>,
+//!     dependencies: tombi_hashmap::HashMap<String, String>,
 //! }
 //!
 //! #[tokio::main]

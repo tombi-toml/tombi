@@ -6,7 +6,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-ahash.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
@@ -17,6 +16,7 @@ tombi-config.workspace = true
 tombi-diagnostic.workspace = true
 tombi-document-tree.workspace = true
 tombi-future.workspace = true
+tombi-hashmap.workspace = true
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-severity-level.workspace = true

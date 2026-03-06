@@ -8,7 +8,7 @@ use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
 
-type RegistoryMap = ahash::AHashMap<String, Registory>;
+type RegistoryMap = tombi_hashmap::HashMap<String, Registory>;
 const DEFAULT_REGISTORY_INDEX: &str = "https://crates.io/crates";
 
 struct Registory {

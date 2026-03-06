@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use ahash::AHashSet;
 use itertools::Itertools;
 use tombi_comment_directive::value::ArrayCommonLintRules;
 use tombi_document_tree::{LiteralValueRef, ValueImpl};
@@ -548,7 +547,7 @@ fn get_duplicated_ranges(
     let duplicated_values = literal_values
         .iter()
         .filter_map(|(value, count)| if *count > 1 { Some(value) } else { None })
-        .collect::<AHashSet<_>>();
+        .collect::<tombi_hashmap::HashSet<_>>();
 
     for value in array_value.values() {
         if let Some(literal_value) = Option::<LiteralValueRef>::from(value)

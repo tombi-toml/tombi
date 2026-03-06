@@ -3023,7 +3023,6 @@ version = "0.0.0-dev"
 dependencies = [
  "chrono",
  "dirs",
- "indexmap",
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
@@ -3037,6 +3036,7 @@ dependencies = [
  "tombi-document",
  "tombi-document-tree",
  "tombi-formatter",
+ "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
  "tombi-test-lib",
@@ -3529,11 +3529,11 @@ version = "0.0.0-dev"
 name = "tombi-accessor"
 version = "0.0.0-dev"
 dependencies = [
- "indexmap",
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
  "rstest",
+ "tombi-hashmap",
  "tombi-text",
 ]
 
@@ -3555,8 +3555,6 @@ dependencies = [
 name = "tombi-ast-editor"
 version = "0.0.0-dev"
 dependencies = [
- "ahash",
- "indexmap",
  "itertools 0.14.0",
  "log",
  "thiserror 2.0.12",
@@ -3565,6 +3563,7 @@ dependencies = [
  "tombi-comment-directive-serde",
  "tombi-document-tree",
  "tombi-future",
+ "tombi-hashmap",
  "tombi-parser",
  "tombi-regex",
  "tombi-schema-store",
@@ -3698,7 +3697,6 @@ dependencies = [
 name = "tombi-document"
 version = "0.0.0-dev"
 dependencies = [
- "indexmap",
  "itertools 0.14.0",
  "pretty_assertions",
  "serde",
@@ -3708,6 +3706,7 @@ dependencies = [
  "tombi-ast",
  "tombi-date-time",
  "tombi-document-tree",
+ "tombi-hashmap",
  "tombi-parser",
  "tombi-test-lib",
  "tombi-text",
@@ -3719,13 +3718,13 @@ name = "tombi-document-tree"
 version = "0.0.0-dev"
 dependencies = [
  "chrono",
- "indexmap",
  "itertools 0.14.0",
  "thiserror 2.0.12",
  "tombi-accessor",
  "tombi-ast",
  "tombi-date-time",
  "tombi-diagnostic",
+ "tombi-hashmap",
  "tombi-syntax",
  "tombi-text",
  "tombi-toml-text",
@@ -3748,7 +3747,6 @@ dependencies = [
 name = "tombi-extension-cargo"
 version = "0.0.0-dev"
 dependencies = [
- "ahash",
  "glob",
  "itertools 0.14.0",
  "log",
@@ -3759,6 +3757,7 @@ dependencies = [
  "tombi-document-tree",
  "tombi-extension",
  "tombi-future",
+ "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
  "tombi-text",
@@ -3848,14 +3847,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tombi-hashmap"
+version = "0.0.0-dev"
+dependencies = [
+ "ahash",
+ "indexmap",
+]
+
+[[package]]
 name = "tombi-json"
 version = "0.0.0-dev"
 dependencies = [
- "indexmap",
  "itertools 0.14.0",
  "pretty_assertions",
  "serde",
  "thiserror 2.0.12",
+ "tombi-hashmap",
  "tombi-json-lexer",
  "tombi-json-syntax",
  "tombi-json-value",
@@ -3886,9 +3893,9 @@ dependencies = [
 name = "tombi-json-value"
 version = "0.0.0-dev"
 dependencies = [
- "indexmap",
  "pretty_assertions",
  "serde",
+ "tombi-hashmap",
 ]
 
 [[package]]
@@ -3908,7 +3915,6 @@ dependencies = [
 name = "tombi-linter"
 version = "0.0.0-dev"
 dependencies = [
- "ahash",
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
@@ -3921,6 +3927,7 @@ dependencies = [
  "tombi-diagnostic",
  "tombi-document-tree",
  "tombi-future",
+ "tombi-hashmap",
  "tombi-parser",
  "tombi-schema-store",
  "tombi-severity-level",
@@ -3934,12 +3941,10 @@ dependencies = [
 name = "tombi-lsp"
 version = "0.0.0-dev"
 dependencies = [
- "ahash",
  "chrono",
  "clap",
  "dirs",
  "futures",
- "indexmap",
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
@@ -3967,6 +3972,7 @@ dependencies = [
  "tombi-formatter",
  "tombi-future",
  "tombi-glob",
+ "tombi-hashmap",
  "tombi-json",
  "tombi-linter",
  "tombi-parser",
@@ -4026,12 +4032,10 @@ dependencies = [
 name = "tombi-schema-store"
 version = "0.0.0-dev"
 dependencies = [
- "ahash",
  "bytes 1.11.1",
  "futures",
  "glob",
  "gloo-net",
- "indexmap",
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
@@ -4047,6 +4051,7 @@ dependencies = [
  "tombi-config",
  "tombi-document-tree",
  "tombi-future",
+ "tombi-hashmap",
  "tombi-json",
  "tombi-test-lib",
  "tombi-text",
@@ -4122,7 +4127,6 @@ name = "tombi-validator"
 version = "0.0.0-dev"
 dependencies = [
  "addr",
- "ahash",
  "email_address",
  "itertools 0.14.0",
  "log",
@@ -4136,6 +4140,7 @@ dependencies = [
  "tombi-document",
  "tombi-document-tree",
  "tombi-future",
+ "tombi-hashmap",
  "tombi-json-value",
  "tombi-parser",
  "tombi-regex",
@@ -4190,7 +4195,6 @@ version = "0.0.0-dev"
 dependencies = [
  "anyhow",
  "clap",
- "indexmap",
  "pretty_assertions",
  "serde",
  "serde_json",
@@ -4199,6 +4203,7 @@ dependencies = [
  "tombi-ast",
  "tombi-config",
  "tombi-document-tree",
+ "tombi-hashmap",
  "tombi-linter",
  "tombi-parser",
  "tombi-schema-store",

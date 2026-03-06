@@ -6,13 +6,13 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-indexmap.workspace = true
 itertools.workspace = true
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
 tombi-ast.workspace = true
 tombi-date-time.workspace = true
 tombi-document-tree.workspace = true
+tombi-hashmap.workspace = true
 tombi-parser.workspace = true
 tombi-text.workspace = true
 tombi-toml-version.workspace = true
@@ -26,4 +26,4 @@ tombi-test-lib.workspace = true
 [features]
 default = ["serde"]
 lsp = ["tombi-text/lsp"]
-serde = ["dep:serde", "indexmap/serde"]
+serde = ["dep:serde"]

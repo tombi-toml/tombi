@@ -802,8 +802,8 @@ mod tests {
 
     use super::*;
     use chrono::{DateTime, TimeZone, Utc};
-    use indexmap::{IndexMap, indexmap};
     use serde::Serialize;
+    use tombi_hashmap;
     use tombi_test_lib::toml_text_assert_eq;
 
     #[tokio::test]
@@ -897,16 +897,16 @@ value = "nested value"
     async fn test_serialize_map() {
         #[derive(Serialize)]
         struct MapTest {
-            string_map: IndexMap<String, String>,
-            int_map: IndexMap<String, i32>,
+            string_map: tombi_hashmap::IndexMap<String, String>,
+            int_map: tombi_hashmap::IndexMap<String, i32>,
         }
 
         let test = MapTest {
-            string_map: indexmap! {
+            string_map: tombi_hashmap::indexmap! {
                 "key1".to_string() => "value1".to_string(),
                 "key2".to_string() => "value2".to_string(),
             },
-            int_map: indexmap! {
+            int_map: tombi_hashmap::indexmap! {
                 "one".to_string() => 1,
                 "two".to_string() => 2,
                 "three".to_string() => 3,
@@ -1009,7 +1009,7 @@ updated_at = "2023-07-20T14:45:30Z"
         #[derive(Serialize)]
         struct CargoToml {
             package: Package,
-            dependencies: IndexMap<String, String>,
+            dependencies: tombi_hashmap::IndexMap<String, String>,
         }
 
         #[derive(Serialize)]
@@ -1024,7 +1024,7 @@ updated_at = "2023-07-20T14:45:30Z"
                 name: "test-package".to_string(),
                 version: "0.1.0".to_string(),
             },
-            dependencies: indexmap! {
+            dependencies: tombi_hashmap::indexmap! {
                 "zzz".to_string() => "1.0".to_string(),
                 "aaa".to_string() => "1.0".to_string(),
                 "mmm".to_string() => "1.0".to_string(),

@@ -18,7 +18,7 @@ pub enum Type {
 pub enum Value {
     Literal { r#type: Type, value: String },
     Array(Vec<Value>),
-    Table(indexmap::IndexMap<String, Value>),
+    Table(tombi_hashmap::IndexMap<String, Value>),
 }
 
 pub trait IntoValue {

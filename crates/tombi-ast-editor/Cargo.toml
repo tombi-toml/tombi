@@ -7,8 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-ahash.workspace = true
-indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 thiserror.workspace = true
@@ -17,6 +15,7 @@ tombi-comment-directive.workspace = true
 tombi-comment-directive-serde.workspace = true
 tombi-document-tree.workspace = true
 tombi-future.workspace = true
+tombi-hashmap.workspace = true
 tombi-parser.workspace = true
 tombi-regex.workspace = true
 tombi-schema-store.workspace = true

@@ -1,5 +1,3 @@
-use indexmap::IndexMap;
-use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
 
@@ -251,12 +249,12 @@ impl From<Object> for Value {
     }
 }
 
-impl<K, V> From<IndexMap<K, V>> for Value
+impl<K, V> From<tombi_hashmap::IndexMap<K, V>> for Value
 where
     K: Into<String> + Hash + Eq,
     V: Into<Value>,
 {
-    fn from(m: IndexMap<K, V>) -> Self {
+    fn from(m: tombi_hashmap::IndexMap<K, V>) -> Self {
         let mut map = Object::new();
         for (k, v) in m {
             map.insert(k.into(), v.into());
@@ -265,12 +263,12 @@ where
     }
 }
 
-impl<K, V> From<HashMap<K, V>> for Value
+impl<K, V> From<tombi_hashmap::HashMap<K, V>> for Value
 where
     K: Into<String> + Hash + Eq,
     V: Into<Value>,
 {
-    fn from(m: HashMap<K, V>) -> Self {
+    fn from(m: tombi_hashmap::HashMap<K, V>) -> Self {
         let mut map = Object::new();
         for (k, v) in m {
             map.insert(k.into(), v.into());

@@ -1,5 +1,4 @@
 use crate::Rule;
-use ahash::AHashMap;
 use tombi_comment_directive::value::{TableCommonFormatRules, TableCommonLintRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
 use tombi_config::SeverityLevel;
@@ -71,7 +70,8 @@ async fn check_dotted_keys_out_of_order(
         return;
     }
 
-    let mut prefix_groups: AHashMap<String, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
+    let mut prefix_groups: tombi_hashmap::HashMap<String, Vec<(usize, tombi_text::Range)>> =
+        tombi_hashmap::HashMap::new();
 
     // Single pass to collect all data
     for (index, key_value) in key_values.enumerate() {

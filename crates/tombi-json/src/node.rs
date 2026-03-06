@@ -219,7 +219,7 @@ impl PartialEq for StringNode {
 
 impl Eq for StringNode {}
 
-impl indexmap::Equivalent<String> for StringNode {
+impl tombi_hashmap::Equivalent<String> for StringNode {
     fn equivalent(&self, other: &String) -> bool {
         self.value == *other
     }

@@ -1,7 +1,5 @@
 use std::{borrow::Cow, sync::Arc};
 
-use ahash::AHashMap;
-use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_accessor::Accessors;
 use tombi_future::{BoxFuture, Boxable};
@@ -41,7 +39,7 @@ pub struct TableSchema {
     )>,
     pub property_names: Option<SchemaItem>,
     pub required: Option<Vec<String>>,
-    pub dependencies: Option<IndexMap<String, Dependency>>,
+    pub dependencies: Option<tombi_hashmap::IndexMap<String, Dependency>>,
     pub min_properties: Option<usize>,
     pub max_properties: Option<usize>,
     pub keys_order: Option<XTombiTableKeysOrder>,
@@ -62,7 +60,7 @@ impl TableSchema {
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
     ) -> Self {
-        let mut properties = IndexMap::new();
+        let mut properties = tombi_hashmap::IndexMap::new();
         if let Some(tombi_json::ValueNode::Object(object_node)) = object_node.get("properties") {
             for (key_node, value_node) in object_node.properties.iter() {
                 let Some(object) = value_node.as_object() else {
@@ -83,7 +81,7 @@ impl TableSchema {
         }
         let pattern_properties = match object_node.get("patternProperties") {
             Some(tombi_json::ValueNode::Object(object_node)) => {
-                let mut pattern_properties = AHashMap::new();
+                let mut pattern_properties = tombi_hashmap::HashMap::new();
                 for (pattern, value) in object_node.properties.iter() {
                     let Some(object) = value.as_object() else {
                         continue;
@@ -160,7 +158,7 @@ impl TableSchema {
                                 },
                             )
                         })
-                        .collect::<AHashMap<_, _>>()
+                        .collect::<tombi_hashmap::HashMap<_, _>>()
                         .into(),
                 )
             }),
@@ -179,7 +177,7 @@ impl TableSchema {
                 .get("dependencies")
                 .and_then(|v| v.as_object())
                 .map(|deps_obj| {
-                    let mut deps = IndexMap::new();
+                    let mut deps = tombi_hashmap::IndexMap::new();
                     for (key, value) in &deps_obj.properties {
                         match value {
                             tombi_json::ValueNode::Array(arr) => {

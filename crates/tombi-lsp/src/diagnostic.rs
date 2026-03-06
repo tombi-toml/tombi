@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tombi_config::Config;
 use tombi_glob::{MatchResult, matches_file_patterns};
@@ -118,7 +117,7 @@ pub struct WorkspaceConfig {
 
 pub async fn get_workspace_configs(
     backend: &Backend,
-) -> Option<AHashMap<Option<PathBuf>, WorkspaceConfig>> {
+) -> Option<tombi_hashmap::HashMap<Option<PathBuf>, WorkspaceConfig>> {
     let workspace_folder_paths =
         backend
             .client
@@ -139,7 +138,7 @@ pub async fn get_workspace_configs(
 
     let workspace_folder_paths = workspace_folder_paths?;
 
-    let mut configs = AHashMap::new();
+    let mut configs = tombi_hashmap::HashMap::new();
 
     for workspace_folder_path in workspace_folder_paths {
         if let Ok((config, config_path)) =

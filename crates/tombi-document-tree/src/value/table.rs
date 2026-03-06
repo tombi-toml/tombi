@@ -1,7 +1,3 @@
-use indexmap::{
-    IndexMap,
-    map::{Entry, MutableKeys},
-};
 use itertools::Itertools;
 use tombi_ast::{AstChildren, AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
@@ -63,7 +59,7 @@ pub struct Table {
     kind: TableKind,
     range: tombi_text::Range,
     symbol_range: tombi_text::Range,
-    key_values: IndexMap<Key, Value>,
+    key_values: tombi_hashmap::IndexMap<Key, Value>,
     pub(crate) header_comment_directives: Option<Vec<TombiValueCommentDirective>>,
     pub(crate) body_comment_directives: Option<Vec<TombiValueCommentDirective>>,
     pub(crate) group_boundary_comment_directives: Option<Vec<TombiValueCommentDirective>>,
@@ -240,7 +236,7 @@ impl Table {
     }
 
     #[inline]
-    pub fn key_values(&self) -> &IndexMap<Key, Value> {
+    pub fn key_values(&self) -> &tombi_hashmap::IndexMap<Key, Value> {
         &self.key_values
     }
 
@@ -298,7 +294,7 @@ impl Table {
         // Merge the key_values of the two tables recursively
         for (key, value2) in other.key_values {
             match self.key_values.entry(key.clone()) {
-                Entry::Occupied(mut entry) => {
+                tombi_hashmap::map::Entry::Occupied(mut entry) => {
                     let value1 = entry.get_mut();
                     match (value1, value2) {
                         (Value::Table(table1), Value::Table(table2)) => {
@@ -322,7 +318,7 @@ impl Table {
                         }
                     }
                 }
-                Entry::Vacant(entry) => {
+                tombi_hashmap::map::Entry::Vacant(entry) => {
                     entry.insert(value2);
                 }
             }
@@ -339,7 +335,7 @@ impl Table {
         let mut errors = Vec::new();
 
         match self.key_values.entry(key) {
-            Entry::Occupied(mut entry) => {
+            tombi_hashmap::map::Entry::Occupied(mut entry) => {
                 let existing_value = entry.get_mut();
                 match (existing_value, value) {
                     (Value::Table(table1), Value::Table(table2)) => {
@@ -362,7 +358,7 @@ impl Table {
                     }
                 }
             }
-            Entry::Vacant(entry) => {
+            tombi_hashmap::map::Entry::Vacant(entry) => {
                 entry.insert(value);
             }
         }
@@ -374,34 +370,34 @@ impl Table {
         }
     }
 
-    pub fn entry(&mut self, key: Key) -> Entry<'_, Key, Value> {
+    pub fn entry(&mut self, key: Key) -> tombi_hashmap::map::Entry<'_, Key, Value> {
         self.key_values.entry(key)
     }
 
     pub fn get<K>(&self, key: &K) -> Option<&Value>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values.get(key)
     }
 
     pub fn get_mut<K>(&mut self, key: &K) -> Option<&mut Value>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values.get_mut(key)
     }
 
     pub fn get_key_value<K>(&self, key: &K) -> Option<(&Key, &Value)>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values.get_key_value(key)
     }
 
     pub fn get_key_value_mut<K>(&mut self, key: &K) -> Option<(&Key, &mut Value)>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values
             .get_full_mut(key)
@@ -410,21 +406,21 @@ impl Table {
 
     pub fn get_full<K>(&self, key: &K) -> Option<(usize, &Key, &Value)>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values.get_full(key)
     }
 
     pub fn get_full_mut<K>(&mut self, key: &K) -> Option<(usize, &Key, &mut Value)>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values.get_full_mut(key)
     }
 
     pub fn get_index_of<K>(&self, key: &K) -> Option<usize>
     where
-        K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+        K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
     {
         self.key_values.get_index_of(key)
     }
@@ -434,7 +430,7 @@ impl Table {
     }
 
     pub fn iter_mut2(&mut self) -> impl Iterator<Item = (&mut Key, &mut Value)> {
-        self.key_values.iter_mut2()
+        tombi_hashmap::map::MutableKeys::iter_mut2(&mut self.key_values)
     }
 
     #[inline]
@@ -485,8 +481,8 @@ impl std::fmt::Display for Table {
     }
 }
 
-impl From<Table> for IndexMap<Key, Value> {
-    fn from(table: Table) -> IndexMap<Key, Value> {
+impl From<Table> for tombi_hashmap::IndexMap<Key, Value> {
+    fn from(table: Table) -> tombi_hashmap::IndexMap<Key, Value> {
         table.key_values
     }
 }
@@ -1075,7 +1071,7 @@ where
 
 impl IntoIterator for Table {
     type Item = (Key, Value);
-    type IntoIter = indexmap::map::IntoIter<Key, Value>;
+    type IntoIter = tombi_hashmap::map::IntoIter<Key, Value>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.key_values.into_iter()
@@ -1155,7 +1151,7 @@ fn append_header_comment_directives(
     };
 
     // Since Table has only one key, we can directly access it without iteration
-    let temp_key_values = std::mem::replace(&mut table.key_values, IndexMap::new());
+    let temp_key_values = std::mem::replace(&mut table.key_values, tombi_hashmap::IndexMap::new());
 
     // Extract the single key-value pair
     let Some((mut key, value)) = temp_key_values.into_iter().next() else {

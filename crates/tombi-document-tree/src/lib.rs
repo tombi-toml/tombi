@@ -76,7 +76,7 @@ pub fn dig_keys<'a, K>(
     keys: &[&K],
 ) -> Option<(&'a crate::Key, &'a crate::Value)>
 where
-    K: ?Sized + std::hash::Hash + indexmap::Equivalent<Key>,
+    K: ?Sized + std::hash::Hash + tombi_hashmap::Equivalent<Key>,
 {
     if keys.is_empty() {
         return None;
