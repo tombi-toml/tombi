@@ -1,6 +1,6 @@
 pub fn validate_format(value: &str) -> bool {
     // RFC 3339 full-date: YYYY-MM-DD
-    if value.len() != 10 {
+    if value.len() != 10 || !value.is_ascii() {
         return false;
     }
 

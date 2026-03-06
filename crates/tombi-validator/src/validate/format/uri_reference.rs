@@ -15,11 +15,42 @@ fn is_relative_reference(value: &str) -> bool {
     }
 
     // Split off fragment
-    let without_fragment = value.split('#').next().unwrap_or("");
+    let (without_fragment, fragment) = match value.split_once('#') {
+        Some((before, after)) => (before, Some(after)),
+        None => (value, None),
+    };
     // Split off query
-    let path = without_fragment.split('?').next().unwrap_or("");
+    let (path, query) = match without_fragment.split_once('?') {
+        Some((before, after)) => (before, Some(after)),
+        None => (without_fragment, None),
+    };
 
-    // Basic validation: path characters must be valid
-    path.chars()
-        .all(|c| c.is_ascii_alphanumeric() || "-._~:@!$&'()*+,;=/".contains(c) || c == '%')
+    // Validate path, query, and fragment characters (RFC 3986)
+    validate_uri_component(path)
+        && query.map_or(true, validate_uri_component)
+        && fragment.map_or(true, validate_uri_component)
+}
+
+fn validate_uri_component(component: &str) -> bool {
+    let mut chars = component.chars();
+    while let Some(c) = chars.next() {
+        if c == '%' {
+            // Percent-encoding must be followed by two hex digits (RFC 3986)
+            match chars.next() {
+                Some(ch) if ch.is_ascii_hexdigit() => {}
+                _ => return false,
+            }
+            match chars.next() {
+                Some(ch) if ch.is_ascii_hexdigit() => {}
+                _ => return false,
+            }
+            continue;
+        }
+
+        if !(c.is_ascii_alphanumeric() || "-._~:@!$&'()*+,;=/".contains(c)) {
+            return false;
+        }
+    }
+
+    true
 }

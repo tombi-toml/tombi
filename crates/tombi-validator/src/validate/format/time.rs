@@ -11,7 +11,7 @@ pub fn validate_format(value: &str) -> bool {
 /// Parse the time components (HH:MM:SS[.frac]) and return the remaining string.
 /// Returns `None` if the input is not a valid time component.
 pub(crate) fn parse_time_components(value: &str) -> Option<&str> {
-    if value.len() < 8 {
+    if value.len() < 8 || !value.is_ascii() {
         return None;
     }
 
@@ -54,6 +54,9 @@ pub(crate) fn parse_time_components(value: &str) -> Option<&str> {
 
 /// Validate a timezone suffix (Z, +hh:mm, or -hh:mm).
 pub(crate) fn validate_timezone(rest: &str) -> bool {
+    if !rest.is_ascii() {
+        return false;
+    }
     match rest {
         "Z" | "z" => true,
         s if (s.starts_with('+') || s.starts_with('-')) && s.len() == 6 => {
