@@ -76,19 +76,19 @@ impl std::borrow::Borrow<String> for Key {
     }
 }
 
-impl indexmap::Equivalent<Key> for &Key {
+impl tombi_hashmap::Equivalent<Key> for &Key {
     fn equivalent(&self, other: &Key) -> bool {
         self.value == other.value
     }
 }
 
-impl indexmap::Equivalent<tombi_ast::Key> for &Key {
+impl tombi_hashmap::Equivalent<tombi_ast::Key> for &Key {
     fn equivalent(&self, other: &tombi_ast::Key) -> bool {
         self.value == other.syntax().text().to_string()
     }
 }
 
-impl indexmap::Equivalent<Key> for &str {
+impl tombi_hashmap::Equivalent<Key> for &str {
     fn equivalent(&self, other: &Key) -> bool {
         self == &other.value
     }

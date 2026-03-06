@@ -50,12 +50,12 @@ pub use tombi_uri::{CatalogUri, SchemaUri};
 pub use value_schema::*;
 
 pub type SchemaProperties =
-    Arc<tokio::sync::RwLock<indexmap::IndexMap<SchemaAccessor, PropertySchema>>>;
+    Arc<tokio::sync::RwLock<tombi_hashmap::IndexMap<SchemaAccessor, PropertySchema>>>;
 pub type SchemaPatternProperties =
-    Arc<tokio::sync::RwLock<ahash::AHashMap<String, PropertySchema>>>;
+    Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<String, PropertySchema>>>;
 pub type SchemaItem = Arc<tokio::sync::RwLock<Referable<ValueSchema>>>;
 pub type SchemaDefinitions =
-    Arc<tokio::sync::RwLock<ahash::AHashMap<String, Referable<ValueSchema>>>>;
+    Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<String, Referable<ValueSchema>>>>;
 pub type ReferableValueSchemas = Arc<tokio::sync::RwLock<Vec<Referable<ValueSchema>>>>;
 
 #[derive(Debug, Clone)]

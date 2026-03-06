@@ -1,4 +1,3 @@
-use indexmap::IndexSet;
 use itertools::Itertools;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -106,7 +105,7 @@ impl ValueType {
         // Macro to handle the common pattern of simplifying composite types (OneOf, AnyOf, AllOf)
         macro_rules! simplify_composite {
             ($value_types:expr, $current_variant:ident, $($other_variant:ident)|+) => {{
-                let mut flattened = IndexSet::new();
+                let mut flattened = tombi_hashmap::IndexSet::new();
                 let mut has_null = false;
 
                 for value_type in $value_types {

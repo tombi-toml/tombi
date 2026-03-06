@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_config::TomlVersion;
 
 use super::{DocumentSchema, SchemaUri};
 use crate::{SchemaAccessor, SchemaAccessors};
 
-pub type SubSchemaUriMap = AHashMap<Vec<SchemaAccessor>, SchemaUri>;
+pub type SubSchemaUriMap = tombi_hashmap::HashMap<Vec<SchemaAccessor>, SchemaUri>;
 
 #[derive(Clone, Default)]
 pub struct SourceSchema {

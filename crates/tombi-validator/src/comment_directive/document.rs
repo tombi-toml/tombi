@@ -45,7 +45,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
         let source_schema = tombi_schema_store::SourceSchema::new(
             Some(Arc::new(document_schema)),
-            ahash::AHashMap::with_capacity(0),
+            tombi_hashmap::HashMap::with_capacity(0),
             Some(toml_version),
         );
 

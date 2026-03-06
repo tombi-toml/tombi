@@ -7,12 +7,10 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-ahash.workspace = true
 bytes.workspace = true
 futures.workspace = true
 glob.workspace = true
 gloo-net = { workspace = true, optional = true }
-indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 reqwest = { workspace = true, optional = true }
@@ -27,6 +25,7 @@ tombi-cache.workspace = true
 tombi-config.workspace = true
 tombi-document-tree = { workspace = true, optional = true }
 tombi-future.workspace = true
+tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-json.workspace = true
 tombi-text.workspace = true
 tombi-uri.workspace = true

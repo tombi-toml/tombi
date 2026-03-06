@@ -8,16 +8,16 @@ use itertools::Itertools;
 use tombi_config::TomlVersion;
 use tombi_document_tree::dig_keys;
 
-type RegistoryMap = ahash::AHashMap<String, Registory>;
-const DEFAULT_REGISTORY_INDEX: &str = "https://crates.io/crates";
+type RegistryMap = tombi_hashmap::HashMap<String, Registry>;
+const DEFAULT_REGISTRY_INDEX: &str = "https://crates.io/crates";
 
-struct Registory {
+struct Registry {
     index: String,
 }
 
 pub enum DocumentLinkToolTip {
     GitRepository,
-    Registory,
+    Registry,
     CrateIo,
     CargoToml,
     CargoTomlFirstMember,
@@ -30,7 +30,7 @@ impl From<&DocumentLinkToolTip> for &'static str {
     fn from(val: &DocumentLinkToolTip) -> Self {
         match val {
             DocumentLinkToolTip::GitRepository => "Open Git Repository",
-            DocumentLinkToolTip::Registory => "Open Registry",
+            DocumentLinkToolTip::Registry => "Open Registry",
             DocumentLinkToolTip::CrateIo => "Open crate.io",
             DocumentLinkToolTip::CargoToml => "Open Cargo.toml",
             DocumentLinkToolTip::CargoTomlFirstMember => "Open first Cargo.toml in members",
@@ -114,7 +114,7 @@ fn document_link_for_workspace_cargo_toml(
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let mut total_document_links = vec![];
 
-    let registories = get_registories(workspace_cargo_toml_path, toml_version).unwrap_or_default();
+    let registries = get_registries(workspace_cargo_toml_path, toml_version).unwrap_or_default();
 
     if let Some((_, tombi_document_tree::Value::Table(dependencies))) =
         dig_keys(workspace_document_tree, &["workspace", "dependencies"])
@@ -122,7 +122,7 @@ fn document_link_for_workspace_cargo_toml(
         total_document_links.extend(document_link_for_workspace_depencencies(
             dependencies,
             workspace_cargo_toml_path,
-            &registories,
+            &registries,
             toml_version,
         )?);
     }
@@ -228,7 +228,7 @@ fn create_member_document_links(
 fn document_link_for_workspace_depencencies(
     dependencies: &tombi_document_tree::Table,
     workspace_cargo_toml_path: &std::path::Path,
-    registories: &RegistoryMap,
+    registries: &RegistryMap,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let mut total_document_links = vec![];
@@ -237,7 +237,7 @@ fn document_link_for_workspace_depencencies(
             crate_name,
             crate_value,
             workspace_cargo_toml_path,
-            registories,
+            registries,
             toml_version,
         ) {
             total_document_links.extend(document_links);
@@ -281,8 +281,8 @@ fn document_link_for_crate_cargo_toml(
         get_workspace_path(crate_document_tree),
         toml_version,
     ) {
-        let registories =
-            get_registories(&workspace_cargo_toml_path, toml_version).unwrap_or_default();
+        let registries =
+            get_registries(&workspace_cargo_toml_path, toml_version).unwrap_or_default();
 
         // Support Workspace
         // See: https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-field
@@ -380,21 +380,21 @@ fn document_link_for_crate_cargo_toml(
                 crate_cargo_toml_path,
                 workspace_dependencies,
                 &workspace_cargo_toml_path,
-                &registories,
+                &registries,
                 toml_version,
             ) {
                 total_document_links.extend(document_links);
             }
         }
     } else {
-        let registories = get_registories(crate_cargo_toml_path, toml_version).unwrap_or_default();
+        let registries = get_registries(crate_cargo_toml_path, toml_version).unwrap_or_default();
 
         for (crate_key, crate_value) in total_dependencies {
             if let Ok(document_links) = document_link_for_dependency(
                 crate_key,
                 crate_value,
                 crate_cargo_toml_path,
-                &registories,
+                &registries,
                 toml_version,
             ) {
                 total_document_links.extend(document_links);
@@ -414,14 +414,14 @@ fn document_link_for_workspace_dependency(
     crate_key: &tombi_document_tree::Key,
     crate_value: &tombi_document_tree::Value,
     workspace_cargo_toml_path: &std::path::Path,
-    registories: &RegistoryMap,
+    registries: &RegistryMap,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     match document_link_for_dependency(
         crate_key,
         crate_value,
         workspace_cargo_toml_path,
-        registories,
+        registries,
         toml_version,
     )? {
         Some(document_link) => Ok(vec![
@@ -444,14 +444,14 @@ fn document_link_for_crate_dependency_has_workspace(
     crate_cargo_toml_path: &std::path::Path,
     workspace_dependencies: Option<&tombi_document_tree::Table>,
     workspace_cargo_toml_path: &std::path::Path,
-    registories: &RegistoryMap,
+    registries: &RegistryMap,
     toml_version: TomlVersion,
 ) -> Result<Vec<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     match document_link_for_dependency(
         crate_key,
         crate_value,
         crate_cargo_toml_path,
-        registories,
+        registries,
         toml_version,
     )? {
         Some(document_link) => Ok(vec![
@@ -475,7 +475,7 @@ fn document_link_for_crate_dependency_has_workspace(
                     crate_key,
                     workspace_crate_value,
                     workspace_cargo_toml_path,
-                    registories,
+                    registries,
                     toml_version,
                 )?
                 .into_iter()
@@ -544,7 +544,7 @@ fn document_link_for_dependency(
     crate_key: &tombi_document_tree::Key,
     crate_value: &tombi_document_tree::Value,
     crate_cargo_toml_path: &std::path::Path,
-    registories: &RegistoryMap,
+    registries: &RegistryMap,
     toml_version: TomlVersion,
 ) -> Result<Option<tombi_extension::DocumentLink>, tower_lsp::jsonrpc::Error> {
     let mut package_name = crate_key.value.as_str();
@@ -605,14 +605,14 @@ fn document_link_for_dependency(
             }));
         }
 
-        if let Some(tombi_document_tree::Value::String(registory_name)) = table.get("registory")
-            && let Some(registry) = registories.get(registory_name.value())
+        if let Some(tombi_document_tree::Value::String(registry_name)) = table.get("registory")
+            && let Some(registry) = registries.get(registry_name.value())
             && let Ok(target) =
                 tombi_uri::Uri::from_str(&format!("{}/{}", registry.index, package_name))
         {
             return Ok(Some(tombi_extension::DocumentLink {
                 target,
-                range: registory_name.unquoted_range(),
+                range: registry_name.unquoted_range(),
                 tooltip: DocumentLinkToolTip::CrateIo.into(),
             }));
         }
@@ -621,24 +621,24 @@ fn document_link_for_dependency(
     Ok(None)
 }
 
-fn get_registories(
+fn get_registries(
     workspace_cargo_toml_path: &std::path::Path,
     toml_version: TomlVersion,
-) -> Result<RegistoryMap, tower_lsp::jsonrpc::Error> {
-    let mut registories = RegistoryMap::default();
+) -> Result<RegistryMap, tower_lsp::jsonrpc::Error> {
+    let mut registries = RegistryMap::default();
     if let Some((_, cargo_toml_document_tree)) = load_cargo_toml(
         &workspace_cargo_toml_path.join(".cargo/config.toml"),
         toml_version,
     ) && let Some(tombi_document_tree::Value::Table(registories_table)) =
-        cargo_toml_document_tree.get("registories")
+        cargo_toml_document_tree.get("registries")
     {
         for (name, value) in registories_table.key_values() {
             if let tombi_document_tree::Value::Table(table) = value
                 && let Some(tombi_document_tree::Value::String(index)) = table.get("index")
             {
-                registories.insert(
+                registries.insert(
                     name.value.to_owned(),
-                    Registory {
+                    Registry {
                         index: index.value().into(),
                     },
                 );
@@ -646,7 +646,7 @@ fn get_registories(
         }
     }
 
-    Ok(registories)
+    Ok(registries)
 }
 
 fn get_crate_io_crate_link(
@@ -660,7 +660,7 @@ fn get_crate_io_crate_link(
         crate_name = real_package.value();
     }
 
-    tombi_uri::Uri::from_str(&format!("{DEFAULT_REGISTORY_INDEX}/{crate_name}"))
+    tombi_uri::Uri::from_str(&format!("{DEFAULT_REGISTRY_INDEX}/{crate_name}"))
         .map(|target| tombi_extension::DocumentLink {
             target,
             range: crate_key.unquoted_range(),

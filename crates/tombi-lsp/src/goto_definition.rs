@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use ahash::AHashMap;
 use itertools::Itertools;
 use tombi_schema_store::get_tombi_schemastore_content;
 use tombi_text::IntoLsp;
@@ -20,7 +19,7 @@ pub async fn into_definition_locations(
         return Ok(None);
     };
 
-    let mut uri_set = AHashMap::new();
+    let mut uri_set = tombi_hashmap::HashMap::new();
     for definition in &definitions {
         if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
             uri_set.insert(definition.uri.clone(), remote_uri);

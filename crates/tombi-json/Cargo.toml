@@ -7,10 +7,10 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-indexmap.workspace = true
 itertools.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+tombi-hashmap.workspace = true
 tombi-json-lexer.workspace = true
 tombi-json-syntax.workspace = true
 tombi-json-value.workspace = true

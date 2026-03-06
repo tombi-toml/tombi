@@ -151,7 +151,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
     let source_schema = tombi_schema_store::SourceSchema::new(
         Some(Arc::new(document_schema)),
-        ahash::AHashMap::with_capacity(0),
+        tombi_hashmap::HashMap::with_capacity(0),
         Some(toml_version),
     );
     let schema_context = tombi_schema_store::SchemaContext {

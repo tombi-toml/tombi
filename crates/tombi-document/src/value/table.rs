@@ -1,4 +1,3 @@
-use indexmap::{IndexMap, map::Entry};
 use serde::forward_to_deserialize_any;
 
 use crate::{IntoDocument, Key, Value};
@@ -24,14 +23,14 @@ impl From<tombi_document_tree::TableKind> for TableKind {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Table {
     kind: TableKind,
-    key_values: IndexMap<Key, Value>,
+    key_values: tombi_hashmap::IndexMap<Key, Value>,
 }
 
 impl Table {
     pub fn new(kind: TableKind) -> Self {
         Self {
             kind,
-            key_values: IndexMap::new(),
+            key_values: tombi_hashmap::IndexMap::new(),
         }
     }
 
@@ -46,11 +45,11 @@ impl Table {
     }
 
     #[inline]
-    pub fn key_values(&self) -> &IndexMap<Key, Value> {
+    pub fn key_values(&self) -> &tombi_hashmap::IndexMap<Key, Value> {
         &self.key_values
     }
 
-    pub fn entry(&mut self, key: Key) -> Entry<'_, Key, Value> {
+    pub fn entry(&mut self, key: Key) -> tombi_hashmap::map::Entry<'_, Key, Value> {
         self.key_values.entry(key)
     }
 
@@ -62,16 +61,18 @@ impl Table {
 impl IntoDocument<Table> for tombi_document_tree::Table {
     fn into_document(self, toml_version: crate::TomlVersion) -> Table {
         let kind = self.kind().into();
-        let key_values =
-            IndexMap::<tombi_document_tree::Key, tombi_document_tree::Value>::from(self)
-                .into_iter()
-                .map(|(key, value)| {
-                    (
-                        key.into_document(toml_version),
-                        value.into_document(toml_version),
-                    )
-                })
-                .collect();
+        let key_values = tombi_hashmap::IndexMap::<
+            tombi_document_tree::Key,
+            tombi_document_tree::Value,
+        >::from(self)
+        .into_iter()
+        .map(|(key, value)| {
+            (
+                key.into_document(toml_version),
+                value.into_document(toml_version),
+            )
+        })
+        .collect();
 
         Table { kind, key_values }
     }
@@ -93,7 +94,7 @@ impl<'de> serde::Deserialize<'de> for Table {
     where
         D: serde::Deserializer<'de>,
     {
-        let key_values = IndexMap::<Key, Value>::deserialize(deserializer)?;
+        let key_values = tombi_hashmap::IndexMap::<Key, Value>::deserialize(deserializer)?;
         Ok(Self {
             kind: TableKind::Table,
             key_values,
@@ -103,7 +104,7 @@ impl<'de> serde::Deserialize<'de> for Table {
 
 #[cfg(feature = "serde")]
 struct TableDeserializer<'de> {
-    iter: <&'de IndexMap<Key, Value> as IntoIterator>::IntoIter,
+    iter: <&'de tombi_hashmap::IndexMap<Key, Value> as IntoIterator>::IntoIter,
     value: Option<&'de Value>,
 }
 

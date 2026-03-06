@@ -37,9 +37,9 @@ where
     log::trace!("schema_uri = {:?}", schema_uri);
 
     async move {
-        let mut one_hover_value_contents = ahash::AHashSet::new();
-        let mut valid_hover_value_contents = ahash::AHashSet::new();
-        let mut value_type_set = indexmap::IndexSet::new();
+        let mut one_hover_value_contents = tombi_hashmap::HashSet::new();
+        let mut valid_hover_value_contents = tombi_hashmap::HashSet::new();
+        let mut value_type_set = tombi_hashmap::IndexSet::new();
         let mut enum_values = Vec::new();
         let default = one_of_schema
             .default
@@ -230,8 +230,8 @@ impl GetHoverContent for tombi_schema_store::OneOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut title_description_set = ahash::AHashSet::new();
-            let mut value_type_set = indexmap::IndexSet::new();
+            let mut title_description_set = tombi_hashmap::HashSet::new();
+            let mut value_type_set = tombi_hashmap::IndexSet::new();
             let mut enum_values = Vec::new();
             let default = self
                 .default

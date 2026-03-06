@@ -37,7 +37,7 @@ where
     async move {
         let mut any_hover_value_contents = vec![];
         let mut valid_hover_value_contents = vec![];
-        let mut value_type_set = indexmap::IndexSet::new();
+        let mut value_type_set = tombi_hashmap::IndexSet::new();
         let mut enum_values = Vec::new();
         let default = any_of_schema
             .default
@@ -190,8 +190,8 @@ impl GetHoverContent for tombi_schema_store::AnyOfSchema {
                 unreachable!("schema must be provided");
             };
 
-            let mut title_description_set = ahash::AHashSet::new();
-            let mut value_type_set = indexmap::IndexSet::new();
+            let mut title_description_set = tombi_hashmap::HashSet::new();
+            let mut value_type_set = tombi_hashmap::IndexSet::new();
             let mut enum_values = Vec::new();
             let default = self
                 .default

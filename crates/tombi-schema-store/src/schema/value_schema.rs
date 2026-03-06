@@ -1,7 +1,6 @@
 use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use futures::future::join_all;
-use indexmap::IndexSet;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_json::StringNode;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
@@ -276,7 +275,7 @@ impl ValueSchema {
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
     ) -> Option<Self> {
-        let mut enum_types = IndexSet::new();
+        let mut enum_types = tombi_hashmap::IndexSet::new();
         for enum_value in &enum_values.items {
             match enum_value {
                 tombi_json::ValueNode::Null(_) => {

@@ -1,7 +1,4 @@
-use std::{
-    collections::HashSet,
-    sync::{Arc, Mutex, MutexGuard},
-};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 pub struct SchemaCycleGuard {
     visits: SchemaVisits,
@@ -15,10 +12,10 @@ impl Drop for SchemaCycleGuard {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct SchemaVisits(Arc<Mutex<HashSet<usize>>>);
+pub struct SchemaVisits(Arc<Mutex<tombi_hashmap::HashSet<usize>>>);
 
 impl SchemaVisits {
-    fn lock(&self) -> MutexGuard<'_, HashSet<usize>> {
+    fn lock(&self) -> MutexGuard<'_, tombi_hashmap::HashSet<usize>> {
         self.0
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

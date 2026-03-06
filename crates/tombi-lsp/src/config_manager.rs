@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use ahash::AHashMap;
-use indexmap::IndexMap;
 use tombi_config::{Config, TomlVersion};
 use tombi_schema_store::{SchemaStore, SchemaUri};
 use tower_lsp::lsp_types::Url;
@@ -38,9 +36,10 @@ impl ConfigSchemaStore {
 #[derive(Debug)]
 pub struct ConfigManager {
     /// Maps source file paths to their associated config file paths
-    source_config_paths: Arc<tokio::sync::RwLock<AHashMap<PathBuf, PathBuf>>>,
+    source_config_paths: Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, PathBuf>>>,
     /// Maps config file paths to their ConfigSchemaStore
-    config_schema_stores: Arc<tokio::sync::RwLock<AHashMap<PathBuf, ConfigSchemaStore>>>,
+    config_schema_stores:
+        Arc<tokio::sync::RwLock<tombi_hashmap::HashMap<PathBuf, ConfigSchemaStore>>>,
     /// Default ConfigSchemaStore when no config file is found
     /// Contains the source type (Default or Editor) and the ConfigSchemaStore
     default_config_schema_store:
@@ -70,7 +69,7 @@ impl ConfigManager {
             };
 
         // Initialize config_schema_stores with the default config if it has a path
-        let mut config_schema_stores = AHashMap::new();
+        let mut config_schema_stores = tombi_hashmap::HashMap::new();
         let mut default_config_schema_store = None;
         if let Some(config_path) = config_path {
             let schema_options = schema_store_options(&config, backend_options);
@@ -91,7 +90,7 @@ impl ConfigManager {
         }
 
         Self {
-            source_config_paths: Arc::new(tokio::sync::RwLock::new(AHashMap::new())),
+            source_config_paths: Arc::new(tokio::sync::RwLock::new(tombi_hashmap::HashMap::new())),
             config_schema_stores: Arc::new(tokio::sync::RwLock::new(config_schema_stores)),
             default_config_schema_store: Arc::new(tokio::sync::RwLock::new(
                 default_config_schema_store,
@@ -385,7 +384,8 @@ impl ConfigManager {
 
     /// List all schemas from all config schema stores
     pub async fn list_schemas(&self) -> Vec<tombi_schema_store::Schema> {
-        let mut schema_map: IndexMap<SchemaUri, tombi_schema_store::Schema> = IndexMap::new();
+        let mut schema_map: tombi_hashmap::IndexMap<SchemaUri, tombi_schema_store::Schema> =
+            tombi_hashmap::IndexMap::new();
 
         // Get schemas from all config_schema_stores
         let config_schema_stores = self.config_schema_stores.read().await;

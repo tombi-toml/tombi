@@ -201,7 +201,6 @@ impl Deserializer<'_> {
 mod tests {
     use super::*;
     use chrono::{DateTime, TimeZone, Utc};
-    use indexmap::{IndexMap, indexmap};
     use serde::Deserialize;
     use tombi_test_lib::project_root_path;
 
@@ -294,8 +293,8 @@ value = "nested value"
     async fn test_deserialize_map() {
         #[derive(Debug, Deserialize, PartialEq)]
         struct MapTest {
-            string_map: IndexMap<String, String>,
-            int_map: IndexMap<String, i32>,
+            string_map: tombi_hashmap::IndexMap<String, String>,
+            int_map: tombi_hashmap::IndexMap<String, i32>,
         }
 
         let toml = r#"
@@ -310,11 +309,11 @@ three = 3
 "#;
 
         let expected = MapTest {
-            string_map: indexmap! {
+            string_map: tombi_hashmap::indexmap! {
                 "key1".to_string() => "value1".to_string(),
                 "key2".to_string() => "value2".to_string(),
             },
-            int_map: indexmap! {
+            int_map: tombi_hashmap::indexmap! {
                 "one".to_string() => 1,
                 "two".to_string() => 2,
                 "three".to_string() => 3,
@@ -401,7 +400,7 @@ updated_at = "2023-07-20T14:45:30Z"
         #[derive(Debug, Deserialize, PartialEq)]
         struct EmptyContainers {
             empty_array: Vec<i32>,
-            empty_map: IndexMap<String, String>,
+            empty_map: tombi_hashmap::IndexMap<String, String>,
         }
 
         let toml = r#"
@@ -411,7 +410,7 @@ empty_map = {}
 
         let expected = EmptyContainers {
             empty_array: vec![],
-            empty_map: IndexMap::new(),
+            empty_map: tombi_hashmap::IndexMap::new(),
         };
 
         let result: EmptyContainers = from_str_async(toml)
@@ -497,13 +496,13 @@ negative_zero = -0.0
         #[derive(Debug, Deserialize, PartialEq)]
         struct Middle {
             inner: Inner,
-            map: IndexMap<String, Inner>,
+            map: tombi_hashmap::IndexMap<String, Inner>,
         }
 
         #[derive(Debug, Deserialize, PartialEq)]
         struct ComplexNested {
             middle: Middle,
-            array_of_maps: Vec<IndexMap<String, String>>,
+            array_of_maps: Vec<tombi_hashmap::IndexMap<String, String>>,
         }
 
         let toml = r#"
@@ -534,7 +533,7 @@ key4 = "value4"
                     value: "nested value".to_string(),
                     numbers: vec![1, 2, 3],
                 },
-                map: indexmap! {
+                map: tombi_hashmap::indexmap! {
                     "key1".to_string() => Inner {
                         value: "value1".to_string(),
                         numbers: vec![4, 5, 6],
@@ -546,11 +545,11 @@ key4 = "value4"
                 },
             },
             array_of_maps: vec![
-                indexmap! {
+                tombi_hashmap::indexmap! {
                     "key1".to_string() => "value1".to_string(),
                     "key2".to_string() => "value2".to_string(),
                 },
-                indexmap! {
+                tombi_hashmap::indexmap! {
                     "key3".to_string() => "value3".to_string(),
                     "key4".to_string() => "value4".to_string(),
                 },

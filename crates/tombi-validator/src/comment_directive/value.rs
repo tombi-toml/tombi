@@ -407,7 +407,7 @@ pub async fn get_comment_directive_document_tree_and_diagnostics<'a>(
         Some(Arc::new(
             comment_directive_document_schema(schema_store, schema_uri).await,
         )),
-        ahash::AHashMap::with_capacity(0),
+        tombi_hashmap::HashMap::with_capacity(0),
         Some(toml_version),
     );
 

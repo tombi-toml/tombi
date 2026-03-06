@@ -5,7 +5,6 @@ use crate::{
     SchemaAccessors, SourceSchema, SubSchemaUriMap, ValueSchema, get_tombi_schemastore_content,
     http_client::HttpClient, json::JsonCatalog,
 };
-use ahash::AHashMap;
 use itertools::{Either, Itertools};
 use tokio::sync::RwLock;
 use tombi_ast::SchemaDocumentCommentDirective;
@@ -27,8 +26,11 @@ pub struct AssociateSchemaOptions {
 #[derive(Debug, Clone)]
 pub struct SchemaStore {
     http_client: HttpClient,
-    document_schemas:
-        Arc<tokio::sync::RwLock<AHashMap<SchemaUri, Result<Arc<DocumentSchema>, crate::Error>>>>,
+    document_schemas: Arc<
+        tokio::sync::RwLock<
+            tombi_hashmap::HashMap<SchemaUri, Result<Arc<DocumentSchema>, crate::Error>>,
+        >,
+    >,
     schemas: Arc<RwLock<Vec<crate::Schema>>>,
     options: crate::Options,
     base_dir_path: Arc<RwLock<Option<std::path::PathBuf>>>,

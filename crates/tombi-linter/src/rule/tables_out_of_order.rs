@@ -1,4 +1,3 @@
-use ahash::AHashMap;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::{RootTableCommonLintRules, TableCommonFormatRules};
 use tombi_comment_directive_serde::get_comment_directive_content;
@@ -80,7 +79,8 @@ impl Rule<tombi_ast::Root> for TablesOutOfOrderRule {
         let mut out_of_order_ranges = Vec::new();
 
         // Group tables by their first key component (prefix)
-        let mut prefix_groups: AHashMap<&str, Vec<(usize, tombi_text::Range)>> = AHashMap::new();
+        let mut prefix_groups: tombi_hashmap::HashMap<&str, Vec<(usize, tombi_text::Range)>> =
+            tombi_hashmap::HashMap::new();
         for (pos, keys, range) in &table_positions {
             if !keys.is_empty() {
                 prefix_groups

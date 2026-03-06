@@ -1,4 +1,3 @@
-use indexmap::{Equivalent, IndexMap};
 use std::hash::Hash;
 use std::iter::{FromIterator, IntoIterator};
 
@@ -10,7 +9,7 @@ use crate::Value;
 /// A map implementation for JSON objects
 #[derive(Debug, Clone)]
 pub struct Map<K, V> {
-    inner: IndexMap<K, V>,
+    inner: tombi_hashmap::IndexMap<K, V>,
 }
 
 impl<K, V> PartialEq for Map<K, V>
@@ -30,14 +29,14 @@ where
     /// Creates an empty Map
     pub fn new() -> Self {
         Map {
-            inner: IndexMap::new(),
+            inner: tombi_hashmap::IndexMap::new(),
         }
     }
 
     /// Creates an empty Map with the specified capacity
     pub fn with_capacity(capacity: usize) -> Self {
         Map {
-            inner: IndexMap::with_capacity(capacity),
+            inner: tombi_hashmap::IndexMap::with_capacity(capacity),
         }
     }
 
@@ -59,7 +58,7 @@ where
     /// Returns a reference to the value corresponding to the key
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
-        Q: ?Sized + Hash + Equivalent<K>,
+        Q: ?Sized + Hash + tombi_hashmap::Equivalent<K>,
     {
         self.inner.get(key)
     }
@@ -104,25 +103,25 @@ where
         self.inner.values_mut()
     }
 
-    /// Returns a reference to the underlying IndexMap
-    pub fn as_inner(&self) -> &IndexMap<K, V> {
+    /// Returns a reference to the underlying tombi_hashmap::IndexMap
+    pub fn as_inner(&self) -> &tombi_hashmap::IndexMap<K, V> {
         &self.inner
     }
 
-    /// Returns a mutable reference to the underlying IndexMap
-    pub fn as_inner_mut(&mut self) -> &mut IndexMap<K, V> {
+    /// Returns a mutable reference to the underlying tombi_hashmap::IndexMap
+    pub fn as_inner_mut(&mut self) -> &mut tombi_hashmap::IndexMap<K, V> {
         &mut self.inner
     }
 
-    /// Consumes the Map and returns the underlying IndexMap
-    pub fn into_inner(self) -> IndexMap<K, V> {
+    /// Consumes the Map and returns the underlying tombi_hashmap::IndexMap
+    pub fn into_inner(self) -> tombi_hashmap::IndexMap<K, V> {
         self.inner
     }
 
     /// Returns true if the map contains a key
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
-        Q: ?Sized + Hash + Equivalent<K>,
+        Q: ?Sized + Hash + tombi_hashmap::Equivalent<K>,
     {
         self.inner.contains_key(key)
     }
@@ -156,7 +155,7 @@ where
 
 impl<K, V> IntoIterator for Map<K, V> {
     type Item = (K, V);
-    type IntoIter = indexmap::map::IntoIter<K, V>;
+    type IntoIter = tombi_hashmap::map::IntoIter<K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inner.into_iter()
@@ -165,7 +164,7 @@ impl<K, V> IntoIterator for Map<K, V> {
 
 impl<'a, K, V> IntoIterator for &'a Map<K, V> {
     type Item = (&'a K, &'a V);
-    type IntoIter = indexmap::map::Iter<'a, K, V>;
+    type IntoIter = tombi_hashmap::map::Iter<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inner.iter()
@@ -174,7 +173,7 @@ impl<'a, K, V> IntoIterator for &'a Map<K, V> {
 
 impl<'a, K, V> IntoIterator for &'a mut Map<K, V> {
     type Item = (&'a K, &'a mut V);
-    type IntoIter = indexmap::map::IterMut<'a, K, V>;
+    type IntoIter = tombi_hashmap::map::IterMut<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inner.iter_mut()
@@ -187,7 +186,7 @@ where
 {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         Map {
-            inner: IndexMap::from_iter(iter),
+            inner: tombi_hashmap::IndexMap::from_iter(iter),
         }
     }
 }

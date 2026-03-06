@@ -1,4 +1,3 @@
-use ahash::AHashSet;
 use itertools::Itertools;
 use std::borrow::Cow;
 use tombi_document_tree::{ArrayKind, LiteralValueRef};
@@ -203,7 +202,7 @@ impl FindCompletionContents for tombi_document_tree::Array {
                                     .iter()
                                     .filter_map(Option::<LiteralValueRef>::from)
                                     .map(|value| value.to_string())
-                                    .collect::<AHashSet<_>>();
+                                    .collect::<tombi_hashmap::HashSet<_>>();
 
                                 completions = completions
                                     .into_iter()

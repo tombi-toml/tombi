@@ -1,0 +1,15 @@
+[package]
+name = "tombi-hashmap"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[features]
+default = []
+serde = ["ahash/serde", "indexmap/serde"]
+
+[dependencies]
+ahash = { version = "0.8.11" }
+indexmap = { version = "2.9.0" }

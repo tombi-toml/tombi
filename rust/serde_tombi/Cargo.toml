@@ -13,7 +13,6 @@ ignored = ["textwrap"]  # Used in `toml_text_assert_eq` macro
 [dependencies]
 chrono.workspace = true
 dirs.workspace = true
-indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 serde.workspace = true
@@ -26,6 +25,7 @@ tombi-date-time.workspace = true
 tombi-document.workspace = true
 tombi-document-tree.workspace = true
 tombi-formatter.workspace = true
+tombi-hashmap = { workspace = true, features = ["serde"] }
 tombi-parser.workspace = true
 tombi-schema-store.workspace = true
 tombi-toml-text.workspace = true

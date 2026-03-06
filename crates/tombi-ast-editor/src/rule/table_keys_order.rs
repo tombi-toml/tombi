@@ -1,7 +1,5 @@
-use ahash::{AHashMap, HashSet};
 use std::borrow::Cow;
 
-use indexmap::IndexMap;
 use itertools::Itertools;
 use tombi_ast::AstNode;
 use tombi_comment_directive::value::{
@@ -22,7 +20,7 @@ pub struct TableOrderOverride {
     pub order: Option<TableKeysOrder>,
 }
 
-pub type TableOrderOverrides = AHashMap<Vec<Accessor>, TableOrderOverride>;
+pub type TableOrderOverrides = tombi_hashmap::HashMap<Vec<Accessor>, TableOrderOverride>;
 
 pub async fn table_keys_order<'a>(
     value: &'a tombi_document_tree::Value,
@@ -156,7 +154,7 @@ where
         }
 
         let mut results = Vec::with_capacity(targets.len());
-        let mut sort_targets_map = IndexMap::new();
+        let mut sort_targets_map = tombi_hashmap::IndexMap::new();
 
         for (accessors, target) in targets {
             if let Some(accessor) = accessors.first() {
@@ -418,7 +416,7 @@ fn get_table_keys_order(
 }
 
 async fn sort_table_targets<T>(
-    sort_targets_map: IndexMap<Accessor, Vec<(Vec<Accessor>, T)>>,
+    sort_targets_map: tombi_hashmap::IndexMap<Accessor, Vec<(Vec<Accessor>, T)>>,
     table_schema: Option<&TableSchema>,
     order: Option<&XTombiTableKeysOrder>,
 ) -> Vec<(Accessor, Vec<(Vec<Accessor>, T)>)> {
@@ -453,7 +451,7 @@ async fn sort_table_targets<T>(
                     TableKeysOrder::Schema => None,
                 })
             };
-            let property_accessors: HashSet<_> =
+            let property_accessors: tombi_hashmap::HashSet<_> =
                 table_schema.accessors().await.into_iter().collect();
 
             let mut pattern_regexes = Vec::new();

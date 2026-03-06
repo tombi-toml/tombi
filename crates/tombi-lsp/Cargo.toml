@@ -9,12 +9,10 @@ license.workspace = true
 ignored = ["semver"]
 
 [dependencies]
-ahash.workspace = true
 chrono.workspace = true
 clap = { workspace = true, optional = true }
 dirs.workspace = true
 futures.workspace = true
-indexmap.workspace = true
 itertools.workspace = true
 log.workspace = true
 reqwest.workspace = true
@@ -38,6 +36,7 @@ tombi-extension-uv.workspace = true
 tombi-formatter.workspace = true
 tombi-future.workspace = true
 tombi-glob.workspace = true
+tombi-hashmap.workspace = true
 tombi-json.workspace = true
 tombi-linter.workspace = true
 tombi-parser.workspace = true
