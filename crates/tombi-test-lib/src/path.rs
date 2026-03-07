@@ -119,3 +119,9 @@ pub fn anchor_dynamic_ref_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("anchor-dynamic-ref-test.schema.json")
 }
+
+pub fn recursive_anchor_ref_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("recursive-anchor-ref-test.schema.json")
+}
