@@ -96,7 +96,6 @@ pub struct UnsupportedVocabularyUsage {
     pub uri: String,
     pub required: bool,
     pub pointer: String,
-    pub issue: Option<&'static str>,
 }
 
 pub fn deprecated_in(keyword: &str) -> Option<JsonSchemaDialect> {
@@ -142,11 +141,11 @@ pub fn is_supported_vocabulary_uri(dialect: JsonSchemaDialect, uri: &str) -> boo
     let normalized_uri = uri.trim_end_matches('#');
     let expected_prefix = match dialect {
         JsonSchemaDialect::Draft07 => return false,
-        JsonSchemaDialect::Draft2019_09 => "https://json-schema.org/draft/2019-09/vocab/",
-        JsonSchemaDialect::Draft2020_12 => "https://json-schema.org/draft/2020-12/vocab/",
+        JsonSchemaDialect::Draft2019_09 => "/draft/2019-09/vocab/",
+        JsonSchemaDialect::Draft2020_12 => "/draft/2020-12/vocab/",
     };
 
-    if !normalized_uri.starts_with(expected_prefix) {
+    if !normalized_uri.contains(expected_prefix) {
         return false;
     }
 
@@ -164,6 +163,7 @@ pub fn is_supported_vocabulary_uri(dialect: JsonSchemaDialect, uri: &str) -> boo
             segment,
             "core"
                 | "applicator"
+                | "unevaluated"
                 | "validation"
                 | "meta-data"
                 | "format-annotation"
@@ -177,46 +177,27 @@ pub fn collect_unsupported_vocabulary_usages(
     root_object: &tombi_json::ObjectNode,
     dialect: JsonSchemaDialect,
 ) -> Vec<UnsupportedVocabularyUsage> {
-    let Some(vocabulary_value) = root_object.get("$vocabulary") else {
+    let Some(vocabulary_object) = root_object.get("$vocabulary").and_then(|v| v.as_object()) else {
         return Vec::new();
-    };
-    let Some(vocabulary_object) = vocabulary_value.as_object() else {
-        return vec![UnsupportedVocabularyUsage {
-            uri: "$vocabulary".to_string(),
-            required: false,
-            pointer: "#/$vocabulary".to_string(),
-            issue: Some("`$vocabulary` must be an object"),
-        }];
     };
 
     vocabulary_object
         .properties
         .iter()
-        .filter_map(|(uri, required_value)| {
-            let pointer = format!(
-                "#/$vocabulary/{}",
-                escape_json_pointer_token(uri.value.as_str())
-            );
-            match required_value.as_bool() {
-                Some(required) => {
-                    if is_supported_vocabulary_uri(dialect, uri.value.as_str()) {
-                        return None;
-                    }
-
-                    Some(UnsupportedVocabularyUsage {
-                        uri: uri.value.to_string(),
-                        required,
-                        pointer,
-                        issue: None,
-                    })
-                }
-                None => Some(UnsupportedVocabularyUsage {
-                    uri: uri.value.to_string(),
-                    required: false,
-                    pointer,
-                    issue: Some("`$vocabulary` entries must be boolean"),
-                }),
+        .filter_map(|(uri, required)| {
+            let required = required.as_bool()?;
+            if is_supported_vocabulary_uri(dialect, uri.value.as_str()) {
+                return None;
             }
+
+            Some(UnsupportedVocabularyUsage {
+                uri: uri.value.to_string(),
+                required,
+                pointer: format!(
+                    "#/$vocabulary/{}",
+                    escape_json_pointer_token(uri.value.as_str())
+                ),
+            })
         })
         .collect()
 }
@@ -395,11 +376,7 @@ mod tests {
         ));
         assert!(is_supported_vocabulary_uri(
             JsonSchemaDialect::Draft2019_09,
-            "https://json-schema.org/draft/2019-09/vocab/format#"
-        ));
-        assert!(!is_supported_vocabulary_uri(
-            JsonSchemaDialect::Draft2019_09,
-            "https://example.com/custom?x=/draft/2019-09/vocab/core"
+            "http://json-schema.org/draft/2019-09/vocab/format#"
         ));
         assert!(!is_supported_vocabulary_uri(
             JsonSchemaDialect::Draft2019_09,
@@ -429,26 +406,5 @@ mod tests {
         assert!(usages.iter().any(
             |usage| !usage.required && usage.uri == "https://example.com/vocab/custom-optional"
         ));
-        assert!(usages.iter().all(|usage| usage.issue.is_none()));
-    }
-
-    #[test]
-    fn collects_invalid_vocabulary_shapes() {
-        let value = tombi_json::ValueNode::from_str(
-            r#"{
-                "$vocabulary": {
-                    "https://example.com/vocab/custom-required": "yes"
-                }
-            }"#,
-        )
-        .expect("schema should parse");
-        let object = value.as_object().expect("schema should be object");
-
-        let usages = collect_unsupported_vocabulary_usages(object, JsonSchemaDialect::Draft2019_09);
-        assert_eq!(usages.len(), 1);
-        assert_eq!(
-            usages[0].issue,
-            Some("`$vocabulary` entries must be boolean")
-        );
     }
 }

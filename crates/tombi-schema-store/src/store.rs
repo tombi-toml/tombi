@@ -542,27 +542,13 @@ impl SchemaStore {
                 .iter()
                 .take(sample_limit)
                 .map(|usage| {
-                    if let Some(issue) = usage.issue {
-                        format!(
-                            "uri={} required={} pointer={} issue={}",
-                            usage.uri, usage.required, usage.pointer, issue
-                        )
-                    } else {
-                        format!(
-                            "uri={} required={} pointer={}",
-                            usage.uri, usage.required, usage.pointer
-                        )
-                    }
+                    format!(
+                        "uri={} required={} pointer={}",
+                        usage.uri, usage.required, usage.pointer
+                    )
                 })
                 .collect();
             let remaining = total.saturating_sub(samples.len());
-            if required_count > 0 {
-                log::error!(
-                    "required JSON Schema vocabularies are unsupported: schema_uri={} required_count={} (validation may be incomplete)",
-                    schema_uri,
-                    required_count,
-                );
-            }
             if remaining > 0 {
                 log::warn!(
                     "unsupported JSON Schema vocabularies declared for current dialect: schema_uri={} count={} required_count={} samples=[{}] ... ({} more occurrences not shown)",
