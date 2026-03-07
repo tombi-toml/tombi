@@ -137,7 +137,8 @@ impl ValueSchema {
     ///
     /// When "type" is not explicitly specified, we can infer the type from keywords
     /// that are only valid for specific types:
-    /// - String: minLength, maxLength, pattern, format
+    /// - String: minLength, maxLength, pattern, format, contentEncoding,
+    ///           contentMediaType, contentSchema (content annotations)
     /// - Number: minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf
     /// - Array: items, prefixItems, minItems, maxItems, uniqueItems
     /// - Object: properties, patternProperties, additionalProperties, required,
@@ -154,6 +155,9 @@ impl ValueSchema {
             || (supports_keyword("maxLength") && object.get("maxLength").is_some())
             || (supports_keyword("pattern") && object.get("pattern").is_some())
             || (supports_keyword("format") && object.get("format").is_some())
+            || (supports_keyword("contentEncoding") && object.get("contentEncoding").is_some())
+            || (supports_keyword("contentMediaType") && object.get("contentMediaType").is_some())
+            || (supports_keyword("contentSchema") && object.get("contentSchema").is_some())
         {
             return Some("string");
         }
@@ -975,6 +979,38 @@ mod tests {
             Some(crate::JsonSchemaDialect::Draft07),
         );
         assert!(matches!(schema, Some(ValueSchema::Array(_))));
+    }
+
+    #[test]
+    fn test_content_keywords_are_preserved_as_string_annotations() {
+        let schema = parse_schema_with_dialect(
+            r#"{
+                "type": "string",
+                "contentEncoding": "base64",
+                "contentMediaType": "application/json",
+                "contentSchema": { "type": "object" }
+            }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        let Some(ValueSchema::String(schema)) = schema else {
+            panic!("schema is not a String schema");
+        };
+
+        assert_eq!(schema.content_encoding.as_deref(), Some("base64"));
+        assert_eq!(
+            schema.content_media_type.as_deref(),
+            Some("application/json")
+        );
+        assert!(schema.content_schema.is_some());
+    }
+
+    #[test]
+    fn test_content_keywords_infer_string_without_explicit_type() {
+        let schema = parse_schema_with_dialect(
+            r#"{ "contentMediaType": "application/json" }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        assert!(matches!(schema, Some(ValueSchema::String(_))));
     }
 
     #[test]

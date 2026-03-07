@@ -5,6 +5,9 @@ pub struct StringSchema {
     pub title: Option<String>,
     pub description: Option<String>,
     pub range: tombi_text::Range,
+    pub content_encoding: Option<String>,
+    pub content_media_type: Option<String>,
+    pub content_schema: Option<tombi_json::Value>,
     pub min_length: Option<usize>,
     pub max_length: Option<usize>,
     pub format: Option<StringFormat>,
@@ -26,6 +29,13 @@ impl StringSchema {
                 .get("description")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             range: object.range,
+            content_encoding: object
+                .get("contentEncoding")
+                .and_then(|v| v.as_str().map(|s| s.to_string())),
+            content_media_type: object
+                .get("contentMediaType")
+                .and_then(|v| v.as_str().map(|s| s.to_string())),
+            content_schema: object.get("contentSchema").cloned().map(Into::into),
             min_length: object
                 .get("minLength")
                 .and_then(|v| v.as_u64().map(|n| n as usize)),
