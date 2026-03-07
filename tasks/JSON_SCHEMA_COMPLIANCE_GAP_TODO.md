@@ -45,7 +45,7 @@
 
 - [x] `$vocabulary` の解釈と未対応 vocabulary 検出を実装する（対応しない: 2026-03-07 方針）
 - [x] `$anchor` を実装する（2026-03-07 対応）
-- [ ] `$recursiveAnchor` / `$recursiveRef` を実装する  
+- [x] `$recursiveAnchor` / `$recursiveRef` を実装する（2026-03-08 対応）  
   備考: 2020-12 で `$dynamicAnchor` / `$dynamicRef` に置換（将来版では compatibility のみ）
 - [x] `dependentRequired` を実装する（`dependencies` 置換）（2026-03-06 対応）
 - [x] `dependentSchemas` を実装する（`dependencies` 置換）（2026-03-06 対応）
@@ -55,7 +55,7 @@
 
 ## 4. draft-2020-12 TODO（目標準拠）
 
-- [ ] `$dynamicAnchor` / `$dynamicRef` を実装する
+- [x] `$dynamicAnchor` / `$dynamicRef` を実装する（2026-03-08 対応）
 - [x] `prefixItems` を実装する（2026-03-05 対応）
 - [x] 2020-12 の `items`（旧 `additionalItems` 相当の役割）を実装する（2026-03-05 対応）
 - [ ] `format` を `format-annotation` / `format-assertion` で切替可能にする
@@ -95,7 +95,7 @@
 
 ### Phase D: 2020-12 ネイティブ実装
 
-- [ ] `$dynamicAnchor` / `$dynamicRef`, `prefixItems` + 新 `items` を実装する
+- [x] `$dynamicAnchor` / `$dynamicRef`, `prefixItems` + 新 `items` を実装する（2026-03-08 時点: `$dynamic*` 対応済み）
 - [ ] 2020-12 モードで廃止キーワードの取り扱いを明示（warning/error を設定可能化）
 - [ ] `format-annotation` / `format-assertion` の切替実装を投入する
 
