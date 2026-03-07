@@ -607,6 +607,7 @@ mod completion_labels {
                 SourcePath(project_root_path().join("schemas").join("tombi.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "anchor-dynamic-ref-test.schema.json",
                 "array-const-enum-test.schema.json",
                 "contains-test.schema.json",
                 "dependencies-test.schema.json",
