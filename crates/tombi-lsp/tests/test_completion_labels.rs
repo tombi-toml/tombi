@@ -617,6 +617,7 @@ mod completion_labels {
                 "min-max-contains-test.schema.json",
                 "partial-taskipy.schema.json",
                 "prefix-items-test.schema.json",
+                "recursive-anchor-ref-test.schema.json",
                 "recursive-schema.schema.json",
                 "string-format-test.schema.json",
                 "table-const-enum-test.schema.json",
