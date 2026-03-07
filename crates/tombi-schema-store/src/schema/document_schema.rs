@@ -56,12 +56,16 @@ impl DocumentSchema {
 
         let mut anchors = AnchorCollector::default();
         let mut dynamic_anchors = DynamicAnchorCollector::default();
+        let collect_anchor =
+            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "$anchor"));
+        let collect_dynamic_anchor =
+            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "$dynamicAnchor"));
         let value_schema = ValueSchema::new(
             &object,
             string_formats.as_deref(),
             dialect,
-            Some(&mut anchors),
-            Some(&mut dynamic_anchors),
+            collect_anchor.then_some(&mut anchors),
+            collect_dynamic_anchor.then_some(&mut dynamic_anchors),
         )
         .map(Arc::new);
         let mut definitions = tombi_hashmap::HashMap::default();
@@ -74,8 +78,8 @@ impl DocumentSchema {
                     object,
                     string_formats.as_deref(),
                     dialect,
-                    Some(&mut anchors),
-                    Some(&mut dynamic_anchors),
+                    collect_anchor.then_some(&mut anchors),
+                    collect_dynamic_anchor.then_some(&mut dynamic_anchors),
                 ) {
                     definitions.insert(format!("#/definitions/{}", key.value), value_schema);
                 }
@@ -90,8 +94,8 @@ impl DocumentSchema {
                     object,
                     string_formats.as_deref(),
                     dialect,
-                    Some(&mut anchors),
-                    Some(&mut dynamic_anchors),
+                    collect_anchor.then_some(&mut anchors),
+                    collect_dynamic_anchor.then_some(&mut dynamic_anchors),
                 ) {
                     definitions.insert(format!("#/$defs/{}", key.value), value_schema);
                 }
@@ -106,8 +110,9 @@ impl DocumentSchema {
             super::collect_named_anchors(
                 &object,
                 &root_referable,
-                Some(&mut anchors),
-                Some(&mut dynamic_anchors),
+                dialect,
+                collect_anchor.then_some(&mut anchors),
+                collect_dynamic_anchor.then_some(&mut dynamic_anchors),
             );
         }
         Self {

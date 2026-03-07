@@ -65,25 +65,41 @@ pub type ReferableValueSchemas = Arc<tokio::sync::RwLock<Vec<Referable<ValueSche
 pub(crate) fn collect_named_anchors(
     object: &tombi_json::ObjectNode,
     referable: &Referable<ValueSchema>,
+    dialect: Option<crate::JsonSchemaDialect>,
     mut anchor_collector: Option<&mut AnchorCollector>,
     mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) {
-    if let Some(anchor) = object.get("$anchor").and_then(|value| value.as_str())
+    let Some(dialect) = dialect else {
+        return;
+    };
+
+    if crate::supports_keyword(dialect, "$anchor")
+        && let Some(anchor) = object
+            .get("$anchor")
+            .and_then(|value| value.as_str())
+            .filter(|anchor| is_plain_name_fragment(anchor))
         && let Some(anchor_collector) = anchor_collector.as_deref_mut()
     {
         anchor_collector
             .entry(format!("#{anchor}"))
             .or_insert_with(|| referable.clone());
     }
-    if let Some(dynamic_anchor) = object
-        .get("$dynamicAnchor")
-        .and_then(|value| value.as_str())
+    if crate::supports_keyword(dialect, "$dynamicAnchor")
+        && let Some(dynamic_anchor) = object
+            .get("$dynamicAnchor")
+            .and_then(|value| value.as_str())
+            .filter(|dynamic_anchor| is_plain_name_fragment(dynamic_anchor))
         && let Some(dynamic_anchor_collector) = dynamic_anchor_collector.as_deref_mut()
     {
         dynamic_anchor_collector
             .entry(format!("#{dynamic_anchor}"))
             .or_insert_with(|| referable.clone());
     }
+}
+
+#[inline]
+fn is_plain_name_fragment(fragment: &str) -> bool {
+    !fragment.is_empty() && !fragment.contains('/')
 }
 
 #[derive(Debug, Clone)]

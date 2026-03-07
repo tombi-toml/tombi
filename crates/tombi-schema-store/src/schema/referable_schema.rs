@@ -83,7 +83,9 @@ impl Referable<ValueSchema> {
         }
         let (reference_kind, reference_value) = match (
             object.get("$ref").and_then(|v| v.as_str()),
-            object.get("$dynamicRef").and_then(|v| v.as_str()),
+            dialect
+                .filter(|dialect| crate::supports_keyword(*dialect, "$dynamicRef"))
+                .and_then(|_| object.get("$dynamicRef").and_then(|v| v.as_str())),
         ) {
             (Some(reference), _) => (Some(ReferenceKind::Ref), Some(reference)),
             (None, Some(reference)) => (Some(ReferenceKind::DynamicRef), Some(reference)),
@@ -121,6 +123,7 @@ impl Referable<ValueSchema> {
             super::collect_named_anchors(
                 object,
                 referable,
+                dialect,
                 anchor_collector.as_deref_mut(),
                 dynamic_anchor_collector.as_deref_mut(),
             );
@@ -426,9 +429,11 @@ fn apply_ref_annotations(
     } = referable_schema
     {
         let value_schema = Arc::make_mut(value_schema);
-        if title.is_some() || description.is_some() {
-            value_schema.set_title(title.cloned());
-            value_schema.set_description(description.cloned());
+        if let Some(title) = title {
+            value_schema.set_title(Some(title.clone()));
+        }
+        if let Some(description) = description {
+            value_schema.set_description(Some(description.clone()));
         }
         if let Some(deprecated) = deprecated {
             value_schema.set_deprecated(deprecated);
@@ -489,14 +494,14 @@ async fn resolve_dynamic_anchor_from_scope(
 
 fn parse_dynamic_anchor_reference(reference: &str) -> Option<(Option<SchemaUri>, String)> {
     if let Some(fragment) = reference.strip_prefix('#') {
-        if fragment.is_empty() || fragment.starts_with('/') {
+        if !is_plain_name_fragment(fragment) {
             return None;
         }
         return Some((None, format!("#{fragment}")));
     }
 
     let (base_uri, fragment) = reference.split_once('#')?;
-    if fragment.is_empty() || fragment.starts_with('/') {
+    if !is_plain_name_fragment(fragment) {
         return None;
     }
 
@@ -505,7 +510,16 @@ fn parse_dynamic_anchor_reference(reference: &str) -> Option<(Option<SchemaUri>,
 }
 
 fn is_plain_name_anchor_reference(reference: &str) -> bool {
-    reference.starts_with('#') && !reference.starts_with("#/")
+    if let Some(fragment) = reference.strip_prefix('#') {
+        is_plain_name_fragment(fragment)
+    } else {
+        false
+    }
+}
+
+#[inline]
+fn is_plain_name_fragment(fragment: &str) -> bool {
+    !fragment.is_empty() && !fragment.contains('/')
 }
 
 /// Two-path schema collection: tries a read lock first for already-resolved schemas,
