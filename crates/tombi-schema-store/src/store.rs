@@ -493,6 +493,8 @@ impl SchemaStore {
             .and_then(|dialect_uri| crate::JsonSchemaDialect::try_from(dialect_uri).ok())
             .unwrap_or_default();
         let deprecated_keyword_usages = crate::collect_deprecated_keyword_usages(&object, dialect);
+        let unsupported_vocabulary_usages =
+            crate::collect_unsupported_vocabulary_usages(&object, dialect);
         let document_schema = DocumentSchema::new(object, schema_uri.clone());
         if !deprecated_keyword_usages.is_empty() {
             let total = deprecated_keyword_usages.len();
@@ -525,6 +527,43 @@ impl SchemaStore {
                     "deprecated JSON Schema keywords used for current dialect: schema_uri={} count={} samples=[{}]",
                     schema_uri,
                     total,
+                    samples.join("; "),
+                );
+            }
+        }
+        if !unsupported_vocabulary_usages.is_empty() {
+            let total = unsupported_vocabulary_usages.len();
+            let required_count = unsupported_vocabulary_usages
+                .iter()
+                .filter(|usage| usage.required)
+                .count();
+            let sample_limit = 3;
+            let samples: Vec<String> = unsupported_vocabulary_usages
+                .iter()
+                .take(sample_limit)
+                .map(|usage| {
+                    format!(
+                        "uri={} required={} pointer={}",
+                        usage.uri, usage.required, usage.pointer
+                    )
+                })
+                .collect();
+            let remaining = total.saturating_sub(samples.len());
+            if remaining > 0 {
+                log::warn!(
+                    "unsupported JSON Schema vocabularies declared for current dialect: schema_uri={} count={} required_count={} samples=[{}] ... ({} more occurrences not shown)",
+                    schema_uri,
+                    total,
+                    required_count,
+                    samples.join("; "),
+                    remaining,
+                );
+            } else {
+                log::warn!(
+                    "unsupported JSON Schema vocabularies declared for current dialect: schema_uri={} count={} required_count={} samples=[{}]",
+                    schema_uri,
+                    total,
+                    required_count,
                     samples.join("; "),
                 );
             }

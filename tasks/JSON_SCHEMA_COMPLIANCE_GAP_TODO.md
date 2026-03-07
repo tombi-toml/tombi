@@ -43,7 +43,7 @@
 
 ## 3. draft-2019-09 TODO（移行レイヤ）
 
-- [ ] `$vocabulary` の解釈と未対応 vocabulary 検出を実装する
+- [x] `$vocabulary` の解釈と未対応 vocabulary 検出を実装する（2026-03-07 対応）
 - [ ] `$anchor` を実装する
 - [ ] `$recursiveAnchor` / `$recursiveRef` を実装する  
   備考: 2020-12 で `$dynamicAnchor` / `$dynamicRef` に置換（将来版では compatibility のみ）
