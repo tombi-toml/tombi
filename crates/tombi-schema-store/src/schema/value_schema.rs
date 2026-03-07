@@ -137,7 +137,8 @@ impl ValueSchema {
     ///
     /// When "type" is not explicitly specified, we can infer the type from keywords
     /// that are only valid for specific types:
-    /// - String: minLength, maxLength, pattern, format
+    /// - String: minLength, maxLength, pattern, format, contentEncoding,
+    ///           contentMediaType, contentSchema (content annotations)
     /// - Number: minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf
     /// - Array: items, prefixItems, minItems, maxItems, uniqueItems
     /// - Object: properties, patternProperties, additionalProperties, required,
