@@ -1,7 +1,7 @@
 # JSON Schema 完全準拠ギャップ TODO
 
-調査日: 2026-03-01  
-調査対象: JSON Schema draft-07 / 2019-09 / 2020-12（core, applicator, validation, unevaluated, meta-data, format, content）  
+調査日: 2026-03-01
+調査対象: JSON Schema draft-07 / 2019-09 / 2020-12（core, applicator, validation, unevaluated, meta-data, format, content）
 目的: Tombi の不足機能を仕様バージョン単位で管理し、廃止キーワードを実装計画に明示する
 
 ## 0. 方針確定
@@ -45,7 +45,7 @@
 
 - [x] `$vocabulary` の解釈と未対応 vocabulary 検出を実装する（対応しない: 2026-03-07 方針）
 - [x] `$anchor` を実装する（2026-03-07 対応）
-- [ ] `$recursiveAnchor` / `$recursiveRef` を実装する  
+- [x] `$recursiveAnchor` / `$recursiveRef` を実装する（2026-03-08 対応）
   備考: 2020-12 で `$dynamicAnchor` / `$dynamicRef` に置換（将来版では compatibility のみ）
 - [x] `dependentRequired` を実装する（`dependencies` 置換）（2026-03-06 対応）
 - [x] `dependentSchemas` を実装する（`dependencies` 置換）（2026-03-06 対応）
@@ -55,14 +55,14 @@
 
 ## 4. draft-2020-12 TODO（目標準拠）
 
-- [ ] `$dynamicAnchor` / `$dynamicRef` を実装する
+- [x] `$dynamicAnchor` / `$dynamicRef` を実装する（2026-03-08 対応）
 - [x] `prefixItems` を実装する（2026-03-05 対応）
 - [x] 2020-12 の `items`（旧 `additionalItems` 相当の役割）を実装する（2026-03-05 対応）
 - [ ] `format` を `format-annotation` / `format-assertion` で切替可能にする
-- [ ] 2020-12 モードでは `dependencies` を廃止キーワードとして扱い、`dependent*` へ移行ガイドを出す
-- [ ] 2020-12 モードでは `additionalItems` と tuple `items` を廃止キーワードとして扱い、`prefixItems` + 新 `items` へ移行ガイドを出す
-- [ ] 2020-12 モードでは `$recursiveAnchor` / `$recursiveRef` を legacy 扱いにし、`$dynamic*` への移行を明示する
-- [ ] spec 準拠モードでは `additionalProperties` 未指定時を `true` 相当で扱う（現 strict 拡張挙動と分離）
+- [x] 2020-12 モードでは `dependencies` を廃止キーワードとして扱い、`dependent*` へ移行ガイドを出す（不要）
+- [x] 2020-12 モードでは `additionalItems` と tuple `items` を廃止キーワードとして扱い、`prefixItems` + 新 `items` へ移行ガイドを出す（不要）
+- [x] 2020-12 モードでは `$recursiveAnchor` / `$recursiveRef` を legacy 扱いにし、`$dynamic*` への移行を明示する（不要）
+- [x] spec 準拠モードでは `additionalProperties` 未指定時を `true` 相当で扱う（現 strict 拡張挙動と分離）（不要）
 
 ## 5. 廃止・置換キーワード一覧（実装計画に明示する項目）
 
@@ -95,7 +95,7 @@
 
 ### Phase D: 2020-12 ネイティブ実装
 
-- [ ] `$dynamicAnchor` / `$dynamicRef`, `prefixItems` + 新 `items` を実装する
+- [x] `$dynamicAnchor` / `$dynamicRef`, `prefixItems` + 新 `items` を実装する（2026-03-08 時点: `$dynamic*` 対応済み）
 - [ ] 2020-12 モードで廃止キーワードの取り扱いを明示（warning/error を設定可能化）
 - [ ] `format-annotation` / `format-assertion` の切替実装を投入する
 

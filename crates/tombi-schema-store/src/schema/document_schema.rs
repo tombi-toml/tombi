@@ -58,8 +58,10 @@ impl DocumentSchema {
         let mut dynamic_anchors = DynamicAnchorCollector::default();
         let collect_anchor =
             dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "$anchor"));
-        let collect_dynamic_anchor =
-            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "$dynamicAnchor"));
+        let collect_dynamic_anchor = dialect.is_some_and(|dialect| {
+            crate::supports_keyword(dialect, "$dynamicAnchor")
+                || crate::supports_keyword(dialect, "$recursiveAnchor")
+        });
         let value_schema = ValueSchema::new(
             &object,
             string_formats.as_deref(),

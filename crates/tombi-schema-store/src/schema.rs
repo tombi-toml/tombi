@@ -95,6 +95,17 @@ pub(crate) fn collect_named_anchors(
             .entry(format!("#{dynamic_anchor}"))
             .or_insert_with(|| referable.clone());
     }
+    if crate::supports_keyword(dialect, "$recursiveAnchor")
+        && object
+            .get("$recursiveAnchor")
+            .and_then(|value| value.as_bool())
+            == Some(true)
+        && let Some(dynamic_anchor_collector) = dynamic_anchor_collector.as_deref_mut()
+    {
+        dynamic_anchor_collector
+            .entry("#".to_string())
+            .or_insert_with(|| referable.clone());
+    }
 }
 
 #[inline]

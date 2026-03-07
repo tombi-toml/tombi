@@ -20,6 +20,8 @@ mod non_schema;
 mod other_schema;
 #[path = "integration/prefix_items_test_schema.rs"]
 mod prefix_items_test_schema;
+#[path = "integration/recursive_anchor_ref_test_schema.rs"]
+mod recursive_anchor_ref_test_schema;
 #[path = "integration/string_format_test_schema.rs"]
 mod string_format_test_schema;
 #[path = "integration/table_const_enum_test_schema.rs"]

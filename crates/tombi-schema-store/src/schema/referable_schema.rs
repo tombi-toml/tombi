@@ -13,6 +13,7 @@ use super::{
 pub enum ReferenceKind {
     Ref,
     DynamicRef,
+    RecursiveRef,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -86,10 +87,20 @@ impl Referable<ValueSchema> {
             dialect
                 .filter(|dialect| crate::supports_keyword(*dialect, "$dynamicRef"))
                 .and_then(|_| object.get("$dynamicRef").and_then(|v| v.as_str())),
+            dialect
+                .filter(|dialect| crate::supports_keyword(*dialect, "$recursiveRef"))
+                .and_then(|_| object.get("$recursiveRef").and_then(|v| v.as_str())),
         ) {
-            (Some(reference), _) => (Some(ReferenceKind::Ref), Some(reference)),
-            (None, Some(reference)) => (Some(ReferenceKind::DynamicRef), Some(reference)),
-            (None, None) => (None, None),
+            (Some(reference), _, _) => (Some(ReferenceKind::Ref), Some(reference)),
+            (None, Some(reference), _) => (Some(ReferenceKind::DynamicRef), Some(reference)),
+            (None, None, Some(reference)) => {
+                if reference == "#" {
+                    (Some(ReferenceKind::RecursiveRef), Some(reference))
+                } else {
+                    (None, None)
+                }
+            }
+            (None, None, None) => (None, None),
         };
         let referable = if let (Some(kind), Some(reference)) = (reference_kind, reference_value) {
             Some(Referable::Ref {
@@ -158,6 +169,7 @@ impl Referable<ValueSchema> {
                 let ref_keyword = match kind {
                     ReferenceKind::Ref => "$ref",
                     ReferenceKind::DynamicRef => "$dynamicRef",
+                    ReferenceKind::RecursiveRef => "$recursiveRef",
                 };
                 log::warn!(
                     "unresolved {ref_keyword} while determining value type: reference={reference}",
@@ -194,10 +206,12 @@ impl Referable<ValueSchema> {
                     description,
                     deprecated,
                 } => {
-                    if *kind == ReferenceKind::DynamicRef
-                        && let Some((base_schema_uri, dynamic_anchor_ref)) =
-                            parse_dynamic_anchor_reference(reference)
-                    {
+                    let dynamic_target = match kind {
+                        ReferenceKind::DynamicRef => parse_dynamic_anchor_reference(reference),
+                        ReferenceKind::RecursiveRef => parse_recursive_anchor_reference(reference),
+                        ReferenceKind::Ref => None,
+                    };
+                    if let Some((base_schema_uri, dynamic_anchor_ref)) = dynamic_target {
                         let mut scope_for_dynamic_ref = dynamic_scope.clone();
                         if let Some(base_schema_uri) = base_schema_uri {
                             scope_for_dynamic_ref.insert(0, base_schema_uri);
@@ -507,6 +521,14 @@ fn parse_dynamic_anchor_reference(reference: &str) -> Option<(Option<SchemaUri>,
 
     let base_schema_uri = SchemaUri::from_str(base_uri).ok()?;
     Some((Some(base_schema_uri), format!("#{fragment}")))
+}
+
+fn parse_recursive_anchor_reference(reference: &str) -> Option<(Option<SchemaUri>, String)> {
+    if reference == "#" {
+        Some((None, "#".to_string()))
+    } else {
+        None
+    }
 }
 
 fn is_plain_name_anchor_reference(reference: &str) -> bool {
@@ -978,6 +1000,65 @@ mod test {
             referable,
             Referable::Ref {
                 kind: super::ReferenceKind::DynamicRef,
+                ..
+            }
+        ));
+
+        let resolved = referable
+            .resolve(
+                Cow::Owned(schema_uri),
+                Cow::Owned(definitions),
+                &schema_store,
+            )
+            .await
+            .unwrap();
+
+        assert!(matches!(
+            resolved.map(|s| s.value_schema),
+            Some(schema) if matches!(&*schema, ValueSchema::String(_))
+        ));
+        let _ = std::fs::remove_file(schema_path);
+    }
+
+    #[tokio::test]
+    async fn test_recursive_ref_resolves_to_recursive_anchor_in_scope() {
+        let schema_json = r##"{
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "$recursiveAnchor": true,
+            "type": "string",
+            "$defs": {
+                "useRecursive": {
+                    "$recursiveRef": "#"
+                }
+            }
+        }"##;
+
+        let schema_path = std::env::temp_dir().join(format!(
+            "tombi_recursive_ref_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::write(&schema_path, schema_json).unwrap();
+
+        let schema_uri = tombi_uri::SchemaUri::from_file_path(&schema_path).unwrap();
+        let schema_store = SchemaStore::new();
+        let document_schema = schema_store
+            .try_get_document_schema(&schema_uri)
+            .await
+            .unwrap()
+            .unwrap();
+        let definitions = document_schema.definitions.clone();
+        let mut referable = {
+            let defs = definitions.read().await;
+            defs.get("#/$defs/useRecursive").cloned().unwrap()
+        };
+        assert!(matches!(
+            referable,
+            Referable::Ref {
+                kind: super::ReferenceKind::RecursiveRef,
                 ..
             }
         ));
