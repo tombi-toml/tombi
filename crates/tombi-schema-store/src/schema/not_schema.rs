@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tombi_x_keyword::StringFormat;
 
-use crate::{Referable, SchemaItem, ValueSchema};
+use crate::{AnchorCollector, DynamicAnchorCollector, Referable, SchemaItem, ValueSchema};
 
 #[derive(Debug, Clone)]
 pub struct NotSchema {
@@ -15,13 +15,23 @@ impl NotSchema {
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         object
             .get("not")
             .and_then(|value| value.as_object())
             .and_then(|obj| {
-                Referable::<ValueSchema>::new(obj, string_formats, dialect)
-                    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+                Referable::<ValueSchema>::new(
+                    obj,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )
+                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             })
             .map(|schema| Self { schema })
     }

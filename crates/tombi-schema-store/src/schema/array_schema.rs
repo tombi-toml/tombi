@@ -7,8 +7,8 @@ use tombi_x_keyword::{
 };
 
 use super::{
-    CurrentSchema, FindSchemaCandidates, Referable, SchemaDefinitions, SchemaItem, SchemaUri,
-    ValueSchema,
+    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, Referable,
+    SchemaDefinitions, SchemaItem, SchemaUri, ValueSchema,
 };
 use crate::{
     Accessor, SchemaStore,
@@ -45,7 +45,11 @@ impl ArraySchema {
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Self {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         Self {
             title: object
                 .get("title")
@@ -56,7 +60,15 @@ impl ArraySchema {
             items: object.get("items").and_then(|value| {
                 value
                     .as_object()
-                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
+                    .and_then(|obj| {
+                        Referable::<ValueSchema>::new(
+                            obj,
+                            string_formats,
+                            dialect,
+                            anchor_collector.as_deref_mut(),
+                            dynamic_anchor_collector.as_deref_mut(),
+                        )
+                    })
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             }),
             prefix_items: object
@@ -69,7 +81,13 @@ impl ArraySchema {
                         .filter_map(|v| {
                             v.as_object()
                                 .and_then(|obj| {
-                                    Referable::<ValueSchema>::new(obj, string_formats, dialect)
+                                    Referable::<ValueSchema>::new(
+                                        obj,
+                                        string_formats,
+                                        dialect,
+                                        anchor_collector.as_deref_mut(),
+                                        dynamic_anchor_collector.as_deref_mut(),
+                                    )
                                 })
                                 .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
                         })
@@ -94,13 +112,29 @@ impl ArraySchema {
                 object
                     .get("additionalItems")
                     .and_then(|v| v.as_object())
-                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
+                    .and_then(|obj| {
+                        Referable::<ValueSchema>::new(
+                            obj,
+                            string_formats,
+                            dialect,
+                            anchor_collector.as_deref_mut(),
+                            dynamic_anchor_collector.as_deref_mut(),
+                        )
+                    })
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             },
             contains: object.get("contains").and_then(|value| {
                 value
                     .as_object()
-                    .and_then(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
+                    .and_then(|obj| {
+                        Referable::<ValueSchema>::new(
+                            obj,
+                            string_formats,
+                            dialect,
+                            anchor_collector.as_deref_mut(),
+                            dynamic_anchor_collector.as_deref_mut(),
+                        )
+                    })
                     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             }),
             min_contains: object
@@ -137,8 +171,21 @@ impl ArraySchema {
                 .and_then(XTombiArrayValuesOrder::new),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
             range: object.range,
-            not: NotSchema::new(object, string_formats, dialect),
-            if_then_else: IfThenElseSchema::new(object, string_formats, dialect).map(Box::new),
+            not: NotSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            ),
+            if_then_else: IfThenElseSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+            .map(Box::new),
         }
     }
 
