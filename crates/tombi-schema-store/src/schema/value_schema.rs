@@ -6,9 +6,9 @@ use tombi_json::StringNode;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
 use super::{
-    AllOfSchema, AnyOfSchema, ArraySchema, BooleanSchema, FindSchemaCandidates, FloatSchema,
-    IntegerSchema, LocalDateSchema, LocalDateTimeSchema, LocalTimeSchema, OffsetDateTimeSchema,
-    OneOfSchema, SchemaUri, StringSchema, TableSchema,
+    AllOfSchema, AnchorCollector, AnyOfSchema, ArraySchema, BooleanSchema, DynamicAnchorCollector,
+    FindSchemaCandidates, FloatSchema, IntegerSchema, LocalDateSchema, LocalDateTimeSchema,
+    LocalTimeSchema, OffsetDateTimeSchema, OneOfSchema, SchemaUri, StringSchema, TableSchema,
 };
 use crate::{
     Accessor, Referable, SchemaDefinitions, SchemaStore,
@@ -37,18 +37,22 @@ impl ValueSchema {
     pub fn new(
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
-    ) -> Option<Self> {
-        Self::new_in_dialect(object, string_formats, None)
-    }
-
-    pub fn new_in_dialect(
-        object: &tombi_json::ObjectNode,
-        string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         match object.get("type") {
             Some(tombi_json::ValueNode::String(type_str)) => {
-                return Self::new_single(type_str.value.as_str(), object, string_formats, dialect);
+                return Self::new_single(
+                    type_str.value.as_str(),
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                );
             }
             Some(tombi_json::ValueNode::Array(types)) => {
                 let schemas = types
@@ -61,6 +65,8 @@ impl ValueSchema {
                                 object,
                                 string_formats,
                                 dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
                             )
                         } else {
                             None
@@ -85,6 +91,8 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
             )));
         }
         if object.get("anyOf").is_some() {
@@ -92,6 +100,8 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
             )));
         }
         if object.get("allOf").is_some() {
@@ -99,10 +109,19 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
             )));
         }
         if let Some(tombi_json::ValueNode::Array(enum_values)) = object.get("enum") {
-            return Self::new_enum_value(object, enum_values, string_formats, dialect);
+            return Self::new_enum_value(
+                object,
+                enum_values,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            );
         }
 
         // Handle "const" keyword without explicit "type"
@@ -122,12 +141,26 @@ impl ValueSchema {
                 tombi_json::ValueNode::Array(_) => "array",
                 tombi_json::ValueNode::Object(_) => "object",
             };
-            return Self::new_single(inferred_type, object, string_formats, dialect);
+            return Self::new_single(
+                inferred_type,
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            );
         }
 
         // Infer type from type-specific keywords when "type" is not explicitly specified
         if let Some(inferred_type) = Self::infer_type_from_keywords(object, dialect) {
-            return Self::new_single(inferred_type, object, string_formats, dialect);
+            return Self::new_single(
+                inferred_type,
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            );
         }
 
         None
@@ -205,7 +238,11 @@ impl ValueSchema {
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         match type_str {
             "null" => Some(ValueSchema::Null),
             "boolean" => Some(ValueSchema::Boolean(BooleanSchema::new(object))),
@@ -263,11 +300,15 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
             ))),
             "object" => Some(ValueSchema::Table(TableSchema::new(
                 object,
                 string_formats,
                 dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
             ))),
             _ => None,
         }
@@ -278,7 +319,11 @@ impl ValueSchema {
         enum_values: &tombi_json::ArrayNode,
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         let mut enum_types = tombi_hashmap::IndexSet::new();
         for enum_value in &enum_values.items {
             match enum_value {
@@ -312,14 +357,26 @@ impl ValueSchema {
             0 => None,
             1 => {
                 let value_type = enum_types.into_iter().next().unwrap();
-                Self::new_single(value_type, object, string_formats, dialect)
+                Self::new_single(
+                    value_type,
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )
             }
             _ => {
                 let mut schemas = Vec::with_capacity(enum_types.len());
                 for value_type in enum_types {
-                    if let Some(schema) =
-                        Self::new_single(value_type, object, string_formats, dialect)
-                    {
+                    if let Some(schema) = Self::new_single(
+                        value_type,
+                        object,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    ) {
                         schemas.push(Referable::Resolved {
                             schema_uri: None,
                             value: Arc::new(schema),
@@ -349,9 +406,21 @@ impl ValueSchema {
                     keys_order: object
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-                    not: NotSchema::new(object, string_formats, dialect),
-                    if_then_else: IfThenElseSchema::new(object, string_formats, dialect)
-                        .map(Box::new),
+                    not: NotSchema::new(
+                        object,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    ),
+                    if_then_else: IfThenElseSchema::new(
+                        object,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    )
+                    .map(Box::new),
                 }))
             }
         }
@@ -839,7 +908,7 @@ mod tests {
     ) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new_in_dialect(object, None, dialect)
+        ValueSchema::new(object, None, dialect, None, None)
     }
 
     #[test]
@@ -1025,10 +1094,12 @@ mod tests {
     fn parse_schema_with_formats(json: &str, formats: &[StringFormat]) -> Option<ValueSchema> {
         let value_node = tombi_json::ValueNode::from_str(json).unwrap();
         let object = value_node.as_object().unwrap();
-        ValueSchema::new_in_dialect(
+        ValueSchema::new(
             object,
             Some(formats),
             Some(crate::JsonSchemaDialect::Draft07),
+            None,
+            None,
         )
     }
 

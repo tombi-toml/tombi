@@ -9,8 +9,8 @@ use tombi_x_keyword::{
 };
 
 use super::{
-    CurrentSchema, FindSchemaCandidates, PropertySchema, SchemaAccessor, SchemaDefinitions,
-    SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
+    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, PropertySchema,
+    SchemaAccessor, SchemaDefinitions, SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
 };
 use crate::{
     Accessor, Referable, SchemaProperties, SchemaStore,
@@ -61,16 +61,24 @@ impl TableSchema {
         object_node: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Self {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         let mut properties = tombi_hashmap::IndexMap::new();
         if let Some(tombi_json::ValueNode::Object(object_node)) = object_node.get("properties") {
             for (key_node, value_node) in object_node.properties.iter() {
                 let Some(object) = value_node.as_object() else {
                     continue;
                 };
-                if let Some(property_schema) =
-                    Referable::<ValueSchema>::new(object, string_formats, dialect)
-                {
+                if let Some(property_schema) = Referable::<ValueSchema>::new(
+                    object,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                ) {
                     properties.insert(
                         SchemaAccessor::Key(key_node.value.to_string()),
                         PropertySchema {
@@ -88,9 +96,13 @@ impl TableSchema {
                     let Some(object) = value.as_object() else {
                         continue;
                     };
-                    if let Some(value_schema) =
-                        Referable::<ValueSchema>::new(object, string_formats, dialect)
-                    {
+                    if let Some(value_schema) = Referable::<ValueSchema>::new(
+                        object,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    ) {
                         pattern_properties.insert(pattern.clone(), value_schema);
                     }
                 }
@@ -103,8 +115,13 @@ impl TableSchema {
             match object_node.get("additionalProperties") {
                 Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
                 Some(tombi_json::ValueNode::Object(object_node)) => {
-                    let value_schema =
-                        Referable::<ValueSchema>::new(object_node, string_formats, dialect);
+                    let value_schema = Referable::<ValueSchema>::new(
+                        object_node,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    );
                     (
                         Some(true),
                         value_schema.map(|schema| {
@@ -194,9 +211,13 @@ impl TableSchema {
                                 );
                             }
                             tombi_json::ValueNode::Object(obj) => {
-                                if let Some(schema) =
-                                    Referable::<ValueSchema>::new(obj, string_formats, dialect)
-                                {
+                                if let Some(schema) = Referable::<ValueSchema>::new(
+                                    obj,
+                                    string_formats,
+                                    dialect,
+                                    anchor_collector.as_deref_mut(),
+                                    dynamic_anchor_collector.as_deref_mut(),
+                                ) {
                                     deps.insert(
                                         key.value.to_string(),
                                         Dependency::Schema(Arc::new(tokio::sync::RwLock::new(
@@ -234,8 +255,13 @@ impl TableSchema {
                     let mut map = tombi_hashmap::IndexMap::new();
                     for (key, value) in &obj.properties {
                         if let Some(schema_obj) = value.as_object()
-                            && let Some(schema) =
-                                Referable::<ValueSchema>::new(schema_obj, string_formats, dialect)
+                            && let Some(schema) = Referable::<ValueSchema>::new(
+                                schema_obj,
+                                string_formats,
+                                dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
+                            )
                         {
                             map.insert(
                                 key.value.to_string(),
@@ -280,12 +306,33 @@ impl TableSchema {
             additional_key_label: object_node
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
-            not: NotSchema::new(object_node, string_formats, dialect),
-            if_then_else: IfThenElseSchema::new(object_node, string_formats, dialect).map(Box::new),
+            not: NotSchema::new(
+                object_node,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            ),
+            if_then_else: IfThenElseSchema::new(
+                object_node,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+            .map(Box::new),
             property_names: object_node
                 .get("propertyNames")
                 .and_then(|v| v.as_object())
-                .and_then(|v| Referable::<ValueSchema>::new(v, string_formats, dialect))
+                .and_then(|v| {
+                    Referable::<ValueSchema>::new(
+                        v,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    )
+                })
                 .map(|schema| Arc::new(tokio::sync::RwLock::new(schema))),
         }
     }

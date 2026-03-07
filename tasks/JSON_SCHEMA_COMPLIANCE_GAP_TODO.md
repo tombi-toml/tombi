@@ -44,7 +44,7 @@
 ## 3. draft-2019-09 TODO（移行レイヤ）
 
 - [x] `$vocabulary` の解釈と未対応 vocabulary 検出を実装する（対応しない: 2026-03-07 方針）
-- [ ] `$anchor` を実装する
+- [x] `$anchor` を実装する（2026-03-07 対応）
 - [ ] `$recursiveAnchor` / `$recursiveRef` を実装する  
   備考: 2020-12 で `$dynamicAnchor` / `$dynamicRef` に置換（将来版では compatibility のみ）
 - [x] `dependentRequired` を実装する（`dependencies` 置換）（2026-03-06 対応）

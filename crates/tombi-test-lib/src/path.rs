@@ -113,3 +113,9 @@ pub fn min_max_contains_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("min-max-contains-test.schema.json")
 }
+
+pub fn anchor_dynamic_ref_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("anchor-dynamic-ref-test.schema.json")
+}

@@ -4,7 +4,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
-use super::{ReferableValueSchemas, ValueSchema};
+use super::{AnchorCollector, DynamicAnchorCollector, ReferableValueSchemas, ValueSchema};
 use crate::{
     Referable,
     schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
@@ -29,7 +29,11 @@ impl OneOfSchema {
         object: &tombi_json::ObjectNode,
         string_formats: Option<&[StringFormat]>,
         dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Self {
+        let mut anchor_collector = anchor_collector;
+        let mut dynamic_anchor_collector = dynamic_anchor_collector;
         let title = object
             .get("title")
             .and_then(|v| v.as_str())
@@ -46,7 +50,15 @@ impl OneOfSchema {
                     .items
                     .iter()
                     .filter_map(|value| value.as_object())
-                    .filter_map(|obj| Referable::<ValueSchema>::new(obj, string_formats, dialect))
+                    .filter_map(|obj| {
+                        Referable::<ValueSchema>::new(
+                            obj,
+                            string_formats,
+                            dialect,
+                            anchor_collector.as_deref_mut(),
+                            dynamic_anchor_collector.as_deref_mut(),
+                        )
+                    })
                     .collect_vec()
             })
             .unwrap_or_default();
@@ -65,8 +77,21 @@ impl OneOfSchema {
             keys_order: object
                 .get(X_TOMBI_TABLE_KEYS_ORDER)
                 .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-            not: NotSchema::new(object, string_formats, dialect),
-            if_then_else: IfThenElseSchema::new(object, string_formats, dialect).map(Box::new),
+            not: NotSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            ),
+            if_then_else: IfThenElseSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+            .map(Box::new),
         }
     }
 
