@@ -84,6 +84,52 @@ pub fn supports_keyword(dialect: JsonSchemaDialect, keyword: &str) -> bool {
     }
 }
 
+pub fn log_keyword_dialect_notes(
+    object: &tombi_json::ObjectNode,
+    dialect: Option<JsonSchemaDialect>,
+) {
+    let dialect = dialect.unwrap_or_default();
+    for (key, value) in &object.properties {
+        let keyword = key.value.as_str();
+
+        if is_deprecated_in_dialect(dialect, keyword) {
+            let hint = replacement_hint(keyword).unwrap_or("No replacement hint.");
+            let compat = if keyword == "dependencies" {
+                " compat=legacy-keyword-parsed"
+            } else {
+                ""
+            };
+            log::debug!(
+                "deprecated-json-schema-keyword: dialect={} keyword={} hint={}{}",
+                dialect,
+                keyword,
+                hint,
+                compat
+            );
+        }
+
+        if keyword == "items"
+            && matches!(dialect, JsonSchemaDialect::Draft2020_12)
+            && matches!(value, tombi_json::ValueNode::Array(_))
+        {
+            let hint = replacement_hint("tuple-items").unwrap_or("No replacement hint.");
+            log::debug!(
+                "deprecated-json-schema-keyword: dialect={} keyword=tuple-items hint={}",
+                dialect,
+                hint
+            );
+        }
+
+        if keyword_vocabulary(keyword).is_some() && !supports_keyword(dialect, keyword) {
+            log::debug!(
+                "unsupported-json-schema-keyword: dialect={} keyword={}",
+                dialect,
+                keyword
+            );
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeprecatedKeywordUsage {
     pub keyword: String,

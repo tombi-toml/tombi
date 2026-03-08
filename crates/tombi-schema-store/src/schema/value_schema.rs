@@ -41,7 +41,7 @@ impl ValueSchema {
         anchor_collector: Option<&mut AnchorCollector>,
         dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
-        Self::log_keyword_dialect_notes(object, dialect);
+        crate::log_keyword_dialect_notes(object, dialect);
 
         let mut anchor_collector = anchor_collector;
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
@@ -166,52 +166,6 @@ impl ValueSchema {
         }
 
         None
-    }
-
-    fn log_keyword_dialect_notes(
-        object: &tombi_json::ObjectNode,
-        dialect: Option<crate::JsonSchemaDialect>,
-    ) {
-        let dialect = dialect.unwrap_or_default();
-        for (key, value) in &object.properties {
-            let keyword = key.value.as_str();
-
-            if crate::is_deprecated_in_dialect(dialect, keyword) {
-                let hint = crate::replacement_hint(keyword).unwrap_or("No replacement hint.");
-                let compat = if keyword == "dependencies" {
-                    " compat=legacy-keyword-parsed"
-                } else {
-                    ""
-                };
-                log::debug!(
-                    "deprecated-json-schema-keyword: dialect={} keyword={} hint={}{}",
-                    dialect,
-                    keyword,
-                    hint,
-                    compat
-                );
-            }
-
-            if keyword == "items"
-                && matches!(dialect, crate::JsonSchemaDialect::Draft2020_12)
-                && matches!(value, tombi_json::ValueNode::Array(_))
-            {
-                let hint = crate::replacement_hint("tuple-items").unwrap_or("No replacement hint.");
-                log::debug!(
-                    "deprecated-json-schema-keyword: dialect={} keyword=tuple-items hint={}",
-                    dialect,
-                    hint
-                );
-            }
-
-            if crate::keyword_vocabulary(keyword).is_some() && !crate::supports_keyword(dialect, keyword) {
-                log::debug!(
-                    "unsupported-json-schema-keyword: dialect={} keyword={}",
-                    dialect,
-                    keyword
-                );
-            }
-        }
     }
 
     /// Infer the JSON Schema type from type-specific keywords.
