@@ -17,6 +17,7 @@ pub struct DocumentSchema {
     pub(crate) dialect: Option<JsonSchemaDialect>,
     pub(crate) toml_version: Option<TomlVersion>,
     pub(crate) string_formats: Option<Vec<StringFormat>>,
+    pub(crate) format_assertion: bool,
     pub value_schema: Option<Arc<ValueSchema>>,
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
@@ -53,6 +54,27 @@ impl DocumentSchema {
                 }
                 _ => None,
             });
+
+        // Determine if `format` should be treated as an assertion.
+        // - Draft-07: always assertion
+        // - Draft 2019-09: annotation by default (no format-assertion vocabulary exists)
+        // - Draft 2020-12: annotation by default,
+        //   assertion only if `$vocabulary` explicitly enables format-assertion
+        const FORMAT_ASSERTION_VOCAB: &str =
+            "https://json-schema.org/draft/2020-12/vocab/format-assertion";
+        let format_assertion = match dialect {
+            Some(JsonSchemaDialect::Draft07) | None => true,
+            Some(JsonSchemaDialect::Draft2019_09) => false,
+            Some(JsonSchemaDialect::Draft2020_12) => object
+                .get("$vocabulary")
+                .and_then(|v| v.as_object())
+                .is_some_and(|vocab| {
+                    vocab.properties.iter().any(|(key, value)| {
+                        key.value == FORMAT_ASSERTION_VOCAB
+                            && matches!(value, tombi_json::ValueNode::Bool(b) if b.value)
+                    })
+                }),
+        };
 
         let mut anchors = AnchorCollector::default();
         let mut dynamic_anchors = DynamicAnchorCollector::default();
@@ -122,6 +144,7 @@ impl DocumentSchema {
             dialect,
             toml_version,
             string_formats,
+            format_assertion,
             value_schema,
             definitions: SchemaDefinitions::new(definitions.into()),
             anchors: SchemaAnchors::new(anchors.into()),
@@ -131,6 +154,10 @@ impl DocumentSchema {
 
     pub fn dialect(&self) -> Option<JsonSchemaDialect> {
         self.dialect
+    }
+
+    pub fn format_assertion(&self) -> bool {
+        self.format_assertion
     }
 
     pub fn string_formats(&self) -> Option<&[StringFormat]> {
@@ -200,6 +227,51 @@ mod tests {
         assert!(!definitions.contains_key("#nameSchema"));
         let anchors = document_schema.anchors.blocking_read();
         assert!(anchors.contains_key("#nameSchema"));
+    }
+
+    #[test]
+    fn format_assertion_default_true_for_draft_07() {
+        let schema_json = r#"{ "$schema": "http://json-schema.org/draft-07/schema#" }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let object = schema_value.as_object().expect("object").to_owned();
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::new(object, uri);
+        assert!(doc.format_assertion());
+    }
+
+    #[test]
+    fn format_assertion_default_false_for_2019_09() {
+        let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2019-09/schema" }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let object = schema_value.as_object().expect("object").to_owned();
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::new(object, uri);
+        assert!(!doc.format_assertion());
+    }
+
+    #[test]
+    fn format_assertion_default_false_for_2020_12() {
+        let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2020-12/schema" }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let object = schema_value.as_object().expect("object").to_owned();
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::new(object, uri);
+        assert!(!doc.format_assertion());
+    }
+
+    #[test]
+    fn format_assertion_enabled_by_vocabulary() {
+        let schema_json = r#"{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$vocabulary": {
+                "https://json-schema.org/draft/2020-12/vocab/format-assertion": true
+            }
+        }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let object = schema_value.as_object().expect("object").to_owned();
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::new(object, uri);
+        assert!(doc.format_assertion());
     }
 
     #[test]

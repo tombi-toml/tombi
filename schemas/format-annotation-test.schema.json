@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "FormatAnnotationTest",
+  "type": "object",
+  "properties": {
+    "ipv4_addr": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "email_addr": {
+      "type": "string",
+      "format": "email"
+    }
+  },
+  "additionalProperties": false
+}

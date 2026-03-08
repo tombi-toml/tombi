@@ -58,7 +58,7 @@
 - [x] `$dynamicAnchor` / `$dynamicRef` を実装する（2026-03-08 対応）
 - [x] `prefixItems` を実装する（2026-03-05 対応）
 - [x] 2020-12 の `items`（旧 `additionalItems` 相当の役割）を実装する（2026-03-05 対応）
-- [ ] `format` を `format-annotation` / `format-assertion` で切替可能にする
+- [x] `format` を `format-annotation` / `format-assertion` で切替可能にする（2026-03-08 対応）
 - [x] 2020-12 モードでは `dependencies` を廃止キーワードとして扱い、`dependent*` へ移行ガイドを出す（不要）
 - [x] 2020-12 モードでは `additionalItems` と tuple `items` を廃止キーワードとして扱い、`prefixItems` + 新 `items` へ移行ガイドを出す（不要）
 - [x] 2020-12 モードでは `$recursiveAnchor` / `$recursiveRef` を legacy 扱いにし、`$dynamic*` への移行を明示する（不要）
@@ -85,7 +85,7 @@
 ### Phase B: draft-07 準拠を固定
 
 - [ ] draft-07 必須キーワードを実装し、まず draft-07 pass rate を安定化する
-- [ ] 将来廃止キーワード（`dependencies`, tuple `items`, `additionalItems`）に移行メッセージを追加する
+- [x] 将来廃止キーワード（`dependencies`, tuple `items`, `additionalItems`）に移行メッセージを追加する（不要）
 
 ### Phase C: 2019-09 互換レイヤを追加
 
@@ -96,8 +96,8 @@
 ### Phase D: 2020-12 ネイティブ実装
 
 - [x] `$dynamicAnchor` / `$dynamicRef`, `prefixItems` + 新 `items` を実装する（2026-03-08 時点: `$dynamic*` 対応済み）
-- [ ] 2020-12 モードで廃止キーワードの取り扱いを明示（warning/error を設定可能化）
-- [ ] `format-annotation` / `format-assertion` の切替実装を投入する
+- [x] 2020-12 モードで廃止キーワードの取り扱いを明示（warning/error を設定可能化）（不要）
+- [x] `format-annotation` / `format-assertion` の切替実装を投入する（2026-03-08 対応）
 
 ### Phase E: 継続運用
 

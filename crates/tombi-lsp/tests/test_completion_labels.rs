@@ -613,6 +613,8 @@ mod completion_labels {
                 "dependencies-test.schema.json",
                 "dependent-required-test.schema.json",
                 "dependent-schemas-test.schema.json",
+                "format-annotation-test.schema.json",
+                "format-assertion-vocab-test.schema.json",
                 "if-then-else-test.schema.json",
                 "min-max-contains-test.schema.json",
                 "partial-taskipy.schema.json",

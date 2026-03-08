@@ -642,6 +642,13 @@ async fn validate_table(
     {
         let allows_empty_key = string_schema.min_length == Some(0);
 
+        let format_assertion = schema_context
+            .root_schema
+            .map_or(true, |root| root.format_assertion())
+            || string_schema
+                .format
+                .is_some_and(|format| schema_context.has_string_format(format));
+
         for key in table_value.keys() {
             if !allows_empty_key {
                 check_key_empty(key, &mut total_diagnostics).await;
@@ -659,6 +666,7 @@ async fn validate_table(
                 &key.value,
                 key.range(),
                 string_schema,
+                format_assertion,
                 lint_rules.as_ref(),
                 key.comment_directives(),
             );

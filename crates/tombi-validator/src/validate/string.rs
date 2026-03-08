@@ -34,7 +34,20 @@ impl Validate for tombi_document_tree::String {
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::String(string_schema) => {
-                        validate_string(self, accessors, string_schema, lint_rules.as_ref()).await
+                        let format_assertion = schema_context
+                            .root_schema
+                            .map_or(true, |root| root.format_assertion())
+                            || string_schema.format.is_some_and(|f| {
+                                schema_context.has_string_format(f)
+                            });
+                        validate_string(
+                            self,
+                            accessors,
+                            string_schema,
+                            format_assertion,
+                            lint_rules.as_ref(),
+                        )
+                        .await
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
@@ -147,6 +160,7 @@ async fn validate_string(
     string_value: &tombi_document_tree::String,
     accessors: &[tombi_schema_store::Accessor],
     string_schema: &tombi_schema_store::StringSchema,
+    format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let result = validate_raw_string(
@@ -154,6 +168,7 @@ async fn validate_string(
         &string_value.to_string(),
         string_value.range(),
         string_schema,
+        format_assertion,
         lint_rules,
         string_value.comment_directives(),
     );
@@ -193,6 +208,7 @@ pub(crate) fn validate_raw_string<'a>(
     display_value: &str,
     range: tombi_text::Range,
     string_schema: &tombi_schema_store::StringSchema,
+    format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
     comment_directives: Option<impl IntoIterator<Item = &'a TombiValueCommentDirective> + 'a>,
 ) -> Result<(), crate::Error> {
@@ -333,7 +349,8 @@ pub(crate) fn validate_raw_string<'a>(
         );
     }
 
-    if let Some(format) = string_schema.format
+    if format_assertion
+        && let Some(format) = string_schema.format
         && !match format {
             StringFormat::Email => format::email::validate_format(value),
             StringFormat::Hostname => format::hostname::validate_format(value),
