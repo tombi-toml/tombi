@@ -23,7 +23,6 @@
 - [x] `uniqueItems` を複合値（配列/オブジェクト）まで含めた deep-equality 判定に拡張する（2026-03-08 対応）
 - [x] `multipleOf` の浮動小数誤差対策（decimal/big rational 等）を行う（2026-03-08 対応）
 - [ ] JSON-Schema-Test-Suite を導入し、draft ごとの pass rate を計測する
-- [ ] CI に compliance レポート（dialect 別 pass rate + 未対応 keyword）を追加する
 
 ## 2. draft-07 TODO（基線）
 
@@ -101,8 +100,7 @@
 
 ### Phase E: 継続運用
 
-- [ ] dialect ごとの回帰テスト（`draft-07`, `2019-09`, `2020-12`）を CI に追加する
-- [ ] 準拠率ダッシュボードに「廃止キーワード利用件数」を追加する
+- [x] dialect ごとの回帰テスト（`draft-07`, `2019-09`, `2020-12`）を CI に追加する（2026-03-08 対応）
 
 ## 7. 構造改修評価（2026-03-01 追記）
 
