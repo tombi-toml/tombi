@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_future::{BoxFuture, Boxable};
@@ -7,8 +7,8 @@ use tombi_x_keyword::{
 };
 
 use super::{
-    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, Referable,
-    SchemaDefinitions, SchemaItem, SchemaUri, ValueSchema,
+    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates,
+    SchemaDefinitions, SchemaItem, SchemaUri, ValueSchema, schema_item_from_schema_value,
 };
 use crate::{
     Accessor, SchemaStore,
@@ -58,18 +58,13 @@ impl ArraySchema {
                 .get("description")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             items: object.get("items").and_then(|value| {
-                value
-                    .as_object()
-                    .and_then(|obj| {
-                        Referable::<ValueSchema>::new(
-                            obj,
-                            string_formats,
-                            dialect,
-                            anchor_collector.as_deref_mut(),
-                            dynamic_anchor_collector.as_deref_mut(),
-                        )
-                    })
-                    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+                schema_item_from_schema_value(
+                    value,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )
             }),
             prefix_items: object
                 .get("prefixItems")
@@ -78,18 +73,14 @@ impl ArraySchema {
                 .map(|arr| {
                     arr.items
                         .iter()
-                        .filter_map(|v| {
-                            v.as_object()
-                                .and_then(|obj| {
-                                    Referable::<ValueSchema>::new(
-                                        obj,
-                                        string_formats,
-                                        dialect,
-                                        anchor_collector.as_deref_mut(),
-                                        dynamic_anchor_collector.as_deref_mut(),
-                                    )
-                                })
-                                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+                        .filter_map(|value| {
+                            schema_item_from_schema_value(
+                                value,
+                                string_formats,
+                                dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
+                            )
                         })
                         .collect_vec()
                 }),
@@ -109,33 +100,24 @@ impl ArraySchema {
             additional_items_schema: if dialect == Some(crate::JsonSchemaDialect::Draft2020_12) {
                 None
             } else {
-                object
-                    .get("additionalItems")
-                    .and_then(|v| v.as_object())
-                    .and_then(|obj| {
-                        Referable::<ValueSchema>::new(
-                            obj,
-                            string_formats,
-                            dialect,
-                            anchor_collector.as_deref_mut(),
-                            dynamic_anchor_collector.as_deref_mut(),
-                        )
-                    })
-                    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+                object.get("additionalItems").and_then(|value| {
+                    schema_item_from_schema_value(
+                        value,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    )
+                })
             },
             contains: object.get("contains").and_then(|value| {
-                value
-                    .as_object()
-                    .and_then(|obj| {
-                        Referable::<ValueSchema>::new(
-                            obj,
-                            string_formats,
-                            dialect,
-                            anchor_collector.as_deref_mut(),
-                            dynamic_anchor_collector.as_deref_mut(),
-                        )
-                    })
-                    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+                schema_item_from_schema_value(
+                    value,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                )
             }),
             min_contains: object
                 .get("minContains")

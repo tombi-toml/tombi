@@ -10,7 +10,7 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use super::Validate;
 use crate::validate::{
     handle_deprecated, has_error_level_diagnostics, if_then_else::validate_if_then_else,
-    is_success_or_warning, not_schema::validate_not, validate_resolved_schema,
+    is_assertion_success, not_schema::validate_not, validate_resolved_schema,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -91,7 +91,7 @@ where
                 continue;
             };
 
-            if is_success_or_warning(&result) {
+            if is_assertion_success(&result) {
                 valid_count += 1;
             }
 

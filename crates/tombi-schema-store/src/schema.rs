@@ -62,6 +62,54 @@ pub type AnchorCollector = SchemaMap;
 pub type DynamicAnchorCollector = SchemaMap;
 pub type ReferableValueSchemas = Arc<tokio::sync::RwLock<Vec<Referable<ValueSchema>>>>;
 
+pub(crate) fn referable_from_schema_value(
+    value: &tombi_json::ValueNode,
+    string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+    anchor_collector: Option<&mut AnchorCollector>,
+    dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
+) -> Option<Referable<ValueSchema>> {
+    match value {
+        tombi_json::ValueNode::Object(obj) => Referable::<ValueSchema>::new(
+            obj,
+            string_formats,
+            dialect,
+            anchor_collector,
+            dynamic_anchor_collector,
+        ),
+        tombi_json::ValueNode::Bool(boolean_schema) => Some(Referable::Resolved {
+            schema_uri: None,
+            value: Arc::new(boolean_value_schema(boolean_schema.value)),
+        }),
+        _ => None,
+    }
+}
+
+pub(crate) fn schema_item_from_schema_value(
+    value: &tombi_json::ValueNode,
+    string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+    anchor_collector: Option<&mut AnchorCollector>,
+    dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
+) -> Option<SchemaItem> {
+    referable_from_schema_value(
+        value,
+        string_formats,
+        dialect,
+        anchor_collector,
+        dynamic_anchor_collector,
+    )
+    .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
+}
+
+pub(crate) fn boolean_value_schema(allow: bool) -> ValueSchema {
+    if allow {
+        ValueSchema::AnyOf(AnyOfSchema::default())
+    } else {
+        ValueSchema::OneOf(OneOfSchema::default())
+    }
+}
+
 pub(crate) fn collect_named_anchors(
     object: &tombi_json::ObjectNode,
     referable: &Referable<ValueSchema>,

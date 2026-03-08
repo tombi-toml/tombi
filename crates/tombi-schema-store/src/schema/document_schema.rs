@@ -22,22 +22,39 @@ pub struct DocumentSchema {
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
     pub dynamic_anchors: SchemaDynamicAnchors,
+    pub comments: tombi_hashmap::HashMap<String, String>,
 }
 
 impl DocumentSchema {
     pub fn new(object: tombi_json::ObjectNode, schema_uri: SchemaUri) -> Self {
-        let dialect = object.get("$schema").and_then(|value| match value {
-            tombi_json::ValueNode::String(s) => JsonSchemaDialect::try_from(s.value.as_str()).ok(),
-            _ => None,
+        Self::from_value(tombi_json::ValueNode::Object(object), schema_uri)
+    }
+
+    pub fn from_value(schema_value: tombi_json::ValueNode, schema_uri: SchemaUri) -> Self {
+        let object = schema_value.as_object();
+        let schema_uri = object
+            .and_then(|obj| resolve_schema_id(obj, &schema_uri))
+            .unwrap_or(schema_uri);
+        let dialect = object.and_then(|object| {
+            object.get("$schema").and_then(|value| match value {
+                tombi_json::ValueNode::String(s) => {
+                    JsonSchemaDialect::try_from(s.value.as_str()).ok()
+                }
+                _ => None,
+            })
         });
 
-        let toml_version = object.get(X_TOMBI_TOML_VERSION).and_then(|obj| match obj {
-            tombi_json::ValueNode::String(version) => TomlVersion::from_str(&version.value).ok(),
-            _ => None,
-        });
+        let toml_version = object
+            .and_then(|object| object.get(X_TOMBI_TOML_VERSION))
+            .and_then(|obj| match obj {
+                tombi_json::ValueNode::String(version) => {
+                    TomlVersion::from_str(&version.value).ok()
+                }
+                _ => None,
+            });
 
         let string_formats = object
-            .get(X_TOMBI_STRING_FORMATS)
+            .and_then(|object| object.get(X_TOMBI_STRING_FORMATS))
             .and_then(|obj| match obj {
                 tombi_json::ValueNode::Array(array) => {
                     let string_formats = array
@@ -67,11 +84,10 @@ impl DocumentSchema {
         let format_assertion = match dialect {
             Some(JsonSchemaDialect::Draft07) | None => true,
             Some(JsonSchemaDialect::Draft2019_09) => {
-                has_enabled_vocabulary(&object, FORMAT_2019_VOCAB)
+                object.is_some_and(|object| has_enabled_vocabulary(object, FORMAT_2019_VOCAB))
             }
-            Some(JsonSchemaDialect::Draft2020_12) => {
-                has_enabled_vocabulary(&object, FORMAT_ASSERTION_2020_VOCAB)
-            }
+            Some(JsonSchemaDialect::Draft2020_12) => object
+                .is_some_and(|object| has_enabled_vocabulary(object, FORMAT_ASSERTION_2020_VOCAB)),
         };
 
         let mut anchors = AnchorCollector::default();
@@ -82,44 +98,46 @@ impl DocumentSchema {
             crate::supports_keyword(dialect, "$dynamicAnchor")
                 || crate::supports_keyword(dialect, "$recursiveAnchor")
         });
-        let value_schema = ValueSchema::new(
-            &object,
-            string_formats.as_deref(),
-            dialect,
-            collect_anchor.then_some(&mut anchors),
-            collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-        )
-        .map(Arc::new);
+        let value_schema = match &schema_value {
+            tombi_json::ValueNode::Object(object) => ValueSchema::new(
+                object,
+                string_formats.as_deref(),
+                dialect,
+                collect_anchor.then_some(&mut anchors),
+                collect_dynamic_anchor.then_some(&mut dynamic_anchors),
+            )
+            .map(Arc::new),
+            tombi_json::ValueNode::Bool(boolean_schema) => {
+                Some(Arc::new(super::boolean_value_schema(boolean_schema.value)))
+            }
+            _ => None,
+        };
         let mut definitions = tombi_hashmap::HashMap::default();
-        if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
-            for (key, value) in object.properties.iter() {
-                let Some(object) = value.as_object() else {
-                    continue;
-                };
-                if let Some(value_schema) = Referable::<ValueSchema>::new(
-                    object,
-                    string_formats.as_deref(),
-                    dialect,
-                    collect_anchor.then_some(&mut anchors),
-                    collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-                ) {
-                    definitions.insert(format!("#/definitions/{}", key.value), value_schema);
+        if let Some(object) = object {
+            if let Some(tombi_json::ValueNode::Object(object)) = object.get("definitions") {
+                for (key, value) in object.properties.iter() {
+                    if let Some(value_schema) = super::referable_from_schema_value(
+                        value,
+                        string_formats.as_deref(),
+                        dialect,
+                        collect_anchor.then_some(&mut anchors),
+                        collect_dynamic_anchor.then_some(&mut dynamic_anchors),
+                    ) {
+                        definitions.insert(format!("#/definitions/{}", key.value), value_schema);
+                    }
                 }
             }
-        }
-        if let Some(tombi_json::ValueNode::Object(object)) = object.get("$defs") {
-            for (key, value) in object.properties.iter() {
-                let Some(object) = value.as_object() else {
-                    continue;
-                };
-                if let Some(value_schema) = Referable::<ValueSchema>::new(
-                    object,
-                    string_formats.as_deref(),
-                    dialect,
-                    collect_anchor.then_some(&mut anchors),
-                    collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-                ) {
-                    definitions.insert(format!("#/$defs/{}", key.value), value_schema);
+            if let Some(tombi_json::ValueNode::Object(object)) = object.get("$defs") {
+                for (key, value) in object.properties.iter() {
+                    if let Some(value_schema) = super::referable_from_schema_value(
+                        value,
+                        string_formats.as_deref(),
+                        dialect,
+                        collect_anchor.then_some(&mut anchors),
+                        collect_dynamic_anchor.then_some(&mut dynamic_anchors),
+                    ) {
+                        definitions.insert(format!("#/$defs/{}", key.value), value_schema);
+                    }
                 }
             }
         }
@@ -129,13 +147,15 @@ impl DocumentSchema {
                 schema_uri: None,
                 value: value_schema.clone(),
             };
-            super::collect_named_anchors(
-                &object,
-                &root_referable,
-                dialect,
-                collect_anchor.then_some(&mut anchors),
-                collect_dynamic_anchor.then_some(&mut dynamic_anchors),
-            );
+            if let Some(object) = object {
+                super::collect_named_anchors(
+                    object,
+                    &root_referable,
+                    dialect,
+                    collect_anchor.then_some(&mut anchors),
+                    collect_dynamic_anchor.then_some(&mut dynamic_anchors),
+                );
+            }
         }
         Self {
             schema_uri,
@@ -147,6 +167,7 @@ impl DocumentSchema {
             definitions: SchemaDefinitions::new(definitions.into()),
             anchors: SchemaAnchors::new(anchors.into()),
             dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
+            comments: collect_comments(&schema_value),
         }
     }
 
@@ -170,6 +191,10 @@ impl DocumentSchema {
             );
         })
     }
+
+    pub fn comment(&self, pointer: &str) -> Option<&str> {
+        self.comments.get(pointer).map(String::as_str)
+    }
 }
 
 fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str) -> bool {
@@ -178,6 +203,47 @@ fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str)
         .and_then(|v| v.as_object())
         .and_then(|vocab| vocab.get(vocabulary_uri))
         .is_some_and(|value| matches!(value, tombi_json::ValueNode::Bool(b) if b.value))
+}
+
+fn resolve_schema_id(
+    object: &tombi_json::ObjectNode,
+    base_schema_uri: &SchemaUri,
+) -> Option<SchemaUri> {
+    let id = object.get("$id")?.as_str()?;
+    let joined = base_schema_uri.join(id).ok()?;
+    Some(SchemaUri::from(joined))
+}
+
+fn collect_comments(
+    schema_value: &tombi_json::ValueNode,
+) -> tombi_hashmap::HashMap<String, String> {
+    let mut comments = tombi_hashmap::HashMap::default();
+    collect_comments_inner(schema_value, "#".to_string(), &mut comments);
+    comments
+}
+
+fn collect_comments_inner(
+    value: &tombi_json::ValueNode,
+    pointer: String,
+    comments: &mut tombi_hashmap::HashMap<String, String>,
+) {
+    match value {
+        tombi_json::ValueNode::Object(object) => {
+            if let Some(comment) = object.get("$comment").and_then(|v| v.as_str()) {
+                comments.insert(pointer.clone(), comment.to_string());
+            }
+            for (key, child) in &object.properties {
+                let escaped = key.value.replace('~', "~0").replace('/', "~1");
+                collect_comments_inner(child, format!("{pointer}/{escaped}"), comments);
+            }
+        }
+        tombi_json::ValueNode::Array(array) => {
+            for (idx, child) in array.items.iter().enumerate() {
+                collect_comments_inner(child, format!("{pointer}/{idx}"), comments);
+            }
+        }
+        _ => {}
+    }
 }
 
 impl FindSchemaCandidates for DocumentSchema {
@@ -204,6 +270,8 @@ impl FindSchemaCandidates for DocumentSchema {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use crate::ValueSchema;
 
     use super::DocumentSchema;
 
@@ -334,5 +402,45 @@ mod tests {
         let document_schema = DocumentSchema::new(object, schema_uri);
         let dynamic_anchors = document_schema.dynamic_anchors.blocking_read();
         assert!(dynamic_anchors.contains_key("#nameSchema"));
+    }
+
+    #[test]
+    fn root_boolean_true_schema_is_accepted() {
+        let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::from_value(schema_value, uri);
+        assert!(matches!(
+            doc.value_schema.as_deref(),
+            Some(ValueSchema::AnyOf(any_of)) if any_of.schemas.blocking_read().is_empty()
+        ));
+    }
+
+    #[test]
+    fn root_boolean_false_schema_is_accepted() {
+        let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::from_value(schema_value, uri);
+        assert!(matches!(
+            doc.value_schema.as_deref(),
+            Some(ValueSchema::OneOf(one_of)) if one_of.schemas.blocking_read().is_empty()
+        ));
+    }
+
+    #[test]
+    fn collects_comment_annotations_with_json_pointer_keys() {
+        let schema_json = r#"{
+            "$comment": "root",
+            "properties": {
+                "name": {
+                    "$comment": "name property"
+                }
+            }
+        }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::from_value(schema_value, uri);
+
+        assert_eq!(doc.comment("#"), Some("root"));
+        assert_eq!(doc.comment("#/properties/name"), Some("name property"));
     }
 }

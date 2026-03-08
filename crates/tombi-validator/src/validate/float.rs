@@ -7,7 +7,10 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
+    validate::{
+        handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
+        is_multiple_of_with_tolerance,
+    },
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -315,7 +318,7 @@ async fn validate_float(
     }
 
     if let Some(multiple_of) = &float_schema.multiple_of
-        && (value % *multiple_of).abs() > f64::EPSILON
+        && !is_multiple_of_with_tolerance(value, *multiple_of)
     {
         let level = lint_rules
             .map(|rules| &rules.value)

@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use tombi_x_keyword::StringFormat;
 
-use crate::{AnchorCollector, DynamicAnchorCollector, Referable, SchemaItem, ValueSchema};
+use crate::{AnchorCollector, DynamicAnchorCollector, SchemaItem, schema_item_from_schema_value};
 
 #[derive(Debug, Clone)]
 pub struct IfThenElseSchema {
@@ -22,47 +20,35 @@ impl IfThenElseSchema {
     ) -> Option<Self> {
         let mut anchor_collector = anchor_collector;
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
-        let if_schema = object
-            .get("if")
-            .and_then(|value| value.as_object())
-            .and_then(|obj| {
-                Referable::<ValueSchema>::new(
-                    obj,
-                    string_formats,
-                    dialect,
-                    anchor_collector.as_deref_mut(),
-                    dynamic_anchor_collector.as_deref_mut(),
-                )
-                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
-            })?;
+        let if_schema = object.get("if").and_then(|value| {
+            schema_item_from_schema_value(
+                value,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })?;
 
-        let then_schema = object
-            .get("then")
-            .and_then(|value| value.as_object())
-            .and_then(|obj| {
-                Referable::<ValueSchema>::new(
-                    obj,
-                    string_formats,
-                    dialect,
-                    anchor_collector.as_deref_mut(),
-                    dynamic_anchor_collector.as_deref_mut(),
-                )
-                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
-            });
+        let then_schema = object.get("then").and_then(|value| {
+            schema_item_from_schema_value(
+                value,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        });
 
-        let else_schema = object
-            .get("else")
-            .and_then(|value| value.as_object())
-            .and_then(|obj| {
-                Referable::<ValueSchema>::new(
-                    obj,
-                    string_formats,
-                    dialect,
-                    anchor_collector,
-                    dynamic_anchor_collector,
-                )
-                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
-            });
+        let else_schema = object.get("else").and_then(|value| {
+            schema_item_from_schema_value(
+                value,
+                string_formats,
+                dialect,
+                anchor_collector,
+                dynamic_anchor_collector,
+            )
+        });
 
         Some(Self {
             if_schema,

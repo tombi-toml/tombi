@@ -4,9 +4,9 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
-use super::{AnchorCollector, DynamicAnchorCollector, ReferableValueSchemas, ValueSchema};
+use super::{AnchorCollector, DynamicAnchorCollector, ReferableValueSchemas};
 use crate::{
-    Referable,
+    referable_from_schema_value,
     schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
 };
 
@@ -49,10 +49,9 @@ impl AllOfSchema {
                 array
                     .items
                     .iter()
-                    .filter_map(|value| value.as_object())
-                    .filter_map(|obj| {
-                        Referable::<ValueSchema>::new(
-                            obj,
+                    .filter_map(|value| {
+                        referable_from_schema_value(
+                            value,
                             string_formats,
                             dialect,
                             anchor_collector.as_deref_mut(),

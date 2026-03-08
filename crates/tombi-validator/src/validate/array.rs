@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use tombi_comment_directive::value::ArrayCommonLintRules;
-use tombi_document_tree::{LiteralValueRef, ValueImpl};
+use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{CurrentSchema, ValueSchema};
 use tombi_severity_level::SeverityLevelDefaultError;
@@ -11,7 +11,7 @@ use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
         handle_deprecated, handle_type_mismatch, handle_unused_noqa,
-        if_then_else::validate_if_then_else, is_success_or_warning, not_schema::validate_not,
+        if_then_else::validate_if_then_else, is_assertion_success, not_schema::validate_not,
     },
 };
 
@@ -293,7 +293,7 @@ async fn validate_array(
             let result = value
                 .validate(&new_accessors, Some(&contains_schema), schema_context)
                 .await;
-            if is_success_or_warning(&result) {
+            if is_assertion_success(&result) {
                 match_count += 1;
                 if !needs_full_count && match_count >= min_contains {
                     break;
@@ -570,29 +570,34 @@ async fn validate_array_without_schema(
 fn get_duplicated_ranges(
     array_value: &tombi_document_tree::Array,
 ) -> Option<Vec<tombi_text::Range>> {
-    let mut duplicated_ranges = vec![];
-    let literal_values = array_value
+    let values = array_value
         .values()
         .iter()
-        .filter_map(Option::<LiteralValueRef>::from)
-        .counts();
+        .map(crate::convert::value_to_json_value)
+        .collect_vec();
 
-    let duplicated_values = literal_values
-        .iter()
-        .filter_map(|(value, count)| if *count > 1 { Some(value) } else { None })
-        .collect::<tombi_hashmap::HashSet<_>>();
-
-    for value in array_value.values() {
-        if let Some(literal_value) = Option::<LiteralValueRef>::from(value)
-            && duplicated_values.contains(&literal_value)
-        {
-            duplicated_ranges.push(value.range());
+    let mut duplicated_indices = tombi_hashmap::HashSet::new();
+    for i in 0..values.len() {
+        for j in (i + 1)..values.len() {
+            if values[i] == values[j] {
+                duplicated_indices.insert(i);
+                duplicated_indices.insert(j);
+            }
         }
     }
 
-    if duplicated_ranges.is_empty() {
+    if duplicated_indices.is_empty() {
         None
     } else {
-        Some(duplicated_ranges)
+        Some(
+            array_value
+                .values()
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, value)| {
+                    duplicated_indices.contains(&idx).then_some(value.range())
+                })
+                .collect(),
+        )
     }
 }

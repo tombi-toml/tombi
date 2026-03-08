@@ -478,22 +478,21 @@ impl SchemaStore {
         &self,
         schema_uri: &SchemaUri,
     ) -> Result<Option<Arc<DocumentSchema>>, crate::Error> {
-        let object = match self.fetch_schema_value(schema_uri).await? {
-            Some(tombi_json::ValueNode::Object(object)) => object,
-            Some(_) => {
-                return Err(crate::Error::SchemaMustBeObject {
-                    schema_uri: schema_uri.to_owned(),
-                });
-            }
+        let schema_value = match self.fetch_schema_value(schema_uri).await? {
+            Some(value) => value,
             None => return Ok(None),
         };
-        let dialect = object
-            .get("$schema")
+        let dialect = schema_value
+            .as_object()
+            .and_then(|object| object.get("$schema"))
             .and_then(|value| value.as_str())
             .and_then(|dialect_uri| crate::JsonSchemaDialect::try_from(dialect_uri).ok())
             .unwrap_or_default();
-        let deprecated_keyword_usages = crate::collect_deprecated_keyword_usages(&object, dialect);
-        let document_schema = DocumentSchema::new(object, schema_uri.clone());
+        let deprecated_keyword_usages = schema_value
+            .as_object()
+            .map(|object| crate::collect_deprecated_keyword_usages(object, dialect))
+            .unwrap_or_default();
+        let document_schema = DocumentSchema::from_value(schema_value, schema_uri.clone());
         if !deprecated_keyword_usages.is_empty() {
             let total = deprecated_keyword_usages.len();
             let sample_limit = 3;
