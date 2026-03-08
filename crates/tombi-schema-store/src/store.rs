@@ -486,7 +486,7 @@ impl SchemaStore {
             schema_value,
             tombi_json::ValueNode::Object(_) | tombi_json::ValueNode::Bool(_)
         ) {
-            return Err(crate::Error::SchemaMustBeObject {
+            return Err(crate::Error::SchemaMustBeObjectOrBoolean {
                 schema_uri: schema_uri.clone(),
             });
         }

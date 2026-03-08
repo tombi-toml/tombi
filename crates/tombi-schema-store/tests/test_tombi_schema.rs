@@ -20,8 +20,10 @@ fn tombi_schema() -> Result<(), Box<dyn std::error::Error>> {
     let value_node = tombi_json::ValueNode::from_str(&contents)?;
     match value_node {
         tombi_json::ValueNode::Object(_) => Ok(()),
-        _ => Err(Box::new(tombi_schema_store::Error::SchemaMustBeObject {
-            schema_uri: SchemaUri::from_file_path(&document_path).unwrap(),
-        })),
+        _ => Err(Box::new(
+            tombi_schema_store::Error::SchemaMustBeObjectOrBoolean {
+                schema_uri: SchemaUri::from_file_path(&document_path).unwrap(),
+            },
+        )),
     }
 }
