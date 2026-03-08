@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use itertools::{Either, Itertools};
 use tombi_ast::{AstNode, DanglingCommentGroupOr, algo::ancestors_at_position};
 use tombi_document_tree::IntoDocumentTreeAndErrors;
@@ -56,8 +58,8 @@ pub async fn handle_hover(
         };
 
         (
-            document_source.ast().clone(),
-            document_source.document_tree().clone(),
+            Arc::clone(document_source.ast_arc()),
+            Arc::clone(document_source.document_tree_arc()),
             document_source.toml_version,
             position.into_lsp(document_source.line_index()),
         )
