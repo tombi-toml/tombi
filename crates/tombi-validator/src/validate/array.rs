@@ -576,17 +576,23 @@ fn get_duplicated_ranges(
         .map(crate::convert::value_to_json_value)
         .collect_vec();
 
-    let mut duplicated_indices = tombi_hashmap::HashSet::new();
-    for i in 0..values.len() {
-        for j in (i + 1)..values.len() {
-            if values[i] == values[j] {
-                duplicated_indices.insert(i);
-                duplicated_indices.insert(j);
-            }
+    // Follow the previous main-branch strategy:
+    // 1) count each value occurrence, 2) build a set of duplicated values,
+    // 3) collect ranges for elements that belong to duplicated values.
+    let mut value_counts: Vec<(tombi_json_value::Value, usize)> = Vec::new();
+    for value in &values {
+        if let Some((_, count)) = value_counts.iter_mut().find(|(seen, _)| seen == value) {
+            *count += 1;
+        } else {
+            value_counts.push((value.clone(), 1));
         }
     }
+    let duplicated_values = value_counts
+        .into_iter()
+        .filter_map(|(value, count)| (count > 1).then_some(value))
+        .collect_vec();
 
-    if duplicated_indices.is_empty() {
+    if duplicated_values.is_empty() {
         None
     } else {
         Some(
@@ -595,7 +601,10 @@ fn get_duplicated_ranges(
                 .iter()
                 .enumerate()
                 .filter_map(|(idx, value)| {
-                    duplicated_indices.contains(&idx).then_some(value.range())
+                    duplicated_values
+                        .iter()
+                        .any(|duplicated| duplicated == &values[idx])
+                        .then_some(value.range())
                 })
                 .collect(),
         )
