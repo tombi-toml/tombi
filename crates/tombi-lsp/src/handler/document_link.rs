@@ -63,7 +63,7 @@ pub async fn handle_document_link(
     let document_tree = document_source.document_tree();
 
     if let Some(locations) =
-        tombi_extension_cargo::document_link(&text_document_uri, document_tree, toml_version)
+        tombi_extension_cargo::document_link(&text_document_uri, &document_tree, toml_version)
             .await?
     {
         document_links.extend(
@@ -74,7 +74,7 @@ pub async fn handle_document_link(
     }
 
     if let Some(locations) =
-        tombi_extension_tombi::document_link(&text_document_uri, document_tree, toml_version)
+        tombi_extension_tombi::document_link(&text_document_uri, &document_tree, toml_version)
             .await?
     {
         document_links.extend(
@@ -85,7 +85,7 @@ pub async fn handle_document_link(
     }
 
     if let Some(locations) =
-        tombi_extension_uv::document_link(&text_document_uri, document_tree, toml_version).await?
+        tombi_extension_uv::document_link(&text_document_uri, &document_tree, toml_version).await?
     {
         document_links.extend(
             locations

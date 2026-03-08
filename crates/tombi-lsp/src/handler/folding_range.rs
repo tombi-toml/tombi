@@ -19,7 +19,7 @@ pub async fn handle_folding_range(
         return Ok(None);
     };
 
-    let folding_ranges = create_folding_ranges(document_source.ast());
+    let folding_ranges = create_folding_ranges(&document_source.ast());
 
     if !folding_ranges.is_empty() {
         Ok(Some(folding_ranges))

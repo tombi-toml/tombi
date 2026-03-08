@@ -76,7 +76,7 @@ pub async fn handle_completion(
     let line_index = document_source.line_index();
 
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -108,12 +108,12 @@ pub async fn handle_completion(
 
     let mut completion_items = Vec::new();
 
-    let comment_context = get_comment_context(root, position);
+    let comment_context = get_comment_context(&root, position);
     let (keys, completion_hint) = match &comment_context {
         Some(CommentContext::DocumentDirective(comment)) => {
             if let Some(comment_completion_contents) =
                 get_document_comment_directive_completion_contents(
-                    root,
+                    &root,
                     comment,
                     position,
                     &text_document_uri,
@@ -123,7 +123,7 @@ pub async fn handle_completion(
                 return Ok(Some(comment_completion_contents));
             }
             let Some((keys, completion_hint)) = get_keys_and_completion_hint(
-                root,
+                &root,
                 position,
                 toml_version,
                 comment_context.as_ref(),
@@ -135,7 +135,7 @@ pub async fn handle_completion(
         }
         Some(CommentContext::ValueDirective(_)) | None => {
             let Some((keys, completion_hint)) = get_keys_and_completion_hint(
-                root,
+                &root,
                 position,
                 toml_version,
                 comment_context.as_ref(),
@@ -156,7 +156,7 @@ pub async fn handle_completion(
 
             completion_items.extend(
                 find_completion_contents_with_tree(
-                    document_tree,
+                    &document_tree,
                     position,
                     &keys,
                     &schema_context,
@@ -169,7 +169,7 @@ pub async fn handle_completion(
         }
         Some(CommentContext::Normal(_)) => {
             let Some((keys, completion_hint)) = get_keys_and_completion_hint(
-                root,
+                &root,
                 position,
                 toml_version,
                 comment_context.as_ref(),
@@ -181,10 +181,10 @@ pub async fn handle_completion(
         }
     };
 
-    let accessors = tombi_document_tree::get_accessors(document_tree, &keys, position);
+    let accessors = tombi_document_tree::get_accessors(&document_tree, &keys, position);
     if let Some(items) = tombi_extension_tombi::completion(
         &text_document_uri,
-        document_tree,
+        &document_tree,
         position,
         &accessors,
         toml_version,
@@ -197,7 +197,7 @@ pub async fn handle_completion(
     }
     if let Some(items) = tombi_extension_cargo::completion(
         &text_document_uri,
-        document_tree,
+        &document_tree,
         position,
         &accessors,
         toml_version,
@@ -210,7 +210,7 @@ pub async fn handle_completion(
     }
     if let Some(items) = tombi_extension_uv::completion(
         &text_document_uri,
-        document_tree,
+        &document_tree,
         position,
         &accessors,
         toml_version,

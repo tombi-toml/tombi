@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tombi_diagnostic::SetDiagnostics;
 use tombi_text::{EncodingKind, LineIndex};
 
@@ -6,9 +8,9 @@ use tombi_document_tree::IntoDocumentTreeAndErrors;
 #[derive(Debug, Clone)]
 pub struct DocumentSource {
     /// The text of the document.
-    text: String,
+    text: Arc<str>,
 
-    line_index: LineIndex<'static>,
+    line_index: Arc<LineIndex<'static>>,
 
     /// The version of the document.
     ///
@@ -18,13 +20,13 @@ pub struct DocumentSource {
     pub toml_version: tombi_config::TomlVersion,
 
     /// Parsed AST (always exists, even with errors)
-    ast: tombi_ast::Root,
+    ast: Arc<tombi_ast::Root>,
 
     /// AST generation errors (empty if no errors)
     ast_errors: Vec<tombi_diagnostic::Diagnostic>,
 
     /// Parsed DocumentTree (always exists)
-    document_tree: tombi_document_tree::DocumentTree,
+    document_tree: Arc<tombi_document_tree::DocumentTree>,
 
     /// DocumentTree generation errors (empty if no errors)
     document_tree_errors: Vec<tombi_diagnostic::Diagnostic>,
@@ -37,9 +39,9 @@ impl DocumentSource {
         toml_version: tombi_config::TomlVersion,
         encoding_kind: EncodingKind,
     ) -> Self {
-        let text = text.into();
+        let text: Arc<str> = Arc::<str>::from(text.into());
 
-        let (ast, errors) = tombi_parser::parse(&text).into_root_and_errors();
+        let (ast, errors) = tombi_parser::parse(text.as_ref()).into_root_and_errors();
 
         // Convert parser errors to diagnostics
         let mut ast_errors = Vec::with_capacity(errors.len());
@@ -58,33 +60,37 @@ impl DocumentSource {
             error.set_diagnostics(&mut document_tree_errors);
         }
 
-        let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(text.as_str()) };
+        let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(text.as_ref()) };
 
         Self {
             text,
-            line_index: LineIndex::new(text_ref, encoding_kind),
+            line_index: Arc::new(LineIndex::new(text_ref, encoding_kind)),
             version,
             toml_version,
-            ast,
+            ast: Arc::new(ast),
             ast_errors,
-            document_tree,
+            document_tree: Arc::new(document_tree),
             document_tree_errors,
         }
     }
 
     pub fn text(&self) -> &str {
-        &self.text
+        self.text.as_ref()
+    }
+
+    pub fn text_arc(&self) -> Arc<str> {
+        Arc::clone(&self.text)
     }
 
     pub fn set_text(&mut self, text: impl Into<String>, toml_version: tombi_config::TomlVersion) {
-        self.text = text.into();
-        let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(self.text.as_str()) };
+        self.text = Arc::<str>::from(text.into());
+        let text_ref = unsafe { std::mem::transmute::<&str, &'static str>(self.text.as_ref()) };
         self.toml_version = toml_version;
-        self.line_index = LineIndex::new(text_ref, self.line_index.encoding_kind);
+        self.line_index = Arc::new(LineIndex::new(text_ref, self.line_index.encoding_kind));
 
         // Re-parse the text and collect errors
-        let (ast, errors) = tombi_parser::parse(&self.text).into_root_and_errors();
-        self.ast = ast;
+        let (ast, errors) = tombi_parser::parse(self.text.as_ref()).into_root_and_errors();
+        self.ast = Arc::new(ast);
 
         // Convert parser errors to diagnostics
         self.ast_errors = Vec::with_capacity(errors.len());
@@ -94,10 +100,11 @@ impl DocumentSource {
 
         let (document_tree, errors) = self
             .ast
+            .as_ref()
             .clone()
             .into_document_tree_and_errors(toml_version)
             .into();
-        self.document_tree = document_tree;
+        self.document_tree = Arc::new(document_tree);
         self.document_tree_errors = Vec::with_capacity(errors.len());
         for error in errors {
             error.set_diagnostics(&mut self.document_tree_errors);
@@ -105,12 +112,12 @@ impl DocumentSource {
     }
 
     pub fn line_index(&self) -> &LineIndex<'static> {
-        &self.line_index
+        self.line_index.as_ref()
     }
 
     /// Get the parsed AST (always exists)
-    pub fn ast(&self) -> &tombi_ast::Root {
-        &self.ast
+    pub fn ast(&self) -> Arc<tombi_ast::Root> {
+        Arc::clone(&self.ast)
     }
 
     /// Get AST generation errors
@@ -119,8 +126,8 @@ impl DocumentSource {
     }
 
     /// Get the parsed DocumentTree (always exists)
-    pub fn document_tree(&self) -> &tombi_document_tree::DocumentTree {
-        &self.document_tree
+    pub fn document_tree(&self) -> Arc<tombi_document_tree::DocumentTree> {
+        Arc::clone(&self.document_tree)
     }
 
     /// Get DocumentTree generation errors

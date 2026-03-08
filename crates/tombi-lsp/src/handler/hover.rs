@@ -49,19 +49,22 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let document_sources = backend.document_sources.read().await;
-    let Some(document_source) = document_sources.get(&text_document_uri) else {
-        return Ok(None);
+    let (root, document_tree, toml_version, position) = {
+        let document_sources = backend.document_sources.read().await;
+        let Some(document_source) = document_sources.get(&text_document_uri) else {
+            return Ok(None);
+        };
+
+        (
+            document_source.ast(),
+            document_source.document_tree(),
+            document_source.toml_version,
+            position.into_lsp(document_source.line_index()),
+        )
     };
 
-    let root = document_source.ast();
-    let toml_version = document_source.toml_version;
-    let line_index = document_source.line_index();
-
-    let position = position.into_lsp(line_index);
-
     let source_schema = schema_store
-        .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
+        .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
         .await
         .ok()
         .flatten();
@@ -69,12 +72,12 @@ pub async fn handle_hover(
     let source_path = text_document_uri.to_file_path().ok();
     // Check if position is in a #:tombi comment directive
     if let Some(content) =
-        get_document_comment_directive_hover_content(root, position, source_path.as_deref()).await
+        get_document_comment_directive_hover_content(&root, position, source_path.as_deref()).await
     {
         return Ok(Some(content));
     }
 
-    let Some((keys, range)) = get_hover_keys_with_range(root, position, toml_version).await else {
+    let Some((keys, range)) = get_hover_keys_with_range(&root, position, toml_version).await else {
         log::debug!("Failed to get hover keys with range");
         return Ok(None);
     };
@@ -84,10 +87,8 @@ pub async fn handle_hover(
         return Ok(None);
     }
 
-    let document_tree = document_source.document_tree();
-
     let mut hover_content = get_hover_content(
-        document_tree,
+        &document_tree,
         position,
         &keys,
         &SchemaContext {
