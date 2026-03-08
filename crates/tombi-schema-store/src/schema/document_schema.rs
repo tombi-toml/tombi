@@ -176,12 +176,8 @@ fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str)
     object
         .get("$vocabulary")
         .and_then(|v| v.as_object())
-        .is_some_and(|vocab| {
-            vocab.properties.iter().any(|(key, value)| {
-                key.value == vocabulary_uri
-                    && matches!(value, tombi_json::ValueNode::Bool(b) if b.value)
-            })
-        })
+        .and_then(|vocab| vocab.get(vocabulary_uri))
+        .is_some_and(|value| matches!(value, tombi_json::ValueNode::Bool(b) if b.value))
 }
 
 impl FindSchemaCandidates for DocumentSchema {
