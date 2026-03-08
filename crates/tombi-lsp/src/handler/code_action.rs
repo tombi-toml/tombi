@@ -52,14 +52,14 @@ pub async fn handle_code_action(
     let position: tombi_text::Position = range.start.into_lsp(line_index);
 
     let Some((keys, key_contexts)) =
-        get_completion_keys_with_context(document_source.ast(), position, toml_version).await
+        get_completion_keys_with_context(&document_source.ast(), position, toml_version).await
     else {
         return Ok(None);
     };
 
     let root = document_source.ast();
     let document_tree = document_source.document_tree();
-    let accessors = get_accessors(document_tree, &keys, position);
+    let accessors = get_accessors(&document_tree, &keys, position);
     let mut key_contexts = key_contexts.into_iter();
     let accessor_contexts = build_accessor_contexts(&accessors, &mut key_contexts);
 
@@ -68,8 +68,8 @@ pub async fn handle_code_action(
     if let Some(code_action) = dot_keys_to_inline_table_code_action(
         &text_document_uri,
         line_index,
-        root,
-        document_tree,
+        &root,
+        &document_tree,
         &accessors,
         &accessor_contexts,
     ) {
@@ -79,8 +79,8 @@ pub async fn handle_code_action(
     if let Some(code_action) = inline_table_to_dot_keys_code_action(
         &text_document_uri,
         line_index,
-        root,
-        document_tree,
+        &root,
+        &document_tree,
         &accessors,
         &accessor_contexts,
     ) {
@@ -90,8 +90,8 @@ pub async fn handle_code_action(
     if let Some(extension_code_actions) = tombi_extension_cargo::code_action(
         &text_document_uri,
         line_index,
-        root,
-        document_tree,
+        &root,
+        &document_tree,
         &accessors,
         &accessor_contexts,
         document_source.toml_version,
@@ -101,8 +101,8 @@ pub async fn handle_code_action(
 
     if let Some(extension_code_actions) = tombi_extension_uv::code_action(
         &text_document_uri,
-        root,
-        document_tree,
+        &root,
+        &document_tree,
         &accessors,
         document_source.toml_version,
         line_index,

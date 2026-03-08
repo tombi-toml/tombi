@@ -41,7 +41,7 @@ pub async fn handle_get_status(
                 // Get schema URI from resolve_source_schema_from_ast
                 // (internally checks comment directive first, then falls back to other methods)
                 let schema_uri = match schema_store
-                    .resolve_source_schema_from_ast(root, Some(Either::Left(&text_document_uri)))
+                    .resolve_source_schema_from_ast(&root, Some(Either::Left(&text_document_uri)))
                     .await
                 {
                     Ok(Some(source_schema)) => source_schema
