@@ -27,8 +27,6 @@ jobs:
       run: cargo build --verbose --locked
     - name: Run tests
       run: cargo nextest run --verbose --locked
-    - name: Run JSON Schema dialect regression tests
-      run: cargo nextest run --verbose --locked -p tombi-linter --test integration -E 'test(dialect_regression_)'
 
   cargo-shear:
     runs-on: ubuntu-latest
