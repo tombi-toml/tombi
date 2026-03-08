@@ -39,15 +39,7 @@ fn main() {
     match parse(&content) {
         Ok(value_node) => {
             eprintln!("✅ Parse successful!");
-            let object_node = match value_node {
-                tombi_json::ValueNode::Object(object_node) => object_node,
-                _ => {
-                    eprintln!("❌ Parse error: expected object node");
-                    process::exit(1);
-                }
-            };
-
-            println!("{:#?}", DocumentSchema::new(object_node, schema_uri));
+            println!("{:#?}", DocumentSchema::new(value_node, schema_uri));
         }
         Err(err) => {
             eprintln!("❌ Parse error: {}", err);
