@@ -497,8 +497,21 @@ async fn validate_table(
                     .await
                     .inspect_err(|err| log::warn!("{err}"))
                     {
+                        // A dependency schema is an additional constraint layered on top of
+                        // the parent table schema. Running strict mode here against the
+                        // partial dependency schema causes false-positive additional key
+                        // diagnostics for valid keys defined by the parent schema.
+                        let dependency_schema_context = tombi_schema_store::SchemaContext {
+                            toml_version: schema_context.toml_version,
+                            root_schema: schema_context.root_schema,
+                            sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                            schema_visits: schema_context.schema_visits.clone(),
+                            store: schema_context.store,
+                            strict: Some(false),
+                        };
+
                         if let Err(crate::Error { diagnostics, .. }) = table_value
-                            .validate(accessors, Some(&dep_schema), schema_context)
+                            .validate(accessors, Some(&dep_schema), &dependency_schema_context)
                             .await
                         {
                             total_diagnostics.extend(diagnostics);
@@ -548,8 +561,18 @@ async fn validate_table(
             .await
             .inspect_err(|err| log::warn!("{err}"))
             {
+                // See the rationale in the `Dependency::Schema` branch above.
+                let dependency_schema_context = tombi_schema_store::SchemaContext {
+                    toml_version: schema_context.toml_version,
+                    root_schema: schema_context.root_schema,
+                    sub_schema_uri_map: schema_context.sub_schema_uri_map,
+                    schema_visits: schema_context.schema_visits.clone(),
+                    store: schema_context.store,
+                    strict: Some(false),
+                };
+
                 if let Err(crate::Error { diagnostics, .. }) = table_value
-                    .validate(accessors, Some(&dep_schema), schema_context)
+                    .validate(accessors, Some(&dep_schema), &dependency_schema_context)
                     .await
                 {
                     total_diagnostics.extend(diagnostics);

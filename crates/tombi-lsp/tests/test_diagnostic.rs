@@ -41,6 +41,28 @@ mod diagnostic {
             ]);
         );
     }
+
+    /// Test for issue #1566: `project.license-files` false additional-key warnings
+    /// https://github.com/tombi-toml/tombi/issues/1566
+    mod issue_1566_pyproject_license_files {
+        use tombi_test_lib::project_root_path;
+
+        use super::*;
+        use std::path::PathBuf;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1566-pyproject-license-files")
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn pyproject_license_files_has_no_false_warnings(
+                SourcePath(fixture_path().join("pyproject.toml")),
+                ConfigPath(fixture_path().join("tombi.toml")),
+            ) -> Ok([]);
+        );
+    }
 }
 
 // Unified test macro

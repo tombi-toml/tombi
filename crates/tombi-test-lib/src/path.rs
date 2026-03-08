@@ -66,6 +66,12 @@ pub fn dependencies_test_schema_path() -> PathBuf {
         .join("dependencies-test.schema.json")
 }
 
+pub fn dependencies_strict_mode_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("dependencies-strict-mode-test.schema.json")
+}
+
 pub fn tuple_items_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
