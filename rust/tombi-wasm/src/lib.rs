@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use js_sys::Promise;
-use serde_wasm_bindgen;
 use tombi_config::TomlVersion;
 use tombi_diagnostic::Diagnostic;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
@@ -65,7 +64,7 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
             return Err(FormatError::Error { error });
         }
 
-        let file_path_buf = file_path.map(|path| std::path::PathBuf::from(path));
+        let file_path_buf = file_path.map(std::path::PathBuf::from);
 
         // Get format options with override support
         let Some(format_options) = tombi_glob::get_format_options(
@@ -82,7 +81,7 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
             &format_options,
             file_path_buf
                 .as_deref()
-                .map(|path| itertools::Either::Right(path)),
+                .map(itertools::Either::Right),
             &schema_store,
         )
         .format(&source)
@@ -154,7 +153,7 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             return Err(LintError::Error { error });
         }
 
-        let file_path_buf = file_path.map(|path| std::path::PathBuf::from(path));
+        let file_path_buf = file_path.map(std::path::PathBuf::from);
 
         // Get lint options with override support
         let Some(lint_options) =
@@ -169,7 +168,7 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
             &lint_options,
             file_path_buf
                 .as_deref()
-                .map(|path| itertools::Either::Right(path)),
+                .map(itertools::Either::Right),
             &schema_store,
         )
         .lint(&source)
