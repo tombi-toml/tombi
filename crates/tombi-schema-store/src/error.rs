@@ -100,8 +100,8 @@ pub enum Error {
     #[error("unsupported uri scheme: {scheme}, uri: {uri}", scheme = uri.scheme())]
     UnsupportedUriScheme { uri: tombi_uri::Uri },
 
-    #[error("schema must be an object: {schema_uri}")]
-    SchemaMustBeObject { schema_uri: SchemaUri },
+    #[error("schema must be an object or boolean: {schema_uri}")]
+    SchemaMustBeObjectOrBoolean { schema_uri: SchemaUri },
 
     #[error(transparent)]
     CacheError(#[from] tombi_cache::Error),
@@ -136,7 +136,7 @@ impl Error {
             Self::InvalidJsonSchemaReference { .. } => "invalid-json-schema-reference",
             Self::UnsupportedReference { .. } => "unsupported-reference",
             Self::UnsupportedUriScheme { .. } => "unsupported-url-scheme",
-            Self::SchemaMustBeObject { .. } => "schema-must-be-object",
+            Self::SchemaMustBeObjectOrBoolean { .. } => "schema-must-be-object-or-boolean",
             Self::CacheError(error) => error.code(),
         }
     }

@@ -4,7 +4,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
 use crate::Validate;
-use crate::validate::is_success_or_warning;
+use crate::validate::is_assertion_success;
 
 pub async fn validate_if_then_else<T>(
     value: &T,
@@ -33,9 +33,8 @@ where
         return Ok(());
     };
 
-    // Per JSON Schema spec: the `if` validation result itself is not exposed to the user.
-    // If `if` succeeds (including warning-only), apply `then`; otherwise apply `else`.
-    if is_success_or_warning(&if_result) {
+    // Per JSON Schema spec: branching is based on assertion result.
+    if is_assertion_success(&if_result) {
         // `if` matched → apply `then` schema if present
         if let Some(then_schema) = &if_then_else_schema.then_schema
             && let Ok(Some(then_current_schema)) = tombi_schema_store::resolve_schema_item(

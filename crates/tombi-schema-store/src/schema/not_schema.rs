@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use tombi_x_keyword::StringFormat;
 
-use crate::{AnchorCollector, DynamicAnchorCollector, Referable, SchemaItem, ValueSchema};
+use crate::{AnchorCollector, DynamicAnchorCollector, SchemaItem, schema_item_from_schema_value};
 
 #[derive(Debug, Clone)]
 pub struct NotSchema {
@@ -22,16 +20,14 @@ impl NotSchema {
         let dynamic_anchor_collector = dynamic_anchor_collector;
         object
             .get("not")
-            .and_then(|value| value.as_object())
-            .and_then(|obj| {
-                Referable::<ValueSchema>::new(
-                    obj,
+            .and_then(|value| {
+                schema_item_from_schema_value(
+                    value,
                     string_formats,
                     dialect,
                     anchor_collector,
                     dynamic_anchor_collector,
                 )
-                .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             })
             .map(|schema| Self { schema })
     }

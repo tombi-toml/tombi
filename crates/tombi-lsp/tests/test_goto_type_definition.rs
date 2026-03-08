@@ -133,7 +133,7 @@ mod goto_type_definition_tests {
                 "#,
                 SourcePath(pyproject_schema_path()),
                 SchemaPath(pyproject_schema_path()),
-            ) -> Ok("https://www.schemastore.org/partial-taskipy.json");
+            ) -> Ok("https://json.schemastore.org/partial-taskipy.json");
         );
 
         test_goto_type_definition!(

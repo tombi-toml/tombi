@@ -258,11 +258,25 @@ fn has_error_level_diagnostics(error: &crate::Error) -> bool {
         .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
 }
 
-fn is_success_or_warning(result: &Result<(), crate::Error>) -> bool {
+fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
     match result {
         Ok(()) => true,
         Err(error) => !has_error_level_diagnostics(error),
     }
+}
+
+fn is_multiple_of_with_tolerance(value: f64, multiple_of: f64) -> bool {
+    if !value.is_finite() || !multiple_of.is_finite() {
+        return false;
+    }
+    if multiple_of <= 0.0 {
+        return true;
+    }
+
+    let quotient = value / multiple_of;
+    let nearest = quotient.round();
+    let tolerance = f64::EPSILON * quotient.abs().max(1.0) * 8.0;
+    (quotient - nearest).abs() <= tolerance
 }
 
 fn validate_deprecated<'a, T>(
@@ -396,4 +410,30 @@ where
         }
     }
     .boxed()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_assertion_success, is_multiple_of_with_tolerance};
+
+    #[test]
+    fn assertion_success_allows_warning_only_errors() {
+        let warning_only_error = crate::Error {
+            score: 0,
+            diagnostics: vec![tombi_diagnostic::Diagnostic::new_warning(
+                "warn",
+                "warn-code",
+                tombi_text::Range::default(),
+            )],
+        };
+        assert!(is_assertion_success(&Ok(())));
+        assert!(is_assertion_success(&Err(warning_only_error)));
+    }
+
+    #[test]
+    fn multiple_of_tolerance_handles_common_fp_noise() {
+        assert!(is_multiple_of_with_tolerance(0.3, 0.1));
+        assert!(is_multiple_of_with_tolerance(1.2, 0.3));
+        assert!(!is_multiple_of_with_tolerance(0.31, 0.1));
+    }
 }
