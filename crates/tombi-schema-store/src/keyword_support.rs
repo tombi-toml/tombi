@@ -137,24 +137,6 @@ pub struct DeprecatedKeywordUsage {
     pub replacement_hint: Option<&'static str>,
 }
 
-pub fn format_deprecated_keyword_warning(
-    dialect: JsonSchemaDialect,
-    schema_uri: &crate::SchemaUri,
-    usage: &DeprecatedKeywordUsage,
-) -> String {
-    let mut message = format!(
-        "deprecated-json-schema-keyword: dialect={} schema_uri={} keyword={} pointer={}",
-        dialect, schema_uri, usage.keyword, usage.pointer
-    );
-    if let Some(hint) = usage.replacement_hint {
-        message.push_str(&format!(" hint={hint}"));
-    }
-    if usage.keyword == "dependencies" {
-        message.push_str(" compat=legacy-keyword-parsed");
-    }
-    message
-}
-
 pub fn deprecated_in(keyword: &str) -> Option<JsonSchemaDialect> {
     match keyword {
         "definitions" => Some(JsonSchemaDialect::Draft2019_09),
@@ -275,8 +257,8 @@ mod tests {
     use crate::JsonSchemaDialect;
 
     use super::{
-        collect_deprecated_keyword_usages, format_deprecated_keyword_warning,
-        is_deprecated_in_dialect, replacement_hint, supports_keyword,
+        collect_deprecated_keyword_usages, is_deprecated_in_dialect, replacement_hint,
+        supports_keyword,
     };
 
     #[test]
@@ -360,22 +342,4 @@ mod tests {
         );
     }
 
-    #[test]
-    fn dependencies_warning_message_is_standardized() {
-        let schema_uri = crate::SchemaUri::from_str("https://example.com/schema.json").unwrap();
-        let warning = format_deprecated_keyword_warning(
-            JsonSchemaDialect::Draft2020_12,
-            &schema_uri,
-            &super::DeprecatedKeywordUsage {
-                keyword: "dependencies".to_string(),
-                pointer: "#/dependencies".to_string(),
-                replacement_hint: replacement_hint("dependencies"),
-            },
-        );
-        assert!(warning.contains("deprecated-json-schema-keyword:"));
-        assert!(warning.contains("dialect=draft-2020-12"));
-        assert!(warning.contains("keyword=dependencies"));
-        assert!(warning.contains("pointer=#/dependencies"));
-        assert!(warning.contains("compat=legacy-keyword-parsed"));
-    }
 }
