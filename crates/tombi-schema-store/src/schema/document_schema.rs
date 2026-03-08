@@ -57,23 +57,21 @@ impl DocumentSchema {
 
         // Determine if `format` should be treated as an assertion.
         // - Draft-07: always assertion
-        // - Draft 2019-09: annotation by default (no format-assertion vocabulary exists)
+        // - Draft 2019-09: annotation by default,
+        //   assertion if `$vocabulary` enables draft-2019-09 format vocabulary
         // - Draft 2020-12: annotation by default,
-        //   assertion only if `$vocabulary` explicitly enables format-assertion
-        const FORMAT_ASSERTION_VOCAB: &str =
+        //   assertion if `$vocabulary` enables format-assertion vocabulary
+        const FORMAT_2019_VOCAB: &str = "https://json-schema.org/draft/2019-09/vocab/format";
+        const FORMAT_ASSERTION_2020_VOCAB: &str =
             "https://json-schema.org/draft/2020-12/vocab/format-assertion";
         let format_assertion = match dialect {
             Some(JsonSchemaDialect::Draft07) | None => true,
-            Some(JsonSchemaDialect::Draft2019_09) => false,
-            Some(JsonSchemaDialect::Draft2020_12) => object
-                .get("$vocabulary")
-                .and_then(|v| v.as_object())
-                .is_some_and(|vocab| {
-                    vocab.properties.iter().any(|(key, value)| {
-                        key.value == FORMAT_ASSERTION_VOCAB
-                            && matches!(value, tombi_json::ValueNode::Bool(b) if b.value)
-                    })
-                }),
+            Some(JsonSchemaDialect::Draft2019_09) => {
+                has_enabled_vocabulary(&object, FORMAT_2019_VOCAB)
+            }
+            Some(JsonSchemaDialect::Draft2020_12) => {
+                has_enabled_vocabulary(&object, FORMAT_ASSERTION_2020_VOCAB)
+            }
         };
 
         let mut anchors = AnchorCollector::default();
@@ -174,6 +172,14 @@ impl DocumentSchema {
     }
 }
 
+fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str) -> bool {
+    object
+        .get("$vocabulary")
+        .and_then(|v| v.as_object())
+        .and_then(|vocab| vocab.get(vocabulary_uri))
+        .is_some_and(|value| matches!(value, tombi_json::ValueNode::Bool(b) if b.value))
+}
+
 impl FindSchemaCandidates for DocumentSchema {
     fn find_schema_candidates<'a: 'b, 'b>(
         &'a self,
@@ -242,6 +248,36 @@ mod tests {
     #[test]
     fn format_assertion_default_false_for_2019_09() {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2019-09/schema" }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let object = schema_value.as_object().expect("object").to_owned();
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::new(object, uri);
+        assert!(!doc.format_assertion());
+    }
+
+    #[test]
+    fn format_assertion_enabled_by_2019_09_vocabulary() {
+        let schema_json = r#"{
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "$vocabulary": {
+                "https://json-schema.org/draft/2019-09/vocab/format": true
+            }
+        }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let object = schema_value.as_object().expect("object").to_owned();
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
+        let doc = DocumentSchema::new(object, uri);
+        assert!(doc.format_assertion());
+    }
+
+    #[test]
+    fn format_assertion_disabled_by_2019_09_vocabulary_false() {
+        let schema_json = r#"{
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "$vocabulary": {
+                "https://json-schema.org/draft/2019-09/vocab/format": false
+            }
+        }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let object = schema_value.as_object().expect("object").to_owned();
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
