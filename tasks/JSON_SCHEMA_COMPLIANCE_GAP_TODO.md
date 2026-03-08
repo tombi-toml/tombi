@@ -18,7 +18,7 @@
 - [x] `$id` による base URI 解決を実装する（2026-03-08 対応）
 - [x] 相対 `$ref`（例: `./defs.json#...`）を base URI 基準で解決する（2026-03-08 対応）
 - [x] 外部 `$ref` + fragment（例: `https://example.com/schema.json#/$defs/x`）を正しく解決する（2026-03-08 対応）
-- [x] `$comment` を annotation として取得可能にする（2026-03-08 対応）
+- [x] `$comment` を annotation として取得可能にする（不要）
 - [x] `anyOf` / `oneOf` / `allOf` の成功判定を「assertion 真偽」と「diagnostics severity」で分離する（2026-03-08 対応）
 - [x] `uniqueItems` を複合値（配列/オブジェクト）まで含めた deep-equality 判定に拡張する（2026-03-08 対応）
 - [x] `multipleOf` の浮動小数誤差対策（decimal/big rational 等）を行う（2026-03-08 対応）

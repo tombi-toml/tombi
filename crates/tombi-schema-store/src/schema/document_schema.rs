@@ -22,7 +22,6 @@ pub struct DocumentSchema {
     pub definitions: SchemaDefinitions,
     pub anchors: SchemaAnchors,
     pub dynamic_anchors: SchemaDynamicAnchors,
-    pub comments: tombi_hashmap::HashMap<String, String>,
 }
 
 impl DocumentSchema {
@@ -167,7 +166,6 @@ impl DocumentSchema {
             definitions: SchemaDefinitions::new(definitions.into()),
             anchors: SchemaAnchors::new(anchors.into()),
             dynamic_anchors: SchemaDynamicAnchors::new(dynamic_anchors.into()),
-            comments: collect_comments(&schema_value),
         }
     }
 
@@ -191,10 +189,6 @@ impl DocumentSchema {
             );
         })
     }
-
-    pub fn comment(&self, pointer: &str) -> Option<&str> {
-        self.comments.get(pointer).map(String::as_str)
-    }
 }
 
 fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str) -> bool {
@@ -212,38 +206,6 @@ fn resolve_schema_id(
     let id = object.get("$id")?.as_str()?;
     let joined = base_schema_uri.join(id).ok()?;
     Some(SchemaUri::from(joined))
-}
-
-fn collect_comments(
-    schema_value: &tombi_json::ValueNode,
-) -> tombi_hashmap::HashMap<String, String> {
-    let mut comments = tombi_hashmap::HashMap::default();
-    collect_comments_inner(schema_value, "#".to_string(), &mut comments);
-    comments
-}
-
-fn collect_comments_inner(
-    value: &tombi_json::ValueNode,
-    pointer: String,
-    comments: &mut tombi_hashmap::HashMap<String, String>,
-) {
-    match value {
-        tombi_json::ValueNode::Object(object) => {
-            if let Some(comment) = object.get("$comment").and_then(|v| v.as_str()) {
-                comments.insert(pointer.clone(), comment.to_string());
-            }
-            for (key, child) in &object.properties {
-                let escaped = key.value.replace('~', "~0").replace('/', "~1");
-                collect_comments_inner(child, format!("{pointer}/{escaped}"), comments);
-            }
-        }
-        tombi_json::ValueNode::Array(array) => {
-            for (idx, child) in array.items.iter().enumerate() {
-                collect_comments_inner(child, format!("{pointer}/{idx}"), comments);
-            }
-        }
-        _ => {}
-    }
 }
 
 impl FindSchemaCandidates for DocumentSchema {
@@ -424,23 +386,5 @@ mod tests {
             doc.value_schema.as_deref(),
             Some(ValueSchema::OneOf(one_of)) if one_of.schemas.blocking_read().is_empty()
         ));
-    }
-
-    #[test]
-    fn collects_comment_annotations_with_json_pointer_keys() {
-        let schema_json = r#"{
-            "$comment": "root",
-            "properties": {
-                "name": {
-                    "$comment": "name property"
-                }
-            }
-        }"#;
-        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
-        let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::from_value(schema_value, uri);
-
-        assert_eq!(doc.comment("#"), Some("root"));
-        assert_eq!(doc.comment("#/properties/name"), Some("name property"));
     }
 }
