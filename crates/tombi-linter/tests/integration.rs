@@ -14,8 +14,6 @@ mod dependencies_test_schema;
 mod dependent_required_test_schema;
 #[path = "integration/dependent_schemas_test_schema.rs"]
 mod dependent_schemas_test_schema;
-#[path = "integration/dialect_regression_test_schema.rs"]
-mod dialect_regression_test_schema;
 #[path = "integration/format_annotation_test_schema.rs"]
 mod format_annotation_test_schema;
 #[path = "integration/min_max_contains_test_schema.rs"]
