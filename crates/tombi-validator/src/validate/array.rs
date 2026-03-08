@@ -214,14 +214,12 @@ async fn validate_array(
                 )
                 .await
                 .inspect_err(|err| log::warn!("{err}"))
-                {
-                    if let Err(crate::Error { diagnostics, .. }) = value
+                    && let Err(crate::Error { diagnostics, .. }) = value
                         .validate(&new_accessors, Some(&item_schema), schema_context)
                         .await
                     {
                         total_diagnostics.extend(diagnostics);
                     }
-                }
             } else if let Some(overflow) = &overflow_schema {
                 if let Err(crate::Error { diagnostics, .. }) = value
                     .validate(&new_accessors, Some(overflow), schema_context)
@@ -389,7 +387,7 @@ async fn validate_array(
         }
 
         if let Some(r#enum) = &array_schema.r#enum {
-            if !r#enum.iter().any(|item| *item == actual_value) {
+            if !r#enum.contains(&actual_value) {
                 let level = lint_rules
                     .map(|rules| &rules.common)
                     .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))

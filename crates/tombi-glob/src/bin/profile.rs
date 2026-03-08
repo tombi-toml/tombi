@@ -1,133 +1,58 @@
-use serde_tombi;
-use std::{env, time::Instant};
-use tombi_config;
-use tombi_glob::{SearchOptions, SearchPatternsOptions};
+use std::{env, path::PathBuf, time::Instant};
 
-fn main() {
+use tombi_config::FilesOptions;
+use tombi_glob::{FileSearchEntry, search_pattern_matched_paths};
+
+#[tokio::main]
+async fn main() {
     let args: Vec<String> = env::args().collect();
-    let root = if args.len() > 1 { &args[1] } else { "." };
+    let root = args.get(1).map_or(".", String::as_str);
 
     println!(
         "Profiling TOML file search in: {} (using .tombi.toml/tombi.toml config)",
         root
     );
 
-    // Load .tombi.toml/tombi.toml configuration like tombi format does
-    let (config, _config_path) = match serde_tombi::config::load_with_path() {
+    let search_dir = Some(PathBuf::from(root));
+    let (config, _config_path) = match serde_tombi::config::load_with_path(search_dir) {
         Ok(config) => config,
-        Err(e) => {
-            eprintln!("Warning: Failed to load .tombi.toml/tombi.toml: {}", e);
+        Err(err) => {
+            eprintln!("Warning: Failed to load .tombi.toml/tombi.toml: {err}");
             eprintln!("Using default configuration");
             (Default::default(), None)
         }
     };
 
-    let default_include = vec!["**/*.toml".to_string()];
-    let include_patterns = config
-        .include
-        .as_deref()
-        .unwrap_or(&default_include)
-        .iter()
-        .map(|s| s.as_str())
-        .collect_vec();
+    let files_options = config.files.clone().unwrap_or_else(|| FilesOptions {
+        include: Some(vec!["**/*.toml".to_string()]),
+        exclude: None,
+    });
 
-    let exclude_patterns = config
-        .exclude
-        .as_deref()
-        .unwrap_or_default()
-        .iter()
-        .map(|s| s.as_str())
-        .collect_vec();
+    println!("Include patterns: {:?}", files_options.include);
+    println!("Exclude patterns: {:?}", files_options.exclude);
 
-    println!("Include patterns: {:?}", include_patterns);
-    println!("Exclude patterns: {:?}", exclude_patterns);
-    println!("Git ignore enabled: true");
-    println!("Ignore files enabled: true");
-
-    // Create search options to match tombi format behavior
-    let search_options = SearchOptions::default(); // git_ignore: true, ignore_files: true
-
-    let patterns_options = SearchPatternsOptions::new(
-        include_patterns.iter().map(|s| s.to_string()).collect(),
-        exclude_patterns.iter().map(|s| s.to_string()).collect(),
-    )
-    .with_search_options(search_options);
-
-    // Profile the same search function that tombi format uses
-    println!("\n=== Profiling tombi format search ===");
     let start_time = Instant::now();
+    let entries = search_pattern_matched_paths(root, files_options).await;
+    let duration = start_time.elapsed();
 
-    match tombi_glob::search_with_patterns_profiled(root, patterns_options) {
-        Ok((results, profile)) => {
-            let total_duration = start_time.elapsed();
+    let mut found = 0usize;
+    let mut skipped = 0usize;
+    let mut errors = 0usize;
 
-            println!("Total search time: {:?}", total_duration);
-            println!("Found {} TOML files", results.len());
-
-            // Show directory traversal profile
-            println!("\n=== Directory Traversal Profile ===");
-            println!(
-                "Total directories visited: {}",
-                profile.total_directories_scanned
-            );
-            println!("Total files examined: {}", profile.total_files_found);
-
-            // Show slowest directories
-            println!("\n=== Top 10 Slowest Directories ===");
-            for (i, dir_profile) in profile.slowest_directories.iter().enumerate() {
-                println!(
-                    "{}. {:?} - {:?} ({} files, {} subdirs)",
-                    i + 1,
-                    dir_profile.path,
-                    dir_profile.duration,
-                    dir_profile.file_count,
-                    dir_profile.subdirectory_count
-                );
-
-                // Show if this directory should have been excluded
-                let path_str = dir_profile.path.to_string_lossy();
-                if path_str.contains("target") || path_str.contains("node_modules") {
-                    println!("   ⚠️  This directory should be excluded by .gitignore!");
-                }
-            }
-
-            // Show sample results
-            println!("\n=== Sample files found ===");
-            for (i, result) in results.iter().take(10).enumerate() {
-                println!("  {}. {:?}", i + 1, result.path);
-            }
-            if results.len() > 10 {
-                println!("  ... and {} more", results.len() - 10);
-            }
-        }
-        Err(e) => {
-            eprintln!("Error during search: {}", e);
+    for entry in &entries {
+        match entry {
+            FileSearchEntry::Found(_) => found += 1,
+            FileSearchEntry::Skipped(_) => skipped += 1,
+            FileSearchEntry::Error(_) => errors += 1,
         }
     }
 
-    // Compare with ignore-disabled search
-    println!("\n=== Comparison: Search without .gitignore ===");
-    let search_options_no_ignore = SearchOptions {
-        git_ignore: false,
-        ignore_files: false,
-        ..SearchOptions::default()
-    };
+    println!("Search completed in: {duration:?}");
+    println!("Found: {found}, Skipped: {skipped}, Errors: {errors}");
 
-    let patterns_options_no_ignore = SearchPatternsOptions::new(
-        include_patterns.iter().map(|s| s.to_string()).collect(),
-        exclude_patterns.iter().map(|s| s.to_string()).collect(),
-    )
-    .with_search_options(search_options_no_ignore);
-
-    let start_time_no_ignore = Instant::now();
-    match tombi_glob::search_with_patterns(root, patterns_options_no_ignore) {
-        Ok(results) => {
-            let duration_no_ignore = start_time_no_ignore.elapsed();
-            println!("Time without .gitignore: {:?}", duration_no_ignore);
-            println!("Found {} TOML files", results.len());
-        }
-        Err(e) => {
-            eprintln!("Error: {}", e);
+    for (index, entry) in entries.iter().take(10).enumerate() {
+        if let FileSearchEntry::Found(path) = entry {
+            println!("{}. {}", index + 1, path.display());
         }
     }
 }

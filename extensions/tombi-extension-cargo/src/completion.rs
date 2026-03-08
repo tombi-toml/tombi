@@ -108,15 +108,14 @@ fn completion_cargo_file_path(
         return completion_directory_path(text_document_uri, document_tree, position, accessors);
     }
 
-    if matches_accessors!(accessors, ["package", "build"])
+    if (matches_accessors!(accessors, ["package", "build"])
         || matches_accessors!(accessors, ["project", "build"])
         || matches_accessors!(accessors, ["lib", "path"])
         || matches_accessors!(accessors, ["bin", _, "path"])
         || matches_accessors!(accessors, ["example", _, "path"])
         || matches_accessors!(accessors, ["test", _, "path"])
-        || matches_accessors!(accessors, ["bench", _, "path"])
-    {
-        if let Some(completions) = completion_file_path(
+        || matches_accessors!(accessors, ["bench", _, "path"]))
+        && let Some(completions) = completion_file_path(
             text_document_uri,
             document_tree,
             position,
@@ -125,9 +124,8 @@ fn completion_cargo_file_path(
         ) {
             return Some(completions);
         }
-    }
 
-    if matches_accessors!(accessors, ["dependencies", _, "path"])
+    if (matches_accessors!(accessors, ["dependencies", _, "path"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
         || matches_accessors!(accessors, ["build-dependencies", _, "path"])
         || matches_accessors!(accessors, ["target", _, "dependencies", _, "path"])
@@ -169,9 +167,8 @@ fn completion_cargo_file_path(
         || matches_accessors!(
             accessors,
             ["project", "metadata", "playdate", "dev-assets", _]
-        )
-    {
-        if let Some(completions) = completion_file_path(
+        ))
+        && let Some(completions) = completion_file_path(
             text_document_uri,
             document_tree,
             position,
@@ -180,7 +177,6 @@ fn completion_cargo_file_path(
         ) {
             return Some(completions);
         }
-    }
 
     None
 }

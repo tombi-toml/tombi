@@ -46,11 +46,7 @@ impl<T: AstNode> AstNode for DanglingCommentGroupOr<T> {
             Some(DanglingCommentGroupOr::DanglingCommentGroup(
                 dangling_comment_group,
             ))
-        } else if let Some(item) = T::cast(syntax) {
-            Some(DanglingCommentGroupOr::ItemGroup(item))
-        } else {
-            None
-        }
+        } else { T::cast(syntax).map(DanglingCommentGroupOr::ItemGroup) }
     }
 
     #[inline]

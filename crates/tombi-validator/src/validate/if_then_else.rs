@@ -37,8 +37,8 @@ where
     // If `if` succeeds (including warning-only), apply `then`; otherwise apply `else`.
     if is_success_or_warning(&if_result) {
         // `if` matched → apply `then` schema if present
-        if let Some(then_schema) = &if_then_else_schema.then_schema {
-            if let Ok(Some(then_current_schema)) = tombi_schema_store::resolve_schema_item(
+        if let Some(then_schema) = &if_then_else_schema.then_schema
+            && let Ok(Some(then_current_schema)) = tombi_schema_store::resolve_schema_item(
                 then_schema,
                 current_schema.schema_uri.clone(),
                 current_schema.definitions.clone(),
@@ -51,11 +51,10 @@ where
                     .validate(accessors, Some(&then_current_schema), schema_context)
                     .await;
             }
-        }
     } else {
         // `if` did not match → apply `else` schema if present
-        if let Some(else_schema) = &if_then_else_schema.else_schema {
-            if let Ok(Some(else_current_schema)) = tombi_schema_store::resolve_schema_item(
+        if let Some(else_schema) = &if_then_else_schema.else_schema
+            && let Ok(Some(else_current_schema)) = tombi_schema_store::resolve_schema_item(
                 else_schema,
                 Cow::Borrowed(current_schema.schema_uri.as_ref()),
                 Cow::Borrowed(current_schema.definitions.as_ref()),
@@ -68,7 +67,6 @@ where
                     .validate(accessors, Some(&else_current_schema), schema_context)
                     .await;
             }
-        }
     }
 
     Ok(())

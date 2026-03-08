@@ -18,8 +18,8 @@ impl NotSchema {
         anchor_collector: Option<&mut AnchorCollector>,
         dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
-        let mut anchor_collector = anchor_collector;
-        let mut dynamic_anchor_collector = dynamic_anchor_collector;
+        let anchor_collector = anchor_collector;
+        let dynamic_anchor_collector = dynamic_anchor_collector;
         object
             .get("not")
             .and_then(|value| value.as_object())
@@ -28,8 +28,8 @@ impl NotSchema {
                     obj,
                     string_formats,
                     dialect,
-                    anchor_collector.as_deref_mut(),
-                    dynamic_anchor_collector.as_deref_mut(),
+                    anchor_collector,
+                    dynamic_anchor_collector,
                 )
                 .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
             })

@@ -182,8 +182,8 @@ impl ArraySchema {
                 object,
                 string_formats,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             )
             .map(Box::new),
         }
@@ -273,7 +273,7 @@ impl XTombiArrayValuesOrder {
                                         None => {
                                             log::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
-                                                group_orders.to_string()
+                                                group_orders
                                             );
                                         }
                                     }
@@ -295,7 +295,7 @@ impl XTombiArrayValuesOrder {
                                         None => {
                                             log::warn!(
                                                 "Invalid {X_TOMBI_ARRAY_VALUES_ORDER} {group_name} group: {}",
-                                                group_orders.to_string()
+                                                group_orders
                                             );
                                         }
                                     }

@@ -198,11 +198,11 @@ impl Format for WithAlignmentHint<&tombi_ast::KeyValueWithCommaGroup> {
             trailing_comment_alignment_width,
         } = self;
 
-        let mut key_values = key_value_group
+        let key_values = key_value_group
             .key_values_with_comma()
             .enumerate()
             .peekable();
-        while let Some((i, (key_value, comma))) = key_values.next() {
+        for (i, (key_value, comma)) in key_values {
             if i > 0 {
                 write!(f, "{}", f.line_ending())?;
             }

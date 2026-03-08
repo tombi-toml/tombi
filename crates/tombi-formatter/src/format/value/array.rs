@@ -188,8 +188,8 @@ impl Format for WithAlignmentHint<&tombi_ast::ValueWithCommaGroup> {
             ..
         } = self;
 
-        let mut values = value_group.values_with_comma().enumerate().peekable();
-        while let Some((i, (value, comma))) = values.next() {
+        let values = value_group.values_with_comma().enumerate().peekable();
+        for (i, (value, comma)) in values {
             if i > 0 {
                 write!(f, "{}", f.line_ending())?;
             }

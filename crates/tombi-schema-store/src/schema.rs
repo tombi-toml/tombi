@@ -66,7 +66,7 @@ pub(crate) fn collect_named_anchors(
     object: &tombi_json::ObjectNode,
     referable: &Referable<ValueSchema>,
     dialect: Option<crate::JsonSchemaDialect>,
-    mut anchor_collector: Option<&mut AnchorCollector>,
+    anchor_collector: Option<&mut AnchorCollector>,
     mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) {
     let Some(dialect) = dialect else {
@@ -78,7 +78,7 @@ pub(crate) fn collect_named_anchors(
             .get("$anchor")
             .and_then(|value| value.as_str())
             .filter(|anchor| is_plain_name_fragment(anchor))
-        && let Some(anchor_collector) = anchor_collector.as_deref_mut()
+        && let Some(anchor_collector) = anchor_collector
     {
         anchor_collector
             .entry(format!("#{anchor}"))
@@ -100,7 +100,7 @@ pub(crate) fn collect_named_anchors(
             .get("$recursiveAnchor")
             .and_then(|value| value.as_bool())
             == Some(true)
-        && let Some(dynamic_anchor_collector) = dynamic_anchor_collector.as_deref_mut()
+        && let Some(dynamic_anchor_collector) = dynamic_anchor_collector
     {
         dynamic_anchor_collector
             .entry("#".to_string())

@@ -318,8 +318,7 @@ impl GetHoverContent for tombi_document_tree::Table {
 
                                 if let Some((_, referable_additional_property_schema)) =
                                     &table_schema.additional_property_schema
-                                {
-                                    if let Ok(Some(current_schema)) =
+                                    && let Ok(Some(current_schema)) =
                                         tombi_schema_store::resolve_schema_item(
                                             referable_additional_property_schema,
                                             current_schema.schema_uri.clone(),
@@ -377,7 +376,6 @@ impl GetHoverContent for tombi_document_tree::Table {
                                         }
                                         return hover_content;
                                     }
-                                }
 
                                 value
                                     .get_hover_content(

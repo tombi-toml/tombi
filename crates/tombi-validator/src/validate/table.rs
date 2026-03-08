@@ -278,8 +278,7 @@ async fn validate_table(
         if !matched_key {
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
-            {
-                if let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
+                && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
                     referable_additional_property_schema,
                     current_schema.schema_uri.clone(),
                     current_schema.definitions.clone(),
@@ -304,7 +303,6 @@ async fn validate_table(
                         total_diagnostics.extend(diagnostics);
                     }
                 }
-            }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::TableStrictAdditionalKeys {
@@ -619,7 +617,7 @@ async fn validate_table(
         }
 
         if let Some(r#enum) = &table_schema.r#enum {
-            if !r#enum.iter().any(|item| *item == actual_object) {
+            if !r#enum.contains(&actual_object) {
                 let level = table_rules
                     .map(|rules| &rules.common)
                     .and_then(|rules| rules.r#enum().map(SeverityLevelDefaultError::from))
@@ -667,7 +665,7 @@ async fn validate_table(
 
         let format_assertion = schema_context
             .root_schema
-            .map_or(true, |root| root.format_assertion())
+            .is_none_or(|root| root.format_assertion())
             || string_schema
                 .format
                 .is_some_and(|format| schema_context.has_string_format(format));
@@ -723,8 +721,8 @@ async fn validate_table(
         );
     }
 
-    if let Some(not_schema) = table_schema.not.as_ref() {
-        if let Err(error) = validate_not(
+    if let Some(not_schema) = table_schema.not.as_ref()
+        && let Err(error) = validate_not(
             table_value,
             accessors,
             not_schema,
@@ -737,10 +735,9 @@ async fn validate_table(
         {
             total_diagnostics.extend(error.diagnostics);
         }
-    }
 
-    if let Some(if_then_else_schema) = table_schema.if_then_else.as_ref() {
-        if let Err(error) = validate_if_then_else(
+    if let Some(if_then_else_schema) = table_schema.if_then_else.as_ref()
+        && let Err(error) = validate_if_then_else(
             table_value,
             accessors,
             if_then_else_schema,
@@ -751,7 +748,6 @@ async fn validate_table(
         {
             total_diagnostics.extend(error.diagnostics);
         }
-    }
 
     if total_diagnostics.is_empty() {
         Ok(())

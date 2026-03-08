@@ -71,8 +71,7 @@ fn read_content(input: &str) -> Result<(String, tombi_uri::SchemaUri), Box<dyn s
         Ok((
             content,
             tombi_uri::SchemaUri::from_file_path(std::path::Path::new(input)).map_err(|_| {
-                Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                Box::new(std::io::Error::other(
                     "Invalid file path",
                 ))
             })?,

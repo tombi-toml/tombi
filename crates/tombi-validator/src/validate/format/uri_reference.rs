@@ -27,8 +27,8 @@ fn is_relative_reference(value: &str) -> bool {
 
     // Validate path, query, and fragment characters (RFC 3986)
     validate_uri_component(path)
-        && query.map_or(true, validate_uri_component)
-        && fragment.map_or(true, validate_uri_component)
+        && query.is_none_or(validate_uri_component)
+        && fragment.is_none_or(validate_uri_component)
 }
 
 fn validate_uri_component(component: &str) -> bool {

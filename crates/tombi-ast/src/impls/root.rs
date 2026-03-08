@@ -31,7 +31,6 @@ impl crate::Root {
         .or_else(|| {
             DocumentCommentDirectives::from_comments(
                 self.first_item_leading_comments()
-                    .into_iter()
                     .map(Into::into),
                 source_path,
             )
@@ -74,7 +73,6 @@ impl crate::Root {
         if directives.is_empty() {
             directives.extend(
                 self.first_item_leading_comments()
-                    .into_iter()
                     .filter_map(|comment| comment.get_tombi_document_directive()),
             );
         }
@@ -84,11 +82,9 @@ impl crate::Root {
 
     pub fn comment_directives(&self) -> impl Iterator<Item = TombiValueCommentDirective> {
         self.dangling_comment_groups()
-            .into_iter()
             .flat_map(|comment_group| {
                 comment_group
                     .into_comments()
-                    .into_iter()
                     .filter_map(|comment| comment.get_tombi_value_directive())
             })
     }

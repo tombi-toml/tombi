@@ -51,7 +51,7 @@ pub fn get_comment_context(
             if comment.syntax().range().contains(position)
                 && comment.syntax().text()[1..].trim_start().starts_with(":")
             {
-                return Some(CommentContext::DocumentDirective(comment.into()));
+                return Some(CommentContext::DocumentDirective(comment));
             }
         }
     }
