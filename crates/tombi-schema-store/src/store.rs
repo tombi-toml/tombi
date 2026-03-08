@@ -492,7 +492,7 @@ impl SchemaStore {
             .as_object()
             .map(|object| crate::collect_deprecated_keyword_usages(object, dialect))
             .unwrap_or_default();
-        let document_schema = DocumentSchema::new(schema_value, schema_uri.clone());
+        let document_schema = DocumentSchema::from_schema_value(schema_value, schema_uri.clone());
         if !deprecated_keyword_usages.is_empty() {
             let total = deprecated_keyword_usages.len();
             let sample_limit = 3;

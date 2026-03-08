@@ -3649,6 +3649,7 @@ name = "tombi-comment-directive-store"
 version = "0.0.0-dev"
 dependencies = [
  "tokio",
+ "tombi-json",
  "tombi-schema-store",
  "tombi-uri",
 ]

@@ -25,7 +25,14 @@ pub struct DocumentSchema {
 }
 
 impl DocumentSchema {
-    pub fn new(schema_value: tombi_json::ValueNode, schema_uri: SchemaUri) -> Self {
+    pub fn new(object: tombi_json::ObjectNode, schema_uri: SchemaUri) -> Self {
+        Self::from_schema_value(tombi_json::ValueNode::Object(object), schema_uri)
+    }
+
+    pub(crate) fn from_schema_value(
+        schema_value: tombi_json::ValueNode,
+        schema_uri: SchemaUri,
+    ) -> Self {
         let object = schema_value.as_object();
         let schema_uri = object
             .and_then(|obj| resolve_schema_id(obj, &schema_uri))
@@ -250,7 +257,11 @@ mod tests {
         let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
             .expect("valid schema uri");
 
-        let document_schema = DocumentSchema::new(schema_value, schema_uri);
+        let object = schema_value
+            .as_object()
+            .expect("schema must be object")
+            .to_owned();
+        let document_schema = DocumentSchema::new(object, schema_uri);
         let definitions = document_schema.definitions.blocking_read();
         assert!(!definitions.contains_key("#nameSchema"));
         let anchors = document_schema.anchors.blocking_read();
@@ -262,7 +273,8 @@ mod tests {
         let schema_json = r#"{ "$schema": "http://json-schema.org/draft-07/schema#" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let object = schema_value.as_object().expect("object").to_owned();
+        let doc = DocumentSchema::new(object, uri);
         assert!(doc.format_assertion());
     }
 
@@ -271,7 +283,8 @@ mod tests {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2019-09/schema" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let object = schema_value.as_object().expect("object").to_owned();
+        let doc = DocumentSchema::new(object, uri);
         assert!(!doc.format_assertion());
     }
 
@@ -285,7 +298,8 @@ mod tests {
         }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let object = schema_value.as_object().expect("object").to_owned();
+        let doc = DocumentSchema::new(object, uri);
         assert!(doc.format_assertion());
     }
 
@@ -299,7 +313,8 @@ mod tests {
         }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let object = schema_value.as_object().expect("object").to_owned();
+        let doc = DocumentSchema::new(object, uri);
         assert!(!doc.format_assertion());
     }
 
@@ -308,7 +323,8 @@ mod tests {
         let schema_json = r#"{ "$schema": "https://json-schema.org/draft/2020-12/schema" }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let object = schema_value.as_object().expect("object").to_owned();
+        let doc = DocumentSchema::new(object, uri);
         assert!(!doc.format_assertion());
     }
 
@@ -322,7 +338,8 @@ mod tests {
         }"#;
         let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let object = schema_value.as_object().expect("object").to_owned();
+        let doc = DocumentSchema::new(object, uri);
         assert!(doc.format_assertion());
     }
 
@@ -343,7 +360,11 @@ mod tests {
         let schema_uri = tombi_uri::SchemaUri::from_str("https://example.com/schema.json")
             .expect("valid schema uri");
 
-        let document_schema = DocumentSchema::new(schema_value, schema_uri);
+        let object = schema_value
+            .as_object()
+            .expect("schema must be object")
+            .to_owned();
+        let document_schema = DocumentSchema::new(object, schema_uri);
         let dynamic_anchors = document_schema.dynamic_anchors.blocking_read();
         assert!(dynamic_anchors.contains_key("#nameSchema"));
     }
@@ -352,7 +373,7 @@ mod tests {
     fn root_boolean_true_schema_is_accepted() {
         let schema_value = tombi_json::ValueNode::from_str("true").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let doc = DocumentSchema::from_schema_value(schema_value, uri);
         assert!(matches!(
             doc.value_schema.as_deref(),
             Some(ValueSchema::AnyOf(any_of)) if any_of.schemas.blocking_read().is_empty()
@@ -363,7 +384,7 @@ mod tests {
     fn root_boolean_false_schema_is_accepted() {
         let schema_value = tombi_json::ValueNode::from_str("false").expect("valid");
         let uri = tombi_uri::SchemaUri::from_str("https://example.com/s.json").expect("valid uri");
-        let doc = DocumentSchema::new(schema_value, uri);
+        let doc = DocumentSchema::from_schema_value(schema_value, uri);
         assert!(matches!(
             doc.value_schema.as_deref(),
             Some(ValueSchema::OneOf(one_of)) if one_of.schemas.blocking_read().is_empty()

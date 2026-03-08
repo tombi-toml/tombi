@@ -20,11 +20,17 @@ pub async fn comment_directive_document_schema(
     store: &tombi_schema_store::SchemaStore,
     schema_uri: SchemaUri,
 ) -> DocumentSchema {
-    let schema_value = store
+    let tombi_json::ValueNode::Object(object) = store
         .fetch_schema_value(&schema_uri)
         .await
         // Value Comment Directive Schema is embedded in the crate
         .unwrap()
-        .unwrap();
-    DocumentSchema::new(schema_value, schema_uri)
+        .unwrap()
+    else {
+        panic!(
+            "Failed to fetch value comment directive schema from URL '{schema_uri}'. \
+             The fetched value was not an object."
+        );
+    };
+    DocumentSchema::new(object, schema_uri)
 }
