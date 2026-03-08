@@ -417,7 +417,7 @@ mod tests {
     use super::{is_assertion_success, is_multiple_of_with_tolerance};
 
     #[test]
-    fn assertion_success_depends_only_on_result_ok() {
+    fn assertion_success_allows_warning_only_errors() {
         let warning_only_error = crate::Error {
             score: 0,
             diagnostics: vec![tombi_diagnostic::Diagnostic::new_warning(
@@ -427,7 +427,7 @@ mod tests {
             )],
         };
         assert!(is_assertion_success(&Ok(())));
-        assert!(!is_assertion_success(&Err(warning_only_error)));
+        assert!(is_assertion_success(&Err(warning_only_error)));
     }
 
     #[test]
