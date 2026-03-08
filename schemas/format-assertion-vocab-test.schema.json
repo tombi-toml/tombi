@@ -8,6 +8,9 @@
   },
   "title": "FormatAssertionVocabTest",
   "type": "object",
+  "x-tombi-string-formats": [
+    "ipv4"
+  ],
   "properties": {
     "ipv4_addr": {
       "type": "string",
