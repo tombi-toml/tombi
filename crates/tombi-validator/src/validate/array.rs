@@ -138,6 +138,9 @@ async fn validate_array(
     lint_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut total_diagnostics = vec![];
+    let mut evaluated = vec![false; array_value.values().len()];
+    let has_unevaluated_items =
+        array_schema.unevaluated_items_schema.is_some() || array_schema.unevaluated_items == Some(false);
 
     if let Some(not_schema) = array_schema.not.as_ref()
         && let Err(error) = validate_not(
@@ -206,6 +209,7 @@ async fn validate_array(
                 .collect_vec();
 
             if index < prefix_items.len() {
+                evaluated[index] = true;
                 if let Ok(Some(item_schema)) = tombi_schema_store::resolve_schema_item(
                     &prefix_items[index],
                     current_schema.schema_uri.clone(),
@@ -221,6 +225,7 @@ async fn validate_array(
                     total_diagnostics.extend(diagnostics);
                 }
             } else if let Some(overflow) = &overflow_schema {
+                evaluated[index] = true;
                 if let Err(crate::Error { diagnostics, .. }) = value
                     .validate(&new_accessors, Some(overflow), schema_context)
                     .await
@@ -252,6 +257,7 @@ async fn validate_array(
         .inspect_err(|err| log::warn!("{err}"))
         {
             for (index, value) in array_value.values().iter().enumerate() {
+                evaluated[index] = true;
                 let new_accessors = accessors
                     .iter()
                     .cloned()
@@ -280,7 +286,8 @@ async fn validate_array(
     {
         let min_contains = array_schema.min_contains.unwrap_or(1);
         let max_contains = array_schema.max_contains;
-        let needs_full_count = max_contains.is_some();
+        let needs_full_count = max_contains.is_some() || has_unevaluated_items;
+        let mut contains_evaluated = vec![false; array_value.values().len()];
 
         let mut match_count = 0usize;
         for (index, value) in array_value.values().iter().enumerate() {
@@ -294,6 +301,7 @@ async fn validate_array(
                 .validate(&new_accessors, Some(&contains_schema), schema_context)
                 .await;
             if is_assertion_success(&result) {
+                contains_evaluated[index] = true;
                 match_count += 1;
                 if !needs_full_count && match_count >= min_contains {
                     break;
@@ -340,6 +348,57 @@ async fn validate_array(
                 SeverityLevelDefaultError::default(),
                 &mut total_diagnostics,
             );
+        }
+
+        for (index, matched) in contains_evaluated.iter().enumerate() {
+            if *matched {
+                evaluated[index] = true;
+            }
+        }
+    }
+
+    // Run unevaluatedItems after all applicators that can mark items as evaluated.
+    if has_unevaluated_items {
+        let unevaluated_schema = if let Some(schema_item) = &array_schema.unevaluated_items_schema {
+            tombi_schema_store::resolve_schema_item(
+                schema_item,
+                current_schema.schema_uri.clone(),
+                current_schema.definitions.clone(),
+                schema_context.store,
+            )
+            .await
+            .inspect_err(|err| log::warn!("{err}"))
+            .ok()
+            .flatten()
+        } else {
+            None
+        };
+
+        for (index, value) in array_value.values().iter().enumerate() {
+            if evaluated.get(index).copied().unwrap_or(false) {
+                continue;
+            }
+            if let Some(schema) = &unevaluated_schema {
+                let new_accessors = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
+                    .collect_vec();
+                if let Err(crate::Error { diagnostics, .. }) =
+                    value.validate(&new_accessors, Some(schema), schema_context).await
+                {
+                    total_diagnostics.extend(diagnostics);
+                }
+            } else if array_schema.unevaluated_items == Some(false) {
+                crate::Diagnostic {
+                    kind: Box::new(crate::DiagnosticKind::ArrayUnevaluatedItemNotAllowed { index }),
+                    range: value.range(),
+                }
+                .push_diagnostic_with_level(
+                    SeverityLevelDefaultError::default(),
+                    &mut total_diagnostics,
+                );
+            }
         }
     }
 

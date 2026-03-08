@@ -276,6 +276,7 @@ async fn validate_table(
         }
 
         if !matched_key {
+            let mut validated_by_additional_schema = false;
             if let Some((_, referable_additional_property_schema)) =
                 &table_schema.additional_property_schema
                 && let Ok(Some(current_schema)) = tombi_schema_store::resolve_schema_item(
@@ -301,6 +302,46 @@ async fn validate_table(
                     .await
                 {
                     total_diagnostics.extend(diagnostics);
+                }
+                validated_by_additional_schema = true;
+            }
+
+            // `additionalProperties` contributes to evaluated properties only when the keyword exists.
+            // When it's absent, unevaluatedProperties must still run.
+            let evaluated_by_additional_default = table_schema.additional_properties().is_some();
+
+            if !validated_by_additional_schema && !evaluated_by_additional_default {
+                if let Some(schema_item) = &table_schema.unevaluated_property_schema
+                    && let Ok(Some(unevaluated_schema)) = tombi_schema_store::resolve_schema_item(
+                        schema_item,
+                        current_schema.schema_uri.clone(),
+                        current_schema.definitions.clone(),
+                        schema_context.store,
+                    )
+                    .await
+                    .inspect_err(|err| log::warn!("{err}"))
+                {
+                    if let Err(crate::Error { diagnostics, .. }) = value
+                        .validate(&new_accessors, Some(&unevaluated_schema), schema_context)
+                        .await
+                    {
+                        total_diagnostics.extend(diagnostics);
+                    }
+                    continue;
+                }
+
+                if table_schema.unevaluated_properties == Some(false) {
+                    crate::Diagnostic {
+                        kind: Box::new(crate::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                            key: key.to_string(),
+                        }),
+                        range: key.range() + value.range(),
+                    }
+                    .push_diagnostic_with_level(
+                        SeverityLevelDefaultError::default(),
+                        &mut total_diagnostics,
+                    );
+                    continue;
                 }
             }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {

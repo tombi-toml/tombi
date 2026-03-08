@@ -88,7 +88,8 @@
 
 ### Phase C: 2019-09 互換レイヤを追加
 
-- [ ] `dependentRequired` / `dependentSchemas` / `unevaluated*` / `$vocabulary` / `$recursive*` を実装する
+- [x] `dependentRequired` / `dependentSchemas` / `$vocabulary` / `$recursive*` を実装する（2026-03-09 整理）
+- [ ] `unevaluatedProperties` / `unevaluatedItems` を実装する
 - [x] `dependencies` を互換実装に落とし、deprecation warning を標準化する（2026-03-09 対応）
 - [ ] 検証結果に evaluated locations を保持する（`unevaluated*` の前提）
 

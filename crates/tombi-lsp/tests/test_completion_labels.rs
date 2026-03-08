@@ -626,6 +626,8 @@ mod completion_labels {
                 "table-const-enum-test.schema.json",
                 "tuple-items-test.schema.json",
                 "type-test.schema.json",
+                "unevaluated-items-test.schema.json",
+                "unevaluated-properties-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",
             ]);

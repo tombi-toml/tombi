@@ -38,6 +38,8 @@ pub struct TableSchema {
         tombi_text::Range, // JSON Schema property name range (for GoToTypeDefinition)
         SchemaItem,
     )>,
+    pub unevaluated_properties: Option<bool>,
+    pub unevaluated_property_schema: Option<SchemaItem>,
     pub property_names: Option<SchemaItem>,
     pub required: Option<Vec<String>>,
     pub dependencies: Option<tombi_hashmap::IndexMap<String, Dependency>>,
@@ -126,6 +128,26 @@ impl TableSchema {
             }
             _ => (None, None),
         };
+        let supports_unevaluated =
+            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "unevaluatedProperties"));
+        let (unevaluated_properties, unevaluated_property_schema) = if supports_unevaluated {
+            match object_node.get("unevaluatedProperties") {
+                Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
+                Some(value @ tombi_json::ValueNode::Object(_)) => (
+                    Some(true),
+                    schema_item_from_schema_value(
+                        value,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    ),
+                ),
+                _ => (None, None),
+            }
+        } else {
+            (None, None)
+        };
 
         let keys_order = object_node
             .get(X_TOMBI_TABLE_KEYS_ORDER)
@@ -175,6 +197,8 @@ impl TableSchema {
             }),
             additional_properties,
             additional_property_schema,
+            unevaluated_properties,
+            unevaluated_property_schema,
             required: object_node.get("required").and_then(|v| {
                 v.as_array().map(|arr| {
                     arr.items

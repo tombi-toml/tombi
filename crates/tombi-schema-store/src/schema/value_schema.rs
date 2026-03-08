@@ -210,6 +210,7 @@ impl ValueSchema {
         // Array-specific keywords
         if (supports_keyword("items") && object.get("items").is_some())
             || (supports_keyword("prefixItems") && object.get("prefixItems").is_some())
+            || (supports_keyword("unevaluatedItems") && object.get("unevaluatedItems").is_some())
             || (supports_keyword("minItems") && object.get("minItems").is_some())
             || (supports_keyword("maxItems") && object.get("maxItems").is_some())
             || (supports_keyword("uniqueItems") && object.get("uniqueItems").is_some())
@@ -227,6 +228,8 @@ impl ValueSchema {
             || (supports_keyword("minProperties") && object.get("minProperties").is_some())
             || (supports_keyword("maxProperties") && object.get("maxProperties").is_some())
             || (supports_keyword("propertyNames") && object.get("propertyNames").is_some())
+            || (supports_keyword("unevaluatedProperties")
+                && object.get("unevaluatedProperties").is_some())
             || (supports_keyword("dependencies") && object.get("dependencies").is_some())
         {
             return Some("object");
