@@ -131,7 +131,7 @@ impl Referable<ValueSchema> {
         };
 
         if let Some(referable) = referable.as_ref() {
-            super::collect_named_anchors(
+            super::update_named_anchors(
                 object,
                 referable,
                 dialect,

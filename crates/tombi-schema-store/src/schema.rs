@@ -110,7 +110,7 @@ pub(crate) fn boolean_value_schema(allow: bool) -> ValueSchema {
     }
 }
 
-pub(crate) fn collect_named_anchors(
+pub(crate) fn update_named_anchors(
     object: &tombi_json::ObjectNode,
     referable: &Referable<ValueSchema>,
     dialect: Option<crate::JsonSchemaDialect>,
