@@ -50,6 +50,10 @@ impl ArraySchema {
     ) -> Self {
         let mut anchor_collector = anchor_collector;
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
+        let has_prefix_items = object.get("prefixItems").is_some()
+            || object
+                .get("items")
+                .is_some_and(|value| value.as_array().is_some());
         Self {
             title: object
                 .get("title")
@@ -58,6 +62,14 @@ impl ArraySchema {
                 .get("description")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             items: object.get("items").and_then(|value| {
+                // draft 2020-12: when prefixItems is present, boolean `items`
+                // configures overflow allowance and should not be treated as a schema item.
+                if dialect == Some(crate::JsonSchemaDialect::Draft2020_12)
+                    && has_prefix_items
+                    && value.as_bool().is_some()
+                {
+                    return None;
+                }
                 schema_item_from_schema_value(
                     value,
                     string_formats,
@@ -100,15 +112,18 @@ impl ArraySchema {
             additional_items_schema: if dialect == Some(crate::JsonSchemaDialect::Draft2020_12) {
                 None
             } else {
-                object.get("additionalItems").and_then(|value| {
-                    schema_item_from_schema_value(
-                        value,
-                        string_formats,
-                        dialect,
-                        anchor_collector.as_deref_mut(),
-                        dynamic_anchor_collector.as_deref_mut(),
-                    )
-                })
+                match object.get("additionalItems") {
+                    Some(value @ tombi_json::ValueNode::Object(_)) => {
+                        schema_item_from_schema_value(
+                            value,
+                            string_formats,
+                            dialect,
+                            anchor_collector.as_deref_mut(),
+                            dynamic_anchor_collector.as_deref_mut(),
+                        )
+                    }
+                    _ => None,
+                }
             },
             contains: object.get("contains").and_then(|value| {
                 schema_item_from_schema_value(
