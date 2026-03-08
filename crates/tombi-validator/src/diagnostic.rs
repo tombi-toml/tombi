@@ -138,6 +138,9 @@ pub enum DiagnosticKind {
         total_count: usize,
     },
 
+    #[error("1 of {total_count} schemas must be matched, but no schema candidates were available")]
+    OneOfNoMatch { total_count: usize },
+
     #[error("\"not\" schema is matched")]
     NotSchemaMatch,
 
@@ -192,6 +195,7 @@ impl DiagnosticKind {
             DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
             DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
             DiagnosticKind::OneOfMultipleMatch { .. } => "one-of-multiple-match",
+            DiagnosticKind::OneOfNoMatch { .. } => "one-of-no-match",
             DiagnosticKind::NotSchemaMatch => "not-schema-match",
             DiagnosticKind::KeyEmpty => "key-empty",
             DiagnosticKind::TableDependencyRequired { .. } => "table-dependency-required",

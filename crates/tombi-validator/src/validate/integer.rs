@@ -527,6 +527,7 @@ async fn validate_float_schema_for_integer(
     }
 
     if let Some(multiple_of) = &float_schema.multiple_of
+        && *multiple_of > 0.0
         && !is_multiple_of_with_tolerance(value, *multiple_of)
     {
         let level = lint_rules

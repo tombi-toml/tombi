@@ -482,6 +482,14 @@ impl SchemaStore {
             Some(value) => value,
             None => return Ok(None),
         };
+        if !matches!(
+            schema_value,
+            tombi_json::ValueNode::Object(_) | tombi_json::ValueNode::Bool(_)
+        ) {
+            return Err(crate::Error::SchemaMustBeObject {
+                schema_uri: schema_uri.clone(),
+            });
+        }
         let dialect = schema_value
             .as_object()
             .and_then(|object| object.get("$schema"))

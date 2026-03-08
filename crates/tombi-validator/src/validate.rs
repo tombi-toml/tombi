@@ -259,12 +259,18 @@ fn has_error_level_diagnostics(error: &crate::Error) -> bool {
 }
 
 fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
-    result.is_ok()
+    match result {
+        Ok(()) => true,
+        Err(error) => !has_error_level_diagnostics(error),
+    }
 }
 
 fn is_multiple_of_with_tolerance(value: f64, multiple_of: f64) -> bool {
-    if !value.is_finite() || !multiple_of.is_finite() || multiple_of == 0.0 {
+    if !value.is_finite() || !multiple_of.is_finite() {
         return false;
+    }
+    if multiple_of <= 0.0 {
+        return true;
     }
 
     let quotient = value / multiple_of;

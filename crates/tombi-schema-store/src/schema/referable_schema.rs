@@ -510,7 +510,10 @@ async fn resolve_external_reference(
         return Ok(None);
     };
 
-    let fragment = resolved_schema_uri.fragment().map(ToString::to_string);
+    let fragment = resolved_schema_uri
+        .fragment()
+        .map(ToString::to_string)
+        .and_then(|fragment| (!fragment.is_empty()).then_some(fragment));
     resolved_schema_uri.set_fragment(None);
 
     let Some(document_schema) = schema_store
@@ -1165,22 +1168,17 @@ mod test {
 
     #[tokio::test]
     async fn test_relative_ref_with_external_fragment_resolves() {
-        let defs_path = std::env::temp_dir().join(format!(
-            "tombi_defs_{}_{}.json",
+        let temp_dir = std::env::temp_dir().join(format!(
+            "tombi_referable_schema_{}_{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
         ));
-        let main_path = std::env::temp_dir().join(format!(
-            "tombi_main_{}_{}.json",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let defs_path = temp_dir.join("defs-source.json");
+        let main_path = temp_dir.join("main.json");
 
         std::fs::write(
             &defs_path,
@@ -1234,9 +1232,7 @@ mod test {
             Some(schema) if matches!(&*schema, ValueSchema::String(_))
         ));
 
-        let _ = std::fs::remove_file(main_path);
-        let _ = std::fs::remove_file(defs_path);
-        let _ = std::fs::remove_file(renamed_defs_path);
+        let _ = std::fs::remove_dir_all(temp_dir);
     }
 
     #[test]

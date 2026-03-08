@@ -75,6 +75,17 @@ where
             }
         };
         let total_count = resolved_schemas.len();
+        if total_count == 0 {
+            crate::Diagnostic {
+                kind: Box::new(crate::DiagnosticKind::OneOfNoMatch { total_count }),
+                range: value.range(),
+            }
+            .push_diagnostic_with_level(
+                SeverityLevelDefaultError::default(),
+                &mut total_diagnostics,
+            );
+            return Err(total_diagnostics.into());
+        }
 
         let mut each_results = Vec::with_capacity(resolved_schemas.len());
         for resolved_schema in &resolved_schemas {

@@ -106,29 +106,26 @@ impl TableSchema {
             _ => None,
         };
 
-        let (additional_properties, additional_property_schema) =
-            match object_node.get("additionalProperties") {
-                Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
-                Some(value @ tombi_json::ValueNode::Object(object_node)) => {
-                    let value_schema = referable_from_schema_value(
-                        value,
-                        string_formats,
-                        dialect,
-                        anchor_collector.as_deref_mut(),
-                        dynamic_anchor_collector.as_deref_mut(),
-                    );
-                    (
-                        Some(true),
-                        value_schema.map(|schema| {
-                            (
-                                object_node.range,
-                                Arc::new(tokio::sync::RwLock::new(schema)),
-                            )
-                        }),
-                    )
-                }
-                _ => (None, None),
-            };
+        let (additional_properties, additional_property_schema) = match object_node
+            .get("additionalProperties")
+        {
+            Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
+            Some(value @ tombi_json::ValueNode::Object(_)) => {
+                let value_schema = referable_from_schema_value(
+                    value,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
+                );
+                (
+                    Some(true),
+                    value_schema
+                        .map(|schema| (value.range(), Arc::new(tokio::sync::RwLock::new(schema)))),
+                )
+            }
+            _ => (None, None),
+        };
 
         let keys_order = object_node
             .get(X_TOMBI_TABLE_KEYS_ORDER)
