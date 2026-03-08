@@ -6,10 +6,10 @@
 
 ## 0. 方針確定
 
-- [ ] 準拠対象を `draft-07` / `2019-09` / `2020-12` の 3 段階で正式決定する
-- [ ] `$schema` による dialect 切替ポリシーを決める（未指定時デフォルト含む）
-- [ ] Tombi 拡張（`x-tombi-*`, strict mode）を JSON Schema 準拠モードと分離する
-- [ ] 廃止キーワードの扱いを決める（`error` / `warning` / `compat` 自動変換）
+- [x] 準拠対象を `draft-07` / `2019-09` / `2020-12` の 3 段階で正式決定する（2026-03-08 対応: `tasks/JSON_SCHEMA_COMPLIANCE_POLICY.md`）
+- [x] `$schema` による dialect 切替ポリシーを決める（未指定時デフォルト含む）（2026-03-08 対応: `tasks/JSON_SCHEMA_COMPLIANCE_POLICY.md`）
+- [x] Tombi 拡張（`x-tombi-*`, strict mode）を JSON Schema 準拠モードと分離する（2026-03-08 方針決定: `tasks/JSON_SCHEMA_COMPLIANCE_POLICY.md`）
+- [x] 廃止キーワードの扱いを決める（`error` / `warning` / `compat` 自動変換）（2026-03-08 対応: `tasks/JSON_SCHEMA_COMPLIANCE_POLICY.md`）
 
 ## 1. バージョン共通 TODO（draft-07 / 2019-09 / 2020-12）
 
