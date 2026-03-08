@@ -50,6 +50,8 @@ impl ArraySchema {
     ) -> Self {
         let mut anchor_collector = anchor_collector;
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
+        let uses_prefix_items_semantics =
+            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "prefixItems"));
         let has_prefix_items = object.get("prefixItems").is_some()
             || object
                 .get("items")
@@ -64,10 +66,7 @@ impl ArraySchema {
             items: object.get("items").and_then(|value| {
                 // draft 2020-12: when prefixItems is present, boolean `items`
                 // configures overflow allowance and should not be treated as a schema item.
-                if dialect == Some(crate::JsonSchemaDialect::Draft2020_12)
-                    && has_prefix_items
-                    && value.as_bool().is_some()
-                {
+                if uses_prefix_items_semantics && has_prefix_items && value.as_bool().is_some() {
                     return None;
                 }
                 schema_item_from_schema_value(
@@ -96,7 +95,7 @@ impl ArraySchema {
                         })
                         .collect_vec()
                 }),
-            additional_items: if dialect == Some(crate::JsonSchemaDialect::Draft2020_12) {
+            additional_items: if uses_prefix_items_semantics {
                 // In 2020-12, `items: false` means no overflow items (like `additionalItems: false` in draft-07)
                 match object.get("items") {
                     Some(tombi_json::ValueNode::Bool(b)) => Some(b.value),
@@ -109,7 +108,7 @@ impl ArraySchema {
                     _ => None,
                 }
             },
-            additional_items_schema: if dialect == Some(crate::JsonSchemaDialect::Draft2020_12) {
+            additional_items_schema: if uses_prefix_items_semantics {
                 None
             } else {
                 match object.get("additionalItems") {
