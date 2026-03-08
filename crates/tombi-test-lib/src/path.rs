@@ -125,3 +125,15 @@ pub fn recursive_anchor_ref_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("recursive-anchor-ref-test.schema.json")
 }
+
+pub fn format_annotation_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("format-annotation-test.schema.json")
+}
+
+pub fn format_assertion_vocab_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("format-assertion-vocab-test.schema.json")
+}

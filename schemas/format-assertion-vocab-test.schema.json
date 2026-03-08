@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$vocabulary": {
+    "https://json-schema.org/draft/2020-12/vocab/core": true,
+    "https://json-schema.org/draft/2020-12/vocab/applicator": true,
+    "https://json-schema.org/draft/2020-12/vocab/validation": true,
+    "https://json-schema.org/draft/2020-12/vocab/format-assertion": true
+  },
+  "title": "FormatAssertionVocabTest",
+  "type": "object",
+  "properties": {
+    "ipv4_addr": {
+      "type": "string",
+      "format": "ipv4"
+    }
+  },
+  "additionalProperties": false
+}

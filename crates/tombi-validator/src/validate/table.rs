@@ -654,11 +654,18 @@ async fn validate_table(
                 >(key.comment_directives(), accessors)
                 .await;
 
+            let format_assertion = schema_context
+                .root_schema
+                .map_or(true, |root| root.format_assertion())
+                || string_schema.format.is_some_and(|f| {
+                    schema_context.has_string_format(f)
+                });
             let result = validate_raw_string(
                 &key.value,
                 &key.value,
                 key.range(),
                 string_schema,
+                format_assertion,
                 lint_rules.as_ref(),
                 key.comment_directives(),
             );
