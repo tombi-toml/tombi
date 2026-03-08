@@ -6,6 +6,8 @@ mod array_const_enum_test_schema;
 mod cargo_schema;
 #[path = "integration/contains_test_schema.rs"]
 mod contains_test_schema;
+#[path = "integration/dependencies_strict_mode_test_schema.rs"]
+mod dependencies_strict_mode_test_schema;
 #[path = "integration/dependencies_test_schema.rs"]
 mod dependencies_test_schema;
 #[path = "integration/dependent_required_test_schema.rs"]
