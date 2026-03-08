@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use itertools::{Either, Itertools};
 use tombi_config::Config;
 use tombi_glob::{MatchResult, matches_file_patterns};
-use tombi_text::IntoLsp;
+use tombi_text::{IntoLsp, LineIndex};
 
 use crate::{backend::Backend, config_manager::ConfigSchemaStore};
 
@@ -70,43 +70,52 @@ pub async fn get_diagnostics_result(
         }
     }
 
-    let document_sources = backend.document_sources.read().await;
+    let (text, version, toml_version, encoding_kind) = {
+        let document_sources = backend.document_sources.read().await;
+        let document_source = document_sources.get(text_document_uri)?;
+        (
+            document_source.text().to_owned(),
+            document_source.version,
+            document_source.toml_version,
+            document_source.line_index().encoding_kind,
+        )
+    };
 
-    match document_sources.get(text_document_uri) {
-        Some(document_source) => {
-            // Get lint options with override support
-            let text_document_path = text_document_uri.to_file_path().ok();
-            let Some(lint_options) = tombi_glob::get_lint_options(
-                &config,
-                text_document_path.as_deref(),
-                config_path.as_deref(),
-            ) else {
-                log::debug!("Linting disabled for {:?} by override", text_document_path);
-                return None;
-            };
+    // Get lint options with override support
+    let text_document_path = text_document_uri.to_file_path().ok();
+    let Some(lint_options) = tombi_glob::get_lint_options(
+        &config,
+        text_document_path.as_deref(),
+        config_path.as_deref(),
+    ) else {
+        log::debug!("Linting disabled for {:?} by override", text_document_path);
+        return None;
+    };
 
-            Some(DiagnosticsResult {
-                diagnostics: match tombi_linter::Linter::new(
-                    document_source.toml_version,
-                    &lint_options,
-                    Some(Either::Left(text_document_uri)),
-                    &schema_store,
-                )
-                .lint(document_source.text())
-                .await
-                {
-                    Ok(_) => Vec::with_capacity(0),
-                    Err(diagnostics) => diagnostics
-                        .into_iter()
-                        .unique()
-                        .map(|diagnostic| diagnostic.into_lsp(document_source.line_index()))
-                        .collect_vec(),
-                },
-                version: document_source.version,
-            })
+    let diagnostics = match tombi_linter::Linter::new(
+        toml_version,
+        &lint_options,
+        Some(Either::Left(text_document_uri)),
+        &schema_store,
+    )
+    .lint(&text)
+    .await
+    {
+        Ok(_) => Vec::with_capacity(0),
+        Err(diagnostics) => {
+            let line_index = LineIndex::new(&text, encoding_kind);
+            diagnostics
+                .into_iter()
+                .unique()
+                .map(|diagnostic| diagnostic.into_lsp(&line_index))
+                .collect_vec()
         }
-        None => None,
-    }
+    };
+
+    Some(DiagnosticsResult {
+        diagnostics,
+        version,
+    })
 }
 
 #[derive(Debug)]
