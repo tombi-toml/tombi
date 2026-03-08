@@ -383,4 +383,44 @@ mod tests {
             Some(ValueSchema::OneOf(one_of)) if one_of.schemas.blocking_read().is_empty()
         ));
     }
+
+    #[test]
+    fn base_uri_uses_absolute_id_when_present() {
+        let schema_json = r#"{ "$id": "https://example.com/other/schema.json" }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
+            .expect("valid uri");
+
+        let doc = DocumentSchema::new(schema_value, uri);
+        let expected = tombi_uri::SchemaUri::from_str("https://example.com/other/schema.json")
+            .expect("valid uri");
+        assert_eq!(doc.id.as_ref(), Some(&expected));
+        assert_eq!(doc.base_uri(), &expected);
+    }
+
+    #[test]
+    fn base_uri_uses_resolved_relative_id_when_present() {
+        let schema_json = r#"{ "$id": "defs/schema.json" }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
+            .expect("valid uri");
+
+        let doc = DocumentSchema::new(schema_value, uri);
+        let expected = tombi_uri::SchemaUri::from_str("https://example.com/base/defs/schema.json")
+            .expect("valid uri");
+        assert_eq!(doc.id.as_ref(), Some(&expected));
+        assert_eq!(doc.base_uri(), &expected);
+    }
+
+    #[test]
+    fn base_uri_falls_back_to_schema_uri_when_id_is_not_string() {
+        let schema_json = r#"{ "$id": 1 }"#;
+        let schema_value = tombi_json::ValueNode::from_str(schema_json).expect("valid");
+        let uri = tombi_uri::SchemaUri::from_str("https://example.com/base/root.json")
+            .expect("valid uri");
+
+        let doc = DocumentSchema::new(schema_value, uri.clone());
+        assert_eq!(doc.id, None);
+        assert_eq!(doc.base_uri(), &uri);
+    }
 }
