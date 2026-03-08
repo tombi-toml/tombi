@@ -13,6 +13,7 @@ use crate::{Accessor, JsonSchemaDialect, SchemaStore};
 
 #[derive(Debug, Clone)]
 pub struct DocumentSchema {
+    pub id: Option<SchemaUri>,
     pub schema_uri: SchemaUri,
     pub(crate) dialect: Option<JsonSchemaDialect>,
     pub(crate) toml_version: Option<TomlVersion>,
@@ -29,6 +30,7 @@ impl DocumentSchema {
         match node {
             tombi_json::ValueNode::Object(object) => Self::new_from_object(object, schema_uri),
             tombi_json::ValueNode::Bool(boolean_schema) => Self {
+                id: None,
                 schema_uri,
                 dialect: None,
                 toml_version: None,
@@ -40,6 +42,7 @@ impl DocumentSchema {
                 dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
             },
             _ => Self {
+                id: None,
                 schema_uri,
                 dialect: None,
                 toml_version: None,
@@ -54,7 +57,8 @@ impl DocumentSchema {
     }
 
     fn new_from_object(object: tombi_json::ObjectNode, schema_uri: SchemaUri) -> Self {
-        let schema_uri = resolve_schema_id(&object, &schema_uri).unwrap_or(schema_uri);
+        let id = resolve_schema_id(&object, &schema_uri);
+
         let dialect = object.get("$schema").and_then(|value| match value {
             tombi_json::ValueNode::String(s) => JsonSchemaDialect::try_from(s.value.as_str()).ok(),
             _ => None,
@@ -156,6 +160,7 @@ impl DocumentSchema {
             );
         }
         Self {
+            id,
             schema_uri,
             dialect,
             toml_version,
@@ -188,6 +193,10 @@ impl DocumentSchema {
             );
         })
     }
+
+    pub fn base_uri(&self) -> &SchemaUri {
+        self.id.as_ref().unwrap_or(&self.schema_uri)
+    }
 }
 
 fn has_enabled_vocabulary(object: &tombi_json::ObjectNode, vocabulary_uri: &str) -> bool {
@@ -203,8 +212,10 @@ fn resolve_schema_id(
     base_schema_uri: &SchemaUri,
 ) -> Option<SchemaUri> {
     let id = object.get("$id")?.as_str()?;
-    let joined = base_schema_uri.join(id).ok()?;
-    Some(SchemaUri::from(joined))
+    if let Ok(joined) = base_schema_uri.join(id) {
+        return Some(SchemaUri::from(joined));
+    }
+    SchemaUri::from_str(id).ok()
 }
 
 impl FindSchemaCandidates for DocumentSchema {

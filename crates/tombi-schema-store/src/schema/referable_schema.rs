@@ -357,7 +357,7 @@ impl Referable<ValueSchema> {
                                     schema_store.try_get_document_schema(reference_url).await?
                                 {
                                     (
-                                        Cow::Owned(document_schema.schema_uri.clone()),
+                                        Cow::Owned(document_base_uri(&document_schema)),
                                         Cow::Owned(document_schema.definitions.clone()),
                                     )
                                 } else {
@@ -401,7 +401,7 @@ impl Referable<ValueSchema> {
                             schema_store.try_get_document_schema(reference_url).await?
                         {
                             (
-                                Cow::Owned(document_schema.schema_uri.clone()),
+                                Cow::Owned(document_base_uri(&document_schema)),
                                 Cow::Owned(document_schema.definitions.clone()),
                             )
                         } else {
@@ -487,7 +487,7 @@ async fn resolve_dynamic_anchor_from_scope(
         if let Some(dynamic_anchor_schema) = dynamic_anchor_schema {
             return Ok(Some((
                 dynamic_anchor_schema,
-                document_schema.schema_uri.clone(),
+                document_base_uri(&document_schema),
                 document_schema.definitions.clone(),
             )));
         }
@@ -529,7 +529,7 @@ async fn resolve_external_reference(
         };
         return Ok(Some(CurrentSchema {
             value_schema: value_schema.clone(),
-            schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
+            schema_uri: Cow::Owned(document_base_uri(&document_schema)),
             definitions: Cow::Owned(document_schema.definitions.clone()),
         }));
     };
@@ -541,7 +541,7 @@ async fn resolve_external_reference(
         {
             return referable
                 .resolve(
-                    Cow::Owned(document_schema.schema_uri.clone()),
+                    Cow::Owned(document_base_uri(&document_schema)),
                     Cow::Owned(document_schema.definitions.clone()),
                     schema_store,
                 )
@@ -569,7 +569,7 @@ async fn resolve_external_reference(
             {
                 return Ok(Some(CurrentSchema {
                     value_schema: Arc::new(value_schema),
-                    schema_uri: Cow::Owned(document_schema.schema_uri.clone()),
+                    schema_uri: Cow::Owned(document_base_uri(&document_schema)),
                     definitions: Cow::Owned(document_schema.definitions.clone()),
                 }));
             }
@@ -584,6 +584,10 @@ async fn resolve_external_reference(
         reference: reference.to_owned(),
         schema_uri: resolved_schema_uri,
     })
+}
+
+fn document_base_uri(document_schema: &crate::DocumentSchema) -> SchemaUri {
+    document_schema.base_uri().clone()
 }
 
 fn parse_dynamic_anchor_reference(reference: &str) -> Option<(Option<SchemaUri>, String)> {
@@ -692,7 +696,7 @@ pub async fn resolve_and_collect_schemas(
                         .await
                     {
                         Ok(Some(document_schema)) => (
-                            document_schema.schema_uri.clone(),
+                            document_base_uri(&document_schema),
                             document_schema.definitions.clone(),
                         ),
                         Ok(None) => (default_schema_uri.clone(), default_definitions.clone()),

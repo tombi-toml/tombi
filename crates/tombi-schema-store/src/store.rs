@@ -534,11 +534,12 @@ impl SchemaStore {
             | ValueSchema::OneOf(OneOfSchema { schemas, .. }),
         ) = document_schema.value_schema.as_deref()
         {
+            let document_base_uri = document_schema.base_uri().clone();
             {
                 for referable_schema in schemas.write().await.iter_mut() {
                     referable_schema
                         .resolve(
-                            Cow::Borrowed(schema_uri),
+                            Cow::Borrowed(&document_base_uri),
                             Cow::Borrowed(&document_schema.definitions),
                             self,
                         )
