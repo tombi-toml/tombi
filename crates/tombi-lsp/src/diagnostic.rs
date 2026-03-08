@@ -74,7 +74,7 @@ pub async fn get_diagnostics_result(
         let document_sources = backend.document_sources.read().await;
         let document_source = document_sources.get(text_document_uri)?;
         (
-            document_source.text().to_owned(),
+            document_source.text_arc(),
             document_source.version,
             document_source.toml_version,
             document_source.line_index().encoding_kind,
@@ -98,12 +98,12 @@ pub async fn get_diagnostics_result(
         Some(Either::Left(text_document_uri)),
         &schema_store,
     )
-    .lint(&text)
+    .lint(text.as_ref())
     .await
     {
         Ok(_) => Vec::with_capacity(0),
         Err(diagnostics) => {
-            let line_index = LineIndex::new(&text, encoding_kind);
+            let line_index = LineIndex::new(text.as_ref(), encoding_kind);
             diagnostics
                 .into_iter()
                 .unique()
