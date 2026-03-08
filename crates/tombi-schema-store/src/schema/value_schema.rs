@@ -41,6 +41,8 @@ impl ValueSchema {
         anchor_collector: Option<&mut AnchorCollector>,
         dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
     ) -> Option<Self> {
+        crate::log_keyword_dialect_notes(object, dialect);
+
         let mut anchor_collector = anchor_collector;
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
         match object.get("type") {
