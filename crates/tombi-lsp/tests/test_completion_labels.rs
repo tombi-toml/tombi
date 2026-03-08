@@ -610,6 +610,7 @@ mod completion_labels {
                 "anchor-dynamic-ref-test.schema.json",
                 "array-const-enum-test.schema.json",
                 "contains-test.schema.json",
+                "dependencies-strict-mode-test.schema.json",
                 "dependencies-test.schema.json",
                 "dependent-required-test.schema.json",
                 "dependent-schemas-test.schema.json",
