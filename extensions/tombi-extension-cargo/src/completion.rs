@@ -121,9 +121,10 @@ fn completion_cargo_file_path(
             position,
             accessors,
             Some(&["rs"]),
-        ) {
-            return Some(completions);
-        }
+        )
+    {
+        return Some(completions);
+    }
 
     if (matches_accessors!(accessors, ["dependencies", _, "path"])
         || matches_accessors!(accessors, ["dev-dependencies", _, "path"])
@@ -174,9 +175,10 @@ fn completion_cargo_file_path(
             position,
             accessors,
             Some(&[]),
-        ) {
-            return Some(completions);
-        }
+        )
+    {
+        return Some(completions);
+    }
 
     None
 }

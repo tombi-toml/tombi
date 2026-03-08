@@ -217,9 +217,9 @@ async fn validate_array(
                     && let Err(crate::Error { diagnostics, .. }) = value
                         .validate(&new_accessors, Some(&item_schema), schema_context)
                         .await
-                    {
-                        total_diagnostics.extend(diagnostics);
-                    }
+                {
+                    total_diagnostics.extend(diagnostics);
+                }
             } else if let Some(overflow) = &overflow_schema {
                 if let Err(crate::Error { diagnostics, .. }) = value
                     .validate(&new_accessors, Some(overflow), schema_context)

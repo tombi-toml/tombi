@@ -326,56 +326,54 @@ impl GetHoverContent for tombi_document_tree::Table {
                                             schema_context.store,
                                         )
                                         .await
+                                {
+                                    let mut hover_content = value
+                                        .get_hover_content(
+                                            position,
+                                            &keys[1..],
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor.clone()))
+                                                .collect_vec(),
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await;
+
+                                    if let Some(HoverContent::Value(hover_value_content)) =
+                                        hover_content.as_mut()
+                                        && keys.len() == 1
                                     {
-                                        let mut hover_content = value
-                                            .get_hover_content(
-                                                position,
-                                                &keys[1..],
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor.clone()))
-                                                    .collect_vec(),
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await;
+                                        // Check if cursor is not on the value
+                                        let cursor_on_value = value.contains(position);
 
-                                        if let Some(HoverContent::Value(hover_value_content)) =
-                                            hover_content.as_mut()
-                                            && keys.len() == 1
-                                        {
-                                            // Check if cursor is not on the value
-                                            let cursor_on_value = value.contains(position);
-
-                                            if !cursor_on_value {
-                                                // When cursor is on key or equals sign,
-                                                // use the property's title and description
-                                                if let Some(title) =
-                                                    current_schema.value_schema.title()
-                                                {
-                                                    hover_value_content.title =
-                                                        Some(title.to_string());
-                                                }
-                                                if let Some(description) =
-                                                    current_schema.value_schema.description()
-                                                {
-                                                    hover_value_content.description =
-                                                        Some(description.to_string());
-                                                }
-                                            }
-
-                                            if hover_value_content
-                                                .accessors
-                                                .last()
-                                                .map(|accessor| accessor.is_key())
-                                                .unwrap_or_default()
+                                        if !cursor_on_value {
+                                            // When cursor is on key or equals sign,
+                                            // use the property's title and description
+                                            if let Some(title) = current_schema.value_schema.title()
                                             {
-                                                hover_value_content.value_type.set_nullable();
+                                                hover_value_content.title = Some(title.to_string());
+                                            }
+                                            if let Some(description) =
+                                                current_schema.value_schema.description()
+                                            {
+                                                hover_value_content.description =
+                                                    Some(description.to_string());
                                             }
                                         }
-                                        return hover_content;
+
+                                        if hover_value_content
+                                            .accessors
+                                            .last()
+                                            .map(|accessor| accessor.is_key())
+                                            .unwrap_or_default()
+                                        {
+                                            hover_value_content.value_type.set_nullable();
+                                        }
                                     }
+                                    return hover_content;
+                                }
 
                                 value
                                     .get_hover_content(

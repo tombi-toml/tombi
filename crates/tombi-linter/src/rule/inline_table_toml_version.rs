@@ -21,13 +21,13 @@ impl Rule<tombi_ast::InlineTable> for InlineTableTomlVersionRule {
                 .key_values_with_comma()
                 .last()
                 .and_then(|(_, comma)| comma.map(|c| c.range()))
-            {
-                l.extend_diagnostics(Diagnostic {
-                    kind: DiagnosticKind::ForbiddenInlineTableLastComma,
-                    level: SeverityLevel::Error,
-                    range: comma_range,
-                });
-            }
+        {
+            l.extend_diagnostics(Diagnostic {
+                kind: DiagnosticKind::ForbiddenInlineTableLastComma,
+                level: SeverityLevel::Error,
+                range: comma_range,
+            });
+        }
     }
 }
 

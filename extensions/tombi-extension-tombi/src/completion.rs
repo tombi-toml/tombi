@@ -28,9 +28,10 @@ pub async fn completion(
             position,
             accessors,
             Some(&["json"]),
-        ) {
-            return Ok(Some(completions));
-        }
+        )
+    {
+        return Ok(Some(completions));
+    }
 
     Ok(None)
 }

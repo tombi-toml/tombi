@@ -425,9 +425,10 @@ fn append_comma_range_if_exists(
                     .value_or_key_values_with_comma()
                     .map(|(item, comma)| (item.range(), comma.map(|comma| comma.range()))),
                 position,
-            ) {
-                return Some(range);
-            }
+            )
+        {
+            return Some(range);
+        }
     }
 
     None

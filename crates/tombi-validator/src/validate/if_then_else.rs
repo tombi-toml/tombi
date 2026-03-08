@@ -46,11 +46,11 @@ where
             )
             .await
             .inspect_err(|err| log::warn!("{err}"))
-            {
-                return value
-                    .validate(accessors, Some(&then_current_schema), schema_context)
-                    .await;
-            }
+        {
+            return value
+                .validate(accessors, Some(&then_current_schema), schema_context)
+                .await;
+        }
     } else {
         // `if` did not match → apply `else` schema if present
         if let Some(else_schema) = &if_then_else_schema.else_schema
@@ -62,11 +62,11 @@ where
             )
             .await
             .inspect_err(|err| log::warn!("{err}"))
-            {
-                return value
-                    .validate(accessors, Some(&else_current_schema), schema_context)
-                    .await;
-            }
+        {
+            return value
+                .validate(accessors, Some(&else_current_schema), schema_context)
+                .await;
+        }
     }
 
     Ok(())

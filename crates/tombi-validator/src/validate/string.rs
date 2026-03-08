@@ -37,9 +37,9 @@ impl Validate for tombi_document_tree::String {
                         let format_assertion = schema_context
                             .root_schema
                             .is_none_or(|root| root.format_assertion())
-                            || string_schema.format.is_some_and(|f| {
-                                schema_context.has_string_format(f)
-                            });
+                            || string_schema
+                                .format
+                                .is_some_and(|f| schema_context.has_string_format(f));
                         validate_string(
                             self,
                             accessors,

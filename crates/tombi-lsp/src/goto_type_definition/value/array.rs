@@ -82,21 +82,21 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                             schema_context.store,
                                         )
                                         .await
-                                    {
-                                        return value
-                                            .get_type_definition(
-                                                position,
-                                                keys,
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor.clone()))
-                                                    .collect_vec(),
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await;
-                                    }
+                                {
+                                    return value
+                                        .get_type_definition(
+                                            position,
+                                            keys,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor.clone()))
+                                                .collect_vec(),
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await;
+                                }
 
                                 return value
                                     .get_type_definition(

@@ -188,21 +188,21 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             schema_context.store,
                                         )
                                         .await
-                                    {
-                                        return value
-                                            .get_type_definition(
-                                                position,
-                                                &keys[1..],
-                                                &accessors,
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await
-                                            .map(|type_definition| {
-                                                type_definition
-                                                    .update_range(&accessors, schema_key_range)
-                                            });
-                                    }
+                                {
+                                    return value
+                                        .get_type_definition(
+                                            position,
+                                            &keys[1..],
+                                            &accessors,
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await
+                                        .map(|type_definition| {
+                                            type_definition
+                                                .update_range(&accessors, schema_key_range)
+                                        });
+                                }
 
                                 value
                                     .get_type_definition(

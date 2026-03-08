@@ -286,23 +286,23 @@ async fn validate_table(
                 )
                 .await
                 .inspect_err(|err| log::warn!("{err}"))
-                {
-                    handle_deprecated_value(
-                        &mut total_diagnostics,
-                        current_schema.value_schema.deprecated().await,
-                        &new_accessors,
-                        value,
-                        table_value.comment_directives(),
-                        table_rules.as_ref().map(|rules| &rules.common),
-                    );
+            {
+                handle_deprecated_value(
+                    &mut total_diagnostics,
+                    current_schema.value_schema.deprecated().await,
+                    &new_accessors,
+                    value,
+                    table_value.comment_directives(),
+                    table_rules.as_ref().map(|rules| &rules.common),
+                );
 
-                    if let Err(crate::Error { diagnostics, .. }) = value
-                        .validate(&new_accessors, Some(&current_schema), schema_context)
-                        .await
-                    {
-                        total_diagnostics.extend(diagnostics);
-                    }
+                if let Err(crate::Error { diagnostics, .. }) = value
+                    .validate(&new_accessors, Some(&current_schema), schema_context)
+                    .await
+                {
+                    total_diagnostics.extend(diagnostics);
                 }
+            }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::TableStrictAdditionalKeys {
@@ -732,9 +732,9 @@ async fn validate_table(
             table_rules.as_ref().map(|rules| &rules.common),
         )
         .await
-        {
-            total_diagnostics.extend(error.diagnostics);
-        }
+    {
+        total_diagnostics.extend(error.diagnostics);
+    }
 
     if let Some(if_then_else_schema) = table_schema.if_then_else.as_ref()
         && let Err(error) = validate_if_then_else(
@@ -745,9 +745,9 @@ async fn validate_table(
             schema_context,
         )
         .await
-        {
-            total_diagnostics.extend(error.diagnostics);
-        }
+    {
+        total_diagnostics.extend(error.diagnostics);
+    }
 
     if total_diagnostics.is_empty() {
         Ok(())

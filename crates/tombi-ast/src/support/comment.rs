@@ -36,7 +36,9 @@ pub fn dangling_comment_group_or<T: AstNode, I: Iterator<Item = tombi_syntax::Sy
             if crate::DanglingCommentGroup::can_cast(node.kind()) {
                 crate::DanglingCommentGroup::cast(node)
                     .map(DanglingCommentGroupOr::DanglingCommentGroup)
-            } else { T::cast(node).map(DanglingCommentGroupOr::ItemGroup) }
+            } else {
+                T::cast(node).map(DanglingCommentGroupOr::ItemGroup)
+            }
         }
         SyntaxElement::Token(_) => None,
     })
