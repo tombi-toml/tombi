@@ -88,8 +88,8 @@ impl OneOfSchema {
                 object,
                 string_formats,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             )
             .map(Box::new),
         }

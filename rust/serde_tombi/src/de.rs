@@ -119,10 +119,9 @@ impl Deserializer<'_> {
         // 1. Check comment directive first (highest priority)
         if let Some(directive) =
             tombi_validator::comment_directive::get_tombi_document_comment_directive(root).await
+            && let Some(toml_version) = directive.toml_version
         {
-            if let Some(toml_version) = directive.toml_version {
-                return Ok(toml_version);
-            }
+            return Ok(toml_version);
         }
 
         // 2. Fall back to config toml_version

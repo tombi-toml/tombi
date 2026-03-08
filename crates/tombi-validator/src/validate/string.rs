@@ -36,10 +36,10 @@ impl Validate for tombi_document_tree::String {
                     ValueSchema::String(string_schema) => {
                         let format_assertion = schema_context
                             .root_schema
-                            .map_or(true, |root| root.format_assertion())
-                            || string_schema.format.is_some_and(|f| {
-                                schema_context.has_string_format(f)
-                            });
+                            .is_none_or(|root| root.format_assertion())
+                            || string_schema
+                                .format
+                                .is_some_and(|f| schema_context.has_string_format(f));
                         validate_string(
                             self,
                             accessors,

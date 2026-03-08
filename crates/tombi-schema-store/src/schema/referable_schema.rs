@@ -135,8 +135,8 @@ impl Referable<ValueSchema> {
                 object,
                 referable,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             );
         }
 
@@ -560,7 +560,7 @@ pub async fn resolve_and_collect_schemas(
     let Some(_cycle_guard) = schema_visits.get_cycle_guard(schemas) else {
         log::debug!(
             "detected composite schema cycle while collecting schemas: schema_uri={schema_uri} accessors={accessors} reason=reentrant_schema_traversal",
-            schema_uri = schema_uri.as_ref().to_string(),
+            schema_uri = schema_uri.as_ref(),
             accessors = crate::Accessors::from(accessors.to_vec())
         );
         return None;
@@ -572,7 +572,7 @@ pub async fn resolve_and_collect_schemas(
             // try_read() failed -- a write lock is held.
             log::debug!(
                 "failed to acquire read lock for composite schema collection: schema_uri={schema_uri} accessors={accessors} reason=write_lock_held",
-                schema_uri = schema_uri.as_ref().to_string(),
+                schema_uri = schema_uri.as_ref(),
                 accessors = crate::Accessors::from(accessors.to_vec())
             );
             return None;
@@ -661,7 +661,7 @@ pub async fn resolve_and_collect_schemas(
         let Ok(mut schema_guard) = schemas.try_write() else {
             log::debug!(
                 "failed to acquire write lock for composite schema resolution: schema_uri={schema_uri} accessors={accessors} reason=lock_contention",
-                schema_uri = schema_uri.as_ref().to_string(),
+                schema_uri = schema_uri.as_ref(),
                 accessors = crate::Accessors::from(accessors.to_vec())
             );
             return Some(collected);

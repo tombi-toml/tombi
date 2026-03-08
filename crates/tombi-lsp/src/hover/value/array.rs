@@ -75,8 +75,8 @@ impl GetHoverContent for tombi_document_tree::Array {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
 
-                                if let Some(items) = &array_schema.items {
-                                    if let Ok(Some(current_schema)) =
+                                if let Some(items) = &array_schema.items
+                                    && let Ok(Some(current_schema)) =
                                         tombi_schema_store::resolve_schema_item(
                                             items,
                                             current_schema.schema_uri.clone(),
@@ -84,27 +84,27 @@ impl GetHoverContent for tombi_document_tree::Array {
                                             schema_context.store,
                                         )
                                         .await
+                                {
+                                    return match value
+                                        .get_hover_content(
+                                            position,
+                                            keys,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor.clone()))
+                                                .collect_vec(),
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await?
                                     {
-                                        return match value
-                                            .get_hover_content(
-                                                position,
-                                                keys,
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor.clone()))
-                                                    .collect_vec(),
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await?
-                                        {
-                                            HoverContent::Value(mut hover_value_content) => {
-                                                if keys.is_empty()
-                                            && self.kind()
-                                                == tombi_document_tree::ArrayKind::ArrayOfTable
-                                            && let Some(constraints) =
-                                                &mut hover_value_content.constraints
+                                        HoverContent::Value(mut hover_value_content) => {
+                                            if keys.is_empty()
+                                                && self.kind()
+                                                    == tombi_document_tree::ArrayKind::ArrayOfTable
+                                                && let Some(constraints) =
+                                                    &mut hover_value_content.constraints
                                             {
                                                 constraints.min_items = array_schema.min_items;
                                                 constraints.max_items = array_schema.max_items;
@@ -112,30 +112,27 @@ impl GetHoverContent for tombi_document_tree::Array {
                                                     array_schema.unique_items;
                                             }
 
-                                                if hover_value_content.title.is_none()
-                                                    && hover_value_content.description.is_none()
-                                                {
-                                                    if let Some(title) = &array_schema.title {
-                                                        hover_value_content.title =
-                                                            Some(title.clone());
-                                                    }
-                                                    if let Some(description) =
-                                                        &array_schema.description
-                                                    {
-                                                        hover_value_content.description =
-                                                            Some(description.clone());
-                                                    }
+                                            if hover_value_content.title.is_none()
+                                                && hover_value_content.description.is_none()
+                                            {
+                                                if let Some(title) = &array_schema.title {
+                                                    hover_value_content.title = Some(title.clone());
                                                 }
-                                                Some(HoverContent::Value(hover_value_content))
+                                                if let Some(description) = &array_schema.description
+                                                {
+                                                    hover_value_content.description =
+                                                        Some(description.clone());
+                                                }
                                             }
-                                            HoverContent::Directive(hover_content) => {
-                                                Some(HoverContent::Directive(hover_content))
-                                            }
-                                            HoverContent::DirectiveContent(hover_content) => {
-                                                Some(HoverContent::DirectiveContent(hover_content))
-                                            }
-                                        };
-                                    }
+                                            Some(HoverContent::Value(hover_value_content))
+                                        }
+                                        HoverContent::Directive(hover_content) => {
+                                            Some(HoverContent::Directive(hover_content))
+                                        }
+                                        HoverContent::DirectiveContent(hover_content) => {
+                                            Some(HoverContent::DirectiveContent(hover_content))
+                                        }
+                                    };
                                 }
 
                                 return value

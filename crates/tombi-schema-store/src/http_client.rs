@@ -25,7 +25,7 @@ pub use gloo_net_client::HttpClient;
 
 #[cfg(feature = "surf2")]
 mod surf_client;
-#[cfg(feature = "surf2")]
+#[cfg(all(feature = "surf2", not(feature = "reqwest01")))]
 pub use surf_client::HttpClient;
 
 // Provide a stub when no features are enabled

@@ -155,17 +155,16 @@ mod tests {
             Box::new(move |entry_result| {
                 match entry_result {
                     Ok(entry) => {
-                        if let Some(file_type) = entry.file_type() {
-                            if file_type.is_file() {
-                                let path = entry.path();
-                                let filename =
-                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                        if let Some(file_type) = entry.file_type()
+                            && file_type.is_file()
+                        {
+                            let path = entry.path();
+                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                                if glob_match("*.rs", filename) {
-                                    if let Ok(mut results_guard) = results_clone.lock() {
-                                        results_guard.push(path.to_path_buf());
-                                    }
-                                }
+                            if glob_match("*.rs", filename)
+                                && let Ok(mut results_guard) = results_clone.lock()
+                            {
+                                results_guard.push(path.to_path_buf());
                             }
                         }
                     }
@@ -223,17 +222,16 @@ mod tests {
             Box::new(move |entry_result| {
                 match entry_result {
                     Ok(entry) => {
-                        if let Some(file_type) = entry.file_type() {
-                            if file_type.is_file() {
-                                let path = entry.path();
-                                let filename =
-                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                        if let Some(file_type) = entry.file_type()
+                            && file_type.is_file()
+                        {
+                            let path = entry.path();
+                            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                                if glob_match("*.toml", filename) {
-                                    if let Ok(mut results_guard) = results_clone.lock() {
-                                        results_guard.push(path.to_path_buf());
-                                    }
-                                }
+                            if glob_match("*.toml", filename)
+                                && let Ok(mut results_guard) = results_clone.lock()
+                            {
+                                results_guard.push(path.to_path_buf());
                             }
                         }
                     }

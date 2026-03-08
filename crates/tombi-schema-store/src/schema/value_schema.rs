@@ -158,8 +158,8 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             );
         }
 
@@ -307,8 +307,8 @@ impl ValueSchema {
                 object,
                 string_formats,
                 dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
+                anchor_collector,
+                dynamic_anchor_collector,
             ))),
             _ => None,
         }
@@ -417,8 +417,8 @@ impl ValueSchema {
                         object,
                         string_formats,
                         dialect,
-                        anchor_collector.as_deref_mut(),
-                        dynamic_anchor_collector.as_deref_mut(),
+                        anchor_collector,
+                        dynamic_anchor_collector,
                     )
                     .map(Box::new),
                 }))
@@ -996,7 +996,7 @@ mod tests {
 
         let schemas = any_of.schemas.read().await;
         assert!(matches!(
-            schemas.get(0).unwrap().value_type().await,
+            schemas.first().unwrap().value_type().await,
             ValueType::Integer
         ));
         assert!(matches!(
@@ -1187,7 +1187,7 @@ mod tests {
         };
         let schemars = one_of.schemas.read().await;
         assert!(matches!(
-            schemars.get(0).unwrap().value_type().await,
+            schemars.first().unwrap().value_type().await,
             ValueType::Float
         ));
         assert!(matches!(

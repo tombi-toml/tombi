@@ -20,18 +20,17 @@ pub async fn completion(
         return Ok(None);
     }
 
-    if matches_accessors!(accessors, ["schema", "catalog", "path"])
-        || matches_accessors!(accessors, ["schemas", _, "path"])
-    {
-        if let Some(completions) = completion_file_path(
+    if (matches_accessors!(accessors, ["schema", "catalog", "path"])
+        || matches_accessors!(accessors, ["schemas", _, "path"]))
+        && let Some(completions) = completion_file_path(
             text_document_uri,
             document_tree,
             position,
             accessors,
             Some(&["json"]),
-        ) {
-            return Ok(Some(completions));
-        }
+        )
+    {
+        return Ok(Some(completions));
     }
 
     Ok(None)

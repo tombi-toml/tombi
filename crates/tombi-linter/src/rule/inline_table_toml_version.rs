@@ -16,18 +16,17 @@ impl Rule<tombi_ast::InlineTable> for InlineTableTomlVersionRule {
                 range: node.range(),
             });
         }
-        if node.has_last_key_value_trailing_comma() {
-            if let Some(comma_range) = node
+        if node.has_last_key_value_trailing_comma()
+            && let Some(comma_range) = node
                 .key_values_with_comma()
                 .last()
                 .and_then(|(_, comma)| comma.map(|c| c.range()))
-            {
-                l.extend_diagnostics(Diagnostic {
-                    kind: DiagnosticKind::ForbiddenInlineTableLastComma,
-                    level: SeverityLevel::Error,
-                    range: comma_range,
-                });
-            }
+        {
+            l.extend_diagnostics(Diagnostic {
+                kind: DiagnosticKind::ForbiddenInlineTableLastComma,
+                level: SeverityLevel::Error,
+                range: comma_range,
+            });
         }
     }
 }

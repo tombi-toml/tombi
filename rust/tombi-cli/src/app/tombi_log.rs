@@ -21,16 +21,14 @@ pub fn format(
 
         writeln!(f, "{}", record.args())?;
 
-        if show_trace_location {
-            if let (Some(file), Some(line)) = (record.file(), record.line()) {
-                let link = format!("{file}:{line}");
-                writeln!(
-                    f,
-                    "    {} {}",
-                    at_style(use_ansi_color).paint("at"),
-                    link_style(use_ansi_color).paint(link)
-                )?;
-            }
+        if show_trace_location && let (Some(file), Some(line)) = (record.file(), record.line()) {
+            let link = format!("{file}:{line}");
+            writeln!(
+                f,
+                "    {} {}",
+                at_style(use_ansi_color).paint("at"),
+                link_style(use_ansi_color).paint(link)
+            )?;
         }
 
         Ok(())

@@ -150,7 +150,7 @@ impl TableSchema {
                         None
                     }
                 } else {
-                    log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v.to_string());
+                    log::warn!("Invalid {X_TOMBI_ARRAY_VALUES_ORDER_BY}: {}", v);
                     None
                 }
             });
@@ -329,8 +329,8 @@ impl TableSchema {
                         v,
                         string_formats,
                         dialect,
-                        anchor_collector.as_deref_mut(),
-                        dynamic_anchor_collector.as_deref_mut(),
+                        anchor_collector,
+                        dynamic_anchor_collector,
                     )
                 })
                 .map(|schema| Arc::new(tokio::sync::RwLock::new(schema))),
@@ -496,7 +496,7 @@ impl FindSchemaCandidates for TableSchema {
                         .inspect_err(|err| {
                             log::warn!(
                                 "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
-                                schema_uri = schema_uri.to_string(),
+                                schema_uri = schema_uri,
                                 accessors = Accessors::from(accessors.to_vec()),
                             )
                         })
@@ -536,7 +536,7 @@ impl FindSchemaCandidates for TableSchema {
                 .inspect_err(|err| {
                     log::warn!(
                         "cannot resolve property schema: schema_uri={schema_uri} accessors={accessors} error={err}",
-                        schema_uri = schema_uri.to_string(),
+                        schema_uri = schema_uri,
                         accessors = Accessors::from(accessors.to_vec()),
                     )
                 })
@@ -617,7 +617,7 @@ impl XTombiTableKeysOrder {
                 Some(Self::Groups(sort_orders))
             }
             order => {
-                log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order.to_string());
+                log::warn!("Invalid {X_TOMBI_TABLE_KEYS_ORDER}: {}", order);
                 None
             }
         }

@@ -85,7 +85,7 @@ mod tests {
         let obj = table_to_json_object(&table);
         assert_eq!(
             obj.get("pi"),
-            Some(&tombi_json_value::Value::Number(3.14f64.into()))
+            Some(&tombi_json_value::Value::Number((314_f64 / 100.0).into()))
         );
     }
 

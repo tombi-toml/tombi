@@ -174,8 +174,8 @@ fn edit_recursive<'a: 'b, 'b>(
                                 }
                             };
 
-                            if pattern.is_match(key_text) {
-                                if let Ok(Some(current_schema)) = table_schema
+                            if pattern.is_match(key_text)
+                                && let Ok(Some(current_schema)) = table_schema
                                     .resolve_pattern_property_schema(
                                         &property_key,
                                         current_schema.schema_uri.clone(),
@@ -183,17 +183,16 @@ fn edit_recursive<'a: 'b, 'b>(
                                         schema_context.store,
                                     )
                                     .await
-                                {
-                                    return edit_recursive(
-                                        value,
-                                        edit_fn,
-                                        key_accessors,
-                                        accessors,
-                                        Some(current_schema.into_owned()),
-                                        schema_context,
-                                    )
-                                    .await;
-                                }
+                            {
+                                return edit_recursive(
+                                    value,
+                                    edit_fn,
+                                    key_accessors,
+                                    accessors,
+                                    Some(current_schema.into_owned()),
+                                    schema_context,
+                                )
+                                .await;
                             }
                         }
                     }

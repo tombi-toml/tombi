@@ -22,7 +22,7 @@ impl DocumentCommentDirectives {
             }
         }
 
-        found.then(|| document_comment_directives)
+        found.then_some(document_comment_directives)
     }
 }
 

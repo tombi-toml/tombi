@@ -73,8 +73,8 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                             if value.contains(position) {
                                 let accessor = Accessor::Index(index);
 
-                                if let Some(items) = &array_schema.items {
-                                    if let Ok(Some(current_schema)) =
+                                if let Some(items) = &array_schema.items
+                                    && let Ok(Some(current_schema)) =
                                         tombi_schema_store::resolve_schema_item(
                                             items,
                                             current_schema.schema_uri.clone(),
@@ -82,21 +82,20 @@ impl GetTypeDefinition for tombi_document_tree::Array {
                                             schema_context.store,
                                         )
                                         .await
-                                    {
-                                        return value
-                                            .get_type_definition(
-                                                position,
-                                                keys,
-                                                &accessors
-                                                    .iter()
-                                                    .cloned()
-                                                    .chain(std::iter::once(accessor.clone()))
-                                                    .collect_vec(),
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await;
-                                    }
+                                {
+                                    return value
+                                        .get_type_definition(
+                                            position,
+                                            keys,
+                                            &accessors
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(accessor.clone()))
+                                                .collect_vec(),
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await;
                                 }
 
                                 return value

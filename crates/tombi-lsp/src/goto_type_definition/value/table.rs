@@ -180,8 +180,7 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                     schema_key_range,
                                     referable_additional_property_schema,
                                 )) = &table_schema.additional_property_schema
-                                {
-                                    if let Ok(Some(current_schema)) =
+                                    && let Ok(Some(current_schema)) =
                                         tombi_schema_store::resolve_schema_item(
                                             referable_additional_property_schema,
                                             current_schema.schema_uri.clone(),
@@ -189,21 +188,20 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                                             schema_context.store,
                                         )
                                         .await
-                                    {
-                                        return value
-                                            .get_type_definition(
-                                                position,
-                                                &keys[1..],
-                                                &accessors,
-                                                Some(&current_schema),
-                                                schema_context,
-                                            )
-                                            .await
-                                            .map(|type_definition| {
-                                                type_definition
-                                                    .update_range(&accessors, schema_key_range)
-                                            });
-                                    }
+                                {
+                                    return value
+                                        .get_type_definition(
+                                            position,
+                                            &keys[1..],
+                                            &accessors,
+                                            Some(&current_schema),
+                                            schema_context,
+                                        )
+                                        .await
+                                        .map(|type_definition| {
+                                            type_definition
+                                                .update_range(&accessors, schema_key_range)
+                                        });
                                 }
 
                                 value

@@ -419,15 +419,15 @@ fn append_comma_range_if_exists(
             ) {
                 return Some(range);
             }
-        } else if let Some(group) = tombi_ast::ValueWithCommaGroup::cast(syntax_node) {
-            if let Some(range) = with_comma_item_range_contains_position(
+        } else if let Some(group) = tombi_ast::ValueWithCommaGroup::cast(syntax_node)
+            && let Some(range) = with_comma_item_range_contains_position(
                 group
                     .value_or_key_values_with_comma()
                     .map(|(item, comma)| (item.range(), comma.map(|comma| comma.range()))),
                 position,
-            ) {
-                return Some(range);
-            }
+            )
+        {
+            return Some(range);
         }
     }
 

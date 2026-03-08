@@ -29,10 +29,7 @@ pub async fn get_tombi_document_comment_directive_and_diagnostics(
 
     let mut total_document_tree_table: Option<tombi_document_tree::Table> = None;
     let mut total_diagnostics = Vec::new();
-    let mut tombi_directive_iter = root
-        .tombi_document_comment_directives()
-        .into_iter()
-        .peekable();
+    let mut tombi_directive_iter = root.tombi_document_comment_directives().peekable();
 
     if tombi_directive_iter.peek().is_some() {
         let toml_version = TOMBI_COMMENT_DIRECTIVE_TOML_VERSION;
