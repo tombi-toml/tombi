@@ -576,37 +576,19 @@ fn get_duplicated_ranges(
         .map(crate::convert::value_to_json_value)
         .collect_vec();
 
-    // Follow the previous main-branch strategy:
-    // 1) count each value occurrence, 2) build a set of duplicated values,
-    // 3) collect ranges for elements that belong to duplicated values.
-    let mut value_counts: Vec<(tombi_json_value::Value, usize)> = Vec::new();
-    for value in &values {
-        if let Some((_, count)) = value_counts.iter_mut().find(|(seen, _)| seen == value) {
-            *count += 1;
-        } else {
-            value_counts.push((value.clone(), 1));
-        }
-    }
-    let duplicated_values = value_counts
-        .into_iter()
-        .filter_map(|(value, count)| (count > 1).then_some(value))
-        .collect_vec();
-
-    if duplicated_values.is_empty() {
-        None
-    } else {
-        Some(
-            array_value
-                .values()
+    let duplicated_ranges = array_value
+        .values()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, value)| {
+            let current = &values[index];
+            let is_duplicated = values
                 .iter()
                 .enumerate()
-                .filter_map(|(idx, value)| {
-                    duplicated_values
-                        .iter()
-                        .any(|duplicated| duplicated == &values[idx])
-                        .then_some(value.range())
-                })
-                .collect(),
-        )
-    }
+                .any(|(other_index, other)| other_index != index && other == current);
+            is_duplicated.then_some(value.range())
+        })
+        .collect_vec();
+
+    (!duplicated_ranges.is_empty()).then_some(duplicated_ranges)
 }
