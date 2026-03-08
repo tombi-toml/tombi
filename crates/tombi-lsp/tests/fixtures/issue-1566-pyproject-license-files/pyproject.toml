@@ -1,0 +1,8 @@
+[project]
+name = "x"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = []
+authors = [{ name = "a", email = "a@example.com" }]
+classifiers = ["Programming Language :: Python :: 3"]
+dependencies = ["requests"]
