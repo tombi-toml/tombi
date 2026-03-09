@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnevaluatedItemsTest",
+  "type": "object",
+  "properties": {
+    "closed_tuple": {
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }],
+      "unevaluatedItems": false
+    },
+    "typed_tuple": {
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }],
+      "unevaluatedItems": { "type": "string" }
+    },
+    "contains_only_closed": {
+      "type": "array",
+      "contains": { "type": "integer" },
+      "unevaluatedItems": false
+    }
+  },
+  "additionalProperties": false
+}

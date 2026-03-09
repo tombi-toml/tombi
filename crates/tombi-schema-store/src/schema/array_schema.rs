@@ -24,6 +24,8 @@ pub struct ArraySchema {
     pub prefix_items: Option<Vec<SchemaItem>>,
     pub additional_items: Option<bool>,
     pub additional_items_schema: Option<SchemaItem>,
+    pub unevaluated_items: Option<bool>,
+    pub unevaluated_items_schema: Option<SchemaItem>,
     pub contains: Option<SchemaItem>,
     pub min_contains: Option<usize>,
     pub max_contains: Option<usize>,
@@ -56,6 +58,8 @@ impl ArraySchema {
             || object
                 .get("items")
                 .is_some_and(|value| value.as_array().is_some());
+        let supports_unevaluated =
+            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "unevaluatedItems"));
         Self {
             title: object
                 .get("title")
@@ -123,6 +127,29 @@ impl ArraySchema {
                     }
                     _ => None,
                 }
+            },
+            unevaluated_items: if supports_unevaluated {
+                match object.get("unevaluatedItems") {
+                    Some(tombi_json::ValueNode::Bool(b)) => Some(b.value),
+                    Some(tombi_json::ValueNode::Object(_)) => Some(true),
+                    _ => None,
+                }
+            } else {
+                None
+            },
+            unevaluated_items_schema: if supports_unevaluated {
+                match object.get("unevaluatedItems") {
+                    Some(value @ tombi_json::ValueNode::Object(_)) => schema_item_from_schema_value(
+                        value,
+                        string_formats,
+                        dialect,
+                        anchor_collector.as_deref_mut(),
+                        dynamic_anchor_collector.as_deref_mut(),
+                    ),
+                    _ => None,
+                }
+            } else {
+                None
             },
             contains: object.get("contains").and_then(|value| {
                 schema_item_from_schema_value(

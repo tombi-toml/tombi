@@ -143,3 +143,15 @@ pub fn format_assertion_vocab_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("format-assertion-vocab-test.schema.json")
 }
+
+pub fn unevaluated_items_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("unevaluated-items-test.schema.json")
+}
+
+pub fn unevaluated_properties_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("unevaluated-properties-test.schema.json")
+}

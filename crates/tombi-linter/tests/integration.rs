@@ -34,5 +34,9 @@ mod table_const_enum_test_schema;
 mod tombi_schema;
 #[path = "integration/tuple_items_test_schema.rs"]
 mod tuple_items_test_schema;
+#[path = "integration/unevaluated_items_test_schema.rs"]
+mod unevaluated_items_test_schema;
+#[path = "integration/unevaluated_properties_test_schema.rs"]
+mod unevaluated_properties_test_schema;
 #[path = "integration/untagged_union_schema.rs"]
 mod untagged_union_schema;
