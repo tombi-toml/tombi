@@ -233,6 +233,9 @@ async fn validate_array(
                     total_diagnostics.extend(diagnostics);
                 }
             } else if array_schema.additional_items == Some(false) {
+                if has_unevaluated_items {
+                    evaluated[index] = true;
+                }
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::ArrayAdditionalItems {
                         max_items: prefix_items.len(),
