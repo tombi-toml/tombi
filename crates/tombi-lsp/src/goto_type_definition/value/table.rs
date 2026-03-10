@@ -41,6 +41,47 @@ impl GetTypeDefinition for tombi_document_tree::Table {
                 return Some(hover_content);
             }
 
+            // Group-boundary directives are attached to container values, but they are not part of
+            // `Value::contains()`. Walk nested containers explicitly before the schema-based path
+            // resolution so goto-type-definition still reaches directive schemas.
+            for (key, value) in self.key_values() {
+                let nested_accessors = accessors
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(Accessor::Key(key.value.clone())))
+                    .collect_vec();
+
+                let nested_type_definition = match value {
+                    tombi_document_tree::Value::Array(array) => {
+                        array
+                            .get_type_definition(
+                                position,
+                                &[],
+                                &nested_accessors,
+                                None,
+                                schema_context,
+                            )
+                            .await
+                    }
+                    tombi_document_tree::Value::Table(table) => {
+                        table
+                            .get_type_definition(
+                                position,
+                                &[],
+                                &nested_accessors,
+                                None,
+                                schema_context,
+                            )
+                            .await
+                    }
+                    _ => None,
+                };
+
+                if nested_type_definition.is_some() {
+                    return nested_type_definition;
+                }
+            }
+
             if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
