@@ -10,7 +10,7 @@ use tombi_x_keyword::StringFormat;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
+    comment_directive::get_tombi_key_value_rules_and_diagnostics,
     validate::{
         format, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
         validate_adjacent_applicators,
@@ -28,7 +28,7 @@ impl Validate for tombi_document_tree::String {
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             let (lint_rules, lint_rules_diagnostics) =
-                get_tombi_key_table_value_rules_and_diagnostics::<
+                get_tombi_key_value_rules_and_diagnostics::<
                     StringCommonFormatRules,
                     StringCommonLintRules,
                 >(self.comment_directives(), accessors)
@@ -174,7 +174,7 @@ async fn validate_string(
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
 ) -> Result<(), crate::Error> {
-    let result = validate_raw_string(
+    let base_result = validate_raw_string(
         string_value.value(),
         &string_value.to_string(),
         string_value.range(),
@@ -184,44 +184,41 @@ async fn validate_string(
         string_value.comment_directives(),
     );
 
-    match result {
-        Ok(()) => {
-            let mut diagnostics = vec![];
+    let mut deprecated_diagnostics = vec![];
+    if base_result.is_ok() {
+        handle_deprecated_value(
+            &mut deprecated_diagnostics,
+            string_schema.deprecated,
+            accessors,
+            string_value,
+            string_value.comment_directives(),
+            lint_rules.as_ref().map(|rules| &rules.common),
+        );
+    }
 
-            handle_deprecated_value(
-                &mut diagnostics,
-                string_schema.deprecated,
-                accessors,
-                string_value,
-                string_value.comment_directives(),
-                lint_rules.as_ref().map(|rules| &rules.common),
-            );
-
-            let base_result = if diagnostics.is_empty() {
+    crate::validate::merge_validation_results(
+        crate::validate::merge_validation_results(
+            base_result,
+            if deprecated_diagnostics.is_empty() {
                 Ok(())
             } else {
-                Err(diagnostics.into())
-            };
-
-            crate::validate::merge_validation_results(
-                base_result,
-                validate_adjacent_applicators(
-                    string_value,
-                    accessors,
-                    string_schema.one_of.as_deref(),
-                    string_schema.any_of.as_deref(),
-                    string_schema.all_of.as_deref(),
-                    string_schema.not.as_deref(),
-                    current_schema,
-                    schema_context,
-                    comment_directives,
-                    lint_rules.map(|rules| &rules.common),
-                )
-                .await,
-            )
-        }
-        Err(error) => Err(error),
-    }
+                Err(deprecated_diagnostics.into())
+            },
+        ),
+        validate_adjacent_applicators(
+            string_value,
+            accessors,
+            string_schema.one_of.as_deref(),
+            string_schema.any_of.as_deref(),
+            string_schema.all_of.as_deref(),
+            string_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }
 
 /// Validate a string value against a `StringSchema`.

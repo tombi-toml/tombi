@@ -6,7 +6,7 @@ use tombi_schema_store::ValueSchema;
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
+    comment_directive::get_tombi_key_value_rules_and_diagnostics,
     validate::{
         handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
         validate_adjacent_applicators,
@@ -28,7 +28,7 @@ impl Validate for tombi_document_tree::Boolean {
                 .map(|directives| directives.cloned().collect_vec());
 
             let (lint_rules, lint_rules_diagnostics) =
-                get_tombi_key_table_value_rules_and_diagnostics::<
+                get_tombi_key_value_rules_and_diagnostics::<
                     BooleanCommonFormatRules,
                     BooleanCommonLintRules,
                 >(self.comment_directives(), accessors)

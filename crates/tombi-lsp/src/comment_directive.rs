@@ -8,7 +8,7 @@ use tombi_comment_directive::{
         ArrayOfTableCommonLintRules, InlineTableCommonFormatRules, InlineTableCommonLintRules,
         TombiGroupBoundaryDirectiveContent, TombiKeyArrayOfTableDirectiveContent,
         TombiKeyTableDirectiveContent, TombiRootTableDirectiveContent, TombiTableDirectiveContent,
-        TombiValueDirectiveContent, WithKeyFormatRules, WithKeyLintRules, WithKeyTableLintRules,
+        TombiValueDirectiveContent, WithKeyFormatRules, WithKeyLintRules,
     },
 };
 use tombi_document_tree::{ArrayKind, TableKind};
@@ -195,7 +195,7 @@ pub fn get_key_table_value_comment_directive_content_and_schema_uri<'a, FormatRu
 ) -> Option<(CommentDirectiveContext<String>, tombi_uri::SchemaUri)>
 where
     TombiValueDirectiveContent<FormatRules, LintRules>: TombiCommentDirectiveImpl,
-    TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyTableLintRules<LintRules>>:
+    TombiValueDirectiveContent<WithKeyFormatRules<FormatRules>, WithKeyLintRules<LintRules>>:
         TombiCommentDirectiveImpl,
 {
     let Some(comment_directives) = comment_directives else {
@@ -210,7 +210,7 @@ where
             } else {
                 TombiValueDirectiveContent::<
                     WithKeyFormatRules<FormatRules>,
-                    WithKeyTableLintRules<LintRules>,
+                    WithKeyLintRules<LintRules>,
                 >::comment_directive_schema_url()
             };
             return Some((comment_directive_context, schema_uri));

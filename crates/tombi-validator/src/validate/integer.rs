@@ -6,7 +6,7 @@ use tombi_schema_store::ValueSchema;
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
+    comment_directive::get_tombi_key_value_rules_and_diagnostics,
     validate::{
         handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
         is_multiple_of_with_tolerance, validate_adjacent_applicators,
@@ -24,7 +24,7 @@ impl Validate for tombi_document_tree::Integer {
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             let (lint_rules, lint_rules_diagnostics) =
-                get_tombi_key_table_value_rules_and_diagnostics::<
+                get_tombi_key_value_rules_and_diagnostics::<
                     IntegerCommonFormatRules,
                     IntegerCommonLintRules,
                 >(self.comment_directives(), accessors)

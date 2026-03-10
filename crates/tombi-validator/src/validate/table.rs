@@ -12,7 +12,7 @@ use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLev
 
 use crate::{
     comment_directive::{
-        get_tombi_key_rules_and_diagnostics, get_tombi_key_table_value_rules_and_diagnostics,
+        get_tombi_key_rules_and_diagnostics, get_tombi_key_value_rules_and_diagnostics,
         get_tombi_table_comment_directive_and_diagnostics,
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
@@ -318,16 +318,14 @@ async fn validate_table(
                 evaluated_keys.insert(accessor_raw_text.to_owned());
             }
 
-            // `additionalProperties` contributes to evaluated properties only when the keyword exists.
-            // When it's absent, unevaluatedProperties must still run.
-            let evaluated_by_additional_default = table_schema.additional_properties().is_some();
-            if evaluated_by_additional_default {
-                evaluated_keys.insert(accessor_raw_text.to_owned());
-            }
+            // `additionalProperties` suppresses `unevaluatedProperties` when the keyword exists,
+            // but `additionalProperties: false` must still flow through to key-not-allowed.
+            let evaluated_by_additional_keyword = table_schema.additional_properties().is_some();
+            let evaluated_by_other_keywords = evaluated_keys.contains(accessor_raw_text);
 
             if !validated_by_additional_schema
-                && !evaluated_by_additional_default
-                && !evaluated_keys.contains(accessor_raw_text)
+                && !evaluated_by_additional_keyword
+                && !evaluated_by_other_keywords
             {
                 if let Some(schema_item) = &table_schema.unevaluated_property_schema
                     && let Ok(Some(unevaluated_schema)) = tombi_schema_store::resolve_schema_item(
@@ -362,7 +360,7 @@ async fn validate_table(
                     continue;
                 }
             }
-            if evaluated_keys.contains(accessor_raw_text) {
+            if validated_by_additional_schema || evaluated_by_other_keywords {
                 continue;
             }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
@@ -723,7 +721,7 @@ async fn validate_table(
     {
         for key in table_value.keys() {
             let (lint_rules, lint_rules_diagnostics) =
-                get_tombi_key_table_value_rules_and_diagnostics::<
+                get_tombi_key_value_rules_and_diagnostics::<
                     StringCommonFormatRules,
                     StringCommonLintRules,
                 >(key.comment_directives(), accessors)

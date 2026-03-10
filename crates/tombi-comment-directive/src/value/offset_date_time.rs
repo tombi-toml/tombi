@@ -5,7 +5,7 @@ use tombi_uri::SchemaUri;
 use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
-    WithKeyFormatRules, WithKeyTableLintRules,
+    WithKeyFormatRules, WithKeyLintRules,
 };
 
 pub type OffsetDateTimeFormatRules = EmptyFormatRules;
@@ -14,7 +14,7 @@ pub type OffsetDateTimeCommonFormatRules = WithCommonFormatRules<OffsetDateTimeF
 pub type OffsetDateTimeCommonLintRules = WithCommonLintRules<OffsetDateTimeLintRules>;
 
 pub type KeyOffsetDateTimeCommonFormatRules = WithKeyFormatRules<OffsetDateTimeCommonFormatRules>;
-pub type KeyOffsetDateTimeCommonLintRules = WithKeyTableLintRules<OffsetDateTimeCommonLintRules>;
+pub type KeyOffsetDateTimeCommonLintRules = WithKeyLintRules<OffsetDateTimeCommonLintRules>;
 
 pub type TombiOffsetDateTimeDirectiveContent =
     TombiValueDirectiveContent<OffsetDateTimeCommonFormatRules, OffsetDateTimeCommonLintRules>;
