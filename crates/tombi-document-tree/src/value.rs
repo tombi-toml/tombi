@@ -166,19 +166,6 @@ impl Value {
             || self.comment_directives().is_some_and(|mut directives| {
                 directives.any(|comment_directive| comment_directive.range().contains(position))
             })
-            || match self {
-                Value::Array(array) => array
-                    .group_boundary_comment_directives()
-                    .is_some_and(|mut directives| {
-                        directives.any(|comment_directive| comment_directive.range().contains(position))
-                    }),
-                Value::Table(table) => table
-                    .group_boundary_comment_directives()
-                    .is_some_and(|mut directives| {
-                        directives.any(|comment_directive| comment_directive.range().contains(position))
-                    }),
-                _ => false,
-            }
     }
 }
 
