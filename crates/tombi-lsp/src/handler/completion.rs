@@ -1,4 +1,5 @@
 use itertools::Either;
+use tombi_comment_directive::{TombiCommentDirectiveImpl, value::TombiGroupBoundaryDirectiveContent};
 use tombi_extension::{CommentContext, CompletionContent, CompletionHint};
 use tombi_text::IntoLsp;
 use tower_lsp::lsp_types::{
@@ -10,7 +11,9 @@ use crate::{
     completion::{
         extract_keys_and_hint, find_completion_contents_with_tree, get_comment_context,
         get_document_comment_directive_completion_contents,
+        get_tombi_comment_directive_content_completion_contents,
     },
+    comment_directive::GetCommentDirectiveContext,
     config_manager::ConfigSchemaStore,
 };
 
@@ -218,6 +221,20 @@ pub async fn handle_completion(
         comment_context.as_ref(),
     )
     .await?
+    {
+        completion_items.extend(items);
+    }
+
+    if completion_items.iter().all(|item| !item.in_comment)
+        && let Some(CommentContext::ValueDirective(comment)) = &comment_context
+        && let Some(comment_directive_context) = comment
+            .get_tombi_value_directive()
+            .and_then(|directive| directive.get_context(position))
+        && let Some(items) = get_tombi_comment_directive_content_completion_contents(
+            comment_directive_context,
+            TombiGroupBoundaryDirectiveContent::comment_directive_schema_url(),
+        )
+        .await
     {
         completion_items.extend(items);
     }
