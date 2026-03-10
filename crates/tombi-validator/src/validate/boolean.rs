@@ -23,6 +23,10 @@ impl Validate for tombi_document_tree::Boolean {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
+            let comment_directives = self
+                .comment_directives()
+                .map(|directives| directives.cloned().collect_vec());
+
             let (lint_rules, lint_rules_diagnostics) =
                 get_tombi_key_table_value_rules_and_diagnostics::<
                     BooleanCommonFormatRules,
@@ -38,9 +42,7 @@ impl Validate for tombi_document_tree::Boolean {
                         boolean_schema,
                         current_schema,
                         schema_context,
-                        self.comment_directives()
-                            .map(|directives| directives.cloned().collect_vec())
-                            .as_deref(),
+                        comment_directives.as_deref(),
                         lint_rules.as_ref(),
                     )
                     .await,
@@ -51,9 +53,7 @@ impl Validate for tombi_document_tree::Boolean {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -65,9 +65,7 @@ impl Validate for tombi_document_tree::Boolean {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -79,9 +77,7 @@ impl Validate for tombi_document_tree::Boolean {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await

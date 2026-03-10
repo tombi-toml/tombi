@@ -1,6 +1,7 @@
-use std::{borrow::Cow, collections::HashSet};
+use std::borrow::Cow;
 
 use itertools::Itertools;
+use tombi_hashmap::HashSet;
 use tombi_comment_directive::value::{
     StringCommonFormatRules, StringCommonLintRules, TableCommonLintRules,
 };
@@ -33,6 +34,10 @@ impl Validate for tombi_document_tree::Table {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
+            let comment_directives = self
+                .comment_directives()
+                .map(|directives| directives.cloned().collect_vec());
+
             if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
                 .await
@@ -62,9 +67,7 @@ impl Validate for tombi_document_tree::Table {
                         table_schema,
                         current_schema,
                         schema_context,
-                        self.comment_directives()
-                            .map(|directives| directives.cloned().collect_vec())
-                            .as_deref(),
+                        comment_directives.as_deref(),
                         lint_rules.as_ref(),
                     )
                     .await,
@@ -75,9 +78,7 @@ impl Validate for tombi_document_tree::Table {
                             one_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -89,9 +90,7 @@ impl Validate for tombi_document_tree::Table {
                             any_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -103,9 +102,7 @@ impl Validate for tombi_document_tree::Table {
                             all_of_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             lint_rules.as_ref().map(|rules| &rules.common),
                         )
                         .await
@@ -323,8 +320,7 @@ async fn validate_table(
 
             // `additionalProperties` contributes to evaluated properties only when the keyword exists.
             // When it's absent, unevaluatedProperties must still run.
-            let evaluated_by_additional_default =
-                table_schema.additional_properties() == Some(true);
+            let evaluated_by_additional_default = table_schema.additional_properties().is_some();
             if evaluated_by_additional_default {
                 evaluated_keys.insert(accessor_raw_text.to_owned());
             }
