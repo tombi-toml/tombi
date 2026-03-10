@@ -22,7 +22,8 @@
 - [x] `anyOf` / `oneOf` / `allOf` の成功判定を「assertion 真偽」と「diagnostics severity」で分離する（2026-03-08 対応）
 - [x] `uniqueItems` を複合値（配列/オブジェクト）まで含めた deep-equality 判定に拡張する（2026-03-08 対応）
 - [x] `multipleOf` の浮動小数誤差対策（decimal/big rational 等）を行う（2026-03-08 対応）
-- [ ] JSON-Schema-Test-Suite を導入し、draft ごとの pass rate を計測する
+- [x] JSON-Schema-Test-Suite を導入し、draft ごとの pass rate を計測する（2026-03-09 対応: object-root かつ TOML 表現可能な official subset を `crates/tombi-linter/tests/integration/json_schema_test_suite.rs` で計測）
+  備考: 2026-03-10 時点の subset pass rate は draft-07 = 49/49, 2019-09 = 8/8, 2020-12 = 33/33
 
 ## 2. draft-07 TODO（基線）
 

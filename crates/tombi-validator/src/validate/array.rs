@@ -11,7 +11,8 @@ use crate::{
     comment_directive::get_tombi_array_comment_directive_and_diagnostics,
     validate::{
         handle_deprecated, handle_type_mismatch, handle_unused_noqa,
-        if_then_else::validate_if_then_else, is_assertion_success, not_schema::validate_not,
+        if_then_else::validate_if_then_else, is_assertion_success, merge_validation_results,
+        validate_adjacent_applicators,
     },
 };
 
@@ -52,17 +53,16 @@ impl Validate for tombi_document_tree::Array {
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => {
-                        validate_array(
-                            self,
-                            accessors,
-                            array_schema,
-                            current_schema,
-                            schema_context,
-                            lint_rules.as_ref(),
-                        )
-                        .await
-                    }
+                    ValueSchema::Array(array_schema) => validate_array(
+                        self,
+                        accessors,
+                        array_schema,
+                        current_schema,
+                        schema_context,
+                        comment_directives.as_deref(),
+                        lint_rules.as_ref(),
+                    )
+                    .await,
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
@@ -135,27 +135,13 @@ async fn validate_array(
     array_schema: &tombi_schema_store::ArraySchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&ArrayCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut total_diagnostics = vec![];
     let mut evaluated = vec![false; array_value.values().len()];
-    let has_unevaluated_items =
-        array_schema.unevaluated_items_schema.is_some() || array_schema.unevaluated_items == Some(false);
-
-    if let Some(not_schema) = array_schema.not.as_ref()
-        && let Err(error) = validate_not(
-            array_value,
-            accessors,
-            not_schema,
-            current_schema,
-            schema_context,
-            array_value.comment_directives(),
-            lint_rules.as_ref().map(|rules| &rules.common),
-        )
-        .await
-    {
-        total_diagnostics.extend(error.diagnostics);
-    }
+    let has_unevaluated_items = array_schema.unevaluated_items_schema.is_some()
+        || array_schema.unevaluated_items == Some(false);
 
     if let Some(if_then_else_schema) = array_schema.if_then_else.as_ref()
         && let Err(error) = validate_if_then_else(
@@ -387,8 +373,9 @@ async fn validate_array(
                     .cloned()
                     .chain(std::iter::once(tombi_schema_store::Accessor::Index(index)))
                     .collect_vec();
-                if let Err(crate::Error { diagnostics, .. }) =
-                    value.validate(&new_accessors, Some(schema), schema_context).await
+                if let Err(crate::Error { diagnostics, .. }) = value
+                    .validate(&new_accessors, Some(schema), schema_context)
+                    .await
                 {
                     total_diagnostics.extend(diagnostics);
                 }
@@ -590,11 +577,28 @@ async fn validate_array(
         );
     }
 
-    if total_diagnostics.is_empty() {
+    let base_result = if total_diagnostics.is_empty() {
         Ok(())
     } else {
         Err(total_diagnostics.into())
-    }
+    };
+
+    merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            array_value,
+            accessors,
+            array_schema.one_of.as_deref(),
+            array_schema.any_of.as_deref(),
+            array_schema.all_of.as_deref(),
+            array_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }
 
 async fn validate_array_without_schema(

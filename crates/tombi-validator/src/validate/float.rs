@@ -9,7 +9,7 @@ use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{
         handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        is_multiple_of_with_tolerance,
+        is_multiple_of_with_tolerance, validate_adjacent_applicators,
     },
 };
 
@@ -32,9 +32,18 @@ impl Validate for tombi_document_tree::Float {
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::Float(float_schema) => {
-                        validate_float(self, accessors, float_schema, lint_rules.as_ref()).await
-                    }
+                    ValueSchema::Float(float_schema) => validate_float(
+                        self,
+                        accessors,
+                        float_schema,
+                        current_schema,
+                        schema_context,
+                        self.comment_directives()
+                            .map(|directives| directives.cloned().collect_vec())
+                            .as_deref(),
+                        lint_rules.as_ref(),
+                    )
+                    .await,
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
@@ -111,6 +120,9 @@ async fn validate_float(
     float_value: &tombi_document_tree::Float,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
+    current_schema: &tombi_schema_store::CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&FloatCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
@@ -362,9 +374,26 @@ async fn validate_float(
         );
     }
 
-    if diagnostics.is_empty() {
+    let base_result = if diagnostics.is_empty() {
         Ok(())
     } else {
         Err(diagnostics.into())
-    }
+    };
+
+    crate::validate::merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            float_value,
+            accessors,
+            float_schema.one_of.as_deref(),
+            float_schema.any_of.as_deref(),
+            float_schema.all_of.as_deref(),
+            float_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }

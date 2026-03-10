@@ -1,5 +1,7 @@
 #[path = "integration/anchor_dynamic_ref_test_schema.rs"]
 mod anchor_dynamic_ref_test_schema;
+#[path = "integration/adjacent_applicators_test_schema.rs"]
+mod adjacent_applicators_test_schema;
 #[path = "integration/array_const_enum_test_schema.rs"]
 mod array_const_enum_test_schema;
 #[path = "integration/cargo_schema.rs"]
@@ -16,6 +18,8 @@ mod dependent_required_test_schema;
 mod dependent_schemas_test_schema;
 #[path = "integration/format_annotation_test_schema.rs"]
 mod format_annotation_test_schema;
+#[path = "integration/json_schema_test_suite.rs"]
+mod json_schema_test_suite;
 #[path = "integration/min_max_contains_test_schema.rs"]
 mod min_max_contains_test_schema;
 #[path = "integration/non_schema.rs"]

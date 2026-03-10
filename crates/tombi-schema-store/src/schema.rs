@@ -110,6 +110,69 @@ pub(crate) fn boolean_value_schema(allow: bool) -> ValueSchema {
     }
 }
 
+pub(crate) fn adjacent_applicators(
+    object: &tombi_json::ObjectNode,
+    string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+    mut anchor_collector: Option<&mut AnchorCollector>,
+    mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
+) -> (
+    Option<Box<OneOfSchema>>,
+    Option<Box<AnyOfSchema>>,
+    Option<Box<AllOfSchema>>,
+    Option<Box<NotSchema>>,
+) {
+    let one_of = object
+        .get("oneOf")
+        .is_some()
+        .then(|| {
+            OneOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })
+        .map(Box::new);
+    let any_of = object
+        .get("anyOf")
+        .is_some()
+        .then(|| {
+            AnyOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })
+        .map(Box::new);
+    let all_of = object
+        .get("allOf")
+        .is_some()
+        .then(|| {
+            AllOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })
+        .map(Box::new);
+    let not = NotSchema::new(
+        object,
+        string_formats,
+        dialect,
+        anchor_collector,
+        dynamic_anchor_collector,
+    )
+    .map(Box::new);
+
+    (one_of, any_of, all_of, not)
+}
+
 pub(crate) fn update_named_anchors(
     object: &tombi_json::ObjectNode,
     referable: &Referable<ValueSchema>,

@@ -11,7 +11,10 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{format, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
+    validate::{
+        format, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
+        validate_adjacent_applicators,
+    },
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -44,6 +47,11 @@ impl Validate for tombi_document_tree::String {
                             self,
                             accessors,
                             string_schema,
+                            current_schema,
+                            schema_context,
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             format_assertion,
                             lint_rules.as_ref(),
                         )
@@ -160,6 +168,9 @@ async fn validate_string(
     string_value: &tombi_document_tree::String,
     accessors: &[tombi_schema_store::Accessor],
     string_schema: &tombi_schema_store::StringSchema,
+    current_schema: &tombi_schema_store::CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[TombiValueCommentDirective]>,
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
 ) -> Result<(), crate::Error> {
@@ -186,11 +197,28 @@ async fn validate_string(
                 lint_rules.as_ref().map(|rules| &rules.common),
             );
 
-            if diagnostics.is_empty() {
+            let base_result = if diagnostics.is_empty() {
                 Ok(())
             } else {
                 Err(diagnostics.into())
-            }
+            };
+
+            crate::validate::merge_validation_results(
+                base_result,
+                validate_adjacent_applicators(
+                    string_value,
+                    accessors,
+                    string_schema.one_of.as_deref(),
+                    string_schema.any_of.as_deref(),
+                    string_schema.all_of.as_deref(),
+                    string_schema.not.as_deref(),
+                    current_schema,
+                    schema_context,
+                    comment_directives,
+                    lint_rules.map(|rules| &rules.common),
+                )
+                .await,
+            )
         }
         Err(error) => Err(error),
     }

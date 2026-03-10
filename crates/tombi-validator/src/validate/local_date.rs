@@ -7,7 +7,10 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
+    validate::{
+        handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
+        validate_adjacent_applicators,
+    },
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -29,10 +32,18 @@ impl Validate for LocalDate {
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalDate(local_date_schema) => {
-                        validate_local_date(self, accessors, local_date_schema, lint_rules.as_ref())
-                            .await
-                    }
+                    ValueSchema::LocalDate(local_date_schema) => validate_local_date(
+                        self,
+                        accessors,
+                        local_date_schema,
+                        current_schema,
+                        schema_context,
+                        self.comment_directives()
+                            .map(|directives| directives.cloned().collect_vec())
+                            .as_deref(),
+                        lint_rules.as_ref(),
+                    )
+                    .await,
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
@@ -109,6 +120,9 @@ async fn validate_local_date(
     local_date_value: &LocalDate,
     accessors: &[tombi_schema_store::Accessor],
     local_date_schema: &tombi_schema_store::LocalDateSchema,
+    current_schema: &tombi_schema_store::CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&LocalDateCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
@@ -189,9 +203,26 @@ async fn validate_local_date(
         );
     }
 
-    if diagnostics.is_empty() {
+    let base_result = if diagnostics.is_empty() {
         Ok(())
     } else {
         Err(diagnostics.into())
-    }
+    };
+
+    crate::validate::merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            local_date_value,
+            accessors,
+            local_date_schema.one_of.as_deref(),
+            local_date_schema.any_of.as_deref(),
+            local_date_schema.all_of.as_deref(),
+            local_date_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }

@@ -9,7 +9,7 @@ use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{
         handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        is_multiple_of_with_tolerance,
+        is_multiple_of_with_tolerance, validate_adjacent_applicators,
     },
 };
 
@@ -37,6 +37,11 @@ impl Validate for tombi_document_tree::Integer {
                             self,
                             accessors,
                             integer_schema,
+                            current_schema,
+                            schema_context,
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref(),
                         )
                         .await
@@ -46,6 +51,11 @@ impl Validate for tombi_document_tree::Integer {
                             self,
                             accessors,
                             float_schema,
+                            current_schema,
+                            schema_context,
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
                             lint_rules.as_ref(),
                         )
                         .await
@@ -126,6 +136,9 @@ async fn validate_integer_schema(
     integer_value: &tombi_document_tree::Integer,
     accessors: &[tombi_schema_store::Accessor],
     integer_schema: &tombi_schema_store::IntegerSchema,
+    current_schema: &tombi_schema_store::CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&IntegerCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
@@ -376,17 +389,37 @@ async fn validate_integer_schema(
         );
     }
 
-    if diagnostics.is_empty() {
+    let base_result = if diagnostics.is_empty() {
         Ok(())
     } else {
         Err(diagnostics.into())
-    }
+    };
+
+    crate::validate::merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            integer_value,
+            accessors,
+            integer_schema.one_of.as_deref(),
+            integer_schema.any_of.as_deref(),
+            integer_schema.all_of.as_deref(),
+            integer_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }
 
 async fn validate_float_schema_for_integer(
     integer_value: &tombi_document_tree::Integer,
     accessors: &[tombi_schema_store::Accessor],
     float_schema: &tombi_schema_store::FloatSchema,
+    current_schema: &tombi_schema_store::CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&IntegerCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
@@ -561,9 +594,26 @@ async fn validate_float_schema_for_integer(
         );
     }
 
-    if diagnostics.is_empty() {
+    let base_result = if diagnostics.is_empty() {
         Ok(())
     } else {
         Err(diagnostics.into())
-    }
+    };
+
+    crate::validate::merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            integer_value,
+            accessors,
+            float_schema.one_of.as_deref(),
+            float_schema.any_of.as_deref(),
+            float_schema.all_of.as_deref(),
+            float_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }

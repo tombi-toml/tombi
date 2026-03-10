@@ -9,13 +9,13 @@ use tombi_x_keyword::{
 };
 
 use super::{
-    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, PropertySchema,
-    SchemaAccessor, SchemaDefinitions, SchemaItem, SchemaPatternProperties, SchemaUri, ValueSchema,
-    referable_from_schema_value, schema_item_from_schema_value,
+    AnchorCollector, CurrentSchema, DynamicAnchorCollector, FindSchemaCandidates, NotSchema,
+    PropertySchema, SchemaAccessor, SchemaDefinitions, SchemaItem, SchemaPatternProperties,
+    SchemaUri, ValueSchema, referable_from_schema_value, schema_item_from_schema_value,
 };
 use crate::{
     Accessor, SchemaProperties, SchemaStore,
-    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
+    schema::{all_of_schema::AllOfSchema, if_then_else_schema::IfThenElseSchema},
 };
 
 #[derive(Debug, Clone)]
@@ -55,7 +55,10 @@ pub struct TableSchema {
     pub examples: Option<Vec<tombi_json::Object>>,
     pub deprecated: Option<bool>,
     pub additional_key_label: Option<String>,
-    pub not: Option<NotSchema>,
+    pub one_of: Option<Box<super::OneOfSchema>>,
+    pub any_of: Option<Box<super::AnyOfSchema>>,
+    pub all_of: Option<Box<AllOfSchema>>,
+    pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
 }
 
@@ -128,8 +131,8 @@ impl TableSchema {
             }
             _ => (None, None),
         };
-        let supports_unevaluated =
-            dialect.is_some_and(|dialect| crate::supports_keyword(dialect, "unevaluatedProperties"));
+        let supports_unevaluated = dialect
+            .is_some_and(|dialect| crate::supports_keyword(dialect, "unevaluatedProperties"));
         let (unevaluated_properties, unevaluated_property_schema) = if supports_unevaluated {
             match object_node.get("unevaluatedProperties") {
                 Some(tombi_json::ValueNode::Bool(allow)) => (Some(allow.value), None),
@@ -168,6 +171,13 @@ impl TableSchema {
                     None
                 }
             });
+        let (one_of, any_of, all_of, not) = crate::adjacent_applicators(
+            object_node,
+            string_formats,
+            dialect,
+            anchor_collector.as_deref_mut(),
+            dynamic_anchor_collector.as_deref_mut(),
+        );
 
         Self {
             title: object_node
@@ -226,23 +236,17 @@ impl TableSchema {
                                     Dependency::Property(required_keys),
                                 );
                             }
-                            value @ tombi_json::ValueNode::Object(_) => {
-                                if let Some(schema) = referable_from_schema_value(
+                            value => {
+                                if let Some(schema) = schema_item_from_schema_value(
                                     value,
                                     string_formats,
                                     dialect,
                                     anchor_collector.as_deref_mut(),
                                     dynamic_anchor_collector.as_deref_mut(),
                                 ) {
-                                    deps.insert(
-                                        key.value.to_string(),
-                                        Dependency::Schema(Arc::new(tokio::sync::RwLock::new(
-                                            schema,
-                                        ))),
-                                    );
+                                    deps.insert(key.value.to_string(), Dependency::Schema(schema));
                                 }
                             }
-                            _ => {}
                         }
                     }
                     deps
@@ -270,17 +274,14 @@ impl TableSchema {
                 .map(|obj| {
                     let mut map = tombi_hashmap::IndexMap::new();
                     for (key, value) in &obj.properties {
-                        if let Some(schema) = referable_from_schema_value(
+                        if let Some(schema) = schema_item_from_schema_value(
                             value,
                             string_formats,
                             dialect,
                             anchor_collector.as_deref_mut(),
                             dynamic_anchor_collector.as_deref_mut(),
                         ) {
-                            map.insert(
-                                key.value.to_string(),
-                                Arc::new(tokio::sync::RwLock::new(schema)),
-                            );
+                            map.insert(key.value.to_string(), schema);
                         }
                     }
                     map
@@ -320,13 +321,10 @@ impl TableSchema {
             additional_key_label: object_node
                 .get(X_TOMBI_ADDITIONAL_KEY_LABEL)
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
-            not: NotSchema::new(
-                object_node,
-                string_formats,
-                dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
-            ),
+            one_of,
+            any_of,
+            all_of,
+            not,
             if_then_else: IfThenElseSchema::new(
                 object_node,
                 string_formats,

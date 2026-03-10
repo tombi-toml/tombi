@@ -1,9 +1,10 @@
+use std::{borrow::Cow, collections::HashSet};
+
 use itertools::Itertools;
-use std::borrow::Cow;
 use tombi_comment_directive::value::{
     StringCommonFormatRules, StringCommonLintRules, TableCommonLintRules,
 };
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree::{IntoDocumentTreeAndErrors, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
@@ -16,7 +17,8 @@ use crate::{
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         handle_deprecated, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        if_then_else::validate_if_then_else, not_schema::validate_not, string::validate_raw_string,
+        if_then_else::validate_if_then_else, is_assertion_success, merge_validation_results,
+        string::validate_raw_string, validate_adjacent_applicators,
     },
 };
 
@@ -54,17 +56,18 @@ impl Validate for tombi_document_tree::Table {
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::Table(table_schema) => {
-                        validate_table(
-                            self,
-                            accessors,
-                            table_schema,
-                            current_schema,
-                            schema_context,
-                            lint_rules.as_ref(),
-                        )
-                        .await
-                    }
+                    ValueSchema::Table(table_schema) => validate_table(
+                        self,
+                        accessors,
+                        table_schema,
+                        current_schema,
+                        schema_context,
+                        self.comment_directives()
+                            .map(|directives| directives.cloned().collect_vec())
+                            .as_deref(),
+                        lint_rules.as_ref(),
+                    )
+                    .await,
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,
@@ -143,10 +146,19 @@ async fn validate_table(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     table_rules: Option<&TableCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
+    let mut evaluated_keys = collect_nested_evaluated_keys(
+        table_value,
+        accessors,
+        table_schema,
+        current_schema,
+        schema_context,
+    )
+    .await;
     for (key, value) in table_value.key_values() {
         let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
             .await
@@ -172,6 +184,7 @@ async fn validate_table(
             .contains_key(&schema_accessor)
         {
             matched_key = true;
+            evaluated_keys.insert(accessor_raw_text.to_owned());
 
             if let Ok(Some(current_schema)) = table_schema
                 .resolve_property_schema(
@@ -209,6 +222,7 @@ async fn validate_table(
                 };
                 if pattern.is_match(accessor_raw_text) {
                     matched_key = true;
+                    evaluated_keys.insert(accessor_raw_text.to_owned());
                     if let Ok(Some(current_schema)) = table_schema
                         .resolve_pattern_property_schema(
                             &pattern_key,
@@ -304,13 +318,21 @@ async fn validate_table(
                     total_diagnostics.extend(diagnostics);
                 }
                 validated_by_additional_schema = true;
+                evaluated_keys.insert(accessor_raw_text.to_owned());
             }
 
             // `additionalProperties` contributes to evaluated properties only when the keyword exists.
             // When it's absent, unevaluatedProperties must still run.
-            let evaluated_by_additional_default = table_schema.additional_properties().is_some();
+            let evaluated_by_additional_default =
+                table_schema.additional_properties() == Some(true);
+            if evaluated_by_additional_default {
+                evaluated_keys.insert(accessor_raw_text.to_owned());
+            }
 
-            if !validated_by_additional_schema && !evaluated_by_additional_default {
+            if !validated_by_additional_schema
+                && !evaluated_by_additional_default
+                && !evaluated_keys.contains(accessor_raw_text)
+            {
                 if let Some(schema_item) = &table_schema.unevaluated_property_schema
                     && let Ok(Some(unevaluated_schema)) = tombi_schema_store::resolve_schema_item(
                         schema_item,
@@ -343,6 +365,9 @@ async fn validate_table(
                     );
                     continue;
                 }
+            }
+            if evaluated_keys.contains(accessor_raw_text) {
+                continue;
             }
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
@@ -699,23 +724,8 @@ async fn validate_table(
         )
         .await
         .inspect_err(|err| log::warn!("{err}"))
-        && let ValueSchema::String(string_schema) =
-            property_name_current_schema.value_schema.as_ref()
     {
-        let allows_empty_key = string_schema.min_length == Some(0);
-
-        let format_assertion = schema_context
-            .root_schema
-            .is_none_or(|root| root.format_assertion())
-            || string_schema
-                .format
-                .is_some_and(|format| schema_context.has_string_format(format));
-
         for key in table_value.keys() {
-            if !allows_empty_key {
-                check_key_empty(key, &mut total_diagnostics).await;
-            }
-
             let (lint_rules, lint_rules_diagnostics) =
                 get_tombi_key_table_value_rules_and_diagnostics::<
                     StringCommonFormatRules,
@@ -723,15 +733,14 @@ async fn validate_table(
                 >(key.comment_directives(), accessors)
                 .await;
 
-            let result = validate_raw_string(
-                &key.value,
-                &key.value,
-                key.range(),
-                string_schema,
-                format_assertion,
+            let result = validate_property_name(
+                key,
+                accessors,
+                &property_name_current_schema,
+                schema_context,
                 lint_rules.as_ref(),
-                key.comment_directives(),
-            );
+            )
+            .await;
 
             match result {
                 Ok(()) => {
@@ -762,21 +771,6 @@ async fn validate_table(
         );
     }
 
-    if let Some(not_schema) = table_schema.not.as_ref()
-        && let Err(error) = validate_not(
-            table_value,
-            accessors,
-            not_schema,
-            current_schema,
-            schema_context,
-            table_value.comment_directives(),
-            table_rules.as_ref().map(|rules| &rules.common),
-        )
-        .await
-    {
-        total_diagnostics.extend(error.diagnostics);
-    }
-
     if let Some(if_then_else_schema) = table_schema.if_then_else.as_ref()
         && let Err(error) = validate_if_then_else(
             table_value,
@@ -790,14 +784,321 @@ async fn validate_table(
         total_diagnostics.extend(error.diagnostics);
     }
 
-    if total_diagnostics.is_empty() {
+    let base_result = if total_diagnostics.is_empty() {
         Ok(())
     } else {
         Err(crate::Error {
             score: total_score,
             diagnostics: total_diagnostics,
         })
+    };
+
+    merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            table_value,
+            accessors,
+            table_schema.one_of.as_deref(),
+            table_schema.any_of.as_deref(),
+            table_schema.all_of.as_deref(),
+            table_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            table_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
+}
+
+async fn validate_property_name(
+    key: &tombi_document_tree::Key,
+    accessors: &[Accessor],
+    property_name_current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    lint_rules: Option<&StringCommonLintRules>,
+) -> Result<(), crate::Error> {
+    if let ValueSchema::AnyOf(any_of_schema) = property_name_current_schema.value_schema.as_ref() {
+        if any_of_schema.schemas.read().await.is_empty() {
+            return Ok(());
+        }
     }
+
+    if let ValueSchema::OneOf(one_of_schema) = property_name_current_schema.value_schema.as_ref() {
+        if one_of_schema.schemas.read().await.is_empty() {
+            return Err(vec![tombi_diagnostic::Diagnostic::new_error(
+                "Property name is not allowed",
+                "property-name-not-allowed",
+                key.range(),
+            )]
+            .into());
+        }
+    }
+
+    match property_name_current_schema.value_schema.as_ref() {
+        ValueSchema::String(string_schema) => {
+            let allows_empty_key = string_schema.min_length == Some(0);
+            if !allows_empty_key {
+                let mut diagnostics = vec![];
+                check_key_empty(key, &mut diagnostics).await;
+                if !diagnostics.is_empty() {
+                    return Err(diagnostics.into());
+                }
+            }
+
+            let format_assertion = schema_context
+                .root_schema
+                .is_none_or(|root| root.format_assertion())
+                || string_schema
+                    .format
+                    .is_some_and(|format| schema_context.has_string_format(format));
+
+            validate_raw_string(
+                &key.value,
+                &key.value,
+                key.range(),
+                string_schema,
+                format_assertion,
+                lint_rules,
+                key.comment_directives(),
+            )
+        }
+        _ => {
+            let synthetic_source = format!(
+                "__tombi_property_name__ = {}",
+                serde_json::to_string(&key.value).expect("property name must serialize")
+            );
+            let (root, parse_errors) =
+                tombi_parser::parse(&synthetic_source).into_root_and_errors();
+            if !parse_errors.is_empty() {
+                return Ok(());
+            }
+
+            let (document_tree, tree_errors) = root
+                .into_document_tree_and_errors(schema_context.toml_version)
+                .into();
+            if !tree_errors.is_empty() {
+                return Ok(());
+            }
+
+            let Some((_, value)) =
+                tombi_document_tree::dig_keys(&document_tree, &["__tombi_property_name__"])
+            else {
+                return Ok(());
+            };
+
+            let synthetic_accessors = accessors
+                .iter()
+                .cloned()
+                .chain(std::iter::once(Accessor::Key(key.value.clone())))
+                .collect_vec();
+
+            value
+                .validate(
+                    &synthetic_accessors,
+                    Some(property_name_current_schema),
+                    schema_context,
+                )
+                .await
+        }
+    }
+}
+
+async fn collect_nested_evaluated_keys(
+    table_value: &tombi_document_tree::Table,
+    accessors: &[Accessor],
+    table_schema: &tombi_schema_store::TableSchema,
+    current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> HashSet<String> {
+    let mut evaluated_keys = HashSet::new();
+
+    for schemas in [
+        table_schema.all_of.as_ref().map(|s| &s.schemas),
+        table_schema.any_of.as_ref().map(|s| &s.schemas),
+        table_schema.one_of.as_ref().map(|s| &s.schemas),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        collect_evaluated_keys_from_applicator(
+            &mut evaluated_keys,
+            table_value,
+            accessors,
+            schemas,
+            current_schema,
+            schema_context,
+        )
+        .await;
+    }
+
+    if let Some(if_then_else_schema) = &table_schema.if_then_else
+        && let Ok(Some(if_schema)) = tombi_schema_store::resolve_schema_item(
+            &if_then_else_schema.if_schema,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        .inspect_err(|err| log::warn!("{err}"))
+        && is_assertion_success(
+            &table_value
+                .validate(accessors, Some(&if_schema), schema_context)
+                .await,
+        )
+    {
+        collect_evaluated_keys_from_current_schema(
+            &mut evaluated_keys,
+            table_value,
+            accessors,
+            &if_schema,
+            schema_context,
+        )
+        .await;
+    }
+
+    evaluated_keys
+}
+
+fn collect_evaluated_keys_from_applicator<'a>(
+    evaluated_keys: &'a mut HashSet<String>,
+    table_value: &'a tombi_document_tree::Table,
+    accessors: &'a [Accessor],
+    schemas: &'a tombi_schema_store::ReferableValueSchemas,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> BoxFuture<'a, ()> {
+    async move {
+        let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            schemas,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+            &schema_context.schema_visits,
+            accessors,
+        )
+        .await
+        else {
+            return;
+        };
+
+        for resolved_schema in resolved_schemas {
+            if is_assertion_success(
+                &table_value
+                    .validate(accessors, Some(&resolved_schema), schema_context)
+                    .await,
+            ) {
+                collect_evaluated_keys_from_current_schema(
+                    evaluated_keys,
+                    table_value,
+                    accessors,
+                    &resolved_schema,
+                    schema_context,
+                )
+                .await;
+            }
+        }
+    }
+    .boxed()
+}
+
+fn collect_evaluated_keys_from_current_schema<'a>(
+    evaluated_keys: &'a mut HashSet<String>,
+    table_value: &'a tombi_document_tree::Table,
+    accessors: &'a [Accessor],
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+) -> BoxFuture<'a, ()> {
+    async move {
+        match current_schema.value_schema.as_ref() {
+            ValueSchema::Table(table_schema) => {
+                if let Some(required) = &table_schema.required {
+                    for key in required {
+                        if table_value.get(key).is_some() {
+                            evaluated_keys.insert(key.clone());
+                        }
+                    }
+                }
+
+                let properties = table_schema.properties.read().await;
+                let pattern_keys = if let Some(pp) = &table_schema.pattern_properties {
+                    Some(pp.read().await.keys().cloned().collect_vec())
+                } else {
+                    None
+                };
+
+                for key in table_value.keys() {
+                    let key_text = &key.value;
+                    let schema_accessor = SchemaAccessor::Key(key_text.clone());
+                    let mut matched = false;
+
+                    if properties.contains_key(&schema_accessor) {
+                        matched = true;
+                        evaluated_keys.insert(key_text.clone());
+                    }
+
+                    if let Some(pattern_keys) = &pattern_keys {
+                        for pattern_key in pattern_keys {
+                            let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
+                                continue;
+                            };
+                            if pattern.is_match(key_text) {
+                                matched = true;
+                                evaluated_keys.insert(key_text.clone());
+                            }
+                        }
+                    }
+
+                    if !matched
+                        && (table_schema.additional_property_schema.is_some()
+                            || table_schema.additional_properties().is_some())
+                    {
+                        evaluated_keys.insert(key_text.clone());
+                    }
+                }
+                drop(properties);
+
+                for schemas in [
+                    table_schema.all_of.as_ref().map(|s| &s.schemas),
+                    table_schema.any_of.as_ref().map(|s| &s.schemas),
+                    table_schema.one_of.as_ref().map(|s| &s.schemas),
+                ]
+                .into_iter()
+                .flatten()
+                {
+                    collect_evaluated_keys_from_applicator(
+                        evaluated_keys,
+                        table_value,
+                        accessors,
+                        schemas,
+                        current_schema,
+                        schema_context,
+                    )
+                    .await;
+                }
+            }
+            value_schema => {
+                let applicator_schemas = match value_schema {
+                    ValueSchema::AllOf(s) => Some(&s.schemas),
+                    ValueSchema::AnyOf(s) => Some(&s.schemas),
+                    ValueSchema::OneOf(s) => Some(&s.schemas),
+                    _ => None,
+                };
+                if let Some(schemas) = applicator_schemas {
+                    collect_evaluated_keys_from_applicator(
+                        evaluated_keys,
+                        table_value,
+                        accessors,
+                        schemas,
+                        current_schema,
+                        schema_context,
+                    )
+                    .await;
+                }
+            }
+        }
+    }
+    .boxed()
 }
 
 async fn validate_table_without_schema(

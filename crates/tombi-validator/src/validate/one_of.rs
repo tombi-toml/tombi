@@ -9,8 +9,9 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use super::Validate;
 use crate::validate::{
-    handle_deprecated, has_error_level_diagnostics, if_then_else::validate_if_then_else,
-    is_assertion_success, not_schema::validate_not, validate_resolved_schema,
+    filter_table_strict_additional_diagnostics, handle_deprecated, has_error_level_diagnostics,
+    if_then_else::validate_if_then_else, is_assertion_success, not_schema::validate_not,
+    validate_resolved_schema,
 };
 
 pub fn validate_one_of<'a: 'b, 'b, T>(
@@ -110,25 +111,37 @@ where
         }
 
         if valid_count == 1 {
+            let mut non_error_diagnostics = vec![];
             for result in each_results {
                 match result {
-                    Ok(()) if total_diagnostics.is_empty() => return Ok(()),
-                    Ok(()) => return Err(total_diagnostics.into()),
-                    Err(mut error) if !has_error_level_diagnostics(&error) => {
-                        error.prepend_diagnostics(total_diagnostics);
-                        return Err(error);
+                    Ok(()) => {}
+                    Err(error) if !has_error_level_diagnostics(&error) => {
+                        if let Err(filtered_error) =
+                            filter_table_strict_additional_diagnostics(error)
+                        {
+                            non_error_diagnostics.extend(filtered_error.diagnostics);
+                        }
                     }
                     Err(_) => {}
                 }
             }
 
-            unreachable!("one_of_schema must have exactly one valid schema");
+            total_diagnostics.extend(non_error_diagnostics);
+            if total_diagnostics.is_empty() {
+                Ok(())
+            } else {
+                Err(total_diagnostics.into())
+            }
         } else {
             let mut error = each_results
                 .into_iter()
                 .fold(crate::Error::new(), |mut a, b| {
                     if let Err(error) = b {
-                        a.combine(error);
+                        if let Err(filtered_error) =
+                            filter_table_strict_additional_diagnostics(error)
+                        {
+                            a.combine(filtered_error);
+                        }
                     }
                     a
                 });

@@ -7,8 +7,12 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use super::Validate;
-use crate::validate::{if_then_else::validate_if_then_else, not_schema::validate_not};
-use crate::validate::{validate_deprecated, validate_resolved_schema};
+use crate::validate::{
+    filter_table_strict_additional_diagnostics, validate_deprecated, validate_resolved_schema,
+};
+use crate::validate::{
+    has_error_level_diagnostics, if_then_else::validate_if_then_else, not_schema::validate_not,
+};
 
 pub fn validate_any_of<'a: 'b, 'b, T>(
     value: &'a T,
@@ -27,6 +31,8 @@ where
 
     async move {
         let mut total_diagnostics = vec![];
+        let mut successful_diagnostics = vec![];
+        let mut has_success = false;
 
         if let Some(not_schema) = any_of_schema.not.as_ref()
             && let Err(error) = validate_not(
@@ -91,6 +97,7 @@ where
 
             match result {
                 Ok(()) => {
+                    has_success = true;
                     if let Err(error) = validate_deprecated(
                         any_of_schema.deprecated,
                         accessors,
@@ -100,18 +107,43 @@ where
                     ) {
                         total_diagnostics.extend(error.diagnostics);
                     }
-                    if total_diagnostics.is_empty() {
-                        return Ok(());
-                    }
-                    return Err(total_diagnostics.into());
                 }
                 Err(error) => {
-                    total_error.combine(error);
+                    let filtered_error = filter_table_strict_additional_diagnostics(error);
+
+                    if let Err(filtered_error) = filtered_error {
+                        if !has_error_level_diagnostics(&filtered_error) {
+                            has_success = true;
+                            successful_diagnostics.extend(filtered_error.diagnostics);
+                            continue;
+                        }
+
+                        total_error.combine(filtered_error);
+                    } else {
+                        has_success = true;
+                    }
                 }
             }
         }
 
-        if total_error.diagnostics.is_empty() && total_diagnostics.is_empty() {
+        if has_success {
+            if let Err(error) = validate_deprecated(
+                any_of_schema.deprecated,
+                accessors,
+                value,
+                comment_directives,
+                common_rules,
+            ) {
+                total_diagnostics.extend(error.diagnostics);
+            }
+
+            total_diagnostics.extend(successful_diagnostics);
+            if total_diagnostics.is_empty() {
+                Ok(())
+            } else {
+                Err(total_diagnostics.into())
+            }
+        } else if total_error.diagnostics.is_empty() && total_diagnostics.is_empty() {
             Ok(())
         } else {
             total_error.prepend_diagnostics(total_diagnostics);

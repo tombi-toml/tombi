@@ -308,6 +308,125 @@ where
     }
 }
 
+fn merge_validation_results(
+    primary: Result<(), crate::Error>,
+    secondary: Result<(), crate::Error>,
+) -> Result<(), crate::Error> {
+    match (primary, secondary) {
+        (Ok(()), Ok(())) => Ok(()),
+        (Err(error), Ok(())) | (Ok(()), Err(error)) => Err(error),
+        (Err(mut left), Err(right)) => {
+            left.score = left.score.max(right.score);
+            left.diagnostics.extend(right.diagnostics);
+            Err(left)
+        }
+    }
+}
+
+fn filter_table_strict_additional_diagnostics(mut error: crate::Error) -> Result<(), crate::Error> {
+    error
+        .diagnostics
+        .retain(|diagnostic| diagnostic.code() != "table-strict-additional-keys");
+
+    if error.diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(error)
+    }
+}
+
+pub fn validate_adjacent_applicators<'a: 'b, 'b, T>(
+    value: &'a T,
+    accessors: &'a [tombi_schema_store::Accessor],
+    one_of_schema: Option<&'a tombi_schema_store::OneOfSchema>,
+    any_of_schema: Option<&'a tombi_schema_store::AnyOfSchema>,
+    all_of_schema: Option<&'a tombi_schema_store::AllOfSchema>,
+    not_schema: Option<&'a tombi_schema_store::NotSchema>,
+    current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
+) -> BoxFuture<'b, Result<(), crate::Error>>
+where
+    T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+{
+    async move {
+        if one_of_schema.is_none()
+            && any_of_schema.is_none()
+            && all_of_schema.is_none()
+            && not_schema.is_none()
+        {
+            return Ok(());
+        }
+
+        let mut result = Ok(());
+
+        if let Some(one_of_schema) = one_of_schema {
+            result = merge_validation_results(
+                result,
+                validate_one_of(
+                    value,
+                    accessors,
+                    one_of_schema,
+                    current_schema,
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+                .await,
+            );
+        }
+        if let Some(any_of_schema) = any_of_schema {
+            result = merge_validation_results(
+                result,
+                validate_any_of(
+                    value,
+                    accessors,
+                    any_of_schema,
+                    current_schema,
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+                .await,
+            );
+        }
+        if let Some(all_of_schema) = all_of_schema {
+            result = merge_validation_results(
+                result,
+                validate_all_of(
+                    value,
+                    accessors,
+                    all_of_schema,
+                    current_schema,
+                    schema_context,
+                    comment_directives,
+                    common_rules,
+                )
+                .await,
+            );
+        }
+        if let Some(not_schema) = not_schema {
+            result = merge_validation_results(
+                result,
+                not_schema::validate_not(
+                    value,
+                    accessors,
+                    not_schema,
+                    current_schema,
+                    schema_context,
+                    comment_directives.map(|directives| directives.iter()),
+                    common_rules,
+                )
+                .await,
+            );
+        }
+
+        result
+    }
+    .boxed()
+}
+
 pub fn validate_resolved_schema<'a: 'b, 'b, T>(
     value: &'a T,
     accessors: &'a [tombi_schema_store::Accessor],

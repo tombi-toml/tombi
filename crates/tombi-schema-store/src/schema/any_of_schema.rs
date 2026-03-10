@@ -4,11 +4,8 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tombi_x_keyword::{StringFormat, TableKeysOrder, X_TOMBI_TABLE_KEYS_ORDER};
 
-use super::{AnchorCollector, DynamicAnchorCollector, ReferableValueSchemas};
-use crate::{
-    referable_from_schema_value,
-    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
-};
+use super::{AnchorCollector, DynamicAnchorCollector, NotSchema, ReferableValueSchemas};
+use crate::{referable_from_schema_value, schema::if_then_else_schema::IfThenElseSchema};
 
 #[derive(Debug, Default, Clone)]
 pub struct AnyOfSchema {
@@ -20,7 +17,7 @@ pub struct AnyOfSchema {
     pub examples: Option<Vec<tombi_json::Value>>,
     pub deprecated: Option<bool>,
     pub keys_order: Option<TableKeysOrder>,
-    pub not: Option<NotSchema>,
+    pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
 }
 
@@ -82,7 +79,8 @@ impl AnyOfSchema {
                 dialect,
                 anchor_collector.as_deref_mut(),
                 dynamic_anchor_collector.as_deref_mut(),
-            ),
+            )
+            .map(Box::new),
             if_then_else: IfThenElseSchema::new(
                 object,
                 string_formats,
