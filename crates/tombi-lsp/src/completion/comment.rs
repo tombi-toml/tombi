@@ -18,7 +18,7 @@ use crate::{
     completion::{extract_keys_and_hint, find_completion_contents_with_tree},
 };
 
-use super::{CompletionContent, CompletionEdit, CompletionHint};
+use super::{CompletionContent, CompletionEdit};
 
 pub async fn get_document_comment_directive_completion_contents(
     root: &tombi_ast::Root,
@@ -148,7 +148,7 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
     let document_tree = root.into_document_tree_and_errors(toml_version).tree;
 
     let schema_store = tombi_comment_directive_store::schema_store().await;
-    let document_schema = comment_directive_document_schema(schema_store, schema_uri.clone()).await;
+    let document_schema = comment_directive_document_schema(schema_store, schema_uri).await;
     let source_schema = tombi_schema_store::SourceSchema::new(
         Some(Arc::new(document_schema)),
         tombi_hashmap::HashMap::with_capacity(0),
@@ -163,40 +163,21 @@ pub async fn get_tombi_comment_directive_content_completion_contents(
         strict: None,
     };
 
-    let mut completion_contents = find_completion_contents_with_tree(
-        &document_tree,
-        position_in_content,
-        &keys,
-        &schema_context,
-        completion_hint,
-    )
-    .await;
-
-    // Preserve syntax completions even when the resolved directive schema does not
-    // expose any properties. This keeps comment-directive editing usable at
-    // non-effective positions such as group boundaries.
-    if completion_contents.is_empty()
-        && matches!(
-            completion_hint,
-            Some(CompletionHint::DotTrigger { .. } | CompletionHint::EqualTrigger { .. })
-        )
-        && let Some(last_key) = keys.last()
-    {
-        completion_contents = CompletionContent::new_magic_triggers(
-            &last_key.value,
-            position_in_content,
-            Some(&schema_uri),
-        );
-    }
-
     Some(
-        completion_contents
-            .into_iter()
-            .map(|mut content| {
-                content.in_comment = true;
-                content.with_position(content_range.start)
-            })
-            .collect(),
+        find_completion_contents_with_tree(
+            &document_tree,
+            position_in_content,
+            &keys,
+            &schema_context,
+            completion_hint,
+        )
+        .await
+        .into_iter()
+        .map(|mut content| {
+            content.in_comment = true;
+            content.with_position(content_range.start)
+        })
+        .collect(),
     )
 }
 
