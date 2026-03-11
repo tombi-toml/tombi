@@ -4,10 +4,7 @@ mod value;
 
 use std::borrow::Cow;
 
-pub use comment::{
-    get_document_comment_directive_completion_contents,
-    get_tombi_comment_directive_content_completion_contents,
-};
+pub use comment::get_document_comment_directive_completion_contents;
 use itertools::Itertools;
 use tombi_ast::{AstNode, AstToken, algo::ancestors_at_position};
 use tombi_config::TomlVersion;
