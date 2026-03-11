@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     ErrorRuleOptions, SortOptions, TombiValueDirectiveContent, WithCommonFormatRules,
-    WithCommonLintRules, WithKeyFormatRules, WithKeyLintRules,
+    WithCommonLintRules, WithKeyFormatRules, WithKeyTableLintRules,
 };
 use tombi_uri::SchemaUri;
 
@@ -11,7 +11,7 @@ pub type ArrayCommonFormatRules = WithCommonFormatRules<ArrayFormatRules>;
 pub type ArrayCommonLintRules = WithCommonLintRules<ArrayLintRules>;
 
 pub type KeyArrayCommonFormatRules = WithKeyFormatRules<ArrayCommonFormatRules>;
-pub type KeyArrayCommonLintRules = WithKeyLintRules<ArrayCommonLintRules>;
+pub type KeyArrayCommonLintRules = WithKeyTableLintRules<ArrayCommonLintRules>;
 
 pub type TombiKeyArrayDirectiveContent =
     TombiValueDirectiveContent<KeyArrayCommonFormatRules, KeyArrayCommonLintRules>;

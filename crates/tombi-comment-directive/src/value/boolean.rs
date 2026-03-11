@@ -5,7 +5,7 @@ use tombi_uri::SchemaUri;
 use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
-    WithKeyFormatRules, WithKeyLintRules,
+    WithKeyFormatRules, WithKeyTableLintRules,
 };
 
 pub type BooleanFormatRules = EmptyFormatRules;
@@ -14,7 +14,7 @@ pub type BooleanCommonFormatRules = WithCommonFormatRules<BooleanFormatRules>;
 pub type BooleanCommonLintRules = WithCommonLintRules<BooleanLintRules>;
 
 pub type KeyBooleanCommonFormatRules = WithKeyFormatRules<BooleanCommonFormatRules>;
-pub type KeyBooleanCommonLintRules = WithKeyLintRules<BooleanCommonLintRules>;
+pub type KeyBooleanCommonLintRules = WithKeyTableLintRules<BooleanCommonLintRules>;
 
 pub type TombiBooleanDirectiveContent =
     TombiValueDirectiveContent<BooleanCommonFormatRules, BooleanCommonLintRules>;

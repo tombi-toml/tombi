@@ -8,7 +8,7 @@ use tombi_schema_store::ValueSchema;
 use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
-    comment_directive::get_tombi_key_value_rules_and_diagnostics,
+    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{
         handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
         validate_adjacent_applicators,
@@ -26,7 +26,7 @@ impl Validate for LocalDateTime {
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
             let (lint_rules, lint_rules_diagnostics) =
-                get_tombi_key_value_rules_and_diagnostics::<
+                get_tombi_key_table_value_rules_and_diagnostics::<
                     LocalDateTimeCommonFormatRules,
                     LocalDateTimeCommonLintRules,
                 >(self.comment_directives(), accessors)
@@ -34,18 +34,20 @@ impl Validate for LocalDateTime {
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::LocalDateTime(local_date_time_schema) => validate_local_date_time(
-                        self,
-                        accessors,
-                        local_date_time_schema,
-                        current_schema,
-                        schema_context,
-                        self.comment_directives()
-                            .map(|directives| directives.cloned().collect_vec())
-                            .as_deref(),
-                        lint_rules.as_ref(),
-                    )
-                    .await,
+                    ValueSchema::LocalDateTime(local_date_time_schema) => {
+                        validate_local_date_time(
+                            self,
+                            accessors,
+                            local_date_time_schema,
+                            current_schema,
+                            schema_context,
+                            self.comment_directives()
+                                .map(|directives| directives.cloned().collect_vec())
+                                .as_deref(),
+                            lint_rules.as_ref(),
+                        )
+                        .await
+                    }
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,

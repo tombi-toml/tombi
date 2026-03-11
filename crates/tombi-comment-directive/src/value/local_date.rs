@@ -5,7 +5,7 @@ use tombi_uri::SchemaUri;
 use crate::TombiCommentDirectiveImpl;
 use crate::value::{
     EmptyFormatRules, TombiValueDirectiveContent, WithCommonFormatRules, WithCommonLintRules,
-    WithKeyFormatRules, WithKeyLintRules,
+    WithKeyFormatRules, WithKeyTableLintRules,
 };
 
 pub type LocalDateFormatRules = EmptyFormatRules;
@@ -14,7 +14,7 @@ pub type LocalDateCommonFormatRules = WithCommonFormatRules<LocalDateFormatRules
 pub type LocalDateCommonLintRules = WithCommonLintRules<LocalDateLintRules>;
 
 pub type KeyLocalDateCommonFormatRules = WithKeyFormatRules<LocalDateCommonFormatRules>;
-pub type KeyLocalDateCommonLintRules = WithKeyLintRules<LocalDateCommonLintRules>;
+pub type KeyLocalDateCommonLintRules = WithKeyTableLintRules<LocalDateCommonLintRules>;
 
 pub type TombiLocalDateDirectiveContent =
     TombiValueDirectiveContent<LocalDateCommonFormatRules, LocalDateCommonLintRules>;

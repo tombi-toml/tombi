@@ -53,16 +53,18 @@ impl Validate for tombi_document_tree::Array {
 
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
-                    ValueSchema::Array(array_schema) => validate_array(
-                        self,
-                        accessors,
-                        array_schema,
-                        current_schema,
-                        schema_context,
-                        comment_directives.as_deref(),
-                        lint_rules.as_ref(),
-                    )
-                    .await,
+                    ValueSchema::Array(array_schema) => {
+                        validate_array(
+                            self,
+                            accessors,
+                            array_schema,
+                            current_schema,
+                            schema_context,
+                            comment_directives.as_deref(),
+                            lint_rules.as_ref(),
+                        )
+                        .await
+                    }
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
                             self,

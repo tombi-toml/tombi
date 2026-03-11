@@ -82,7 +82,7 @@ pub async fn get_tombi_array_comment_directive_and_diagnostics(
                 rules
             } else {
                 let (rules, key_value_diagnostics) =
-                    get_tombi_key_value_rules_and_diagnostics::<
+                    get_tombi_key_table_value_rules_and_diagnostics::<
                         ArrayCommonFormatRules,
                         ArrayCommonLintRules,
                     >(array.comment_directives(), accessors)

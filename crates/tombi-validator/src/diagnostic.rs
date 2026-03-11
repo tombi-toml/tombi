@@ -172,7 +172,9 @@ impl DiagnosticKind {
             }
             DiagnosticKind::TableStrictAdditionalKeys { .. } => "table-strict-additional-keys",
             DiagnosticKind::KeyNotAllowed { .. } => "key-not-allowed",
-            DiagnosticKind::UnevaluatedPropertyNotAllowed { .. } => "unevaluated-property-not-allowed",
+            DiagnosticKind::UnevaluatedPropertyNotAllowed { .. } => {
+                "unevaluated-property-not-allowed"
+            }
             DiagnosticKind::KeyPattern { .. } => "key-pattern",
             DiagnosticKind::TypeMismatch { .. } => "type-mismatch",
             DiagnosticKind::Const { .. } => "const",
@@ -198,7 +200,9 @@ impl DiagnosticKind {
             DiagnosticKind::ArrayMaxContains { .. } => "array-max-contains",
             DiagnosticKind::ArrayUniqueValues => "array-unique-values",
             DiagnosticKind::ArrayAdditionalItems { .. } => "array-additional-items",
-            DiagnosticKind::ArrayUnevaluatedItemNotAllowed { .. } => "array-unevaluated-item-not-allowed",
+            DiagnosticKind::ArrayUnevaluatedItemNotAllowed { .. } => {
+                "array-unevaluated-item-not-allowed"
+            }
             DiagnosticKind::TableMaxKeys { .. } => "table-max-keys",
             DiagnosticKind::TableMinKeys { .. } => "table-min-keys",
             DiagnosticKind::TableKeyRequired { .. } => "table-key-required",
