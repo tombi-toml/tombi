@@ -6,7 +6,9 @@ use tombi_comment_directive::value::{
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_hashmap::HashSet;
-use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema};
+use tombi_schema_store::{
+    Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema,
+};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
 use crate::{
@@ -932,13 +934,13 @@ fn collect_keys_from_schema_item<'a>(
 }
 
 fn collect_keys_from_referable_schemas<'a>(
-    applicator: &'a (impl HasReferableSchemas + Sync),
+    applicator: &'a (impl CompositeSchema + Sync),
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     keys: &'a mut HashSet<String>,
 ) -> BoxFuture<'a, ()> {
     async move {
-        for schema_item in applicator.referable_schemas().read().await.iter() {
+        for schema_item in applicator.schemas().read().await.iter() {
             if let Ok(Some(schema)) = schema_item
                 .to_current_schema(
                     current_schema.schema_uri.clone(),
@@ -1004,28 +1006,6 @@ fn collect_keys_from_value_schema<'a>(
         }
     }
     .boxed()
-}
-
-trait HasReferableSchemas {
-    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas;
-}
-
-impl HasReferableSchemas for tombi_schema_store::OneOfSchema {
-    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas {
-        &self.schemas
-    }
-}
-
-impl HasReferableSchemas for tombi_schema_store::AnyOfSchema {
-    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas {
-        &self.schemas
-    }
-}
-
-impl HasReferableSchemas for tombi_schema_store::AllOfSchema {
-    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas {
-        &self.schemas
-    }
 }
 
 async fn validate_table_without_schema(

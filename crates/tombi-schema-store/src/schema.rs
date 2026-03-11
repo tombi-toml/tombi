@@ -62,6 +62,54 @@ pub type AnchorCollector = SchemaMap;
 pub type DynamicAnchorCollector = SchemaMap;
 pub type ReferableValueSchemas = Arc<tokio::sync::RwLock<Vec<Referable<ValueSchema>>>>;
 
+pub trait CompositeSchema {
+    fn title(&self) -> Option<String>;
+    fn description(&self) -> Option<String>;
+    fn schemas(&self) -> &ReferableValueSchemas;
+}
+
+impl CompositeSchema for OneOfSchema {
+    fn title(&self) -> Option<String> {
+        self.title.clone()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn schemas(&self) -> &ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
+impl CompositeSchema for AnyOfSchema {
+    fn title(&self) -> Option<String> {
+        self.title.clone()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn schemas(&self) -> &ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
+impl CompositeSchema for AllOfSchema {
+    fn title(&self) -> Option<String> {
+        self.title.clone()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn schemas(&self) -> &ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
 pub(crate) fn referable_from_schema_value(
     value: &tombi_json::ValueNode,
     string_formats: Option<&[tombi_x_keyword::StringFormat]>,
