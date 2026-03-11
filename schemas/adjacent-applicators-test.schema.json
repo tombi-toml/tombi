@@ -108,7 +108,8 @@
     "object_all": {
       "type": "object",
       "properties": {
-        "foo": { "type": "integer" }
+        "foo": { "type": "integer" },
+        "bar": { "type": "string" }
       },
       "allOf": [
         {
@@ -122,7 +123,9 @@
     "object_any": {
       "type": "object",
       "properties": {
-        "kind": { "type": "string" }
+        "kind": { "type": "string" },
+        "alpha": { "type": "integer" },
+        "beta": { "type": "integer" }
       },
       "anyOf": [
         { "required": ["alpha"] },
@@ -131,10 +134,11 @@
     },
     "object_one": {
       "type": "object",
-      "oneOf": [
-        { "required": ["foo"] },
-        { "required": ["bar"] }
-      ]
+      "properties": {
+        "foo": { "type": "integer" },
+        "bar": { "type": "integer" }
+      },
+      "oneOf": [{ "required": ["foo"] }, { "required": ["bar"] }]
     },
     "inferred_dependent_required_any": {
       "properties": {

@@ -5,6 +5,7 @@ use tombi_comment_directive::value::{
 };
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
+use tombi_hashmap::HashSet;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema};
 use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 
@@ -148,6 +149,9 @@ async fn validate_table(
 ) -> Result<(), crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
+    let adjacent_allowed_keys =
+        collect_adjacent_allowed_keys(table_schema, current_schema, schema_context).await;
+
     for (key, value) in table_value.key_values() {
         let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
             .await
@@ -345,6 +349,10 @@ async fn validate_table(
                     continue;
                 }
             }
+            if adjacent_allowed_keys.contains(accessor_raw_text) {
+                continue;
+            }
+
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
                 crate::Diagnostic {
                     kind: Box::new(crate::DiagnosticKind::TableStrictAdditionalKeys {
@@ -779,9 +787,6 @@ async fn validate_table(
     let comment_directives = table_value
         .comment_directives()
         .map(|directives| directives.cloned().collect_vec());
-    let has_adjacent_assertion_applicators = table_schema.one_of.is_some()
-        || table_schema.any_of.is_some()
-        || table_schema.all_of.is_some();
     let base_result = if total_diagnostics.is_empty() {
         Ok(())
     } else {
@@ -792,11 +797,7 @@ async fn validate_table(
     };
 
     merge_validation_results(
-        if has_adjacent_assertion_applicators {
-            base_result.or_else(crate::validate::filter_table_strict_additional_diagnostics)
-        } else {
-            base_result
-        },
+        base_result,
         validate_adjacent_applicators(
             table_value,
             accessors,
@@ -811,6 +812,220 @@ async fn validate_table(
         )
         .await,
     )
+}
+
+async fn collect_adjacent_allowed_keys(
+    table_schema: &tombi_schema_store::TableSchema,
+    current_schema: &CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+) -> HashSet<String> {
+    let mut keys = HashSet::new();
+    collect_keys_from_table_schema(table_schema, current_schema, schema_context, &mut keys).await;
+    keys
+}
+
+fn collect_keys_from_table_schema<'a>(
+    table_schema: &'a tombi_schema_store::TableSchema,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    keys: &'a mut HashSet<String>,
+) -> BoxFuture<'a, ()> {
+    async move {
+        for accessor in table_schema.properties.read().await.keys() {
+            if let SchemaAccessor::Key(key) = accessor {
+                keys.insert(key.clone());
+            }
+        }
+
+        if let Some(dependencies) = &table_schema.dependencies {
+            for (dependent_key, dependency) in dependencies {
+                keys.insert(dependent_key.clone());
+                match dependency {
+                    tombi_schema_store::Dependency::Property(required_keys) => {
+                        keys.extend(required_keys.iter().cloned());
+                    }
+                    tombi_schema_store::Dependency::Schema(schema_item) => {
+                        collect_keys_from_schema_item(
+                            schema_item,
+                            current_schema,
+                            schema_context,
+                            keys,
+                        )
+                        .await;
+                    }
+                }
+            }
+        }
+
+        if let Some(dependent_required) = &table_schema.dependent_required {
+            for (dependent_key, required_keys) in dependent_required {
+                keys.insert(dependent_key.clone());
+                keys.extend(required_keys.iter().cloned());
+            }
+        }
+
+        if let Some(dependent_schemas) = &table_schema.dependent_schemas {
+            for (dependent_key, schema_item) in dependent_schemas {
+                keys.insert(dependent_key.clone());
+                collect_keys_from_schema_item(schema_item, current_schema, schema_context, keys)
+                    .await;
+            }
+        }
+
+        if let Some(one_of_schema) = &table_schema.one_of {
+            collect_keys_from_referable_schemas(
+                one_of_schema.as_ref(),
+                current_schema,
+                schema_context,
+                keys,
+            )
+            .await;
+        }
+        if let Some(any_of_schema) = &table_schema.any_of {
+            collect_keys_from_referable_schemas(
+                any_of_schema.as_ref(),
+                current_schema,
+                schema_context,
+                keys,
+            )
+            .await;
+        }
+        if let Some(all_of_schema) = &table_schema.all_of {
+            collect_keys_from_referable_schemas(
+                all_of_schema.as_ref(),
+                current_schema,
+                schema_context,
+                keys,
+            )
+            .await;
+        }
+    }
+    .boxed()
+}
+
+fn collect_keys_from_schema_item<'a>(
+    schema_item: &'a tombi_schema_store::SchemaItem,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    keys: &'a mut HashSet<String>,
+) -> BoxFuture<'a, ()> {
+    async move {
+        if let Ok(Some(schema)) = tombi_schema_store::resolve_schema_item(
+            schema_item,
+            current_schema.schema_uri.clone(),
+            current_schema.definitions.clone(),
+            schema_context.store,
+        )
+        .await
+        .inspect_err(|err| log::warn!("{err}"))
+        {
+            collect_keys_from_value_schema(
+                schema.value_schema.as_ref(),
+                &schema,
+                schema_context,
+                keys,
+            )
+            .await;
+        }
+    }
+    .boxed()
+}
+
+fn collect_keys_from_referable_schemas<'a>(
+    applicator: &'a (impl HasReferableSchemas + Sync),
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    keys: &'a mut HashSet<String>,
+) -> BoxFuture<'a, ()> {
+    async move {
+        for schema_item in applicator.referable_schemas().read().await.iter() {
+            if let Ok(Some(schema)) = schema_item
+                .to_current_schema(
+                    current_schema.schema_uri.clone(),
+                    current_schema.definitions.clone(),
+                    schema_context.store,
+                )
+                .await
+                .inspect_err(|err| log::warn!("{err}"))
+            {
+                collect_keys_from_value_schema(
+                    schema.value_schema.as_ref(),
+                    &schema,
+                    schema_context,
+                    keys,
+                )
+                .await;
+            }
+        }
+    }
+    .boxed()
+}
+
+fn collect_keys_from_value_schema<'a>(
+    value_schema: &'a ValueSchema,
+    current_schema: &'a CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    keys: &'a mut HashSet<String>,
+) -> BoxFuture<'a, ()> {
+    async move {
+        match value_schema {
+            ValueSchema::Table(table_schema) => {
+                collect_keys_from_table_schema(table_schema, current_schema, schema_context, keys)
+                    .await;
+            }
+            ValueSchema::OneOf(one_of_schema) => {
+                collect_keys_from_referable_schemas(
+                    one_of_schema,
+                    current_schema,
+                    schema_context,
+                    keys,
+                )
+                .await;
+            }
+            ValueSchema::AnyOf(any_of_schema) => {
+                collect_keys_from_referable_schemas(
+                    any_of_schema,
+                    current_schema,
+                    schema_context,
+                    keys,
+                )
+                .await;
+            }
+            ValueSchema::AllOf(all_of_schema) => {
+                collect_keys_from_referable_schemas(
+                    all_of_schema,
+                    current_schema,
+                    schema_context,
+                    keys,
+                )
+                .await;
+            }
+            _ => {}
+        }
+    }
+    .boxed()
+}
+
+trait HasReferableSchemas {
+    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas;
+}
+
+impl HasReferableSchemas for tombi_schema_store::OneOfSchema {
+    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
+impl HasReferableSchemas for tombi_schema_store::AnyOfSchema {
+    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
+impl HasReferableSchemas for tombi_schema_store::AllOfSchema {
+    fn referable_schemas(&self) -> &tombi_schema_store::ReferableValueSchemas {
+        &self.schemas
+    }
 }
 
 async fn validate_table_without_schema(
