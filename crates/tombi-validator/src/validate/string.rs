@@ -174,12 +174,7 @@ async fn validate_string(
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
 ) -> Result<(), crate::Error> {
-    let mut diagnostics = vec![];
-
-    if let Err(crate::Error {
-        diagnostics: base_diagnostics,
-        ..
-    }) = validate_raw_string(
+    let result = validate_raw_string(
         string_value.value(),
         &string_value.to_string(),
         string_value.range(),
@@ -187,25 +182,28 @@ async fn validate_string(
         format_assertion,
         lint_rules,
         string_value.comment_directives(),
-    ) {
-        diagnostics.extend(base_diagnostics);
-    }
+    );
 
-    if diagnostics.is_empty() {
-        handle_deprecated_value(
-            &mut diagnostics,
-            string_schema.deprecated,
-            accessors,
-            string_value,
-            string_value.comment_directives(),
-            lint_rules.as_ref().map(|rules| &rules.common),
-        );
-    }
+    let base_result = match result {
+        Ok(()) => {
+            let mut diagnostics = vec![];
 
-    let base_result = if diagnostics.is_empty() {
-        Ok(())
-    } else {
-        Err(diagnostics.into())
+            handle_deprecated_value(
+                &mut diagnostics,
+                string_schema.deprecated,
+                accessors,
+                string_value,
+                string_value.comment_directives(),
+                lint_rules.as_ref().map(|rules| &rules.common),
+            );
+
+            if diagnostics.is_empty() {
+                Ok(())
+            } else {
+                Err(diagnostics.into())
+            }
+        }
+        Err(error) => Err(error),
     };
 
     crate::validate::merge_validation_results(
