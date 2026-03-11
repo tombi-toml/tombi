@@ -174,7 +174,12 @@ async fn validate_string(
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
 ) -> Result<(), crate::Error> {
-    let base_result = validate_raw_string(
+    let mut diagnostics = vec![];
+
+    if let Err(crate::Error {
+        diagnostics: base_diagnostics,
+        ..
+    }) = validate_raw_string(
         string_value.value(),
         &string_value.to_string(),
         string_value.range(),
@@ -182,12 +187,13 @@ async fn validate_string(
         format_assertion,
         lint_rules,
         string_value.comment_directives(),
-    );
+    ) {
+        diagnostics.extend(base_diagnostics);
+    }
 
-    let mut deprecated_diagnostics = vec![];
-    if base_result.is_ok() {
+    if diagnostics.is_empty() {
         handle_deprecated_value(
-            &mut deprecated_diagnostics,
+            &mut diagnostics,
             string_schema.deprecated,
             accessors,
             string_value,
@@ -196,15 +202,14 @@ async fn validate_string(
         );
     }
 
+    let base_result = if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics.into())
+    };
+
     crate::validate::merge_validation_results(
-        crate::validate::merge_validation_results(
-            base_result,
-            if deprecated_diagnostics.is_empty() {
-                Ok(())
-            } else {
-                Err(deprecated_diagnostics.into())
-            },
-        ),
+        base_result,
         validate_adjacent_applicators(
             string_value,
             accessors,
