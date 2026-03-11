@@ -14,8 +14,8 @@ use super::{
     SchemaUri, ValueSchema, referable_from_schema_value, schema_item_from_schema_value,
 };
 use crate::{
-    Accessor, SchemaProperties, SchemaStore,
-    schema::{all_of_schema::AllOfSchema, if_then_else_schema::IfThenElseSchema},
+    Accessor, AllOfSchema, AnyOfSchema, IfThenElseSchema, OneOfSchema, SchemaProperties,
+    SchemaStore,
 };
 
 #[derive(Debug, Clone)]
@@ -55,8 +55,8 @@ pub struct TableSchema {
     pub examples: Option<Vec<tombi_json::Object>>,
     pub deprecated: Option<bool>,
     pub additional_key_label: Option<String>,
-    pub one_of: Option<Box<super::OneOfSchema>>,
-    pub any_of: Option<Box<super::AnyOfSchema>>,
+    pub one_of: Option<Box<OneOfSchema>>,
+    pub any_of: Option<Box<AnyOfSchema>>,
     pub all_of: Option<Box<AllOfSchema>>,
     pub not: Option<Box<NotSchema>>,
     pub if_then_else: Option<Box<IfThenElseSchema>>,
