@@ -136,7 +136,7 @@ mod completion_labels {
             #[tokio::test]
             async fn tombi_used_toml_version_with_schema_directive(
                 r#"
-                #:schema https://www.schemastore.org/tombi.json
+                #:schema tombi://www.schemastore.org/tombi.json
 
                 toml-version = "v1.0.0"
                 █
