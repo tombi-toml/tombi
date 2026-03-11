@@ -362,48 +362,51 @@ where
         let mut result = Ok(());
 
         if let Some(one_of_schema) = one_of_schema {
+            let adjacent_result = validate_one_of(
+                value,
+                accessors,
+                one_of_schema,
+                current_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await;
             result = merge_validation_results(
                 result,
-                validate_one_of(
-                    value,
-                    accessors,
-                    one_of_schema,
-                    current_schema,
-                    schema_context,
-                    comment_directives,
-                    common_rules,
-                )
-                .await,
+                adjacent_result.or_else(filter_table_strict_additional_diagnostics),
             );
         }
         if let Some(any_of_schema) = any_of_schema {
+            let adjacent_result = validate_any_of(
+                value,
+                accessors,
+                any_of_schema,
+                current_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await;
             result = merge_validation_results(
                 result,
-                validate_any_of(
-                    value,
-                    accessors,
-                    any_of_schema,
-                    current_schema,
-                    schema_context,
-                    comment_directives,
-                    common_rules,
-                )
-                .await,
+                adjacent_result.or_else(filter_table_strict_additional_diagnostics),
             );
         }
         if let Some(all_of_schema) = all_of_schema {
+            let adjacent_result = validate_all_of(
+                value,
+                accessors,
+                all_of_schema,
+                current_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await;
             result = merge_validation_results(
                 result,
-                validate_all_of(
-                    value,
-                    accessors,
-                    all_of_schema,
-                    current_schema,
-                    schema_context,
-                    comment_directives,
-                    common_rules,
-                )
-                .await,
+                adjacent_result.or_else(filter_table_strict_additional_diagnostics),
             );
         }
         if let Some(not_schema) = not_schema {
@@ -533,7 +536,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{is_assertion_success, is_multiple_of_with_tolerance};
+    use super::{
+        filter_table_strict_additional_diagnostics, is_assertion_success,
+        is_multiple_of_with_tolerance,
+    };
+
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn assertion_success_allows_warning_only_errors() {
@@ -554,5 +562,42 @@ mod tests {
         assert!(is_multiple_of_with_tolerance(0.3, 0.1));
         assert!(is_multiple_of_with_tolerance(1.2, 0.3));
         assert!(!is_multiple_of_with_tolerance(0.31, 0.1));
+    }
+
+    #[test]
+    fn filter_drops_only_table_strict_additional_diagnostics() {
+        let result = filter_table_strict_additional_diagnostics(crate::Error {
+            score: 1,
+            diagnostics: vec![
+                tombi_diagnostic::Diagnostic::new_warning(
+                    "strict additional",
+                    "table-strict-additional-keys",
+                    tombi_text::Range::default(),
+                ),
+                tombi_diagnostic::Diagnostic::new_warning(
+                    "other warning",
+                    "deprecated",
+                    tombi_text::Range::default(),
+                ),
+            ],
+        });
+
+        let err = result.expect_err("non-strict diagnostics should remain");
+        assert_eq!(err.diagnostics.len(), 1);
+        assert_eq!(err.diagnostics[0].code(), "deprecated");
+    }
+
+    #[test]
+    fn filter_turns_strict_additional_only_error_into_success() {
+        let result = filter_table_strict_additional_diagnostics(crate::Error {
+            score: 1,
+            diagnostics: vec![tombi_diagnostic::Diagnostic::new_warning(
+                "strict additional",
+                "table-strict-additional-keys",
+                tombi_text::Range::default(),
+            )],
+        });
+
+        assert!(result.is_ok());
     }
 }

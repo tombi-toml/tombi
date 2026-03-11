@@ -7,8 +7,7 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use crate::validate::{
-    filter_table_strict_additional_diagnostics, handle_deprecated,
-    if_then_else::validate_if_then_else, not_schema::validate_not,
+    handle_deprecated, if_then_else::validate_if_then_else, not_schema::validate_not,
 };
 
 use super::Validate;
@@ -46,14 +45,12 @@ where
         };
 
         for resolved_schema in &resolved_schemas {
-            if let Err(error) = value
+            if let Err(crate::Error { diagnostics, score }) = value
                 .validate(accessors, Some(resolved_schema), schema_context)
                 .await
             {
-                if let Err(filtered_error) = filter_table_strict_additional_diagnostics(error) {
-                    total_score += filtered_error.score;
-                    total_diagnostics.extend(filtered_error.diagnostics);
-                }
+                total_diagnostics.extend(diagnostics);
+                total_score += score;
             }
         }
 
