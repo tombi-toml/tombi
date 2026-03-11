@@ -779,15 +779,23 @@ async fn validate_table(
     let comment_directives = table_value
         .comment_directives()
         .map(|directives| directives.cloned().collect_vec());
+    let has_adjacent_assertion_applicators = table_schema.one_of.is_some()
+        || table_schema.any_of.is_some()
+        || table_schema.all_of.is_some();
+    let base_result = if total_diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(crate::Error {
+            score: total_score,
+            diagnostics: total_diagnostics,
+        })
+    };
 
     merge_validation_results(
-        if total_diagnostics.is_empty() {
-            Ok(())
+        if has_adjacent_assertion_applicators {
+            base_result.or_else(crate::validate::filter_table_strict_additional_diagnostics)
         } else {
-            Err(crate::Error {
-                score: total_score,
-                diagnostics: total_diagnostics,
-            })
+            base_result
         },
         validate_adjacent_applicators(
             table_value,

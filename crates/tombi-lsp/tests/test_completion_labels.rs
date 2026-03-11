@@ -143,15 +143,13 @@ mod completion_labels {
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }

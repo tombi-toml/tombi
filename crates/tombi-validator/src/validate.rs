@@ -323,7 +323,9 @@ fn merge_validation_results(
     }
 }
 
-fn filter_table_strict_additional_diagnostics(mut error: crate::Error) -> Result<(), crate::Error> {
+pub(crate) fn filter_table_strict_additional_diagnostics(
+    mut error: crate::Error,
+) -> Result<(), crate::Error> {
     error
         .diagnostics
         .retain(|diagnostic| diagnostic.code() != "table-strict-additional-keys");
