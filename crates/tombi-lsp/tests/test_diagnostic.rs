@@ -63,6 +63,28 @@ mod diagnostic {
             ) -> Ok([]);
         );
     }
+
+    /// Test for issue #1581: pyproject `tool.tombi.format.rules` false additional-key warnings
+    /// https://github.com/tombi-toml/tombi/issues/1581
+    mod issue_1581_pyproject_format_rules {
+        use tombi_test_lib::project_root_path;
+
+        use super::*;
+        use std::path::PathBuf;
+
+        fn fixture_path() -> PathBuf {
+            project_root_path()
+                .join("crates/tombi-lsp/tests/fixtures/issue-1581-pyproject-format-rules")
+        }
+
+        test_diagnostic_file!(
+            #[tokio::test]
+            async fn pyproject_tombi_format_rules_has_no_false_warnings(
+                SourcePath(fixture_path().join("pyproject.toml")),
+                ConfigPath(fixture_path().join("tombi.toml")),
+            ) -> Ok([]);
+        );
+    }
 }
 
 // Unified test macro

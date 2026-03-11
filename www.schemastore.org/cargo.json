@@ -1,6 +1,6 @@
 {
+  "$id": "tombi://www.schemastore.org/cargo.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://www.schemastore.org/cargo.json",
   "x-tombi-toml-version": "v1.0.0",
   "definitions": {
     "Build": {

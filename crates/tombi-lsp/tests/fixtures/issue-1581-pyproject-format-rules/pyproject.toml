@@ -1,0 +1,11 @@
+[tool.tombi]
+  toml-version = "v1.0.0"
+
+[tool.tombi.files]
+  exclude = ["**/uv.lock"]
+
+[tool.tombi.format.rules]
+  indent-table-key-value-pairs    = true
+  inline-table-brace-space-width  = 0
+  key-value-equals-sign-alignment = true
+  trailing-comment-alignment      = true
