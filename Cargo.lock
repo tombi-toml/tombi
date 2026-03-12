@@ -3917,7 +3917,6 @@ dependencies = [
  "itertools 0.14.0",
  "log",
  "pretty_assertions",
- "serde",
  "serde_json",
  "tempfile",
  "thiserror 2.0.12",
