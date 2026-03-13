@@ -216,6 +216,13 @@ impl DiagnosticKind {
 }
 
 impl Diagnostic {
+    pub fn new(kind: DiagnosticKind, range: impl Into<tombi_text::Range>) -> Self {
+        Self {
+            kind: Box::new(kind),
+            range: range.into(),
+        }
+    }
+
     #[inline]
     pub fn code(&self) -> &'static str {
         self.kind.code()

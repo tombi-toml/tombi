@@ -4,11 +4,11 @@ use itertools::Either;
 use serde_json::Value as JsonValue;
 use tempfile::tempdir;
 use tombi_config::TomlVersion;
-use tombi_diagnostic::Level;
 use tombi_linter::{LintOptions, Linter};
 use tombi_schema_store::{
     AssociateSchemaOptions, Options as SchemaStoreOptions, SchemaStore, SchemaUri,
 };
+use tombi_severity_level::SeverityLevel;
 
 fn json_object_to_toml_document(object: &serde_json::Map<String, JsonValue>) -> String {
     let mut out = String::new();
@@ -53,7 +53,10 @@ fn toml_key(key: &str) -> String {
     }
 }
 
-async fn assert_suite_validation(schema: JsonValue, data: JsonValue, expected_valid: bool) {
+async fn validate_test_suite(
+    schema: JsonValue,
+    data: JsonValue,
+) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
     let toml_text = json_object_to_toml_document(
         data.as_object()
             .expect("suite test data must be a JSON object"),
@@ -89,17 +92,7 @@ async fn assert_suite_validation(schema: JsonValue, data: JsonValue, expected_va
         &schema_store,
     );
 
-    let actual_valid = match linter.lint(&toml_text).await {
-        Ok(()) => true,
-        Err(diagnostics) => diagnostics
-            .iter()
-            .all(|diagnostic| diagnostic.level() != Level::ERROR),
-    };
-
-    assert_eq!(
-        actual_valid, expected_valid,
-        "expected valid={expected_valid}, got valid={actual_valid}\nschema: {schema}\ntoml:\n{toml_text}"
-    );
+    linter.lint(&toml_text).await
 }
 
 macro_rules! suite_test {
@@ -110,17 +103,36 @@ macro_rules! suite_test {
         #[tokio::test]
         async fn $name() {
             tombi_test_lib::init_log();
-            assert_suite_validation($schema, serde_json::json!($data), true).await;
+            match validate_test_suite($schema, serde_json::json!($data)).await {
+                Ok(_) => {}
+                Err(errors) => {
+                    pretty_assertions::assert_eq!(
+                        errors,
+                        Vec::<tombi_diagnostic::Diagnostic>::new(),
+                        "expected success but got errors"
+                    );
+                }
+            }
         }
     };
+
     (#[tokio::test] async fn $name:ident(
         $data:tt,
         JsonSchema($schema:expr) $(,)?
-    ) -> Err(_);) => {
+    ) -> Err($errors:expr);) => {
         #[tokio::test]
         async fn $name() {
             tombi_test_lib::init_log();
-            assert_suite_validation($schema, serde_json::json!($data), false).await;
+            match validate_test_suite($schema, serde_json::json!($data)).await {
+                Ok(_) => panic!("expected error but got success"),
+                Err(errs) => {
+                    let mut expected = Vec::new();
+                    for diagnostic in $errors {
+                        diagnostic.push_diagnostic_with_level(SeverityLevel::Error, &mut expected);
+                    }
+                    pretty_assertions::assert_eq!(errs, expected);
+                }
+            }
         }
     };
 }
@@ -163,7 +175,15 @@ mod draft7_dependencies {
             #[tokio::test] async fn missing_dependency(
                 {"bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "bar".to_string(),
+                        required_key: "foo".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 
@@ -221,21 +241,52 @@ mod draft7_dependencies {
             #[tokio::test] async fn missing_dependency(
                 {"foo": 1, "quux": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "bar".to_string()
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_other_dependency(
                 {"bar": 1, "quux": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "foo".to_string()
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_both_dependencies(
                 {"quux": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "foo".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 
@@ -273,21 +324,52 @@ mod draft7_dependencies {
             #[tokio::test] async fn wrong_type(
                 {"foo": "quux", "bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((0, 6), (0, 12))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn wrong_type_other(
                 {"foo": 2, "bar": "quux"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((1, 6), (1, 12))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn wrong_type_both(
                 {"foo": "quux", "bar": "quux"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((0, 6), (0, 12))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((1, 6), (1, 12))
+                ),
+            ]);
         );
     }
 
@@ -309,14 +391,28 @@ mod draft7_dependencies {
             #[tokio::test] async fn schema_false_is_invalid(
                 {"bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::OneOfNoMatch {
+                        total_count: 0,
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn both_properties_is_invalid(
                 {"foo": 1, "bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::OneOfNoMatch {
+                        total_count: 0,
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -366,28 +462,59 @@ mod draft7_dependencies {
             #[tokio::test] async fn invalid_object_1(
                 {"foo\nbar": 1, "foo": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "foo\nbar".to_string(),
+                        required_key: "foo\rbar".to_string()
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn invalid_object_2(
                 {"foo\tbar": 1, "a": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableMinKeys {
+                        min_keys: 4,
+                        actual: 2
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn invalid_object_3(
                 {"foo'bar": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableKeyRequired {
+                        key: "foo\"bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn invalid_object_4(
                 {"foo\"bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "foo\"bar".to_string(),
+                        required_key: "foo'bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 
@@ -410,7 +537,14 @@ mod draft7_dependencies {
             #[tokio::test] async fn matches_root(
                 {"foo": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::KeyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 7))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -424,7 +558,20 @@ mod draft7_dependencies {
             #[tokio::test] async fn matches_both(
                 {"foo": 1, "bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::KeyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 7))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::KeyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 7))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -460,7 +607,15 @@ mod draft7_property_names {
             #[tokio::test] async fn some_property_names_invalid(
                 {"foo": {}, "foobar": {}},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::StringMaxLength {
+                        maximum: 3,
+                        actual: 6
+                    },
+                    ((1, 0), (1, 6))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -489,7 +644,15 @@ mod draft7_property_names {
             #[tokio::test] async fn non_matching_invalid(
                 {"aaA": {}},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::StringPattern {
+                        pattern: "^a+$".to_string(),
+                        actual: "aaA".to_string()
+                    },
+                    ((0, 0), (0, 3))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -533,7 +696,14 @@ mod draft7_property_names {
             #[tokio::test] async fn any_properties_invalid(
                 {"foo": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::OneOfNoMatch {
+                        total_count: 0,
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -562,7 +732,15 @@ mod draft7_property_names {
             #[tokio::test] async fn other_property_invalid(
                 {"bar": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::Const {
+                        expected: "\"foo\"".to_string(),
+                        actual: "bar".to_string()
+                    },
+                    ((0, 0), (0, 3))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -598,7 +776,15 @@ mod draft7_property_names {
             #[tokio::test] async fn other_property_invalid(
                 {"baz": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::Enum {
+                        expected: vec!["\"foo\"".to_string(), "\"bar\"".to_string()],
+                        actual: "baz".to_string()
+                    },
+                    ((0, 0), (0, 3))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -638,7 +824,14 @@ mod draft2019_09_unevaluated_properties {
             #[tokio::test] async fn with_unevaluated_properties(
                 {"foo": "foo"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 11))
+                ),
+            ]);
         );
     }
 
@@ -665,7 +858,14 @@ mod draft2019_09_unevaluated_properties {
             #[tokio::test] async fn with_unevaluated_properties(
                 {"foo": "foo", "bar": "bar"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 11))
+                ),
+            ]);
         );
     }
 
@@ -693,7 +893,20 @@ mod draft2019_09_unevaluated_properties {
             #[tokio::test] async fn with_additional_properties(
                 {"foo": "foo", "bar": "bar", "baz": "baz"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 11))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "baz".to_string()
+                    },
+                    ((2, 0), (2, 11))
+                ),
+            ]);
         );
     }
 
@@ -719,7 +932,14 @@ mod draft2019_09_unevaluated_properties {
             #[tokio::test] async fn invalid_in_case_if_is_evaluated(
                 {"bar": "a"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((0, 0), (0, 9))
+                ),
+            ]);
         );
     }
 }
@@ -765,7 +985,15 @@ mod draft2020_12_dependent_required {
             #[tokio::test] async fn missing_dependency(
                 {"bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "bar".to_string(),
+                        required_key: "foo".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 
@@ -829,21 +1057,52 @@ mod draft2020_12_dependent_required {
             #[tokio::test] async fn missing_dependency(
                 {"foo": 1, "quux": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "bar".to_string()
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_other_dependency(
                 {"bar": 1, "quux": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "foo".to_string()
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_both_dependencies(
                 {"quux": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "foo".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "quux".to_string(),
+                        required_key: "bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 
@@ -878,14 +1137,30 @@ mod draft2020_12_dependent_required {
             #[tokio::test] async fn crlf_missing_dependent(
                 {"foo\nbar": 1, "foo": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "foo\nbar".to_string(),
+                        required_key: "foo\rbar".to_string()
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn quoted_quotes_missing_dependent(
                 {"foo\"bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableDependencyRequired {
+                        dependent_key: "foo\"bar".to_string(),
+                        required_key: "foo'bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 }
@@ -931,21 +1206,52 @@ mod draft2020_12_dependent_schemas {
             #[tokio::test] async fn wrong_type(
                 {"foo": "quux", "bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((0, 6), (0, 12))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn wrong_type_other(
                 {"foo": 2, "bar": "quux"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((1, 6), (1, 12))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn wrong_type_both(
                 {"foo": "quux", "bar": "quux"},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((0, 6), (0, 12))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TypeMismatch {
+                        expected: tombi_schema_store::ValueType::Integer,
+                        actual: tombi_document_tree::ValueType::String
+                    },
+                    ((1, 6), (1, 12))
+                ),
+            ]);
         );
     }
 
@@ -970,14 +1276,28 @@ mod draft2020_12_dependent_schemas {
             #[tokio::test] async fn schema_false_invalid(
                 {"bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::OneOfNoMatch {
+                        total_count: 0,
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn both_properties_invalid(
                 {"foo": 1, "bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::OneOfNoMatch {
+                        total_count: 0,
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -1012,21 +1332,43 @@ mod draft2020_12_dependent_schemas {
             #[tokio::test] async fn quoted_quote(
                 {"foo'bar": {"foo\"bar": 1}},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableKeyRequired {
+                        key: "foo\"bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn quoted_tab_invalid(
                 {"foo\tbar": 1, "a": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableMinKeys {
+                        min_keys: 4,
+                        actual: 2
+                    },
+                    ((0, 0), (2, 0))
+                ),
+            ]);
         );
 
         suite_test!(
             #[tokio::test] async fn quoted_quote_invalid(
                 {"foo'bar": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::TableKeyRequired {
+                        key: "foo\"bar".to_string()
+                    },
+                    ((0, 0), (1, 0))
+                ),
+            ]);
         );
     }
 
@@ -1050,7 +1392,14 @@ mod draft2020_12_dependent_schemas {
             #[tokio::test] async fn matches_root(
                 {"foo": 1},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::KeyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 7))
+                ),
+            ]);
         );
 
         suite_test!(
@@ -1064,7 +1413,20 @@ mod draft2020_12_dependent_schemas {
             #[tokio::test] async fn matches_both(
                 {"foo": 1, "bar": 2},
                 JsonSchema(schema()),
-            ) -> Err(_);
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::KeyNotAllowed {
+                        key: "foo".to_string()
+                    },
+                    ((0, 0), (0, 7))
+                ),
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::KeyNotAllowed {
+                        key: "bar".to_string()
+                    },
+                    ((1, 0), (1, 7))
+                ),
+            ]);
         );
 
         suite_test!(
