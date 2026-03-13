@@ -118,16 +118,16 @@ pub(crate) fn referable_from_schema_value(
     dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) -> Option<Referable<ValueSchema>> {
     match value {
-        tombi_json::ValueNode::Object(obj) => Referable::<ValueSchema>::new(
-            obj,
+        tombi_json::ValueNode::Object(object) => Referable::<ValueSchema>::new(
+            object,
             string_formats,
             dialect,
             anchor_collector,
             dynamic_anchor_collector,
         ),
-        tombi_json::ValueNode::Bool(boolean_schema) => Some(Referable::Resolved {
+        tombi_json::ValueNode::Bool(bool) => Some(Referable::Resolved {
             schema_uri: None,
-            value: Arc::new(boolean_value_schema(boolean_schema.value)),
+            value: Arc::new(bool_value_schema(bool.value, bool.range)),
         }),
         _ => None,
     }
@@ -150,11 +150,11 @@ pub(crate) fn schema_item_from_schema_value(
     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
 }
 
-pub(crate) fn boolean_value_schema(allow: bool) -> ValueSchema {
+pub(crate) fn bool_value_schema(allow: bool, range: tombi_text::Range) -> ValueSchema {
     if allow {
-        ValueSchema::AnyOf(AnyOfSchema::default())
+        ValueSchema::Anything(range)
     } else {
-        ValueSchema::OneOf(OneOfSchema::default())
+        ValueSchema::Nothing(range)
     }
 }
 

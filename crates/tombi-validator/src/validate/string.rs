@@ -12,8 +12,8 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{
-        format, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        validate_adjacent_applicators,
+        format, handle_anything_schema, handle_deprecated_value, handle_nothing_schema,
+        handle_type_mismatch, handle_unused_noqa, validate_adjacent_applicators,
     },
 };
 
@@ -100,6 +100,8 @@ impl Validate for tombi_document_tree::String {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
+                    ValueSchema::Anything(_) => handle_anything_schema(self),
+                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     // When the schema expects a TOML date/time type but the value is a string,
                     // check if x-tombi-string-formats includes the corresponding format.
                     // If so, validate the string against the format instead of reporting type mismatch.

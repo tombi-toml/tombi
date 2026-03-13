@@ -198,6 +198,27 @@ fn handle_type_mismatch(
     }
 }
 
+#[inline]
+pub(crate) fn handle_anything_schema<T>(_value: &T) -> Result<(), crate::Error>
+where
+    T: tombi_document_tree::ValueImpl,
+{
+    Ok(())
+}
+
+pub(crate) fn handle_nothing_schema<T>(value: &T) -> Result<(), crate::Error>
+where
+    T: tombi_document_tree::ValueImpl,
+{
+    let mut diagnostics = vec![];
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::Nothing),
+        range: value.range(),
+    }
+    .push_diagnostic_with_level(SeverityLevelDefaultError::default(), &mut diagnostics);
+    Err(diagnostics.into())
+}
+
 fn handle_unused_noqa<'a>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<
@@ -478,6 +499,8 @@ where
                 )
             }
             (_, tombi_schema_store::ValueSchema::Null) => None,
+            (_, tombi_schema_store::ValueSchema::Anything(_)) => Some(handle_anything_schema(value)),
+            (_, tombi_schema_store::ValueSchema::Nothing(_)) => Some(handle_nothing_schema(value)),
             (_, tombi_schema_store::ValueSchema::Boolean(_))
             | (_, tombi_schema_store::ValueSchema::Integer(_))
             | (_, tombi_schema_store::ValueSchema::Float(_))

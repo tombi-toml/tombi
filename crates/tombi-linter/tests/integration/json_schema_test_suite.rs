@@ -393,9 +393,7 @@ mod draft7_dependencies {
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::OneOfNoMatch {
-                        total_count: 0,
-                    },
+                    tombi_validator::DiagnosticKind::Nothing,
                     ((0, 0), (1, 0))
                 ),
             ]);
@@ -407,9 +405,7 @@ mod draft7_dependencies {
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::OneOfNoMatch {
-                        total_count: 0,
-                    },
+                    tombi_validator::DiagnosticKind::Nothing,
                     ((0, 0), (2, 0))
                 ),
             ]);
@@ -698,9 +694,7 @@ mod draft7_property_names {
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::OneOfNoMatch {
-                        total_count: 0,
-                    },
+                    tombi_validator::DiagnosticKind::Nothing,
                     ((0, 0), (1, 0))
                 ),
             ]);
@@ -1278,9 +1272,7 @@ mod draft2020_12_dependent_schemas {
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::OneOfNoMatch {
-                        total_count: 0,
-                    },
+                    tombi_validator::DiagnosticKind::Nothing,
                     ((0, 0), (1, 0))
                 ),
             ]);
@@ -1292,9 +1284,7 @@ mod draft2020_12_dependent_schemas {
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::OneOfNoMatch {
-                        total_count: 0,
-                    },
+                    tombi_validator::DiagnosticKind::Nothing,
                     ((0, 0), (2, 0))
                 ),
             ]);

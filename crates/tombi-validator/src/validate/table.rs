@@ -18,9 +18,9 @@ use crate::{
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
-        handle_deprecated, handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        if_then_else::validate_if_then_else, merge_validation_results, string::validate_raw_string,
-        validate_adjacent_applicators,
+        handle_anything_schema, handle_deprecated, handle_deprecated_value, handle_nothing_schema,
+        handle_type_mismatch, handle_unused_noqa, if_then_else::validate_if_then_else,
+        merge_validation_results, string::validate_raw_string, validate_adjacent_applicators,
     },
 };
 
@@ -112,6 +112,8 @@ impl Validate for tombi_document_tree::Table {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
+                    ValueSchema::Anything(_) => handle_anything_schema(self),
+                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),

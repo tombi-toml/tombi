@@ -8,8 +8,8 @@ use tombi_severity_level::SeverityLevelDefaultError;
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
     validate::{
-        handle_deprecated_value, handle_type_mismatch, handle_unused_noqa,
-        validate_adjacent_applicators,
+        handle_anything_schema, handle_deprecated_value, handle_nothing_schema,
+        handle_type_mismatch, handle_unused_noqa, validate_adjacent_applicators,
     },
 };
 
@@ -91,6 +91,8 @@ impl Validate for tombi_document_tree::Boolean {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
+                    ValueSchema::Anything(_) => handle_anything_schema(self),
+                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),

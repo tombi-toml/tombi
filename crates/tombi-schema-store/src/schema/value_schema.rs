@@ -17,7 +17,6 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum ValueSchema {
-    Null,
     Boolean(BooleanSchema),
     Integer(IntegerSchema),
     Float(FloatSchema),
@@ -31,6 +30,9 @@ pub enum ValueSchema {
     OneOf(OneOfSchema),
     AnyOf(AnyOfSchema),
     AllOf(AllOfSchema),
+    Null,
+    Anything(tombi_text::Range),
+    Nothing(tombi_text::Range),
 }
 
 impl ValueSchema {
@@ -499,7 +501,6 @@ impl ValueSchema {
 
     pub async fn value_type(&self) -> crate::ValueType {
         match self {
-            Self::Null => crate::ValueType::Null,
             Self::Boolean(boolean) => boolean.value_type(),
             Self::Integer(integer) => integer.value_type(),
             Self::Float(float) => float.value_type(),
@@ -513,12 +514,24 @@ impl ValueSchema {
             Self::OneOf(one_of) => one_of.value_type().await,
             Self::AnyOf(any_of) => any_of.value_type().await,
             Self::AllOf(all_of) => all_of.value_type().await,
+            Self::Null | Self::Nothing(_) => crate::ValueType::Null,
+            Self::Anything(_) => crate::ValueType::AnyOf(vec![
+                crate::ValueType::Boolean,
+                crate::ValueType::Integer,
+                crate::ValueType::Float,
+                crate::ValueType::String,
+                crate::ValueType::LocalDate,
+                crate::ValueType::LocalDateTime,
+                crate::ValueType::LocalTime,
+                crate::ValueType::OffsetDateTime,
+                crate::ValueType::Array,
+                crate::ValueType::Table,
+            ]),
         }
     }
 
     pub async fn deprecated(&self) -> Option<bool> {
         match self {
-            Self::Null => None,
             Self::Boolean(boolean) => boolean.deprecated,
             Self::Integer(integer) => integer.deprecated,
             Self::Float(float) => float.deprecated,
@@ -564,12 +577,12 @@ impl ValueSchema {
                     if has_deprecated { Some(true) } else { None }
                 }
             }
+            Self::Null | Self::Anything(_) | Self::Nothing(_) => None,
         }
     }
 
     pub(crate) fn set_deprecated(&mut self, deprecated: bool) {
         match self {
-            Self::Null => {}
             Self::Boolean(boolean) => boolean.deprecated = Some(deprecated),
             Self::Integer(integer) => integer.deprecated = Some(deprecated),
             Self::Float(float) => float.deprecated = Some(deprecated),
@@ -585,12 +598,12 @@ impl ValueSchema {
             Self::OneOf(one_of) => one_of.deprecated = Some(deprecated),
             Self::AnyOf(any_of) => any_of.deprecated = Some(deprecated),
             Self::AllOf(all_of) => all_of.deprecated = Some(deprecated),
+            Self::Null | Self::Anything(_) | Self::Nothing(_) => {}
         }
     }
 
     pub fn title(&self) -> Option<&str> {
         match self {
-            ValueSchema::Null => None,
             ValueSchema::Boolean(schema) => schema.title.as_deref(),
             ValueSchema::Integer(schema) => schema.title.as_deref(),
             ValueSchema::Float(schema) => schema.title.as_deref(),
@@ -604,12 +617,12 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title.as_deref(),
             ValueSchema::AnyOf(schema) => schema.title.as_deref(),
             ValueSchema::AllOf(schema) => schema.title.as_deref(),
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
         }
     }
 
     pub fn set_title(&mut self, title: Option<String>) {
         match self {
-            ValueSchema::Null => {}
             ValueSchema::Boolean(schema) => schema.title = title,
             ValueSchema::Integer(schema) => schema.title = title,
             ValueSchema::Float(schema) => schema.title = title,
@@ -623,12 +636,12 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title = title,
             ValueSchema::AnyOf(schema) => schema.title = title,
             ValueSchema::AllOf(schema) => schema.title = title,
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
         }
     }
 
     pub fn description(&self) -> Option<&str> {
         match self {
-            ValueSchema::Null => None,
             ValueSchema::Boolean(schema) => schema.description.as_deref(),
             ValueSchema::Integer(schema) => schema.description.as_deref(),
             ValueSchema::Float(schema) => schema.description.as_deref(),
@@ -642,12 +655,12 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description.as_deref(),
             ValueSchema::AnyOf(schema) => schema.description.as_deref(),
             ValueSchema::AllOf(schema) => schema.description.as_deref(),
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
         }
     }
 
     pub fn set_description(&mut self, description: Option<String>) {
         match self {
-            ValueSchema::Null => {}
             ValueSchema::Boolean(schema) => schema.description = description,
             ValueSchema::Integer(schema) => schema.description = description,
             ValueSchema::Float(schema) => schema.description = description,
@@ -661,6 +674,7 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description = description,
             ValueSchema::AnyOf(schema) => schema.description = description,
             ValueSchema::AllOf(schema) => schema.description = description,
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
         }
     }
 
@@ -680,6 +694,7 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.range,
             ValueSchema::AnyOf(schema) => schema.range,
             ValueSchema::AllOf(schema) => schema.range,
+            ValueSchema::Anything(range) | ValueSchema::Nothing(range) => *range,
         }
     }
 

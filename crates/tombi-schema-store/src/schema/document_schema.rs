@@ -29,14 +29,14 @@ impl DocumentSchema {
     pub fn new(node: tombi_json::ValueNode, schema_uri: SchemaUri) -> Self {
         match node {
             tombi_json::ValueNode::Object(object) => Self::new_from_object(object, schema_uri),
-            tombi_json::ValueNode::Bool(boolean_schema) => Self {
+            tombi_json::ValueNode::Bool(bool) => Self {
                 id: None,
                 schema_uri,
                 dialect: None,
                 toml_version: None,
                 string_formats: None,
                 format_assertion: true,
-                value_schema: Some(Arc::new(super::boolean_value_schema(boolean_schema.value))),
+                value_schema: Some(Arc::new(super::bool_value_schema(bool.value, bool.range))),
                 definitions: SchemaDefinitions::new(Default::default()),
                 anchors: SchemaAnchors::new(Default::default()),
                 dynamic_anchors: SchemaDynamicAnchors::new(Default::default()),
@@ -369,7 +369,7 @@ mod tests {
         let doc = DocumentSchema::new(schema_value, uri);
         assert!(matches!(
             doc.value_schema.as_deref(),
-            Some(ValueSchema::AnyOf(any_of)) if any_of.schemas.blocking_read().is_empty()
+            Some(ValueSchema::Anything(_))
         ));
     }
 
@@ -380,7 +380,7 @@ mod tests {
         let doc = DocumentSchema::new(schema_value, uri);
         assert!(matches!(
             doc.value_schema.as_deref(),
-            Some(ValueSchema::OneOf(one_of)) if one_of.schemas.blocking_read().is_empty()
+            Some(ValueSchema::Nothing(_))
         ));
     }
 
