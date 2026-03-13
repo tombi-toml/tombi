@@ -153,8 +153,7 @@ async fn validate_table(
 ) -> Result<(), crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
-    let adjacent_allowed_keys =
-        collect_adjacent_allowed_keys(table_schema, current_schema, schema_context).await;
+    let used_keys = collect_used_keys(table_schema, current_schema, schema_context).await;
 
     for (key, value) in table_value.key_values() {
         let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
@@ -353,7 +352,7 @@ async fn validate_table(
                     continue;
                 }
             }
-            if adjacent_allowed_keys.contains(accessor_raw_text) {
+            if used_keys.contains(accessor_raw_text) {
                 continue;
             }
 
@@ -818,7 +817,7 @@ async fn validate_table(
     )
 }
 
-async fn collect_adjacent_allowed_keys(
+async fn collect_used_keys(
     table_schema: &tombi_schema_store::TableSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
