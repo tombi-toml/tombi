@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tombi Conditional Repro",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["a", "b"]
+    },
+    "component": {
+      "type": "string"
+    }
+  },
+  "required": ["mode", "component"],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": { "const": "a" }
+        }
+      },
+      "then": {
+        "properties": {
+          "component": {
+            "enum": ["x"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": { "const": "b" }
+        }
+      },
+      "then": {
+        "properties": {
+          "component": {
+            "enum": ["y"]
+          }
+        }
+      }
+    }
+  ]
+}
