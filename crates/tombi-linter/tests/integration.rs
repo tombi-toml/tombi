@@ -1,5 +1,7 @@
 #[path = "integration/adjacent_applicators_test_schema.rs"]
 mod adjacent_applicators_test_schema;
+#[path = "integration/additional_properties_branch_keys_test_schema.rs"]
+mod additional_properties_branch_keys_test_schema;
 #[path = "integration/anchor_dynamic_ref_test_schema.rs"]
 mod anchor_dynamic_ref_test_schema;
 #[path = "integration/array_const_enum_test_schema.rs"]

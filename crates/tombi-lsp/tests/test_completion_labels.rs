@@ -605,6 +605,7 @@ mod completion_labels {
                 SourcePath(project_root_path().join("schemas").join("tombi.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "additional-properties-branch-keys-test.schema.json",
                 "adjacent-applicators-test.schema.json",
                 "anchor-dynamic-ref-test.schema.json",
                 "array-const-enum-test.schema.json",

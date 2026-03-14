@@ -326,15 +326,14 @@ async fn validate_table(
                 validated_by_additional_schema = true;
             }
 
-            if used_keys.contains(accessor_raw_text) {
-                continue;
-            }
-
             // `additionalProperties` contributes to evaluated properties only when the keyword exists.
             // When it's absent, unevaluatedProperties must still run.
             let evaluated_by_additional_default = table_schema.additional_properties().is_some();
 
-            if !validated_by_additional_schema && !evaluated_by_additional_default {
+            if !used_keys.contains(accessor_raw_text)
+                && !validated_by_additional_schema
+                && !evaluated_by_additional_default
+            {
                 if let Some(schema_item) = &table_schema.unevaluated_property_schema
                     && let Ok(Some(unevaluated_schema)) = tombi_schema_store::resolve_schema_item(
                         schema_item,
@@ -367,6 +366,12 @@ async fn validate_table(
                     );
                     continue;
                 }
+            }
+
+            if used_keys.contains(accessor_raw_text)
+                && table_schema.additional_properties() != Some(false)
+            {
+                continue;
             }
 
             if table_schema.check_strict_additional_properties_violation(schema_context.strict()) {
