@@ -279,7 +279,7 @@ fn has_error_level_diagnostics(error: &crate::Error) -> bool {
         .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
 }
 
-fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
+pub(crate) fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
     match result {
         Ok(()) => true,
         Err(error) => !has_error_level_diagnostics(error),
