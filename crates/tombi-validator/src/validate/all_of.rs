@@ -7,7 +7,8 @@ use tombi_future::{BoxFuture, Boxable};
 use tombi_schema_store::CurrentSchema;
 
 use crate::validate::{
-    handle_deprecated, if_then_else::validate_if_then_else, not_schema::validate_not,
+    handle_deprecated, has_error_level_diagnostics, if_then_else::validate_if_then_else,
+    not_schema::validate_not,
 };
 
 use super::Validate;
@@ -30,6 +31,7 @@ where
     async move {
         let mut total_diagnostics = vec![];
         let mut total_score = 0;
+        let mut evaluated_locations = crate::EvaluatedLocations::new();
 
         let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
             &all_of_schema.schemas,
@@ -45,14 +47,18 @@ where
         };
 
         for resolved_schema in &resolved_schemas {
-            if let Err(crate::Error {
-                diagnostics, score, ..
-            }) = value
+            match value
                 .validate(accessors, Some(resolved_schema), schema_context)
                 .await
             {
-                total_diagnostics.extend(diagnostics);
-                total_score += score;
+                Ok(result) => evaluated_locations.merge_from(result),
+                Err(error) => {
+                    if !has_error_level_diagnostics(&error) {
+                        evaluated_locations.merge_from(error.evaluated_locations.clone());
+                    }
+                    total_diagnostics.extend(error.diagnostics);
+                    total_score += error.score;
+                }
             }
         }
 
@@ -83,7 +89,8 @@ where
         }
 
         if let Some(if_then_else_schema) = all_of_schema.if_then_else.as_ref()
-            && let Err(error) = validate_if_then_else(
+        {
+            match validate_if_then_else(
                 value,
                 accessors,
                 if_then_else_schema,
@@ -91,17 +98,25 @@ where
                 schema_context,
             )
             .await
-        {
-            total_diagnostics.extend(error.diagnostics);
+            {
+                Ok(result) => evaluated_locations.merge_from(result),
+                Err(error) => {
+                    if !has_error_level_diagnostics(&error) {
+                        evaluated_locations.merge_from(error.evaluated_locations.clone());
+                    }
+                    total_diagnostics.extend(error.diagnostics);
+                    total_score += error.score;
+                }
+            }
         }
 
         if total_diagnostics.is_empty() {
-            Ok(crate::EvaluatedLocations::new())
+            Ok(evaluated_locations)
         } else {
             Err(crate::Error {
                 score: total_score,
                 diagnostics: total_diagnostics,
-                evaluated_locations: crate::EvaluatedLocations::default(),
+                evaluated_locations,
             })
         }
     }

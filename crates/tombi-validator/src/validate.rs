@@ -284,7 +284,11 @@ pub(crate) fn with_lint_diagnostics(
             if lint_rules_diagnostics.is_empty() {
                 Ok(result)
             } else {
-                Err(lint_rules_diagnostics.into())
+                Err(crate::Error {
+                    score: crate::error::TYPE_MATCHED_SCORE,
+                    diagnostics: lint_rules_diagnostics,
+                    evaluated_locations: result,
+                })
             }
         }
         Err(mut error) => {
@@ -294,7 +298,7 @@ pub(crate) fn with_lint_diagnostics(
     }
 }
 
-fn has_error_level_diagnostics(error: &crate::Error) -> bool {
+pub(crate) fn has_error_level_diagnostics(error: &crate::Error) -> bool {
     error
         .diagnostics
         .iter()
@@ -353,7 +357,7 @@ where
     }
 }
 
-fn merge_validation_results(
+pub(crate) fn merge_validation_results(
     primary: Result<crate::EvaluatedLocations, crate::Error>,
     secondary: Result<crate::EvaluatedLocations, crate::Error>,
 ) -> Result<crate::EvaluatedLocations, crate::Error> {
@@ -593,7 +597,7 @@ where
 mod tests {
     use super::{
         filter_table_strict_additional_diagnostics, is_assertion_success,
-        is_multiple_of_with_tolerance, merge_validation_results,
+        is_multiple_of_with_tolerance, merge_validation_results, with_lint_diagnostics,
     };
 
     use pretty_assertions::assert_eq;
@@ -671,5 +675,23 @@ mod tests {
 
         assert!(merged.properties.contains("foo"));
         assert!(merged.indices.contains(&2));
+    }
+
+    #[test]
+    fn with_lint_diagnostics_preserves_evaluated_locations() {
+        let mut evaluated_locations = crate::EvaluatedLocations::new();
+        evaluated_locations.mark_property("foo");
+
+        let result = with_lint_diagnostics(
+            Ok(evaluated_locations),
+            vec![tombi_diagnostic::Diagnostic::new_warning(
+                "lint warning",
+                "lint-warning",
+                tombi_text::Range::default(),
+            )],
+        )
+        .expect_err("lint warnings should still surface");
+
+        assert!(result.evaluated_locations.properties.contains("foo"));
     }
 }

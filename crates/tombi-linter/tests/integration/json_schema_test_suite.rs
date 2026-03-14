@@ -1090,6 +1090,33 @@ mod draft2019_09_unevaluated_properties {
                 ),
             ]);
         );
+
+        fn schema_if_only_marks_property() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "if": {
+                    "properties": {
+                        "kind": {"const": "x"}
+                    }
+                },
+                "then": {
+                    "properties": {
+                        "foo": {"type": "string"}
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn if_schema_evaluated_properties_are_preserved(
+                r#"
+                kind = "x"
+                foo = "ok"
+                "#,
+                JsonSchema(schema_if_only_marks_property()),
+            ) -> Ok(_);
+        );
     }
 
     mod dependent_schemas_evaluated_properties {
@@ -1134,6 +1161,39 @@ mod draft2019_09_unevaluated_properties {
                     ((1, 0), (1, 10))
                 ),
             ]);
+        );
+    }
+
+    mod any_of_evaluated_properties {
+        use super::*;
+
+        fn schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "anyOf": [
+                    {
+                        "properties": {
+                            "foo": {"type": "string"}
+                        }
+                    },
+                    {
+                        "properties": {
+                            "bar": {"type": "string"}
+                        }
+                    }
+                ],
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn merges_evaluated_properties_from_multiple_successful_branches(
+                r#"
+                foo = "ok"
+                bar = "ok"
+                "#,
+                JsonSchema(schema()),
+            ) -> Ok(_);
         );
     }
 }
