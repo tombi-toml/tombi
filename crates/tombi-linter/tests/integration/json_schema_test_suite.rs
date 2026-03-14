@@ -988,12 +988,6 @@ mod draft2019_09_unevaluated_properties {
             ) -> Err([
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
-                        key: "bar".to_string()
-                    },
-                    ((1, 0), (1, 11))
-                ),
-                tombi_validator::Diagnostic::new(
-                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
                         key: "baz".to_string()
                     },
                     ((2, 0), (2, 11))
