@@ -12,7 +12,7 @@ use super::{
 };
 use crate::{
     Accessor, Referable, SchemaDefinitions, SchemaStore,
-    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
+    schema::if_then_else_schema::IfThenElseSchema,
 };
 
 #[derive(Debug, Clone)]
@@ -478,14 +478,7 @@ impl ValueSchema {
                     keys_order: object
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-                    not: NotSchema::new(
-                        object,
-                        string_formats,
-                        dialect,
-                        anchor_collector.as_deref_mut(),
-                        dynamic_anchor_collector.as_deref_mut(),
-                    )
-                    .map(Box::new),
+                    not: None,
                     if_then_else: IfThenElseSchema::new(
                         object,
                         string_formats,
@@ -1103,6 +1096,37 @@ mod tests {
 
         assert!(all_of.not.is_some());
         assert!(all_of.schemas.read().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_multi_type_enum_wrapper_does_not_duplicate_not_schema() {
+        let schema = parse_schema_with_dialect(
+            r#"{
+                "enum": [1, "foo"],
+                "not": { "const": "foo" }
+            }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        let Some(ValueSchema::OneOf(one_of)) = schema else {
+            panic!("schema is not a OneOf schema");
+        };
+
+        assert!(one_of.not.is_none());
+
+        let schemas = one_of.schemas.read().await;
+        assert_eq!(schemas.len(), 2);
+
+        for schema in schemas.iter() {
+            let Referable::Resolved { value, .. } = schema else {
+                panic!("schema is not resolved");
+            };
+
+            match value.as_ref() {
+                ValueSchema::Integer(integer) => assert!(integer.not.is_some()),
+                ValueSchema::String(string) => assert!(string.not.is_some()),
+                _ => panic!("unexpected schema type"),
+            }
+        }
     }
 
     #[test]

@@ -167,3 +167,9 @@ pub fn unevaluated_properties_test_schema_path() -> PathBuf {
         .join("schemas")
         .join("unevaluated-properties-test.schema.json")
 }
+
+pub fn unevaluated_properties_branch_additional_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("unevaluated-properties-branch-additional-test.schema.json")
+}

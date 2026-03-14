@@ -822,29 +822,69 @@ fn collect_keys_from_table_schema<'a>(
             return;
         }
 
-        for accessor in table_schema.properties.read().await.keys() {
-            if let SchemaAccessor::Key(key) = accessor {
-                keys.insert(key.clone());
-            }
+        let property_keys = table_schema
+            .properties
+            .read()
+            .await
+            .keys()
+            .filter_map(|accessor| match accessor {
+                SchemaAccessor::Key(key) => Some(key.clone()),
+                _ => None,
+            })
+            .collect_vec();
+        for key in &property_keys {
+            keys.insert(key.clone());
         }
 
-        if let Some(pattern_properties) = &table_schema.pattern_properties {
-            let pattern_keys = pattern_properties
+        let pattern_keys = if let Some(pattern_properties) = &table_schema.pattern_properties {
+            pattern_properties
                 .read()
                 .await
                 .keys()
                 .cloned()
-                .collect_vec();
+                .collect_vec()
+        } else {
+            Vec::new()
+        };
+        let pattern_regexes = pattern_keys
+            .iter()
+            .filter_map(|pattern_key| match tombi_regex::Regex::new(pattern_key) {
+                Ok(pattern) => Some(pattern),
+                Err(_) => {
+                    log::warn!("Invalid regex pattern property: {}", pattern_key);
+                    None
+                }
+            })
+            .collect_vec();
+
+        for key in table_value.keys() {
+            if property_keys
+                .iter()
+                .any(|property_key| property_key == &key.value)
+            {
+                keys.insert(key.value.to_string());
+                continue;
+            }
+
+            if pattern_regexes
+                .iter()
+                .any(|pattern| pattern.is_match(&key.value))
+            {
+                keys.insert(key.value.to_string());
+            }
+        }
+
+        if table_schema.additional_properties().is_some() {
             for key in table_value.keys() {
-                for pattern_key in &pattern_keys {
-                    let Ok(pattern) = tombi_regex::Regex::new(pattern_key) else {
-                        log::warn!("Invalid regex pattern property: {}", pattern_key);
-                        continue;
-                    };
-                    if pattern.is_match(&key.value) {
-                        keys.insert(key.value.to_string());
-                        break;
-                    }
+                let matched_property = property_keys
+                    .iter()
+                    .any(|property_key| property_key == &key.value);
+                let matched_pattern = pattern_regexes
+                    .iter()
+                    .any(|pattern| pattern.is_match(&key.value));
+
+                if !matched_property && !matched_pattern {
+                    keys.insert(key.value.to_string());
                 }
             }
         }

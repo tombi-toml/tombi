@@ -1,7 +1,7 @@
-#[path = "integration/adjacent_applicators_test_schema.rs"]
-mod adjacent_applicators_test_schema;
 #[path = "integration/additional_properties_branch_keys_test_schema.rs"]
 mod additional_properties_branch_keys_test_schema;
+#[path = "integration/adjacent_applicators_test_schema.rs"]
+mod adjacent_applicators_test_schema;
 #[path = "integration/anchor_dynamic_ref_test_schema.rs"]
 mod anchor_dynamic_ref_test_schema;
 #[path = "integration/array_const_enum_test_schema.rs"]
@@ -44,6 +44,8 @@ mod tombi_schema;
 mod tuple_items_test_schema;
 #[path = "integration/unevaluated_items_test_schema.rs"]
 mod unevaluated_items_test_schema;
+#[path = "integration/unevaluated_properties_branch_additional_test_schema.rs"]
+mod unevaluated_properties_branch_additional_test_schema;
 #[path = "integration/unevaluated_properties_test_schema.rs"]
 mod unevaluated_properties_test_schema;
 #[path = "integration/untagged_union_schema.rs"]
