@@ -151,13 +151,7 @@ async function findNodeModulesTombiBin(
         "bin",
         "tombi",
       ),
-      vscode.Uri.joinPath(
-        currentUri,
-        "node_modules",
-        "tombi",
-        "bin",
-        "tombi",
-      ),
+      vscode.Uri.joinPath(currentUri, "node_modules", "tombi", "bin", "tombi"),
     ];
 
     for (const packageBinUri of packageBinUris) {
