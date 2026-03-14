@@ -192,7 +192,9 @@ impl FindCompletionContents for SchemaCompletion {
                     )
                     .await
                 }
-                ValueSchema::Null => Vec::with_capacity(0),
+                ValueSchema::Anything(_) | ValueSchema::Nothing(_) | ValueSchema::Null => {
+                    Vec::with_capacity(0)
+                }
             }
         }
         .boxed()

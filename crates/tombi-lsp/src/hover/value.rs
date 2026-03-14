@@ -325,7 +325,7 @@ impl GetHoverContent for ValueSchema {
                         )
                         .await
                 }
-                Self::Null => None,
+                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()

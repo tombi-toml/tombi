@@ -1,7 +1,7 @@
 use tombi_ast::{AstNode, TombiValueCommentDirective};
 use tombi_toml_version::TomlVersion;
 
-use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors};
+use crate::{DocumentTreeAndErrors, IntoDocumentTreeAndErrors, LikeString, ValueImpl, ValueType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyKind {
@@ -168,5 +168,25 @@ impl IntoDocumentTreeAndErrors<Vec<crate::Key>> for tombi_ast::Keys {
         }
 
         DocumentTreeAndErrors { tree: keys, errors }
+    }
+}
+
+impl ValueImpl for Key {
+    fn value_type(&self) -> ValueType {
+        ValueType::String
+    }
+
+    fn range(&self) -> tombi_text::Range {
+        self.range
+    }
+}
+
+impl LikeString for Key {
+    fn value(&self) -> &str {
+        &self.value
+    }
+
+    fn comment_directives(&self) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.comment_directives.as_deref().map(|d| d.iter())
     }
 }

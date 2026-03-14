@@ -985,13 +985,10 @@ fn collect_table_key_completion_contents<'a: 'b, 'b>(
                         }
                     }
                 }
-                ValueSchema::Null
-                | ValueSchema::OneOf(_)
-                | ValueSchema::AnyOf(_)
-                | ValueSchema::AllOf(_) => {
-                    unreachable!(
-                        "Null, OneOf, AnyOf, and AllOf are not allowed in flattened schema"
-                    );
+                ValueSchema::Anything(_) => {}
+                ValueSchema::Nothing(_) | ValueSchema::Null => continue,
+                ValueSchema::OneOf(_) | ValueSchema::AnyOf(_) | ValueSchema::AllOf(_) => {
+                    unreachable!("OneOf, AnyOf, and AllOf are not allowed in flattened schema");
                 }
             }
 

@@ -1,27 +1,24 @@
 use itertools::Itertools;
 use std::borrow::Cow;
-use tombi_comment_directive::value::{
-    StringCommonFormatRules, StringCommonLintRules, TableCommonLintRules,
-};
+use tombi_comment_directive::value::TableCommonLintRules;
 use tombi_document_tree::ValueImpl;
 use tombi_future::{BoxFuture, Boxable};
 use tombi_hashmap::HashSet;
 use tombi_schema_store::{
     Accessor, CompositeSchema, CurrentSchema, SchemaAccessor, SchemaAccessors, ValueSchema,
 };
-use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError, SeverityLevelDefaultWarn};
+use tombi_severity_level::{SeverityLevel, SeverityLevelDefaultError};
 
 use crate::{
     comment_directive::{
-        get_tombi_key_rules_and_diagnostics, get_tombi_key_table_value_rules_and_diagnostics,
-        get_tombi_table_comment_directive_and_diagnostics,
+        get_tombi_key_rules_and_diagnostics, get_tombi_table_comment_directive_and_diagnostics,
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
         filter_table_strict_additional_diagnostics, handle_anything_schema, handle_deprecated,
         handle_deprecated_value, handle_nothing_schema, handle_type_mismatch, handle_unused_noqa,
         if_then_else::validate_if_then_else, is_assertion_success, merge_validation_results,
-        string::validate_raw_string, validate_adjacent_applicators,
+        validate_adjacent_applicators,
     },
 };
 
@@ -726,62 +723,25 @@ async fn validate_table(
         .await
         .inspect_err(|err| log::warn!("{err}"))
     {
-        match property_name_current_schema.value_schema.as_ref() {
-            ValueSchema::String(string_schema) => {
-                let allows_empty_key = string_schema.min_length == Some(0);
-
-                let format_assertion = schema_context
-                    .root_schema
-                    .is_none_or(|root| root.format_assertion())
-                    || string_schema
-                        .format
-                        .is_some_and(|format| schema_context.has_string_format(format));
-
-                for key in table_value.keys() {
-                    if !allows_empty_key {
-                        check_key_empty(key, &mut total_diagnostics).await;
-                    }
-
-                    let (lint_rules, lint_rules_diagnostics) =
-                        get_tombi_key_table_value_rules_and_diagnostics::<
-                            StringCommonFormatRules,
-                            StringCommonLintRules,
-                        >(key.comment_directives(), accessors)
-                        .await;
-
-                    let result = validate_raw_string(
-                        &key.value,
-                        &key.value,
-                        key.range(),
-                        string_schema,
-                        format_assertion,
-                        lint_rules.as_ref(),
-                        key.comment_directives(),
-                    );
-
-                    match result {
-                        Ok(()) => {
-                            if !lint_rules_diagnostics.is_empty() {
-                                total_diagnostics.extend(lint_rules_diagnostics);
-                            }
-                        }
-                        Err(mut error) => {
-                            error.prepend_diagnostics(lint_rules_diagnostics);
-                            total_diagnostics.extend(error.diagnostics);
-                        }
-                    }
-                }
+        for key in table_value.keys() {
+            if let Err(crate::Error { diagnostics, .. }) = key
+                .validate(
+                    accessors,
+                    Some(&property_name_current_schema),
+                    schema_context,
+                )
+                .await
+            {
+                total_diagnostics.extend(diagnostics);
             }
-            ValueSchema::Nothing(_) if !table_value.keys().next().is_none() => {
-                if let Err(crate::Error { diagnostics, .. }) = handle_nothing_schema(table_value) {
-                    total_diagnostics.extend(diagnostics);
-                }
-            }
-            _ => {}
         }
     } else {
         for key in table_value.keys() {
-            check_key_empty(key, &mut total_diagnostics).await;
+            if let Err(crate::Error { diagnostics, .. }) =
+                key.validate(accessors, None, schema_context).await
+            {
+                total_diagnostics.extend(diagnostics);
+            }
         }
     }
 
@@ -1165,7 +1125,11 @@ async fn validate_table_without_schema(
 
     // Validate without schema
     for (key, value) in table_value.key_values() {
-        check_key_empty(key, &mut total_diagnostics).await;
+        if let Err(crate::Error { diagnostics, .. }) =
+            key.validate(accessors, None, schema_context).await
+        {
+            total_diagnostics.extend(diagnostics);
+        }
 
         if let Err(crate::Error { diagnostics, .. }) = value
             .validate(
@@ -1188,32 +1152,6 @@ async fn validate_table_without_schema(
     } else {
         Err(total_diagnostics.into())
     }
-}
-
-async fn check_key_empty(
-    key: &tombi_document_tree::Key,
-    diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
-) {
-    if !key.value.is_empty() {
-        return;
-    }
-
-    let (key_rules, key_rules_diagnostics) =
-        get_tombi_key_rules_and_diagnostics(key.comment_directives()).await;
-    let key_rules = key_rules.map(|rules| rules.value);
-
-    diagnostics.extend(key_rules_diagnostics);
-
-    let level = key_rules
-        .as_ref()
-        .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
-        .unwrap_or_default();
-
-    crate::Diagnostic {
-        kind: Box::new(crate::DiagnosticKind::KeyEmpty),
-        range: key.range(),
-    }
-    .push_diagnostic_with_level(level, diagnostics);
 }
 
 /// Convert deprecated diagnostics to warnings for the given value

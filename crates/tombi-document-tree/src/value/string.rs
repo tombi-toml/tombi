@@ -5,7 +5,7 @@ use tombi_toml_text::{
 use tombi_toml_version::TomlVersion;
 
 use crate::{
-    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, ValueImpl, ValueType,
+    DocumentTreeAndErrors, IntoDocumentTreeAndErrors, LikeString, ValueImpl, ValueType,
     value::collect_comment_directives_and_errors,
 };
 
@@ -124,6 +124,16 @@ impl ValueImpl for crate::String {
 
     fn range(&self) -> tombi_text::Range {
         self.range
+    }
+}
+
+impl LikeString for crate::String {
+    fn value(&self) -> &str {
+        &self.value
+    }
+
+    fn comment_directives(&self) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_> {
+        self.comment_directives.as_deref().map(|d| d.iter())
     }
 }
 

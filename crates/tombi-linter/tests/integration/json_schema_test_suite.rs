@@ -762,7 +762,7 @@ mod draft7_property_names {
             ) -> Err([
                 tombi_validator::Diagnostic::new(
                     tombi_validator::DiagnosticKind::Nothing,
-                    ((0, 0), (1, 0))
+                    ((0, 0), (0, 3))
                 ),
             ]);
         );

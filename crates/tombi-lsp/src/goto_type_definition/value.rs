@@ -307,7 +307,7 @@ impl GetTypeDefinition for tombi_schema_store::ValueSchema {
                         )
                         .await
                 }
-                Self::Null => None,
+                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()

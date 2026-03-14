@@ -294,7 +294,11 @@ impl GetEnum for ValueSchema {
                         None
                     }
                 }
-                ValueSchema::Array(_) | ValueSchema::Table(_) | ValueSchema::Null => None,
+                ValueSchema::Anything(_)
+                | ValueSchema::Nothing(_)
+                | ValueSchema::Array(_)
+                | ValueSchema::Table(_)
+                | ValueSchema::Null => None,
                 ValueSchema::OneOf(OneOfSchema { schemas, .. })
                 | ValueSchema::AnyOf(AnyOfSchema { schemas, .. })
                 | ValueSchema::AllOf(AllOfSchema { schemas, .. }) => {

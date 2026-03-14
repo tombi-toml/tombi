@@ -1,16 +1,19 @@
 use itertools::Itertools;
 use tombi_ast::TombiValueCommentDirective;
+use tombi_comment_directive::value::KeyLinkRules;
 use tombi_comment_directive::value::{StringCommonFormatRules, StringCommonLintRules};
-use tombi_document_tree::ValueImpl;
+use tombi_document_tree::{LikeString, ValueImpl};
 use tombi_future::{BoxFuture, Boxable};
 use tombi_regex::Regex;
 use tombi_schema_store::ValueSchema;
-use tombi_severity_level::SeverityLevelDefaultError;
+use tombi_severity_level::{SeverityLevelDefaultError, SeverityLevelDefaultWarn};
 use tombi_x_keyword::StringFormat;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
+    comment_directive::{
+        get_tombi_key_rules_and_diagnostics, get_tombi_key_table_value_rules_and_diagnostics,
+    },
     validate::{
         format, handle_anything_schema, handle_deprecated_value, handle_nothing_schema,
         handle_type_mismatch, handle_unused_noqa, validate_adjacent_applicators,
@@ -26,148 +29,271 @@ impl Validate for tombi_document_tree::String {
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
-        async move {
-            let (lint_rules, lint_rules_diagnostics) =
+        validate_like_string(self, accessors, current_schema, schema_context, false)
+    }
+}
+
+impl Validate for tombi_document_tree::Key {
+    fn validate<'a: 'b, 'b>(
+        &'a self,
+        accessors: &'a [tombi_schema_store::Accessor],
+        current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+        schema_context: &'a tombi_schema_store::SchemaContext,
+    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+        validate_like_string(self, accessors, current_schema, schema_context, true)
+    }
+}
+
+fn validate_like_string<'a: 'b, 'b, T>(
+    string_value: &'a T,
+    accessors: &'a [tombi_schema_store::Accessor],
+    current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
+    schema_context: &'a tombi_schema_store::SchemaContext,
+    enable_key_empty_validation: bool,
+) -> BoxFuture<'b, Result<(), crate::Error>>
+where
+    T: Validate + LikeString + ValueImpl + ToString + Sync + Send + std::fmt::Debug,
+{
+    async move {
+        let comment_directives = string_value
+            .comment_directives()
+            .map(|directives| directives.cloned().collect_vec());
+
+        let (key_rules, key_rules_diagnostics) = if enable_key_empty_validation {
+            let (rules, diagnostics) = get_tombi_key_rules_and_diagnostics(
+                comment_directives
+                    .as_deref()
+                    .map(|directives| directives.iter()),
+            )
+            .await;
+            (rules.map(|rules| rules.value), diagnostics)
+        } else {
+            (None, vec![])
+        };
+
+        let (lint_rules, lint_rules_diagnostics) =
+            if !enable_key_empty_validation || current_schema.is_some() {
                 get_tombi_key_table_value_rules_and_diagnostics::<
                     StringCommonFormatRules,
                     StringCommonLintRules,
-                >(self.comment_directives(), accessors)
-                .await;
+                >(
+                    comment_directives
+                        .as_deref()
+                        .map(|directives| directives.iter()),
+                    accessors,
+                )
+                .await
+            } else {
+                (None, vec![])
+            };
 
-            let result = if let Some(current_schema) = current_schema {
-                match current_schema.value_schema.as_ref() {
-                    ValueSchema::String(string_schema) => {
-                        let format_assertion = schema_context
-                            .root_schema
-                            .is_none_or(|root| root.format_assertion())
-                            || string_schema
-                                .format
-                                .is_some_and(|f| schema_context.has_string_format(f));
+        let result = if let Some(current_schema) = current_schema {
+            match current_schema.value_schema.as_ref() {
+                ValueSchema::String(string_schema) => {
+                    let key_empty_result = if enable_key_empty_validation
+                        && should_validate_key_empty(Some(current_schema))
+                    {
+                        validate_key_empty_rule(string_value, key_rules.as_ref())
+                    } else {
+                        Ok(())
+                    };
+                    let format_assertion = schema_context
+                        .root_schema
+                        .is_none_or(|root| root.format_assertion())
+                        || string_schema
+                            .format
+                            .is_some_and(|f| schema_context.has_string_format(f));
+                    crate::validate::merge_validation_results(
+                        key_empty_result,
                         validate_string(
-                            self,
+                            string_value,
                             accessors,
                             string_schema,
                             current_schema,
                             schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
+                            comment_directives.as_deref(),
                             format_assertion,
                             lint_rules.as_ref(),
                         )
-                        .await
-                    }
-                    ValueSchema::OneOf(one_of_schema) => {
-                        validate_one_of(
-                            self,
-                            accessors,
-                            one_of_schema,
-                            current_schema,
-                            schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
-                            lint_rules.as_ref().map(|rules| &rules.common),
-                        )
-                        .await
-                    }
-                    ValueSchema::AnyOf(any_of_schema) => {
-                        validate_any_of(
-                            self,
-                            accessors,
-                            any_of_schema,
-                            current_schema,
-                            schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
-                            lint_rules.as_ref().map(|rules| &rules.common),
-                        )
-                        .await
-                    }
-                    ValueSchema::AllOf(all_of_schema) => {
-                        validate_all_of(
-                            self,
-                            accessors,
-                            all_of_schema,
-                            current_schema,
-                            schema_context,
-                            self.comment_directives()
-                                .map(|directives| directives.cloned().collect_vec())
-                                .as_deref(),
-                            lint_rules.as_ref().map(|rules| &rules.common),
-                        )
-                        .await
-                    }
-                    ValueSchema::Null => return Ok(()),
-                    ValueSchema::Anything(_) => handle_anything_schema(self),
-                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
-                    // When the schema expects a TOML date/time type but the value is a string,
-                    // check if x-tombi-string-formats includes the corresponding format.
-                    // If so, validate the string against the format instead of reporting type mismatch.
-                    ValueSchema::OffsetDateTime(_) => validate_string_as_date_format(
-                        self,
-                        StringFormat::DateTime,
-                        tombi_schema_store::ValueType::OffsetDateTime,
-                        format::date_time::validate_format,
-                        schema_context,
-                        lint_rules.as_ref(),
-                    ),
-                    ValueSchema::LocalDateTime(_) => validate_string_as_date_format(
-                        self,
-                        StringFormat::DateTimeLocal,
-                        tombi_schema_store::ValueType::LocalDateTime,
-                        format::local_date_time::validate_format,
-                        schema_context,
-                        lint_rules.as_ref(),
-                    ),
-                    ValueSchema::LocalDate(_) => validate_string_as_date_format(
-                        self,
-                        StringFormat::Date,
-                        tombi_schema_store::ValueType::LocalDate,
-                        format::date::validate_format,
-                        schema_context,
-                        lint_rules.as_ref(),
-                    ),
-                    ValueSchema::LocalTime(_) => validate_string_as_date_format(
-                        self,
-                        StringFormat::TimeLocal,
-                        tombi_schema_store::ValueType::LocalTime,
-                        format::local_time::validate_format,
-                        schema_context,
-                        lint_rules.as_ref(),
-                    ),
-                    value_schema => handle_type_mismatch(
-                        value_schema.value_type().await,
-                        self.value_type(),
-                        self.range(),
-                        lint_rules.as_ref().map(|rules| &rules.common),
-                    ),
+                        .await,
+                    )
                 }
+                ValueSchema::OneOf(one_of_schema) => {
+                    let result = validate_one_of(
+                        string_value,
+                        accessors,
+                        one_of_schema,
+                        current_schema,
+                        schema_context,
+                        comment_directives.as_deref(),
+                        lint_rules.as_ref().map(|rules| &rules.common),
+                    )
+                    .await;
+                    if enable_key_empty_validation
+                        && should_validate_key_empty(Some(current_schema))
+                    {
+                        crate::validate::merge_validation_results(
+                            result,
+                            validate_key_empty_rule(string_value, key_rules.as_ref()),
+                        )
+                    } else {
+                        result
+                    }
+                }
+                ValueSchema::AnyOf(any_of_schema) => {
+                    let result = validate_any_of(
+                        string_value,
+                        accessors,
+                        any_of_schema,
+                        current_schema,
+                        schema_context,
+                        comment_directives.as_deref(),
+                        lint_rules.as_ref().map(|rules| &rules.common),
+                    )
+                    .await;
+                    if enable_key_empty_validation
+                        && should_validate_key_empty(Some(current_schema))
+                    {
+                        crate::validate::merge_validation_results(
+                            result,
+                            validate_key_empty_rule(string_value, key_rules.as_ref()),
+                        )
+                    } else {
+                        result
+                    }
+                }
+                ValueSchema::AllOf(all_of_schema) => {
+                    let result = validate_all_of(
+                        string_value,
+                        accessors,
+                        all_of_schema,
+                        current_schema,
+                        schema_context,
+                        comment_directives.as_deref(),
+                        lint_rules.as_ref().map(|rules| &rules.common),
+                    )
+                    .await;
+                    if enable_key_empty_validation
+                        && should_validate_key_empty(Some(current_schema))
+                    {
+                        crate::validate::merge_validation_results(
+                            result,
+                            validate_key_empty_rule(string_value, key_rules.as_ref()),
+                        )
+                    } else {
+                        result
+                    }
+                }
+                ValueSchema::Null => return Ok(()),
+                ValueSchema::Anything(_) => handle_anything_schema(string_value),
+                ValueSchema::Nothing(_) => handle_nothing_schema(string_value),
+                // When the schema expects a TOML date/time type but the value is a string,
+                // check if x-tombi-string-formats includes the corresponding format.
+                // If so, validate the string against the format instead of reporting type mismatch.
+                ValueSchema::OffsetDateTime(_) => validate_string_as_date_format(
+                    string_value,
+                    StringFormat::DateTime,
+                    tombi_schema_store::ValueType::OffsetDateTime,
+                    format::date_time::validate_format,
+                    schema_context,
+                    lint_rules.as_ref(),
+                ),
+                ValueSchema::LocalDateTime(_) => validate_string_as_date_format(
+                    string_value,
+                    StringFormat::DateTimeLocal,
+                    tombi_schema_store::ValueType::LocalDateTime,
+                    format::local_date_time::validate_format,
+                    schema_context,
+                    lint_rules.as_ref(),
+                ),
+                ValueSchema::LocalDate(_) => validate_string_as_date_format(
+                    string_value,
+                    StringFormat::Date,
+                    tombi_schema_store::ValueType::LocalDate,
+                    format::date::validate_format,
+                    schema_context,
+                    lint_rules.as_ref(),
+                ),
+                ValueSchema::LocalTime(_) => validate_string_as_date_format(
+                    string_value,
+                    StringFormat::TimeLocal,
+                    tombi_schema_store::ValueType::LocalTime,
+                    format::local_time::validate_format,
+                    schema_context,
+                    lint_rules.as_ref(),
+                ),
+                value_schema => handle_type_mismatch(
+                    value_schema.value_type().await,
+                    string_value.value_type(),
+                    ValueImpl::range(string_value),
+                    lint_rules.as_ref().map(|rules| &rules.common),
+                ),
+            }
+        } else {
+            if enable_key_empty_validation && should_validate_key_empty(None) {
+                validate_key_empty_rule(string_value, key_rules.as_ref())
             } else {
                 Ok(())
-            };
+            }
+        };
 
-            match result {
-                Ok(()) => {
-                    if lint_rules_diagnostics.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(lint_rules_diagnostics.into())
-                    }
-                }
-                Err(mut error) => {
-                    error.prepend_diagnostics(lint_rules_diagnostics);
-                    Err(error)
+        match result {
+            Ok(()) => {
+                let mut total_diagnostics = key_rules_diagnostics;
+                total_diagnostics.extend(lint_rules_diagnostics);
+
+                if total_diagnostics.is_empty() {
+                    Ok(())
+                } else {
+                    Err(total_diagnostics.into())
                 }
             }
+            Err(mut error) => {
+                error.prepend_diagnostics(lint_rules_diagnostics);
+                error.prepend_diagnostics(key_rules_diagnostics);
+                Err(error)
+            }
         }
-        .boxed()
     }
+    .boxed()
 }
 
-async fn validate_string(
-    string_value: &tombi_document_tree::String,
+fn should_validate_key_empty(
+    current_schema: Option<&tombi_schema_store::CurrentSchema<'_>>,
+) -> bool {
+    !matches!(
+        current_schema.map(|schema| schema.value_schema.as_ref()),
+        Some(ValueSchema::String(string_schema)) if string_schema.min_length == Some(0)
+    )
+}
+
+fn validate_key_empty_rule<T>(
+    string_value: &T,
+    key_rules: Option<&KeyLinkRules>,
+) -> Result<(), crate::Error>
+where
+    T: LikeString + ValueImpl,
+{
+    if !string_value.value().is_empty() {
+        return Ok(());
+    }
+
+    let level = key_rules
+        .and_then(|rules| rules.key_empty.as_ref().map(SeverityLevelDefaultWarn::from))
+        .unwrap_or_default();
+
+    let mut diagnostics = vec![];
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::KeyEmpty),
+        range: ValueImpl::range(string_value),
+    }
+    .push_diagnostic_with_level(level, &mut diagnostics);
+
+    Err(diagnostics.into())
+}
+
+async fn validate_string<T>(
+    string_value: &T,
     accessors: &[tombi_schema_store::Accessor],
     string_schema: &tombi_schema_store::StringSchema,
     current_schema: &tombi_schema_store::CurrentSchema<'_>,
@@ -175,11 +301,14 @@ async fn validate_string(
     comment_directives: Option<&[TombiValueCommentDirective]>,
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<(), crate::Error>
+where
+    T: LikeString + ValueImpl + ToString + Validate + Sync + Send + std::fmt::Debug,
+{
     let result = validate_raw_string(
         string_value.value(),
         &string_value.to_string(),
-        string_value.range(),
+        ValueImpl::range(string_value),
         string_schema,
         format_assertion,
         lint_rules,
@@ -476,7 +605,7 @@ pub(crate) fn validate_raw_string<'a>(
 /// check if x-tombi-string-formats includes the corresponding format.
 /// If so, validate the string against the format; otherwise, report type mismatch.
 fn validate_string_as_date_format(
-    string_value: &tombi_document_tree::String,
+    string_value: &(impl LikeString + ValueImpl + ToString),
     string_format: StringFormat,
     expected_value_type: tombi_schema_store::ValueType,
     validate_fn: fn(&str) -> bool,
@@ -487,7 +616,7 @@ fn validate_string_as_date_format(
         return handle_type_mismatch(
             expected_value_type,
             string_value.value_type(),
-            string_value.range(),
+            ValueImpl::range(string_value),
             lint_rules.map(|rules| &rules.common),
         );
     }
@@ -511,7 +640,7 @@ fn validate_string_as_date_format(
                 format: string_format,
                 actual: string_value.to_string(),
             }),
-            range: string_value.range(),
+            range: ValueImpl::range(string_value),
         }
         .push_diagnostic_with_level(level, &mut diagnostics);
 
