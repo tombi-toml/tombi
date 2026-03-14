@@ -60,7 +60,7 @@ export class Extension {
     const client = new node.LanguageClient(
       EXTENSION_ID,
       `${EXTENSION_NAME} Language Server`,
-      serverOptions(server.tombiBin.path, settings),
+      serverOptions(server.tombiBin, settings),
       clientOptions(),
       // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
       process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"] !== undefined,

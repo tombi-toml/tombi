@@ -19,8 +19,16 @@ export type TombiBin = {
     | "local"
     | "venv"
     | "node_modules";
-  path: string;
+  binPath: string;
+  command: string;
+  args: string[];
 };
+
+type NodeModulesTombiBin =
+  | { kind: "node-script"; binPath: string }
+  | { kind: "shim"; binPath: string };
+
+const MAX_NODE_MODULES_SEARCH_DEPTH = 8;
 
 /**
  * Bootstrap the Language Server binary.
@@ -34,7 +42,7 @@ export async function bootstrap(
     throw new Error("tombi Language Server is not available.");
   }
 
-  log.info("Using Language Server binary at", tombiBin.path);
+  log.info("Using Language Server binary at", tombiBin.binPath);
 
   return tombiBin;
 }
@@ -48,19 +56,13 @@ async function getTombiBin(
     if (settingsPath.startsWith("~/")) {
       settingsPath = os.homedir() + settingsPath.slice("~".length);
     }
-    return {
-      source: "editor settings",
-      path: settingsPath,
-    };
+    return createDirectTombiBin("editor settings", settingsPath);
   }
 
   // biome-ignore lint/complexity/useLiteralKeys: process.env properties require bracket notation
   const developPath = process.env["__TOMBI_LANGUAGE_SERVER_DEBUG"];
   if (developPath) {
-    return {
-      source: "dev",
-      path: developPath,
-    };
+    return createDirectTombiBin("dev", developPath);
   }
 
   const ext = process.platform === "win32" ? ".exe" : "";
@@ -70,32 +72,20 @@ async function getTombiBin(
     // Check for tombi in Python virtual environment
     const venvBinPath = await findVenvTombiBin(binName, workspace.uri);
     if (venvBinPath) {
-      return {
-        source: "venv",
-        path: venvBinPath,
-      };
+      return createDirectTombiBin("venv", venvBinPath);
     }
 
-    // Check for tombi in node_modules/.bin
-    const nodeModulesBinPath = await findNodeModulesTombiBin(
-      binName,
-      workspace.uri,
-    );
-    if (nodeModulesBinPath) {
-      return {
-        source: "node_modules",
-        path: nodeModulesBinPath,
-      };
+    // Check for tombi in node_modules
+    const nodeModulesBin = await findNodeModulesTombiBin(workspace.uri);
+    if (nodeModulesBin) {
+      return createNodeModulesTombiBin(nodeModulesBin);
     }
   }
 
   // use local tombi binary
   const localBinPath = await findLocalTombiBin(binName);
   if (localBinPath) {
-    return {
-      source: "local",
-      path: localBinPath,
-    };
+    return createDirectTombiBin("local", localBinPath);
   }
 
   // finally, use the bundled one
@@ -106,10 +96,7 @@ async function getTombiBin(
   );
 
   if (await fileExists(bundledUri)) {
-    return {
-      source: "bundled",
-      path: bundledUri.fsPath,
-    };
+    return createDirectTombiBin("bundled", bundledUri.fsPath);
   }
 
   await vscode.window.showErrorMessage(
@@ -151,21 +138,73 @@ async function findVenvTombiBin(
 }
 
 async function findNodeModulesTombiBin(
-  _binName: string,
   workspaceUri: vscode.Uri,
-): Promise<string | undefined> {
+): Promise<NodeModulesTombiBin | undefined> {
+  let currentUri = workspaceUri;
+  for (let depth = 0; depth <= MAX_NODE_MODULES_SEARCH_DEPTH; depth += 1) {
+    const packageBinUris = [
+      vscode.Uri.joinPath(
+        currentUri,
+        "node_modules",
+        "@tombi-toml",
+        "tombi",
+        "bin",
+        "tombi",
+      ),
+      vscode.Uri.joinPath(currentUri, "node_modules", "tombi", "bin", "tombi"),
+    ];
+
+    for (const packageBinUri of packageBinUris) {
+      if (await fileExists(packageBinUri)) {
+        return { kind: "node-script", binPath: packageBinUri.fsPath };
+      }
+    }
+
+    const parentPath = path.posix.dirname(currentUri.path);
+    if (parentPath === currentUri.path) {
+      break;
+    }
+
+    currentUri = currentUri.with({ path: parentPath });
+  }
+
   const nodeModulesBinPath = vscode.Uri.joinPath(
     workspaceUri,
     "node_modules",
     ".bin",
-    "tombi", // NOTE: npm installs the binary as "tombi"
+    "tombi",
   );
 
   if (await fileExists(nodeModulesBinPath)) {
-    return nodeModulesBinPath.fsPath;
+    return { kind: "shim", binPath: nodeModulesBinPath.fsPath };
   }
 
   return undefined;
+}
+
+function createDirectTombiBin(
+  source: TombiBin["source"],
+  binPath: string,
+): TombiBin {
+  return {
+    source,
+    binPath,
+    command: binPath,
+    args: [],
+  };
+}
+
+function createNodeModulesTombiBin(bin: NodeModulesTombiBin): TombiBin {
+  if (bin.kind === "node-script") {
+    return {
+      source: "node_modules",
+      binPath: bin.binPath,
+      command: process.execPath,
+      args: [bin.binPath],
+    };
+  }
+
+  return createDirectTombiBin("node_modules", bin.binPath);
 }
 
 async function findLocalTombiBin(binName: string): Promise<string | undefined> {
