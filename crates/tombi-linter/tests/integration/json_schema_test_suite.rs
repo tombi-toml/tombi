@@ -10,58 +10,18 @@ use tombi_schema_store::{
 };
 use tombi_severity_level::SeverityLevel;
 
-fn json_object_to_toml_document(object: &serde_json::Map<String, JsonValue>) -> String {
-    let mut out = String::new();
-    for (key, value) in object {
-        out.push_str(&toml_key(key));
-        out.push_str(" = ");
-        out.push_str(&json_value_to_toml(value));
-        out.push('\n');
+fn normalize_toml_text(input: &str) -> String {
+    let mut toml_text = textwrap::dedent(input).trim().to_string();
+    if !toml_text.is_empty() {
+        toml_text.push('\n');
     }
-    out
-}
-
-fn json_value_to_toml(value: &JsonValue) -> String {
-    match value {
-        JsonValue::Null => unreachable!("null values are filtered by support checks"),
-        JsonValue::Bool(boolean) => boolean.to_string(),
-        JsonValue::Number(number) => number.to_string(),
-        JsonValue::String(string) => serde_json::to_string(string).expect("string must serialize"),
-        JsonValue::Array(items) => {
-            let values = items.iter().map(json_value_to_toml).collect::<Vec<_>>();
-            format!("[{}]", values.join(", "))
-        }
-        JsonValue::Object(object) => {
-            let entries = object
-                .iter()
-                .map(|(key, value)| format!("{} = {}", toml_key(key), json_value_to_toml(value)))
-                .collect::<Vec<_>>();
-            format!("{{ {} }}", entries.join(", "))
-        }
-    }
-}
-
-fn toml_key(key: &str) -> String {
-    if key
-        .chars()
-        .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
-        && !key.is_empty()
-    {
-        key.to_string()
-    } else {
-        serde_json::to_string(key).expect("key must serialize")
-    }
+    toml_text
 }
 
 async fn validate_test_suite(
     schema: JsonValue,
-    data: JsonValue,
+    toml_text: &str,
 ) -> Result<(), Vec<tombi_diagnostic::Diagnostic>> {
-    let toml_text = json_object_to_toml_document(
-        data.as_object()
-            .expect("suite test data must be a JSON object"),
-    );
-
     let temp = tempdir().expect("failed to create temp directory");
     let schema_path = temp.path().join("schema.json");
     let source_path = temp.path().join("test.toml");
@@ -97,13 +57,14 @@ async fn validate_test_suite(
 
 macro_rules! suite_test {
     (#[tokio::test] async fn $name:ident(
-        $data:tt,
+        $data:expr,
         JsonSchema($schema:expr) $(,)?
     ) -> Ok(_);) => {
         #[tokio::test]
         async fn $name() {
             tombi_test_lib::init_log();
-            match validate_test_suite($schema, serde_json::json!($data)).await {
+            let toml_text = normalize_toml_text($data);
+            match validate_test_suite($schema, &toml_text).await {
                 Ok(_) => {}
                 Err(errors) => {
                     pretty_assertions::assert_eq!(
@@ -117,13 +78,14 @@ macro_rules! suite_test {
     };
 
     (#[tokio::test] async fn $name:ident(
-        $data:tt,
+        $data:expr,
         JsonSchema($schema:expr) $(,)?
     ) -> Err($errors:expr);) => {
         #[tokio::test]
         async fn $name() {
             tombi_test_lib::init_log();
-            match validate_test_suite($schema, serde_json::json!($data)).await {
+            let toml_text = normalize_toml_text($data);
+            match validate_test_suite($schema, &toml_text).await {
                 Ok(_) => panic!("expected error but got success"),
                 Err(errs) => {
                     let mut expected = Vec::new();
@@ -152,28 +114,37 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn neither(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn nondependant(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_dependency(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_dependency(
-                {"bar": 2},
+                r#"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -196,14 +167,18 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn empty_object(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn object_with_one_property(
-                {"bar": 2},
+                r#"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -218,28 +193,40 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn neither(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn nondependants(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_dependencies(
-                {"foo": 1, "bar": 2, "quux": 3},
+                r#"
+                foo = 1
+                bar = 2
+                quux = 3
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_dependency(
-                {"foo": 1, "quux": 2},
+                r#"
+                foo = 1
+                quux = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -254,7 +241,10 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn missing_other_dependency(
-                {"bar": 1, "quux": 2},
+                r#"
+                bar = 1
+                quux = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -269,7 +259,9 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn missing_both_dependencies(
-                {"quux": 1},
+                r#"
+                quux = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -308,21 +300,29 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn valid(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn no_dependency(
-                {"foo": "quux"},
+                r#"
+                foo = "quux"
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn wrong_type(
-                {"foo": "quux", "bar": 2},
+                r#"
+                foo = "quux"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -337,7 +337,10 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn wrong_type_other(
-                {"foo": 2, "bar": "quux"},
+                r#"
+                foo = 2
+                bar = "quux"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -352,7 +355,10 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn wrong_type_both(
-                {"foo": "quux", "bar": "quux"},
+                r#"
+                foo = "quux"
+                bar = "quux"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -382,14 +388,18 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn schema_true_is_valid(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn schema_false_is_invalid(
-                {"bar": 2},
+                r#"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -401,7 +411,10 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn both_properties_is_invalid(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -413,7 +426,9 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn empty_object_is_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -435,28 +450,42 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn valid_object_1(
-                {"foo\nbar": 1, "foo\rbar": 2},
+                r#"
+                "foo\nbar" = 1
+                "foo\rbar" = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn valid_object_2(
-                {"foo\tbar": 1, "a": 2, "b": 3, "c": 4},
+                r#"
+                "foo\tbar" = 1
+                a = 2
+                b = 3
+                c = 4
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn valid_object_3(
-                {"foo'bar": 1, "foo\"bar": 2},
+                r#"
+                "foo'bar" = 1
+                "foo\"bar" = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn invalid_object_1(
-                {"foo\nbar": 1, "foo": 2},
+                r#"
+                "foo\nbar" = 1
+                foo = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -471,7 +500,10 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn invalid_object_2(
-                {"foo\tbar": 1, "a": 2},
+                r#"
+                "foo\tbar" = 1
+                a = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -486,7 +518,9 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn invalid_object_3(
-                {"foo'bar": 1},
+                r#"
+                "foo'bar" = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -500,7 +534,9 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn invalid_object_4(
-                {"foo\"bar": 2},
+                r#"
+                "foo\"bar" = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -531,7 +567,9 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn matches_root(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -545,14 +583,19 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn matches_dependency(
-                {"bar": 1},
+                r#"
+                bar = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn matches_both(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -572,7 +615,9 @@ mod draft7_dependencies {
 
         suite_test!(
             #[tokio::test] async fn no_dependency(
-                {"baz": 1},
+                r#"
+                baz = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -594,14 +639,20 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn all_property_names_valid(
-                {"f": {}, "foo": {}},
+                r#"
+                f = {  }
+                foo = {  }
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn some_property_names_invalid(
-                {"foo": {}, "foobar": {}},
+                r#"
+                foo = {  }
+                foobar = {  }
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -616,7 +667,9 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn object_without_properties_is_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -631,14 +684,20 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn matching_valid(
-                {"a": {}, "aa": {}, "aaa": {}},
+                r#"
+                a = {  }
+                aa = {  }
+                aaa = {  }
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn non_matching_invalid(
-                {"aaA": {}},
+                r#"
+                aaA = {  }
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -653,7 +712,9 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn empty_object_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -668,14 +729,18 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn any_properties_valid(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn empty_object_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -690,7 +755,9 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn any_properties_invalid(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -702,7 +769,9 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn empty_object_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -717,14 +786,18 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn foo_valid(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn other_property_invalid(
-                {"bar": 1},
+                r#"
+                bar = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -739,7 +812,9 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn empty_object_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -754,21 +829,28 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn foo_valid(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn foo_and_bar_valid(
-                {"foo": 1, "bar": 1},
+                r#"
+                foo = 1
+                bar = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn other_property_invalid(
-                {"baz": 1},
+                r#"
+                baz = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -783,7 +865,9 @@ mod draft7_property_names {
 
         suite_test!(
             #[tokio::test] async fn empty_object_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -809,14 +893,16 @@ mod draft2019_09_unevaluated_properties {
 
         suite_test!(
             #[tokio::test] async fn no_unevaluated_properties(
-                {},
+                r#""#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_unevaluated_properties(
-                {"foo": "foo"},
+                r#"
+                foo = "foo"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -843,14 +929,19 @@ mod draft2019_09_unevaluated_properties {
 
         suite_test!(
             #[tokio::test] async fn no_unevaluated_properties(
-                {"foo": "foo"},
+                r#"
+                foo = "foo"
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_unevaluated_properties(
-                {"foo": "foo", "bar": "bar"},
+                r#"
+                foo = "foo"
+                bar = "bar"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -878,14 +969,21 @@ mod draft2019_09_unevaluated_properties {
 
         suite_test!(
             #[tokio::test] async fn no_additional_properties(
-                {"foo": "foo", "bar": "bar"},
+                r#"
+                foo = "foo"
+                bar = "bar"
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_additional_properties(
-                {"foo": "foo", "bar": "bar", "baz": "baz"},
+                r#"
+                foo = "foo"
+                bar = "bar"
+                baz = "baz"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -917,14 +1015,18 @@ mod draft2019_09_unevaluated_properties {
 
         suite_test!(
             #[tokio::test] async fn valid_in_case_if_is_evaluated(
-                {"foo": "a"},
+                r#"
+                foo = "a"
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn invalid_in_case_if_is_evaluated(
-                {"bar": "a"},
+                r#"
+                bar = "a"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -956,28 +1058,37 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn neither(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn nondependant(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_dependency(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_dependency(
-                {"bar": 2},
+                r#"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1003,14 +1114,18 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn empty_object(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn object_with_one_property(
-                {"bar": 2},
+                r#"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -1028,28 +1143,40 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn neither(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn nondependants(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn with_dependencies(
-                {"foo": 1, "bar": 2, "quux": 3},
+                r#"
+                foo = 1
+                bar = 2
+                quux = 3
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn missing_dependency(
-                {"foo": 1, "quux": 2},
+                r#"
+                foo = 1
+                quux = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1064,7 +1191,10 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn missing_other_dependency(
-                {"bar": 1, "quux": 2},
+                r#"
+                bar = 1
+                quux = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1079,7 +1209,9 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn missing_both_dependencies(
-                {"quux": 1},
+                r#"
+                quux = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1115,21 +1247,30 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn crlf(
-                {"foo\nbar": 1, "foo\rbar": 2},
+                r#"
+                "foo\nbar" = 1
+                "foo\rbar" = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn quoted_quotes(
-                {"foo'bar": 1, "foo\"bar": 2},
+                r#"
+                "foo'bar" = 1
+                "foo\"bar" = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn crlf_missing_dependent(
-                {"foo\nbar": 1, "foo": 2},
+                r#"
+                "foo\nbar" = 1
+                foo = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1144,7 +1285,9 @@ mod draft2020_12_dependent_required {
 
         suite_test!(
             #[tokio::test] async fn quoted_quotes_missing_dependent(
-                {"foo\"bar": 2},
+                r#"
+                "foo\"bar" = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1184,21 +1327,29 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn valid(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn no_dependency(
-                {"foo": "quux"},
+                r#"
+                foo = "quux"
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn wrong_type(
-                {"foo": "quux", "bar": 2},
+                r#"
+                foo = "quux"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1213,7 +1364,10 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn wrong_type_other(
-                {"foo": 2, "bar": "quux"},
+                r#"
+                foo = 2
+                bar = "quux"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1228,7 +1382,10 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn wrong_type_both(
-                {"foo": "quux", "bar": "quux"},
+                r#"
+                foo = "quux"
+                bar = "quux"
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1261,14 +1418,18 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn schema_true_valid(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn schema_false_invalid(
-                {"bar": 2},
+                r#"
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1280,7 +1441,10 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn both_properties_invalid(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1292,7 +1456,9 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn empty_object_valid(
-                {},
+                r#"
+
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
@@ -1313,14 +1479,21 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn quoted_tab(
-                {"foo\tbar": 1, "a": 2, "b": 3, "c": 4},
+                r#"
+                "foo\tbar" = 1
+                a = 2
+                b = 3
+                c = 4
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn quoted_quote(
-                {"foo'bar": {"foo\"bar": 1}},
+                r#"
+                "foo'bar" = { "foo\"bar" = 1 }
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1334,7 +1507,10 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn quoted_tab_invalid(
-                {"foo\tbar": 1, "a": 2},
+                r#"
+                "foo\tbar" = 1
+                a = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1349,7 +1525,9 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn quoted_quote_invalid(
-                {"foo'bar": 1},
+                r#"
+                "foo'bar" = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1380,7 +1558,9 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn matches_root(
-                {"foo": 1},
+                r#"
+                foo = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1394,14 +1574,19 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn matches_dependency(
-                {"bar": 1},
+                r#"
+                bar = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );
 
         suite_test!(
             #[tokio::test] async fn matches_both(
-                {"foo": 1, "bar": 2},
+                r#"
+                foo = 1
+                bar = 2
+                "#,
                 JsonSchema(schema()),
             ) -> Err([
                 tombi_validator::Diagnostic::new(
@@ -1421,7 +1606,9 @@ mod draft2020_12_dependent_schemas {
 
         suite_test!(
             #[tokio::test] async fn no_dependency(
-                {"baz": 1},
+                r#"
+                baz = 1
+                "#,
                 JsonSchema(schema()),
             ) -> Ok(_);
         );

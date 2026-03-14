@@ -28,6 +28,7 @@ tombi-validator.workspace = true
 pretty_assertions.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true
+textwrap.workspace = true
 tokio = { workspace = true, features = ["fs", "macros"] }
 tombi-config.workspace = true
 tombi-schema-store = { workspace = true, features = ["native"] }
