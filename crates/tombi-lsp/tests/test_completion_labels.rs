@@ -628,6 +628,7 @@ mod completion_labels {
                 "tuple-items-test.schema.json",
                 "type-test.schema.json",
                 "unevaluated-items-test.schema.json",
+                "unevaluated-properties-branch-additional-test.schema.json",
                 "unevaluated-properties-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",
