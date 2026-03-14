@@ -85,7 +85,7 @@ pub trait Validate {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>>;
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>;
 }
 
 pub fn handle_deprecated<'a, T>(
@@ -170,7 +170,7 @@ fn handle_type_mismatch(
     actual: tombi_document_tree::ValueType,
     range: tombi_text::Range,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut diagnostics = vec![];
 
     let level = common_rules
@@ -189,24 +189,27 @@ fn handle_type_mismatch(
     .push_diagnostic_with_level(level, &mut diagnostics);
 
     if diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(crate::Error {
             score: 0,
             diagnostics,
+            evaluated_locations: crate::EvaluatedLocations::default(),
         })
     }
 }
 
 #[inline]
-pub(crate) fn handle_anything_schema<T>(_value: &T) -> Result<(), crate::Error>
+pub(crate) fn handle_anything_schema<T>(
+    _value: &T,
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: tombi_document_tree::ValueImpl,
 {
-    Ok(())
+    Ok(crate::EvaluatedLocations::new())
 }
 
-pub(crate) fn handle_nothing_schema<T>(value: &T) -> Result<(), crate::Error>
+pub(crate) fn handle_nothing_schema<T>(value: &T) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: tombi_document_tree::ValueImpl,
 {
@@ -272,6 +275,25 @@ fn handle_unused_noqa<'a>(
     }
 }
 
+pub(crate) fn with_lint_diagnostics(
+    result: Result<crate::EvaluatedLocations, crate::Error>,
+    lint_rules_diagnostics: Vec<tombi_diagnostic::Diagnostic>,
+) -> Result<crate::EvaluatedLocations, crate::Error> {
+    match result {
+        Ok(result) => {
+            if lint_rules_diagnostics.is_empty() {
+                Ok(result)
+            } else {
+                Err(lint_rules_diagnostics.into())
+            }
+        }
+        Err(mut error) => {
+            error.prepend_diagnostics(lint_rules_diagnostics);
+            Err(error)
+        }
+    }
+}
+
 fn has_error_level_diagnostics(error: &crate::Error) -> bool {
     error
         .diagnostics
@@ -279,9 +301,11 @@ fn has_error_level_diagnostics(error: &crate::Error) -> bool {
         .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
 }
 
-pub(crate) fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
+pub(crate) fn is_assertion_success(
+    result: &Result<crate::EvaluatedLocations, crate::Error>,
+) -> bool {
     match result {
-        Ok(()) => true,
+        Ok(_) => true,
         Err(error) => !has_error_level_diagnostics(error),
     }
 }
@@ -308,7 +332,7 @@ fn validate_deprecated<'a, T>(
         impl IntoIterator<Item = &'a tombi_ast::TombiValueCommentDirective> + 'a,
     >,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
-) -> Result<(), crate::Error>
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: tombi_document_tree::ValueImpl,
 {
@@ -323,22 +347,30 @@ where
     );
 
     if diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(diagnostics.into())
     }
 }
 
 fn merge_validation_results(
-    primary: Result<(), crate::Error>,
-    secondary: Result<(), crate::Error>,
-) -> Result<(), crate::Error> {
+    primary: Result<crate::EvaluatedLocations, crate::Error>,
+    secondary: Result<crate::EvaluatedLocations, crate::Error>,
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     match (primary, secondary) {
-        (Ok(()), Ok(())) => Ok(()),
-        (Err(error), Ok(())) | (Ok(()), Err(error)) => Err(error),
+        (Ok(mut left), Ok(right)) => {
+            left.merge_from(right);
+            Ok(left)
+        }
+        (Err(mut error), Ok(result)) | (Ok(result), Err(mut error)) => {
+            error.evaluated_locations.merge_from(result);
+            Err(error)
+        }
         (Err(mut left), Err(right)) => {
             left.score = left.score.max(right.score);
             left.diagnostics.extend(right.diagnostics);
+            left.evaluated_locations
+                .merge_from(right.evaluated_locations);
             Err(left)
         }
     }
@@ -346,13 +378,13 @@ fn merge_validation_results(
 
 pub(crate) fn filter_table_strict_additional_diagnostics(
     mut error: crate::Error,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     error
         .diagnostics
         .retain(|diagnostic| diagnostic.code() != "table-strict-additional-keys");
 
     if error.diagnostics.is_empty() {
-        Ok(())
+        Ok(error.evaluated_locations)
     } else {
         Err(error)
     }
@@ -369,7 +401,7 @@ pub fn validate_adjacent_applicators<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
-) -> BoxFuture<'b, Result<(), crate::Error>>
+) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
 where
     T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
 {
@@ -379,10 +411,10 @@ where
             && all_of_schema.is_none()
             && not_schema.is_none()
         {
-            return Ok(());
+            return Ok(crate::EvaluatedLocations::new());
         }
 
-        let mut result = Ok(());
+        let mut result = Ok(crate::EvaluatedLocations::new());
 
         if let Some(one_of_schema) = one_of_schema {
             let adjacent_result = validate_one_of(
@@ -451,7 +483,7 @@ pub fn validate_resolved_schema<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
     common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
-) -> BoxFuture<'b, Option<Result<(), crate::Error>>>
+) -> BoxFuture<'b, Option<Result<crate::EvaluatedLocations, crate::Error>>>
 where
     T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
 {
@@ -561,7 +593,7 @@ where
 mod tests {
     use super::{
         filter_table_strict_additional_diagnostics, is_assertion_success,
-        is_multiple_of_with_tolerance,
+        is_multiple_of_with_tolerance, merge_validation_results,
     };
 
     use pretty_assertions::assert_eq;
@@ -575,8 +607,9 @@ mod tests {
                 "warn-code",
                 tombi_text::Range::default(),
             )],
+            evaluated_locations: crate::EvaluatedLocations::default(),
         };
-        assert!(is_assertion_success(&Ok(())));
+        assert!(is_assertion_success(&Ok(crate::EvaluatedLocations::new())));
         assert!(is_assertion_success(&Err(warning_only_error)));
     }
 
@@ -603,6 +636,7 @@ mod tests {
                     tombi_text::Range::default(),
                 ),
             ],
+            evaluated_locations: crate::EvaluatedLocations::default(),
         });
 
         let err = result.expect_err("non-strict diagnostics should remain");
@@ -619,8 +653,23 @@ mod tests {
                 "table-strict-additional-keys",
                 tombi_text::Range::default(),
             )],
+            evaluated_locations: crate::EvaluatedLocations::default(),
         });
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn merge_validation_results_combines_evaluated_locations() {
+        let mut left = crate::EvaluatedLocations::new();
+        left.mark_property("foo");
+
+        let mut right = crate::EvaluatedLocations::new();
+        right.mark_index(2);
+
+        let merged = merge_validation_results(Ok(left), Ok(right)).expect("merge should succeed");
+
+        assert!(merged.properties.contains("foo"));
+        assert!(merged.indices.contains(&2));
     }
 }

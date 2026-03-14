@@ -31,7 +31,7 @@ impl Validate for tombi_document_tree::Table {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         async move {
             if let Some(Ok(document_schema)) = schema_context
                 .get_subschema(accessors, current_schema)
@@ -109,7 +109,7 @@ impl Validate for tombi_document_tree::Table {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(()),
+                    ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
                     ValueSchema::Anything(_) => handle_anything_schema(self),
                     ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
@@ -123,19 +123,7 @@ impl Validate for tombi_document_tree::Table {
                 validate_table_without_schema(self, accessors, schema_context).await
             };
 
-            match result {
-                Ok(()) => {
-                    if lint_rules_diagnostics.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(lint_rules_diagnostics.into())
-                    }
-                }
-                Err(mut error) => {
-                    error.prepend_diagnostics(lint_rules_diagnostics);
-                    Err(error)
-                }
-            }
+            crate::validate::with_lint_diagnostics(result, lint_rules_diagnostics)
         }
         .boxed()
     }
@@ -148,24 +136,22 @@ async fn validate_table(
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     table_rules: Option<&TableCommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut total_score = TYPE_MATCHED_SCORE;
     let mut total_diagnostics = vec![];
-    let used_keys = {
-        let mut keys = HashSet::new();
+    let evaluated_locations = {
         let mut visited_schema_values = HashSet::new();
-        collect_keys_from_table_schema(
+        collect_evaluated_properties_from_table_schema(
             table_value,
             accessors,
             table_schema,
             current_schema,
             schema_context,
-            &mut keys,
             &mut visited_schema_values,
         )
-        .await;
-        keys
+        .await
     };
+    let evaluated_properties = &evaluated_locations.properties;
 
     for (key, value) in table_value.key_values() {
         let key_rules = get_tombi_key_rules_and_diagnostics(key.comment_directives())
@@ -330,7 +316,7 @@ async fn validate_table(
             // When it's absent, unevaluatedProperties must still run.
             let evaluated_by_additional_default = table_schema.additional_properties().is_some();
 
-            if !used_keys.contains(accessor_raw_text)
+            if !evaluated_properties.contains(accessor_raw_text)
                 && !validated_by_additional_schema
                 && !evaluated_by_additional_default
             {
@@ -368,7 +354,7 @@ async fn validate_table(
                 }
             }
 
-            if used_keys.contains(accessor_raw_text)
+            if evaluated_properties.contains(accessor_raw_text)
                 && table_schema.additional_properties() != Some(false)
             {
                 continue;
@@ -780,11 +766,12 @@ async fn validate_table(
         .comment_directives()
         .map(|directives| directives.cloned().collect_vec());
     let base_result = if total_diagnostics.is_empty() {
-        Ok(())
+        Ok(evaluated_locations)
     } else {
         Err(crate::Error {
             score: total_score,
             diagnostics: total_diagnostics,
+            evaluated_locations,
         })
     };
 
@@ -807,20 +794,21 @@ async fn validate_table(
     )
 }
 
-fn collect_keys_from_table_schema<'a>(
+fn collect_evaluated_properties_from_table_schema<'a>(
     table_value: &'a tombi_document_tree::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     table_schema: &'a tombi_schema_store::TableSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    keys: &'a mut HashSet<String>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, ()> {
+) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
         let schema_key = std::sync::Arc::as_ptr(&current_schema.value_schema) as usize;
         if !visited_schema_values.insert(schema_key) {
-            return;
+            return crate::EvaluatedLocations::new();
         }
+
+        let mut result = crate::EvaluatedLocations::new();
 
         let property_keys = table_schema
             .properties
@@ -833,7 +821,7 @@ fn collect_keys_from_table_schema<'a>(
             })
             .collect_vec();
         for key in &property_keys {
-            keys.insert(key.clone());
+            result.mark_property(key.clone());
         }
 
         let pattern_keys = if let Some(pattern_properties) = &table_schema.pattern_properties {
@@ -862,7 +850,7 @@ fn collect_keys_from_table_schema<'a>(
                 .iter()
                 .any(|property_key| property_key == &key.value)
             {
-                keys.insert(key.value.to_string());
+                result.mark_property(key.value.to_string());
                 continue;
             }
 
@@ -870,7 +858,7 @@ fn collect_keys_from_table_schema<'a>(
                 .iter()
                 .any(|pattern| pattern.is_match(&key.value))
             {
-                keys.insert(key.value.to_string());
+                result.mark_property(key.value.to_string());
             }
         }
 
@@ -884,29 +872,32 @@ fn collect_keys_from_table_schema<'a>(
                     .any(|pattern| pattern.is_match(&key.value));
 
                 if !matched_property && !matched_pattern {
-                    keys.insert(key.value.to_string());
+                    result.mark_property(key.value.to_string());
                 }
             }
         }
 
         if let Some(dependencies) = &table_schema.dependencies {
             for (dependent_key, dependency) in dependencies {
-                keys.insert(dependent_key.clone());
+                result.mark_property(dependent_key.clone());
                 match dependency {
                     tombi_schema_store::Dependency::Property(required_keys) => {
-                        keys.extend(required_keys.iter().cloned());
+                        for key in required_keys {
+                            result.mark_property(key.clone());
+                        }
                     }
                     tombi_schema_store::Dependency::Schema(schema_item) => {
-                        collect_keys_from_schema_item(
-                            table_value,
-                            accessors,
-                            schema_item,
-                            current_schema,
-                            schema_context,
-                            keys,
-                            visited_schema_values,
-                        )
-                        .await;
+                        result.merge_from(
+                            collect_evaluated_properties_from_schema_item(
+                                table_value,
+                                accessors,
+                                schema_item,
+                                current_schema,
+                                schema_context,
+                                visited_schema_values,
+                            )
+                            .await,
+                        );
                     }
                 }
             }
@@ -914,89 +905,97 @@ fn collect_keys_from_table_schema<'a>(
 
         if let Some(dependent_required) = &table_schema.dependent_required {
             for (dependent_key, required_keys) in dependent_required {
-                keys.insert(dependent_key.clone());
-                keys.extend(required_keys.iter().cloned());
+                result.mark_property(dependent_key.clone());
+                for key in required_keys {
+                    result.mark_property(key.clone());
+                }
             }
         }
 
         if let Some(dependent_schemas) = &table_schema.dependent_schemas {
             for (dependent_key, schema_item) in dependent_schemas {
-                keys.insert(dependent_key.clone());
-                collect_keys_from_schema_item(
-                    table_value,
-                    accessors,
-                    schema_item,
-                    current_schema,
-                    schema_context,
-                    keys,
-                    visited_schema_values,
-                )
-                .await;
+                result.mark_property(dependent_key.clone());
+                result.merge_from(
+                    collect_evaluated_properties_from_schema_item(
+                        table_value,
+                        accessors,
+                        schema_item,
+                        current_schema,
+                        schema_context,
+                        visited_schema_values,
+                    )
+                    .await,
+                );
             }
         }
 
         if let Some(one_of_schema) = &table_schema.one_of {
-            collect_keys_from_referable_schemas(
-                table_value,
-                accessors,
-                one_of_schema.as_ref(),
-                current_schema,
-                schema_context,
-                keys,
-                visited_schema_values,
-            )
-            .await;
+            result.merge_from(
+                collect_evaluated_properties_from_referable_schemas(
+                    table_value,
+                    accessors,
+                    one_of_schema.as_ref(),
+                    current_schema,
+                    schema_context,
+                    visited_schema_values,
+                )
+                .await,
+            );
         }
         if let Some(any_of_schema) = &table_schema.any_of {
-            collect_keys_from_referable_schemas(
-                table_value,
-                accessors,
-                any_of_schema.as_ref(),
-                current_schema,
-                schema_context,
-                keys,
-                visited_schema_values,
-            )
-            .await;
+            result.merge_from(
+                collect_evaluated_properties_from_referable_schemas(
+                    table_value,
+                    accessors,
+                    any_of_schema.as_ref(),
+                    current_schema,
+                    schema_context,
+                    visited_schema_values,
+                )
+                .await,
+            );
         }
         if let Some(all_of_schema) = &table_schema.all_of {
-            collect_keys_from_referable_schemas(
-                table_value,
-                accessors,
-                all_of_schema.as_ref(),
-                current_schema,
-                schema_context,
-                keys,
-                visited_schema_values,
-            )
-            .await;
+            result.merge_from(
+                collect_evaluated_properties_from_referable_schemas(
+                    table_value,
+                    accessors,
+                    all_of_schema.as_ref(),
+                    current_schema,
+                    schema_context,
+                    visited_schema_values,
+                )
+                .await,
+            );
         }
 
         if let Some(if_then_else_schema) = &table_schema.if_then_else {
-            collect_keys_from_if_then_else_schema(
-                table_value,
-                accessors,
-                if_then_else_schema,
-                current_schema,
-                schema_context,
-                keys,
-                visited_schema_values,
-            )
-            .await;
+            result.merge_from(
+                collect_evaluated_properties_from_if_then_else_schema(
+                    table_value,
+                    accessors,
+                    if_then_else_schema,
+                    current_schema,
+                    schema_context,
+                    visited_schema_values,
+                )
+                .await,
+            );
         }
+
+        result
     }
     .boxed()
 }
 
-fn collect_keys_from_schema_item<'a>(
+fn collect_evaluated_properties_from_schema_item<'a>(
     table_value: &'a tombi_document_tree::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     schema_item: &'a tombi_schema_store::SchemaItem,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    keys: &'a mut HashSet<String>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, ()> {
+) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
         if let Ok(Some(schema)) = tombi_schema_store::resolve_schema_item(
             schema_item,
@@ -1007,31 +1006,32 @@ fn collect_keys_from_schema_item<'a>(
         .await
         .inspect_err(|err| log::warn!("{err}"))
         {
-            collect_keys_from_value_schema(
+            collect_evaluated_properties_from_value_schema(
                 table_value,
                 accessors,
                 schema.value_schema.as_ref(),
                 &schema,
                 schema_context,
-                keys,
                 visited_schema_values,
             )
-            .await;
+            .await
+        } else {
+            crate::EvaluatedLocations::new()
         }
     }
     .boxed()
 }
 
-fn collect_keys_from_referable_schemas<'a>(
+fn collect_evaluated_properties_from_referable_schemas<'a>(
     table_value: &'a tombi_document_tree::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     applicator: &'a (impl CompositeSchema + Sync),
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    keys: &'a mut HashSet<String>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, ()> {
+) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
+        let mut result = crate::EvaluatedLocations::new();
         for schema_item in applicator.schemas().read().await.iter() {
             if let Ok(Some(schema)) = schema_item
                 .to_current_schema(
@@ -1042,96 +1042,92 @@ fn collect_keys_from_referable_schemas<'a>(
                 .await
                 .inspect_err(|err| log::warn!("{err}"))
             {
-                collect_keys_from_value_schema(
-                    table_value,
-                    accessors,
-                    schema.value_schema.as_ref(),
-                    &schema,
-                    schema_context,
-                    keys,
-                    visited_schema_values,
-                )
-                .await;
+                result.merge_from(
+                    collect_evaluated_properties_from_value_schema(
+                        table_value,
+                        accessors,
+                        schema.value_schema.as_ref(),
+                        &schema,
+                        schema_context,
+                        visited_schema_values,
+                    )
+                    .await,
+                );
             }
         }
+        result
     }
     .boxed()
 }
 
-fn collect_keys_from_value_schema<'a>(
+fn collect_evaluated_properties_from_value_schema<'a>(
     table_value: &'a tombi_document_tree::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     value_schema: &'a ValueSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    keys: &'a mut HashSet<String>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, ()> {
+) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
         match value_schema {
             ValueSchema::Table(table_schema) => {
-                collect_keys_from_table_schema(
+                collect_evaluated_properties_from_table_schema(
                     table_value,
                     accessors,
                     table_schema,
                     current_schema,
                     schema_context,
-                    keys,
                     visited_schema_values,
                 )
-                .await;
+                .await
             }
             ValueSchema::OneOf(one_of_schema) => {
-                collect_keys_from_referable_schemas(
+                collect_evaluated_properties_from_referable_schemas(
                     table_value,
                     accessors,
                     one_of_schema,
                     current_schema,
                     schema_context,
-                    keys,
                     visited_schema_values,
                 )
-                .await;
+                .await
             }
             ValueSchema::AnyOf(any_of_schema) => {
-                collect_keys_from_referable_schemas(
+                collect_evaluated_properties_from_referable_schemas(
                     table_value,
                     accessors,
                     any_of_schema,
                     current_schema,
                     schema_context,
-                    keys,
                     visited_schema_values,
                 )
-                .await;
+                .await
             }
             ValueSchema::AllOf(all_of_schema) => {
-                collect_keys_from_referable_schemas(
+                collect_evaluated_properties_from_referable_schemas(
                     table_value,
                     accessors,
                     all_of_schema,
                     current_schema,
                     schema_context,
-                    keys,
                     visited_schema_values,
                 )
-                .await;
+                .await
             }
-            _ => {}
+            _ => crate::EvaluatedLocations::new(),
         }
     }
     .boxed()
 }
 
-fn collect_keys_from_if_then_else_schema<'a>(
+fn collect_evaluated_properties_from_if_then_else_schema<'a>(
     table_value: &'a tombi_document_tree::Table,
     accessors: &'a [tombi_schema_store::Accessor],
     if_then_else_schema: &'a tombi_schema_store::IfThenElseSchema,
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
-    keys: &'a mut HashSet<String>,
     visited_schema_values: &'a mut HashSet<usize>,
-) -> BoxFuture<'a, ()> {
+) -> BoxFuture<'a, crate::EvaluatedLocations> {
     async move {
         let Ok(Some(if_current_schema)) = tombi_schema_store::resolve_schema_item(
             &if_then_else_schema.if_schema,
@@ -1141,7 +1137,7 @@ fn collect_keys_from_if_then_else_schema<'a>(
         )
         .await
         .inspect_err(|err| log::warn!("{err}")) else {
-            return;
+            return crate::EvaluatedLocations::new();
         };
 
         let if_result = table_value
@@ -1149,40 +1145,42 @@ fn collect_keys_from_if_then_else_schema<'a>(
             .await;
 
         if is_assertion_success(&if_result) {
-            collect_keys_from_value_schema(
+            let mut result = collect_evaluated_properties_from_value_schema(
                 table_value,
                 accessors,
                 if_current_schema.value_schema.as_ref(),
                 &if_current_schema,
                 schema_context,
-                keys,
                 visited_schema_values,
             )
             .await;
 
             if let Some(then_schema) = &if_then_else_schema.then_schema {
-                collect_keys_from_schema_item(
-                    table_value,
-                    accessors,
-                    then_schema,
-                    current_schema,
-                    schema_context,
-                    keys,
-                    visited_schema_values,
-                )
-                .await;
+                result.merge_from(
+                    collect_evaluated_properties_from_schema_item(
+                        table_value,
+                        accessors,
+                        then_schema,
+                        current_schema,
+                        schema_context,
+                        visited_schema_values,
+                    )
+                    .await,
+                );
             }
+            result
         } else if let Some(else_schema) = &if_then_else_schema.else_schema {
-            collect_keys_from_schema_item(
+            collect_evaluated_properties_from_schema_item(
                 table_value,
                 accessors,
                 else_schema,
                 current_schema,
                 schema_context,
-                keys,
                 visited_schema_values,
             )
-            .await;
+            .await
+        } else {
+            crate::EvaluatedLocations::new()
         }
     }
     .boxed()
@@ -1192,7 +1190,7 @@ async fn validate_table_without_schema(
     table_value: &tombi_document_tree::Table,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut total_diagnostics = vec![];
 
     // Validate without schema
@@ -1220,7 +1218,7 @@ async fn validate_table_without_schema(
     }
 
     if total_diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(total_diagnostics.into())
     }

@@ -24,7 +24,7 @@ impl Validate for tombi_document_tree::Array {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         let comment_directives = self
             .comment_directives()
             .map(|directives| directives.cloned().collect_vec());
@@ -101,7 +101,7 @@ impl Validate for tombi_document_tree::Array {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(()),
+                    ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
                     ValueSchema::Anything(_) => handle_anything_schema(self),
                     ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
@@ -115,19 +115,7 @@ impl Validate for tombi_document_tree::Array {
                 validate_array_without_schema(self, accessors, schema_context).await
             };
 
-            match result {
-                Ok(()) => {
-                    if lint_rules_diagnostics.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(lint_rules_diagnostics.into())
-                    }
-                }
-                Err(mut error) => {
-                    error.prepend_diagnostics(lint_rules_diagnostics);
-                    Err(error)
-                }
-            }
+            crate::validate::with_lint_diagnostics(result, lint_rules_diagnostics)
         }
         .boxed()
     }
@@ -141,8 +129,9 @@ async fn validate_array(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&ArrayCommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut total_diagnostics = vec![];
+    let mut validation_result = crate::EvaluatedLocations::new();
     let mut evaluated = vec![false; array_value.values().len()];
     let has_unevaluated_items = array_schema.unevaluated_items_schema.is_some()
         || array_schema.unevaluated_items == Some(false);
@@ -371,6 +360,7 @@ async fn validate_array(
             if evaluated.get(index).copied().unwrap_or(false) {
                 continue;
             }
+            evaluated[index] = true;
             if let Some(schema) = &unevaluated_schema {
                 let new_accessors = accessors
                     .iter()
@@ -581,10 +571,20 @@ async fn validate_array(
         );
     }
 
+    for (index, matched) in evaluated.iter().enumerate() {
+        if *matched {
+            validation_result.mark_index(index);
+        }
+    }
+
     let base_result = if total_diagnostics.is_empty() {
-        Ok(())
+        Ok(validation_result)
     } else {
-        Err(total_diagnostics.into())
+        Err(crate::Error {
+            score: crate::error::TYPE_MATCHED_SCORE,
+            diagnostics: total_diagnostics,
+            evaluated_locations: validation_result,
+        })
     };
 
     merge_validation_results(
@@ -609,7 +609,7 @@ async fn validate_array_without_schema(
     array_value: &tombi_document_tree::Array,
     accessors: &[tombi_schema_store::Accessor],
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut total_diagnostics = vec![];
 
     // Validate without schema
@@ -631,7 +631,7 @@ async fn validate_array_without_schema(
     }
 
     if total_diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(total_diagnostics.into())
     }

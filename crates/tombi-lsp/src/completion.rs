@@ -360,7 +360,10 @@ fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
             return candidates.into_iter().next();
         }
 
-        composite_schema.title().as_deref().map(|title| title.into())
+        composite_schema
+            .title()
+            .as_deref()
+            .map(|title| title.into())
     }
     .boxed()
 }

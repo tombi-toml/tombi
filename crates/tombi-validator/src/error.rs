@@ -14,6 +14,7 @@ pub const REQUIRED_KEY_SCORE: u8 = 1;
 pub struct Error {
     pub score: u8,
     pub diagnostics: Vec<tombi_diagnostic::Diagnostic>,
+    pub evaluated_locations: crate::EvaluatedLocations,
 }
 
 impl Default for Error {
@@ -28,11 +29,15 @@ impl Error {
         Self {
             score: 0,
             diagnostics: vec![],
+            evaluated_locations: Default::default(),
         }
     }
 
     #[inline]
     pub fn combine(&mut self, mut other: Self) {
+        let mut merged_locations = std::mem::take(&mut self.evaluated_locations);
+        merged_locations.merge_from(std::mem::take(&mut other.evaluated_locations));
+
         match self.score.cmp(&other.score) {
             Ordering::Greater => {}
             Ordering::Less => std::mem::swap(self, &mut other),
@@ -40,6 +45,8 @@ impl Error {
                 self.diagnostics.extend(other.diagnostics);
             }
         }
+
+        self.evaluated_locations = merged_locations;
     }
 
     #[inline]
@@ -54,6 +61,7 @@ impl From<Vec<tombi_diagnostic::Diagnostic>> for Error {
         Self {
             score: TYPE_MATCHED_SCORE,
             diagnostics,
+            evaluated_locations: Default::default(),
         }
     }
 }

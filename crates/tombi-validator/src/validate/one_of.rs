@@ -21,7 +21,7 @@ pub fn validate_one_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<(), crate::Error>>
+) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
@@ -69,7 +69,7 @@ where
         .await
         else {
             if total_diagnostics.is_empty() {
-                return Ok(());
+                return Ok(crate::EvaluatedLocations::new());
             } else {
                 return Err(total_diagnostics.into());
             }
@@ -112,8 +112,14 @@ where
         if valid_count == 1 {
             for result in each_results {
                 match result {
-                    Ok(()) if total_diagnostics.is_empty() => return Ok(()),
-                    Ok(()) => return Err(total_diagnostics.into()),
+                    Ok(result) if total_diagnostics.is_empty() => return Ok(result),
+                    Ok(result) => {
+                        return Err(crate::Error {
+                            score: crate::error::TYPE_MATCHED_SCORE,
+                            diagnostics: total_diagnostics,
+                            evaluated_locations: result,
+                        });
+                    }
                     Err(mut error) if !has_error_level_diagnostics(&error) => {
                         error.prepend_diagnostics(total_diagnostics);
                         return Err(error);

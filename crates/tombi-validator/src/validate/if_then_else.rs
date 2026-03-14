@@ -12,7 +12,7 @@ pub async fn validate_if_then_else<T>(
     if_then_else_schema: &tombi_schema_store::IfThenElseSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<(), crate::Error>
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: Validate + ValueImpl + Sync + Send,
 {
@@ -30,7 +30,7 @@ where
             .validate(accessors, Some(&if_current_schema), schema_context)
             .await
     } else {
-        return Ok(());
+        return Ok(crate::EvaluatedLocations::new());
     };
 
     // Per JSON Schema spec: branching is based on assertion result.
@@ -68,5 +68,5 @@ where
         }
     }
 
-    Ok(())
+    Ok(crate::EvaluatedLocations::new())
 }

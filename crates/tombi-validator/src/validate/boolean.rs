@@ -21,7 +21,7 @@ impl Validate for tombi_document_tree::Boolean {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         async move {
             let comment_directives = self
                 .comment_directives()
@@ -90,7 +90,7 @@ impl Validate for tombi_document_tree::Boolean {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(()),
+                    ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
                     ValueSchema::Anything(_) => handle_anything_schema(self),
                     ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
@@ -101,22 +101,10 @@ impl Validate for tombi_document_tree::Boolean {
                     ),
                 }
             } else {
-                Ok(())
+                Ok(crate::EvaluatedLocations::new())
             };
 
-            match result {
-                Ok(()) => {
-                    if lint_rules_diagnostics.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(lint_rules_diagnostics.into())
-                    }
-                }
-                Err(mut error) => {
-                    error.prepend_diagnostics(lint_rules_diagnostics);
-                    Err(error)
-                }
-            }
+            crate::validate::with_lint_diagnostics(result, lint_rules_diagnostics)
         }
         .boxed()
     }
@@ -130,7 +118,7 @@ async fn validate_boolean(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&BooleanCommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut diagnostics = vec![];
 
     let value = boolean_value.value();
@@ -211,7 +199,7 @@ async fn validate_boolean(
     }
 
     let base_result = if diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(diagnostics.into())
     };

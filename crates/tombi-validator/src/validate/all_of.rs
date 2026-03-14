@@ -20,7 +20,7 @@ pub fn validate_all_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<(), crate::Error>>
+) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
@@ -41,11 +41,13 @@ where
         )
         .await
         else {
-            return Ok(());
+            return Ok(crate::EvaluatedLocations::new());
         };
 
         for resolved_schema in &resolved_schemas {
-            if let Err(crate::Error { diagnostics, score }) = value
+            if let Err(crate::Error {
+                diagnostics, score, ..
+            }) = value
                 .validate(accessors, Some(resolved_schema), schema_context)
                 .await
             {
@@ -94,11 +96,12 @@ where
         }
 
         if total_diagnostics.is_empty() {
-            Ok(())
+            Ok(crate::EvaluatedLocations::new())
         } else {
             Err(crate::Error {
                 score: total_score,
                 diagnostics: total_diagnostics,
+                evaluated_locations: crate::EvaluatedLocations::default(),
             })
         }
     }

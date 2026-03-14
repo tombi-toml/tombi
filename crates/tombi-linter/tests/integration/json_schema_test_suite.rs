@@ -1032,6 +1032,110 @@ mod draft2019_09_unevaluated_properties {
             ]);
         );
     }
+
+    mod if_then_else_evaluated_properties {
+        use super::*;
+
+        fn schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "if": {"required": ["kind"]},
+                "then": {
+                    "properties": {
+                        "kind": {"type": "string"},
+                        "foo": {"type": "string"}
+                    }
+                },
+                "else": {
+                    "properties": {
+                        "bar": {"type": "string"}
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn then_branch_marks_properties_as_evaluated(
+                r#"
+                kind = "x"
+                foo = "ok"
+                "#,
+                JsonSchema(schema()),
+            ) -> Ok(_);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn else_branch_marks_properties_as_evaluated(
+                r#"
+                bar = "ok"
+                "#,
+                JsonSchema(schema()),
+            ) -> Ok(_);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn reports_unevaluated_property_outside_selected_branch(
+                r#"
+                kind = "x"
+                baz = "ng"
+                "#,
+                JsonSchema(schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "baz".to_string()
+                    },
+                    ((1, 0), (1, 10))
+                ),
+            ]);
+        );
+    }
+
+    mod dependent_schemas_evaluated_properties {
+        use super::*;
+
+        fn schema() -> JsonValue {
+            serde_json::json!({
+                "$schema": "https://json-schema.org/draft/2019-09/schema",
+                "dependentSchemas": {
+                    "foo": {
+                        "properties": {
+                            "bar": {"type": "string"}
+                        }
+                    }
+                },
+                "unevaluatedProperties": false
+            })
+        }
+
+        suite_test!(
+            #[tokio::test] async fn dependent_schema_marks_nested_properties_as_evaluated(
+                r#"
+                foo = "trigger"
+                bar = "ok"
+                "#,
+                JsonSchema(schema()),
+            ) -> Ok(_);
+        );
+
+        suite_test!(
+            #[tokio::test] async fn non_dependent_property_stays_unevaluated(
+                r#"
+                foo = "trigger"
+                baz = "ng"
+                "#,
+                JsonSchema(schema()),
+            ) -> Err([
+                tombi_validator::Diagnostic::new(
+                    tombi_validator::DiagnosticKind::UnevaluatedPropertyNotAllowed {
+                        key: "baz".to_string()
+                    },
+                    ((1, 0), (1, 10))
+                ),
+            ]);
+        );
+    }
 }
 
 // =============================================================================

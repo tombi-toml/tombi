@@ -116,7 +116,7 @@ where
                         .validate(accessors, Some(resolved_schema), schema_context)
                         .await
                     {
-                        Ok(()) => {
+                        Ok(_) => {
                             valid_hover_value_contents.insert(hover_value_content.clone());
                         }
                         Err(tombi_validator::Error { diagnostics, .. })

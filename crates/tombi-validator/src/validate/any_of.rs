@@ -18,7 +18,7 @@ pub fn validate_any_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<(), crate::Error>>
+) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
@@ -67,7 +67,7 @@ where
         .await
         else {
             if total_diagnostics.is_empty() {
-                return Ok(());
+                return Ok(crate::EvaluatedLocations::new());
             } else {
                 return Err(total_diagnostics.into());
             }
@@ -90,7 +90,7 @@ where
             };
 
             match result {
-                Ok(()) => {
+                Ok(result) => {
                     if let Err(error) = validate_deprecated(
                         any_of_schema.deprecated,
                         accessors,
@@ -101,9 +101,13 @@ where
                         total_diagnostics.extend(error.diagnostics);
                     }
                     if total_diagnostics.is_empty() {
-                        return Ok(());
+                        return Ok(result);
                     }
-                    return Err(total_diagnostics.into());
+                    return Err(crate::Error {
+                        score: crate::error::TYPE_MATCHED_SCORE,
+                        diagnostics: total_diagnostics,
+                        evaluated_locations: result,
+                    });
                 }
                 Err(error) => {
                     total_error.combine(error);
@@ -112,7 +116,7 @@ where
         }
 
         if total_error.diagnostics.is_empty() && total_diagnostics.is_empty() {
-            Ok(())
+            Ok(crate::EvaluatedLocations::new())
         } else {
             total_error.prepend_diagnostics(total_diagnostics);
             Err(total_error)
