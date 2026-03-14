@@ -8,7 +8,7 @@ impl Validate for tombi_document_tree::Value {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         async move {
             match self {
                 Self::Boolean(boolean) => {
@@ -61,7 +61,7 @@ impl Validate for tombi_document_tree::Value {
                         .validate(accessors, current_schema, schema_context)
                         .await
                 }
-                Self::Incomplete { .. } => Ok(()),
+                Self::Incomplete { .. } => Ok(Default::default()),
             }
         }
         .boxed()

@@ -13,7 +13,7 @@ pub async fn validate_not<'a, T>(
     schema_context: &SchemaContext<'a>,
     comment_directives: Option<impl Iterator<Item = &'a TombiValueCommentDirective> + 'a>,
     common_rules: Option<&tombi_comment_directive::value::CommonLintRules>,
-) -> Result<(), crate::Error>
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: Validate + ValueImpl + Sync + Send,
 {
@@ -65,5 +65,5 @@ where
         }
     }
 
-    Ok(())
+    Ok(crate::EvaluatedLocations::new())
 }

@@ -207,7 +207,10 @@ impl tombi_validator::Validate for SchemaCompletion {
         _accessors: &'a [tombi_schema_store::Accessor],
         _current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         _schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> tombi_future::BoxFuture<'b, Result<(), tombi_validator::Error>> {
-        async move { Ok(()) }.boxed()
+    ) -> tombi_future::BoxFuture<
+        'b,
+        Result<tombi_validator::EvaluatedLocations, tombi_validator::Error>,
+    > {
+        async move { Ok(tombi_validator::EvaluatedLocations::new()) }.boxed()
     }
 }

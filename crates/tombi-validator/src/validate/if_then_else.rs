@@ -4,7 +4,7 @@ use tombi_document_tree::ValueImpl;
 use tombi_schema_store::CurrentSchema;
 
 use crate::Validate;
-use crate::validate::is_assertion_success;
+use crate::validate::{has_error_level_diagnostics, merge_validation_results, is_assertion_success};
 
 pub async fn validate_if_then_else<T>(
     value: &T,
@@ -12,10 +12,21 @@ pub async fn validate_if_then_else<T>(
     if_then_else_schema: &tombi_schema_store::IfThenElseSchema,
     current_schema: &CurrentSchema<'_>,
     schema_context: &tombi_schema_store::SchemaContext<'_>,
-) -> Result<(), crate::Error>
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: Validate + ValueImpl + Sync + Send,
 {
+    let merge_if_result = |
+        branch_result: Result<crate::EvaluatedLocations, crate::Error>,
+        if_result: Result<crate::EvaluatedLocations, crate::Error>,
+    | match if_result {
+        Ok(evaluated_locations) => merge_validation_results(Ok(evaluated_locations), branch_result),
+        Err(error) if !has_error_level_diagnostics(&error) => {
+            merge_validation_results(Err(error), branch_result)
+        }
+        Err(_) => branch_result,
+    };
+
     // Resolve and validate the `if` schema
     let if_result = if let Ok(Some(if_current_schema)) = tombi_schema_store::resolve_schema_item(
         &if_then_else_schema.if_schema,
@@ -30,7 +41,7 @@ where
             .validate(accessors, Some(&if_current_schema), schema_context)
             .await
     } else {
-        return Ok(());
+        return Ok(crate::EvaluatedLocations::new());
     };
 
     // Per JSON Schema spec: branching is based on assertion result.
@@ -46,10 +57,13 @@ where
             .await
             .inspect_err(|err| log::warn!("{err}"))
         {
-            return value
+            let branch_result = value
                 .validate(accessors, Some(&then_current_schema), schema_context)
                 .await;
+            return merge_if_result(branch_result, if_result);
         }
+
+        return merge_if_result(Ok(crate::EvaluatedLocations::new()), if_result);
     } else {
         // `if` did not match → apply `else` schema if present
         if let Some(else_schema) = &if_then_else_schema.else_schema
@@ -68,5 +82,5 @@ where
         }
     }
 
-    Ok(())
+    Ok(crate::EvaluatedLocations::new())
 }

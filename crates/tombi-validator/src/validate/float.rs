@@ -22,7 +22,7 @@ impl Validate for tombi_document_tree::Float {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         async move {
             let (lint_rules, lint_rules_diagnostics) =
                 get_tombi_key_table_value_rules_and_diagnostics::<
@@ -89,7 +89,7 @@ impl Validate for tombi_document_tree::Float {
                         )
                         .await
                     }
-                    ValueSchema::Null => return Ok(()),
+                    ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
                     ValueSchema::Anything(_) => handle_anything_schema(self),
                     ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
@@ -100,22 +100,10 @@ impl Validate for tombi_document_tree::Float {
                     ),
                 }
             } else {
-                Ok(())
+                Ok(crate::EvaluatedLocations::new())
             };
 
-            match result {
-                Ok(()) => {
-                    if lint_rules_diagnostics.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(lint_rules_diagnostics.into())
-                    }
-                }
-                Err(mut error) => {
-                    error.prepend_diagnostics(lint_rules_diagnostics);
-                    Err(error)
-                }
-            }
+            crate::validate::with_lint_diagnostics(result, lint_rules_diagnostics)
         }
         .boxed()
     }
@@ -129,7 +117,7 @@ async fn validate_float(
     schema_context: &tombi_schema_store::SchemaContext<'_>,
     comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&FloatCommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut diagnostics = vec![];
 
     let value = float_value.value();
@@ -380,7 +368,7 @@ async fn validate_float(
     }
 
     let base_result = if diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(diagnostics.into())
     };
