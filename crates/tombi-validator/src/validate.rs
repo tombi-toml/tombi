@@ -456,6 +456,13 @@ where
     T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
+        let Some(_cycle_guard) = schema_context
+            .schema_visits
+            .get_value_schema_cycle_guard(&resolved_schema.value_schema)
+        else {
+            return None;
+        };
+
         match (value.value_type(), resolved_schema.value_schema.as_ref()) {
             (tombi_document_tree::ValueType::Boolean, tombi_schema_store::ValueSchema::Boolean(_))
             | (

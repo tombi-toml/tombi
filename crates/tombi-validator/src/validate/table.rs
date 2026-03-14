@@ -153,6 +153,7 @@ async fn validate_table(
     let mut total_diagnostics = vec![];
     let used_keys = {
         let mut keys = HashSet::new();
+        let mut visited_schema_values = HashSet::new();
         collect_keys_from_table_schema(
             table_value,
             accessors,
@@ -160,6 +161,7 @@ async fn validate_table(
             current_schema,
             schema_context,
             &mut keys,
+            &mut visited_schema_values,
         )
         .await;
         keys
@@ -807,8 +809,14 @@ fn collect_keys_from_table_schema<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     keys: &'a mut HashSet<String>,
+    visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, ()> {
     async move {
+        let schema_key = std::sync::Arc::as_ptr(&current_schema.value_schema) as usize;
+        if !visited_schema_values.insert(schema_key) {
+            return;
+        }
+
         for accessor in table_schema.properties.read().await.keys() {
             if let SchemaAccessor::Key(key) = accessor {
                 keys.insert(key.clone());
@@ -851,6 +859,7 @@ fn collect_keys_from_table_schema<'a>(
                             current_schema,
                             schema_context,
                             keys,
+                            visited_schema_values,
                         )
                         .await;
                     }
@@ -875,6 +884,7 @@ fn collect_keys_from_table_schema<'a>(
                     current_schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -888,6 +898,7 @@ fn collect_keys_from_table_schema<'a>(
                 current_schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
         }
@@ -899,6 +910,7 @@ fn collect_keys_from_table_schema<'a>(
                 current_schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
         }
@@ -910,6 +922,7 @@ fn collect_keys_from_table_schema<'a>(
                 current_schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
         }
@@ -922,6 +935,7 @@ fn collect_keys_from_table_schema<'a>(
                 current_schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
         }
@@ -936,6 +950,7 @@ fn collect_keys_from_schema_item<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     keys: &'a mut HashSet<String>,
+    visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, ()> {
     async move {
         if let Ok(Some(schema)) = tombi_schema_store::resolve_schema_item(
@@ -954,6 +969,7 @@ fn collect_keys_from_schema_item<'a>(
                 &schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
         }
@@ -968,6 +984,7 @@ fn collect_keys_from_referable_schemas<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     keys: &'a mut HashSet<String>,
+    visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, ()> {
     async move {
         for schema_item in applicator.schemas().read().await.iter() {
@@ -987,6 +1004,7 @@ fn collect_keys_from_referable_schemas<'a>(
                     &schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -1002,6 +1020,7 @@ fn collect_keys_from_value_schema<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     keys: &'a mut HashSet<String>,
+    visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, ()> {
     async move {
         match value_schema {
@@ -1013,6 +1032,7 @@ fn collect_keys_from_value_schema<'a>(
                     current_schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -1024,6 +1044,7 @@ fn collect_keys_from_value_schema<'a>(
                     current_schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -1035,6 +1056,7 @@ fn collect_keys_from_value_schema<'a>(
                     current_schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -1046,6 +1068,7 @@ fn collect_keys_from_value_schema<'a>(
                     current_schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -1062,6 +1085,7 @@ fn collect_keys_from_if_then_else_schema<'a>(
     current_schema: &'a CurrentSchema<'a>,
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     keys: &'a mut HashSet<String>,
+    visited_schema_values: &'a mut HashSet<usize>,
 ) -> BoxFuture<'a, ()> {
     async move {
         let Ok(Some(if_current_schema)) = tombi_schema_store::resolve_schema_item(
@@ -1087,6 +1111,7 @@ fn collect_keys_from_if_then_else_schema<'a>(
                 &if_current_schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
 
@@ -1098,6 +1123,7 @@ fn collect_keys_from_if_then_else_schema<'a>(
                     current_schema,
                     schema_context,
                     keys,
+                    visited_schema_values,
                 )
                 .await;
             }
@@ -1109,6 +1135,7 @@ fn collect_keys_from_if_then_else_schema<'a>(
                 current_schema,
                 schema_context,
                 keys,
+                visited_schema_values,
             )
             .await;
         }
