@@ -18,9 +18,10 @@ use crate::{
     },
     error::{REQUIRED_KEY_SCORE, TYPE_MATCHED_SCORE},
     validate::{
-        handle_anything_schema, handle_deprecated, handle_deprecated_value, handle_nothing_schema,
-        handle_type_mismatch, handle_unused_noqa, if_then_else::validate_if_then_else,
-        merge_validation_results, string::validate_raw_string, validate_adjacent_applicators,
+        filter_table_strict_additional_diagnostics, handle_anything_schema, handle_deprecated,
+        handle_deprecated_value, handle_nothing_schema, handle_type_mismatch, handle_unused_noqa,
+        if_then_else::validate_if_then_else, merge_validation_results, string::validate_raw_string,
+        validate_adjacent_applicators,
     },
 };
 
@@ -813,7 +814,8 @@ async fn validate_table(
             comment_directives.as_deref(),
             table_rules.map(|rules| &rules.common),
         )
-        .await,
+        .await
+        .or_else(filter_table_strict_additional_diagnostics),
     )
 }
 

@@ -395,10 +395,7 @@ where
                 common_rules,
             )
             .await;
-            result = merge_validation_results(
-                result,
-                adjacent_result.or_else(filter_table_strict_additional_diagnostics),
-            );
+            result = merge_validation_results(result, adjacent_result);
         }
         if let Some(any_of_schema) = any_of_schema {
             let adjacent_result = validate_any_of(
@@ -411,10 +408,7 @@ where
                 common_rules,
             )
             .await;
-            result = merge_validation_results(
-                result,
-                adjacent_result.or_else(filter_table_strict_additional_diagnostics),
-            );
+            result = merge_validation_results(result, adjacent_result);
         }
         if let Some(all_of_schema) = all_of_schema {
             let adjacent_result = validate_all_of(
@@ -427,10 +421,7 @@ where
                 common_rules,
             )
             .await;
-            result = merge_validation_results(
-                result,
-                adjacent_result.or_else(filter_table_strict_additional_diagnostics),
-            );
+            result = merge_validation_results(result, adjacent_result);
         }
         if let Some(not_schema) = not_schema {
             result = merge_validation_results(
