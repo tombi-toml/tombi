@@ -302,7 +302,7 @@ impl CompletionCandidate for ValueSchema {
                         .title(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
-                Self::Null => None,
+                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()
@@ -344,7 +344,7 @@ impl CompletionCandidate for ValueSchema {
                         .description(schema_uri, definitions, schema_store, completion_hint)
                         .await
                 }
-                Self::Null => None,
+                Self::Anything(_) | Self::Nothing(_) | Self::Null => None,
             }
         }
         .boxed()

@@ -341,5 +341,4 @@ mod tests {
             Some("Use `dependentRequired` / `dependentSchemas` instead.")
         );
     }
-
 }

@@ -10,6 +10,7 @@ pub use error::Error;
 pub use key::{Key, KeyKind};
 pub use literal_value::LiteralValueRef;
 pub use root::DocumentTree;
+use tombi_ast::TombiValueCommentDirective;
 use tombi_toml_version::TomlVersion;
 pub use value::{
     Array, ArrayKind, Boolean, Float, Integer, IntegerKind, LocalDate, LocalDateTime, LocalTime,
@@ -46,6 +47,12 @@ pub trait ValueImpl {
     fn value_type(&self) -> ValueType;
 
     fn range(&self) -> tombi_text::Range;
+}
+
+pub trait LikeString {
+    fn value(&self) -> &str;
+
+    fn comment_directives(&self) -> Option<impl Iterator<Item = &TombiValueCommentDirective> + '_>;
 }
 
 /// A structure that holds an incomplete tree and errors that are the reason for the incompleteness.

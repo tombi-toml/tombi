@@ -198,6 +198,27 @@ fn handle_type_mismatch(
     }
 }
 
+#[inline]
+pub(crate) fn handle_anything_schema<T>(_value: &T) -> Result<(), crate::Error>
+where
+    T: tombi_document_tree::ValueImpl,
+{
+    Ok(())
+}
+
+pub(crate) fn handle_nothing_schema<T>(value: &T) -> Result<(), crate::Error>
+where
+    T: tombi_document_tree::ValueImpl,
+{
+    let mut diagnostics = vec![];
+    crate::Diagnostic {
+        kind: Box::new(crate::DiagnosticKind::Nothing),
+        range: value.range(),
+    }
+    .push_diagnostic_with_level(SeverityLevelDefaultError::default(), &mut diagnostics);
+    Err(diagnostics.into())
+}
+
 fn handle_unused_noqa<'a>(
     diagnostics: &mut Vec<tombi_diagnostic::Diagnostic>,
     comment_directives: Option<
@@ -258,7 +279,7 @@ fn has_error_level_diagnostics(error: &crate::Error) -> bool {
         .any(|diagnostic| diagnostic.level() == tombi_diagnostic::Level::ERROR)
 }
 
-fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
+pub(crate) fn is_assertion_success(result: &Result<(), crate::Error>) -> bool {
     match result {
         Ok(()) => true,
         Err(error) => !has_error_level_diagnostics(error),
@@ -308,6 +329,121 @@ where
     }
 }
 
+fn merge_validation_results(
+    primary: Result<(), crate::Error>,
+    secondary: Result<(), crate::Error>,
+) -> Result<(), crate::Error> {
+    match (primary, secondary) {
+        (Ok(()), Ok(())) => Ok(()),
+        (Err(error), Ok(())) | (Ok(()), Err(error)) => Err(error),
+        (Err(mut left), Err(right)) => {
+            left.score = left.score.max(right.score);
+            left.diagnostics.extend(right.diagnostics);
+            Err(left)
+        }
+    }
+}
+
+pub(crate) fn filter_table_strict_additional_diagnostics(
+    mut error: crate::Error,
+) -> Result<(), crate::Error> {
+    error
+        .diagnostics
+        .retain(|diagnostic| diagnostic.code() != "table-strict-additional-keys");
+
+    if error.diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(error)
+    }
+}
+
+pub fn validate_adjacent_applicators<'a: 'b, 'b, T>(
+    value: &'a T,
+    accessors: &'a [tombi_schema_store::Accessor],
+    one_of_schema: Option<&'a tombi_schema_store::OneOfSchema>,
+    any_of_schema: Option<&'a tombi_schema_store::AnyOfSchema>,
+    all_of_schema: Option<&'a tombi_schema_store::AllOfSchema>,
+    not_schema: Option<&'a tombi_schema_store::NotSchema>,
+    current_schema: &'a tombi_schema_store::CurrentSchema<'a>,
+    schema_context: &'a tombi_schema_store::SchemaContext<'a>,
+    comment_directives: Option<&'a [tombi_ast::TombiValueCommentDirective]>,
+    common_rules: Option<&'a tombi_comment_directive::value::CommonLintRules>,
+) -> BoxFuture<'b, Result<(), crate::Error>>
+where
+    T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
+{
+    async move {
+        if one_of_schema.is_none()
+            && any_of_schema.is_none()
+            && all_of_schema.is_none()
+            && not_schema.is_none()
+        {
+            return Ok(());
+        }
+
+        let mut result = Ok(());
+
+        if let Some(one_of_schema) = one_of_schema {
+            let adjacent_result = validate_one_of(
+                value,
+                accessors,
+                one_of_schema,
+                current_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await;
+            result = merge_validation_results(result, adjacent_result);
+        }
+        if let Some(any_of_schema) = any_of_schema {
+            let adjacent_result = validate_any_of(
+                value,
+                accessors,
+                any_of_schema,
+                current_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await;
+            result = merge_validation_results(result, adjacent_result);
+        }
+        if let Some(all_of_schema) = all_of_schema {
+            let adjacent_result = validate_all_of(
+                value,
+                accessors,
+                all_of_schema,
+                current_schema,
+                schema_context,
+                comment_directives,
+                common_rules,
+            )
+            .await;
+            result = merge_validation_results(result, adjacent_result);
+        }
+        if let Some(not_schema) = not_schema {
+            result = merge_validation_results(
+                result,
+                not_schema::validate_not(
+                    value,
+                    accessors,
+                    not_schema,
+                    current_schema,
+                    schema_context,
+                    comment_directives.map(|directives| directives.iter()),
+                    common_rules,
+                )
+                .await,
+            );
+        }
+
+        result
+    }
+    .boxed()
+}
+
 pub fn validate_resolved_schema<'a: 'b, 'b, T>(
     value: &'a T,
     accessors: &'a [tombi_schema_store::Accessor],
@@ -320,6 +456,13 @@ where
     T: Validate + tombi_document_tree::ValueImpl + Sync + Send + std::fmt::Debug,
 {
     async move {
+        let Some(_cycle_guard) = schema_context
+            .schema_visits
+            .get_value_schema_cycle_guard(&resolved_schema.value_schema)
+        else {
+            return None;
+        };
+
         match (value.value_type(), resolved_schema.value_schema.as_ref()) {
             (tombi_document_tree::ValueType::Boolean, tombi_schema_store::ValueSchema::Boolean(_))
             | (
@@ -354,6 +497,8 @@ where
                 )
             }
             (_, tombi_schema_store::ValueSchema::Null) => None,
+            (_, tombi_schema_store::ValueSchema::Anything(_)) => Some(handle_anything_schema(value)),
+            (_, tombi_schema_store::ValueSchema::Nothing(_)) => Some(handle_nothing_schema(value)),
             (_, tombi_schema_store::ValueSchema::Boolean(_))
             | (_, tombi_schema_store::ValueSchema::Integer(_))
             | (_, tombi_schema_store::ValueSchema::Float(_))
@@ -414,7 +559,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{is_assertion_success, is_multiple_of_with_tolerance};
+    use super::{
+        filter_table_strict_additional_diagnostics, is_assertion_success,
+        is_multiple_of_with_tolerance,
+    };
+
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn assertion_success_allows_warning_only_errors() {
@@ -435,5 +585,42 @@ mod tests {
         assert!(is_multiple_of_with_tolerance(0.3, 0.1));
         assert!(is_multiple_of_with_tolerance(1.2, 0.3));
         assert!(!is_multiple_of_with_tolerance(0.31, 0.1));
+    }
+
+    #[test]
+    fn filter_drops_only_table_strict_additional_diagnostics() {
+        let result = filter_table_strict_additional_diagnostics(crate::Error {
+            score: 1,
+            diagnostics: vec![
+                tombi_diagnostic::Diagnostic::new_warning(
+                    "strict additional",
+                    "table-strict-additional-keys",
+                    tombi_text::Range::default(),
+                ),
+                tombi_diagnostic::Diagnostic::new_warning(
+                    "other warning",
+                    "deprecated",
+                    tombi_text::Range::default(),
+                ),
+            ],
+        });
+
+        let err = result.expect_err("non-strict diagnostics should remain");
+        assert_eq!(err.diagnostics.len(), 1);
+        assert_eq!(err.diagnostics[0].code(), "deprecated");
+    }
+
+    #[test]
+    fn filter_turns_strict_additional_only_error_into_success() {
+        let result = filter_table_strict_additional_diagnostics(crate::Error {
+            score: 1,
+            diagnostics: vec![tombi_diagnostic::Diagnostic::new_warning(
+                "strict additional",
+                "table-strict-additional-keys",
+                tombi_text::Range::default(),
+            )],
+        });
+
+        assert!(result.is_ok());
     }
 }

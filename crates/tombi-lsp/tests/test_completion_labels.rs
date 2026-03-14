@@ -136,22 +136,20 @@ mod completion_labels {
             #[tokio::test]
             async fn tombi_used_toml_version_with_schema_directive(
                 r#"
-                #:schema https://www.schemastore.org/tombi.json
+                #:schema tombi://www.schemastore.org/tombi.json
 
                 toml-version = "v1.0.0"
                 █
                 "#,
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
-                "exclude",
                 "files",
                 "format",
-                "include",
                 "lint",
                 "lsp",
+                "overrides",
                 "schema",
                 "schemas",
-                "server",
                 // "toml-version",
             ]);
         }
@@ -607,6 +605,8 @@ mod completion_labels {
                 SourcePath(project_root_path().join("schemas").join("tombi.toml")),
                 SchemaPath(tombi_schema_path()),
             ) -> Ok([
+                "additional-properties-branch-keys-test.schema.json",
+                "adjacent-applicators-test.schema.json",
                 "anchor-dynamic-ref-test.schema.json",
                 "array-const-enum-test.schema.json",
                 "contains-test.schema.json",
@@ -621,12 +621,14 @@ mod completion_labels {
                 "partial-taskipy.schema.json",
                 "prefix-items-test.schema.json",
                 "recursive-anchor-ref-test.schema.json",
+                "recursive-defs-any-of-test.schema.json",
                 "recursive-schema.schema.json",
                 "string-format-test.schema.json",
                 "table-const-enum-test.schema.json",
                 "tuple-items-test.schema.json",
                 "type-test.schema.json",
                 "unevaluated-items-test.schema.json",
+                "unevaluated-properties-branch-additional-test.schema.json",
                 "unevaluated-properties-test.schema.json",
                 "untagged-union.schema.json",
                 "x-tombi-table-keys-order.schema.json",

@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": true,
+  "anyOf": [
+    { "$ref": "#/$defs/a" }
+  ],
+  "$defs": {
+    "a": {
+      "type": "object",
+      "additionalProperties": true,
+      "anyOf": [
+        { "$ref": "#/$defs/b" }
+      ]
+    },
+    "b": {
+      "type": "object",
+      "additionalProperties": true,
+      "anyOf": [
+        { "$ref": "#/$defs/a" }
+      ]
+    }
+  }
+}

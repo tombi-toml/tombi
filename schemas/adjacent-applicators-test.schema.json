@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "const_string_any": {
+      "const": "foo",
+      "anyOf": [
+        { "pattern": "^foo$" }
+      ]
+    },
+    "boolean_all": {
+      "type": "boolean",
+      "allOf": [
+        { "const": true }
+      ]
+    },
+    "integer_any": {
+      "type": "integer",
+      "minimum": 10,
+      "anyOf": [
+        { "const": 10 },
+        { "const": 12 }
+      ]
+    },
+    "number_one": {
+      "type": "number",
+      "oneOf": [
+        { "const": 1.5 },
+        { "multipleOf": 0.5 }
+      ]
+    },
+    "string_any": {
+      "type": "string",
+      "minLength": 3,
+      "anyOf": [
+        { "pattern": "^foo" },
+        { "pattern": "^bar" }
+      ]
+    },
+    "string_one": {
+      "type": "string",
+      "oneOf": [
+        { "pattern": "^foo" },
+        { "pattern": "o$" }
+      ]
+    },
+    "array_all": {
+      "type": "array",
+      "minItems": 2,
+      "allOf": [
+        { "contains": { "const": "x" } }
+      ]
+    },
+    "offset_date_time_all": {
+      "type": "string",
+      "format": "date-time",
+      "allOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "const": "2024-01-15T10:30:00Z"
+        }
+      ]
+    },
+    "local_date_time_any": {
+      "type": "string",
+      "format": "partial-date-time",
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "partial-date-time",
+          "const": "2024-01-15T10:30:00"
+        },
+        {
+          "type": "string",
+          "format": "partial-date-time",
+          "const": "2024-01-16T10:30:00"
+        }
+      ]
+    },
+    "local_date_one": {
+      "type": "string",
+      "format": "date",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date",
+          "const": "2024-01-15"
+        },
+        {
+          "type": "string",
+          "format": "date",
+          "enum": ["2024-01-15", "2024-01-16"]
+        }
+      ]
+    },
+    "local_time_all": {
+      "type": "string",
+      "format": "partial-time",
+      "allOf": [
+        {
+          "type": "string",
+          "format": "partial-time",
+          "const": "10:30:00"
+        }
+      ]
+    },
+    "object_all": {
+      "type": "object",
+      "properties": {
+        "foo": { "type": "integer" },
+        "bar": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "required": ["bar"],
+          "properties": {
+            "bar": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "object_any": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string" },
+        "alpha": { "type": "integer" },
+        "beta": { "type": "integer" }
+      },
+      "anyOf": [
+        { "required": ["alpha"] },
+        { "required": ["beta"] }
+      ]
+    },
+    "object_one": {
+      "type": "object",
+      "properties": {
+        "foo": { "type": "integer" },
+        "bar": { "type": "integer" }
+      },
+      "oneOf": [{ "required": ["foo"] }, { "required": ["bar"] }]
+    },
+    "inferred_dependent_required_any": {
+      "properties": {
+        "foo": { "type": "integer" },
+        "bar": { "type": "integer" },
+        "baz": { "type": "integer" }
+      },
+      "dependentRequired": {
+        "foo": ["bar"]
+      },
+      "anyOf": [
+        { "required": ["foo"] },
+        { "required": ["baz"] }
+      ]
+    },
+    "inferred_dependent_schemas_all": {
+      "dependentSchemas": {
+        "foo": {
+          "required": ["bar"],
+          "properties": {
+            "bar": { "type": "integer" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "properties": {
+            "foo": { "type": "integer" },
+            "bar": { "type": "integer" }
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

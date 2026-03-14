@@ -7,7 +7,10 @@ use tombi_severity_level::SeverityLevelDefaultError;
 
 use crate::{
     comment_directive::get_tombi_key_table_value_rules_and_diagnostics,
-    validate::{handle_deprecated_value, handle_type_mismatch, handle_unused_noqa},
+    validate::{
+        handle_anything_schema, handle_deprecated_value, handle_nothing_schema,
+        handle_type_mismatch, handle_unused_noqa, validate_adjacent_applicators,
+    },
 };
 
 use super::{Validate, validate_all_of, validate_any_of, validate_one_of};
@@ -20,6 +23,10 @@ impl Validate for tombi_document_tree::Boolean {
         schema_context: &'a tombi_schema_store::SchemaContext,
     ) -> BoxFuture<'b, Result<(), crate::Error>> {
         async move {
+            let comment_directives = self
+                .comment_directives()
+                .map(|directives| directives.cloned().collect_vec());
+
             let (lint_rules, lint_rules_diagnostics) =
                 get_tombi_key_table_value_rules_and_diagnostics::<
                     BooleanCommonFormatRules,
@@ -30,7 +37,16 @@ impl Validate for tombi_document_tree::Boolean {
             let result = if let Some(current_schema) = current_schema {
                 match current_schema.value_schema.as_ref() {
                     ValueSchema::Boolean(boolean_schema) => {
-                        validate_boolean(self, accessors, boolean_schema, lint_rules.as_ref()).await
+                        validate_boolean(
+                            self,
+                            accessors,
+                            boolean_schema,
+                            current_schema,
+                            schema_context,
+                            comment_directives.as_deref(),
+                            lint_rules.as_ref(),
+                        )
+                        .await
                     }
                     ValueSchema::OneOf(one_of_schema) => {
                         validate_one_of(
@@ -75,6 +91,8 @@ impl Validate for tombi_document_tree::Boolean {
                         .await
                     }
                     ValueSchema::Null => return Ok(()),
+                    ValueSchema::Anything(_) => handle_anything_schema(self),
+                    ValueSchema::Nothing(_) => handle_nothing_schema(self),
                     value_schema => handle_type_mismatch(
                         value_schema.value_type().await,
                         self.value_type(),
@@ -108,6 +126,9 @@ async fn validate_boolean(
     boolean_value: &tombi_document_tree::Boolean,
     accessors: &[tombi_schema_store::Accessor],
     boolean_schema: &tombi_schema_store::BooleanSchema,
+    current_schema: &tombi_schema_store::CurrentSchema<'_>,
+    schema_context: &tombi_schema_store::SchemaContext<'_>,
+    comment_directives: Option<&[tombi_ast::TombiValueCommentDirective]>,
     lint_rules: Option<&BooleanCommonLintRules>,
 ) -> Result<(), crate::Error> {
     let mut diagnostics = vec![];
@@ -189,9 +210,26 @@ async fn validate_boolean(
         );
     }
 
-    if diagnostics.is_empty() {
+    let base_result = if diagnostics.is_empty() {
         Ok(())
     } else {
         Err(diagnostics.into())
-    }
+    };
+
+    crate::validate::merge_validation_results(
+        base_result,
+        validate_adjacent_applicators(
+            boolean_value,
+            accessors,
+            boolean_schema.one_of.as_deref(),
+            boolean_schema.any_of.as_deref(),
+            boolean_schema.all_of.as_deref(),
+            boolean_schema.not.as_deref(),
+            current_schema,
+            schema_context,
+            comment_directives,
+            lint_rules.map(|rules| &rules.common),
+        )
+        .await,
+    )
 }

@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "properties": {
+        "foo": {
+          "type": "integer"
+        }
+      }
+    }
+  ]
+}

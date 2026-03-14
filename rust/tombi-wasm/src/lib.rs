@@ -79,9 +79,7 @@ pub fn format(source: String, file_path: Option<String>, toml_version: Option<St
         match tombi_formatter::Formatter::new(
             toml_version,
             &format_options,
-            file_path_buf
-                .as_deref()
-                .map(itertools::Either::Right),
+            file_path_buf.as_deref().map(itertools::Either::Right),
             &schema_store,
         )
         .format(&source)
@@ -166,9 +164,7 @@ pub fn lint(source: String, file_path: Option<String>, toml_version: Option<Stri
         match tombi_linter::Linter::new(
             toml_version,
             &lint_options,
-            file_path_buf
-                .as_deref()
-                .map(itertools::Either::Right),
+            file_path_buf.as_deref().map(itertools::Either::Right),
             &schema_store,
         )
         .lint(&source)

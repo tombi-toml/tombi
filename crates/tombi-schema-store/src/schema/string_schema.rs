@@ -1,6 +1,8 @@
 use tombi_x_keyword::StringFormat;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+use super::{AllOfSchema, AnyOfSchema, NotSchema, OneOfSchema};
+
+#[derive(Debug, Default, Clone)]
 pub struct StringSchema {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -17,10 +19,28 @@ pub struct StringSchema {
     pub default: Option<String>,
     pub const_value: Option<String>,
     pub deprecated: Option<bool>,
+    pub one_of: Option<Box<OneOfSchema>>,
+    pub any_of: Option<Box<AnyOfSchema>>,
+    pub all_of: Option<Box<AllOfSchema>>,
+    pub not: Option<Box<NotSchema>>,
 }
 
 impl StringSchema {
-    pub fn new(object: &tombi_json::ObjectNode, format: Option<StringFormat>) -> Self {
+    pub fn new(
+        object: &tombi_json::ObjectNode,
+        format: Option<StringFormat>,
+        string_formats: Option<&[StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut crate::AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut crate::DynamicAnchorCollector>,
+    ) -> Self {
+        let (one_of, any_of, all_of, not) = crate::adjacent_applicators(
+            object,
+            string_formats,
+            dialect,
+            anchor_collector,
+            dynamic_anchor_collector,
+        );
         Self {
             title: object
                 .get("title")
@@ -67,6 +87,10 @@ impl StringSchema {
                 .get("default")
                 .and_then(|v| v.as_str().map(|s| s.to_string())),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            one_of,
+            any_of,
+            all_of,
+            not,
         }
     }
 

@@ -62,6 +62,54 @@ pub type AnchorCollector = SchemaMap;
 pub type DynamicAnchorCollector = SchemaMap;
 pub type ReferableValueSchemas = Arc<tokio::sync::RwLock<Vec<Referable<ValueSchema>>>>;
 
+pub trait CompositeSchema {
+    fn title(&self) -> Option<String>;
+    fn description(&self) -> Option<String>;
+    fn schemas(&self) -> &ReferableValueSchemas;
+}
+
+impl CompositeSchema for OneOfSchema {
+    fn title(&self) -> Option<String> {
+        self.title.clone()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn schemas(&self) -> &ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
+impl CompositeSchema for AnyOfSchema {
+    fn title(&self) -> Option<String> {
+        self.title.clone()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn schemas(&self) -> &ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
+impl CompositeSchema for AllOfSchema {
+    fn title(&self) -> Option<String> {
+        self.title.clone()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn schemas(&self) -> &ReferableValueSchemas {
+        &self.schemas
+    }
+}
+
 pub(crate) fn referable_from_schema_value(
     value: &tombi_json::ValueNode,
     string_formats: Option<&[tombi_x_keyword::StringFormat]>,
@@ -70,16 +118,16 @@ pub(crate) fn referable_from_schema_value(
     dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
 ) -> Option<Referable<ValueSchema>> {
     match value {
-        tombi_json::ValueNode::Object(obj) => Referable::<ValueSchema>::new(
-            obj,
+        tombi_json::ValueNode::Object(object) => Referable::<ValueSchema>::new(
+            object,
             string_formats,
             dialect,
             anchor_collector,
             dynamic_anchor_collector,
         ),
-        tombi_json::ValueNode::Bool(boolean_schema) => Some(Referable::Resolved {
+        tombi_json::ValueNode::Bool(bool) => Some(Referable::Resolved {
             schema_uri: None,
-            value: Arc::new(boolean_value_schema(boolean_schema.value)),
+            value: Arc::new(bool_value_schema(bool.value, bool.range)),
         }),
         _ => None,
     }
@@ -102,12 +150,75 @@ pub(crate) fn schema_item_from_schema_value(
     .map(|schema| Arc::new(tokio::sync::RwLock::new(schema)))
 }
 
-pub(crate) fn boolean_value_schema(allow: bool) -> ValueSchema {
+pub(crate) fn bool_value_schema(allow: bool, range: tombi_text::Range) -> ValueSchema {
     if allow {
-        ValueSchema::AnyOf(AnyOfSchema::default())
+        ValueSchema::Anything(range)
     } else {
-        ValueSchema::OneOf(OneOfSchema::default())
+        ValueSchema::Nothing(range)
     }
+}
+
+pub(crate) fn adjacent_applicators(
+    object: &tombi_json::ObjectNode,
+    string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+    dialect: Option<crate::JsonSchemaDialect>,
+    mut anchor_collector: Option<&mut AnchorCollector>,
+    mut dynamic_anchor_collector: Option<&mut DynamicAnchorCollector>,
+) -> (
+    Option<Box<OneOfSchema>>,
+    Option<Box<AnyOfSchema>>,
+    Option<Box<AllOfSchema>>,
+    Option<Box<NotSchema>>,
+) {
+    let one_of = object
+        .get("oneOf")
+        .is_some()
+        .then(|| {
+            OneOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })
+        .map(Box::new);
+    let any_of = object
+        .get("anyOf")
+        .is_some()
+        .then(|| {
+            AnyOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })
+        .map(Box::new);
+    let all_of = object
+        .get("allOf")
+        .is_some()
+        .then(|| {
+            AllOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )
+        })
+        .map(Box::new);
+    let not = NotSchema::new(
+        object,
+        string_formats,
+        dialect,
+        anchor_collector,
+        dynamic_anchor_collector,
+    )
+    .map(Box::new);
+
+    (one_of, any_of, all_of, not)
 }
 
 pub(crate) fn update_named_anchors(

@@ -12,12 +12,11 @@ use super::{
 };
 use crate::{
     Accessor, Referable, SchemaDefinitions, SchemaStore,
-    schema::{if_then_else_schema::IfThenElseSchema, not_schema::NotSchema},
+    schema::if_then_else_schema::IfThenElseSchema,
 };
 
 #[derive(Debug, Clone)]
 pub enum ValueSchema {
-    Null,
     Boolean(BooleanSchema),
     Integer(IntegerSchema),
     Float(FloatSchema),
@@ -31,6 +30,9 @@ pub enum ValueSchema {
     OneOf(OneOfSchema),
     AnyOf(AnyOfSchema),
     AllOf(AllOfSchema),
+    Null,
+    Anything(tombi_text::Range),
+    Nothing(tombi_text::Range),
 }
 
 impl ValueSchema {
@@ -88,33 +90,6 @@ impl ValueSchema {
             _ => {}
         }
 
-        if object.get("oneOf").is_some() {
-            return Some(ValueSchema::OneOf(OneOfSchema::new(
-                object,
-                string_formats,
-                dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
-            )));
-        }
-        if object.get("anyOf").is_some() {
-            return Some(ValueSchema::AnyOf(AnyOfSchema::new(
-                object,
-                string_formats,
-                dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
-            )));
-        }
-        if object.get("allOf").is_some() {
-            return Some(ValueSchema::AllOf(AllOfSchema::new(
-                object,
-                string_formats,
-                dialect,
-                anchor_collector.as_deref_mut(),
-                dynamic_anchor_collector.as_deref_mut(),
-            )));
-        }
         if let Some(tombi_json::ValueNode::Array(enum_values)) = object.get("enum") {
             return Self::new_enum_value(
                 object,
@@ -163,6 +138,54 @@ impl ValueSchema {
                 anchor_collector,
                 dynamic_anchor_collector,
             );
+        }
+
+        if object.get("oneOf").is_some() {
+            return Some(ValueSchema::OneOf(OneOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )));
+        }
+        if object.get("anyOf").is_some() {
+            return Some(ValueSchema::AnyOf(AnyOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )));
+        }
+        if object.get("allOf").is_some() {
+            return Some(ValueSchema::AllOf(AllOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )));
+        }
+        if object.get("not").is_some()
+            || object.get("if").is_some()
+            || object.get("then").is_some()
+            || object.get("else").is_some()
+        {
+            // `not` / `if` / `then` / `else` can appear without an explicit `allOf`.
+            // We still need to preserve and validate these applicators somewhere in
+            // `ValueSchema`, and `AllOfSchema` is the existing container that already
+            // carries `not` and `if_then_else` and is handled generically by the
+            // validator. Representing these schemas as `AllOf` is therefore an
+            // intentional implementation choice, even when the original schema object
+            // does not contain an `allOf` keyword.
+            return Some(ValueSchema::AllOf(AllOfSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            )));
         }
 
         None
@@ -231,6 +254,8 @@ impl ValueSchema {
             || (supports_keyword("unevaluatedProperties")
                 && object.get("unevaluatedProperties").is_some())
             || (supports_keyword("dependencies") && object.get("dependencies").is_some())
+            || (supports_keyword("dependentRequired") && object.get("dependentRequired").is_some())
+            || (supports_keyword("dependentSchemas") && object.get("dependentSchemas").is_some())
         {
             return Some("object");
         }
@@ -250,9 +275,27 @@ impl ValueSchema {
         let mut dynamic_anchor_collector = dynamic_anchor_collector;
         match type_str {
             "null" => Some(ValueSchema::Null),
-            "boolean" => Some(ValueSchema::Boolean(BooleanSchema::new(object))),
-            "integer" => Some(ValueSchema::Integer(IntegerSchema::new(object))),
-            "number" => Some(ValueSchema::Float(FloatSchema::new(object))),
+            "boolean" => Some(ValueSchema::Boolean(BooleanSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            ))),
+            "integer" => Some(ValueSchema::Integer(IntegerSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            ))),
+            "number" => Some(ValueSchema::Float(FloatSchema::new(
+                object,
+                string_formats,
+                dialect,
+                anchor_collector.as_deref_mut(),
+                dynamic_anchor_collector.as_deref_mut(),
+            ))),
             "string" => {
                 let string_format = if let Some(tombi_json::ValueNode::String(StringNode {
                     value: format_str,
@@ -264,6 +307,10 @@ impl ValueSchema {
                         "date-time" => {
                             return Some(ValueSchema::OffsetDateTime(OffsetDateTimeSchema::new(
                                 object,
+                                string_formats,
+                                dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
                             )));
                         }
                         "date-time-local" | "partial-date-time" => {
@@ -272,16 +319,32 @@ impl ValueSchema {
                             //       partial-date-time: used [schemars](https://github.com/GREsau/schemars).
                             return Some(ValueSchema::LocalDateTime(LocalDateTimeSchema::new(
                                 object,
+                                string_formats,
+                                dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
                             )));
                         }
                         "date" => {
-                            return Some(ValueSchema::LocalDate(LocalDateSchema::new(object)));
+                            return Some(ValueSchema::LocalDate(LocalDateSchema::new(
+                                object,
+                                string_formats,
+                                dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
+                            )));
                         }
                         "time-local" | "partial-time" => {
                             // NOTE: It's defined in OpenAPI.
                             //       time-local: see [OpenAPI Format Registry](https://spec.openapis.org/registry/format/time-local.html).
                             //       partial-time: used [schemars](https://github.com/GREsau/schemars).
-                            return Some(ValueSchema::LocalTime(LocalTimeSchema::new(object)));
+                            return Some(ValueSchema::LocalTime(LocalTimeSchema::new(
+                                object,
+                                string_formats,
+                                dialect,
+                                anchor_collector.as_deref_mut(),
+                                dynamic_anchor_collector.as_deref_mut(),
+                            )));
                         }
                         _ => string_formats.and_then(|string_formats| {
                             if let Ok(string_format) = StringFormat::from_str(format_str.as_str())
@@ -299,6 +362,10 @@ impl ValueSchema {
                 Some(ValueSchema::String(StringSchema::new(
                     object,
                     string_format,
+                    string_formats,
+                    dialect,
+                    anchor_collector.as_deref_mut(),
+                    dynamic_anchor_collector.as_deref_mut(),
                 )))
             }
             "array" => Some(ValueSchema::Array(ArraySchema::new(
@@ -411,13 +478,7 @@ impl ValueSchema {
                     keys_order: object
                         .get(X_TOMBI_TABLE_KEYS_ORDER)
                         .and_then(|v| v.as_str().and_then(|s| TableKeysOrder::try_from(s).ok())),
-                    not: NotSchema::new(
-                        object,
-                        string_formats,
-                        dialect,
-                        anchor_collector.as_deref_mut(),
-                        dynamic_anchor_collector.as_deref_mut(),
-                    ),
+                    not: None,
                     if_then_else: IfThenElseSchema::new(
                         object,
                         string_formats,
@@ -433,7 +494,6 @@ impl ValueSchema {
 
     pub async fn value_type(&self) -> crate::ValueType {
         match self {
-            Self::Null => crate::ValueType::Null,
             Self::Boolean(boolean) => boolean.value_type(),
             Self::Integer(integer) => integer.value_type(),
             Self::Float(float) => float.value_type(),
@@ -447,12 +507,24 @@ impl ValueSchema {
             Self::OneOf(one_of) => one_of.value_type().await,
             Self::AnyOf(any_of) => any_of.value_type().await,
             Self::AllOf(all_of) => all_of.value_type().await,
+            Self::Null | Self::Nothing(_) => crate::ValueType::Null,
+            Self::Anything(_) => crate::ValueType::AnyOf(vec![
+                crate::ValueType::Boolean,
+                crate::ValueType::Integer,
+                crate::ValueType::Float,
+                crate::ValueType::String,
+                crate::ValueType::LocalDate,
+                crate::ValueType::LocalDateTime,
+                crate::ValueType::LocalTime,
+                crate::ValueType::OffsetDateTime,
+                crate::ValueType::Array,
+                crate::ValueType::Table,
+            ]),
         }
     }
 
     pub async fn deprecated(&self) -> Option<bool> {
         match self {
-            Self::Null => None,
             Self::Boolean(boolean) => boolean.deprecated,
             Self::Integer(integer) => integer.deprecated,
             Self::Float(float) => float.deprecated,
@@ -498,12 +570,12 @@ impl ValueSchema {
                     if has_deprecated { Some(true) } else { None }
                 }
             }
+            Self::Null | Self::Anything(_) | Self::Nothing(_) => None,
         }
     }
 
     pub(crate) fn set_deprecated(&mut self, deprecated: bool) {
         match self {
-            Self::Null => {}
             Self::Boolean(boolean) => boolean.deprecated = Some(deprecated),
             Self::Integer(integer) => integer.deprecated = Some(deprecated),
             Self::Float(float) => float.deprecated = Some(deprecated),
@@ -519,12 +591,12 @@ impl ValueSchema {
             Self::OneOf(one_of) => one_of.deprecated = Some(deprecated),
             Self::AnyOf(any_of) => any_of.deprecated = Some(deprecated),
             Self::AllOf(all_of) => all_of.deprecated = Some(deprecated),
+            Self::Null | Self::Anything(_) | Self::Nothing(_) => {}
         }
     }
 
     pub fn title(&self) -> Option<&str> {
         match self {
-            ValueSchema::Null => None,
             ValueSchema::Boolean(schema) => schema.title.as_deref(),
             ValueSchema::Integer(schema) => schema.title.as_deref(),
             ValueSchema::Float(schema) => schema.title.as_deref(),
@@ -538,12 +610,12 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title.as_deref(),
             ValueSchema::AnyOf(schema) => schema.title.as_deref(),
             ValueSchema::AllOf(schema) => schema.title.as_deref(),
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
         }
     }
 
     pub fn set_title(&mut self, title: Option<String>) {
         match self {
-            ValueSchema::Null => {}
             ValueSchema::Boolean(schema) => schema.title = title,
             ValueSchema::Integer(schema) => schema.title = title,
             ValueSchema::Float(schema) => schema.title = title,
@@ -557,12 +629,12 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.title = title,
             ValueSchema::AnyOf(schema) => schema.title = title,
             ValueSchema::AllOf(schema) => schema.title = title,
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
         }
     }
 
     pub fn description(&self) -> Option<&str> {
         match self {
-            ValueSchema::Null => None,
             ValueSchema::Boolean(schema) => schema.description.as_deref(),
             ValueSchema::Integer(schema) => schema.description.as_deref(),
             ValueSchema::Float(schema) => schema.description.as_deref(),
@@ -576,12 +648,12 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description.as_deref(),
             ValueSchema::AnyOf(schema) => schema.description.as_deref(),
             ValueSchema::AllOf(schema) => schema.description.as_deref(),
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => None,
         }
     }
 
     pub fn set_description(&mut self, description: Option<String>) {
         match self {
-            ValueSchema::Null => {}
             ValueSchema::Boolean(schema) => schema.description = description,
             ValueSchema::Integer(schema) => schema.description = description,
             ValueSchema::Float(schema) => schema.description = description,
@@ -595,6 +667,7 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.description = description,
             ValueSchema::AnyOf(schema) => schema.description = description,
             ValueSchema::AllOf(schema) => schema.description = description,
+            ValueSchema::Null | ValueSchema::Anything(_) | ValueSchema::Nothing(_) => {}
         }
     }
 
@@ -614,6 +687,7 @@ impl ValueSchema {
             ValueSchema::OneOf(schema) => schema.range,
             ValueSchema::AnyOf(schema) => schema.range,
             ValueSchema::AllOf(schema) => schema.range,
+            ValueSchema::Anything(range) | ValueSchema::Nothing(range) => *range,
         }
     }
 
@@ -1008,6 +1082,51 @@ mod tests {
             schemas.get(1).unwrap().value_type().await,
             ValueType::String
         ));
+    }
+
+    #[tokio::test]
+    async fn test_not_only_schema_is_preserved() {
+        let schema = parse_schema_with_dialect(
+            r#"{ "not": { "required": ["path"] } }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        let Some(ValueSchema::AllOf(all_of)) = schema else {
+            panic!("schema is not an AllOf schema");
+        };
+
+        assert!(all_of.not.is_some());
+        assert!(all_of.schemas.read().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_multi_type_enum_wrapper_does_not_duplicate_not_schema() {
+        let schema = parse_schema_with_dialect(
+            r#"{
+                "enum": [1, "foo"],
+                "not": { "const": "foo" }
+            }"#,
+            Some(crate::JsonSchemaDialect::Draft07),
+        );
+        let Some(ValueSchema::OneOf(one_of)) = schema else {
+            panic!("schema is not a OneOf schema");
+        };
+
+        assert!(one_of.not.is_none());
+
+        let schemas = one_of.schemas.read().await;
+        assert_eq!(schemas.len(), 2);
+
+        for schema in schemas.iter() {
+            let Referable::Resolved { value, .. } = schema else {
+                panic!("schema is not resolved");
+            };
+
+            match value.as_ref() {
+                ValueSchema::Integer(integer) => assert!(integer.not.is_some()),
+                ValueSchema::String(string) => assert!(string.not.is_some()),
+                _ => panic!("unexpected schema type"),
+            }
+        }
     }
 
     #[test]

@@ -1,4 +1,6 @@
-#[derive(Debug, Default, Clone, PartialEq)]
+use super::{AllOfSchema, AnyOfSchema, NotSchema, OneOfSchema};
+
+#[derive(Debug, Default, Clone)]
 pub struct FloatSchema {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -13,10 +15,27 @@ pub struct FloatSchema {
     pub const_value: Option<f64>,
     pub examples: Option<Vec<f64>>,
     pub deprecated: Option<bool>,
+    pub one_of: Option<Box<OneOfSchema>>,
+    pub any_of: Option<Box<AnyOfSchema>>,
+    pub all_of: Option<Box<AllOfSchema>>,
+    pub not: Option<Box<NotSchema>>,
 }
 
 impl FloatSchema {
-    pub fn new(object: &tombi_json::ObjectNode) -> Self {
+    pub fn new(
+        object: &tombi_json::ObjectNode,
+        string_formats: Option<&[tombi_x_keyword::StringFormat]>,
+        dialect: Option<crate::JsonSchemaDialect>,
+        anchor_collector: Option<&mut crate::AnchorCollector>,
+        dynamic_anchor_collector: Option<&mut crate::DynamicAnchorCollector>,
+    ) -> Self {
+        let (one_of, any_of, all_of, not) = crate::adjacent_applicators(
+            object,
+            string_formats,
+            dialect,
+            anchor_collector,
+            dynamic_anchor_collector,
+        );
         Self {
             title: object
                 .get("title")
@@ -40,6 +59,10 @@ impl FloatSchema {
                 .and_then(|v| v.as_array())
                 .map(|v| v.items.iter().filter_map(|v| v.as_f64()).collect()),
             deprecated: object.get("deprecated").and_then(|v| v.as_bool()),
+            one_of,
+            any_of,
+            all_of,
+            not,
             range: object.range,
         }
     }

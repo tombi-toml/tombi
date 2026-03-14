@@ -132,6 +132,18 @@ pub fn recursive_anchor_ref_test_schema_path() -> PathBuf {
         .join("recursive-anchor-ref-test.schema.json")
 }
 
+pub fn recursive_defs_any_of_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("recursive-defs-any-of-test.schema.json")
+}
+
+pub fn additional_properties_branch_keys_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("additional-properties-branch-keys-test.schema.json")
+}
+
 pub fn format_annotation_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
@@ -154,4 +166,10 @@ pub fn unevaluated_properties_test_schema_path() -> PathBuf {
     project_root_path()
         .join("schemas")
         .join("unevaluated-properties-test.schema.json")
+}
+
+pub fn unevaluated_properties_branch_additional_test_schema_path() -> PathBuf {
+    project_root_path()
+        .join("schemas")
+        .join("unevaluated-properties-branch-additional-test.schema.json")
 }

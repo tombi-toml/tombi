@@ -15,12 +15,10 @@ use tombi_extension::{
 use tombi_future::Boxable;
 use tombi_rg_tree::{NodeOrToken, TokenAtOffset};
 use tombi_schema_store::{
-    Accessor, AccessorKeyKind, CurrentSchema, KeyContext, SchemaDefinitions, SchemaStore,
-    SchemaUri, ValueSchema,
+    Accessor, AccessorKeyKind, CompositeSchema, CurrentSchema, KeyContext, SchemaDefinitions,
+    SchemaStore, SchemaUri, ValueSchema,
 };
 use tombi_syntax::{Direction, SyntaxElement, SyntaxKind, SyntaxNode};
-
-use crate::composite_schema::CompositeSchema;
 
 pub fn get_comment_context(
     root: &tombi_ast::Root,
@@ -318,107 +316,136 @@ pub trait CompletionCandidate {
     }
 }
 
-impl<T: CompositeSchema + Sync + Send> CompletionCandidate for T {
-    fn title<'a: 'b, 'b>(
-        &'a self,
-        schema_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        schema_store: &'a SchemaStore,
-        completion_hint: Option<CompletionHint>,
-    ) -> tombi_future::BoxFuture<'b, Option<String>> {
-        async move {
-            let mut candidates = tombi_hashmap::HashSet::new();
-            let schema_visits = tombi_schema_store::SchemaVisits::default();
+fn composite_title<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
+    composite_schema: &'a T,
+    schema_uri: &'a SchemaUri,
+    definitions: &'a SchemaDefinitions,
+    schema_store: &'a SchemaStore,
+    completion_hint: Option<CompletionHint>,
+) -> tombi_future::BoxFuture<'b, Option<String>> {
+    async move {
+        let mut candidates = tombi_hashmap::HashSet::new();
+        let schema_visits = tombi_schema_store::SchemaVisits::default();
 
-            if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-                self.schemas(),
-                Cow::Borrowed(schema_uri),
-                Cow::Borrowed(definitions),
-                schema_store,
-                &schema_visits,
-                &[],
-            )
-            .await
-            {
-                for current_schema in &resolved_schemas {
-                    if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
-                        continue;
-                    }
+        if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            composite_schema.schemas(),
+            Cow::Borrowed(schema_uri),
+            Cow::Borrowed(definitions),
+            schema_store,
+            &schema_visits,
+            &[],
+        )
+        .await
+        {
+            for current_schema in &resolved_schemas {
+                if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
+                    continue;
+                }
 
-                    if let Some(candidate) = CompletionCandidate::title(
-                        current_schema.value_schema.as_ref(),
-                        &current_schema.schema_uri,
-                        &current_schema.definitions,
-                        schema_store,
-                        completion_hint,
-                    )
-                    .await
-                    {
-                        candidates.insert(candidate.to_string());
-                    }
+                if let Some(candidate) = CompletionCandidate::title(
+                    current_schema.value_schema.as_ref(),
+                    &current_schema.schema_uri,
+                    &current_schema.definitions,
+                    schema_store,
+                    completion_hint,
+                )
+                .await
+                {
+                    candidates.insert(candidate.to_string());
                 }
             }
-
-            if candidates.len() == 1 {
-                return candidates.into_iter().next();
-            }
-
-            self.composite_title().as_deref().map(|title| title.into())
         }
-        .boxed()
-    }
 
-    fn description<'a: 'b, 'b>(
-        &'a self,
-        schema_uri: &'a SchemaUri,
-        definitions: &'a SchemaDefinitions,
-        schema_store: &'a SchemaStore,
-        completion_hint: Option<CompletionHint>,
-    ) -> tombi_future::BoxFuture<'b, Option<String>> {
-        async move {
-            let mut candidates = tombi_hashmap::HashSet::new();
-            let schema_visits = tombi_schema_store::SchemaVisits::default();
-
-            if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
-                self.schemas(),
-                Cow::Borrowed(schema_uri),
-                Cow::Borrowed(definitions),
-                schema_store,
-                &schema_visits,
-                &[],
-            )
-            .await
-            {
-                for current_schema in &resolved_schemas {
-                    if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
-                        continue;
-                    }
-
-                    if let Some(candidate) = CompletionCandidate::description(
-                        current_schema.value_schema.as_ref(),
-                        &current_schema.schema_uri,
-                        &current_schema.definitions,
-                        schema_store,
-                        completion_hint,
-                    )
-                    .await
-                    {
-                        candidates.insert(candidate.to_string());
-                    }
-                }
-            }
-
-            if candidates.len() == 1 {
-                return candidates.into_iter().next();
-            }
-
-            self.composite_description()
-                .as_deref()
-                .map(|description| description.into())
+        if candidates.len() == 1 {
+            return candidates.into_iter().next();
         }
-        .boxed()
+
+        composite_schema.title().as_deref().map(|title| title.into())
     }
+    .boxed()
 }
+
+fn composite_description<'a: 'b, 'b, T: CompositeSchema + Sync + Send>(
+    composite_schema: &'a T,
+    schema_uri: &'a SchemaUri,
+    definitions: &'a SchemaDefinitions,
+    schema_store: &'a SchemaStore,
+    completion_hint: Option<CompletionHint>,
+) -> tombi_future::BoxFuture<'b, Option<String>> {
+    async move {
+        let mut candidates = tombi_hashmap::HashSet::new();
+        let schema_visits = tombi_schema_store::SchemaVisits::default();
+
+        if let Some(resolved_schemas) = tombi_schema_store::resolve_and_collect_schemas(
+            composite_schema.schemas(),
+            Cow::Borrowed(schema_uri),
+            Cow::Borrowed(definitions),
+            schema_store,
+            &schema_visits,
+            &[],
+        )
+        .await
+        {
+            for current_schema in &resolved_schemas {
+                if matches!(current_schema.value_schema.as_ref(), ValueSchema::Null) {
+                    continue;
+                }
+
+                if let Some(candidate) = CompletionCandidate::description(
+                    current_schema.value_schema.as_ref(),
+                    &current_schema.schema_uri,
+                    &current_schema.definitions,
+                    schema_store,
+                    completion_hint,
+                )
+                .await
+                {
+                    candidates.insert(candidate.to_string());
+                }
+            }
+        }
+
+        if candidates.len() == 1 {
+            return candidates.into_iter().next();
+        }
+
+        composite_schema
+            .description()
+            .as_deref()
+            .map(|description| description.into())
+    }
+    .boxed()
+}
+
+macro_rules! impl_composite_completion_candidate {
+    ($ty:path) => {
+        impl CompletionCandidate for $ty {
+            fn title<'a: 'b, 'b>(
+                &'a self,
+                schema_uri: &'a SchemaUri,
+                definitions: &'a SchemaDefinitions,
+                schema_store: &'a SchemaStore,
+                completion_hint: Option<CompletionHint>,
+            ) -> tombi_future::BoxFuture<'b, Option<String>> {
+                composite_title(self, schema_uri, definitions, schema_store, completion_hint)
+            }
+
+            fn description<'a: 'b, 'b>(
+                &'a self,
+                schema_uri: &'a SchemaUri,
+                definitions: &'a SchemaDefinitions,
+                schema_store: &'a SchemaStore,
+                completion_hint: Option<CompletionHint>,
+            ) -> tombi_future::BoxFuture<'b, Option<String>> {
+                composite_description(self, schema_uri, definitions, schema_store, completion_hint)
+            }
+        }
+    };
+}
+
+impl_composite_completion_candidate!(tombi_schema_store::OneOfSchema);
+impl_composite_completion_candidate!(tombi_schema_store::AnyOfSchema);
+impl_composite_completion_candidate!(tombi_schema_store::AllOfSchema);
 
 fn tombi_json_value_to_completion_default_item(
     value: &tombi_json::Value,
