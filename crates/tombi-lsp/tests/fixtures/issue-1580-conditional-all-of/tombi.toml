@@ -1,3 +1,3 @@
 [[schemas]]
 path = "./schema.json"
-include = ["*.toml"]
+include = ["input.toml"]
