@@ -49,8 +49,8 @@
   備考: 2020-12 で `$dynamicAnchor` / `$dynamicRef` に置換（将来版では compatibility のみ）
 - [x] `dependentRequired` を実装する（`dependencies` 置換）（2026-03-06 対応）
 - [x] `dependentSchemas` を実装する（`dependencies` 置換）（2026-03-06 対応）
-- [ ] `unevaluatedProperties` を実装する
-- [ ] `unevaluatedItems` を実装する
+- [x] `unevaluatedProperties` を実装する（2026-03-09 対応）
+- [x] `unevaluatedItems` を実装する（2026-03-09 対応）
 - [x] `minContains` / `maxContains` を実装する（2026-03-06 対応）
 
 ## 4. draft-2020-12 TODO（目標準拠）
@@ -84,7 +84,7 @@
 
 ### Phase B: draft-07 準拠を固定
 
-- [ ] draft-07 必須キーワードを実装し、まず draft-07 pass rate を安定化する
+- [x] draft-07 必須キーワードを実装し、まず draft-07 pass rate を安定化する（2026-03-10 時点の official subset pass rate: 49/49）
 - [x] 将来廃止キーワード（`dependencies`, tuple `items`, `additionalItems`）に移行メッセージを追加する（不要）
 
 ### Phase C: 2019-09 互換レイヤを追加
