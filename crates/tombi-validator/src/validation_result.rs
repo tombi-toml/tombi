@@ -1,9 +1,7 @@
-use std::collections::BTreeSet;
-
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct EvaluatedLocations {
-    pub properties: BTreeSet<String>,
-    pub indices: BTreeSet<usize>,
+    pub properties: tombi_hashmap::IndexSet<String>,
+    pub indices: tombi_hashmap::IndexSet<usize>,
 }
 
 impl EvaluatedLocations {
