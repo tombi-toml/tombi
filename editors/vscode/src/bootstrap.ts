@@ -25,8 +25,8 @@ export type TombiBin = {
 };
 
 type NodeModulesTombiBin =
-  | { kind: "node-script"; path: string }
-  | { kind: "shim"; path: string };
+  | { kind: "node-script"; binPath: string }
+  | { kind: "shim"; binPath: string };
 
 const MAX_NODE_MODULES_SEARCH_DEPTH = 8;
 
@@ -140,27 +140,38 @@ async function findVenvTombiBin(
 async function findNodeModulesTombiBin(
   workspaceUri: vscode.Uri,
 ): Promise<NodeModulesTombiBin | undefined> {
-  let currentDir = workspaceUri.fsPath;
+  let currentUri = workspaceUri;
   for (let depth = 0; depth <= MAX_NODE_MODULES_SEARCH_DEPTH; depth += 1) {
-    const packageBinPath = path.join(
-      currentDir,
-      "node_modules",
-      "@tombi-toml",
-      "tombi",
-      "bin",
-      "tombi",
-    );
+    const packageBinUris = [
+      vscode.Uri.joinPath(
+        currentUri,
+        "node_modules",
+        "@tombi-toml",
+        "tombi",
+        "bin",
+        "tombi",
+      ),
+      vscode.Uri.joinPath(
+        currentUri,
+        "node_modules",
+        "tombi",
+        "bin",
+        "tombi",
+      ),
+    ];
 
-    if (await fileExists(vscode.Uri.file(packageBinPath))) {
-      return { kind: "node-script", path: packageBinPath };
+    for (const packageBinUri of packageBinUris) {
+      if (await fileExists(packageBinUri)) {
+        return { kind: "node-script", binPath: packageBinUri.fsPath };
+      }
     }
 
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) {
+    const parentPath = path.posix.dirname(currentUri.path);
+    if (parentPath === currentUri.path) {
       break;
     }
 
-    currentDir = parentDir;
+    currentUri = currentUri.with({ path: parentPath });
   }
 
   const nodeModulesBinPath = vscode.Uri.joinPath(
@@ -171,7 +182,7 @@ async function findNodeModulesTombiBin(
   );
 
   if (await fileExists(nodeModulesBinPath)) {
-    return { kind: "shim", path: nodeModulesBinPath.fsPath };
+    return { kind: "shim", binPath: nodeModulesBinPath.fsPath };
   }
 
   return undefined;
@@ -179,12 +190,12 @@ async function findNodeModulesTombiBin(
 
 function createDirectTombiBin(
   source: TombiBin["source"],
-  path: string,
+  binPath: string,
 ): TombiBin {
   return {
     source,
-    binPath: path,
-    command: path,
+    binPath,
+    command: binPath,
     args: [],
   };
 }
@@ -193,13 +204,13 @@ function createNodeModulesTombiBin(bin: NodeModulesTombiBin): TombiBin {
   if (bin.kind === "node-script") {
     return {
       source: "node_modules",
-      binPath: bin.path,
+      binPath: bin.binPath,
       command: process.execPath,
-      args: [bin.path],
+      args: [bin.binPath],
     };
   }
 
-  return createDirectTombiBin("node_modules", bin.path);
+  return createDirectTombiBin("node_modules", bin.binPath);
 }
 
 async function findLocalTombiBin(binName: string): Promise<string | undefined> {
