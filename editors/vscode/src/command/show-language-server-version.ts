@@ -11,7 +11,7 @@ export async function showLanguageServerVersion(server: Server): Promise<void> {
       server.tombiBin.source,
     )
   ) {
-    message += `\t@${server.tombiBin.path}`;
+    message += `\t@${server.tombiBin.binPath}`;
   }
 
   vscode.window.showInformationMessage(message);

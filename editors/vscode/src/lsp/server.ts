@@ -14,7 +14,10 @@ export class Server {
       let version: string;
       try {
         version = await text(
-          spawn(this.tombiBin.path, ["--version"]).stdout.setEncoding("utf-8"),
+          spawn(this.tombiBin.command, [
+            ...this.tombiBin.args,
+            "--version",
+          ]).stdout.setEncoding("utf-8"),
         );
 
         const prefix = LANGUAGE_SERVER_NAME;

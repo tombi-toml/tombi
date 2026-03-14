@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 import type * as node from "vscode-languageclient/node";
+import type { TombiBin } from "@/bootstrap";
 import type { Settings } from "@/extension";
 
 export function serverOptions(
-  serverPath: string,
+  tombiBin: TombiBin,
   settings: Settings,
 ): node.ServerOptions {
   const args: string[] = settings.args ?? [];
@@ -14,8 +15,8 @@ export function serverOptions(
   const proxyEnv = getProxyEnv();
 
   const run = {
-    command: serverPath,
-    args,
+    command: tombiBin.command,
+    args: [...tombiBin.args, ...args],
     options: {
       env: {
         ...process.env,
