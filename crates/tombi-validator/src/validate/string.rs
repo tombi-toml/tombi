@@ -28,7 +28,7 @@ impl Validate for tombi_document_tree::String {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         validate_like_string(self, accessors, current_schema, schema_context, false)
     }
 }
@@ -39,7 +39,7 @@ impl Validate for tombi_document_tree::Key {
         accessors: &'a [tombi_schema_store::Accessor],
         current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
         schema_context: &'a tombi_schema_store::SchemaContext,
-    ) -> BoxFuture<'b, Result<(), crate::Error>> {
+    ) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>> {
         validate_like_string(self, accessors, current_schema, schema_context, true)
     }
 }
@@ -50,7 +50,7 @@ fn validate_like_string<'a: 'b, 'b, T>(
     current_schema: Option<&'a tombi_schema_store::CurrentSchema<'a>>,
     schema_context: &'a tombi_schema_store::SchemaContext,
     enable_key_empty_validation: bool,
-) -> BoxFuture<'b, Result<(), crate::Error>>
+) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
 where
     T: Validate + LikeString + ValueImpl + ToString + Sync + Send + std::fmt::Debug,
 {
@@ -95,7 +95,7 @@ where
                     {
                         validate_key_empty_rule(string_value, key_rules.as_ref())
                     } else {
-                        Ok(())
+                        Ok(crate::EvaluatedLocations::new())
                     };
                     let format_assertion = schema_context
                         .root_schema
@@ -184,7 +184,7 @@ where
                         result
                     }
                 }
-                ValueSchema::Null => return Ok(()),
+                ValueSchema::Null => return Ok(crate::EvaluatedLocations::new()),
                 ValueSchema::Anything(_) => handle_anything_schema(string_value),
                 ValueSchema::Nothing(_) => handle_nothing_schema(string_value),
                 // When the schema expects a TOML date/time type but the value is a string,
@@ -233,17 +233,17 @@ where
             if enable_key_empty_validation && should_validate_key_empty(None) {
                 validate_key_empty_rule(string_value, key_rules.as_ref())
             } else {
-                Ok(())
+                Ok(crate::EvaluatedLocations::new())
             }
         };
 
         match result {
-            Ok(()) => {
+            Ok(result) => {
                 let mut total_diagnostics = key_rules_diagnostics;
                 total_diagnostics.extend(lint_rules_diagnostics);
 
                 if total_diagnostics.is_empty() {
-                    Ok(())
+                    Ok(result)
                 } else {
                     Err(total_diagnostics.into())
                 }
@@ -270,12 +270,12 @@ fn should_validate_key_empty(
 fn validate_key_empty_rule<T>(
     string_value: &T,
     key_rules: Option<&KeyLinkRules>,
-) -> Result<(), crate::Error>
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: LikeString + ValueImpl,
 {
     if !string_value.value().is_empty() {
-        return Ok(());
+        return Ok(crate::EvaluatedLocations::new());
     }
 
     let level = key_rules
@@ -301,7 +301,7 @@ async fn validate_string<T>(
     comment_directives: Option<&[TombiValueCommentDirective]>,
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
-) -> Result<(), crate::Error>
+) -> Result<crate::EvaluatedLocations, crate::Error>
 where
     T: LikeString + ValueImpl + ToString + Validate + Sync + Send + std::fmt::Debug,
 {
@@ -316,7 +316,7 @@ where
     );
 
     let base_result = match result {
-        Ok(()) => {
+        Ok(result) => {
             let mut diagnostics = vec![];
 
             handle_deprecated_value(
@@ -329,7 +329,7 @@ where
             );
 
             if diagnostics.is_empty() {
-                Ok(())
+                Ok(result)
             } else {
                 Err(diagnostics.into())
             }
@@ -370,7 +370,7 @@ pub(crate) fn validate_raw_string<'a>(
     format_assertion: bool,
     lint_rules: Option<&StringCommonLintRules>,
     comment_directives: Option<impl IntoIterator<Item = &'a TombiValueCommentDirective> + 'a>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     let mut diagnostics = vec![];
 
     let comment_directives =
@@ -595,7 +595,7 @@ pub(crate) fn validate_raw_string<'a>(
     }
 
     if diagnostics.is_empty() {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         Err(diagnostics.into())
     }
@@ -611,7 +611,7 @@ fn validate_string_as_date_format(
     validate_fn: fn(&str) -> bool,
     schema_context: &tombi_schema_store::SchemaContext,
     lint_rules: Option<&StringCommonLintRules>,
-) -> Result<(), crate::Error> {
+) -> Result<crate::EvaluatedLocations, crate::Error> {
     if !schema_context.has_string_format(string_format) {
         return handle_type_mismatch(
             expected_value_type,
@@ -622,7 +622,7 @@ fn validate_string_as_date_format(
     }
 
     if validate_fn(string_value.value()) {
-        Ok(())
+        Ok(crate::EvaluatedLocations::new())
     } else {
         let level = lint_rules
             .map(|rules| &rules.value)

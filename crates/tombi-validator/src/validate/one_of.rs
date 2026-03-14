@@ -21,12 +21,13 @@ pub fn validate_one_of<'a: 'b, 'b, T>(
     schema_context: &'a tombi_schema_store::SchemaContext<'a>,
     comment_directives: Option<&'a [TombiValueCommentDirective]>,
     common_rules: Option<&'a CommonLintRules>,
-) -> BoxFuture<'b, Result<(), crate::Error>>
+) -> BoxFuture<'b, Result<crate::EvaluatedLocations, crate::Error>>
 where
     T: Validate + ValueImpl + Sync + Send + Debug,
 {
     async move {
         let mut total_diagnostics = vec![];
+        let mut base_evaluated_locations = crate::EvaluatedLocations::new();
 
         if let Some(not_schema) = one_of_schema.not.as_ref()
             && let Err(error) = validate_not(
@@ -44,7 +45,8 @@ where
         }
 
         if let Some(if_then_else_schema) = one_of_schema.if_then_else.as_ref()
-            && let Err(error) = validate_if_then_else(
+        {
+            match validate_if_then_else(
                 value,
                 accessors,
                 if_then_else_schema,
@@ -52,8 +54,16 @@ where
                 schema_context,
             )
             .await
-        {
-            total_diagnostics.extend(error.diagnostics);
+            {
+                Ok(result) => base_evaluated_locations.merge_from(result),
+                Err(error) => {
+                    if !has_error_level_diagnostics(&error) {
+                        base_evaluated_locations
+                            .merge_from(error.evaluated_locations.clone());
+                    }
+                    total_diagnostics.extend(error.diagnostics);
+                }
+            }
         }
 
         let mut valid_count = 0;
@@ -69,9 +79,13 @@ where
         .await
         else {
             if total_diagnostics.is_empty() {
-                return Ok(());
+                return Ok(base_evaluated_locations);
             } else {
-                return Err(total_diagnostics.into());
+                return Err(crate::Error {
+                    score: crate::error::TYPE_MATCHED_SCORE,
+                    diagnostics: total_diagnostics,
+                    evaluated_locations: base_evaluated_locations,
+                });
             }
         };
         let total_count = resolved_schemas.len();
@@ -84,7 +98,11 @@ where
                 SeverityLevelDefaultError::default(),
                 &mut total_diagnostics,
             );
-            return Err(total_diagnostics.into());
+            return Err(crate::Error {
+                score: crate::error::TYPE_MATCHED_SCORE,
+                diagnostics: total_diagnostics,
+                evaluated_locations: base_evaluated_locations,
+            });
         }
 
         let mut each_results = Vec::with_capacity(resolved_schemas.len());
@@ -112,10 +130,24 @@ where
         if valid_count == 1 {
             for result in each_results {
                 match result {
-                    Ok(()) if total_diagnostics.is_empty() => return Ok(()),
-                    Ok(()) => return Err(total_diagnostics.into()),
+                    Ok(mut result) if total_diagnostics.is_empty() => {
+                        result.merge_from(base_evaluated_locations);
+                        return Ok(result);
+                    }
+                    Ok(result) => {
+                        let mut evaluated_locations = base_evaluated_locations;
+                        evaluated_locations.merge_from(result);
+                        return Err(crate::Error {
+                            score: crate::error::TYPE_MATCHED_SCORE,
+                            diagnostics: total_diagnostics,
+                            evaluated_locations,
+                        });
+                    }
                     Err(mut error) if !has_error_level_diagnostics(&error) => {
                         error.prepend_diagnostics(total_diagnostics);
+                        error
+                            .evaluated_locations
+                            .merge_from(base_evaluated_locations);
                         return Err(error);
                     }
                     Err(_) => {}
@@ -163,6 +195,9 @@ where
                 Err(total_diagnostics.into())
             } else {
                 error.prepend_diagnostics(total_diagnostics);
+                error
+                    .evaluated_locations
+                    .merge_from(base_evaluated_locations);
                 Err(error)
             }
         }

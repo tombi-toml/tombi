@@ -107,7 +107,7 @@ where
                         .validate(accessors, Some(resolved_schema), schema_context)
                         .await
                     {
-                        Ok(()) => valid_hover_value_contents.push(hover_value_content.clone()),
+                        Ok(_) => valid_hover_value_contents.push(hover_value_content.clone()),
                         Err(tombi_validator::Error { diagnostics, .. })
                             if diagnostics.iter().all(Diagnostic::is_warning) =>
                         {
