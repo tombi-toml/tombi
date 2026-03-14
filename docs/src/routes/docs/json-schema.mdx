@@ -323,3 +323,85 @@ It removes **all file caches** and fetches the latest schema over the network fo
 ## Associate Schema
 VSCode supports associating a TOML schema with a file match pattern.
 See [VSCode Extension](/docs/editors/vscode-extension#json-schema-association) for details.
+
+## Compliance Status
+
+The table below summarizes keyword-level support implemented in Tombi.
+
+`✅`: supported in the dialect\
+`❌`: not implemented in Tombi\
+`-`: not used by that dialect
+
+| Keyword | draft-07 | draft-2019-09 | draft-2020-12 |
+| --- | --- | --- | --- |
+| `$id` | ✅ | ✅ | ✅ |
+| `$schema` | ✅ | ✅ | ✅ |
+| `$ref` | ✅ | ✅ | ✅ |
+| `$defs` | ✅ | ✅ | ✅ |
+| `definitions` | ✅ | - | - |
+| `$anchor` | - | ✅ | ✅ |
+| `$dynamicRef` | - | - | ✅ |
+| `$dynamicAnchor` | - | - | ✅ |
+| `$recursiveRef` | - | ✅ | - |
+| `$recursiveAnchor` | - | ✅ | - |
+| `$vocabulary` | - | ✅ | ✅ |
+| `allOf` | ✅ | ✅ | ✅ |
+| `anyOf` | ✅ | ✅ | ✅ |
+| `oneOf` | ✅ | ✅ | ✅ |
+| `not` | ✅ | ✅ | ✅ |
+| `if` | ✅ | ✅ | ✅ |
+| `then` | ✅ | ✅ | ✅ |
+| `else` | ✅ | ✅ | ✅ |
+| `properties` | ✅ | ✅ | ✅ |
+| `patternProperties` | ✅ | ✅ | ✅ |
+| `additionalProperties` | ✅ | ✅ | ✅ |
+| `propertyNames` | ✅ | ✅ | ✅ |
+| `items` | ✅ | ✅ | ✅ |
+| `additionalItems` | ✅ | ✅ | - |
+| `prefixItems` | - | - | ✅ |
+| `contains` | ✅ | ✅ | ✅ |
+| `dependentSchemas` | - | ✅ | ✅ |
+| `unevaluatedProperties` | - | ✅ | ✅ |
+| `unevaluatedItems` | - | ✅ | ✅ |
+| `type` | ✅ | ✅ | ✅ |
+| `enum` | ✅ | ✅ | ✅ |
+| `const` | ✅ | ✅ | ✅ |
+| `multipleOf` | ✅ | ✅ | ✅ |
+| `maximum` | ✅ | ✅ | ✅ |
+| `minimum` | ✅ | ✅ | ✅ |
+| `exclusiveMaximum` | ✅ | ✅ | ✅ |
+| `exclusiveMinimum` | ✅ | ✅ | ✅ |
+| `maxLength` | ✅ | ✅ | ✅ |
+| `minLength` | ✅ | ✅ | ✅ |
+| `pattern` | ✅ | ✅ | ✅ |
+| `format` | ✅ | ✅ | ✅ |
+| `maxItems` | ✅ | ✅ | ✅ |
+| `minItems` | ✅ | ✅ | ✅ |
+| `uniqueItems` | ✅ | ✅ | ✅ |
+| `maxProperties` | ✅ | ✅ | ✅ |
+| `minProperties` | ✅ | ✅ | ✅ |
+| `required` | ✅ | ✅ | ✅ |
+| `dependencies` | ✅ | ✅ | - |
+| `dependentRequired` | - | ✅ | ✅ |
+| `minContains` | - | ✅ | ✅ |
+| `maxContains` | - | ✅ | ✅ |
+| `title` | ✅ | ✅ | ✅ |
+| `description` | ✅ | ✅ | ✅ |
+| `default` | ✅ | ✅ | ✅ |
+| `examples` | ✅ | ✅ | ✅ |
+| `deprecated` | ✅ | ✅ | ✅ |
+| `$comment` | ❌ | ❌ | ❌ |
+| `readOnly` | ❌ | ❌ | ❌ |
+| `writeOnly` | ❌ | ❌ | ❌ |
+| `contentEncoding` | ✅ | ✅ | ✅ |
+| `contentMediaType` | ✅ | ✅ | ✅ |
+| `contentSchema` | ✅ | ✅ | ✅ |
+
+<Note>
+`format`, `title`, `description`, `default`, `examples`, `deprecated`, `contentEncoding`, `contentMediaType`, and `contentSchema` are not all treated as pure assertion keywords.
+Some are used as annotations for validation behavior, hover, completion, or diagnostics.
+</Note>
+
+<Note>
+Tombi defaults to a non-standard `strict` behavior: when `additionalProperties` is omitted, objects are treated as closed unless you disable `schema.strict`.
+</Note>
