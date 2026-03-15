@@ -1,5 +1,6 @@
 import CodeTabs from "../../components/CodeTabs";
 import { createSignal } from "solid-js";
+import { Warning } from "~/components/Highlight";
 
 export const [selectedMethod, setSelectedMethod] = createSignal(null);
 
@@ -202,6 +203,17 @@ Cursor, Windsurf, etc.
   image="/zed.jpeg"
   url="https://zed.dev/extensions?query=tombi&filter=language-servers"
 />
+
+<Warning>
+After installing the extension, we recommend creating a `tombi.toml` file in your workspace with the following initial setting:
+
+```toml
+[lsp]
+goto-type-definition.enabled = false
+```
+
+This avoids the issue reported in [#1556](https://github.com/tombi-toml/tombi/issues/1556), where editing files such as `pyproject.toml` or `Cargo.toml` in Zed can open unexpected `lsp edit` tabs when type definition requests are triggered. For more editor-specific settings, see the [Zed Extension](/docs/editors/zed-extension) page.
+</Warning>
 
 ## Helix
 
