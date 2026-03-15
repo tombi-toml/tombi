@@ -326,7 +326,8 @@ See [VSCode Extension](/docs/editors/vscode-extension#json-schema-association) f
 
 ## Compliance Status
 
-The table below summarizes keyword-level support implemented in Tombi.
+The table below summarizes keyword membership in each JSON Schema dialect and whether Tombi
+implements the keyword when that dialect defines it.
 
 `✅`: supported in the dialect\
 `❌`: not implemented in Tombi\
@@ -396,6 +397,13 @@ The table below summarizes keyword-level support implemented in Tombi.
 | `contentEncoding` | ✅ | ✅ | ✅ |
 | `contentMediaType` | ✅ | ✅ | ✅ |
 | `contentSchema` | ✅ | ✅ | ✅ |
+
+<Note>
+Tombi also accepts some legacy keywords for compatibility even when they are not part of the
+selected dialect. For example, `definitions` is still loaded alongside `$defs` in draft-2019-09
+and draft-2020-12, `dependencies` is still honored in draft-2020-12, and `prefixItems` is
+accepted even before draft-2020-12.
+</Note>
 
 <Note>
 `format`, `title`, `description`, `default`, `examples`, `deprecated`, `contentEncoding`, `contentMediaType`, and `contentSchema` are not all treated as pure assertion keywords.
