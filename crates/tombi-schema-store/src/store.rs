@@ -644,23 +644,17 @@ impl SchemaStore {
                     .ok()
                     .map(|relative_source_path| relative_source_path.to_path_buf())
             })
-            .unwrap_or(canonicalized_source_path);
+            .unwrap_or_else(|| canonicalized_source_path.clone());
 
         let schemas = self.schemas.read().await;
         let matching_schemas = schemas
             .iter()
             .filter(|schema| {
-                schema.include.iter().any(|pat| {
-                    let pattern = if !pat.contains("*") {
-                        format!("**/{pat}")
-                    } else {
-                        pat.to_string()
-                    };
-                    glob::Pattern::new(&pattern)
-                        .ok()
-                        .map(|glob_pat| glob_pat.matches_path(&path_for_matching))
-                        .unwrap_or(false)
-                })
+                matches_schema_include(
+                    &schema.include,
+                    &path_for_matching,
+                    &canonicalized_source_path,
+                )
             })
             .collect_vec();
 
@@ -819,6 +813,29 @@ impl SchemaStore {
     }
 }
 
+fn matches_schema_include(
+    include: &[String],
+    path_for_matching: &std::path::Path,
+    absolute_source_path: &std::path::Path,
+) -> bool {
+    include.iter().any(|pat| {
+        let pattern = if !pat.contains('*') {
+            format!("**/{pat}")
+        } else {
+            pat.to_string()
+        };
+
+        glob::Pattern::new(&pattern)
+            .ok()
+            .map(|glob_pat| {
+                glob_pat.matches_path(path_for_matching)
+                    || (path_for_matching != absolute_source_path
+                        && glob_pat.matches_path(absolute_source_path))
+            })
+            .unwrap_or(false)
+    })
+}
+
 async fn load_catalog_from_cache_ignoring_ttl(
     tagalog_uri: &CatalogUri,
     catalog_cache_path: Option<&std::path::Path>,
@@ -915,4 +932,29 @@ fn canonicalize_path_for_matching(path: &std::path::Path) -> std::path::PathBuf 
                 .unwrap_or_else(|| path.to_path_buf())
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::matches_schema_include;
+
+    #[test]
+    fn schema_include_matches_user_config_path_via_absolute_suffix() {
+        assert!(matches_schema_include(
+            &[String::from("tombi/config.toml")],
+            Path::new("config.toml"),
+            Path::new("/Users/test/.config/tombi/config.toml"),
+        ));
+    }
+
+    #[test]
+    fn schema_include_does_not_match_unrelated_config_toml() {
+        assert!(!matches_schema_include(
+            &[String::from("tombi/config.toml")],
+            Path::new("config.toml"),
+            Path::new("/Users/test/project/config.toml"),
+        ));
+    }
 }
