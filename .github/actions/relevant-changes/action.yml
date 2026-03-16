@@ -1,0 +1,134 @@
+name: Relevant Changes
+description: Detect whether a workflow should run for the current diff.
+
+inputs:
+  paths:
+    description: Newline-separated path globs to match against changed files.
+    required: true
+  base-sha:
+    description: Base commit SHA for the diff.
+    required: false
+  head-sha:
+    description: Head commit SHA for the diff.
+    required: false
+
+outputs:
+  relevant:
+    description: Whether any changed file matched the configured paths.
+    value: ${{ steps.detect.outputs.relevant }}
+  changed-files:
+    description: Newline-separated list of changed files.
+    value: ${{ steps.detect.outputs.changed-files }}
+
+runs:
+  using: composite
+  steps:
+    - id: detect
+      shell: bash
+      env:
+        INPUT_PATHS: ${{ inputs.paths }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+
+        write_safe_defaults() {
+          {
+            echo "relevant=true"
+            echo "changed-files<<EOF"
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        }
+
+        ensure_commit() {
+          local sha="$1"
+
+          if git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+            return 0
+          fi
+
+          git fetch --no-tags --depth=1 origin "${sha}"
+        }
+
+        ensure_base_ref() {
+          local remote_ref="refs/remotes/origin/${BASE_REF}"
+
+          if git show-ref --verify --quiet "${remote_ref}"; then
+            return 0
+          fi
+
+          git fetch --no-tags --depth=1 origin "refs/heads/${BASE_REF}:${remote_ref}"
+        }
+
+        deepen_base_ref() {
+          local remote_ref="refs/remotes/origin/${BASE_REF}"
+
+          git fetch --no-tags --deepen=50 origin "refs/heads/${BASE_REF}:${remote_ref}"
+        }
+
+        resolve_changed_files() {
+          if [[ -n "${BASE_REF}" ]]; then
+            local remote_ref="refs/remotes/origin/${BASE_REF}"
+            local merge_base=""
+
+            ensure_base_ref
+
+            for _ in 1 2 3 4 5; do
+              merge_base="$(git merge-base "${remote_ref}" "${HEAD_SHA}" || true)"
+              if [[ -n "${merge_base}" ]]; then
+                git diff --name-only "${merge_base}" "${HEAD_SHA}"
+                return 0
+              fi
+
+              deepen_base_ref
+            done
+
+            echo "Failed to determine merge-base for ${remote_ref} and ${HEAD_SHA}." >&2
+            return 1
+          fi
+
+          git diff --name-only "${BASE_SHA}" "${HEAD_SHA}"
+        }
+
+        if [[ -z "${BASE_SHA}" || -z "${HEAD_SHA}" || "${BASE_SHA}" =~ ^0+$ ]]; then
+          echo "No comparable base commit found. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        if ! ensure_commit "${BASE_SHA}"; then
+          echo "Failed to fetch base commit ${BASE_SHA}. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        if ! ensure_commit "${HEAD_SHA}"; then
+          echo "Failed to fetch head commit ${HEAD_SHA}. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        if ! mapfile -t changed_files < <(resolve_changed_files); then
+          echo "Failed to resolve changed files. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        {
+          echo "changed-files<<EOF"
+          printf '%s\n' "${changed_files[@]}"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        if RELEVANT_FILE="$(
+          INPUT_PATHS="${INPUT_PATHS}" CHANGED_FILES="$(printf '%s\n' "${changed_files[@]}")" python3 -c 'import fnmatch, os, sys; patterns=[line.strip() for line in os.environ["INPUT_PATHS"].splitlines() if line.strip()]; files=[line.rstrip("\\r") for line in os.environ["CHANGED_FILES"].splitlines() if line.rstrip("\\r")]; match=next((path for pattern in patterns for path in files if fnmatch.fnmatchcase(path, pattern)), None); print(match or ""); sys.exit(0 if match else 1)'
+        )"; then
+          echo "Relevant change detected: ${RELEVANT_FILE}"
+          echo "relevant=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        echo "No relevant changes detected."
+        echo "relevant=false" >> "$GITHUB_OUTPUT"
