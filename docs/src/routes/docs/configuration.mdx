@@ -32,7 +32,7 @@ toml-version = "v1.0.0"
 
 [files]
 include = ["**/*.toml"]
-exclude = []
+exclude = [".cache/**/*.toml"]
 
 [format]
 [format.rules]
@@ -83,7 +83,7 @@ catalog = {
 
 # Root Schema
 [[schemas]]
-toml-version = "1.0.0"
+toml-version = "v1.0.0"
 path = "https://example.com/schema.json"
 include = ["example.toml"]
 
