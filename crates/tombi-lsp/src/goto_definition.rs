@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 
 use itertools::Itertools;
 use tombi_schema_store::get_tombi_schemastore_content;
@@ -59,15 +59,12 @@ pub async fn open_remote_file(
     backend: &Backend,
     uri: &tombi_uri::Uri,
 ) -> Result<Option<tombi_uri::Uri>, tower_lsp::jsonrpc::Error> {
+    if let Some(cached_uri) = get_cached_remote_file_uri(uri).await {
+        return Ok(Some(cached_uri));
+    }
+
     match uri.scheme() {
         "http" | "https" => {
-            // Check if cache file exists
-            if let Some(cache_path) = tombi_cache::get_cache_file_path(uri).await
-                && cache_path.is_file()
-                && let Ok(cached_uri) = tombi_uri::Uri::from_file_path(&cache_path)
-            {
-                return Ok(Some(cached_uri));
-            }
             let remote_uri =
                 tombi_uri::Uri::from_str(&format!("untitled://{}", uri.path())).unwrap();
             let content = fetch_remote_content(uri).await?;
@@ -84,6 +81,23 @@ pub async fn open_remote_file(
             Ok(Some(remote_uri))
         }
         _ => Ok(None),
+    }
+}
+
+pub(crate) async fn get_cached_remote_file_uri(uri: &tombi_uri::Uri) -> Option<tombi_uri::Uri> {
+    let cache_path = tombi_cache::get_cache_file_path(uri).await;
+    cached_remote_file_uri(uri, cache_path.as_deref())
+}
+
+fn cached_remote_file_uri(
+    uri: &tombi_uri::Uri,
+    cache_path: Option<&Path>,
+) -> Option<tombi_uri::Uri> {
+    match uri.scheme() {
+        "http" | "https" => cache_path
+            .filter(|cache_path| cache_path.is_file())
+            .and_then(|cache_path| tombi_uri::Uri::from_file_path(cache_path).ok()),
+        _ => None,
     }
 }
 
@@ -202,4 +216,43 @@ async fn fetch_remote_content(url: &Url) -> Result<String, tower_lsp::jsonrpc::E
     })?;
 
     Ok(content)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::cached_remote_file_uri;
+
+    #[test]
+    fn cached_remote_file_uri_returns_file_uri_for_cached_http_schema() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let cache_file_path = temp_dir.path().join("schema.json");
+        std::fs::write(&cache_file_path, "{}").unwrap();
+
+        let uri = tombi_uri::Uri::from_str("https://json.schemastore.org/cargo.json").unwrap();
+
+        let cached_uri = cached_remote_file_uri(&uri, Some(&cache_file_path)).unwrap();
+
+        assert_eq!(cached_uri.to_file_path().unwrap(), cache_file_path);
+    }
+
+    #[test]
+    fn cached_remote_file_uri_returns_none_without_cache_file() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let missing_cache_file_path = temp_dir.path().join("missing.json");
+        let uri = tombi_uri::Uri::from_str("https://json.schemastore.org/cargo.json").unwrap();
+
+        assert!(cached_remote_file_uri(&uri, Some(&missing_cache_file_path)).is_none());
+    }
+
+    #[test]
+    fn cached_remote_file_uri_ignores_non_remote_uri() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let cache_file_path = temp_dir.path().join("schema.json");
+        std::fs::write(&cache_file_path, "{}").unwrap();
+        let uri = tombi_uri::Uri::from_file_path(&cache_file_path).unwrap();
+
+        assert!(cached_remote_file_uri(&uri, Some(&cache_file_path)).is_none());
+    }
 }

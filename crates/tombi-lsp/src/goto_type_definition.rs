@@ -11,7 +11,10 @@ use itertools::Itertools;
 use tombi_schema_store::{Accessor, CurrentSchema, SchemaUri};
 use tower_lsp::lsp_types::GotoDefinitionResponse;
 
-use crate::{Backend, goto_definition::open_remote_file};
+use crate::{
+    Backend,
+    goto_definition::{get_cached_remote_file_uri, open_remote_file},
+};
 
 pub async fn get_type_definition(
     document_tree: &tombi_document_tree::DocumentTree,
@@ -53,6 +56,11 @@ pub async fn into_type_definition_locations(
 
     let mut uri_set = tombi_hashmap::HashMap::new();
     for definition in &definitions {
+        if let Some(cached_uri) = get_cached_remote_file_uri(&definition.uri).await {
+            uri_set.insert(definition.uri.clone(), cached_uri);
+            continue;
+        }
+
         if let Ok(Some(remote_uri)) = open_remote_file(backend, &definition.uri).await {
             uri_set.insert(definition.uri.clone(), remote_uri);
         }
