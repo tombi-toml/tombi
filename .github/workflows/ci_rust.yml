@@ -22,50 +22,50 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        fetch-depth: 1
-    - id: filter
-      uses: ./.github/actions/relevant-changes
-      with:
-        base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-        head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        paths: |
-          .cargo/**
-          .config/nextest.toml
-          .github/actions/relevant-changes/**
-          Cargo.toml
-          Cargo.lock
-          rust-toolchain.toml
-          clippy.toml
-          rustfmt.toml
-          toml.ungram
-          crates/**
-          extensions/**
-          rust/**
-          editors/zed/**
-          toml-test/**
-          xtask/**
-          schemas/**
-          www.schemastore.org/**
-          www.schemastore.tombi/**
-          tombi.toml
-          type-test.toml
-          .github/workflows/ci_rust.yml
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            .config/nextest.toml
+            .github/actions/relevant-changes/**
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            clippy.toml
+            rustfmt.toml
+            toml.ungram
+            crates/**
+            extensions/**
+            rust/**
+            editors/zed/**
+            toml-test/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            tombi.toml
+            type-test.toml
+            .github/workflows/ci_rust.yml
 
   ci-rust:
     needs: detect-changes
     if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: Swatinem/rust-cache@v2
-    - uses: taiki-e/install-action@nextest
-    - name: Build
-      run: cargo build --verbose --locked
-    - name: Run tests
-      run: cargo nextest run --verbose --locked
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@nextest
+      - name: Build
+        run: cargo build --verbose --locked
+      - name: Run tests
+        run: cargo nextest run --verbose --locked
 
   cargo-shear:
     needs: detect-changes
