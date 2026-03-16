@@ -212,7 +212,7 @@ After installing the extension, we recommend creating a `tombi.toml` file in you
 goto-type-definition.enabled = false
 ```
 
-This avoids the issue reported in [#1556](https://github.com/tombi-toml/tombi/issues/1556), where editing files such as `pyproject.toml` or `Cargo.toml` in Zed can open unexpected `lsp edit` tabs when type definition requests are triggered. For more editor-specific settings, see the [Zed Extension](/docs/editors/zed-extension) page.
+This helps prevent the issue described in [#1556](https://github.com/tombi-toml/tombi/issues/1556), where pressing any key while editing files such as `pyproject.toml` or `Cargo.toml` in Zed may trigger unwanted `lsp edit` tabs due to type definition requests. For additional configuration tips specific to your editor, see the [Zed Extension](/docs/editors/zed-extension) page.
 </Warning>
 
 ## Helix
