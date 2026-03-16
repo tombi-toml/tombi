@@ -199,7 +199,7 @@ function createNodeModulesTombiBin(bin: NodeModulesTombiBin): TombiBin {
     return {
       source: "node_modules",
       binPath: bin.binPath,
-      command: process.execPath,
+      command: process.platform === "win32" ? "node" : process.execPath,
       args: [bin.binPath],
     };
   }
