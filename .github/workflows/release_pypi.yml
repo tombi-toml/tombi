@@ -20,7 +20,45 @@ env:
   TOMBI_VERSION: ""
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            .github/actions/relevant-changes/**
+            .github/actions/set-version/**
+            .python-version
+            Cargo.toml
+            Cargo.lock
+            pyproject.toml
+            uv.lock
+            crates/**
+            extensions/**
+            rust/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            www.tombi.dev/**
+            python/**
+            tombi.toml
+            type-test.toml
+            .github/workflows/release_pypi.yml
+
   linux:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -65,6 +103,8 @@ jobs:
           path: dist
 
   musllinux:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -99,6 +139,8 @@ jobs:
           path: dist
 
   windows:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -128,6 +170,8 @@ jobs:
           path: dist
 
   macos:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -157,6 +201,8 @@ jobs:
           path: dist
 
   sdist:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

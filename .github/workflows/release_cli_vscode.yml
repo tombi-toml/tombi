@@ -22,7 +22,47 @@ env:
   RUSTFLAGS: "-C strip=symbols"
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            .github/actions/relevant-changes/**
+            .github/actions/set-version/**
+            .node-version
+            .npmrc
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            package.json
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+            editors/vscode/**
+            crates/**
+            extensions/**
+            rust/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            tombi.toml
+            type-test.toml
+            .github/workflows/release_cli_vscode.yml
+
   delete-old-dev-artifacts:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: geekyeggo/delete-artifact@v5
@@ -140,6 +180,8 @@ jobs:
           path: dist/tombi-vscode-${{ env.TOMBI_VERSION }}-${{ matrix.vscode_target }}.vsix
 
   check-release-notes:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     outputs:
       exists: ${{ steps.check.outputs.exists }}

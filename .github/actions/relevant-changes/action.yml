@@ -1,0 +1,93 @@
+name: Relevant Changes
+description: Detect whether a workflow should run for the current diff.
+
+inputs:
+  paths:
+    description: Newline-separated path globs to match against changed files.
+    required: true
+  base-sha:
+    description: Base commit SHA for the diff.
+    required: false
+  head-sha:
+    description: Head commit SHA for the diff.
+    required: false
+
+outputs:
+  relevant:
+    description: Whether any changed file matched the configured paths.
+    value: ${{ steps.detect.outputs.relevant }}
+  changed-files:
+    description: Newline-separated list of changed files.
+    value: ${{ steps.detect.outputs.changed-files }}
+
+runs:
+  using: composite
+  steps:
+    - id: detect
+      shell: bash
+      env:
+        INPUT_PATHS: ${{ inputs.paths }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+      run: |
+        set -euo pipefail
+
+        write_safe_defaults() {
+          {
+            echo "relevant=true"
+            echo "changed-files<<EOF"
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        }
+
+        ensure_commit() {
+          local sha="$1"
+
+          if git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+            return 0
+          fi
+
+          git fetch --no-tags --depth=1 origin "${sha}"
+        }
+
+        if [[ -z "${BASE_SHA}" || -z "${HEAD_SHA}" || "${BASE_SHA}" =~ ^0+$ ]]; then
+          echo "No comparable base commit found. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        if ! ensure_commit "${BASE_SHA}"; then
+          echo "Failed to fetch base commit ${BASE_SHA}. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        if ! ensure_commit "${HEAD_SHA}"; then
+          echo "Failed to fetch head commit ${HEAD_SHA}. Running workflow."
+          write_safe_defaults
+          exit 0
+        fi
+
+        mapfile -t changed_files < <(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")
+
+        {
+          echo "changed-files<<EOF"
+          printf '%s\n' "${changed_files[@]}"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        while IFS= read -r pattern; do
+          [[ -z "${pattern}" ]] && continue
+
+          for file in "${changed_files[@]}"; do
+            if [[ "${file}" == ${pattern} ]]; then
+              echo "Relevant change detected: ${file}"
+              echo "relevant=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+        done <<< "${INPUT_PATHS}"
+
+        echo "No relevant changes detected."
+        echo "relevant=false" >> "$GITHUB_OUTPUT"
