@@ -22,112 +22,8 @@ Also, we supports `[tool.tombi]` in `pyproject.toml`.
 <Warning>
 The base directory for configuration search depends on the context: for CLI usage, it is the directory where the command is executed; for LSP usage, it is the directory of the currently opened file.
 
-Therefore, It is recommended to place `tombi.toml` only at the root of your project. If multiple `tombi.toml` files exist at different levels within a single project, there may be inconsistencies in formatting or diagnostic results between the CLI and the editor.
+Therefore, it is recommended to place `tombi.toml` only at the root of your project. If multiple `tombi.toml` files exist at different levels within a single project, there may be inconsistencies in formatting or diagnostic results between the CLI and the editor.
 </Warning>
-
-## Full Structure
-
-```toml
-toml-version = "v1.0.0"
-
-[files]
-include = ["**/*.toml"]
-exclude = []
-
-[format]
-[format.rules]
-array-bracket-space-width = 0
-array-comma-space-width = 1
-date-time-delimiter = "T"
-indent-style = "space"
-indent-sub-tables = false
-indent-table-key-value-pairs = false
-indent-width = 2
-inline-table-brace-space-width = 1
-inline-table-comma-space-width = 1
-key-value-equals-sign-alignment = false
-key-value-equals-sign-space-width = 1
-line-ending = "lf"
-line-width = 80
-string-quote-style = "double"
-trailing-comment-alignment = false
-trailing-comment-space-width = 2
-
-[lint]
-[lint.rules]
-dotted-keys-out-of-order = "warn"
-key-empty = "warn"
-tables-out-of-order = "warn"
-
-[lsp]
-code-action.enabled = true
-completion.enabled = true
-diagnostic.enabled = true
-document-link.enabled = true
-formatting.enabled = true
-goto-declaration.enabled = true
-goto-definition.enabled = true
-goto-type-definition.enabled = true
-hover.enabled = true
-workspace-diagnostic.enabled = true
-
-[schema]
-enabled = true
-strict = true
-catalog = {
-  paths = [
-    "tombi://www.schemastore.org/api/json/catalog.json",
-    "https://www.schemastore.org/api/json/catalog.json",
-  ],
-}
-
-# Root Schema
-[[schemas]]
-toml-version = "1.0.0"
-path = "https://example.com/schema.json"
-include = ["example.toml"]
-
-# Sub Schema
-[[schemas]]
-root = "tool.taskipy"
-path = "schemas/partial-taskipy.schema.json"
-include = ["pyproject.toml"]
-
-# Override config
-[[overrides]]
-[overrides.files]
-include = ["specific/**/*.toml"]
-exclude = ["specific/**/ignored.toml"]
-
-[overrides.format]
-enabled = true
-
-[overrides.format.rules]
-array-bracket-space-width = 1
-array-comma-space-width = 1
-date-time-delimiter = "space"
-indent-style = "tab"
-indent-sub-tables = true
-indent-table-key-value-pairs = true
-indent-width = 4
-inline-table-brace-space-width = 0
-inline-table-comma-space-width = 1
-key-value-equals-sign-alignment = true
-key-value-equals-sign-space-width = 1
-line-ending = "crlf"
-line-width = 120
-string-quote-style = "single"
-trailing-comment-alignment = true
-trailing-comment-space-width = 1
-
-[overrides.lint]
-enabled = true
-
-[overrides.lint.rules]
-dotted-keys-out-of-order = "error"
-key-empty = "error"
-tables-out-of-order = "error"
-```
 
 ## Available Options
 
@@ -199,6 +95,110 @@ tables-out-of-order = "error"
   - [overrides[\*].lint](#overrides-lint)
     - [overrides[\*].lint.enabled](#overrides-lint-enabled)
     - [overrides[\*].lint.rules](#overrides-lint-rules)
+
+## Full Structure
+
+```toml
+toml-version = "v1.0.0"
+
+[files]
+include = ["**/*.toml"]
+exclude = [".cache/**/*.toml"]
+
+[format]
+[format.rules]
+array-bracket-space-width = 0
+array-comma-space-width = 1
+date-time-delimiter = "T"
+indent-style = "space"
+indent-sub-tables = false
+indent-table-key-value-pairs = false
+indent-width = 2
+inline-table-brace-space-width = 1
+inline-table-comma-space-width = 1
+key-value-equals-sign-alignment = false
+key-value-equals-sign-space-width = 1
+line-ending = "lf"
+line-width = 80
+string-quote-style = "double"
+trailing-comment-alignment = false
+trailing-comment-space-width = 2
+
+[lint]
+[lint.rules]
+dotted-keys-out-of-order = "warn"
+key-empty = "warn"
+tables-out-of-order = "warn"
+
+[lsp]
+code-action.enabled = true
+completion.enabled = true
+diagnostic.enabled = true
+document-link.enabled = true
+formatting.enabled = true
+goto-declaration.enabled = true
+goto-definition.enabled = true
+goto-type-definition.enabled = true
+hover.enabled = true
+workspace-diagnostic.enabled = true
+
+[schema]
+enabled = true
+strict = true
+catalog = {
+  paths = [
+    "tombi://www.schemastore.org/api/json/catalog.json",
+    "https://www.schemastore.org/api/json/catalog.json",
+  ],
+}
+
+# Root Schema
+[[schemas]]
+toml-version = "v1.0.0"
+path = "https://example.com/schema.json"
+include = ["example.toml"]
+
+# Sub Schema
+[[schemas]]
+root = "tool.taskipy"
+path = "schemas/partial-taskipy.schema.json"
+include = ["pyproject.toml"]
+
+# Override config
+[[overrides]]
+[overrides.files]
+include = ["specific/**/*.toml"]
+exclude = ["specific/**/ignored.toml"]
+
+[overrides.format]
+enabled = true
+
+[overrides.format.rules]
+array-bracket-space-width = 1
+array-comma-space-width = 1
+date-time-delimiter = "space"
+indent-style = "tab"
+indent-sub-tables = true
+indent-table-key-value-pairs = true
+indent-width = 4
+inline-table-brace-space-width = 0
+inline-table-comma-space-width = 1
+key-value-equals-sign-alignment = true
+key-value-equals-sign-space-width = 1
+line-ending = "crlf"
+line-width = 120
+string-quote-style = "single"
+trailing-comment-alignment = true
+trailing-comment-space-width = 1
+
+[overrides.lint]
+enabled = true
+
+[overrides.lint.rules]
+dotted-keys-out-of-order = "error"
+key-empty = "error"
+tables-out-of-order = "error"
+```
 
 ### toml-version
 
