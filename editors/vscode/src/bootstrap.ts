@@ -201,8 +201,7 @@ function createNodeModulesTombiBin(bin: NodeModulesTombiBin): TombiBin {
       source: "node_modules",
       binPath: bin.binPath,
       command:
-        process.platform === "win32" &&
-        spawnSync(node, ["-v"]).stdout.byteLength
+        process.platform === "win32" && existsCommand(node)
           ? node
           : process.execPath,
       args: [bin.binPath],
@@ -210,6 +209,16 @@ function createNodeModulesTombiBin(bin: NodeModulesTombiBin): TombiBin {
   }
 
   return createDirectTombiBin("node_modules", bin.binPath);
+}
+
+function existsCommand(command: string): boolean {
+  const result = spawnSync(command, ["-v"]);
+  return (
+    result.status === 0 &&
+    !result.error &&
+    result.stdout &&
+    result.stdout.byteLength > 0
+  );
 }
 
 async function findLocalTombiBin(binName: string): Promise<string | undefined> {
