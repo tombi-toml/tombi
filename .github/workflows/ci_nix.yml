@@ -9,7 +9,40 @@ on:
       - main
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            .github/actions/relevant-changes/**
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            flake.nix
+            flake.lock
+            crates/**
+            extensions/**
+            rust/**
+            editors/zed/**
+            toml-test/**
+            xtask/**
+            *.json
+            .github/workflows/ci_nix.yml
+
   nix-build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

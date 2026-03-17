@@ -7,7 +7,41 @@ on:
     branches: [ main ]
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            .cargo/**
+            .github/actions/relevant-changes/**
+            Cargo.toml
+            Cargo.lock
+            rust-toolchain.toml
+            crates/**
+            extensions/**
+            rust/**
+            toml-test/**
+            xtask/**
+            schemas/**
+            www.schemastore.org/**
+            www.schemastore.tombi/**
+            tombi.toml
+            type-test.toml
+            .github/workflows/toml-test.yml
+
   toml-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     name: Run toml-test (${{ matrix.toml-version }})
     runs-on: ubuntu-latest
     strategy:
@@ -38,7 +72,18 @@ jobs:
         run: cargo xtask toml-test --toml-version ${{ matrix.toml-version }}
 
   success-toml-test:
+    needs:
+      - detect-changes
+      - toml-test
+    if: always()
     runs-on: ubuntu-latest
-    needs: toml-test
     steps:
-      - run: echo "All matrix jobs succeeded!"
+      - shell: bash
+        run: |
+          if [[ "${{ needs.detect-changes.outputs.relevant }}" != "true" ]]; then
+            echo "No relevant toml-test changes."
+            exit 0
+          fi
+
+          [[ "${{ needs.toml-test.result }}" == "success" ]]
+          echo "All matrix jobs succeeded!"

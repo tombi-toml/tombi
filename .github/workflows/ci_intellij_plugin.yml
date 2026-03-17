@@ -4,15 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - editors/intellij/**
-      - .github/workflows/ci_intellij_plugin.yml
   pull_request:
     branches:
       - main
-    paths:
-      - editors/intellij/**
-      - .github/workflows/ci_intellij_plugin.yml
   workflow_dispatch:
 
 concurrency:
@@ -20,7 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: filter
+        uses: ./.github/actions/relevant-changes
+        with:
+          base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          paths: |
+            editors/intellij/**
+            .github/actions/relevant-changes/**
+            .github/workflows/ci_intellij_plugin.yml
+
   build-intellij-plugin:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -86,6 +101,8 @@ jobs:
           path: ${{ github.workspace }}/editors/intellij/build/reports/tests
 
   inspect-intellij-plugin:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
 
     permissions:
@@ -185,8 +202,19 @@ jobs:
 
   check-intellij-plugin-success:
     needs:
+      - detect-changes
       - build-intellij-plugin
       - test-intellij-plugin
+    if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: echo "success"
+      - shell: bash
+        run: |
+          if [[ "${{ needs.detect-changes.outputs.relevant }}" != "true" ]]; then
+            echo "No relevant IntelliJ changes."
+            exit 0
+          fi
+
+          [[ "${{ needs.build-intellij-plugin.result }}" == "success" ]]
+          [[ "${{ needs.test-intellij-plugin.result }}" == "success" ]]
+          echo "success"
