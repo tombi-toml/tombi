@@ -106,13 +106,17 @@ pub fn extract_keys_and_hint(
             }
             continue;
         } else if let Some(kv) = tombi_ast::KeyValue::cast(node.to_owned()) {
-            match (kv.keys(), kv.eq(), kv.value()) {
-                (Some(_), Some(_), Some(_)) => {}
-                (Some(_), Some(eq), None) => {
+            let Some(kv_keys) = kv.keys() else { continue };
+            if comment_context.is_none() && kv_keys.range().start > position {
+                continue;
+            }
+            match (kv.eq(), kv.value()) {
+                (Some(_), Some(_)) => {}
+                (Some(eq), None) => {
                     completion_hint = Some(CompletionHint::EqualTrigger { range: eq.range() });
                 }
-                (Some(keys), None, None) => {
-                    if let Some(last_dot) = keys
+                (None, None) => {
+                    if let Some(last_dot) = kv_keys
                         .syntax()
                         .children_with_tokens()
                         .filter(|node_or_token| match node_or_token {
@@ -128,7 +132,7 @@ pub fn extract_keys_and_hint(
                 }
                 _ => {}
             }
-            kv.keys()
+            Some(kv_keys)
         } else if let Some(table) = tombi_ast::Table::cast(node.to_owned()) {
             let (bracket_start_range, bracket_end_range) =
                 match (table.bracket_start(), table.bracket_end()) {

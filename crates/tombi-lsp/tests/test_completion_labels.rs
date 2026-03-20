@@ -1363,6 +1363,161 @@ mod completion_labels {
         }
 
         test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal(
+                r#"
+                [dependencies]
+                num-chrono-duration=█
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+                "branch",
+                "default-features",
+                "features",
+                "git",
+                "optional",
+                "package",
+                "path",
+                "registry",
+                "rev",
+                "tag",
+                "version",
+                "workspace",
+                "\"\"",
+                "''",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_dot(
+                r#"
+                [dependencies]
+                num-chrono-duration.█
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+                "branch",
+                "default-features",
+                "features",
+                "git",
+                "optional",
+                "package",
+                "path",
+                "registry",
+                "rev",
+                "tag",
+                "version",
+                "workspace",
+                "\"\"",
+                "''",
+                "{}",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version█ }
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                ".",
+                "=",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version_dot(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version.█ }
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+                "\"\"",
+                "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_string(
+                r#"
+                [dependencies]
+                num-chrono-duration = "█"
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_string_with_comment(
+                r#"
+                [dependencies]
+                num-chrono-duration = "█"  \# comment
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version_equal(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version=█ }
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+                "\"\"",
+                "''",
+            ]);
+        }
+
+        test_completion_labels! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version_eq_string(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version= "█" }
+                "#,
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok([
+                "\"0.1.0\"",
+                "\"*\"",
+            ]);
+        }
+
+        test_completion_labels! {
          #[tokio::test]
             async fn cargo_dependencies_tombi_date_time_features_with_workspace_eq_true_comma(
                 r#"
@@ -2071,19 +2226,11 @@ mod completion_labels {
                 let line_index =
                     tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
-                let toml_file_url = match args.source_file_path.as_ref() {
-                    Some(path) => {
-                        Url::from_file_path(path)
-                            .map_err(|_| "failed to convert temporary file path to URL")?
-                    }
-                    None => Url::from_file_path(temp_file.path())
-                        .map_err(|_| "failed to convert temporary file path to URL")?,
-                };
+                let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
+                let toml_file_url = Url::from_file_path(source_path)
+                    .map_err(|_| "failed to convert file path to URL")?;
 
                 if !schema_items.is_empty() {
-                    let source_path = toml_file_url
-                        .to_file_path()
-                        .map_err(|_| "failed to convert URL to path")?;
                     let config_schema_store = backend
                         .config_manager
                         .config_schema_store_for_file(&source_path)
