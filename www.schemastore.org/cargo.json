@@ -1182,7 +1182,7 @@
     "SemVerRequirement": {
       "title": "Semantic Version Requirement",
       "description": "The [version requirement](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html) of the target dependency.",
-      "default": "*",
+      "examples": ["*"],
       "type": "string",
       "format": "semver-requirement",
       "x-taplo": {

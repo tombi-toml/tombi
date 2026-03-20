@@ -106,6 +106,8 @@ impl<'a> Formatter<'a> {
         let (root, errors) = parsed.into_root_and_errors();
 
         if !errors.is_empty() {
+            log::trace!("TOML AST with parsing errors: {:#?}", root);
+
             let mut diagnostics = vec![];
             for error in errors {
                 error.set_diagnostics(&mut diagnostics);
