@@ -1,6 +1,7 @@
 use tombi_extension::CompletionTextEdit;
 use tombi_test_lib::{
-    today_local_date, today_local_date_time, today_local_time, today_offset_date_time,
+    project_root_path, today_local_date, today_local_date_time, today_local_time,
+    today_offset_date_time,
 };
 
 mod completion_edit {
@@ -115,6 +116,170 @@ mod completion_edit {
                 r#"
                 [dependencies]
                 serde = { workspace = true }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal(
+                r#"
+                [dependencies]
+                num-chrono-duration=█
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = "0.1.0"
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_dot(
+                r#"
+                [dependencies]
+                num-chrono-duration.█
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = "0.1.0"
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_string(
+                r#"
+                [dependencies]
+                num-chrono-duration = "█"
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = "0.1.0"
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_string_with_comment(
+                r#"
+                [dependencies]
+                num-chrono-duration = "█"  \# comment
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = "0.1.0"  \# comment
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version█ }
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version = "0.1.0" }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version_dot(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version.█ }
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version = "0.1.0" }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version_equal(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version=█ }
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version = "0.1.0" }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_dependencies_num_chrono_duration_equal_version_equal_string(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version = "█" }
+                "#,
+                Select("\"0.1.0\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [dependencies]
+                num-chrono-duration = { version = "0.1.0" }
+                "#
+            );
+        }
+
+        test_completion_edit! {
+            #[tokio::test]
+            async fn cargo_workspace_dependencies_addr_not_nested_under_previous_key(
+                r#"
+                [workspace.dependencies]
+                addr= █
+                anyhow = "1.0.98"
+                "#,
+                Select("\"0.15.6\""),
+                SourcePath(project_root_path().join("Cargo.toml")),
+                SchemaPath(cargo_schema_path()),
+            ) -> Ok(
+                r#"
+                [workspace.dependencies]
+                addr  = "0.15.6"
+                anyhow = "1.0.98"
                 "#
             );
         }
@@ -723,6 +888,7 @@ mod completion_edit {
                 #[derive(Default)]
                 struct TestArgs {
                     select: Option<String>,
+                    source_file_path: Option<std::path::PathBuf>,
                     schema_file_path: Option<std::path::PathBuf>,
                     backend_options: tombi_lsp::backend::Options,
                 }
@@ -743,6 +909,15 @@ mod completion_edit {
 
                 #[allow(unused)]
                 struct SchemaPath(std::path::PathBuf);
+
+                #[allow(unused)]
+                struct SourcePath(std::path::PathBuf);
+
+                impl ApplyTestArg for SourcePath {
+                    fn apply(self, args: &mut TestArgs) {
+                        args.source_file_path = Some(self.0);
+                    }
+                }
 
                 impl ApplyTestArg for SchemaPath {
                     fn apply(self, args: &mut TestArgs) {
@@ -808,14 +983,14 @@ mod completion_edit {
                 let line_index =
                 tombi_text::LineIndex::new(&toml_text, tombi_text::EncodingKind::Utf16);
 
-                let Ok(toml_file_url) = Url::from_file_path(temp_file.path()) else {
-                    return Err("failed to convert temporary file path to URL".into());
-                };
+                let source_path = args.source_file_path.as_deref().unwrap_or(temp_file.path());
+                let toml_file_url = Url::from_file_path(source_path)
+                    .map_err(|_| "failed to convert file path to URL")?;
 
                 if !schema_items.is_empty() {
                     let config_schema_store = backend
                         .config_manager
-                        .config_schema_store_for_file(temp_file.path())
+                        .config_schema_store_for_file(&source_path)
                         .await;
 
                     let mut test_config = config_schema_store.config;

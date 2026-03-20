@@ -350,10 +350,18 @@ async fn complete_crate_version(
     completion_hint: Option<CompletionHint>,
 ) -> Result<Option<Vec<CompletionContent>>, tower_lsp::jsonrpc::Error> {
     let version_value = match dig_accessors(document_tree, accessors) {
-        Some((_, tombi_document_tree::Value::String(value_string))) => Some(value_string),
-        Some((_, tombi_document_tree::Value::Incomplete { .. })) => None,
+        Some((_, value))
+            if matches!(
+                value,
+                tombi_document_tree::Value::String(_)
+                    | tombi_document_tree::Value::Incomplete { .. }
+            ) =>
+        {
+            value
+        }
         _ => return Ok(None),
     };
+
     if let Some(versions) = fetch_crate_versions(crate_name).await {
         let items = versions
             .into_iter()
@@ -361,8 +369,8 @@ async fn complete_crate_version(
             .rev()
             .take(100)
             .enumerate()
-            .map(|(i, ver)| CompletionContent {
-                label: format!("\"{ver}\""),
+            .map(|(i, version_str)| CompletionContent {
+                label: format!("\"{version_str}\""),
                 kind: CompletionKind::Enum,
                 emoji_icon: Some('🦀'),
                 priority: tombi_extension::CompletionContentPriority::Custom(format!(
@@ -374,27 +382,38 @@ async fn complete_crate_version(
                 schema_uri: None,
                 deprecated: None,
                 edit: match version_value {
-                    Some(value) => Some(tombi_extension::CompletionEdit {
-                        text_edit: CompletionTextEdit::Edit(tombi_extension::TextEdit {
-                            range: tombi_text::Range::at(position),
-                            new_text: format!("\"{ver}\""),
-                        }),
-                        insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
-                        additional_text_edits: Some(vec![TextEdit {
-                            range: value.range(),
-                            new_text: "".to_string(),
-                        }]),
-                    }),
-                    None => tombi_extension::CompletionEdit::new_literal(
-                        &format!("\"{ver}\""),
-                        position,
-                        completion_hint,
-                    ),
+                    tombi_document_tree::Value::String(value_string) => {
+                        tombi_extension::CompletionEdit::new_string_literal_while_editing(
+                            &format!("\"{version_str}\""),
+                            value_string.range(),
+                        )
+                    }
+                    tombi_document_tree::Value::Incomplete { .. } => {
+                        Some(tombi_extension::CompletionEdit {
+                            text_edit: CompletionTextEdit::Edit(tombi_extension::TextEdit {
+                                range: tombi_text::Range::at(position),
+                                new_text: format!(" = \"{version_str}\""),
+                            }),
+                            insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+                            additional_text_edits: match completion_hint {
+                                Some(
+                                    CompletionHint::DotTrigger { range, .. }
+                                    | CompletionHint::EqualTrigger { range, .. },
+                                ) => Some(vec![TextEdit {
+                                    range: range,
+                                    new_text: "".to_string(),
+                                }]),
+                                _ => None,
+                            },
+                        })
+                    }
+                    _ => None,
                 },
                 preselect: None,
                 in_comment: false,
             })
             .collect();
+
         Ok(Some(items))
     } else {
         Ok(None)
