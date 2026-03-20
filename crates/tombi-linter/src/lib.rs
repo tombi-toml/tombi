@@ -30,6 +30,7 @@ macro_rules! test_lint {
                 pub toml_version: TomlVersion,
                 pub options: $crate::LintOptions,
                 pub schema_path: Option<std::path::PathBuf>,
+                pub source_path: Option<std::path::PathBuf>,
             }
 
             #[allow(unused)]
@@ -59,6 +60,16 @@ macro_rules! test_lint {
                 }
             }
 
+            /// Set source path for the test case.
+            #[allow(unused)]
+            pub struct SourcePath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SourcePath {
+                fn apply(self, args: &mut TestArgs) {
+                    args.source_path = Some(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -81,7 +92,7 @@ macro_rules! test_lint {
             }
 
             // Initialize linter
-            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let source_path = args.source_path.unwrap_or_else(|| tombi_test_lib::project_root_path().join("test.toml"));
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,
@@ -120,6 +131,7 @@ macro_rules! test_lint {
                 pub toml_version: TomlVersion,
                 pub options: $crate::LintOptions,
                 pub schema_path: Option<std::path::PathBuf>,
+                pub source_path: Option<std::path::PathBuf>,
             }
 
             #[allow(unused)]
@@ -149,6 +161,16 @@ macro_rules! test_lint {
                 }
             }
 
+            /// Set source path for the test case.
+            #[allow(unused)]
+            pub struct SourcePath(pub std::path::PathBuf);
+
+            impl ApplyTestArg for SourcePath {
+                fn apply(self, args: &mut TestArgs) {
+                    args.source_path = Some(self.0);
+                }
+            }
+
             #[allow(unused_mut)]
             let mut args = TestArgs::default();
             $(
@@ -171,7 +193,7 @@ macro_rules! test_lint {
             }
 
             // Initialize linter
-            let source_path = tombi_test_lib::project_root_path().join("test.toml");
+            let source_path = args.source_path.unwrap_or_else(|| tombi_test_lib::project_root_path().join("test.toml"));
             let linter = $crate::Linter::new(
                 args.toml_version,
                 &args.options,

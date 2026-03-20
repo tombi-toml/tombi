@@ -70,3 +70,22 @@ impl std::str::FromStr for SchemaUri {
         crate::Uri::from_str(s).map(Self)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use crate::SchemaUri;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_schema_uri_from_file_path_with_fragment() {
+        let uri_text = "file://./schema.json#/definitions/TableValue";
+        let schema_uri = SchemaUri::from_str(uri_text).unwrap();
+        assert_eq!(
+            schema_uri.to_string(),
+            format!("file://./schema.json#/definitions/TableValue")
+        );
+        assert_eq!(schema_uri.fragment(), Some("/definitions/TableValue"))
+    }
+}
