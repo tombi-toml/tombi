@@ -4121,6 +4121,7 @@ dependencies = [
 name = "tombi-uri"
 version = "0.0.0-dev"
 dependencies = [
+ "pretty_assertions",
  "serde",
  "url",
 ]

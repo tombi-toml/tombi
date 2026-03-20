@@ -30,11 +30,13 @@ macro_rules! comment_directive_schemastore_hostname {
 pub struct Uri(url::Url);
 
 impl Uri {
+    #[inline]
     #[allow(clippy::result_unit_err)]
     pub fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, ()> {
         url_from_file_path(path).map(Self)
     }
 
+    #[inline]
     #[allow(clippy::result_unit_err)]
     pub fn to_file_path(&self) -> Result<std::path::PathBuf, ()> {
         url_to_file_path(self)
@@ -94,6 +96,7 @@ impl std::str::FromStr for Uri {
     target_os = "wasi",
     target_os = "hermit"
 ))]
+#[inline]
 #[allow(clippy::result_unit_err)]
 fn url_from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<url::Url, ()> {
     url::Url::from_file_path(path)
@@ -118,6 +121,7 @@ fn url_from_file_path<P: AsRef<std::path::Path>>(_path: P) -> Result<url::Url, (
     target_os = "wasi",
     target_os = "hermit"
 ))]
+#[inline]
 #[allow(clippy::result_unit_err)]
 fn url_to_file_path(url: &url::Url) -> Result<std::path::PathBuf, ()> {
     url.to_file_path()
@@ -130,6 +134,7 @@ fn url_to_file_path(url: &url::Url) -> Result<std::path::PathBuf, ()> {
     target_os = "wasi",
     target_os = "hermit"
 )))]
+#[inline]
 #[allow(clippy::result_unit_err)]
 fn url_to_file_path(_url: &url::Url) -> Result<std::path::PathBuf, ()> {
     Err(())

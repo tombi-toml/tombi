@@ -38,7 +38,8 @@ pub use not_schema::NotSchema;
 pub use offset_date_time_schema::OffsetDateTimeSchema;
 pub use one_of_schema::OneOfSchema;
 pub use referable_schema::{
-    CurrentSchema, Referable, is_online_url, resolve_and_collect_schemas, resolve_schema_item,
+    CurrentSchema, Referable, is_online_url, resolve_and_collect_schemas, resolve_json_pointer,
+    resolve_schema_item,
 };
 pub use schema_context::SchemaContext;
 pub use schema_cycle_guard::{SchemaCycleGuard, SchemaVisits};
