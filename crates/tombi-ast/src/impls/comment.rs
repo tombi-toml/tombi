@@ -44,15 +44,13 @@ impl Comment {
                     && let Ok(mut base_dir_uri) =
                         tombi_uri::SchemaUri::from_file_path(source_dir_path)
                 {
-                    let relative_ref = format!("{}{}", host, uri.path());
-
                     if !base_dir_uri.path().ends_with('/') {
                         let path = format!("{}/", base_dir_uri.path());
                         base_dir_uri.set_path(&path);
                     }
 
                     if let Ok(resolved_uri) = base_dir_uri
-                        .join(&relative_ref)
+                        .join(&format!("{}{}", host, uri.path()))
                         .map(tombi_uri::SchemaUri::from)
                         && let Ok(mut schema_file_path) = resolved_uri.to_file_path()
                     {
